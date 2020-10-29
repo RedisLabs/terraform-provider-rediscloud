@@ -1,0 +1,139 @@
+name: Terraform Provider Checks
+
+on:
+  push:
+    branches:
+      - master
+      - 'release/**'
+      - 'dev/**'
+  pull_request:
+    paths:
+      - .github/workflows/terraform_provider.yml
+      - .goreleaser.yml
+      - go.sum
+      - GNUmakefile
+      - main.go
+      - staticcheck.conf
+      - internal/provider/**
+      - website/**
+
+env:
+  GO_VERSION: "1.15"
+  GO111MODULE: on
+  TERRAFORM_VERSION: "0.12.26"
+
+jobs:
+  go_mod_download:
+    name: go mod download
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - uses: actions/cache@v2
+        continue-on-error: true
+        id: cache-go-pkg-mod
+        timeout-minutes: 2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-pkg-mod-${{ hashFiles('go.sum') }}
+      - if: steps.cache-go-pkg-mod.outputs.cache-hit != 'true' || steps.cache-go-pkg-mod.outcome == 'failure'
+        run: go mod download
+
+  go_build:
+    name: go build
+    needs: [go_mod_download]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        continue-on-error: true
+        id: cache-terraform-plugin-dir
+        timeout-minutes: 2
+        with:
+          path: terraform-plugin-dir
+          key: ${{ runner.os }}-terraform-plugin-dir-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/provider/**') }}
+      - if: steps.cache-terraform-plugin-dir.outputs.cache-hit != 'true' || steps.cache-terraform-plugin-dir.outcome == 'failure'
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - if: steps.cache-terraform-plugin-dir.outputs.cache-hit != 'true' || steps.cache-terraform-plugin-dir.outcome == 'failure'
+        name: go env
+        run: |
+          echo "::set-env name=GOCACHE::$(go env GOCACHE)"
+      - if: steps.cache-terraform-plugin-dir.outputs.cache-hit != 'true' || steps.cache-terraform-plugin-dir.outcome == 'failure'
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-GOCACHE-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/provider/**') }}
+      - if: steps.cache-terraform-plugin-dir.outputs.cache-hit != 'true' || steps.cache-terraform-plugin-dir.outcome == 'failure'
+        uses: actions/cache@v2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-pkg-mod-${{ hashFiles('go.sum') }}
+      - if: steps.cache-terraform-plugin-dir.outputs.cache-hit != 'true' || steps.cache-terraform-plugin-dir.outcome == 'failure'
+        name: go build
+        run: go build -o terraform-plugin-dir/terraform-provider-rediscloud_v99.99.99_x4 .
+
+  terraform_providers_schema:
+    name: terraform providers schema
+    needs: [go_build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        continue-on-error: true
+        id: cache-terraform-providers-schema
+        timeout-minutes: 2
+        with:
+          path: terraform-providers-schema
+          key: ${{ runner.os }}-terraform-providers-schema-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/provider/**') }}
+      - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
+        uses: actions/cache@v2
+        timeout-minutes: 2
+        with:
+          path: terraform-plugin-dir
+          key: ${{ runner.os }}-terraform-plugin-dir-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/provider/**') }}
+      - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+      - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
+        name: terraform init
+        run: |
+          # We need a file to initialize the provider
+          echo 'resource "redislabs_subscription" "example" {}' > example.tf
+          terraform init -plugin-dir terraform-plugin-dir
+      - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
+        name: terraform providers schema
+        run: |
+          mkdir terraform-providers-schema
+          terraform providers schema -json > terraform-providers-schema/schema.json
+
+  go_test:
+    name: go test
+    needs: [go_build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: go env
+        run: |
+          echo "::set-env name=GOCACHE::$(go env GOCACHE)"
+      - uses: actions/cache@v2
+        continue-on-error: true
+        timeout-minutes: 2
+        with:
+          path: ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-GOCACHE-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/provider/**') }}
+      - uses: actions/cache@v2
+        continue-on-error: true
+        timeout-minutes: 2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-pkg-mod-${{ hashFiles('go.sum') }}
+      - run: go test ./... -timeout=5m
