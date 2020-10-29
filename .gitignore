@@ -8,6 +8,7 @@ bin/
 dist/
 modules-dev/
 /pkg/
+playground/
 website/.vagrant
 website/.bundle
 website/build
@@ -26,6 +27,7 @@ website/node_modules
 *.iml
 
 website/vendor
+
 
 # Test exclusions
 !command/test-fixtures/**/*.tfstate
