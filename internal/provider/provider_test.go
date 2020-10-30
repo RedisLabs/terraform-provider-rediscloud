@@ -1,6 +1,8 @@
 package provider
 
 import (
+	rediscloud_api "github.com/RedisLabs/rediscloud-go-api"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -22,7 +24,13 @@ func TestProvider(t *testing.T) {
 }
 
 func testAccPreCheck(t *testing.T) {
-	// You can add code here to run prior to any test case execution, for example assertions
-	// about the appropriate environment variables being set are common to see in a pre-check
-	// function.
+	if _, ok := os.LookupEnv("REDISCLOUD_URL"); !ok {
+		t.Fatal("Missing `REDISCLOUD_URL` environment variable")
+	}
+	if _, ok := os.LookupEnv(rediscloud_api.ApiKeyEnvVar); !ok {
+		t.Fatalf("Missing `%s` environment variable", rediscloud_api.ApiKeyEnvVar)
+	}
+	if _, ok := os.LookupEnv(rediscloud_api.SecretKeyEnvVar); !ok {
+		t.Fatalf("Missing `%s` environment variable", rediscloud_api.SecretKeyEnvVar)
+	}
 }

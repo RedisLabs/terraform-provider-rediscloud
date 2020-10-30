@@ -5,12 +5,31 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	rediscloud_api "github.com/RedisLabs/rediscloud-go-api"
 )
 
 func New(version string) func() *schema.Provider {
 	return func() *schema.Provider {
 		p := &schema.Provider{
-			DataSourcesMap: map[string]*schema.Resource{},
+			Schema: map[string]*schema.Schema{
+				"url": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					DefaultFunc: schema.EnvDefaultFunc("REDISCLOUD_URL", ""),
+				},
+				"api_key": {
+					Type:     schema.TypeString,
+					Optional: true,
+				},
+				"secret_key": {
+					Type:     schema.TypeString,
+					Optional: true,
+				},
+			},
+			DataSourcesMap: map[string]*schema.Resource{
+				"rediscloud_payment_method": dataSourceRedisCloudPaymentMethod(),
+			},
 			ResourcesMap: map[string]*schema.Resource{
 				"rediscloud_subscription": resourceRedisCloudSubscription(),
 			},
@@ -23,17 +42,33 @@ func New(version string) func() *schema.Provider {
 }
 
 type apiClient struct {
-	// Add whatever fields, client or connection info, etc. here
-	// you would need to setup to communicate with the upstream
-	// API.
+	client *rediscloud_api.Client
 }
 
 func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	return func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		// Setup a User-Agent for your API client (replace the provider name for yours):
-		// userAgent := p.UserAgent("terraform-provider-scaffolding", version)
-		// TODO: myClient.UserAgent = userAgent
+	return func(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+		var config []rediscloud_api.Option
+		config = append(config, rediscloud_api.AdditionalUserAgent(p.UserAgent("terraform-provider-rediscloud", version)))
 
-		return &apiClient{}, nil
+		url := d.Get("url").(string)
+		apiKey := d.Get("api_key").(string)
+		secretKey := d.Get("secret_key").(string)
+
+		if url != "" {
+			config = append(config, rediscloud_api.BaseUrl(url))
+		}
+
+		if apiKey != "" && secretKey != "" {
+			config = append(config, rediscloud_api.Auth(apiKey, secretKey))
+		}
+
+		client, err := rediscloud_api.NewClient(config...)
+		if err != nil {
+			return nil, diag.FromErr(err)
+		}
+
+		return &apiClient{
+			client: client,
+		}, nil
 	}
 }
