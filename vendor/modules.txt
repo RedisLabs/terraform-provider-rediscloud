@@ -8,10 +8,18 @@ cloud.google.com/go/internal/trace
 cloud.google.com/go/internal/version
 # cloud.google.com/go/storage v1.10.0
 cloud.google.com/go/storage
+# github.com/RedisLabs/rediscloud-go-api v0.0.0-20201030131120-216e4687e548
+## explicit
+github.com/RedisLabs/rediscloud-go-api
+github.com/RedisLabs/rediscloud-go-api/internal
+github.com/RedisLabs/rediscloud-go-api/service/account
+github.com/RedisLabs/rediscloud-go-api/service/task
 # github.com/agext/levenshtein v1.2.2
 github.com/agext/levenshtein
 # github.com/apparentlymart/go-textseg v1.0.0
 github.com/apparentlymart/go-textseg/textseg
+# github.com/avast/retry-go v3.0.0+incompatible
+github.com/avast/retry-go
 # github.com/aws/aws-sdk-go v1.25.3
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/awserr
@@ -136,6 +144,7 @@ github.com/hashicorp/go-checkpoint
 # github.com/hashicorp/go-cleanhttp v0.5.1
 github.com/hashicorp/go-cleanhttp
 # github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
+## explicit
 github.com/hashicorp/go-cty/cty
 github.com/hashicorp/go-cty/cty/convert
 github.com/hashicorp/go-cty/cty/gocty
@@ -176,6 +185,8 @@ github.com/hashicorp/terraform-plugin-sdk/v2/diag
 github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging
 github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource
 github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema
+github.com/hashicorp/terraform-plugin-sdk/v2/helper/structure
+github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation
 github.com/hashicorp/terraform-plugin-sdk/v2/internal/addrs
 github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/configschema
 github.com/hashicorp/terraform-plugin-sdk/v2/internal/configs/hcl2shim
@@ -280,7 +291,7 @@ golang.org/x/lint/golint
 # golang.org/x/mod v0.3.0
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20200707034311-ab3426394381
+# golang.org/x/net v0.0.0-20201021035429-f5854403a974
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
@@ -297,7 +308,7 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20200523222454-059865788121
+# golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
@@ -307,7 +318,8 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# golang.org/x/tools v0.0.0-20200713011307-fd294ab11aed
+# golang.org/x/tools v0.0.0-20201030010431-2feb2bb1ff51
+## explicit
 golang.org/x/tools/cmd/goimports
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
@@ -320,7 +332,7 @@ golang.org/x/tools/internal/fastwalk
 golang.org/x/tools/internal/gocommand
 golang.org/x/tools/internal/gopathwalk
 golang.org/x/tools/internal/imports
-# golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
+# golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 golang.org/x/xerrors
 golang.org/x/xerrors/internal
 # google.golang.org/api v0.29.0
