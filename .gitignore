@@ -6,6 +6,7 @@ terraform.tfplan
 terraform.tfstate
 bin/
 dist/
+.envrc
 modules-dev/
 /pkg/
 playground/

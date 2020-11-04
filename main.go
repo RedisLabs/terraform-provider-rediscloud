@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 	"github.com/RedisLabs/terraform-provider-rediscloud/internal/provider"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 )
 
 var (
@@ -11,7 +11,7 @@ var (
 	version string = "dev"
 
 	// Allows goreleaser pass the specific commit details
-	commit  string = ""
+	commit string = ""
 )
 
 func main() {
