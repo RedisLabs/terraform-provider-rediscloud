@@ -4,8 +4,6 @@ import (
 	"context"
 	rediscloud_api "github.com/RedisLabs/rediscloud-go-api"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
-	"github.com/go-openapi/runtime"
-	"github.com/go-openapi/strfmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -305,19 +303,4 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 	d.SetId("")
 
 	return diags
-}
-
-type auth struct {
-	key       string
-	secretKey string
-}
-
-func (a *auth) AuthenticateRequest(r runtime.ClientRequest, _ strfmt.Registry) error {
-	if err := r.SetHeaderParam("x-api-key", a.key); err != nil {
-		return err
-	}
-	if err := r.SetHeaderParam("x-api-secret-key", a.secretKey); err != nil {
-		return err
-	}
-	return nil
 }
