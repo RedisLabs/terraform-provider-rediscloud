@@ -21,20 +21,23 @@ import (
 	"fmt"
 
 	rediscloud_api "github.com/RedisLabs/rediscloud-go-api"
+	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 )
 
 func main() {
-	// The client will use the credentials from `REDISCLOUD_API_KEY` and `REDISCLOUD_SECRET_KEY` by default
+	// The client will use the credentials from `REDISCLOUD_ACCESS_KEY` and `REDISCLOUD_SECRET_KEY` by default
 	client, err := rediscloud_api.NewClient()
 	if err != nil {
 		panic(err)
 	}
 
-	task, err := client.Task.Get(context.TODO(), "task-uuid")
+	id, err := client.Subscription.Create(context.TODO(), subscriptions.CreateSubscription{
+		// ...
+	})
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("Found task: %#v", task)
+	fmt.Printf("Created subscription: %d", id)
 }
 ```

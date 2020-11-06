@@ -120,6 +120,6 @@ jobs:
           key: ${{ runner.os }}-go-pkg-mod-${{ hashFiles('go.sum') }}
       - run: go test ./... -timeout=5m
         env:
-          REDISCLOUD_API_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_QA }}
+          REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_QA }}
           REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_QA }}
           REDISCLOUD_URL: https://qa-api.redislabs.com/v1/
