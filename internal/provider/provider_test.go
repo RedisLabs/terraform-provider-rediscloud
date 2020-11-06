@@ -27,8 +27,8 @@ func testAccPreCheck(t *testing.T) {
 	if _, ok := os.LookupEnv("REDISCLOUD_URL"); !ok {
 		t.Fatal("Missing `REDISCLOUD_URL` environment variable")
 	}
-	if _, ok := os.LookupEnv(rediscloud_api.ApiKeyEnvVar); !ok {
-		t.Fatalf("Missing `%s` environment variable", rediscloud_api.ApiKeyEnvVar)
+	if _, ok := os.LookupEnv(rediscloud_api.AccessKeyEnvVar); !ok {
+		t.Fatalf("Missing `%s` environment variable", rediscloud_api.AccessKeyEnvVar)
 	}
 	if _, ok := os.LookupEnv(rediscloud_api.SecretKeyEnvVar); !ok {
 		t.Fatalf("Missing `%s` environment variable", rediscloud_api.SecretKeyEnvVar)

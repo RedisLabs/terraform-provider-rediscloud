@@ -10,8 +10,8 @@ const (
 	// Version is the release number of this SDK.
 	Version = "0.1.0"
 
-	// ApiKeyEnvVar is the environment variable that will be used for the API key by default.
-	ApiKeyEnvVar = "REDISCLOUD_API_KEY"
+	// AccessKeyEnvVar is the environment variable that will be used for the access key by default.
+	AccessKeyEnvVar = "REDISCLOUD_ACCESS_KEY"
 
 	// SecretKeyEnvVar is the environment variable that will be used for the secret key by default.
 	SecretKeyEnvVar = "REDISCLOUD_SECRET_KEY"
