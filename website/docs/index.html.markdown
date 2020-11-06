@@ -34,7 +34,7 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 This can also be set by the `REDISCLOUD_URL` environment variable. 
 
 * `api_key` - (Optional) This is the Redis Cloud API key. It must be provided but can also be set by the
-`REDISCLOUD_API_KEY` environment variable.
+`REDISCLOUD_ACCESS_KEY` environment variable.
 
 * `secret_key` - (Optional) This is the Redis Cloud API secret key. It must be provided but can also be set
 by the `REDISCLOUD_SECRET_KEY` environment variable.
