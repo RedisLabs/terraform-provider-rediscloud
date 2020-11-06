@@ -23,6 +23,8 @@ data "rediscloud_payment_method" "example" {
 
 * `last_four_numbers` - (Optional) Last four numbers of the card of the payment method.
 
+* `exclude_expired` - (Optional) Whether to exclude any expired cards or not. Default is `true`.
+
 ## Attributes Reference
 
 `id` is set to the ID of the found payment method.

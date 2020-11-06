@@ -2,8 +2,12 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"log"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	rediscloud_api "github.com/RedisLabs/rediscloud-go-api"
@@ -55,12 +59,18 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 		secretKey := d.Get("secret_key").(string)
 
 		if url != "" {
-			config = append(config, rediscloud_api.BaseUrl(url))
+			config = append(config, rediscloud_api.BaseURL(url))
 		}
 
 		if apiKey != "" && secretKey != "" {
 			config = append(config, rediscloud_api.Auth(apiKey, secretKey))
 		}
+
+		if logging.IsDebugOrHigher() {
+			config = append(config, rediscloud_api.LogRequests(true))
+		}
+
+		config = append(config, rediscloud_api.Logger(&debugLogger{}))
 
 		client, err := rediscloud_api.NewClient(config...)
 		if err != nil {
@@ -71,4 +81,18 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 			client: client,
 		}, nil
 	}
+}
+
+type debugLogger struct{}
+
+func (d *debugLogger) Printf(format string, v ...interface{}) {
+	log.Printf("[DEBUG] [rediscloud-go-api] "+format, v...)
+}
+
+func (d *debugLogger) Println(v ...interface{}) {
+	var items []string
+	for _, i := range v {
+		items = append(items, fmt.Sprintf("%s", i))
+	}
+	log.Printf("[DEBUG] [rediscloud-go-api] %s", strings.Join(items, " "))
 }
