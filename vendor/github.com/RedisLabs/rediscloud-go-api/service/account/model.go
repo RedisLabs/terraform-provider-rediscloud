@@ -21,3 +21,16 @@ type PaymentMethod struct {
 func (o PaymentMethod) String() string {
 	return internal.ToString(o)
 }
+
+type regions struct {
+	Regions []*Region `json:"regions,omitempty"`
+}
+
+func (o regions) String() string {
+	return internal.ToString(o)
+}
+
+type Region struct {
+	Name     *string `json:"name,omitempty"`
+	Provider *string `json:"provider,omitempty"`
+}
