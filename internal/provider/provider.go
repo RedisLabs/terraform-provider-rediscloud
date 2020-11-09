@@ -36,7 +36,8 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_regions": dataSourceRedisCloudRegions(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
-				"rediscloud_subscription": resourceRedisCloudSubscription(),
+				"rediscloud_cloud_account": resourceRedisCloudCloudAccount(),
+				"rediscloud_subscription":  resourceRedisCloudSubscription(),
 			},
 		}
 
