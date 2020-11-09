@@ -24,13 +24,17 @@ func TestProvider(t *testing.T) {
 }
 
 func testAccPreCheck(t *testing.T) {
-	if _, ok := os.LookupEnv("REDISCLOUD_URL"); !ok {
-		t.Fatal("Missing `REDISCLOUD_URL` environment variable")
-	}
-	if _, ok := os.LookupEnv(rediscloud_api.AccessKeyEnvVar); !ok {
-		t.Fatalf("Missing `%s` environment variable", rediscloud_api.AccessKeyEnvVar)
-	}
-	if _, ok := os.LookupEnv(rediscloud_api.SecretKeyEnvVar); !ok {
-		t.Fatalf("Missing `%s` environment variable", rediscloud_api.SecretKeyEnvVar)
+	requireEnvironmentVariables(t, "REDISCLOUD_URL", rediscloud_api.AccessKeyEnvVar, rediscloud_api.SecretKeyEnvVar)
+}
+
+func testAccAwsPreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_ACCESS_SECRET_KEY", "AWS_CONSOLE_USERNAME", "AWS_CONSOLE_PASSWORD", "AWS_SIGNIN_URL")
+}
+
+func requireEnvironmentVariables(t *testing.T, names ...string) {
+	for _, name := range names {
+		if _, ok := os.LookupEnv(name); !ok {
+			t.Fatalf("Missing `%s` environment variable", name)
+		}
 	}
 }
