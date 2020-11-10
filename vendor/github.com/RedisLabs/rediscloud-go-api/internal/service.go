@@ -103,7 +103,7 @@ func (a *api) waitForTaskToComplete(ctx context.Context, id string) (*task, erro
 			}
 			if _, ok := err.(*taskNotFoundError); ok {
 				notFoundCount++
-				if notFoundCount > 2 {
+				if notFoundCount > max404Errors {
 					return false
 				}
 			}
@@ -131,6 +131,13 @@ func (a *api) get(ctx context.Context, id string) (*task, error) {
 
 	return &task, nil
 }
+
+// Number of 404 errors to swallow before returning an error while waiting for a task to finish.
+//
+// There's a short window between the API returning a task ID and the task being known by the
+// Task service, so by ignoring _a number_ of 404 errors we give the task service enough time to
+// learn about the task but also handle the situation where there really is no task.
+const max404Errors = 4
 
 var processingStates = map[string]bool{
 	"initialized":            true,
