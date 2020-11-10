@@ -12,7 +12,7 @@ import (
 func TestAccResourceRedisCloudSubscription(t *testing.T) {
 	name := acctest.RandomWithPrefix("tf-test")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{
