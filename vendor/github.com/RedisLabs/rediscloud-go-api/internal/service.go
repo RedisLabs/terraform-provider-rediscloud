@@ -74,10 +74,14 @@ func (a *api) WaitForResource(ctx context.Context, id string, resource interface
 
 func (a *api) waitForTaskToComplete(ctx context.Context, id string) (*task, error) {
 	var task *task
+	notFoundCount := 0
 	err := retry.Do(func() error {
 		var err error
 		task, err = a.get(ctx, id)
 		if err != nil {
+			if status, ok := err.(*HTTPError); ok && status.StatusCode == 404 {
+				return &taskNotFoundError{err}
+			}
 			return retry.Unrecoverable(err)
 		}
 
@@ -93,6 +97,18 @@ func (a *api) waitForTaskToComplete(ctx context.Context, id string) (*task, erro
 		return fmt.Errorf("task %s not processed yet: %s", id, status)
 	},
 		retry.Attempts(math.MaxUint64), retry.Delay(1*time.Second), retry.MaxDelay(30*time.Second),
+		retry.RetryIf(func(err error) bool {
+			if !retry.IsRecoverable(err) {
+				return false
+			}
+			if _, ok := err.(*taskNotFoundError); ok {
+				notFoundCount++
+				if notFoundCount > 2 {
+					return false
+				}
+			}
+			return true
+		}),
 		retry.LastErrorOnly(true), retry.Context(ctx), retry.OnRetry(func(_ uint, err error) {
 			a.logger.Println(err)
 		}))
@@ -123,3 +139,15 @@ var processingStates = map[string]bool{
 }
 
 const processedState = "processing-completed"
+
+type taskNotFoundError struct {
+	wrapped error
+}
+
+func (e *taskNotFoundError) Error() string {
+	return e.wrapped.Error()
+}
+
+func (e taskNotFoundError) Unwrap() error {
+	return e.wrapped
+}
