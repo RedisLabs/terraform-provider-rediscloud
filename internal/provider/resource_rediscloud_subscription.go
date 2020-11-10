@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -24,7 +25,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: schema.ImportStatePassthroughContext, // TODO import won't set db_id
 		},
 
 		Timeouts: &schema.ResourceTimeout{
@@ -47,61 +48,66 @@ func resourceRedisCloudSubscription() *schema.Resource {
 			"memory_storage": {
 				Type:             schema.TypeString,
 				Optional:         true,
+				ForceNew:         true,
 				Default:          "ram",
-				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.MemoryStorage(), false)), // TODO shoudl be MemoryStorageValues()
+				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.MemoryStorage(), false)), // TODO should be MemoryStorageValues()
 			},
 			"persistent_storage_encryption": {
 				Type:     schema.TypeBool,
+				ForceNew: true,
 				Optional: true,
 				Default:  false,
 			},
-			"cloud_providers": {
-				Type:     schema.TypeSet,
+			"cloud_provider": {
+				Type:     schema.TypeList,
 				Required: true,
+				ForceNew: true,
 				MaxItems: 1,
+				MinItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"provider": {
 							Type:             schema.TypeString,
 							Optional:         true,
+							ForceNew:         true,
 							Default:          "AWS",
 							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
 						},
 						"cloud_account_id": {
 							Type:             schema.TypeString,
 							Optional:         true,
+							ForceNew:         true,
 							ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 							Default:          "1",
 						},
-						"regions": {
+						"region": { // TODO single?
 							Type:     schema.TypeSet,
 							Required: true,
+							ForceNew: true,
 							MinItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"region": {
 										Type:     schema.TypeString,
 										Required: true,
+										ForceNew: true,
 									},
 									"multiple_availability_zones": {
 										Type:     schema.TypeBool,
+										ForceNew: true,
 										Optional: true,
 										Default:  false,
 									},
-									"preferred_availability_zones": {
-										Type:     schema.TypeSet,
-										Optional: true,
-										Elem: &schema.Schema{
-											Type: schema.TypeString,
-										},
-									},
+									// TODO preferred_availability_zones
 									"networking_deployment_cidr": {
 										Type:             schema.TypeString,
 										Optional:         true,
+										ForceNew:         true,
 										ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
 									},
-									"networking_vpc_id": {
+									"networking_vpc_id": { // TODO not used in set
 										Type:     schema.TypeString,
+										ForceNew: true,
 										Optional: true,
 									},
 								},
@@ -111,13 +117,10 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				},
 			},
 			"database": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Required: true,
 				MinItems: 1,
-				Set: func(v interface{}) int {
-					m := v.(map[string]interface{})
-					return m["db_id"].(int)
-				},
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"db_id": {
@@ -187,18 +190,25 @@ func resourceRedisCloudSubscription() *schema.Resource {
 }
 
 func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*apiClient)
+	var diags diag.Diagnostics
 
 	// Create CloudProviders
-	providers := buildCreateCloudProviders(d.Get("cloud_providers"))
+	providers, err := buildCreateCloudProviders(d.Get("cloud_provider"))
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	// Create databases
-	databases := buildCreateDatabases(d.Get("database"))
+	dbs := buildCreateDatabases(d.Get("database"))
 
 	// Create Subscription
 	name := d.Get("name").(string)
-	paymentMethodID, _ := strconv.Atoi(d.Get("payment_method_id").(string)) // TODO
+	paymentMethodID, err := strconv.Atoi(d.Get("payment_method_id").(string))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	memoryStorage := d.Get("memory_storage").(string)
 	persistentStorageEncryption := d.Get("persistent_storage_encryption").(bool)
 
@@ -209,7 +219,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 		MemoryStorage:               redis.String(memoryStorage),
 		PersistentStorageEncryption: redis.Bool(persistentStorageEncryption),
 		CloudProviders:              providers,
-		Databases:                   databases,
+		Databases:                   dbs,
 	}
 
 	subId, err := api.client.Subscription.Create(ctx, createSubscriptionRequest)
@@ -228,20 +238,24 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	// Locate Databases to confirm Active status
 	dbList := api.client.Database.List(ctx, subId)
 
-	for dbList.Next() {
-		database := dbList.Value()
-
-		err := waitForDatabaseToBeActive(ctx, subId, *database.ID, api)
-		if err != nil {
-			return diag.FromErr(err)
+	if !dbList.Next() {
+		if dbList.Err() != nil {
+			return diag.FromErr(dbList.Err())
 		}
+		return diag.FromErr(fmt.Errorf("no initial databases found"))
 	}
 
-	if dbList.Err() != nil {
-		return diag.FromErr(dbList.Err())
+	dbId := *dbList.Value().ID
+
+	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		return diag.FromErr(err)
 	}
 
-	return resourceRedisCloudSubscriptionRead(ctx, d, meta)
+	if err := refreshSubscription(ctx, api, subId, dbId, d); err != nil {
+		return diag.FromErr(err)
+	}
+
+	return diags
 	// TODO need to run database update to modify values that can only be accessed through creating/updating a database
 }
 
@@ -254,23 +268,12 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	dbId := d.Get("database.0.db_id").(int)
 
-	// Read subscription, (also returned cloud providers/Details)
-	subscription, err := api.client.Subscription.Get(ctx, subId)
+	err = refreshSubscription(ctx, api, subId, dbId, d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	d.Set("name", redis.StringValue(subscription.Name))
-	d.Set("payment_method_id", strconv.Itoa(redis.IntValue(subscription.PaymentMethodID)))
-	d.Set("memory_storage", redis.StringValue(subscription.MemoryStorage))
-
-	d.Set("cloud_providers", flattenCloudDetails(subscription.CloudDetails))
-
-	// Read databases that are not returned with Subscription
-	databaseList := api.client.Database.List(ctx, subId)
-
-	d.Set("database", flattenDatabases(*databaseList, d.Get("database").(*schema.Set)))
 
 	return diags
 }
@@ -283,27 +286,32 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	updateSubscriptionRequest := subscriptions.UpdateSubscription{}
+	if d.HasChanges("name", "payment_method_id") {
+		updateSubscriptionRequest := subscriptions.UpdateSubscription{}
 
-	if d.HasChange("name") {
-		name := d.Get("name").(string)
-		updateSubscriptionRequest.Name = &name
-	}
+		if d.HasChange("name") {
+			name := d.Get("name").(string)
+			updateSubscriptionRequest.Name = &name
+		}
 
-	if d.HasChange("payment_method_id") {
-		paymentMethodID, _ := strconv.Atoi(d.Get("payment_method_id").(string)) // TODO
-		updateSubscriptionRequest.PaymentMethodID = &paymentMethodID
-	}
+		if d.HasChange("payment_method_id") {
+			paymentMethodID, err := strconv.Atoi(d.Get("payment_method_id").(string))
+			if err != nil {
+				return diag.FromErr(err)
+			}
 
-	// TODO this really should only be done if there are changes
-	err = api.client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
-	if err != nil {
-		return diag.FromErr(err)
+			updateSubscriptionRequest.PaymentMethodID = &paymentMethodID
+		}
+
+		err = api.client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if d.HasChange("database") {
 
-		for _, database := range d.Get("database").(*schema.Set).List() {
+		for _, database := range d.Get("database").([]interface{}) {
 			databaseMap := database.(map[string]interface{})
 
 			dbId := databaseMap["db_id"].(int)
@@ -326,11 +334,18 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 				},
 				DataPersistence: redis.String(dataPersistence),
 			})
-
 			if err != nil {
 				return diag.FromErr(err)
 			}
+
+			if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+				return diag.FromErr(err)
+			}
 		}
+	}
+
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return diag.FromErr(err)
 	}
 
 	return resourceRedisCloudSubscriptionRead(ctx, d, meta)
@@ -347,23 +362,13 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	// Locate databases for sub and delete.
-	databases := api.client.Database.List(ctx, subId)
+	databaseId := d.Get("database.0.db_id").(int)
 
-	for databases.Next() {
+	log.Printf("[DEBUG] Deleting database %d on subscription %d", databaseId, subId)
 
-		database := databases.Value()
-		databaseId := database.ID
-
-		log.Printf("[DEBUG] Deleting database %d on subscription %d", databaseId, subId)
-
-		dbErr := api.client.Database.Delete(ctx, subId, *databaseId)
-		if dbErr != nil {
-			diag.FromErr(dbErr)
-		}
-	}
-	if databases.Err() != nil {
-		diag.FromErr(databases.Err())
+	dbErr := api.client.Database.Delete(ctx, subId, databaseId)
+	if dbErr != nil {
+		diag.FromErr(dbErr)
 	}
 
 	// Delete subscription once all databases are deleted
@@ -377,17 +382,43 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 	return diags
 }
 
-func buildCreateCloudProviders(providers interface{}) []*subscriptions.CreateCloudProvider {
+func refreshSubscription(ctx context.Context, api *apiClient, subId int, dbId int, d *schema.ResourceData) error {
+	subscription, err := api.client.Subscription.Get(ctx, subId)
+	if err != nil {
+		return err
+	}
+
+	d.Set("name", redis.StringValue(subscription.Name))
+	d.Set("payment_method_id", strconv.Itoa(redis.IntValue(subscription.PaymentMethodID)))
+	d.Set("memory_storage", redis.StringValue(subscription.MemoryStorage))
+	d.Set("persistent_storage_encryption", redis.BoolValue(subscription.StorageEncryption))
+
+	d.Set("cloud_provider", flattenCloudDetails(subscription.CloudDetails))
+
+	db, err := api.client.Database.Get(ctx, subId, dbId)
+	if err != nil {
+		return err
+	}
+
+	d.Set("database", flattenDatabase(d.Get("database.0.average_item_size_in_bytes").(int), db))
+
+	return nil
+}
+
+func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCloudProvider, error) {
 	createCloudProviders := make([]*subscriptions.CreateCloudProvider, 0)
 
-	for _, provider := range providers.(*schema.Set).List() {
+	for _, provider := range providers.([]interface{}) {
 		providerMap := provider.(map[string]interface{})
 
 		providerStr := providerMap["provider"].(string)
-		cloudAccountID, _ := strconv.Atoi(providerMap["cloud_account_id"].(string)) // TODO
+		cloudAccountID, err := strconv.Atoi(providerMap["cloud_account_id"].(string))
+		if err != nil {
+			return nil, err
+		}
 
 		createRegions := make([]*subscriptions.CreateRegion, 0)
-		if regions := providerMap["regions"].(*schema.Set).List(); len(regions) != 0 {
+		if regions := providerMap["region"].(*schema.Set).List(); len(regions) != 0 {
 
 			for _, region := range regions {
 				regionMap := region.(map[string]interface{})
@@ -421,13 +452,13 @@ func buildCreateCloudProviders(providers interface{}) []*subscriptions.CreateClo
 		createCloudProviders = append(createCloudProviders, createCloudProvider)
 	}
 
-	return createCloudProviders
+	return createCloudProviders, nil
 }
 
 func buildCreateDatabases(databases interface{}) []*subscriptions.CreateDatabase {
 	createDatabases := make([]*subscriptions.CreateDatabase, 0)
 
-	for _, database := range databases.(*schema.Set).List() {
+	for _, database := range databases.([]interface{}) {
 		databaseMap := database.(map[string]interface{})
 
 		name := databaseMap["name"].(string)
@@ -492,7 +523,7 @@ func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) 
 func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClient) error {
 	wait := &resource.StateChangeConf{
 		Delay:   10 * time.Second,
-		Pending: []string{databases.StatusDraft},
+		Pending: []string{databases.StatusDraft, databases.StatusActiveChangePending, "rcp-active-change-draft", "active-change-draft"}, // TODO
 		Target:  []string{databases.StatusActive},
 		Timeout: 10 * time.Minute,
 
@@ -535,7 +566,7 @@ func flattenCloudDetails(cloudDetails []*subscriptions.CloudDetail) []map[string
 		cdlMapString := map[string]interface{}{
 			"provider":         redis.StringValue(currentCloudDetail.Provider),
 			"cloud_account_id": strconv.Itoa(redis.IntValue(currentCloudDetail.CloudAccountID)),
-			"regions":          regions,
+			"region":           regions,
 		}
 		cdl = append(cdl, cdlMapString)
 	}
@@ -543,52 +574,25 @@ func flattenCloudDetails(cloudDetails []*subscriptions.CloudDetail) []map[string
 	return cdl
 }
 
-func flattenDatabases(list databases.ListDatabase, databaseSet *schema.Set) []map[string]interface{} {
-	var dbl []map[string]interface{}
-
-	for list.Next() {
-
-		currentDatabase := list.Value()
-
-		dbMapString := map[string]interface{}{
-			"db_id":                        redis.IntValue(currentDatabase.ID),
-			"name":                         redis.StringValue(currentDatabase.Name),
-			"protocol":                     redis.StringValue(currentDatabase.Protocol),
-			"memory_limit_in_gb":           redis.Float64Value(currentDatabase.MemoryLimitInGB),
-			"support_oss_cluster_api":      redis.BoolValue(currentDatabase.SupportOSSClusterAPI),
-			"data_persistence":             redis.StringValue(currentDatabase.DataPersistence),
-			"replication":                  redis.BoolValue(currentDatabase.Replication),
-			"throughput_measurement_by":    redis.StringValue(currentDatabase.ThroughputMeasurement.By),
-			"throughput_measurement_value": redis.IntValue(currentDatabase.ThroughputMeasurement.Value),
-			"password":                     redis.StringValue(currentDatabase.Security.Password),
-			"public_endpoint":              redis.StringValue(currentDatabase.PublicEndpoint),
-			"private_endpoint":             redis.StringValue(currentDatabase.PrivateEndpoint),
-		}
-
-		averageItemSizeInBytes := locateAverageItemSizeInBytes(*currentDatabase.Name, databaseSet)
-		if averageItemSizeInBytes > 0 {
-			dbMapString["average_item_size_in_bytes"] = averageItemSizeInBytes
-		}
-
-		dbl = append(dbl, dbMapString)
+func flattenDatabase(averageItemSizeInBytes int, db *databases.Database) []map[string]interface{} {
+	tf := map[string]interface{}{
+		"db_id":                        redis.IntValue(db.ID),
+		"name":                         redis.StringValue(db.Name),
+		"protocol":                     redis.StringValue(db.Protocol),
+		"memory_limit_in_gb":           redis.Float64Value(db.MemoryLimitInGB),
+		"support_oss_cluster_api":      redis.BoolValue(db.SupportOSSClusterAPI),
+		"data_persistence":             redis.StringValue(db.DataPersistence),
+		"replication":                  redis.BoolValue(db.Replication),
+		"throughput_measurement_by":    redis.StringValue(db.ThroughputMeasurement.By),
+		"throughput_measurement_value": redis.IntValue(db.ThroughputMeasurement.Value),
+		"password":                     redis.StringValue(db.Security.Password),
+		"public_endpoint":              redis.StringValue(db.PublicEndpoint),
+		"private_endpoint":             redis.StringValue(db.PrivateEndpoint),
 	}
 
-	return dbl
-}
-
-func locateAverageItemSizeInBytes(dbName string, databases *schema.Set) int {
-
-	var averageItemSizeInBytes int
-
-	for _, database := range databases.List() {
-		databaseMap := database.(map[string]interface{})
-
-		name := databaseMap["name"].(string)
-
-		if name == dbName {
-			return databaseMap["average_item_size_in_bytes"].(int)
-		}
+	if averageItemSizeInBytes > 0 {
+		tf["average_item_size_in_bytes"] = averageItemSizeInBytes
 	}
 
-	return averageItemSizeInBytes
+	return []map[string]interface{}{tf}
 }
