@@ -6,8 +6,10 @@ terraform.tfplan
 terraform.tfstate
 bin/
 dist/
+.envrc
 modules-dev/
 /pkg/
+playground/
 website/.vagrant
 website/.bundle
 website/build
@@ -26,6 +28,7 @@ website/node_modules
 *.iml
 
 website/vendor
+
 
 # Test exclusions
 !command/test-fixtures/**/*.tfstate
