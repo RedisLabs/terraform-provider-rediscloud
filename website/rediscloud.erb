@@ -1,0 +1,40 @@
+<% wrap_layout :inner do %>
+    <% content_for :sidebar do %>
+        <div class="docs-sidebar hidden-print affix-top" role="complementary">
+            <ul class="nav docs-sidenav">
+                 <!-- <li<%= sidebar_current("docs-home") %>>
+                     <a href="/docs/providers/index.html">All Providers</a>
+                 </li> -->
+
+                <li<%= sidebar_current("docs-rediscloud-index") %>>
+                    <a href="/docs/providers/rediscloud/index.html">RedisCloud Provider</a>
+                </li>
+
+                <li<%= sidebar_current("docs-rediscloud-datasource") %>>
+                    <a href="#">Data Sources</a>
+                    <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-rediscloud-datasource-payment-method") %>>
+                            <a href="/docs/providers/rediscloud/d/rediscloud_payment_method.html">rediscloud_payment_method</a>
+                        </li>
+                        <li<%= sidebar_current("docs-rediscloud-datasource-payment-method") %>>
+                            <a href="/docs/providers/rediscloud/d/rediscloud_regions.html">rediscloud_regions</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li<%= sidebar_current("docs-rediscloud-resource") %>>
+                    <a href="#">Resources</a>
+                    <ul class="nav nav-visible">
+                        <li<%= sidebar_current("docs-rediscloud-resource-cloud-account") %>>
+                            <a href="/docs/providers/rediscloud/r/rediscloud_cloud_account.html">rediscloud_cloud_account</a>
+                        </li>
+                        <li<%= sidebar_current("docs-rediscloud-resource-subscription") %>>
+                            <a href="/docs/providers/rediscloud/r/rediscloud_subscription.html">rediscloud_subscription</a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    <% end %>
+    <%= yield %>
+<% end %>
