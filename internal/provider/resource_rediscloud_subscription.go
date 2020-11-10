@@ -50,7 +50,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Optional:         true,
 				ForceNew:         true,
 				Default:          "ram",
-				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.MemoryStorage(), false)), // TODO should be MemoryStorageValues()
+				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.MemoryStorageValues(), false)),
 			},
 			"persistent_storage_encryption": {
 				Type:     schema.TypeBool,
@@ -80,7 +80,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 							Default:          "1",
 						},
-						"region": { // TODO single?
+						"region": {
 							Type:     schema.TypeSet,
 							Required: true,
 							ForceNew: true,
@@ -523,7 +523,7 @@ func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) 
 func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClient) error {
 	wait := &resource.StateChangeConf{
 		Delay:   10 * time.Second,
-		Pending: []string{databases.StatusDraft, databases.StatusActiveChangePending, "rcp-active-change-draft", "active-change-draft"}, // TODO
+		Pending: []string{databases.StatusDraft, databases.StatusActiveChangePending, databases.StatusRCPActiveChangeDraft, databases.StatusActiveChangeDraft},
 		Target:  []string{databases.StatusActive},
 		Timeout: 10 * time.Minute,
 

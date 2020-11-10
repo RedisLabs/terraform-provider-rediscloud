@@ -216,13 +216,17 @@ const (
 	StatusActive = "active"
 	// Draft value of the `Status` field in `Database`
 	StatusDraft = "draft"
+	// RCP active change draft value of the `Status` field in `Database`
+	StatusRCPActiveChangeDraft = "rcp-active-change-draft"
+	// Active change draft value of the `Status` field in `Database`
+	StatusActiveChangeDraft = "active-change-draft"
 	// Active change pending value of the `Status` field in `Database`
 	StatusActiveChangePending = "active-change-pending"
 	// Error value of the `Status` field in `Database`
 	StatusError = "error"
 )
 
-func MemoryStorage() []string {
+func MemoryStorageValues() []string {
 	return []string{
 		"ram",
 		"ram-and-flash",
