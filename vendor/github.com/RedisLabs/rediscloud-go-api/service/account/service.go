@@ -25,3 +25,12 @@ func (a *API) ListPaymentMethods(ctx context.Context) ([]*PaymentMethod, error) 
 
 	return body.PaymentMethods, nil
 }
+
+func (a *API) ListRegions(ctx context.Context) ([]*Region, error) {
+	var body regions
+	if err := a.client.Get(ctx, "list regions", "/regions", &body); err != nil {
+		return nil, err
+	}
+
+	return body.Regions, nil
+}
