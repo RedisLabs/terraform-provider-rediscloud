@@ -130,7 +130,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				},
 			},
 			"database": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Required: true,
 				MinItems: 1,
 				MaxItems: 1,
@@ -278,12 +278,6 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	dbName := d.Get("database.0.name").(string)
-	dbId, err := findDatabaseId(ctx, dbName, subId, api)
-	if err != nil {
-		// TODO this shouldn't just fail, but should have an empty collection of databases
-		return diag.FromErr(err)
-	}
 
 	subscription, err := api.client.Subscription.Get(ctx, subId)
 	if err != nil {
@@ -307,12 +301,11 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 
-	db, err := api.client.Database.Get(ctx, subId, dbId)
+	flatDbs, err := flattenDatabases(ctx, subId, d.Get("database").(*schema.Set).List(), api)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	if err := d.Set("database", flattenDatabase(d.Get("database.0.average_item_size_in_bytes").(int), db)); err != nil {
+	if err := d.Set("database", flatDbs); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -352,7 +345,7 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 
 	if d.HasChange("database") || d.IsNewResource() {
 
-		for _, database := range d.Get("database").([]interface{}) {
+		for _, database := range d.Get("database").(*schema.Set).List() {
 			databaseMap := database.(map[string]interface{})
 
 			name := databaseMap["name"].(string)
@@ -413,17 +406,22 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	databaseName := d.Get("database.0.name").(string)
-	databaseId, err := findDatabaseId(ctx, databaseName, subId, api)
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	for _, v := range d.Get("database").(*schema.Set).List() {
+		database := v.(map[string]interface{})
 
-	log.Printf("[DEBUG] Deleting database %d on subscription %d", databaseId, subId)
+		name := database["name"].(string)
+		id, err := findDatabaseId(ctx, name, subId, api)
+		if err != nil {
+			// TODO handle situation where the database was already deleted
+			return diag.FromErr(err)
+		}
 
-	dbErr := api.client.Database.Delete(ctx, subId, databaseId)
-	if dbErr != nil {
-		diag.FromErr(dbErr)
+		log.Printf("[DEBUG] Deleting database %d on subscription %d", id, subId)
+
+		dbErr := api.client.Database.Delete(ctx, subId, id)
+		if dbErr != nil {
+			diag.FromErr(dbErr)
+		}
 	}
 
 	// Delete subscription once all databases are deleted
@@ -495,7 +493,7 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 func buildCreateDatabases(databases interface{}) []*subscriptions.CreateDatabase {
 	createDatabases := make([]*subscriptions.CreateDatabase, 0)
 
-	for _, database := range databases.([]interface{}) {
+	for _, database := range databases.(*schema.Set).List() {
 		databaseMap := database.(map[string]interface{})
 
 		name := databaseMap["name"].(string)
@@ -613,7 +611,30 @@ func flattenCloudDetails(cloudDetails []*subscriptions.CloudDetail) []map[string
 	return cdl
 }
 
-func flattenDatabase(averageItemSizeInBytes int, db *databases.Database) []map[string]interface{} {
+func flattenDatabases(ctx context.Context, subId int, databases []interface{}, api *apiClient) ([]interface{}, error) {
+	var flattened []interface{}
+	for _, v := range databases {
+		database := v.(map[string]interface{})
+		name := database["name"].(string)
+		id, err := findDatabaseId(ctx, name, subId, api)
+		if err != nil {
+			log.Printf("database %d not found: %s", id, err)
+			continue
+		}
+
+		db, err := api.client.Database.Get(ctx, subId, id)
+		if err != nil {
+			return nil, err
+		}
+
+		averageItemSize := database["average_item_size_in_bytes"].(int)
+
+		flattened = append(flattened, flattenDatabase(averageItemSize, db))
+	}
+	return flattened, nil
+}
+
+func flattenDatabase(averageItemSizeInBytes int, db *databases.Database) map[string]interface{} {
 	tf := map[string]interface{}{
 		"db_id":                        redis.IntValue(db.ID),
 		"name":                         redis.StringValue(db.Name),
@@ -633,7 +654,7 @@ func flattenDatabase(averageItemSizeInBytes int, db *databases.Database) []map[s
 		tf["average_item_size_in_bytes"] = averageItemSizeInBytes
 	}
 
-	return []map[string]interface{}{tf}
+	return tf
 }
 
 func findDatabaseId(ctx context.Context, name string, subId int, client *apiClient) (int, error) {

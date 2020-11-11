@@ -124,3 +124,4 @@ jobs:
           REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_QA }}
           REDISCLOUD_URL: https://qa-api.redislabs.com/v1/
           TF_ACC: true
+          TF_LOG: debug
