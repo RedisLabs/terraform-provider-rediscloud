@@ -216,6 +216,8 @@ const (
 	StatusActive = "active"
 	// Draft value of the `Status` field in `Database`
 	StatusDraft = "draft"
+	// Pending value of the `Status` field in `Database`
+	StatusPending = "pending"
 	// RCP active change draft value of the `Status` field in `Database`
 	StatusRCPActiveChangeDraft = "rcp-active-change-draft"
 	// Active change draft value of the `Status` field in `Database`
