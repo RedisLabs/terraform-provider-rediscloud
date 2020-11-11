@@ -8,7 +8,7 @@ cloud.google.com/go/internal/trace
 cloud.google.com/go/internal/version
 # cloud.google.com/go/storage v1.10.0
 cloud.google.com/go/storage
-# github.com/RedisLabs/rediscloud-go-api v0.0.0-20201111121636-cddf163a948d
+# github.com/RedisLabs/rediscloud-go-api v0.0.0-20201111143525-994ffba8bc8f
 ## explicit
 github.com/RedisLabs/rediscloud-go-api
 github.com/RedisLabs/rediscloud-go-api/internal
