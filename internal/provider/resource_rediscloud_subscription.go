@@ -264,6 +264,8 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
+	// Some attributes on a database are not accessible by the subscription creation API.
+	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
 	return resourceRedisCloudSubscriptionUpdate(ctx, d, meta)
 }
 
