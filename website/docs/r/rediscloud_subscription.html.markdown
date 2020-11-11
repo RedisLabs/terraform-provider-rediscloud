@@ -68,3 +68,8 @@ The `database` block has these attributes:
 * `password` - Password used to access the database
 * `public_endpoint` - Public endpoint to access the database
 * `private_endpoint` - Private endpoint to access the database
+
+The `region` block has these attributes:
+
+* `preferred_availability_zones` - List of availability zones used
+* `networking_subnet_id` - The subnet that the subscription deploys into
