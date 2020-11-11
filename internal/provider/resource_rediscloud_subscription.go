@@ -25,11 +25,11 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext, // TODO import won't set db_id
+			StateContext: schema.ImportStatePassthroughContext,
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(20 * time.Minute),
 			Read:   schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(10 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
@@ -184,6 +184,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 						},
 						"password": {
 							Type:      schema.TypeString,
+							Optional:  true,
 							Computed:  true,
 							Sensitive: true,
 						},
@@ -204,7 +205,6 @@ func resourceRedisCloudSubscription() *schema.Resource {
 
 func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
-	var diags diag.Diagnostics
 
 	// Create CloudProviders
 	providers, err := buildCreateCloudProviders(d.Get("cloud_provider"))
@@ -264,12 +264,9 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	if err := refreshSubscription(ctx, api, subId, dbId, d); err != nil {
-		return diag.FromErr(err)
-	}
-
-	return diags
-	// TODO need to run database update to modify values that can only be accessed through creating/updating a database
+	// Some attributes on a database are not accessible by the subscription creation API.
+	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
+	return resourceRedisCloudSubscriptionUpdate(ctx, d, meta)
 }
 
 func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -281,10 +278,41 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	dbId := d.Get("database.0.db_id").(int)
-
-	err = refreshSubscription(ctx, api, subId, dbId, d)
+	dbName := d.Get("database.0.name").(string)
+	dbId, err := findDatabaseId(ctx, dbName, subId, api)
 	if err != nil {
+		// TODO this shouldn't just fail, but should have an empty collection of databases
+		return diag.FromErr(err)
+	}
+
+	subscription, err := api.client.Subscription.Get(ctx, subId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("name", redis.StringValue(subscription.Name)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("payment_method_id", strconv.Itoa(redis.IntValue(subscription.PaymentMethodID))); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("memory_storage", redis.StringValue(subscription.MemoryStorage)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("persistent_storage_encryption", redis.BoolValue(subscription.StorageEncryption)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("cloud_provider", flattenCloudDetails(subscription.CloudDetails)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	db, err := api.client.Database.Get(ctx, subId, dbId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("database", flattenDatabase(d.Get("database.0.average_item_size_in_bytes").(int), db)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -322,12 +350,11 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 		}
 	}
 
-	if d.HasChange("database") {
+	if d.HasChange("database") || d.IsNewResource() {
 
 		for _, database := range d.Get("database").([]interface{}) {
 			databaseMap := database.(map[string]interface{})
 
-			dbId := databaseMap["db_id"].(int)
 			name := databaseMap["name"].(string)
 			memoryLimitInGB := databaseMap["memory_limit_in_gb"].(float64)
 			supportOSSClusterAPI := databaseMap["support_oss_cluster_api"].(bool)
@@ -336,7 +363,12 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 			throughputMeasurementValue := databaseMap["throughput_measurement_value"].(int)
 			dataPersistence := databaseMap["data_persistence"].(string)
 
-			err := api.client.Database.Update(ctx, subId, dbId, databases.UpdateDatabase{
+			dbId, err := findDatabaseId(ctx, name, subId, api)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+
+			update := databases.UpdateDatabase{
 				Name:                 redis.String(name),
 				MemoryLimitInGB:      redis.Float64(memoryLimitInGB),
 				SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
@@ -346,7 +378,13 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 					Value: redis.Int(throughputMeasurementValue),
 				},
 				DataPersistence: redis.String(dataPersistence),
-			})
+			}
+
+			if v, ok := databaseMap["password"]; ok {
+				update.Password = redis.String(v.(string))
+			}
+
+			err = api.client.Database.Update(ctx, subId, dbId, update)
 			if err != nil {
 				return diag.FromErr(err)
 			}
@@ -375,7 +413,11 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	databaseId := d.Get("database.0.db_id").(int)
+	databaseName := d.Get("database.0.name").(string)
+	databaseId, err := findDatabaseId(ctx, databaseName, subId, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	log.Printf("[DEBUG] Deleting database %d on subscription %d", databaseId, subId)
 
@@ -393,41 +435,6 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 	d.SetId("")
 
 	return diags
-}
-
-func refreshSubscription(ctx context.Context, api *apiClient, subId int, dbId int, d *schema.ResourceData) error {
-	subscription, err := api.client.Subscription.Get(ctx, subId)
-	if err != nil {
-		return err
-	}
-
-	if err := d.Set("name", redis.StringValue(subscription.Name)); err != nil {
-		return err
-	}
-	if err := d.Set("payment_method_id", strconv.Itoa(redis.IntValue(subscription.PaymentMethodID))); err != nil {
-		return err
-	}
-	if err := d.Set("memory_storage", redis.StringValue(subscription.MemoryStorage)); err != nil {
-		return err
-	}
-	if err := d.Set("persistent_storage_encryption", redis.BoolValue(subscription.StorageEncryption)); err != nil {
-		return err
-	}
-
-	if err := d.Set("cloud_provider", flattenCloudDetails(subscription.CloudDetails)); err != nil {
-		return err
-	}
-
-	db, err := api.client.Database.Get(ctx, subId, dbId)
-	if err != nil {
-		return err
-	}
-
-	if err := d.Set("database", flattenDatabase(d.Get("database.0.average_item_size_in_bytes").(int), db)); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCloudProvider, error) {
@@ -627,4 +634,19 @@ func flattenDatabase(averageItemSizeInBytes int, db *databases.Database) []map[s
 	}
 
 	return []map[string]interface{}{tf}
+}
+
+func findDatabaseId(ctx context.Context, name string, subId int, client *apiClient) (int, error) {
+	list := client.client.Database.List(ctx, subId)
+	for list.Next() {
+		db := list.Value()
+		if redis.StringValue(db.Name) == name {
+			return redis.IntValue(db.ID), nil
+		}
+	}
+	if list.Err() != nil {
+		return 0, list.Err()
+	}
+
+	return 0, fmt.Errorf("unable to find database with name %s", name)
 }
