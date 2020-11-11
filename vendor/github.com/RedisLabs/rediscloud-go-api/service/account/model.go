@@ -47,3 +47,16 @@ type DataPersistence struct {
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
 }
+
+type databaseModules struct {
+	DatabaseModules []*DatabaseModule `json:"modules,omitempty"`
+}
+
+func (o databaseModules) String() string {
+	return internal.ToString(o)
+}
+
+type DatabaseModule struct {
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+}
