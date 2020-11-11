@@ -8,13 +8,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-// providerFactories are used to instantiate a provider during acceptance testing.
-// The factory function will be invoked for every Terraform CLI command executed
-// to create a provider server to which the CLI can reattach.
-var providerFactories = map[string]func() (*schema.Provider, error){
-	"rediscloud": func() (*schema.Provider, error) {
-		return New("dev")(), nil
-	},
+var testProvider *schema.Provider
+var providerFactories map[string]func() (*schema.Provider, error)
+
+func init() {
+	testProvider = New("dev")()
+	providerFactories = map[string]func() (*schema.Provider, error){
+		"rediscloud": func() (*schema.Provider, error) {
+			return testProvider, nil
+		},
+	}
 }
 
 func TestProvider(t *testing.T) {
