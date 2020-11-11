@@ -20,6 +20,9 @@ func TestAccResourceRedisCloudSubscription(t *testing.T) {
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscription, name, 1),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_subscription.example", "name", name),
+					resource.TestCheckResourceAttr("rediscloud_subscription.example", "cloud_provider.0.provider", "AWS"),
+					resource.TestCheckResourceAttr("rediscloud_subscription.example", "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
+					resource.TestCheckResourceAttrSet("rediscloud_subscription.example", "cloud_provider.0.region.0.networking_subnet_id"),
 					resource.TestCheckResourceAttr("rediscloud_subscription.example", "database.#", "1"),
 					resource.TestMatchResourceAttr("rediscloud_subscription.example", "database.0.db_id", regexp.MustCompile("^[1-9][0-9]*$")),
 					resource.TestCheckResourceAttrSet("rediscloud_subscription.example", "database.0.password"),

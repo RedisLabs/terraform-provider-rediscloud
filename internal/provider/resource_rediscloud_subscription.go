@@ -98,17 +98,30 @@ func resourceRedisCloudSubscription() *schema.Resource {
 										Optional: true,
 										Default:  false,
 									},
-									// TODO preferred_availability_zones
+									"preferred_availability_zones": {
+										Type: schema.TypeList,
+										// TODO it should be possible to optionally set this
+										Computed: true,
+										Elem: &schema.Schema{
+											Type: schema.TypeString,
+										},
+									},
 									"networking_deployment_cidr": {
-										Type:             schema.TypeString,
+										Type: schema.TypeString,
+										// TODO this needs to be ForceNew as it can't be updated, but cannot also be Computed
+										// TODO need to see what the returned value is when only using redis internal account
 										Optional:         true,
-										ForceNew:         true,
+										Computed:         true,
 										ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
 									},
-									"networking_vpc_id": { // TODO not used in set
+									"networking_vpc_id": {
 										Type:     schema.TypeString,
 										ForceNew: true,
 										Optional: true,
+									},
+									"networking_subnet_id": {
+										Type:     schema.TypeString,
+										Computed: true,
 									},
 								},
 							},
@@ -388,19 +401,31 @@ func refreshSubscription(ctx context.Context, api *apiClient, subId int, dbId in
 		return err
 	}
 
-	d.Set("name", redis.StringValue(subscription.Name))
-	d.Set("payment_method_id", strconv.Itoa(redis.IntValue(subscription.PaymentMethodID)))
-	d.Set("memory_storage", redis.StringValue(subscription.MemoryStorage))
-	d.Set("persistent_storage_encryption", redis.BoolValue(subscription.StorageEncryption))
+	if err := d.Set("name", redis.StringValue(subscription.Name)); err != nil {
+		return err
+	}
+	if err := d.Set("payment_method_id", strconv.Itoa(redis.IntValue(subscription.PaymentMethodID))); err != nil {
+		return err
+	}
+	if err := d.Set("memory_storage", redis.StringValue(subscription.MemoryStorage)); err != nil {
+		return err
+	}
+	if err := d.Set("persistent_storage_encryption", redis.BoolValue(subscription.StorageEncryption)); err != nil {
+		return err
+	}
 
-	d.Set("cloud_provider", flattenCloudDetails(subscription.CloudDetails))
+	if err := d.Set("cloud_provider", flattenCloudDetails(subscription.CloudDetails)); err != nil {
+		return err
+	}
 
 	db, err := api.client.Database.Get(ctx, subId, dbId)
 	if err != nil {
 		return err
 	}
 
-	d.Set("database", flattenDatabase(d.Get("database.0.average_item_size_in_bytes").(int), db))
+	if err := d.Set("database", flattenDatabase(d.Get("database.0.average_item_size_in_bytes").(int), db)); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -429,14 +454,19 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 				createRegion := subscriptions.CreateRegion{
 					Region:                    redis.String(regionStr),
 					MultipleAvailabilityZones: redis.Bool(multipleAvailabilityZones),
-					//PreferredAvailabilityZones: []string{"eu-west-1"},
 				}
 
-				if v, ok := regionMap["networking_deployment_cidr"]; ok {
+				if v, ok := regionMap["networking_deployment_cidr"]; ok && v != "" {
 					createRegion.Networking = &subscriptions.CreateNetworking{
 						DeploymentCIDR: redis.String(v.(string)),
-						//VPCId:          mRegion["networking_vpc_id"].(string),
 					}
+				}
+
+				if v, ok := regionMap["networking_vpc_id"]; ok && v != "" {
+					if createRegion.Networking == nil {
+						createRegion.Networking = &subscriptions.CreateNetworking{}
+					}
+					createRegion.Networking.VPCId = redis.String(v.(string))
 				}
 
 				createRegions = append(createRegions, &createRegion)
@@ -523,7 +553,7 @@ func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) 
 func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClient) error {
 	wait := &resource.StateChangeConf{
 		Delay:   10 * time.Second,
-		Pending: []string{databases.StatusDraft, databases.StatusActiveChangePending, databases.StatusRCPActiveChangeDraft, databases.StatusActiveChangeDraft},
+		Pending: []string{databases.StatusDraft, databases.StatusPending, databases.StatusActiveChangePending, databases.StatusRCPActiveChangeDraft, databases.StatusActiveChangeDraft},
 		Target:  []string{databases.StatusActive},
 		Timeout: 10 * time.Minute,
 
@@ -550,21 +580,23 @@ func flattenCloudDetails(cloudDetails []*subscriptions.CloudDetail) []map[string
 
 	for _, currentCloudDetail := range cloudDetails {
 
-		var regions []map[string]interface{}
+		var regions []interface{}
 		for _, currentRegion := range currentCloudDetail.Regions {
 
 			regionMapString := map[string]interface{}{
-				"region":                      redis.StringValue(currentRegion.Region),
-				"multiple_availability_zones": redis.BoolValue(currentRegion.MultipleAvailabilityZones),
-				//"preferred_availability_zones": currentRegion.PreferredAvailabilityZones
-				"networking_deployment_cidr": redis.StringValue(currentRegion.Networking[0].DeploymentCIDR),
-				"networking_vpc_id":          redis.StringValue(currentRegion.Networking[0].VPCId),
+				"region":                       currentRegion.Region,
+				"multiple_availability_zones":  currentRegion.MultipleAvailabilityZones,
+				"preferred_availability_zones": currentRegion.PreferredAvailabilityZones,
+				"networking_deployment_cidr":   currentRegion.Networking[0].DeploymentCIDR,
+				"networking_vpc_id":            currentRegion.Networking[0].VPCId,
+				"networking_subnet_id":         currentRegion.Networking[0].SubnetID,
 			}
+
 			regions = append(regions, regionMapString)
 		}
 
 		cdlMapString := map[string]interface{}{
-			"provider":         redis.StringValue(currentCloudDetail.Provider),
+			"provider":         currentCloudDetail.Provider,
 			"cloud_account_id": strconv.Itoa(redis.IntValue(currentCloudDetail.CloudAccountID)),
 			"region":           regions,
 		}
