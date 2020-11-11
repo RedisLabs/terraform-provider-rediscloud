@@ -35,6 +35,10 @@ type Region struct {
 	Provider *string `json:"provider,omitempty"`
 }
 
+func (o Region) String() string {
+	return internal.ToString(o)
+}
+
 type dataPersistence struct {
 	DataPersistence []*DataPersistence `json:"dataPersistence,omitempty"`
 }
@@ -46,4 +50,25 @@ func (o dataPersistence) String() string {
 type DataPersistence struct {
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
+}
+
+func (o DataPersistence) String() string {
+	return internal.ToString(o)
+}
+
+type databaseModules struct {
+	DatabaseModules []*DatabaseModule `json:"modules,omitempty"`
+}
+
+func (o databaseModules) String() string {
+	return internal.ToString(o)
+}
+
+type DatabaseModule struct {
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+}
+
+func (o DatabaseModule) String() string {
+	return internal.ToString(o)
 }
