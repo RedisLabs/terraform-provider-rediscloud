@@ -45,6 +45,7 @@ The `database` block supports:
 * `memory_limit_in_gb` - (Required) Maximum memory usage for this specific database
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `data_persistence` - (Optional) Rate of database data persistence (in persistent storage). Default: ‘none’
+* `password` - (Optional) Password used to access the database. Defaults to a randomly generated one
 * `replication` - (Optional) Databases replication. Default: ‘true’
 * `throughput_measurement_by` - (Required) Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)
 * `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
@@ -65,7 +66,6 @@ within the hosting account
 The `database` block has these attributes:
 
 * `db_id` - Identifier of the database created
-* `password` - Password used to access the database
 * `public_endpoint` - Public endpoint to access the database
 * `private_endpoint` - Private endpoint to access the database
 
