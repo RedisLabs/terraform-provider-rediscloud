@@ -15,6 +15,7 @@ import (
 
 func TestAccResourceRedisCloudSubscription(t *testing.T) {
 	name := acctest.RandomWithPrefix("tf-test")
+	password := acctest.RandString(20)
 	resourceName := "rediscloud_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -22,7 +23,7 @@ func TestAccResourceRedisCloudSubscription(t *testing.T) {
 		ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscription, name, 1),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscription, name, 1, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -64,7 +65,7 @@ func TestAccResourceRedisCloudSubscription(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscription, name, 2),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscription, name, 2, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "database.#", "1"),
@@ -105,6 +106,7 @@ resource "rediscloud_subscription" "example" {
     data_persistence = "none"
     replication = false
     throughput_measurement_by = "operations-per-second"
+    password = "%s"
     throughput_measurement_value = 10000
   }
 }
