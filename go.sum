@@ -43,6 +43,10 @@ github.com/RedisLabs/rediscloud-go-api v0.0.0-20201109134119-4a24398e5410 h1:EGs
 github.com/RedisLabs/rediscloud-go-api v0.0.0-20201109134119-4a24398e5410/go.mod h1:2E+NDl4h2ksk2JH+8C4OB3pnhQy7zlHsHLU+zpGpqjo=
 github.com/RedisLabs/rediscloud-go-api v0.0.0-20201110105121-c5a24c8f847e h1:DJKRpflpjWkVlMlvXpGFPvigF2QmTXan3MxV7AVUtLU=
 github.com/RedisLabs/rediscloud-go-api v0.0.0-20201110105121-c5a24c8f847e/go.mod h1:2E+NDl4h2ksk2JH+8C4OB3pnhQy7zlHsHLU+zpGpqjo=
+github.com/RedisLabs/rediscloud-go-api v0.0.0-20201110144113-15f8e68cbd12 h1:x42z/6JDzqMC9GD3jhoX4J+0yezRILnODWYOYLEvw1A=
+github.com/RedisLabs/rediscloud-go-api v0.0.0-20201110144113-15f8e68cbd12/go.mod h1:2E+NDl4h2ksk2JH+8C4OB3pnhQy7zlHsHLU+zpGpqjo=
+github.com/RedisLabs/rediscloud-go-api v0.0.0-20201111084619-8a1822dba6bd h1:6bs+Q9TWOcxPHcc24AfaD524iEF6EAps89boenD2gas=
+github.com/RedisLabs/rediscloud-go-api v0.0.0-20201111084619-8a1822dba6bd/go.mod h1:2E+NDl4h2ksk2JH+8C4OB3pnhQy7zlHsHLU+zpGpqjo=
 github.com/agext/levenshtein v1.2.1/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki2W0IB5558=
 github.com/agext/levenshtein v1.2.2 h1:0S/Yg6LYmFJ5stwQeRp6EeOcCbj7xiqQSdNelsXvaqE=
 github.com/agext/levenshtein v1.2.2/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki2W0IB5558=

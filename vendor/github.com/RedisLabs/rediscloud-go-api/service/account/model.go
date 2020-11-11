@@ -34,3 +34,16 @@ type Region struct {
 	Name     *string `json:"name,omitempty"`
 	Provider *string `json:"provider,omitempty"`
 }
+
+type dataPersistence struct {
+	DataPersistence []*DataPersistence `json:"dataPersistence,omitempty"`
+}
+
+func (o dataPersistence) String() string {
+	return internal.ToString(o)
+}
+
+type DataPersistence struct {
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+}
