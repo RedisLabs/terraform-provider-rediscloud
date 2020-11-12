@@ -76,7 +76,6 @@ func (o CreateThroughput) String() string {
 
 type CreateModules struct {
 	Name       *string            `json:"name,omitempty"`
-	Parameters map[string]*string `json:"parameters,omitempty"`
 }
 
 func (o CreateModules) String() string {

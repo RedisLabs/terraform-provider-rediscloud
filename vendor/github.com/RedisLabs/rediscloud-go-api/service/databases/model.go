@@ -59,7 +59,6 @@ func (o CreateAlert) String() string {
 
 type CreateModule struct {
 	Name       *string            `json:"name,omitempty"`
-	Parameters map[string]*string `json:"parameters,omitempty"`
 }
 
 func (o CreateModule) String() string {
@@ -118,8 +117,7 @@ func (o Security) String() string {
 }
 
 type Module struct {
-	Name       *string            `json:"name,omitempty"`
-	Parameters map[string]*string `json:"parameters,omitempty"`
+	Name *string `json:"name,omitempty"`
 }
 
 func (o Module) String() string {
