@@ -184,8 +184,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 						},
 						"password": {
 							Type:      schema.TypeString,
-							Optional:  true,
-							Computed:  true,
+							Required:  true,
 							Sensitive: true,
 						},
 						"public_endpoint": {
@@ -385,10 +384,7 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 					Value: redis.Int(throughputMeasurementValue),
 				},
 				DataPersistence: redis.String(dataPersistence),
-			}
-
-			if v, ok := databaseMap["password"]; ok {
-				update.Password = redis.String(v.(string))
+				Password:        redis.String(databaseMap["password"].(string)),
 			}
 
 			err = api.client.Database.Update(ctx, subId, dbId, update)
