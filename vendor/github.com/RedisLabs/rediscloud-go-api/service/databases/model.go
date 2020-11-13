@@ -58,7 +58,7 @@ func (o CreateAlert) String() string {
 }
 
 type CreateModule struct {
-	Name       *string            `json:"name,omitempty"`
+	Name *string `json:"name,omitempty"`
 }
 
 func (o CreateModule) String() string {
@@ -216,6 +216,10 @@ const (
 	StatusDraft = "draft"
 	// Pending value of the `Status` field in `Database`
 	StatusPending = "pending"
+	// RCP change pending value of the `Status` field in `Database`
+	StatusRCPChangePending = "rcp-change-pending"
+	// RCP draft value of the `Status` field in `Database`
+	StatusRCPDraft = "rcp-draft"
 	// RCP active change draft value of the `Status` field in `Database`
 	StatusRCPActiveChangeDraft = "rcp-active-change-draft"
 	// Active change draft value of the `Status` field in `Database`

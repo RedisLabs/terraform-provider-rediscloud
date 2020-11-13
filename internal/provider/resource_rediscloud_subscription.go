@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -133,7 +132,6 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Type:     schema.TypeSet,
 				Required: true,
 				MinItems: 1,
-				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"db_id": {
@@ -226,7 +224,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	}
 
 	// Create databases
-	dbs := buildCreateDatabases(d.Get("database"))
+	dbs := buildSubscriptionCreateDatabases(d.Get("database"))
 
 	// Create Subscription
 	name := d.Get("name").(string)
@@ -264,17 +262,15 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	// Locate Databases to confirm Active status
 	dbList := api.client.Database.List(ctx, subId)
 
-	if !dbList.Next() {
-		if dbList.Err() != nil {
-			return diag.FromErr(dbList.Err())
+	for dbList.Next() {
+		dbId := *dbList.Value().ID
+
+		if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+			return diag.FromErr(err)
 		}
-		return diag.FromErr(fmt.Errorf("no initial databases found"))
 	}
-
-	dbId := *dbList.Value().ID
-
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-		return diag.FromErr(err)
+	if dbList.Err() != nil {
+		return diag.FromErr(dbList.Err())
 	}
 
 	// Some attributes on a database are not accessible by the subscription creation API.
@@ -358,34 +354,44 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 
 	if d.HasChange("database") || d.IsNewResource() {
 
-		for _, database := range d.Get("database").(*schema.Set).List() {
-			databaseMap := database.(map[string]interface{})
+		nameId, err := getDatabaseNameIdMap(ctx, subId, api)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 
-			name := databaseMap["name"].(string)
-			memoryLimitInGB := databaseMap["memory_limit_in_gb"].(float64)
-			supportOSSClusterAPI := databaseMap["support_oss_cluster_api"].(bool)
-			replication := databaseMap["replication"].(bool)
-			throughputMeasurementBy := databaseMap["throughput_measurement_by"].(string)
-			throughputMeasurementValue := databaseMap["throughput_measurement_value"].(int)
-			dataPersistence := databaseMap["data_persistence"].(string)
+		oldDb, newDb := d.GetChange("database")
+		addition, existing, deletion := diff(oldDb.(*schema.Set), newDb.(*schema.Set), func(v interface{}) string {
+			m := v.(map[string]interface{})
+			return m["name"].(string)
+		})
 
-			dbId, err := findDatabaseId(ctx, name, subId, api)
-			if err != nil {
-				return diag.FromErr(err)
+		if d.IsNewResource() {
+			// Terraform will report all of the databases that were just created in resourceRedisCloudSubscriptionCreate
+			// as newly added, but they have been created by the create subscription call. All that needs to happen to
+			// them is to be updated like 'normal' existing databases.
+			existing = addition
+		} else {
+			// this is not a new resource, so these databases really do new to be created
+			for _, db := range addition {
+				request := buildCreateDatabase(db)
+				id, err := api.client.Database.Create(ctx, subId, request)
+				if err != nil {
+					return diag.FromErr(err)
+				}
+
+				log.Printf("[DEBUG] Created database %d", id)
+
+				if err := waitForDatabaseToBeActive(ctx, subId, id, api); err != nil {
+					return diag.FromErr(err)
+				}
 			}
+		}
 
-			update := databases.UpdateDatabase{
-				Name:                 redis.String(name),
-				MemoryLimitInGB:      redis.Float64(memoryLimitInGB),
-				SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
-				Replication:          redis.Bool(replication),
-				ThroughputMeasurement: &databases.UpdateThroughputMeasurement{
-					By:    redis.String(throughputMeasurementBy),
-					Value: redis.Int(throughputMeasurementValue),
-				},
-				DataPersistence: redis.String(dataPersistence),
-				Password:        redis.String(databaseMap["password"].(string)),
-			}
+		for _, db := range existing {
+			update := buildUpdateDatabase(db)
+			dbId := nameId[redis.StringValue(update.Name)]
+
+			log.Printf("[DEBUG] Updating database %d", dbId)
 
 			err = api.client.Database.Update(ctx, subId, dbId, update)
 			if err != nil {
@@ -393,6 +399,18 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 			}
 
 			if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+
+		for _, db := range deletion {
+			name := db["name"].(string)
+			id := nameId[name]
+
+			log.Printf("[DEBUG] Deleting database %s (%d)", name, id)
+
+			err = api.client.Database.Delete(ctx, subId, id)
+			if err != nil {
 				return diag.FromErr(err)
 			}
 		}
@@ -416,21 +434,24 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
+	nameId, err := getDatabaseNameIdMap(ctx, subId, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	for _, v := range d.Get("database").(*schema.Set).List() {
 		database := v.(map[string]interface{})
 
 		name := database["name"].(string)
-		id, err := findDatabaseId(ctx, name, subId, api)
-		if err != nil {
-			// TODO handle situation where the database was already deleted
-			return diag.FromErr(err)
-		}
+		if id, ok := nameId[name]; ok {
+			log.Printf("[DEBUG] Deleting database %d on subscription %d", id, subId)
 
-		log.Printf("[DEBUG] Deleting database %d on subscription %d", id, subId)
-
-		dbErr := api.client.Database.Delete(ctx, subId, id)
-		if dbErr != nil {
-			diag.FromErr(dbErr)
+			dbErr := api.client.Database.Delete(ctx, subId, id)
+			if dbErr != nil {
+				diag.FromErr(dbErr)
+			}
+		} else {
+			log.Printf("[DEBUG] Database %s no longer exists", name)
 		}
 	}
 
@@ -441,6 +462,11 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 	}
 
 	d.SetId("")
+
+	err = waitForSubscriptionToBeDeleted(ctx, subId, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	return diags
 }
@@ -500,7 +526,7 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 	return createCloudProviders, nil
 }
 
-func buildCreateDatabases(databases interface{}) []*subscriptions.CreateDatabase {
+func buildSubscriptionCreateDatabases(databases interface{}) []*subscriptions.CreateDatabase {
 	createDatabases := make([]*subscriptions.CreateDatabase, 0)
 
 	for _, database := range databases.(*schema.Set).List() {
@@ -555,6 +581,50 @@ func buildCreateDatabases(databases interface{}) []*subscriptions.CreateDatabase
 	return createDatabases
 }
 
+func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
+	create := databases.CreateDatabase{
+		DryRun:               redis.Bool(false),
+		Name:                 redis.String(db["name"].(string)),
+		Protocol:             redis.String(db["protocol"].(string)),
+		MemoryLimitInGB:      redis.Float64(db["memory_limit_in_gb"].(float64)),
+		SupportOSSClusterAPI: redis.Bool(db["support_oss_cluster_api"].(bool)),
+		DataPersistence:      redis.String(db["data_persistence"].(string)),
+		Replication:          redis.Bool(db["replication"].(bool)),
+		ThroughputMeasurement: &databases.CreateThroughputMeasurement{
+			By:    redis.String(db["throughput_measurement_by"].(string)),
+			Value: redis.Int(db["throughput_measurement_value"].(int)),
+		},
+	}
+
+	averageItemSize := db["average_item_size_in_bytes"].(int)
+	if averageItemSize > 0 {
+		create.AverageItemSizeInBytes = redis.Int(averageItemSize)
+	}
+
+	if v, ok := db["password"]; ok {
+		create.Password = redis.String(v.(string))
+	}
+
+	return create
+}
+
+func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
+	update := databases.UpdateDatabase{
+		Name:                 redis.String(db["name"].(string)),
+		MemoryLimitInGB:      redis.Float64(db["memory_limit_in_gb"].(float64)),
+		SupportOSSClusterAPI: redis.Bool(db["support_oss_cluster_api"].(bool)),
+		Replication:          redis.Bool(db["replication"].(bool)),
+		ThroughputMeasurement: &databases.UpdateThroughputMeasurement{
+			By:    redis.String(db["throughput_measurement_by"].(string)),
+			Value: redis.Int(db["throughput_measurement_value"].(int)),
+		},
+		DataPersistence: redis.String(db["data_persistence"].(string)),
+		Password:        redis.String(db["password"].(string)),
+	}
+
+	return update
+}
+
 func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) error {
 	wait := &resource.StateChangeConf{
 		Delay:   10 * time.Second,
@@ -580,10 +650,46 @@ func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) 
 	return nil
 }
 
-func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClient) error {
+func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient) error {
 	wait := &resource.StateChangeConf{
 		Delay:   10 * time.Second,
-		Pending: []string{databases.StatusDraft, databases.StatusPending, databases.StatusActiveChangePending, databases.StatusRCPActiveChangeDraft, databases.StatusActiveChangeDraft},
+		Pending: []string{subscriptions.SubscriptionStatusDeleting},
+		Target:  []string{"deleted"},
+		Timeout: 10 * time.Minute,
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for subscription %d to be deleted", id)
+
+			subscription, err := api.client.Subscription.Get(ctx, id)
+			if err != nil {
+				if _, ok := err.(*subscriptions.NotFound); ok {
+					return "deleted", "deleted", nil
+				}
+				return nil, "", err
+			}
+
+			return redis.StringValue(subscription.Status), redis.StringValue(subscription.Status), nil
+		},
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClient) error {
+	wait := &resource.StateChangeConf{
+		Delay: 10 * time.Second,
+		Pending: []string{
+			databases.StatusDraft,
+			databases.StatusPending,
+			databases.StatusActiveChangePending,
+			databases.StatusRCPActiveChangeDraft,
+			databases.StatusActiveChangeDraft,
+			databases.StatusRCPDraft,
+			databases.StatusRCPChangePending,
+		},
 		Target:  []string{databases.StatusActive},
 		Timeout: 10 * time.Minute,
 
@@ -637,12 +743,17 @@ func flattenCloudDetails(cloudDetails []*subscriptions.CloudDetail) []map[string
 }
 
 func flattenDatabases(ctx context.Context, subId int, databases []interface{}, api *apiClient) ([]interface{}, error) {
+	nameId, err := getDatabaseNameIdMap(ctx, subId, api)
+	if err != nil {
+		return nil, err
+	}
+
 	var flattened []interface{}
 	for _, v := range databases {
 		database := v.(map[string]interface{})
 		name := database["name"].(string)
-		id, err := findDatabaseId(ctx, name, subId, api)
-		if err != nil {
+		id, ok := nameId[name]
+		if !ok {
 			log.Printf("database %d not found: %s", id, err)
 			continue
 		}
@@ -653,13 +764,14 @@ func flattenDatabases(ctx context.Context, subId int, databases []interface{}, a
 		}
 
 		averageItemSize := database["average_item_size_in_bytes"].(int)
+		existingPassword := database["password"].(string)
 
-		flattened = append(flattened, flattenDatabase(averageItemSize, db))
+		flattened = append(flattened, flattenDatabase(averageItemSize, existingPassword, db))
 	}
 	return flattened, nil
 }
 
-func flattenDatabase(averageItemSizeInBytes int, db *databases.Database) map[string]interface{} {
+func flattenDatabase(averageItemSizeInBytes int, existingPassword string, db *databases.Database) map[string]interface{} {
 	tf := map[string]interface{}{
 		"db_id":                        redis.IntValue(db.ID),
 		"name":                         redis.StringValue(db.Name),
@@ -670,7 +782,6 @@ func flattenDatabase(averageItemSizeInBytes int, db *databases.Database) map[str
 		"replication":                  redis.BoolValue(db.Replication),
 		"throughput_measurement_by":    redis.StringValue(db.ThroughputMeasurement.By),
 		"throughput_measurement_value": redis.IntValue(db.ThroughputMeasurement.Value),
-		"password":                     redis.StringValue(db.Security.Password),
 		"public_endpoint":              redis.StringValue(db.PublicEndpoint),
 		"private_endpoint":             redis.StringValue(db.PrivateEndpoint),
 		"module":                       flattenModules(db.Modules),
@@ -678,6 +789,13 @@ func flattenDatabase(averageItemSizeInBytes int, db *databases.Database) map[str
 
 	if averageItemSizeInBytes > 0 {
 		tf["average_item_size_in_bytes"] = averageItemSizeInBytes
+	}
+
+	if redis.StringValue(db.Protocol) == "memcached" {
+		// TODO need to check if this is expected behaviour or not
+		tf["password"] = existingPassword
+	} else {
+		tf["password"] = redis.StringValue(db.Security.Password)
 	}
 
 	return tf
@@ -697,17 +815,45 @@ func flattenModules(modules []*databases.Module) []map[string]interface{} {
 	return tfs
 }
 
-func findDatabaseId(ctx context.Context, name string, subId int, client *apiClient) (int, error) {
+func getDatabaseNameIdMap(ctx context.Context, subId int, client *apiClient) (map[string]int, error) {
+	ret := map[string]int{}
 	list := client.client.Database.List(ctx, subId)
 	for list.Next() {
 		db := list.Value()
-		if redis.StringValue(db.Name) == name {
-			return redis.IntValue(db.ID), nil
-		}
+		ret[redis.StringValue(db.Name)] = redis.IntValue(db.ID)
 	}
 	if list.Err() != nil {
-		return 0, list.Err()
+		return nil, list.Err()
+	}
+	return ret, nil
+}
+
+func diff(oldSet *schema.Set, newSet *schema.Set, hashKey func(interface{}) string) ([]map[string]interface{}, []map[string]interface{}, []map[string]interface{}) {
+	oldMap := map[string]map[string]interface{}{}
+	newMap := map[string]map[string]interface{}{}
+
+	for _, v := range oldSet.List() {
+		oldMap[hashKey(v)] = v.(map[string]interface{})
+	}
+	for _, v := range newSet.List() {
+		newMap[hashKey(v)] = v.(map[string]interface{})
 	}
 
-	return 0, fmt.Errorf("unable to find database with name %s", name)
+	var addition, existing, deletion []map[string]interface{}
+
+	for k, v := range newMap {
+		if _, ok := oldMap[k]; ok {
+			existing = append(existing, v)
+		} else {
+			addition = append(addition, v)
+		}
+	}
+
+	for k, v := range oldMap {
+		if _, ok := newMap[k]; !ok {
+			deletion = append(deletion, v)
+		}
+	}
+
+	return addition, existing, deletion
 }
