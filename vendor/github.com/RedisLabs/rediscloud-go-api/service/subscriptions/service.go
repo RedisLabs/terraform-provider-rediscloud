@@ -3,6 +3,9 @@ package subscriptions
 import (
 	"context"
 	"fmt"
+	"net/http"
+
+	"github.com/RedisLabs/rediscloud-go-api/internal"
 )
 
 type Log interface {
@@ -66,7 +69,7 @@ func (a *API) Get(ctx context.Context, id int) (*Subscription, error) {
 	var response Subscription
 	err := a.client.Get(ctx, fmt.Sprintf("retrieve subscription %d", id), fmt.Sprintf("/subscriptions/%d", id), &response)
 	if err != nil {
-		return nil, err
+		return nil, wrap404Error(id, err)
 	}
 
 	return &response, nil
@@ -77,7 +80,7 @@ func (a *API) Update(ctx context.Context, id int, subscription UpdateSubscriptio
 	var task taskResponse
 	err := a.client.Put(ctx, fmt.Sprintf("update subscription %d", id), fmt.Sprintf("/subscriptions/%d", id), subscription, &task)
 	if err != nil {
-		return err
+		return wrap404Error(id, err)
 	}
 
 	a.logger.Printf("Waiting for task %s to finish creating the subscription", task)
@@ -96,7 +99,7 @@ func (a *API) Delete(ctx context.Context, id int) error {
 	var task taskResponse
 	err := a.client.Delete(ctx, fmt.Sprintf("delete subscription %d", id), fmt.Sprintf("/subscriptions/%d", id), &task)
 	if err != nil {
-		return err
+		return wrap404Error(id, err)
 	}
 
 	a.logger.Printf("Waiting for subscription %d to finish being deleted", id)
@@ -115,7 +118,7 @@ func (a *API) GetCIDRAllowlist(ctx context.Context, id int) (*CIDRAllowlist, err
 	var task taskResponse
 	err := a.client.Get(ctx, fmt.Sprintf("get cidr for subscription %d", id), fmt.Sprintf("/subscriptions/%d/cidr", id), &task)
 	if err != nil {
-		return nil, err
+		return nil, wrap404Error(id, err)
 	}
 
 	a.logger.Printf("Waiting for subscription %d CIDR allowlist to be retrieved", id)
@@ -135,7 +138,7 @@ func (a *API) UpdateCIDRAllowlist(ctx context.Context, id int, cidr UpdateCIDRAl
 	var task taskResponse
 	err := a.client.Put(ctx, fmt.Sprintf("update cidr for subscription %d", id), fmt.Sprintf("/subscriptions/%d/cidr", id), cidr, &task)
 	if err != nil {
-		return err
+		return wrap404Error(id, err)
 	}
 
 	a.logger.Printf("Waiting for subscription %d CIDR allowlist to finish being updated", id)
@@ -153,7 +156,7 @@ func (a *API) ListVPCPeering(ctx context.Context, id int) ([]*VPCPeering, error)
 	var task taskResponse
 	err := a.client.Get(ctx, fmt.Sprintf("get peerings for subscription %d", id), fmt.Sprintf("/subscriptions/%d/peerings", id), &task)
 	if err != nil {
-		return nil, err
+		return nil, wrap404Error(id, err)
 	}
 
 	a.logger.Printf("Waiting for subscription %d peering details to be retrieved", id)
@@ -172,7 +175,7 @@ func (a *API) CreateVPCPeering(ctx context.Context, id int, create CreateVPCPeer
 	var task taskResponse
 	err := a.client.Post(ctx, fmt.Sprintf("create peering for subscription %d", id), fmt.Sprintf("/subscriptions/%d/peerings", id), create, &task)
 	if err != nil {
-		return 0, err
+		return 0, wrap404Error(id, err)
 	}
 
 	a.logger.Printf("Waiting for subscription %d peering details to be retrieved", id)
@@ -201,4 +204,11 @@ func (a *API) DeleteVPCPeering(ctx context.Context, subscription int, peering in
 	}
 
 	return nil
+}
+
+func wrap404Error(id int, err error) error {
+	if v, ok := err.(*internal.HTTPError); ok && v.StatusCode == http.StatusNotFound {
+		return &NotFound{id: id}
+	}
+	return err
 }
