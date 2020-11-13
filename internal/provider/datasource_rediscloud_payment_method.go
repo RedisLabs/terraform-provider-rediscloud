@@ -33,7 +33,7 @@ func dataSourceRedisCloudPaymentMethod() *schema.Resource {
 				Computed: true,
 				Type:     schema.TypeString,
 
-				ValidateDiagFunc: toDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d{4}$"), "")),
+				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d{4}$"), "")),
 			},
 		},
 	}
