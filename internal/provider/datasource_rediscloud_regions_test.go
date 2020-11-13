@@ -6,7 +6,7 @@ import (
 )
 
 func TestAccDataSourceRedisCloudRegions(t *testing.T) {
-	resource.UnitTest(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{
@@ -22,7 +22,7 @@ func TestAccDataSourceRedisCloudRegions(t *testing.T) {
 }
 
 func TestAccDataSourceRedisCloudRegionsAWS(t *testing.T) {
-	resource.UnitTest(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{
@@ -38,7 +38,7 @@ func TestAccDataSourceRedisCloudRegionsAWS(t *testing.T) {
 }
 
 func TestAccDataSourceRedisCloudRegionsGCP(t *testing.T) {
-	resource.UnitTest(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{

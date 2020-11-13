@@ -17,22 +17,22 @@ func dataSourceRedisCloudRegions() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"provider_name": {
-				Optional: true,
-				Type:     schema.TypeString,
-				ValidateDiagFunc: toDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
+				Optional:         true,
+				Type:             schema.TypeString,
+				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
 			},
 			"regions": {
-				Type: schema.TypeSet,
+				Type:     schema.TypeSet,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
 							Computed: true,
-							Type: schema.TypeString,
+							Type:     schema.TypeString,
 						},
 						"provider_name": {
 							Computed: true,
-							Type: schema.TypeString,
+							Type:     schema.TypeString,
 						},
 					},
 				},
@@ -66,7 +66,9 @@ func dataSourceRedisCloudRegionsRead(ctx context.Context, d *schema.ResourceData
 	}
 
 	d.SetId(time.Now().UTC().String())
-	d.Set("regions", flattenRegions(regions))
+	if err := d.Set("regions", flattenRegions(regions)); err != nil {
+		return diag.FromErr(err)
+	}
 
 	return diags
 }
