@@ -193,6 +193,20 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"module": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							MinItems: 1,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"name": {
+										Type:     schema.TypeString,
+										Required: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -528,6 +542,20 @@ func buildSubscriptionCreateDatabases(databases interface{}) []*subscriptions.Cr
 		throughputMeasurementValue := databaseMap["throughput_measurement_value"].(int)
 		averageItemSizeInBytes := databaseMap["average_item_size_in_bytes"].(int)
 
+		createModules := make([]*subscriptions.CreateModules, 0)
+		modules := databaseMap["module"]
+		for _, module := range modules.(*schema.Set).List() {
+			moduleMap := module.(map[string]interface{})
+
+			modName := moduleMap["name"].(string)
+
+			createModule := &subscriptions.CreateModules{
+				Name: redis.String(modName),
+			}
+
+			createModules = append(createModules, createModule)
+		}
+
 		createDatabase := &subscriptions.CreateDatabase{
 			Name:                 redis.String(name),
 			Protocol:             redis.String(protocol),
@@ -540,6 +568,7 @@ func buildSubscriptionCreateDatabases(databases interface{}) []*subscriptions.Cr
 				Value: redis.Int(throughputMeasurementValue),
 			},
 			Quantity: redis.Int(1),
+			Modules:  createModules,
 		}
 
 		if averageItemSizeInBytes > 0 {
@@ -755,6 +784,7 @@ func flattenDatabase(averageItemSizeInBytes int, existingPassword string, db *da
 		"throughput_measurement_value": redis.IntValue(db.ThroughputMeasurement.Value),
 		"public_endpoint":              redis.StringValue(db.PublicEndpoint),
 		"private_endpoint":             redis.StringValue(db.PrivateEndpoint),
+		"module":                       flattenModules(db.Modules),
 	}
 
 	if averageItemSizeInBytes > 0 {
@@ -769,6 +799,20 @@ func flattenDatabase(averageItemSizeInBytes int, existingPassword string, db *da
 	}
 
 	return tf
+}
+
+func flattenModules(modules []*databases.Module) []map[string]interface{} {
+
+	var tfs = make([]map[string]interface{}, 0)
+	for _, module := range modules {
+
+		tf := map[string]interface{}{
+			"name": redis.StringValue(module.Name),
+		}
+		tfs = append(tfs, tf)
+	}
+
+	return tfs
 }
 
 func getDatabaseNameIdMap(ctx context.Context, subId int, client *apiClient) (map[string]int, error) {
