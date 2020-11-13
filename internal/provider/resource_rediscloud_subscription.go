@@ -374,10 +374,6 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 			return m["name"].(string)
 		})
 
-		log.Printf("addition: %s", addition)
-		log.Printf("existing: %s", existing)
-		log.Printf("deletion: %s", deletion)
-
 		if d.IsNewResource() {
 			// Terraform will report all of the databases that were just created in resourceRedisCloudSubscriptionCreate
 			// as newly added, but they have been created by the create subscription call. All that needs to happen to
