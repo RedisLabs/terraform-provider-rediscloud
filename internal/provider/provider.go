@@ -32,10 +32,11 @@ func New(version string) func() *schema.Provider {
 				},
 			},
 			DataSourcesMap: map[string]*schema.Resource{
+				"rediscloud_cloud_account":    dataSourceRedisCloudCloudAccount(),
 				"rediscloud_data_persistence": dataSourceRedisCloudDataPersistence(),
 				"rediscloud_database_modules": dataSourceRedisCloudDatabaseModules(),
-				"rediscloud_payment_method": dataSourceRedisCloudPaymentMethod(),
-				"rediscloud_regions": dataSourceRedisCloudRegions(),
+				"rediscloud_payment_method":   dataSourceRedisCloudPaymentMethod(),
+				"rediscloud_regions":          dataSourceRedisCloudRegions(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
 				"rediscloud_cloud_account": resourceRedisCloudCloudAccount(),
