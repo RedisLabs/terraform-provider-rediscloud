@@ -15,7 +15,7 @@ func TestAccDataSourceRedisCloudSubscription(t *testing.T) {
 
 	name := acctest.RandomWithPrefix("tf-test")
 	password := acctest.RandString(20)
-	resourceName := "rediscloud_subscription.example"
+	resourceName := "data.rediscloud_subscription.example"
 
 	var subId int
 
@@ -24,7 +24,7 @@ func TestAccDataSourceRedisCloudSubscription(t *testing.T) {
 		ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDb, name, name, 1, password),
+				Config: fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionOneDb, name, name, 1, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
