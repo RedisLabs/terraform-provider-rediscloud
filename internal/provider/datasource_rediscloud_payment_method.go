@@ -96,8 +96,12 @@ func dataSourceRedisCloudPaymentMethodRead(ctx context.Context, d *schema.Resour
 	method := methods[0]
 
 	d.SetId(strconv.Itoa(redis.IntValue(method.ID)))
-	d.Set("card_type", method.Type)
-	d.Set("last_four_numbers", formattedCardNumber(method))
+	if err := d.Set("card_type", method.Type); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("last_four_numbers", formattedCardNumber(method)); err != nil {
+		return diag.FromErr(err)
+	}
 
 	return diags
 }
