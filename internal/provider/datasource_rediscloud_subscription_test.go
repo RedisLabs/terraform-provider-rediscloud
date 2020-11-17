@@ -30,12 +30,12 @@ func TestAccDataSourceRedisCloudSubscription(t *testing.T) {
 				Config: fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionDataSource, name) + fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionOneDb, name, 1, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(dataSourceName, "name", regexp.MustCompile(name)),
-					resource.TestCheckResourceAttr(dataSourceName, "payment_method_id", "16971"),
+					resource.TestCheckResourceAttrSet(dataSourceName, "payment_method_id"),
 					resource.TestMatchResourceAttr(dataSourceName, "memory_storage", regexp.MustCompile("ram")),
 					resource.TestCheckResourceAttr(dataSourceName, "persistent_storage_encryption", "false"),
 					resource.TestCheckResourceAttr(dataSourceName, "number_of_databases", "1"),
 					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.provider", "AWS"),
-					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.cloud_account_id", "16566"),
+					resource.TestCheckResourceAttrSet(dataSourceName, "cloud_provider.0.cloud_account_id"),
 					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.region.0.region", "eu-west-1"),
 					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.region.0.networking_deployment_cidr", "10.0.0.0/24"),
 					resource.TestCheckResourceAttr(dataSourceName, "status", "active"),
@@ -51,6 +51,11 @@ data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
 
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS" 
+}
+
 resource "rediscloud_subscription" "example" {
 
   name = "%s"
@@ -59,8 +64,8 @@ resource "rediscloud_subscription" "example" {
   persistent_storage_encryption = false
 
   cloud_provider {
-    provider = "AWS"
-    cloud_account_id = "16566"
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
     region {
       region = "eu-west-1"
       networking_deployment_cidr = "10.0.0.0/24"

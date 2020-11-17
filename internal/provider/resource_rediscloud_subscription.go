@@ -180,7 +180,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Optional: true,
 							// Setting default to 0 so that the hash func produces the same hash when this field is not
 							// specified. SDK's catch-all issue around this: https://github.com/hashicorp/terraform-plugin-sdk/issues/261
-							Default:  0,
+							Default: 0,
 						},
 						"password": {
 							Type:      schema.TypeString,

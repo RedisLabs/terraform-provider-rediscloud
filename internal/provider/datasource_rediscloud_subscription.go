@@ -20,11 +20,11 @@ func dataSourceRedisCloudSubscription() *schema.Resource {
 				Optional: true,
 			},
 			"payment_method_id": {
-				Type:             schema.TypeString,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"memory_storage": {
-				Type:             schema.TypeString,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"persistent_storage_encryption": {
@@ -32,11 +32,11 @@ func dataSourceRedisCloudSubscription() *schema.Resource {
 				Computed: true,
 			},
 			"number_of_databases": {
-				Type: schema.TypeInt,
+				Type:     schema.TypeInt,
 				Computed: true,
 			},
 			"status": {
-				Type: schema.TypeString,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"cloud_provider": {
@@ -45,11 +45,11 @@ func dataSourceRedisCloudSubscription() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"provider": {
-							Type:             schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"cloud_account_id": {
-							Type:             schema.TypeString,
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"region": {
@@ -66,14 +66,14 @@ func dataSourceRedisCloudSubscription() *schema.Resource {
 										Computed: true,
 									},
 									"preferred_availability_zones": {
-										Type: schema.TypeList,
+										Type:     schema.TypeList,
 										Computed: true,
 										Elem: &schema.Schema{
 											Type: schema.TypeString,
 										},
 									},
 									"networking_deployment_cidr": {
-										Type: schema.TypeString,
+										Type:     schema.TypeString,
 										Computed: true,
 									},
 									"networking_vpc_id": {
@@ -150,8 +150,6 @@ func dataSourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.Resourc
 	return diags
 }
 
-
-
 func filterSubscriptions(subs []*subscriptions.Subscription, filters []func(sub *subscriptions.Subscription) bool) []*subscriptions.Subscription {
 	var filteredSubs []*subscriptions.Subscription
 	for _, sub := range subs {
@@ -171,4 +169,3 @@ func filterSub(method *subscriptions.Subscription, filters []func(method *subscr
 	}
 	return true
 }
-
