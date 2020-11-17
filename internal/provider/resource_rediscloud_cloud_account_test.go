@@ -14,8 +14,6 @@ import (
 )
 
 func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
-	t.Skip("Required environment variables currently not available under CI")
-
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudCloudAccount,
