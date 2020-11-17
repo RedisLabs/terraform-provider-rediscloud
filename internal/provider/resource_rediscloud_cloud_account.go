@@ -49,7 +49,7 @@ func resourceRedisCloudCloudAccount() *schema.Resource {
 			"provider_type": {
 				Type:             schema.TypeString,
 				Required:         true,
-				ValidateDiagFunc: toDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
+				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
 				ForceNew:         true,
 			},
 			"sign_in_login_url": {
@@ -139,10 +139,18 @@ func resourceRedisCloudCloudAccountRead(ctx context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 
-	d.Set("access_key_id", redis.StringValue(account.AccessKeyID))
-	d.Set("name", redis.StringValue(account.Name))
-	d.Set("provider_type", redis.StringValue(account.Provider))
-	d.Set("status", redis.StringValue(account.Status))
+	if err := d.Set("access_key_id", redis.StringValue(account.AccessKeyID)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("name", redis.StringValue(account.Name)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("provider_type", redis.StringValue(account.Provider)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("status", redis.StringValue(account.Status)); err != nil {
+		return diag.FromErr(err)
+	}
 
 	return diags
 }
