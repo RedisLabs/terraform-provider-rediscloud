@@ -1,13 +1,10 @@
 package provider
 
 import (
-	"context"
 	"fmt"
-	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"strconv"
+	"regexp"
 	"testing"
 )
 
@@ -15,51 +12,33 @@ func TestAccDataSourceRedisCloudSubscription(t *testing.T) {
 
 	name := acctest.RandomWithPrefix("tf-test")
 	password := acctest.RandString(20)
-	resourceName := "data.rediscloud_subscription.example"
 
-	var subId int
+	resourceName := "rediscloud_subscription.example"
+	dataSourceName := "data.rediscloud_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionOneDb, name, name, 1, password),
+				Config: fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionOneDb, name, 1, password),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", name),
-					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
-					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
-					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.0.networking_subnet_id"),
-					resource.TestCheckResourceAttr(resourceName, "number_of_databases", "1"),
-					func(s *terraform.State) error {
-						r := s.RootModule().Resources[resourceName]
-
-						var err error
-						subId, err = strconv.Atoi(r.Primary.ID)
-						if err != nil {
-							return err
-						}
-
-						client := testProvider.Meta().(*apiClient)
-						sub, err := client.client.Subscription.Get(context.TODO(), subId)
-						if err != nil {
-							return err
-						}
-
-						if redis.StringValue(sub.Name) != name {
-							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
-						}
-
-						listDb := client.client.Database.List(context.TODO(), subId)
-						if listDb.Next() != true {
-							return fmt.Errorf("no database found: %s", listDb.Err())
-						}
-						if listDb.Err() != nil {
-							return listDb.Err()
-						}
-
-						return nil
-					},
+					resource.TestMatchResourceAttr(resourceName, "name", regexp.MustCompile(name)),
+				),
+			},
+			{
+				Config: fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionDataSource, name) + fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionOneDb, name, 1, password),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestMatchResourceAttr(dataSourceName, "name", regexp.MustCompile(name)),
+					resource.TestCheckResourceAttr(dataSourceName, "payment_method_id", "16971"),
+					resource.TestMatchResourceAttr(dataSourceName, "memory_storage", regexp.MustCompile("ram")),
+					resource.TestCheckResourceAttr(dataSourceName, "persistent_storage_encryption", "false"),
+					resource.TestCheckResourceAttr(dataSourceName, "number_of_databases", "1"),
+					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.provider", "AWS"),
+					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.cloud_account_id", "16566"),
+					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.region.0.region", "eu-west-1"),
+					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.region.0.networking_deployment_cidr", "10.0.0.0/24"),
+					resource.TestCheckResourceAttr(dataSourceName, "status", "active"),
 				),
 			},
 		},
@@ -67,9 +46,6 @@ func TestAccDataSourceRedisCloudSubscription(t *testing.T) {
 }
 
 const testAccDatasourceRedisCloudSubscriptionOneDb = `
-data "rediscloud_subscription" "example" {
-	name = "%s"
-}
 
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
@@ -102,5 +78,12 @@ resource "rediscloud_subscription" "example" {
     password = "%s"
     throughput_measurement_value = 10000
   }
+}
+`
+
+const testAccDatasourceRedisCloudSubscriptionDataSource = `
+
+data "rediscloud_subscription" "example" {
+  name = "%s"
 }
 `
