@@ -143,7 +143,7 @@ func (o Networking) String() string {
 type CIDRAllowlist struct {
 	CIDRIPs          []*string   `json:"cidr_ips,omitempty"`
 	SecurityGroupIDs []*string   `json:"security_group_ids,omitempty"`
-	Errors           interface{} `json:"errors,omitempty"` // TODO the structure of this is undocumented
+	Errors           interface{} `json:"errors,omitempty"`
 }
 
 func (o CIDRAllowlist) String() string {

@@ -99,7 +99,7 @@ func (a *API) Delete(ctx context.Context, subscription int, database int) error 
 		return err
 	}
 
-	a.logger.Printf("Waiting for database %d for subscription %d to finish being deleted", subscription, database)
+	a.logger.Printf("Waiting for database %d for subscription %d to finish being deleted", database, subscription)
 
 	err = a.task.Wait(ctx, *task.ID)
 	if err != nil {

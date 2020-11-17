@@ -13,8 +13,53 @@ Subscription resource in the Terraform provider RedisCloud.
 ## Example Usage
 
 ```hcl
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS"
+}
+
+resource "random_password" "password" {
+  length = 20
+  upper = true
+  lower = true
+  number = true
+  special = false
+}
+
 resource "rediscloud_subscription" "example" {
-  sample_attribute = "foo"
+
+  name = "example"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  memory_storage = "ram"
+  persistent_storage_encryption = false
+
+  cloud_provider {
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region = "eu-west-1"
+      networking_deployment_cidr = "10.0.0.0/24"
+    }
+  }
+
+  database {
+    name = "tf-example-database"
+    protocol = "redis"
+    memory_limit_in_gb = 1
+    data_persistence = "none"
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 10000
+    password = random_password.password.result
+
+    alert {
+      name = "dataset-size"
+      value = 40
+    }
+  }
 }
 ```
 
@@ -22,7 +67,7 @@ resource "rediscloud_subscription" "example" {
 
 The following arguments are supported:
 
-* `name` - (Optional) A meaningful name to identify the subscription
+* `name` - (Required) A meaningful name to identify the subscription
 * `payment_method_id` - (Required) A valid payment method pre-defined in the current account
 * `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of 'ram-and-flash’. Default: ‘ram’
 * `persistent_storage_encryption` - (Optional) Encrypt data stored in persistent storage. Required for a GCP subscription. Default: ‘false’
@@ -44,6 +89,14 @@ The `database` block supports:
 * `protocol` - (Optional) The protocol that will be used to access the database, (either ‘redis’ or 'memcached’) Default: ‘redis’
 * `memory_limit_in_gb` - (Required) Maximum memory usage for this specific database
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
+* `external_endpoint_for_oss_cluster_api` - (Optional) Should use the external endpoint for open-source (OSS) Cluster API.
+Can only be enabled if OSS Cluster API support is enabled. Default: 'false'
+* `client_ssl_certificate` - (Optional) SSL certificate to authenticate user connections
+* `periodic_backup_path` - (Optional) Path that will be used to store database backup files
+* `replica_of` - (Optional) Set of Redis database URIs, in the format `redis://user:password@host:port`, that this
+database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided.
+Cannot be enabled when `support_oss_cluster_api` is enabled.
+* `alert` - (Optional) Set of alerts to enable on the database, documented below
 * `data_persistence` - (Optional) Rate of database data persistence (in persistent storage). Default: ‘none’
 * `password` - (Required) Password used to access the database
 * `replication` - (Optional) Databases replication. Default: ‘true’
@@ -61,6 +114,11 @@ The cloud_provider `region` block supports:
 * `networking_vpc_id` - (Optional) Either an existing VPC Id (already exists in the specific region) or create a new VPC
 (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4625884ad’) and existing
 within the hosting account
+
+The database `alert` block supports:
+
+* `name` (Required) Alert name
+* `value` (Required) Alert value
 
 ## Attribute reference
 
