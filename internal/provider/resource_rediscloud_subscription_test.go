@@ -224,6 +224,11 @@ data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
 
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS" 
+}
+
 resource "rediscloud_subscription" "example" {
 
   name = "%s"
@@ -232,8 +237,8 @@ resource "rediscloud_subscription" "example" {
   persistent_storage_encryption = false
 
   cloud_provider {
-    provider = "AWS"
-    cloud_account_id = "16566"
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
     region {
       region = "eu-west-1"
       networking_deployment_cidr = "10.0.0.0/24"
@@ -250,6 +255,7 @@ resource "rediscloud_subscription" "example" {
     throughput_measurement_by = "operations-per-second"
     password = "%s"
     throughput_measurement_value = 10000
+    source_ips = ["10.0.0.0/8"]
   }
 }
 `
@@ -259,6 +265,11 @@ data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
 
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS" 
+}
+
 resource "rediscloud_subscription" "example" {
 
   name = "%s"
@@ -267,8 +278,8 @@ resource "rediscloud_subscription" "example" {
   persistent_storage_encryption = false
 
   cloud_provider {
-    provider = "AWS"
-    cloud_account_id = "16566"
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
     region {
       region = "eu-west-1"
       networking_deployment_cidr = "10.0.0.0/24"
@@ -285,6 +296,7 @@ resource "rediscloud_subscription" "example" {
     throughput_measurement_by = "operations-per-second"
     password = "%s"
     throughput_measurement_value = 10000
+    source_ips = ["10.0.0.0/8"]
   }
 
   database {
