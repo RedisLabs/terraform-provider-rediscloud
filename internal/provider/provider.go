@@ -13,6 +13,8 @@ import (
 	rediscloud_api "github.com/RedisLabs/rediscloud-go-api"
 )
 
+const RedisCloudUrlEnvVar = "REDISCLOUD_URL"
+
 func New(version string) func() *schema.Provider {
 	return func() *schema.Provider {
 		p := &schema.Provider{
@@ -20,7 +22,7 @@ func New(version string) func() *schema.Provider {
 				"url": {
 					Type:        schema.TypeString,
 					Optional:    true,
-					DefaultFunc: schema.EnvDefaultFunc("REDISCLOUD_URL", ""),
+					DefaultFunc: schema.EnvDefaultFunc(RedisCloudUrlEnvVar, ""),
 				},
 				"api_key": {
 					Type:     schema.TypeString,

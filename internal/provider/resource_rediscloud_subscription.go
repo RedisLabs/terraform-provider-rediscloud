@@ -156,6 +156,11 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Optional: true,
 							Default:  false,
 						},
+						"external_endpoint_for_oss_cluster_api": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
 						"data_persistence": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -194,6 +199,41 @@ func resourceRedisCloudSubscription() *schema.Resource {
 						"private_endpoint": {
 							Type:     schema.TypeString,
 							Computed: true,
+						},
+						"client_ssl_certificate": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "",
+						},
+						"periodic_backup_path": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Default:  "",
+						},
+						"replica_of": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Schema{
+								Type:             schema.TypeString,
+								ValidateDiagFunc: validateDiagFunc(validation.IsURLWithScheme([]string{"redis"})),
+							},
+						},
+						"alert": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"name": {
+										Type:             schema.TypeString,
+										Required:         true,
+										ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.AlertNameValues(), false)),
+									},
+									"value": {
+										Type:     schema.TypeInt,
+										Required: true,
+									},
+								},
+							},
 						},
 						"module": {
 							Type:     schema.TypeSet,
@@ -593,6 +633,16 @@ func buildSubscriptionCreateDatabases(databases interface{}) []*subscriptions.Cr
 }
 
 func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
+	var alerts []*databases.CreateAlert
+	for _, alert := range db["alert"].(*schema.Set).List() {
+		dbAlert := alert.(map[string]interface{})
+
+		alerts = append(alerts, &databases.CreateAlert{
+			Name:  redis.String(dbAlert["name"].(string)),
+			Value: redis.Int(dbAlert["value"].(int)),
+		})
+	}
+
 	create := databases.CreateDatabase{
 		DryRun:               redis.Bool(false),
 		Name:                 redis.String(db["name"].(string)),
@@ -605,8 +655,10 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 			By:    redis.String(db["throughput_measurement_by"].(string)),
 			Value: redis.Int(db["throughput_measurement_value"].(int)),
 		},
-		Password: redis.String(db["password"].(string)),
-		SourceIP: toStringSlice(db["source_ips"].(*schema.Set)),
+		Alerts:    alerts,
+		ReplicaOf: toStringSlice(db["replica_of"].(*schema.Set)),
+		Password:  redis.String(db["password"].(string)),
+		SourceIP:  toStringSlice(db["source_ips"].(*schema.Set)),
 	}
 
 	averageItemSize := db["average_item_size_in_bytes"].(int)
@@ -614,10 +666,34 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 		create.AverageItemSizeInBytes = redis.Int(averageItemSize)
 	}
 
+	clientSSLCertificate := db["client_ssl_certificate"].(string)
+	if clientSSLCertificate != "" {
+		create.ClientSSLCertificate = redis.String(clientSSLCertificate)
+	}
+
+	backupPath := db["periodic_backup_path"].(string)
+	if backupPath != "" {
+		create.PeriodicBackupPath = redis.String(backupPath)
+	}
+
+	if v, ok := db["external_endpoint_for_oss_cluster_api"]; ok {
+		create.UseExternalEndpointForOSSClusterAPI = redis.Bool(v.(bool))
+	}
+
 	return create
 }
 
 func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
+	var alerts []*databases.UpdateAlert
+	for _, alert := range db["alert"].(*schema.Set).List() {
+		dbAlert := alert.(map[string]interface{})
+
+		alerts = append(alerts, &databases.UpdateAlert{
+			Name:  redis.String(dbAlert["name"].(string)),
+			Value: redis.Int(dbAlert["value"].(int)),
+		})
+	}
+
 	update := databases.UpdateDatabase{
 		Name:                 redis.String(db["name"].(string)),
 		MemoryLimitInGB:      redis.Float64(db["memory_limit_in_gb"].(float64)),
@@ -630,6 +706,22 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 		DataPersistence: redis.String(db["data_persistence"].(string)),
 		Password:        redis.String(db["password"].(string)),
 		SourceIP:        toStringSlice(db["source_ips"].(*schema.Set)),
+		Alerts:          alerts,
+		ReplicaOf:       toStringSlice(db["replica_of"].(*schema.Set)),
+	}
+
+	clientSSLCertificate := db["client_ssl_certificate"].(string)
+	if clientSSLCertificate != "" {
+		update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+	}
+
+	backupPath := db["periodic_backup_path"].(string)
+	if backupPath != "" {
+		update.PeriodicBackupPath = redis.String(backupPath)
+	}
+
+	if v, ok := db["external_endpoint_for_oss_cluster_api"]; ok {
+		update.UseExternalEndpointForOSSClusterAPI = redis.Bool(v.(bool))
 	}
 
 	return update
@@ -773,16 +865,19 @@ func flattenDatabases(ctx context.Context, subId int, databases []interface{}, a
 			return nil, err
 		}
 
+		cert := database["client_ssl_certificate"].(string)
+		backupPath := database["periodic_backup_path"].(string)
 		averageItemSize := database["average_item_size_in_bytes"].(int)
 		existingPassword := database["password"].(string)
 		existingSourceIPs := database["source_ips"].(*schema.Set)
+		external := database["external_endpoint_for_oss_cluster_api"].(bool)
 
-		flattened = append(flattened, flattenDatabase(averageItemSize, existingPassword, existingSourceIPs, db))
+		flattened = append(flattened, flattenDatabase(cert, external, backupPath, averageItemSize, existingPassword, existingSourceIPs, db))
 	}
 	return flattened, nil
 }
 
-func flattenDatabase(averageItemSizeInBytes int, existingPassword string, existingSourceIp *schema.Set, db *databases.Database) map[string]interface{} {
+func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath string, averageItemSizeInBytes int, existingPassword string, existingSourceIp *schema.Set, db *databases.Database) map[string]interface{} {
 	password := existingPassword
 	if redis.StringValue(db.Protocol) == "redis" {
 		// TODO need to check if this is expected behaviour or not
@@ -800,27 +895,55 @@ func flattenDatabase(averageItemSizeInBytes int, existingPassword string, existi
 	}
 
 	tf := map[string]interface{}{
-		"db_id":                        redis.IntValue(db.ID),
-		"name":                         redis.StringValue(db.Name),
-		"protocol":                     redis.StringValue(db.Protocol),
-		"memory_limit_in_gb":           redis.Float64Value(db.MemoryLimitInGB),
-		"support_oss_cluster_api":      redis.BoolValue(db.SupportOSSClusterAPI),
-		"data_persistence":             redis.StringValue(db.DataPersistence),
-		"replication":                  redis.BoolValue(db.Replication),
-		"throughput_measurement_by":    redis.StringValue(db.ThroughputMeasurement.By),
-		"throughput_measurement_value": redis.IntValue(db.ThroughputMeasurement.Value),
-		"public_endpoint":              redis.StringValue(db.PublicEndpoint),
-		"private_endpoint":             redis.StringValue(db.PrivateEndpoint),
-		"module":                       flattenModules(db.Modules),
-		"password":                     password,
-		"source_ips":                   sourceIPs,
+		"db_id":                                 redis.IntValue(db.ID),
+		"name":                                  redis.StringValue(db.Name),
+		"protocol":                              redis.StringValue(db.Protocol),
+		"memory_limit_in_gb":                    redis.Float64Value(db.MemoryLimitInGB),
+		"support_oss_cluster_api":               redis.BoolValue(db.SupportOSSClusterAPI),
+		"data_persistence":                      redis.StringValue(db.DataPersistence),
+		"replication":                           redis.BoolValue(db.Replication),
+		"throughput_measurement_by":             redis.StringValue(db.ThroughputMeasurement.By),
+		"throughput_measurement_value":          redis.IntValue(db.ThroughputMeasurement.Value),
+		"public_endpoint":                       redis.StringValue(db.PublicEndpoint),
+		"private_endpoint":                      redis.StringValue(db.PrivateEndpoint),
+		"module":                                flattenModules(db.Modules),
+		"alert":                                 flattenAlerts(db.Alerts),
+		"external_endpoint_for_oss_cluster_api": externalOSSAPIEndpoint,
+		"password":                              password,
+		"source_ips":                            sourceIPs,
+	}
+
+	if db.ReplicaOf != nil {
+		tf["replica_of"] = redis.StringSliceValue(db.ReplicaOf.Endpoints...)
+	}
+
+	if redis.BoolValue(db.Security.SSLClientAuthentication) {
+		tf["client_ssl_certificate"] = certificate
 	}
 
 	if averageItemSizeInBytes > 0 {
 		tf["average_item_size_in_bytes"] = averageItemSizeInBytes
 	}
 
+	if backupPath != "" {
+		tf["periodic_backup_path"] = backupPath
+	}
+
 	return tf
+}
+
+func flattenAlerts(alerts []*databases.Alert) []map[string]interface{} {
+	var tfs = make([]map[string]interface{}, 0)
+
+	for _, alert := range alerts {
+		tf := map[string]interface{}{
+			"name":  redis.StringValue(alert.Name),
+			"value": redis.IntValue(alert.Value),
+		}
+		tfs = append(tfs, tf)
+	}
+
+	return tfs
 }
 
 func flattenModules(modules []*databases.Module) []map[string]interface{} {
