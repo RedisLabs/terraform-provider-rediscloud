@@ -255,6 +255,7 @@ resource "rediscloud_subscription" "example" {
     throughput_measurement_by = "operations-per-second"
     password = "%s"
     throughput_measurement_value = 10000
+    source_ips = ["10.0.0.0/8"]
   }
 }
 `
@@ -295,6 +296,7 @@ resource "rediscloud_subscription" "example" {
     throughput_measurement_by = "operations-per-second"
     password = "%s"
     throughput_measurement_value = 10000
+    source_ips = ["10.0.0.0/8"]
   }
 
   database {

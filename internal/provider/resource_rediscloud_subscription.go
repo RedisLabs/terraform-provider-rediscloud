@@ -207,6 +207,15 @@ func resourceRedisCloudSubscription() *schema.Resource {
 								},
 							},
 						},
+						"source_ips": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							MinItems: 1,
+							Elem: &schema.Schema{
+								Type:             schema.TypeString,
+								ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
+							},
+						},
 					},
 				},
 			},
@@ -594,15 +603,13 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 			By:    redis.String(db["throughput_measurement_by"].(string)),
 			Value: redis.Int(db["throughput_measurement_value"].(int)),
 		},
+		Password: redis.String(db["password"].(string)),
+		SourceIP: toStringSlice(db["source_ips"].(*schema.Set)),
 	}
 
 	averageItemSize := db["average_item_size_in_bytes"].(int)
 	if averageItemSize > 0 {
 		create.AverageItemSizeInBytes = redis.Int(averageItemSize)
-	}
-
-	if v, ok := db["password"]; ok {
-		create.Password = redis.String(v.(string))
 	}
 
 	return create
@@ -620,6 +627,7 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 		},
 		DataPersistence: redis.String(db["data_persistence"].(string)),
 		Password:        redis.String(db["password"].(string)),
+		SourceIP:        toStringSlice(db["source_ips"].(*schema.Set)),
 	}
 
 	return update
@@ -765,13 +773,30 @@ func flattenDatabases(ctx context.Context, subId int, databases []interface{}, a
 
 		averageItemSize := database["average_item_size_in_bytes"].(int)
 		existingPassword := database["password"].(string)
+		existingSourceIPs := database["source_ips"].(*schema.Set)
 
-		flattened = append(flattened, flattenDatabase(averageItemSize, existingPassword, db))
+		flattened = append(flattened, flattenDatabase(averageItemSize, existingPassword, existingSourceIPs, db))
 	}
 	return flattened, nil
 }
 
-func flattenDatabase(averageItemSizeInBytes int, existingPassword string, db *databases.Database) map[string]interface{} {
+func flattenDatabase(averageItemSizeInBytes int, existingPassword string, existingSourceIp *schema.Set, db *databases.Database) map[string]interface{} {
+	password := existingPassword
+	if redis.StringValue(db.Protocol) == "redis" {
+		// TODO need to check if this is expected behaviour or not
+		password = redis.StringValue(db.Security.Password)
+	}
+
+	var sourceIPs []string
+	if len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0" {
+		// The API handles an empty list as ["0.0.0.0/0"] but need to be careful to match the input to avoid Terraform detecting drift
+		if existingSourceIp.Len() != 0 {
+			sourceIPs = redis.StringSliceValue(db.Security.SourceIPs...)
+		}
+	} else {
+		sourceIPs = redis.StringSliceValue(db.Security.SourceIPs...)
+	}
+
 	tf := map[string]interface{}{
 		"db_id":                        redis.IntValue(db.ID),
 		"name":                         redis.StringValue(db.Name),
@@ -785,17 +810,12 @@ func flattenDatabase(averageItemSizeInBytes int, existingPassword string, db *da
 		"public_endpoint":              redis.StringValue(db.PublicEndpoint),
 		"private_endpoint":             redis.StringValue(db.PrivateEndpoint),
 		"module":                       flattenModules(db.Modules),
+		"password":                     password,
+		"source_ips":                   sourceIPs,
 	}
 
 	if averageItemSizeInBytes > 0 {
 		tf["average_item_size_in_bytes"] = averageItemSizeInBytes
-	}
-
-	if redis.StringValue(db.Protocol) == "memcached" {
-		// TODO need to check if this is expected behaviour or not
-		tf["password"] = existingPassword
-	} else {
-		tf["password"] = redis.StringValue(db.Security.Password)
 	}
 
 	return tf
