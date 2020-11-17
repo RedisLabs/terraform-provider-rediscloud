@@ -30,6 +30,10 @@ func testAccPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, RedisCloudUrlEnvVar, rediscloud_api.AccessKeyEnvVar, rediscloud_api.SecretKeyEnvVar)
 }
 
+func testAccAwsPreExistingCloudAccountPreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
+}
+
 func testAccAwsCloudAccountPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_ACCESS_SECRET_KEY", "AWS_CONSOLE_USERNAME", "AWS_CONSOLE_PASSWORD", "AWS_SIGNIN_URL")
 }
