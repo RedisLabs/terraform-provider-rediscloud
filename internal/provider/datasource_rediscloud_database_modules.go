@@ -14,17 +14,17 @@ func dataSourceRedisCloudDatabaseModules() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"modules": {
-				Type: schema.TypeSet,
+				Type:     schema.TypeSet,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
 							Computed: true,
-							Type: schema.TypeString,
+							Type:     schema.TypeString,
 						},
 						"description": {
 							Computed: true,
-							Type: schema.TypeString,
+							Type:     schema.TypeString,
 						},
 					},
 				},
@@ -55,7 +55,7 @@ func flattenDatabaseModules(moduleList []*account.DatabaseModule) []map[string]i
 	for _, currentModule := range moduleList {
 
 		moduleMapString := map[string]interface{}{
-			"name":          currentModule.Name,
+			"name":        currentModule.Name,
 			"description": currentModule.Description,
 		}
 
