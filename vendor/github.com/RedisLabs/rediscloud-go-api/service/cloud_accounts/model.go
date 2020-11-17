@@ -31,6 +31,10 @@ func (o UpdateCloudAccount) String() string {
 	return internal.ToString(o)
 }
 
+type listCloudAccounts struct {
+	CloudAccounts []*CloudAccount `json:"cloudAccounts"`
+}
+
 type taskResponse struct {
 	ID *string `json:"taskId,omitempty"`
 }
@@ -40,6 +44,7 @@ func (o taskResponse) String() string {
 }
 
 type CloudAccount struct {
+	ID          *int    `json:"id"`
 	Name        *string `json:"name,omitempty"`
 	Provider    *string `json:"provider,omitempty"`
 	Status      *string `json:"status,omitempty"`

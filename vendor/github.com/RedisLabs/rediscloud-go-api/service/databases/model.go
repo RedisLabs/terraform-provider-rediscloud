@@ -97,12 +97,21 @@ func (o Database) String() string {
 }
 
 type Clustering struct {
-	NumberOfShards *int `json:"numberOfShards,omitempty"`
-	// TODO RegexRules interface{} `json:"regexRules,omitempty"`
+	NumberOfShards *int         `json:"numberOfShards,omitempty"`
+	RegexRules     []*RegexRule `json:"regexRules,omitempty"`
 	// TODO HashingPolicy interface{} `json:"hashingPolicy,omitempty"`
 }
 
 func (o Clustering) String() string {
+	return internal.ToString(o)
+}
+
+type RegexRule struct {
+	Ordinal int    `json:"ordinal"`
+	Pattern string `json:"pattern"`
+}
+
+func (o RegexRule) String() string {
 	return internal.ToString(o)
 }
 
