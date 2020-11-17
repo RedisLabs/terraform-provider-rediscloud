@@ -175,10 +175,12 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Type:     schema.TypeInt,
 							Required: true,
 						},
-						// TODO modules support - note that certain modules conflict with certain values of throughput_measurement_by
 						"average_item_size_in_bytes": {
 							Type:     schema.TypeInt,
 							Optional: true,
+							// Setting default to 0 so that the hash func produces the same hash when this field is not
+							// specified. SDK's catch-all issue around this: https://github.com/hashicorp/terraform-plugin-sdk/issues/261
+							Default:  0,
 						},
 						"password": {
 							Type:      schema.TypeString,
