@@ -48,6 +48,15 @@ func (a *API) Create(ctx context.Context, account CreateCloudAccount) (int, erro
 	return id, nil
 }
 
+func (a API) List(ctx context.Context) ([]*CloudAccount, error) {
+	var response listCloudAccounts
+	if err := a.client.Get(ctx, "list cloud accounts", "/cloud-accounts", &response); err != nil {
+		return nil, err
+	}
+
+	return response.CloudAccounts, nil
+}
+
 // Get will retrieve an existing Cloud Account.
 func (a *API) Get(ctx context.Context, id int) (*CloudAccount, error) {
 	var response CloudAccount

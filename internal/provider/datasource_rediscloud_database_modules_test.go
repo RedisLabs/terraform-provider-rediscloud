@@ -6,7 +6,7 @@ import (
 )
 
 func TestAccDataSourceRedisCloudDatabaseModules(t *testing.T) {
-	resource.UnitTest(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{

@@ -51,6 +51,7 @@ The `database` block supports:
 * `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes)
 of the items stored in the database. Default: 1000
+* `source_ips` - (Optional) Set of CIDR addresses to allow access to the database. Defaults to allowing traffic.
 
 The cloud_provider `region` block supports:
 
