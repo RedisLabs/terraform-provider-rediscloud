@@ -5,16 +5,15 @@ import (
 	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"regexp"
 	"strconv"
 	"testing"
-
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccResourceRedisCloudSubscription_updateDatabase(t *testing.T) {
-	name := acctest.RandomWithPrefix("tf-test")
+	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	resourceName := "rediscloud_subscription.example"
 

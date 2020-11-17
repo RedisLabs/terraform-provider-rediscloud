@@ -41,3 +41,7 @@ endif
 build_0_13: fmtcheck
 	@mkdir -p $(PROVIDER_PATH)
 	go build -o $(PROVIDER_PATH)/terraform-provider-$(PROVIDER_NAMESPACE)_v$(PROVIDER_VERSION)
+
+sweep:
+	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
+	go test ./internal/provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
