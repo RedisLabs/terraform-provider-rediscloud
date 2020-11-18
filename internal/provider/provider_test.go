@@ -30,8 +30,12 @@ func testAccPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, RedisCloudUrlEnvVar, rediscloud_api.AccessKeyEnvVar, rediscloud_api.SecretKeyEnvVar)
 }
 
-func testAccAwsPreCheck(t *testing.T) {
+func testAccAwsCloudAccountPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_ACCESS_SECRET_KEY", "AWS_CONSOLE_USERNAME", "AWS_CONSOLE_PASSWORD", "AWS_SIGNIN_URL")
+}
+
+func testAccAwsPeeringPreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "AWS_PEERING_REGION", "AWS_ACCOUNT_ID", "AWS_VPC_ID", "AWS_VPC_CIDR")
 }
 
 func requireEnvironmentVariables(t *testing.T, names ...string) {

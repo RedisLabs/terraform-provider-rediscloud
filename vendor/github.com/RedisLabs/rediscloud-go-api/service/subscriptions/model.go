@@ -170,9 +170,16 @@ func (o CreateVPCPeering) String() string {
 	return internal.ToString(o)
 }
 
+type listVpcPeering struct {
+	Peerings []*VPCPeering `json:"peerings"`
+}
+
 type VPCPeering struct {
-	ID     *int    `json:"id,omitempty"`
-	Status *string `json:"status,omitempty"`
+	ID           *int    `json:"vpcPeeringId,omitempty"`
+	AWSAccountID *string `json:"awsAccountId"`
+	VPCId        *string `json:"vpcUid,omitempty"`
+	VPCCidr      *string `json:"vpcCidr,omitempty"`
+	Status       *string `json:"status,omitempty"`
 }
 
 func (o VPCPeering) String() string {
@@ -209,6 +216,8 @@ const (
 	// Deleting value of the `Status` field in `Subscription`
 	SubscriptionStatusDeleting = "deleting"
 
+	// Initiating request value of the `Status` field in `VPCPeering`
+	VPCPeeringStatusInitiatingRequest = "initiating-request"
 	// Active value of the `Status` field in `VPCPeering`
 	VPCPeeringStatusActive = "active"
 	// Inactive value of the `Status` field in `VPCPeering`
