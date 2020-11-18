@@ -25,7 +25,7 @@ func TestAccResourceRedisCloudCloudAccount(t *testing.T) {
 	resourceName := "rediscloud_cloud_account.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{
 			{

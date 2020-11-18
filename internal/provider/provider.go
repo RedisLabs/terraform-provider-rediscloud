@@ -42,8 +42,9 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_subscription":     dataSourceRedisCloudSubscription(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
-				"rediscloud_cloud_account": resourceRedisCloudCloudAccount(),
-				"rediscloud_subscription":  resourceRedisCloudSubscription(),
+				"rediscloud_cloud_account":        resourceRedisCloudCloudAccount(),
+				"rediscloud_subscription":         resourceRedisCloudSubscription(),
+				"rediscloud_subscription_peering": resourceRedisCloudSubscriptionPeering(),
 			},
 		}
 
@@ -52,6 +53,9 @@ func New(version string) func() *schema.Provider {
 		return p
 	}
 }
+
+// Lock that must be acquired when modifying something related to a subscription as only one _thing_ can modify a subscription and all sub-resources at any time
+var subscriptionMutex = NewPerIdLock()
 
 type apiClient struct {
 	client *rediscloud_api.Client

@@ -19,8 +19,9 @@ func resourceRedisCloudCloudAccount() *schema.Resource {
 		ReadContext:   resourceRedisCloudCloudAccountRead,
 		UpdateContext: resourceRedisCloudCloudAccountUpdate,
 		DeleteContext: resourceRedisCloudCloudAccountDelete,
+
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: schema.ImportStatePassthroughContext, // TODO validate that this is in the right format
 		},
 
 		Schema: map[string]*schema.Schema{
