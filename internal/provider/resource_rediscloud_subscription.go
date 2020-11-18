@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -56,6 +57,30 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				ForceNew: true,
 				Optional: true,
 				Default:  false,
+			},
+			"allowlist": {
+				Type:     schema.TypeList,
+				MaxItems: 1,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cidrs": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Schema{
+								Type:             schema.TypeString,
+								ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
+							},
+						},
+						"security_group_ids": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+					},
+				},
 			},
 			"cloud_provider": {
 				Type:     schema.TypeList,
@@ -361,6 +386,18 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 
+	allowlist, err := flattenSubscriptionAllowlist(ctx, subId, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	log.Printf("[DEBUG] findme %s new: %#v", redis.StringValue(subscription.Name), allowlist)
+	log.Printf("[DEBUG] findme %s old: %#v", redis.StringValue(subscription.Name), d.Get("allowlist"))
+
+	if err := d.Set("allowlist", allowlist); err != nil {
+		return diag.FromErr(err)
+	}
+
 	flatDbs, err := flattenDatabases(ctx, subId, d.Get("database").(*schema.Set).List(), api)
 	if err != nil {
 		return diag.FromErr(err)
@@ -382,6 +419,19 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
+
+	if d.HasChange("allowlist") {
+		cidrs := toStringSlice(d.Get("allowlist.0.cidrs").(*schema.Set))
+		sgs := toStringSlice(d.Get("allowlist.0.security_group_ids").(*schema.Set))
+
+		err := api.client.Subscription.UpdateCIDRAllowlist(ctx, subId, subscriptions.UpdateCIDRAllowlist{
+			CIDRIPs:          cidrs,
+			SecurityGroupIDs: sgs,
+		})
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
 
 	if d.HasChanges("name", "payment_method_id") {
 		updateSubscriptionRequest := subscriptions.UpdateSubscription{}
@@ -817,6 +867,60 @@ func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClien
 	}
 
 	return nil
+}
+
+func flattenSubscriptionAllowlist(ctx context.Context, subId int, api *apiClient) ([]map[string]interface{}, error) {
+	allowlist, err := api.client.Subscription.GetCIDRAllowlist(ctx, subId)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isNil(allowlist.Errors) {
+		return nil, fmt.Errorf("unable to read allowlist for subscription %d: %v", subId, allowlist.Errors)
+	}
+
+	var cidrs []string
+	for _, cidr := range allowlist.CIDRIPs {
+		cidrs = append(cidrs, redis.StringValue(cidr))
+	}
+	var sgs []string
+	for _, sg := range allowlist.SecurityGroupIDs {
+		sgs = append(sgs, redis.StringValue(sg))
+	}
+
+	tfs := map[string]interface{}{}
+
+	if len(cidrs) != 0 {
+		tfs["cidrs"] = cidrs
+	}
+	if len(sgs) != 0 {
+		tfs["security_group_ids"] = sgs
+	}
+	if len(tfs) == 0 {
+		return nil, nil
+	}
+
+	return []map[string]interface{}{tfs}, nil
+}
+
+func isNil(i interface{}) bool {
+	if i == nil {
+		return true
+	}
+
+	if l, ok := i.([]interface{}); ok {
+		if len(l) == 0 {
+			return true
+		}
+	}
+
+	if m, ok := i.(map[string]interface{}); ok {
+		if len(m) == 0 {
+			return true
+		}
+	}
+
+	return false
 }
 
 func flattenCloudDetails(cloudDetails []*subscriptions.CloudDetail) []map[string]interface{} {
