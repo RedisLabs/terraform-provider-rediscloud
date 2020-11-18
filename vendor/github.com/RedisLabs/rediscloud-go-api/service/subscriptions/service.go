@@ -161,13 +161,13 @@ func (a *API) ListVPCPeering(ctx context.Context, id int) ([]*VPCPeering, error)
 
 	a.logger.Printf("Waiting for subscription %d peering details to be retrieved", id)
 
-	var peering []*VPCPeering
+	var peering listVpcPeering
 	err = a.task.WaitForResource(ctx, *task.ID, &peering)
 	if err != nil {
 		return nil, err
 	}
 
-	return peering, nil
+	return peering.Peerings, nil
 }
 
 // CreateVPCPeering creates a new VPC peering from the subscription VPC and returns the identifier of the VPC peering.
