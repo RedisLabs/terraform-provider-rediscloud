@@ -24,7 +24,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
+			StateContext: schema.ImportStatePassthroughContext, // TODO validate that this is in the right format
 		},
 
 		Timeouts: &schema.ResourceTimeout{
@@ -380,6 +380,9 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
+	subscriptionMutex.Lock(subId)
+	defer subscriptionMutex.Unlock(subId)
+
 	if d.HasChanges("name", "payment_method_id") {
 		updateSubscriptionRequest := subscriptions.UpdateSubscription{}
 
@@ -484,6 +487,9 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
+	subscriptionMutex.Lock(subId)
+	defer subscriptionMutex.Unlock(subId)
 
 	nameId, err := getDatabaseNameIdMap(ctx, subId, api)
 	if err != nil {

@@ -8,7 +8,7 @@ cloud.google.com/go/internal/trace
 cloud.google.com/go/internal/version
 # cloud.google.com/go/storage v1.10.0
 cloud.google.com/go/storage
-# github.com/RedisLabs/rediscloud-go-api v0.0.0-20201117145114-177f7adf7113
+# github.com/RedisLabs/rediscloud-go-api v0.0.0-20201118121248-6cc863177016
 ## explicit
 github.com/RedisLabs/rediscloud-go-api
 github.com/RedisLabs/rediscloud-go-api/internal
@@ -334,7 +334,7 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# golang.org/x/tools v0.0.0-20201117152513-9036a0f9af11
+# golang.org/x/tools v0.0.0-20201118030313-598b068a9102
 ## explicit
 golang.org/x/tools/cmd/goimports
 golang.org/x/tools/go/ast/astutil
