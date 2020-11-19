@@ -313,9 +313,10 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api = true
     data_persistence = "none"
     replication = false
-    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_by = "number-of-shards"
+    throughput_measurement_value = 2
     password = "%s"
-    throughput_measurement_value = 10000
+    hashing_policy = ["(?<tag>.*)"]
   }
 }
 `

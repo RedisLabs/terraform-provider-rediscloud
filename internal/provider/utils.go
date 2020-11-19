@@ -29,10 +29,18 @@ func validateDiagFunc(validateFunc func(interface{}, string) ([]string, []error)
 	}
 }
 
-func toStringSlice(set *schema.Set) []*string {
+func setToStringSlice(set *schema.Set) []*string {
 	var ret []*string
 	for _, s := range set.List() {
 		ret = append(ret, redis.String(s.(string)))
+	}
+	return ret
+}
+
+func interfaceToStringSlice(list []interface{}) []*string {
+	var ret []*string
+	for _, i := range list {
+		ret = append(ret, redis.String(i.(string)))
 	}
 	return ret
 }

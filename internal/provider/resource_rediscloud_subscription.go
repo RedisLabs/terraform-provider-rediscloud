@@ -283,6 +283,15 @@ func resourceRedisCloudSubscription() *schema.Resource {
 								ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
 							},
 						},
+						"hashing_policy": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+								// Can't check that these are valid regex rules as the service wants something like `(?<tag>.*)`
+								// which isn't a valid Go regex
+							},
+						},
 					},
 				},
 			},
@@ -417,8 +426,8 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 	defer subscriptionMutex.Unlock(subId)
 
 	if d.HasChange("allowlist") {
-		cidrs := toStringSlice(d.Get("allowlist.0.cidrs").(*schema.Set))
-		sgs := toStringSlice(d.Get("allowlist.0.security_group_ids").(*schema.Set))
+		cidrs := setToStringSlice(d.Get("allowlist.0.cidrs").(*schema.Set))
+		sgs := setToStringSlice(d.Get("allowlist.0.security_group_ids").(*schema.Set))
 
 		err := api.client.Subscription.UpdateCIDRAllowlist(ctx, subId, subscriptions.UpdateCIDRAllowlist{
 			CIDRIPs:          cidrs,
@@ -485,6 +494,10 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 					return diag.FromErr(err)
 				}
 			}
+
+			// Certain values - like the hashing policy - can only be set on an update, so the newly created databases
+			// need to be updated straight away
+			existing = append(existing, addition...)
 		}
 
 		for _, db := range existing {
@@ -708,9 +721,9 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 			Value: redis.Int(db["throughput_measurement_value"].(int)),
 		},
 		Alerts:    alerts,
-		ReplicaOf: toStringSlice(db["replica_of"].(*schema.Set)),
+		ReplicaOf: setToStringSlice(db["replica_of"].(*schema.Set)),
 		Password:  redis.String(db["password"].(string)),
-		SourceIP:  toStringSlice(db["source_ips"].(*schema.Set)),
+		SourceIP:  setToStringSlice(db["source_ips"].(*schema.Set)),
 	}
 
 	averageItemSize := db["average_item_size_in_bytes"].(int)
@@ -757,14 +770,19 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 		},
 		DataPersistence: redis.String(db["data_persistence"].(string)),
 		Password:        redis.String(db["password"].(string)),
-		SourceIP:        toStringSlice(db["source_ips"].(*schema.Set)),
+		SourceIP:        setToStringSlice(db["source_ips"].(*schema.Set)),
 		Alerts:          alerts,
-		ReplicaOf:       toStringSlice(db["replica_of"].(*schema.Set)),
+		ReplicaOf:       setToStringSlice(db["replica_of"].(*schema.Set)),
 	}
 
 	clientSSLCertificate := db["client_ssl_certificate"].(string)
 	if clientSSLCertificate != "" {
 		update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+	}
+
+	regex := db["hashing_policy"].([]interface{})
+	if len(regex) != 0 {
+		update.RegexRules = interfaceToStringSlice(regex)
 	}
 
 	backupPath := db["periodic_backup_path"].(string)
@@ -1017,6 +1035,7 @@ func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath
 		"external_endpoint_for_oss_cluster_api": externalOSSAPIEndpoint,
 		"password":                              password,
 		"source_ips":                            sourceIPs,
+		"hashing_policy":                        flattenRegexRules(db.Clustering.RegexRules),
 	}
 
 	if db.ReplicaOf != nil {
@@ -1064,6 +1083,20 @@ func flattenModules(modules []*databases.Module) []map[string]interface{} {
 	}
 
 	return tfs
+}
+
+func flattenRegexRules(rules []*databases.RegexRule) []string {
+	ret := make([]string, len(rules))
+	for _, rule := range rules {
+		ret[rule.Ordinal] = rule.Pattern
+	}
+
+	if len(ret) == 2 && ret[0] == ".*\\{(?<tag>.*)\\}.*" && ret[1] == "(?<tag>.*)" {
+		// This is the default regex rules - https://docs.redislabs.com/latest/rc/concepts/clustering/#custom-hashing-policy
+		return []string{}
+	}
+
+	return ret
 }
 
 func getDatabaseNameIdMap(ctx context.Context, subId int, client *apiClient) (map[string]int, error) {
