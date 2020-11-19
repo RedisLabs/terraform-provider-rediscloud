@@ -111,6 +111,9 @@ Cannot be enabled when `support_oss_cluster_api` is enabled.
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes)
 of the items stored in the database. Default: 1000
 * `source_ips` - (Optional) Set of CIDR addresses to allow access to the database. Defaults to allowing traffic.
+* `hashing_policy` - (Optional) List of regular expression rules to shard the database by. See
+[the documentation on clustering](https://docs.redislabs.com/latest/rc/concepts/clustering/) for more information on the
+hashing policy. This cannot be set when `support_oss_cluster_api` is set to true.
 
 The cloud_provider `region` block supports:
 
