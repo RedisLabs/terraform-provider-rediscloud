@@ -310,7 +310,6 @@ resource "rediscloud_subscription" "example" {
     name = "tf-database-2"
     protocol = "memcached"
     memory_limit_in_gb = 2
-    support_oss_cluster_api = true
     data_persistence = "none"
     replication = false
     throughput_measurement_by = "number-of-shards"
