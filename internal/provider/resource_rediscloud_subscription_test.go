@@ -235,6 +235,10 @@ resource "rediscloud_subscription" "example" {
   memory_storage = "ram"
   persistent_storage_encryption = false
 
+  allowlist {
+    cidrs = ["192.168.0.0/16"]
+  }
+
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
@@ -275,6 +279,10 @@ resource "rediscloud_subscription" "example" {
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
   persistent_storage_encryption = false
+
+  allowlist {
+    cidrs = ["192.168.0.0/16"]
+  }
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type

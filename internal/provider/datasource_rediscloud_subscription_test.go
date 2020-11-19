@@ -9,7 +9,6 @@ import (
 )
 
 func TestAccDataSourceRedisCloudSubscription(t *testing.T) {
-
 	name := acctest.RandomWithPrefix("tf-test")
 	password := acctest.RandString(20)
 

@@ -10,7 +10,6 @@ PROVIDER_TYPE=rediscloud
 # Run acceptance tests
 .PHONY: testacc install_macos website website-test
 
-
 testacc:
 	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 120m
 
