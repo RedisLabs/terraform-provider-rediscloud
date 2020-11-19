@@ -390,10 +390,6 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	log.Printf("[DEBUG] findme %s new: %#v", redis.StringValue(subscription.Name), allowlist)
-	log.Printf("[DEBUG] findme %s old: %#v", redis.StringValue(subscription.Name), d.Get("allowlist"))
-
 	if err := d.Set("allowlist", allowlist); err != nil {
 		return diag.FromErr(err)
 	}
