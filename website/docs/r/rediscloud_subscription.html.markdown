@@ -71,8 +71,14 @@ The following arguments are supported:
 * `payment_method_id` - (Required) A valid payment method pre-defined in the current account
 * `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of 'ram-and-flash’. Default: ‘ram’
 * `persistent_storage_encryption` - (Optional) Encrypt data stored in persistent storage. Required for a GCP subscription. Default: ‘false’
+* `allowlist` - (Optional) An allowlist object, documented below 
 * `cloud_provider` - (Required) A cloud provider object, documented below 
 * `database` - (Required) A database object, documented below
+
+The `allowlist` block supports:
+
+* `cidrs` - (Optional) Set of CIDR ranges that are allowed to access the databases associated with this subscription
+* `security_group_ids` - (Optional) Set of security groups that are allowed to access the databases associated with this subscription
 
 The `cloud_provider` block supports:
 
