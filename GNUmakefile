@@ -1,8 +1,13 @@
 default: testacc
 
-plugin_version = 99.99.99
-plugins_mirror_path = ~/.terraform.d/plugins
-plugins_provider_path = registry.terraform.io/RedisLabs/rediscloud/$(plugin_version)/darwin_amd64/
+PROVIDER_HOSTNAME=registry.terraform.io
+PROVIDER_NAMESPACE=RedisLabs
+PROVIDER_TYPE=rediscloud
+PROVIDER_TARGET=$(shell go env GOOS)_$(shell go env GOARCH)
+PROVIDER_VERSION = 99.99.99
+
+PLUGINS_PATH = ~/.terraform.d/plugins
+PLUGINS_PROVIDER_PATH=$(PROVIDER_HOSTNAME)/$(PROVIDER_NAMESPACE)/$(PROVIDER_TYPE)/$(PROVIDER_VERSION)/$(PROVIDER_TARGET)
 
 WEBSITE_REPO=github.com/hashicorp/terraform-website
 PROVIDER_TYPE=rediscloud
@@ -12,7 +17,7 @@ PROVIDER_TYPE=rediscloud
 build:
 	@echo "Building local provider binary"
 	@mkdir -p ./bin
-	go build -o bin/terraform-provider-rediscloud_v$(plugin_version)
+	go build -o bin/terraform-provider-rediscloud_v$(PROVIDER_VERSION)
 
 clean:
 	@echo "Deleting local provider binary"
@@ -22,9 +27,9 @@ testacc:
 	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 120m
 
 install_local: build
-	@echo "Installing local provider binary to plugins mirror path $(plugins_mirror_path)/$(plugins_provider_path)"
-	@mkdir -p $(plugins_mirror_path)/$(plugins_provider_path)
-	@cp ./bin/terraform-provider-rediscloud_v$(plugin_version) $(plugins_mirror_path)/$(plugins_provider_path)
+	@echo "Installing local provider binary to plugins mirror path $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)"
+	@mkdir -p $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)
+	@cp ./bin/terraform-provider-rediscloud_v$(PROVIDER_VERSION) $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)
 
 website:
 ifeq (,$(wildcard $(GOPATH)/src/$(WEBSITE_REPO)))
