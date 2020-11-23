@@ -15,23 +15,27 @@ import (
 
 func dataSourceRedisCloudPaymentMethod() *schema.Resource {
 	return &schema.Resource{
+		Description: "Use this data source to get the ID of a payment method for use with the subscription resource",
 		ReadContext: dataSourceRedisCloudPaymentMethodRead,
 
 		Schema: map[string]*schema.Schema{
 			"card_type": {
-				Optional: true,
-				Computed: true,
-				Type:     schema.TypeString,
+				Description: "Type of card that the payment method should be, such as `Visa`",
+				Optional:    true,
+				Computed:    true,
+				Type:        schema.TypeString,
 			},
 			"exclude_expired": {
-				Optional: true,
-				Default:  true,
-				Type:     schema.TypeBool,
+				Description: "Whether to exclude any expired cards or not",
+				Optional:    true,
+				Default:     true,
+				Type:        schema.TypeBool,
 			},
 			"last_four_numbers": {
-				Optional: true,
-				Computed: true,
-				Type:     schema.TypeString,
+				Description: "Last four numbers of the card of the payment method",
+				Optional:    true,
+				Computed:    true,
+				Type:        schema.TypeString,
 
 				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d{4}$"), "")),
 			},

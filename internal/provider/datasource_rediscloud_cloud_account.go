@@ -12,28 +12,33 @@ import (
 
 func dataSourceRedisCloudCloudAccount() *schema.Resource {
 	return &schema.Resource{
+		Description: "Use this data source to get the ID of a cloud account for use with the subscription resource.",
 		ReadContext: dataSourceRedisCloudCloudAccountRead,
 
 		Schema: map[string]*schema.Schema{
 			"exclude_internal_account": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+				Type:        schema.TypeBool,
+				Description: "Whether to exclude the Redis Labs internal cloud account.",
+				Optional:    true,
+				Default:     false,
 			},
 			"provider_type": {
 				Type:             schema.TypeString,
+				Description:      "The cloud provider of the cloud account, (either `AWS` or `GCP`)",
 				Optional:         true,
 				Computed:         true,
 				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
 			},
 			"name": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Description: "A meaningful name to identify the cloud account",
+				Optional:    true,
+				Computed:    true,
 			},
 			"access_key_id": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Description: "The access key ID associated with the cloud account",
+				Computed:    true,
 			},
 		},
 	}

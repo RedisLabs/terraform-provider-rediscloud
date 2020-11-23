@@ -11,78 +11,95 @@ import (
 
 func dataSourceRedisCloudSubscription() *schema.Resource {
 	return &schema.Resource{
+		Description: "Use this data source to get the details of an existing subscription within your Redis Cloud account",
 		ReadContext: dataSourceRedisCloudSubscriptionRead,
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Optional: true,
+				Description: "The name of the subscription to filter returned subscriptions",
+				Type:        schema.TypeString,
+				Computed:    true,
+				Optional:    true,
 			},
 			"payment_method_id": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Description: "A valid payment method pre-defined in the current account",
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
 			"memory_storage": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Description: "Memory storage preference: either ‘ram’ or a combination of 'ram-and-flash’",
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
 			"persistent_storage_encryption": {
-				Type:     schema.TypeBool,
-				Computed: true,
+				Description: "Encrypt data stored in persistent storage. Required for a GCP subscription",
+				Type:        schema.TypeBool,
+				Computed:    true,
 			},
 			"number_of_databases": {
-				Type:     schema.TypeInt,
-				Computed: true,
+				Description: "The number of databases that are linked to this subscription",
+				Type:        schema.TypeInt,
+				Computed:    true,
 			},
 			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Description: "Current status of the subscription",
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
 			"cloud_provider": {
-				Type:     schema.TypeList,
-				Computed: true,
+				Description: "A cloud provider object",
+				Type:        schema.TypeList,
+				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"provider": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Description: "The cloud provider to use with the subscription, (either `AWS` or `GCP`)",
+							Type:        schema.TypeString,
+							Computed:    true,
 						},
 						"cloud_account_id": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Description: "Cloud account identifier, (A Cloud Account Id = 1 implies using Redis Labs internal cloud account)",
+							Type:        schema.TypeString,
+							Computed:    true,
 						},
 						"region": {
-							Type:     schema.TypeSet,
-							Computed: true,
+							Description: "Cloud networking details, per region (single region or multiple regions for Active-Active cluster only)",
+							Type:        schema.TypeSet,
+							Computed:    true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"region": {
-										Type:     schema.TypeString,
-										Computed: true,
+										Description: "Deployment region as defined by cloud provider",
+										Type:        schema.TypeString,
+										Computed:    true,
 									},
 									"multiple_availability_zones": {
-										Type:     schema.TypeBool,
-										Computed: true,
+										Description: "Support deployment on multiple availability zones within the selected region",
+										Type:        schema.TypeBool,
+										Computed:    true,
 									},
 									"preferred_availability_zones": {
-										Type:     schema.TypeList,
-										Computed: true,
+										Description: "List of availability zones used",
+										Type:        schema.TypeList,
+										Computed:    true,
 										Elem: &schema.Schema{
 											Type: schema.TypeString,
 										},
 									},
 									"networking_deployment_cidr": {
-										Type:     schema.TypeString,
-										Computed: true,
+										Description: "Deployment CIDR mask",
+										Type:        schema.TypeString,
+										Computed:    true,
 									},
 									"networking_vpc_id": {
-										Type:     schema.TypeString,
-										Computed: true,
+										Description: "The ID of the VPC where the Redis Cloud subscription is deployed",
+										Type:        schema.TypeString,
+										Computed:    true,
 									},
 									"networking_subnet_id": {
-										Type:     schema.TypeString,
-										Computed: true,
+										Description: "The subnet that the subscription deploys into",
+										Type:        schema.TypeString,
+										Computed:    true,
 									},
 								},
 							},
