@@ -1,4 +1,4 @@
-Terraform Provider RedisCloud
+Terraform Provider Redis Cloud
 ==================
 
 TODO - Fill this in for provider

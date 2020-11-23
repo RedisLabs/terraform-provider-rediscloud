@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestAccResourceRedisCloudSubscriptionPeering(t *testing.T) {
+func TestAccResourceRedisCloudSubscriptionPeering_basic(t *testing.T) {
 	t.Skip("Required environment variables currently not available under CI")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
@@ -35,6 +35,7 @@ func TestAccResourceRedisCloudSubscriptionPeering(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPeeringPreCheck(t) },
 		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: tf,

@@ -1,14 +1,14 @@
 ---
 layout: "rediscloud"
-page_title: "RedisCloud: rediscloud_cloud_account"
+page_title: "Redis Cloud: rediscloud_cloud_account"
 sidebar_current: "docs-rediscloud-cloud-account"
 description: |-
-  Cloud Account resource in the Terraform provider RedisCloud.
+  Cloud Account resource in the Terraform provider Redis Cloud.
 ---
 
-# rediscloud_cloud_account
+# Resource: rediscloud_cloud_account
 
-Cloud Account resource in the Terraform provider RedisCloud.
+Cloud Account resource in the Terraform provider Redis Cloud.
 
 ## Example Usage
 
@@ -47,6 +47,22 @@ Note that drift cannot currently be detected for this.
 * `sign_in_login_url` - (Required) Cloud provider management console login URL.
 Note that drift cannot currently be detected for this.
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when creating the Cloud Account
+* `update` - (Defaults to 5 mins) Used when updating the Cloud Account
+* `delete` - (Defaults to 5 mins) Used when destroying the Cloud Account
+
 ## Attribute Reference
 
 `status` is set to the current status of the account - `draft`, `pending` or `active`.
+
+## Import
+
+`rediscloud_cloud_account` can be imported using the ID of the Cloud Account, e.g.
+
+```
+$ terraform import rediscloud_cloud_account.example 12345678
+```

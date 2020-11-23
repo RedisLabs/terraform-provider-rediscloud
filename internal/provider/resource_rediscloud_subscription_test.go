@@ -22,6 +22,7 @@ func TestAccResourceRedisCloudSubscription_updateDatabase(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDb, name, 1, password),
@@ -74,23 +75,11 @@ func TestAccResourceRedisCloudSubscription_updateDatabase(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "2"),
 				),
 			},
-		},
-
-		CheckDestroy: func(state *terraform.State) error {
-			client := testProvider.Meta().(*apiClient)
-
-			subs, err := client.client.Subscription.List(context.TODO())
-			if err != nil {
-				return err
-			}
-
-			for _, sub := range subs {
-				if redis.IntValue(sub.ID) == subId {
-					return fmt.Errorf("subscription %d still exists", subId)
-				}
-			}
-
-			return nil
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -104,6 +93,7 @@ func TestAccResourceRedisCloudSubscription_deleteDatabase(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionTwoDbs, name, 1, password, password2),
@@ -162,6 +152,7 @@ func TestAccResourceRedisCloudSubscription_additionalDatabase(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDb, name, 1, password),
@@ -216,6 +207,34 @@ func TestAccResourceRedisCloudSubscription_additionalDatabase(t *testing.T) {
 			},
 		},
 	})
+}
+
+func testAccCheckSubscriptionDestroy(s *terraform.State) error {
+	client := testProvider.Meta().(*apiClient)
+
+	for _, r := range s.RootModule().Resources {
+		if r.Type != "rediscloud_subscription" {
+			continue
+		}
+
+		subId, err := strconv.Atoi(r.Primary.ID)
+		if err != nil {
+			return err
+		}
+
+		subs, err := client.client.Subscription.List(context.TODO())
+		if err != nil {
+			return err
+		}
+
+		for _, sub := range subs {
+			if redis.IntValue(sub.ID) == subId {
+				return fmt.Errorf("subscription %d still exists", subId)
+			}
+		}
+	}
+
+	return nil
 }
 
 const testAccResourceRedisCloudSubscriptionOneDb = `

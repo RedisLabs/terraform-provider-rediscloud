@@ -5,10 +5,11 @@ import (
 	"testing"
 )
 
-func TestAccDataSourceRedisCloudDataPersistence(t *testing.T) {
+func TestAccDataSourceRedisCloudDataPersistence_basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
+		CheckDestroy:      nil, // data persistence isn't a 'real' resource
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudDataPersistence,
