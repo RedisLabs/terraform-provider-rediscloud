@@ -15,22 +15,29 @@ import (
 
 const RedisCloudUrlEnvVar = "REDISCLOUD_URL"
 
+func init() {
+	schema.DescriptionKind = schema.StringMarkdown
+}
+
 func New(version string) func() *schema.Provider {
 	return func() *schema.Provider {
 		p := &schema.Provider{
 			Schema: map[string]*schema.Schema{
 				"url": {
 					Type:        schema.TypeString,
+					Description: fmt.Sprintf("This is the URL of Redis Cloud and will default to `https://api.redislabs.com/v1`. This can also be set by the `%s` environment variable.", RedisCloudUrlEnvVar),
 					Optional:    true,
 					DefaultFunc: schema.EnvDefaultFunc(RedisCloudUrlEnvVar, ""),
 				},
 				"api_key": {
-					Type:     schema.TypeString,
-					Optional: true,
+					Type:        schema.TypeString,
+					Description: fmt.Sprintf("This is the Redis Cloud API key. It must be provided but can also be set by the `%s` environment variable.", rediscloud_api.AccessKeyEnvVar),
+					Optional:    true,
 				},
 				"secret_key": {
-					Type:     schema.TypeString,
-					Optional: true,
+					Type:        schema.TypeString,
+					Description: fmt.Sprintf("This is the Redis Cloud API secret key. It must be provided but can also be set by the `%s` environment variable.", rediscloud_api.SecretKeyEnvVar),
+					Optional:    true,
 				},
 			},
 			DataSourcesMap: map[string]*schema.Resource{
