@@ -3,19 +3,10 @@ name: Terraform Provider Checks
 on:
   push:
     branches:
-      - master
-      - 'release/**'
-      - 'dev/**'
+      - main
   pull_request:
-    paths:
-      - .github/workflows/terraform_provider.yml
-      - .goreleaser.yml
-      - go.sum
-      - GNUmakefile
-      - main.go
-      - staticcheck.conf
-      - internal/provider/**
-      - website/**
+    branches:
+      - main
 
 env:
   GO_VERSION: "1.15"
