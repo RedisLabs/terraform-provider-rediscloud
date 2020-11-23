@@ -46,7 +46,7 @@ $ make build
 The `make build` command will build a local provider binary into a `bin` directory at the root of the repository.
 
 Installing the Provider
-------------------------------------
+-----------------------
 
 After the provider has been built locally it most be placed the user plugins directory so it can be discovered by the 
 Terraform CLI.  The default user plugins directory root is `~/.terraform.d/plugins`.  
