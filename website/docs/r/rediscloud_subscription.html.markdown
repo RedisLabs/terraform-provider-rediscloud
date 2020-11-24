@@ -191,7 +191,8 @@ The cloud_provider `region` block supports:
 * `networking_deployment_cidr` - (Required) Deployment CIDR mask. Default: If using Redis Labs internal cloud account, 192.168.0.0/24
 * `networking_vpc_id` - (Optional) Either an existing VPC Id (already exists in the specific region) or create a new VPC
 (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4625884ad’) and existing
-within the hosting account
+within the hosting account.
+* `preferred_availability_zones` - (Required) Availability zones deployment preferences (for the selected provider & region).
 
 The database `alert` block supports:
 
@@ -220,7 +221,6 @@ The `database` block has these attributes:
 
 The `region` block has these attributes:
 
-* `preferred_availability_zones` - List of availability zones used
 * `networking_subnet_id` - The subnet that the subscription deploys into
 
 ## Import
