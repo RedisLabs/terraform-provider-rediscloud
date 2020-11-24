@@ -1,8 +1,9 @@
 package provider
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccDataSourceRedisCloudDataPersistence_basic(t *testing.T) {
@@ -14,8 +15,15 @@ func TestAccDataSourceRedisCloudDataPersistence_basic(t *testing.T) {
 			{
 				Config: testAccDataSourceRedisCloudDataPersistence,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(
-						"data.rediscloud_data_persistence.foo", "data_persistence.#", "6"),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_data_persistence.foo", "data_persistence.*", map[string]string{
+						"name": "snapshot-every-12-hours",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_data_persistence.foo", "data_persistence.*", map[string]string{
+						"name": "snapshot-every-6-hours",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_data_persistence.foo", "data_persistence.*", map[string]string{
+						"name": "snapshot-every-1-hour",
+					}),
 				),
 			},
 		},

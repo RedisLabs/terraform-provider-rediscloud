@@ -2,10 +2,12 @@ package provider
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"os"
 	"regexp"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccDataSourceRedisCloudSubscription_basic(t *testing.T) {
@@ -14,20 +16,21 @@ func TestAccDataSourceRedisCloudSubscription_basic(t *testing.T) {
 
 	resourceName := "rediscloud_subscription.example"
 	dataSourceName := "data.rediscloud_subscription.example"
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionOneDb, name, 1, password),
+				Config: fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionOneDb, testCloudAccountName, name, 1, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "name", regexp.MustCompile(name)),
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionDataSource, name) + fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionOneDb, name, 1, password),
+				Config: fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionDataSource, name) + fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionOneDb, testCloudAccountName, name, 1, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(dataSourceName, "name", regexp.MustCompile(name)),
 					resource.TestCheckResourceAttrSet(dataSourceName, "payment_method_id"),
@@ -54,6 +57,7 @@ data "rediscloud_payment_method" "card" {
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
   provider_type = "AWS" 
+  name = "%s"
 }
 
 resource "rediscloud_subscription" "example" {
