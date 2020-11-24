@@ -1,7 +1,6 @@
 ---
 layout: "rediscloud"
 page_title: "Provider: Redis Enterprise Cloud"
-sidebar_current: "docs-rediscloud-index"
 description: |-
   Terraform provider RedisCloud.
 ---
