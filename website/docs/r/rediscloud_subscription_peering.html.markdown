@@ -8,7 +8,9 @@ description: |-
 
 # Resource: rediscloud_subscription_peering
 
-Subscription VPC peering resource in the Terraform provider Redis Cloud.
+Creates an AWS VPC peering for an existing Redis Enterprise Cloud Subscription, allowing access to your subscription databases as if they were on the same network.
+
+VPC peerings for Google Cloud Provider must be enabled using the GCloud command line.
 
 ## Example Usage
 
@@ -45,7 +47,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Attribute reference
 
-`status` is set to the current status of the account - `initiating-request`, `pending-acceptance`, `active`, `inactive` or `failed`.
+* `status` is set to the current status of the account - `initiating-request`, `pending-acceptance`, `active`, `inactive` or `failed`.
 
 ## Import
 
