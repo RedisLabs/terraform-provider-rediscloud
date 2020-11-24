@@ -1,8 +1,9 @@
 package provider
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccDataSourceRedisCloudDatabaseModules_basic(t *testing.T) {
@@ -14,8 +15,15 @@ func TestAccDataSourceRedisCloudDatabaseModules_basic(t *testing.T) {
 			{
 				Config: testAccDataSourceRedisCloudDatabaseModules,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(
-						"data.rediscloud_database_modules.foo", "modules.#", "4"),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_database_modules.foo", "modules.*", map[string]string{
+						"name": "RedisBloom",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_database_modules.foo", "modules.*", map[string]string{
+						"name": "RediSearch",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_database_modules.foo", "modules.*", map[string]string{
+						"name": "RedisGraph",
+					}),
 				),
 			},
 		},

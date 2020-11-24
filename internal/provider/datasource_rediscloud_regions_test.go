@@ -1,8 +1,9 @@
 package provider
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
@@ -14,8 +15,24 @@ func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
 			{
 				Config: testAccDataSourceRedisCloudRegions,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(
-						"data.rediscloud_regions.foo", "regions.#", "36"),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_regions.foo", "regions.*", map[string]string{
+						"name": "europe-west1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_regions.foo", "regions.*", map[string]string{
+						"name": "us-west1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_regions.foo", "regions.*", map[string]string{
+						"name": "us-west2",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_regions.foo", "regions.*", map[string]string{
+						"name": "eu-west-1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_regions.foo", "regions.*", map[string]string{
+						"name": "us-east-1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_regions.foo", "regions.*", map[string]string{
+						"name": "us-east-2",
+					}),
 				),
 			},
 		},
@@ -31,8 +48,15 @@ func TestAccDataSourceRedisCloudRegions_AWS(t *testing.T) {
 			{
 				Config: testAccDataSourceRedisCloudRegionsAWS,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(
-						"data.rediscloud_regions.foo", "regions.#", "16"),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_regions.foo", "regions.*", map[string]string{
+						"name": "eu-west-1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_regions.foo", "regions.*", map[string]string{
+						"name": "us-east-1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_regions.foo", "regions.*", map[string]string{
+						"name": "us-east-2",
+					}),
 				),
 			},
 		},
@@ -48,8 +72,15 @@ func TestAccDataSourceRedisCloudRegions_GCP(t *testing.T) {
 			{
 				Config: testAccDataSourceRedisCloudRegionsGCP,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(
-						"data.rediscloud_regions.foo", "regions.#", "20"),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_regions.foo", "regions.*", map[string]string{
+						"name": "europe-west1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_regions.foo", "regions.*", map[string]string{
+						"name": "us-west1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_regions.foo", "regions.*", map[string]string{
+						"name": "us-west2",
+					}),
 				),
 			},
 		},

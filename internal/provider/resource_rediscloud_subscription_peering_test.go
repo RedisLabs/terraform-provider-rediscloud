@@ -17,12 +17,14 @@ func TestAccResourceRedisCloudSubscriptionPeering_basic(t *testing.T) {
 	password := acctest.RandString(20)
 
 	cidrRange := os.Getenv("AWS_VPC_CIDR")
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	if strings.HasPrefix(cidrRange, "192.168") {
 		t.Fatal("VPC peering test has the subscription deployment CIDR using 192.168.x.x, so the peered VPC must be something else")
 	}
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudSubscriptionPeering,
+		testCloudAccountName,
 		name,
 		password,
 		os.Getenv("AWS_PEERING_REGION"),
@@ -33,7 +35,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_basic(t *testing.T) {
 	resourceName := "rediscloud_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPeeringPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPeeringPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -56,6 +58,7 @@ data "rediscloud_payment_method" "card" {
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
   provider_type = "AWS" 
+  name = "%s"
 }
 
 resource "rediscloud_subscription" "example" {
