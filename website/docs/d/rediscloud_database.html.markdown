@@ -6,17 +6,29 @@ description: |-
   Database data source in the Terraform provider Redis Cloud.
 ---
 
-# Data Source: rediscloud_subscription
+# Data Source: rediscloud_database
 
-Use this data source to get the details of an existing database within your Redis Cloud account.
+The Database data source allows access to the details of an existing database within your Redis Enterprise Cloud account.
 
 ## Example Usage
 
-```hcl
+The following example shows how to locate a single database within a Subscription.  This example assumes the subscription only contains a single database.
+
+```hcl-template
 data "rediscloud_database" "example" {
   subscription_id = "1234"
 }
 ```
+
+The following example shows how to use the name to locate a single database within a subscription that has multiple databases. 
+
+```hcl-terraform
+data "rediscloud_database" "example" {
+  subscription_id = "1234"
+  name = "first-database"
+}
+```
+
 
 ## Argument Reference
 

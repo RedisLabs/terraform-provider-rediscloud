@@ -8,16 +8,21 @@ description: |-
 
 # Data Source: rediscloud_data_persistence
 
-Use this data source to get a list of supported data persistence options.  
-A data persistence option represents the rate at which a database will persist data to storage.
+The data persistence data source allows access to a list of supported data persistence options.  
+Each option represents the rate at which a database will persist its data to storage.
 
 ## Example Usage
 
-```hcl
+The following example returns all of the data persistence options available within your Redis Enterprise Cloud account.
+
+```hcl-terraform
 data "rediscloud_data_persistence" "example" {
 }
-```
 
+output "data_persistence_options" {
+  value = data.rediscloud_data_persistence.example.data_persistence
+}
+```
 
 ## Attributes Reference
 

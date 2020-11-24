@@ -13,7 +13,7 @@ import (
 
 func dataSourceRedisCloudRegions() *schema.Resource {
 	return &schema.Resource{
-		Description: "Use this data source to get a list of supported regions from supported cloud providers. These regions can be used with the subscription resource.",
+		Description: "The Regions data source allows access to a list of supported cloud provider regions. These regions can be used with the subscription resource.",
 		ReadContext: dataSourceRedisCloudRegionsRead,
 
 		Schema: map[string]*schema.Schema{

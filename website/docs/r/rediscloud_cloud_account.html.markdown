@@ -8,11 +8,14 @@ description: |-
 
 # Resource: rediscloud_cloud_account
 
-Cloud Account resource in the Terraform provider Redis Cloud.
+Creates a Cloud Account resource representing the access credentials to a cloud provider account, (`AWS` or `GCP`).
+Your Redis Enterprise Cloud account uses these credentials to provision databases within your infrastructure. 
 
 ## Example Usage
 
-```hcl
+The following example defines a new AWS Cloud Account that is then used with a Subscription.
+
+```hcl-terraform
 resource "rediscloud_cloud_account" "example" {
   access_key_id     = "abcdefg"
   access_secret_key = "9876543"
@@ -22,6 +25,21 @@ resource "rediscloud_cloud_account" "example" {
   provider_type     = "AWS"
   sign_in_login_url = "https://1234567890.signin.aws.amazon.com/console"
 }
+
+resource "rediscloud_subscription" "example" {
+  name                          = "My Example Subscription"
+  payment_method_id             = data.rediscloud_payment_method.card.id
+  memory_storage                = "ram"
+  persistent_storage_encryption = false
+
+  cloud_provider {
+    provider         = data.rediscloud_cloud_account.example.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.example.id
+    ...
+  }
+  ...
+}
+
 ```
 
 ## Argument Reference

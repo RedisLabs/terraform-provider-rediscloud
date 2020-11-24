@@ -11,7 +11,7 @@ import (
 
 func dataSourceRedisCloudSubscription() *schema.Resource {
 	return &schema.Resource{
-		Description: "Use this data source to get the details of an existing subscription within your Redis Cloud account",
+		Description: "The Subscription data source allows access to the details of an existing subscription within your Redis Enterprise Cloud account.",
 		ReadContext: dataSourceRedisCloudSubscriptionRead,
 
 		Schema: map[string]*schema.Schema{
