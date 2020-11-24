@@ -5,26 +5,29 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/account"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"time"
 )
 
 func dataSourceRedisCloudDataPersistence() *schema.Resource {
 	return &schema.Resource{
+		Description: "Use this data source to get a list of supported data persistence options. A data persistence option represents the rate at which a database will persist data to storage.",
 		ReadContext: dataSourceRedisCloudDataPersistenceRead,
 
 		Schema: map[string]*schema.Schema{
 			"data_persistence": {
-				Type:     schema.TypeSet,
-				Computed: true,
+				Type:        schema.TypeSet,
+				Description: "A list of data persistence option that can be applied to subscription databases",
+				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
-							Computed: true,
-							Type:     schema.TypeString,
+							Computed:    true,
+							Description: "The identifier of the data persistence option",
+							Type:        schema.TypeString,
 						},
 						"description": {
-							Computed: true,
-							Type:     schema.TypeString,
+							Computed:    true,
+							Description: "A meaningful description of the data persistence option",
+							Type:        schema.TypeString,
 						},
 					},
 				},
@@ -43,8 +46,10 @@ func dataSourceRedisCloudDataPersistenceRead(ctx context.Context, d *schema.Reso
 		return diag.FromErr(err)
 	}
 
-	d.SetId(time.Now().UTC().String())
-	d.Set("data_persistence", flattenDataPersistence(dataPersistence))
+	d.SetId("ALL")
+	if err := d.Set("data_persistence", flattenDataPersistence(dataPersistence)); err != nil {
+		return diag.FromErr(err)
+	}
 
 	return diags
 }
