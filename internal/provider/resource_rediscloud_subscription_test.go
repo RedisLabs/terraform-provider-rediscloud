@@ -123,7 +123,7 @@ func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T)
 						"db_id":              regexp.MustCompile("^[1-9][0-9]*$"),
 						"name":               regexp.MustCompile("tf-database"),
 						"protocol":           regexp.MustCompile("redis"),
-						"memory_limit_in_gb": regexp.MustCompile("1"),
+						"memory_limit_in_gb": regexp.MustCompile("2"),
 					}),
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
