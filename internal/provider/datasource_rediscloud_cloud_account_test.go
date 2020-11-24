@@ -11,7 +11,7 @@ func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckCloudAccountDestroy,
+		CheckDestroy:      nil, // test doesn't create a resource at the moment, so don't need to check anything
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudCloudAccount,
