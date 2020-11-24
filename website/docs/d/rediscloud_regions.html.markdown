@@ -1,12 +1,12 @@
 ---
 layout: "rediscloud"
-page_title: "RedisCloud: rediscloud_regions"
+page_title: "Redis Cloud: rediscloud_regions"
 sidebar_current: "docs-rediscloud-regions"
 description: |-
-  Regions data source in the Terraform provider RedisCloud.
+  Regions data source in the Terraform provider Redis Cloud.
 ---
 
-# rediscloud_regions
+# Data Source: rediscloud_regions
 
 The Regions data source allows access to a list of supported cloud provider regions. These regions can be used with the subscription resource.
 

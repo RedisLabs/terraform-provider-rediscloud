@@ -1,12 +1,12 @@
 ---
 layout: "rediscloud"
-page_title: "RedisCloud: rediscloud_payment_method"
+page_title: "Redis Cloud: rediscloud_payment_method"
 sidebar_current: "docs-rediscloud-payment-method"
 description: |-
-  Payment method data source in the Terraform provider RedisCloud.
+  Payment method data source in the Terraform provider Redis Cloud.
 ---
 
-# rediscloud_payment_method
+# Data Source: rediscloud_payment_method
 
 The Payment Method data source allows access to the ID of a Payment Method configured against your Redis Enterprise Cloud account. This ID can be used when creating Subscription resources.
 

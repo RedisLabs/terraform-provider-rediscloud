@@ -8,31 +8,36 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"time"
+	"strings"
 )
 
 func dataSourceRedisCloudRegions() *schema.Resource {
 	return &schema.Resource{
+		Description: "Use this data source to get a list of supported regions from supported cloud providers. These regions can be used with the subscription resource.",
 		ReadContext: dataSourceRedisCloudRegionsRead,
 
 		Schema: map[string]*schema.Schema{
 			"provider_name": {
+				Description:      "The name of the cloud provider to filter returned regions, (accepted values are `AWS` or `GCP`).",
 				Optional:         true,
 				Type:             schema.TypeString,
 				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
 			},
 			"regions": {
-				Type:     schema.TypeSet,
-				Computed: true,
+				Description: "A list of regions from either a single or multiple cloud providers",
+				Type:        schema.TypeSet,
+				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
-							Computed: true,
-							Type:     schema.TypeString,
+							Description: "The identifier assigned by the cloud provider, (for example `eu-west-1` for `AWS`)",
+							Computed:    true,
+							Type:        schema.TypeString,
 						},
 						"provider_name": {
-							Computed: true,
-							Type:     schema.TypeString,
+							Description: "The identifier of the owning cloud provider, (either `AWS` or `GCP`)",
+							Computed:    true,
+							Type:        schema.TypeString,
 						},
 					},
 				},
@@ -53,10 +58,12 @@ func dataSourceRedisCloudRegionsRead(ctx context.Context, d *schema.ResourceData
 
 	var filters []func(method *account.Region) bool
 
+	var id = strings.Join(cloud_accounts.ProviderValues(), "-")
 	if provider, ok := d.GetOk("provider_name"); ok {
 		filters = append(filters, func(region *account.Region) bool {
 			return formattedProvider(region) == provider
 		})
+		id = provider.(string)
 	}
 
 	regions = filterRegions(regions, filters)
@@ -65,7 +72,7 @@ func dataSourceRedisCloudRegionsRead(ctx context.Context, d *schema.ResourceData
 		return diag.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
 
-	d.SetId(time.Now().UTC().String())
+	d.SetId(id)
 	if err := d.Set("regions", flattenRegions(regions)); err != nil {
 		return diag.FromErr(err)
 	}

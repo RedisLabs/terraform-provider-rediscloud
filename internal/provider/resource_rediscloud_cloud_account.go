@@ -15,51 +15,73 @@ import (
 
 func resourceRedisCloudCloudAccount() *schema.Resource {
 	return &schema.Resource{
+		Description:   "Cloud Account resource in the Terraform provider Redis Cloud",
 		CreateContext: resourceRedisCloudCloudAccountCreate,
 		ReadContext:   resourceRedisCloudCloudAccountRead,
 		UpdateContext: resourceRedisCloudCloudAccountUpdate,
 		DeleteContext: resourceRedisCloudCloudAccountDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext, // TODO validate that this is in the right format
+			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+				_, err := strconv.Atoi(d.Id())
+				if err != nil {
+					return nil, err
+				}
+				return []*schema.ResourceData{d}, nil
+			},
+		},
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Read:   schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
 			"access_key_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Description: "Cloud provider access key",
+				Type:        schema.TypeString,
+				Required:    true,
 			},
 			"access_secret_key": {
-				Type:      schema.TypeString,
-				Required:  true,
-				Sensitive: true,
+				Description: "Cloud provider secret key",
+				Type:        schema.TypeString,
+				Required:    true,
+				Sensitive:   true,
 			},
 			"console_password": {
-				Type:      schema.TypeString,
-				Required:  true,
-				Sensitive: true,
+				Description: "Cloud provider management console password",
+				Type:        schema.TypeString,
+				Required:    true,
+				Sensitive:   true,
 			},
 			"console_username": {
-				Type:     schema.TypeString,
-				Required: true,
+				Description: "Cloud provider management console username",
+				Type:        schema.TypeString,
+				Required:    true,
 			},
 			"name": {
-				Type:     schema.TypeString,
-				Required: true,
+				Description: "Display name of the account",
+				Type:        schema.TypeString,
+				Required:    true,
 			},
 			"provider_type": {
+				Description:      "Cloud provider type - either `AWS` or `GCP`",
 				Type:             schema.TypeString,
 				Required:         true,
 				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
 				ForceNew:         true,
 			},
 			"sign_in_login_url": {
-				Type:     schema.TypeString,
-				Required: true,
+				Description: "Cloud provider management console login URL",
+				Type:        schema.TypeString,
+				Required:    true,
 			},
 			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Description: "The current status of the account - `draft`, `pending` or `active`",
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
 		},
 	}
@@ -137,6 +159,10 @@ func resourceRedisCloudCloudAccountRead(ctx context.Context, d *schema.ResourceD
 
 	account, err := client.client.CloudAccount.Get(ctx, id)
 	if err != nil {
+		if _, ok := err.(*cloud_accounts.NotFound); ok {
+			d.SetId("")
+			return diags
+		}
 		return diag.FromErr(err)
 	}
 

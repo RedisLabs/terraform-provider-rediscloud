@@ -1,12 +1,12 @@
 ---
 layout: "rediscloud"
-page_title: "RedisCloud: rediscloud_cloud_account"
+page_title: "Redis Cloud: rediscloud_cloud_account"
 sidebar_current: "docs-rediscloud-cloud-account"
 description: |-
-  Cloud Account data source in the Terraform provider RedisCloud.
+  Cloud Account data source in the Terraform provider Redis Cloud.
 ---
 
-# rediscloud_cloud_account
+# Data Source: rediscloud_cloud_account
 
 The Cloud Account data source allows access to the ID of a Cloud Account configuration.  This ID can be 
 used when creating Subscription resources. 
