@@ -145,3 +145,30 @@ jobs:
           AWS_CONSOLE_USERNAME: ${{ secrets.CLOUD_ACCOUNT_USERNAME }}
           AWS_CONSOLE_PASSWORD: ${{ secrets.CLOUD_ACCOUNT_PASS }}
           AWS_SIGNIN_URL: ${{ secrets.CLOUD_ACCOUNT_URL }}
+
+  tfproviderlint:
+    name: tfproviderlint
+    needs: [go_build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      # See also: https://github.com/actions/setup-go/issues/54
+      - name: go env
+        run: |
+          echo "GOCACHE=$(go env GOCACHE)" >> $GITHUB_ENV
+      - uses: actions/cache@v2
+        continue-on-error: true
+        timeout-minutes: 2
+        with:
+          path: ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-GOCACHE-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/provider/**') }}
+      - uses: actions/cache@v2
+        continue-on-error: true
+        timeout-minutes: 2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-pkg-mod-${{ hashFiles('go.sum') }}
+      - run: make tfproviderlint
