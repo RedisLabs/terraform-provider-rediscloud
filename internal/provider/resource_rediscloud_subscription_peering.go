@@ -233,7 +233,8 @@ func waitForPeeringToBeInitiated(ctx context.Context, subId, id int, api *apiCli
 
 			peering := findVpcPeering(id, list)
 			if peering == nil {
-				return nil, "", fmt.Errorf("peering %d/%d has disappeared", subId, id)
+				log.Printf("Peering %d/%d not present yet", subId, id)
+				return nil, "", nil
 			}
 
 			return redis.StringValue(peering.Status), redis.StringValue(peering.Status), nil
