@@ -8,7 +8,7 @@ description: |-
 
 # rediscloud_regions
 
-Use this data source to get a list of supported regions from supported cloud providers.  These regions can be used with the subscritpion resource.
+Use this data source to get a list of supported regions from supported cloud providers.  These regions can be used with the subscription resource.
 
 ## Example Usage
 
@@ -19,7 +19,7 @@ data "rediscloud_regions" "example" {
 
 ## Argument Reference
 
-* `provider_name` - (Optional) The name of the cloud provider to fitler retuned regions, (accepted values are `AWS` or `GCP`).
+* `provider_name` - (Optional) The name of the cloud provider to filter returned regions, (accepted values are `AWS` or `GCP`).
 
 ## Attributes Reference
 
@@ -27,6 +27,6 @@ data "rediscloud_regions" "example" {
 
 Each region entry provides the following attributes
 
-* `name` The identifier assined by the cloud provider, (for example `eu-west-1` for `AWS`)
+* `name` The identifier assigned by the cloud provider, (for example `eu-west-1` for `AWS`)
 
 * `provider_name` The identifier of the owning cloud provider, (either `AWS` or `GCP`)
