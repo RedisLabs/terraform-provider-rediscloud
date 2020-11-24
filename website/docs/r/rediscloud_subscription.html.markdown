@@ -8,7 +8,7 @@ description: |-
 
 # Resource: rediscloud_subscription
 
-Creates a Subscription and database resources within your Redis Enterprise Cloud Account.
+Creates a Subscription within your Redis Enterprise Cloud Account.
 This resource is responsible for creating subscriptions and the databases within that subscription. 
 This allows your Redis Enterprise Cloud Account to efficiently pack the databases within provisioned cloud provider compute instances.
 
