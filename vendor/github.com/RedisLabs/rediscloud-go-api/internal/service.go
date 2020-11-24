@@ -137,7 +137,7 @@ func (a *api) get(ctx context.Context, id string) (*task, error) {
 // There's a short window between the API returning a task ID and the task being known by the
 // Task service, so by ignoring _a number_ of 404 errors we give the task service enough time to
 // learn about the task but also handle the situation where there really is no task.
-const max404Errors = 4
+const max404Errors = 5
 
 var processingStates = map[string]bool{
 	"initialized":            true,

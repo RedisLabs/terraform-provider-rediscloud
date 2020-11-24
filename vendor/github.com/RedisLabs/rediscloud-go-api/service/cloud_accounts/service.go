@@ -3,6 +3,9 @@ package cloud_accounts
 import (
 	"context"
 	"fmt"
+	"net/http"
+
+	"github.com/RedisLabs/rediscloud-go-api/internal"
 )
 
 type Log interface {
@@ -61,7 +64,7 @@ func (a API) List(ctx context.Context) ([]*CloudAccount, error) {
 func (a *API) Get(ctx context.Context, id int) (*CloudAccount, error) {
 	var response CloudAccount
 	if err := a.client.Get(ctx, fmt.Sprintf("retrieve cloud account %d", id), fmt.Sprintf("/cloud-accounts/%d", id), &response); err != nil {
-		return nil, err
+		return nil, wrap404Error(id, err)
 	}
 
 	return &response, nil
@@ -71,7 +74,7 @@ func (a *API) Get(ctx context.Context, id int) (*CloudAccount, error) {
 func (a *API) Update(ctx context.Context, id int, account UpdateCloudAccount) error {
 	var response taskResponse
 	if err := a.client.Put(ctx, fmt.Sprintf("update cloud account %d", id), fmt.Sprintf("/cloud-accounts/%d", id), account, &response); err != nil {
-		return err
+		return wrap404Error(id, err)
 	}
 
 	a.logger.Printf("Waiting for cloud account %d to finish being updated", id)
@@ -88,7 +91,7 @@ func (a *API) Update(ctx context.Context, id int, account UpdateCloudAccount) er
 func (a *API) Delete(ctx context.Context, id int) error {
 	var response taskResponse
 	if err := a.client.Delete(ctx, fmt.Sprintf("delete cloud account %d", id), fmt.Sprintf("/cloud-accounts/%d", id), &response); err != nil {
-		return err
+		return wrap404Error(id, err)
 	}
 
 	a.logger.Printf("Waiting for cloud account %d to finish being deleted", id)
@@ -98,4 +101,11 @@ func (a *API) Delete(ctx context.Context, id int) error {
 	}
 
 	return nil
+}
+
+func wrap404Error(id int, err error) error {
+	if v, ok := err.(*internal.HTTPError); ok && v.StatusCode == http.StatusNotFound {
+		return &NotFound{id: id}
+	}
+	return err
 }
