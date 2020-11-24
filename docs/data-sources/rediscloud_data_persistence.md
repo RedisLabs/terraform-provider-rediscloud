@@ -1,7 +1,6 @@
 ---
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_data_persistence"
-sidebar_current: "docs-rediscloud-data-persistence"
 description: |-
   Data Persistence data source in the Terraform provider Redis Cloud.
 ---
