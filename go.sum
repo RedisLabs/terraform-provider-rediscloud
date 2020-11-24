@@ -45,6 +45,8 @@ github.com/RedisLabs/rediscloud-go-api v0.0.0-20201118112254-b99c433236f7 h1:DXI
 github.com/RedisLabs/rediscloud-go-api v0.0.0-20201118112254-b99c433236f7/go.mod h1:2E+NDl4h2ksk2JH+8C4OB3pnhQy7zlHsHLU+zpGpqjo=
 github.com/RedisLabs/rediscloud-go-api v0.0.0-20201118121248-6cc863177016 h1:eNuzWEqR989yggilxwgOE5Fb0cgvnjBCe2bhBYwK7CQ=
 github.com/RedisLabs/rediscloud-go-api v0.0.0-20201118121248-6cc863177016/go.mod h1:2E+NDl4h2ksk2JH+8C4OB3pnhQy7zlHsHLU+zpGpqjo=
+github.com/RedisLabs/rediscloud-go-api v0.0.0-20201119142109-7d78b9e63288 h1:rVONf9ui2G2DbGyRwMO/ywEoe7OVKc5emFJHQY4Rc7w=
+github.com/RedisLabs/rediscloud-go-api v0.0.0-20201119142109-7d78b9e63288/go.mod h1:2E+NDl4h2ksk2JH+8C4OB3pnhQy7zlHsHLU+zpGpqjo=
 github.com/agext/levenshtein v1.2.1/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki2W0IB5558=
 github.com/agext/levenshtein v1.2.2 h1:0S/Yg6LYmFJ5stwQeRp6EeOcCbj7xiqQSdNelsXvaqE=
 github.com/agext/levenshtein v1.2.2/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki2W0IB5558=
@@ -493,6 +495,8 @@ golang.org/x/tools v0.0.0-20201117152513-9036a0f9af11 h1:gqcmLJzeDSNhSzkyhJ4kxP6
 golang.org/x/tools v0.0.0-20201117152513-9036a0f9af11/go.mod h1:emZCQorbCU4vsT4fOWvOPXz4eW1wZW4PmDk9uLelYpA=
 golang.org/x/tools v0.0.0-20201118030313-598b068a9102 h1:kr6Ik/EJgxdTSLX+rSiDounHdHWMBu9Ks/ghr2hWNpo=
 golang.org/x/tools v0.0.0-20201118030313-598b068a9102/go.mod h1:emZCQorbCU4vsT4fOWvOPXz4eW1wZW4PmDk9uLelYpA=
+golang.org/x/tools v0.0.0-20201119132711-4783bc9bebf0 h1:26vapYZ9m+DJd68m3DCFP/swNNErXAU7tOMFG7NyUuM=
+golang.org/x/tools v0.0.0-20201119132711-4783bc9bebf0/go.mod h1:emZCQorbCU4vsT4fOWvOPXz4eW1wZW4PmDk9uLelYpA=
 golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543 h1:E7g+9GITq07hpfrRu66IVDexMakfv52eLZ2CXBWiKr4=
