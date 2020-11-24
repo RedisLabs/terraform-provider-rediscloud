@@ -8,12 +8,30 @@ description: |-
 
 # rediscloud_regions
 
-Use this data source to get a list of supported regions from supported cloud providers.  These regions can be used with the subscription resource.
+The Regions data source allows access to a list of supported cloud provider regions. These regions can be used with the subscription resource.
 
 ## Example Usage
 
-```hcl
+The following example returns all of the supported regions available within your Redis Enterprise Cloud account.
+
+```hcl-terraform
 data "rediscloud_regions" "example" {
+}
+
+output "all_regions" {
+  value = data.rediscloud_regions.example.regions
+}
+```
+
+The following example show how the list of regions can be filtered by cloud provider, (`AWS` or `GCP`).
+
+```hcl-terraform
+data "rediscloud_regions" "example_aws" {
+  provider_name = "AWS"
+}
+
+data "rediscloud_regions" "example_gcp" {
+  provider_name = "GCP"
 }
 ```
 
@@ -23,7 +41,7 @@ data "rediscloud_regions" "example" {
 
 ## Attributes Reference
 
-`regions` A list of regions from either a single or multiple cloud providers.
+* `regions` A list of regions from either a single or multiple cloud providers.
 
 Each region entry provides the following attributes
 
