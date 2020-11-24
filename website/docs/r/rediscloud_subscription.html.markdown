@@ -1,7 +1,6 @@
 ---
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_subscription"
-sidebar_current: "docs-rediscloud-subscription"
 description: |-
   Subscription resource in the Terraform provider Redis Cloud.
 ---
