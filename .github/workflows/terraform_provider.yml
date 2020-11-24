@@ -11,12 +11,30 @@ on:
 env:
   GO_VERSION: "1.15"
   GO111MODULE: on
-  GOPRIVATE: "github.com/RedisLabs"
   TERRAFORM_VERSION: "0.12.26"
 
 jobs:
+  go_mod_download:
+    name: go mod download
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - uses: actions/cache@v2
+        continue-on-error: true
+        id: cache-go-pkg-mod
+        timeout-minutes: 2
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-pkg-mod-${{ hashFiles('go.sum') }}
+      - if: steps.cache-go-pkg-mod.outputs.cache-hit != 'true' || steps.cache-go-pkg-mod.outcome == 'failure'
+        run: go mod download
+
   go_build:
     name: go build
+    needs: [go_mod_download]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
