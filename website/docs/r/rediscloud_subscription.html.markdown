@@ -8,7 +8,7 @@ description: |-
 
 # Resource: rediscloud_subscription
 
-Subscription resource in the Terraform provider Redis Cloud.
+Creates a Subscription and database resources within your Redis Enterprise Cloud Account.
 
 This resource is responsible for not only creating the subscription but also the databases within the subscription, as
 this allows Redis Cloud to efficiently pack the databases within instances.

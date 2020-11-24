@@ -19,7 +19,7 @@ import (
 
 func resourceRedisCloudSubscription() *schema.Resource {
 	return &schema.Resource{
-		Description:   "Subscription resource in the Terraform provider Redis Cloud",
+		Description:   "Creates a Subscription and database resources within your Redis Enterprise Cloud Account.",
 		CreateContext: resourceRedisCloudSubscriptionCreate,
 		ReadContext:   resourceRedisCloudSubscriptionRead,
 		UpdateContext: resourceRedisCloudSubscriptionUpdate,

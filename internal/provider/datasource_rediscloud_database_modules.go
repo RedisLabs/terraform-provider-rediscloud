@@ -9,7 +9,7 @@ import (
 
 func dataSourceRedisCloudDatabaseModules() *schema.Resource {
 	return &schema.Resource{
-		Description: "Use this data source to get a list of supported database modules. A single database module can be applied to a database.",
+		Description: "The Database data source allows access to the details of an existing database within your Redis Enterprise Cloud account.",
 		ReadContext: dataSourceRedisCloudDatabaseModulesRead,
 
 		Schema: map[string]*schema.Schema{
