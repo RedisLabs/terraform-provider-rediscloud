@@ -19,17 +19,41 @@ import (
 
 func resourceRedisCloudSubscription() *schema.Resource {
 	return &schema.Resource{
+		Description:   "Subscription resource in the Terraform provider Redis Cloud",
 		CreateContext: resourceRedisCloudSubscriptionCreate,
 		ReadContext:   resourceRedisCloudSubscriptionRead,
 		UpdateContext: resourceRedisCloudSubscriptionUpdate,
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext, // TODO validate that this is in the right format
+			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+				subId, err := strconv.Atoi(d.Id())
+				if err != nil {
+					return nil, err
+				}
+
+				// Populate the names of databases that already exist so that `flattenDatabases` can iterate over them
+				api := meta.(*apiClient)
+				list := api.client.Database.List(ctx, subId)
+				var dbs []map[string]interface{}
+				for list.Next() {
+					dbs = append(dbs, map[string]interface{}{
+						"name": redis.StringValue(list.Value().Name),
+					})
+				}
+				if list.Err() != nil {
+					return nil, list.Err()
+				}
+				if err := d.Set("database", dbs); err != nil {
+					return nil, err
+				}
+
+				return []*schema.ResourceData{d}, nil
+			},
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(20 * time.Minute),
+			Create: schema.DefaultTimeout(30 * time.Minute),
 			Read:   schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(10 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
@@ -37,15 +61,18 @@ func resourceRedisCloudSubscription() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Description: "A meaningful name to identify the subscription",
+				Type:        schema.TypeString,
+				Optional:    true,
 			},
 			"payment_method_id": {
+				Description:      "A valid payment method pre-defined in the current account",
 				Type:             schema.TypeString,
 				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 				Optional:         true,
 			},
 			"memory_storage": {
+				Description:      "Memory storage preference: either ‘ram’ or a combination of 'ram-and-flash’",
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
@@ -53,28 +80,32 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.MemoryStorageValues(), false)),
 			},
 			"persistent_storage_encryption": {
-				Type:     schema.TypeBool,
-				ForceNew: true,
-				Optional: true,
-				Default:  false,
+				Description: "Encrypt data stored in persistent storage. Required for a GCP subscription",
+				Type:        schema.TypeBool,
+				ForceNew:    true,
+				Optional:    true,
+				Default:     false,
 			},
 			"allowlist": {
-				Type:     schema.TypeList,
-				MaxItems: 1,
-				Optional: true,
+				Description: "An allowlist object",
+				Type:        schema.TypeList,
+				MaxItems:    1,
+				Optional:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"cidrs": {
-							Type:     schema.TypeSet,
-							Optional: true,
+							Description: "Set of CIDR ranges that are allowed to access the databases associated with this subscription",
+							Type:        schema.TypeSet,
+							Optional:    true,
 							Elem: &schema.Schema{
 								Type:             schema.TypeString,
 								ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
 							},
 						},
 						"security_group_ids": {
-							Type:     schema.TypeSet,
-							Optional: true,
+							Description: "Set of security groups that are allowed to access the databases associated with this subscription",
+							Type:        schema.TypeSet,
+							Optional:    true,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
@@ -83,14 +114,16 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				},
 			},
 			"cloud_provider": {
-				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
-				MaxItems: 1,
-				MinItems: 1,
+				Description: "A cloud provider object",
+				Type:        schema.TypeList,
+				Required:    true,
+				ForceNew:    true,
+				MaxItems:    1,
+				MinItems:    1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"provider": {
+							Description:      "The cloud provider to use with the subscription, (either `AWS` or `GCP`)",
 							Type:             schema.TypeString,
 							Optional:         true,
 							ForceNew:         true,
@@ -98,6 +131,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
 						},
 						"cloud_account_id": {
+							Description:      "Cloud account identifier. Default: Redis Labs internal cloud account (using Cloud Account Id = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created only with Redis Labs internal cloud account",
 							Type:             schema.TypeString,
 							Optional:         true,
 							ForceNew:         true,
@@ -105,25 +139,29 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Default:          "1",
 						},
 						"region": {
-							Type:     schema.TypeSet,
-							Required: true,
-							ForceNew: true,
-							MinItems: 1,
+							Description: "Cloud networking details, per region (single region or multiple regions for Active-Active cluster only)",
+							Type:        schema.TypeSet,
+							Required:    true,
+							ForceNew:    true,
+							MinItems:    1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"region": {
-										Type:     schema.TypeString,
-										Required: true,
-										ForceNew: true,
+										Description: "Deployment region as defined by cloud provider",
+										Type:        schema.TypeString,
+										Required:    true,
+										ForceNew:    true,
 									},
 									"multiple_availability_zones": {
-										Type:     schema.TypeBool,
-										ForceNew: true,
-										Optional: true,
-										Default:  false,
+										Description: "Support deployment on multiple availability zones within the selected region",
+										Type:        schema.TypeBool,
+										ForceNew:    true,
+										Optional:    true,
+										Default:     false,
 									},
 									"preferred_availability_zones": {
-										Type: schema.TypeList,
+										Description: "List of availability zones used",
+										Type:        schema.TypeList,
 										// TODO it should be possible to optionally set this
 										Computed: true,
 										Elem: &schema.Schema{
@@ -131,7 +169,8 @@ func resourceRedisCloudSubscription() *schema.Resource {
 										},
 									},
 									"networking_deployment_cidr": {
-										Type: schema.TypeString,
+										Description: "Deployment CIDR mask",
+										Type:        schema.TypeString,
 										// TODO this needs to be ForceNew as it can't be updated, but cannot also be Computed
 										// TODO need to see what the returned value is when only using redis internal account
 										Optional:         true,
@@ -139,13 +178,16 @@ func resourceRedisCloudSubscription() *schema.Resource {
 										ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
 									},
 									"networking_vpc_id": {
-										Type:     schema.TypeString,
-										ForceNew: true,
-										Optional: true,
+										Description: "Either an existing VPC Id (already exists in the specific region) or create a new VPC (if no VPC is specified)",
+										Type:        schema.TypeString,
+										ForceNew:    true,
+										Optional:    true,
+										Default:     "",
 									},
 									"networking_subnet_id": {
-										Type:     schema.TypeString,
-										Computed: true,
+										Description: "The subnet that the subscription deploys into",
+										Type:        schema.TypeString,
+										Computed:    true,
 									},
 								},
 							},
@@ -154,138 +196,163 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				},
 			},
 			"database": {
-				Type:     schema.TypeSet,
-				Required: true,
-				MinItems: 1,
+				Description: "A database object",
+				Type:        schema.TypeSet,
+				Required:    true,
+				MinItems:    1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"db_id": {
-							Type:     schema.TypeInt,
-							Computed: true,
+							Description: "Identifier of the database created",
+							Type:        schema.TypeInt,
+							Computed:    true,
 						},
 						"name": {
-							Type:     schema.TypeString,
-							Required: true,
+							Description: "A meaningful name to identify the database",
+							Type:        schema.TypeString,
+							Required:    true,
 						},
 						"protocol": {
+							Description:      "The protocol that will be used to access the database, (either ‘redis’ or 'memcached’) ",
 							Type:             schema.TypeString,
 							Required:         true,
 							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.ProtocolValues(), false)),
 						},
 						"memory_limit_in_gb": {
-							Type:     schema.TypeFloat,
-							Required: true,
+							Description: "Maximum memory usage for this specific database",
+							Type:        schema.TypeFloat,
+							Required:    true,
 						},
 						"support_oss_cluster_api": {
-							Type:     schema.TypeBool,
-							Optional: true,
-							Default:  false,
+							Description: "Support Redis open-source (OSS) Cluster API",
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Default:     false,
 						},
 						"external_endpoint_for_oss_cluster_api": {
-							Type:     schema.TypeBool,
-							Optional: true,
-							Default:  false,
+							Description: "Should use the external endpoint for open-source (OSS) Cluster API",
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Default:     false,
 						},
 						"data_persistence": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Default:  "none",
+							Description: "Rate of database data persistence (in persistent storage)",
+							Type:        schema.TypeString,
+							Optional:    true,
+							Default:     "none",
 						},
 						"replication": {
-							Type:     schema.TypeBool,
-							Optional: true,
-							Default:  true,
+							Description: "Databases replication",
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Default:     true,
 						},
 						"throughput_measurement_by": {
+							Description:      "Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)",
 							Type:             schema.TypeString,
 							Required:         true,
 							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice([]string{"number-of-shards", "operations-per-second"}, false)),
 						},
 						"throughput_measurement_value": {
-							Type:     schema.TypeInt,
-							Required: true,
+							Description: "Throughput value (as applies to selected measurement method)",
+							Type:        schema.TypeInt,
+							Required:    true,
 						},
 						"average_item_size_in_bytes": {
-							Type:     schema.TypeInt,
-							Optional: true,
+							Description: "Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes) of the items stored in the database",
+							Type:        schema.TypeInt,
+							Optional:    true,
 							// Setting default to 0 so that the hash func produces the same hash when this field is not
 							// specified. SDK's catch-all issue around this: https://github.com/hashicorp/terraform-plugin-sdk/issues/261
 							Default: 0,
 						},
 						"password": {
-							Type:      schema.TypeString,
-							Required:  true,
-							Sensitive: true,
+							Description: "Password used to access the database",
+							Type:        schema.TypeString,
+							Required:    true,
+							Sensitive:   true,
 						},
 						"public_endpoint": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Description: "Public endpoint to access the database",
+							Type:        schema.TypeString,
+							Computed:    true,
 						},
 						"private_endpoint": {
-							Type:     schema.TypeString,
-							Computed: true,
+							Description: "Private endpoint to access the database",
+							Type:        schema.TypeString,
+							Computed:    true,
 						},
 						"client_ssl_certificate": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Default:  "",
+							Description: "SSL certificate to authenticate user connections",
+							Type:        schema.TypeString,
+							Optional:    true,
+							Default:     "",
 						},
 						"periodic_backup_path": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Default:  "",
+							Description: "Path that will be used to store database backup files",
+							Type:        schema.TypeString,
+							Optional:    true,
+							Default:     "",
 						},
 						"replica_of": {
-							Type:     schema.TypeSet,
-							Optional: true,
+							Description: "Set of Redis database URIs, in the format `redis://user:password@host:port`, that this database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided",
+							Type:        schema.TypeSet,
+							Optional:    true,
 							Elem: &schema.Schema{
 								Type:             schema.TypeString,
 								ValidateDiagFunc: validateDiagFunc(validation.IsURLWithScheme([]string{"redis"})),
 							},
 						},
 						"alert": {
-							Type:     schema.TypeSet,
-							Optional: true,
+							Description: "Set of alerts to enable on the database",
+							Type:        schema.TypeSet,
+							Optional:    true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"name": {
+										Description:      "Alert name",
 										Type:             schema.TypeString,
 										Required:         true,
 										ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.AlertNameValues(), false)),
 									},
 									"value": {
-										Type:     schema.TypeInt,
-										Required: true,
+										Description: "Alert value",
+										Type:        schema.TypeInt,
+										Required:    true,
 									},
 								},
 							},
 						},
 						"module": {
-							Type:     schema.TypeSet,
-							Optional: true,
-							MinItems: 1,
-							MaxItems: 1,
+							Description: "A module object",
+							Type:        schema.TypeList,
+							Optional:    true,
+							MinItems:    1,
+							MaxItems:    1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"name": {
-										Type:     schema.TypeString,
-										Required: true,
+										Description: "Name of the module to enable",
+										Type:        schema.TypeString,
+										Required:    true,
 									},
 								},
 							},
 						},
 						"source_ips": {
-							Type:     schema.TypeSet,
-							Optional: true,
-							MinItems: 1,
+							Description: "Set of CIDR addresses to allow access to the database",
+							Type:        schema.TypeSet,
+							Optional:    true,
+							MinItems:    1,
 							Elem: &schema.Schema{
 								Type:             schema.TypeString,
 								ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
 							},
 						},
 						"hashing_policy": {
-							Type:     schema.TypeList,
-							Optional: true,
+							Description: "List of regular expression rules to shard the database by. See the documentation on clustering for more information on the hashing policy - https://docs.redislabs.com/latest/rc/concepts/clustering/",
+							Type:        schema.TypeList,
+							Optional:    true,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 								// Can't check that these are valid regex rules as the service wants something like `(?<tag>.*)`
@@ -375,6 +442,10 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 
 	subscription, err := api.client.Subscription.Get(ctx, subId)
 	if err != nil {
+		if _, ok := err.(*subscriptions.NotFound); ok {
+			d.SetId("")
+			return diags
+		}
 		return diag.FromErr(err)
 	}
 
@@ -659,7 +730,7 @@ func buildSubscriptionCreateDatabases(databases interface{}) []*subscriptions.Cr
 
 		createModules := make([]*subscriptions.CreateModules, 0)
 		modules := databaseMap["module"]
-		for _, module := range modules.(*schema.Set).List() {
+		for _, module := range modules.([]interface{}) {
 			moduleMap := module.(map[string]interface{})
 
 			modName := moduleMap["name"].(string)
@@ -801,7 +872,7 @@ func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) 
 		Delay:   10 * time.Second,
 		Pending: []string{subscriptions.SubscriptionStatusPending},
 		Target:  []string{subscriptions.SubscriptionStatusActive},
-		Timeout: 10 * time.Minute,
+		Timeout: 20 * time.Minute,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for subscription %d to be active", id)

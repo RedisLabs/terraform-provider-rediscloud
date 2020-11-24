@@ -1,14 +1,14 @@
 ---
 layout: "rediscloud"
-page_title: "RedisCloud: rediscloud_database_modules"
+page_title: "Redis Cloud: rediscloud_database_modules"
 sidebar_current: "docs-rediscloud-database-modules"
 description: |-
-  Database Modules data source in the Terraform provider RedisCloud.
+  Database Modules data source in the Terraform provider Redis Cloud.
 ---
 
-# rediscloud_database_module
+# Data Source: rediscloud_database_module
 
-Use this data source to get a list of supported database moodules.  A single database module can be applied to a database.
+Use this data source to get a list of supported database modules.  A single database module can be applied to a database.
 
 ## Example Usage
 
