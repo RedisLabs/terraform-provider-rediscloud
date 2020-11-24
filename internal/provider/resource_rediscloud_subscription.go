@@ -162,8 +162,8 @@ func resourceRedisCloudSubscription() *schema.Resource {
 									"preferred_availability_zones": {
 										Description: "List of availability zones used",
 										Type:        schema.TypeList,
-										// TODO it should be possible to optionally set this
-										Computed: true,
+										Required:    true,
+										ForceNew:    true,
 										Elem: &schema.Schema{
 											Type: schema.TypeString,
 										},
@@ -677,10 +677,12 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 
 				regionStr := regionMap["region"].(string)
 				multipleAvailabilityZones := regionMap["multiple_availability_zones"].(bool)
+				preferredAZs := regionMap["preferred_availability_zones"].([]interface{})
 
 				createRegion := subscriptions.CreateRegion{
-					Region:                    redis.String(regionStr),
-					MultipleAvailabilityZones: redis.Bool(multipleAvailabilityZones),
+					Region:                     redis.String(regionStr),
+					MultipleAvailabilityZones:  redis.Bool(multipleAvailabilityZones),
+					PreferredAvailabilityZones: interfaceToStringSlice(preferredAZs),
 				}
 
 				if v, ok := regionMap["networking_deployment_cidr"]; ok && v != "" {
