@@ -5,10 +5,11 @@ import (
 	"testing"
 )
 
-func TestAccDataSourceRedisCloudRegions(t *testing.T) {
+func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
+		CheckDestroy:      nil, // regions isn't a 'real' resource
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudRegions,
@@ -21,10 +22,11 @@ func TestAccDataSourceRedisCloudRegions(t *testing.T) {
 	})
 }
 
-func TestAccDataSourceRedisCloudRegionsAWS(t *testing.T) {
+func TestAccDataSourceRedisCloudRegions_AWS(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
+		CheckDestroy:      nil, // regions isn't a 'real' resource
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudRegionsAWS,
@@ -37,10 +39,11 @@ func TestAccDataSourceRedisCloudRegionsAWS(t *testing.T) {
 	})
 }
 
-func TestAccDataSourceRedisCloudRegionsGCP(t *testing.T) {
+func TestAccDataSourceRedisCloudRegions_GCP(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
+		CheckDestroy:      nil, // regions isn't a 'real' resource
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudRegionsGCP,

@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestAccDataSourceRedisCloudSubscription(t *testing.T) {
+func TestAccDataSourceRedisCloudSubscription_basic(t *testing.T) {
 	name := acctest.RandomWithPrefix("tf-test")
 	password := acctest.RandString(20)
 
@@ -18,6 +18,7 @@ func TestAccDataSourceRedisCloudSubscription(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionOneDb, name, 1, password),

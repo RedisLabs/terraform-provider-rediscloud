@@ -5,26 +5,29 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/account"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"time"
 )
 
 func dataSourceRedisCloudDatabaseModules() *schema.Resource {
 	return &schema.Resource{
+		Description: "Use this data source to get a list of supported database modules. A single database module can be applied to a database.",
 		ReadContext: dataSourceRedisCloudDatabaseModulesRead,
 
 		Schema: map[string]*schema.Schema{
 			"modules": {
-				Type:     schema.TypeSet,
-				Computed: true,
+				Description: "A list of database modules",
+				Type:        schema.TypeSet,
+				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
-							Computed: true,
-							Type:     schema.TypeString,
+							Description: "The identifier assigned by the database module",
+							Computed:    true,
+							Type:        schema.TypeString,
 						},
 						"description": {
-							Computed: true,
-							Type:     schema.TypeString,
+							Description: "A meaningful description of the database module",
+							Computed:    true,
+							Type:        schema.TypeString,
 						},
 					},
 				},
@@ -43,8 +46,10 @@ func dataSourceRedisCloudDatabaseModulesRead(ctx context.Context, d *schema.Reso
 		return diag.FromErr(err)
 	}
 
-	d.SetId(time.Now().UTC().String())
-	d.Set("modules", flattenDatabaseModules(modules))
+	d.SetId("ALL")
+	if err := d.Set("modules", flattenDatabaseModules(modules)); err != nil {
+		return diag.FromErr(err)
+	}
 
 	return diags
 }
