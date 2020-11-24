@@ -129,10 +129,19 @@ jobs:
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-pkg-mod-${{ hashFiles('go.sum') }}
-      - run: go test -v ./... -timeout=30m
+      - run: make testacc
         env:
           REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_QA }}
           REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_QA }}
           REDISCLOUD_URL: https://qa-api.redislabs.com/v1/
+#          REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_PROD }}
+#          REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_PROD }}
+#          REDISCLOUD_URL: https://api.redislabs.com/v1/
+          AWS_TEST_CLOUD_ACCOUNT_NAME: oc
           TF_ACC: true
           TF_LOG: debug
+          AWS_ACCESS_KEY_ID: ${{ secrets.CLOUD_ACCOUNT_KEY }}
+          AWS_ACCESS_SECRET_KEY: ${{ secrets.CLOUD_ACCOUNT_SECRET }}
+          AWS_CONSOLE_USERNAME: ${{ secrets.CLOUD_ACCOUNT_USERNAME }}
+          AWS_CONSOLE_PASSWORD: ${{ secrets.CLOUD_ACCOUNT_PASS }}
+          AWS_SIGNIN_URL: ${{ secrets.CLOUD_ACCOUNT_URL }}
