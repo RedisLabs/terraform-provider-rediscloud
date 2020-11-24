@@ -1,7 +1,6 @@
 ---
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_database"
-sidebar_current: "docs-rediscloud-database"
 description: |-
   Database data source in the Terraform provider Redis Cloud.
 ---

@@ -1,7 +1,6 @@
 ---
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_subscription_peering"
-sidebar_current: "docs-rediscloud-subscription-peering"
 description: |-
   Subscription VPC peering resource in the Terraform provider Redis Cloud.
 ---
