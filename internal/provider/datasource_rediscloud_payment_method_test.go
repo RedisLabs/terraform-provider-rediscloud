@@ -6,10 +6,12 @@ import (
 	"testing"
 )
 
-func TestAccDataSourceRedisCloudPaymentMethod(t *testing.T) {
+func TestAccDataSourceRedisCloudPaymentMethod_basic(t *testing.T) {
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
+		CheckDestroy:      nil, // payment method isn't managed by this provider
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudPaymentMethod,

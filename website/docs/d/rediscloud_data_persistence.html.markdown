@@ -1,12 +1,12 @@
 ---
 layout: "rediscloud"
-page_title: "RedisCloud: rediscloud_data_persistence"
+page_title: "Redis Cloud: rediscloud_data_persistence"
 sidebar_current: "docs-rediscloud-data-persistence"
 description: |-
-  Data Persistence data source in the Terraform provider RedisCloud.
+  Data Persistence data source in the Terraform provider Redis Cloud.
 ---
 
-# rediscloud_data_persistence
+# Data Source: rediscloud_data_persistence
 
 Use this data source to get a list of supported data persistence options.  
 A data persistence option represents the rate at which a database will persist data to storage.

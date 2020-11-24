@@ -18,13 +18,20 @@ import (
 
 func resourceRedisCloudSubscriptionPeering() *schema.Resource {
 	return &schema.Resource{
+		Description:   "Subscription VPC peering resource in the Terraform provider Redis Cloud",
 		CreateContext: resourceRedisCloudSubscriptionPeeringCreate,
 		ReadContext:   resourceRedisCloudSubscriptionPeeringRead,
 		DeleteContext: resourceRedisCloudSubscriptionPeeringDelete,
 		// UpdateContext - not set as all attributes are not updatable or computed
 
 		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext, // TODO validate that this is in the right format
+			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+				_, _, err := toVpcPeeringId(d.Id())
+				if err != nil {
+					return nil, err
+				}
+				return []*schema.ResourceData{d}, nil
+			},
 		},
 
 		Timeouts: &schema.ResourceTimeout{
@@ -35,34 +42,40 @@ func resourceRedisCloudSubscriptionPeering() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
+				Description:      "A valid subscription predefined in the current account",
 				Type:             schema.TypeString,
 				Required:         true,
 				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 				ForceNew:         true,
 			},
 			"region": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Description: "AWS Region that the VPC to be peered lives in",
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
 			},
 			"aws_account_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Description: "AWS account id that the VPC to be peered lives in",
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
 			},
 			"vpc_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Description: "Identifier of the VPC to be peered",
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
 			},
 			"vpc_cidr": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Description: "CIDR range of the VPC to be peered",
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
 			},
 			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Description: "Current status of the account - `initiating-request`, `pending-acceptance`, `active`, `inactive` or `failed`",
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
 		},
 	}

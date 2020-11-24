@@ -1,12 +1,12 @@
 ---
 layout: "rediscloud"
-page_title: "Provider: RedisCloud"
+page_title: "Provider: Redis Cloud"
 sidebar_current: "docs-rediscloud-index"
 description: |-
-  Terraform provider RedisCloud.
+  Terraform provider Redis Cloud.
 ---
 
-# RedisCloud Provider
+# Redis Cloud Provider
 
 Use this paragraph to give a high-level overview of your provider, and any configuration it requires.
 

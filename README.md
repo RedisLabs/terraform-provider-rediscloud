@@ -1,4 +1,4 @@
-Terraform Provider RedisCloud
+Terraform Provider Redis Cloud
 ==================
 
 - Website: [terraform.io](https://www.terraform.io)
