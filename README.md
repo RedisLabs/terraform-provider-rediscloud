@@ -6,8 +6,8 @@ Terraform Provider RedisCloud
 - Redis Cloud:  [redislabs.com/redis-enterprise-cloud](https://redislabs.com/redis-enterprise-cloud)
 - Mailing list: [Google Groups](http://groups.google.com/group/terraform-tool)
 
-The RedisCloud Terraform provider is a plugin for Terraform that allows Redis Cloud Enterprise customers to manage the full 
-lifecyle of their enterprise subscriptions and related redis databases.
+The Redis Enterprise Cloud Terraform provider is a plugin for Terraform that allows RediD Enterprise Cloud Pro customers to manage the full 
+lifecyle of their subscriptions and related Redis databases.
 
 Requirements
 ------------
@@ -20,8 +20,8 @@ Quick Starts
 
 - [Using the provider](https://www.terraform.io/docs/providers/RedisLabs/rediscloud/index.html)
 
-To use the RedisCloud Terraform provider you will need to set the following environment variables, 
-and these are created through the Redis Cloud console under the settings menu.
+To use the Redis Enterprise Cloud Terraform provider you will need to set the following environment variables, 
+and these are created through the Redis Enterprise Cloud console under the settings menu.
 
 - REDISCLOUD_ACCESS_KEY - Account Cloud API Access Key
 - REDISCLOUD_SECRET_KEY - Individual user Cloud API Secret Key
