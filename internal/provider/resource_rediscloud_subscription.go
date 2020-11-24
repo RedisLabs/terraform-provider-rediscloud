@@ -535,12 +535,6 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 	}
 
 	if d.HasChange("database") || d.IsNewResource() {
-
-		nameId, err := getDatabaseNameIdMap(ctx, subId, api)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
 		oldDb, newDb := d.GetChange("database")
 		addition, existing, deletion := diff(oldDb.(*schema.Set), newDb.(*schema.Set), func(v interface{}) string {
 			m := v.(map[string]interface{})
@@ -573,11 +567,16 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 			existing = append(existing, addition...)
 		}
 
+		nameId, err := getDatabaseNameIdMap(ctx, subId, api)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
 		for _, db := range existing {
 			update := buildUpdateDatabase(db)
 			dbId := nameId[redis.StringValue(update.Name)]
 
-			log.Printf("[DEBUG] Updating database %d", dbId)
+			log.Printf("[DEBUG] Updating database %s (%d)", redis.StringValue(update.Name), dbId)
 
 			err = api.client.Database.Update(ctx, subId, dbId, update)
 			if err != nil {
