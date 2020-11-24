@@ -162,9 +162,8 @@ func resourceRedisCloudSubscription() *schema.Resource {
 									"preferred_availability_zones": {
 										Description: "List of availability zones used",
 										Type:        schema.TypeList,
-										ForceNew:    true,
-										Optional:    true,
-										Computed:    true,
+										// TODO it should be possible to optionally set this
+										Computed: true,
 										Elem: &schema.Schema{
 											Type: schema.TypeString,
 										},
@@ -270,8 +269,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 						"password": {
 							Description: "Password used to access the database",
 							Type:        schema.TypeString,
-							Optional:    true,
-							Computed:    true,
+							Required:    true,
 							Sensitive:   true,
 						},
 						"public_endpoint": {
@@ -698,10 +696,6 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 					createRegion.Networking.VPCId = redis.String(v.(string))
 				}
 
-				if v, ok := regionMap["preferred_availability_zone"]; ok && len(v.([]interface{})) != 0 {
-					createRegion.PreferredAvailabilityZones = interfaceToStringSlice(v.([]interface{}))
-				}
-
 				createRegions = append(createRegions, &createRegion)
 			}
 		}
@@ -798,6 +792,7 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 		},
 		Alerts:    alerts,
 		ReplicaOf: setToStringSlice(db["replica_of"].(*schema.Set)),
+		Password:  redis.String(db["password"].(string)),
 		SourceIP:  setToStringSlice(db["source_ips"].(*schema.Set)),
 	}
 
@@ -818,10 +813,6 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 
 	if v, ok := db["external_endpoint_for_oss_cluster_api"]; ok {
 		create.UseExternalEndpointForOSSClusterAPI = redis.Bool(v.(bool))
-	}
-
-	if v, ok := db["password"]; ok && v != "" {
-		create.Password = redis.String(v.(string))
 	}
 
 	return create
@@ -848,6 +839,7 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 			Value: redis.Int(db["throughput_measurement_value"].(int)),
 		},
 		DataPersistence: redis.String(db["data_persistence"].(string)),
+		Password:        redis.String(db["password"].(string)),
 		SourceIP:        setToStringSlice(db["source_ips"].(*schema.Set)),
 		Alerts:          alerts,
 		ReplicaOf:       setToStringSlice(db["replica_of"].(*schema.Set)),
@@ -866,10 +858,6 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 	backupPath := db["periodic_backup_path"].(string)
 	if backupPath != "" {
 		update.PeriodicBackupPath = redis.String(backupPath)
-	}
-
-	if v, ok := db["password"]; ok && v != "" {
-		update.Password = redis.String(v.(string))
 	}
 
 	if v, ok := db["external_endpoint_for_oss_cluster_api"]; ok {
