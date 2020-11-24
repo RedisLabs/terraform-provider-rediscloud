@@ -24,7 +24,7 @@ func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
 	)
 	resourceName := "rediscloud_cloud_account.test"
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCloudAccountDestroy,
