@@ -15,7 +15,7 @@ import (
 
 func dataSourceRedisCloudPaymentMethod() *schema.Resource {
 	return &schema.Resource{
-		Description: "Use this data source to get the ID of a payment method for use with the subscription resource",
+		Description: "The Payment Method data source allows access to the ID of a Payment Method configured against your Redis Enterprise Cloud account. This ID can be used when creating Subscription resources.",
 		ReadContext: dataSourceRedisCloudPaymentMethodRead,
 
 		Schema: map[string]*schema.Schema{

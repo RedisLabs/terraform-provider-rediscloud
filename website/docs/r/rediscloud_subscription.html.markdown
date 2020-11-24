@@ -8,17 +8,13 @@ description: |-
 
 # Resource: rediscloud_subscription
 
-Subscription resource in the Terraform provider Redis Cloud.
+Creates a Subscription within your Redis Enterprise Cloud Account.
+This resource is responsible for creating subscriptions and the databases within that subscription. 
+This allows your Redis Enterprise Cloud Account to efficiently pack the databases within provisioned cloud provider compute instances.
 
-This resource is responsible for not only creating the subscription but also the databases within the subscription, as
-this allows Redis Cloud to efficiently pack the databases within instances.
-
-The way this resource manages changes to databases is by identifying databases by their name - which means that **the
-name of the database cannot be changed**, as this resource has no other way of being able to identify the database and
-would just lead to the database to be destroyed.
-
-Due to the limitations mentioned above, this means that the difference shown by Terraform will be different from normal.
-When an argument has been changed on a database - changing the `memory_limit_in_gb` from 1 to 2 for example - Terraform
+~> **Note:** The subscription resource manages changes to its databases by identifying a databases through its name.  This means **database names cannot be changed**, as this resource has no other way of being able to identify the database and would lead to the database to be destroyed.
+Due to the limitations mentioned above, the differences shown by Terraform will be different from normal plan.
+When an argument has been changed on a nested database - for example changing the `memory_limit_in_gb` from 1 to 2, Terraform
 will display the resource as being modified with the database as being removed, and a new one added. As the resource
 identifies the database based on the name, the only change that would happen would be to update the database to increase
 the memory limit. Below is the Terraform output for changing the `memory_limit_in_gb` for a single database within a

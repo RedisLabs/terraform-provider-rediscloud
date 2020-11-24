@@ -12,7 +12,7 @@ import (
 
 func dataSourceRedisCloudCloudAccount() *schema.Resource {
 	return &schema.Resource{
-		Description: "Use this data source to get the ID of a cloud account for use with the subscription resource.",
+		Description: "The Cloud Account data source allows access to the ID of a Cloud Account configuration.  This ID can be used when creating Subscription resources.",
 		ReadContext: dataSourceRedisCloudCloudAccountRead,
 
 		Schema: map[string]*schema.Schema{

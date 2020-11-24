@@ -8,12 +8,36 @@ description: |-
 
 # Data Source: rediscloud_payment_method
 
-Use this data source to get the ID of a payment method for use with the subscription resource.
+The Payment Method data source allows access to the ID of a Payment Method configured against your Redis Enterprise Cloud account. This ID can be used when creating Subscription resources.
 
 ## Example Usage
 
+The following example shows a payment method data source being used with a subscription resource.  
+
+The example assumes only a single payment method has been defined with a card type of Visa.  By default all expired payment methods are excluded.
+
 ```hcl
-data "rediscloud_payment_method" "example" {
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+}
+
+resource "rediscloud_subscription" "example" {
+
+  name = "My Test Subscription"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  memory_storage = "ram"
+  persistent_storage_encryption = false
+
+  ...
+}
+```
+
+The following example shows how a single payment method can be identified when there are multiple methods against the same card type.
+
+```hcl
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+  last_four_numbers = "0123"
 }
 ```
 

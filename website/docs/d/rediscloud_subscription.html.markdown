@@ -8,12 +8,19 @@ description: |-
 
 # Data Source: rediscloud_subscription
 
-Use this data source to get the details of an existing subscription within your Redis Cloud account.
+The Subscription data source allows access to the details of an existing subscription within your Redis Enterprise Cloud account.
 
 ## Example Usage
 
+The following example shows how to use the name attribute to locate a subscription within your Redis Enterprise Cloud account.
+
 ```hcl
 data "rediscloud_subscription" "example" {
+  name = "My Example Subscription"
+}
+
+output "rediscloud_subscription" {
+  value = data.rediscloud_subscription.example.id
 }
 ```
 

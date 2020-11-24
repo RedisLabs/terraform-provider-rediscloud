@@ -15,7 +15,7 @@ import (
 
 func resourceRedisCloudCloudAccount() *schema.Resource {
 	return &schema.Resource{
-		Description:   "Cloud Account resource in the Terraform provider Redis Cloud",
+		Description:   "Creates a Cloud Account resource representing the access credentials to a cloud provider account, (`AWS` or `GCP`). Your Redis Enterprise Cloud account uses these credentials to provision databases within your infrastructure. ",
 		CreateContext: resourceRedisCloudCloudAccountCreate,
 		ReadContext:   resourceRedisCloudCloudAccountRead,
 		UpdateContext: resourceRedisCloudCloudAccountUpdate,

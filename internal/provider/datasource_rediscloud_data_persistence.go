@@ -9,7 +9,7 @@ import (
 
 func dataSourceRedisCloudDataPersistence() *schema.Resource {
 	return &schema.Resource{
-		Description: "Use this data source to get a list of supported data persistence options. A data persistence option represents the rate at which a database will persist data to storage.",
+		Description: "The data persistence data source allows access to a list of supported data persistence options.  Each option represents the rate at which a database will persist its data to storage.",
 		ReadContext: dataSourceRedisCloudDataPersistenceRead,
 
 		Schema: map[string]*schema.Schema{

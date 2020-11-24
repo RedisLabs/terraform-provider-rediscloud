@@ -18,7 +18,7 @@ import (
 
 func resourceRedisCloudSubscriptionPeering() *schema.Resource {
 	return &schema.Resource{
-		Description:   "Subscription VPC peering resource in the Terraform provider Redis Cloud",
+		Description:   "Creates an AWS VPC peering for an existing Redis Enterprise Cloud Subscription, allowing access to your subscription databases as if they were on the same network.",
 		CreateContext: resourceRedisCloudSubscriptionPeeringCreate,
 		ReadContext:   resourceRedisCloudSubscriptionPeeringRead,
 		DeleteContext: resourceRedisCloudSubscriptionPeeringDelete,
