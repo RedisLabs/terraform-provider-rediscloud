@@ -181,7 +181,11 @@ func dataSourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceDat
 		return diag.Errorf("Your query returned more than one result. Please change try a more specific search criteria and try again.")
 	}
 
-	db := dbs[0]
+	// Some attributes are only returned when retrieving a single database
+	db, err := api.client.Database.Get(ctx, subId, redis.IntValue(dbs[0].ID))
+	if err != nil {
+		return diag.FromErr(list.Err())
+	}
 
 	d.SetId(fmt.Sprintf("%d/%d", subId, redis.IntValue(db.ID)))
 
