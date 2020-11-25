@@ -2,14 +2,18 @@
 layout: "rediscloud"
 page_title: "Provider: Redis Enterprise Cloud"
 description: |-
-  Terraform provider RedisCloud.
+   The Redis Enterprise Cloud provider is used to interact with the resources supported by Redis Enterprise Cloud. The provider needs to be configured with the proper credentials before it can be used..
 ---
 
 # Redis Enterprise Cloud Provider
 
-Use this paragraph to give a high-level overview of your provider, and any configuration it requires.
+The Redis Enterprise Cloud provider is used to interact with the resources supported by Redis Enterprise Cloud . The provider needs to be configured with the proper credentials before it can be used.
 
-Use the navigation to the left to read about the available resources.
+Use the navigation to the left to read about the available provider resources and data sources.
+
+## Configure Redis Enterprise Cloud Programmatic Access
+
+In order to setup authentication with the Redis Enterprise Cloud provider a programmatic API key must be generated for Redis Enterprise Cloud.   The [Redis Enterprise Cloud documentation](https://docs.redislabs.com/latest/rc/api/how-to/enable-your-account-to-use-api/) contains the most up-to-date instructions for creating and managing your key(s) and IP access.
 
 ## Example Usage
 
