@@ -14,9 +14,9 @@ func TestAccResourceRedisCloudSubscriptionPeering_basic(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 
-	cidrRange := os.Getenv("AWS_VPC_CIDR")
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
+	cidrRange := os.Getenv("AWS_VPC_CIDR")
 	// Chose a CIDR range for the subscription that's unlikely to overlap with any VPC CIDR
 	subCidrRange := "10.0.0.0/24"
 
@@ -28,14 +28,23 @@ func TestAccResourceRedisCloudSubscriptionPeering_basic(t *testing.T) {
 		subCidrRange = "172.16.0.0/24"
 	}
 
+	peeringRegion := os.Getenv("AWS_PEERING_REGION")
+	matchesRegex(t, peeringRegion, "^[a-z]+-[a-z]+-\\d+$")
+
+	accountId := os.Getenv("AWS_ACCOUNT_ID")
+	matchesRegex(t, accountId, "^\\d+$")
+
+	vpcId := os.Getenv("AWS_VPC_ID")
+	matchesRegex(t, vpcId, "^vpc-[a-z\\d]+$")
+
 	tf := fmt.Sprintf(testAccResourceRedisCloudSubscriptionPeering,
 		testCloudAccountName,
 		name,
 		subCidrRange,
 		password,
-		os.Getenv("AWS_PEERING_REGION"),
-		os.Getenv("AWS_ACCOUNT_ID"),
-		os.Getenv("AWS_VPC_ID"),
+		peeringRegion,
+		accountId,
+		vpcId,
 		cidrRange,
 	)
 	resourceName := "rediscloud_subscription_peering.test"
@@ -54,6 +63,12 @@ func TestAccResourceRedisCloudSubscriptionPeering_basic(t *testing.T) {
 			},
 		},
 	})
+}
+
+func matchesRegex(t *testing.T, value string, regex string) {
+	if !regexp.MustCompile(regex).MatchString(value) {
+		t.Fatalf("%s doesn't match regex %s", value, regex)
+	}
 }
 
 func cidrRangesOverlap(cidr1 string, cidr2 string) (bool, error) {
