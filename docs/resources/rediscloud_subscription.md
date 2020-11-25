@@ -197,6 +197,9 @@ The cloud_provider `region` block supports:
 within the hosting account.
 * `preferred_availability_zones` - (Required) Availability zones deployment preferences (for the selected provider & region).
 
+~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI. 
+This difference in behaviour is to guarantee that a plan after an apply does not generate differences.
+
 The database `alert` block supports:
 
 * `name` (Required) Alert name
