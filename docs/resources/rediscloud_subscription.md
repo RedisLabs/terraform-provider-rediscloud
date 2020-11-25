@@ -105,6 +105,7 @@ resource "rediscloud_subscription" "example" {
     region {
       region = "eu-west-1"
       networking_deployment_cidr = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
     }
   }
 
@@ -121,6 +122,13 @@ resource "rediscloud_subscription" "example" {
       name = "dataset-size"
       value = 40
     }
+  }
+}
+
+output "database_endpoints" {
+  value = {
+    for database in rediscloud_subscription.example.database:
+      database.name => database.public_endpoint
   }
 }
 ```
@@ -190,6 +198,9 @@ The cloud_provider `region` block supports:
 (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4625884ad’) and existing
 within the hosting account.
 * `preferred_availability_zones` - (Required) Availability zones deployment preferences (for the selected provider & region).
+
+~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI. 
+This difference in behaviour is to guarantee that a plan after an apply does not generate differences.
 
 The database `alert` block supports:
 

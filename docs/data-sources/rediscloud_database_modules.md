@@ -6,7 +6,7 @@ description: |-
 ---
 
 
-# Data Source: rediscloud_database_module
+# Data Source: rediscloud_database_modules
 
 The database modules data source allows access to a list of supported [Redis Enterprise Cloud modules](https://redislabs.com/redis-enterprise/modules).  
 Each module represents an enrichment that can be applied to a Redis database.
