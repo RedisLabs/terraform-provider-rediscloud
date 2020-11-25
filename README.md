@@ -8,7 +8,7 @@ Terraform Provider Redis Cloud
 - Redis Cloud:  [redislabs.com/redis-enterprise-cloud](https://redislabs.com/redis-enterprise-cloud)
 - Mailing list: [Google Groups](http://groups.google.com/group/terraform-tool)
 
-The Redis Enterprise Cloud Terraform provider is a plugin for Terraform that allows RediD Enterprise Cloud Pro customers to manage the full 
+The Redis Enterprise Cloud Terraform provider is a plugin for Terraform that allows Redis Enterprise Cloud Pro customers to manage the full 
 lifecyle of their subscriptions and related Redis databases.
 
 Requirements
