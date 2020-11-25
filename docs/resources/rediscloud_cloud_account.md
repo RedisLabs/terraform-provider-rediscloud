@@ -2,13 +2,13 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_cloud_account"
 description: |-
-  Cloud Account resource in the Terraform provider Redis Cloud.
+  Cloud Account resource in the Terraform provider Redis Enterprise Cloud.
 ---
 
 # Resource: rediscloud_cloud_account
 
-Creates a Cloud Account resource representing the access credentials to a cloud provider account, (`AWS` or `GCP`).
-Your Redis Enterprise Cloud account uses these credentials to provision databases within your infrastructure. 
+Creates a Cloud Account resource representing the access credentials to a cloud provider account, (`AWS`).
+Redis Enterprise Cloud uses these credentials to provision databases within your infrastructure. 
 
 ## Example Usage
 
