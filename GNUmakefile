@@ -9,7 +9,7 @@ PROVIDER_VERSION = 99.99.99
 PLUGINS_PATH = ~/.terraform.d/plugins
 PLUGINS_PROVIDER_PATH=$(PROVIDER_HOSTNAME)/$(PROVIDER_NAMESPACE)/$(PROVIDER_TYPE)/$(PROVIDER_VERSION)/$(PROVIDER_TARGET)
 
-.PHONY: build clean testacc install_local website website-test
+.PHONY: build clean testacc install_local website website-test tfproviderlint
 
 build:
 	@echo "Building local provider binary"
@@ -31,3 +31,6 @@ install_local: build
 sweep:
 	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
 	go test ./internal/provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
+
+tfproviderlint:
+	@go run github.com/bflad/tfproviderlint/cmd/tfproviderlint ./...
