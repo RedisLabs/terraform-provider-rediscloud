@@ -1,6 +1,8 @@
 Terraform Provider Redis Cloud
 ==================
 
+ ![Terraform Provider Checks](https://github.com/RedisLabs/terraform-provider-rediscloud/workflows/Terraform%20Provider%20Checks/badge.svg?branch=main)
+
 - Website: [terraform.io](https://www.terraform.io)
 - Tutorials: [learn.hashicorp.com](https://learn.hashicorp.com/terraform?track=getting-started#getting-started)
 - Redis Cloud:  [redislabs.com/redis-enterprise-cloud](https://redislabs.com/redis-enterprise-cloud)
