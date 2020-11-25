@@ -25,7 +25,6 @@ resource "rediscloud_subscription" "example" {
   name = "My Test Subscription"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
-  persistent_storage_encryption = false
 
   ...
 }
