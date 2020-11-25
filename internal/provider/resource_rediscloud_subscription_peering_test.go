@@ -2,12 +2,14 @@ package provider
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"log"
 	"net"
 	"os"
 	"regexp"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccResourceRedisCloudSubscriptionPeering_basic(t *testing.T) {
@@ -36,6 +38,11 @@ func TestAccResourceRedisCloudSubscriptionPeering_basic(t *testing.T) {
 
 	vpcId := os.Getenv("AWS_VPC_ID")
 	matchesRegex(t, vpcId, "^vpc-[a-z\\d]+$")
+
+	log.Printf("AWS_VPC_CIDR: %d", len(cidrRange))
+	log.Printf("AWS_VPC_ID: %d", len(vpcId))
+	log.Printf("AWS_PEERING_REGION: %d", len(peeringRegion))
+	log.Printf("AWS_ACCOUNT_ID: %d", len(accountId))
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudSubscriptionPeering,
 		testCloudAccountName,

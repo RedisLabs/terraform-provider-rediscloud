@@ -139,7 +139,7 @@ jobs:
               - 'internal/**'
               - '*.go'
               - '.github/workflows/**'
-      - run: make testacc
+      - run: make testacc TESTARGS='-run=TestAccResourceRedisCloudSubscriptionPeering_basic'
         if: steps.filter.outputs.code-changes == 'true'
         env:
           REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_QA }}
