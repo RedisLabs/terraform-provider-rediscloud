@@ -13,7 +13,7 @@ The Database data source allows access to the details of an existing database wi
 
 The following example shows how to locate a single database within a Subscription.  This example assumes the subscription only contains a single database.
 
-```hcl-template
+```hcl-terraform
 data "rediscloud_database" "example" {
   subscription_id = "1234"
 }

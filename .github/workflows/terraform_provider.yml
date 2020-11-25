@@ -129,7 +129,18 @@ jobs:
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-pkg-mod-${{ hashFiles('go.sum') }}
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            code-changes:
+              - 'go.mod'
+              - 'go.sum'
+              - 'internal/**'
+              - '*.go'
+              - '.github/workflows/**'
       - run: make testacc
+        if: steps.filter.outputs.code-changes == 'true'
         env:
           REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_QA }}
           REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_QA }}
