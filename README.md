@@ -1,12 +1,7 @@
 Terraform Provider Redis Cloud
 ==================
 
-- Website: [terraform.io](https://www.terraform.io)
-- Tutorials: [learn.hashicorp.com](https://learn.hashicorp.com/terraform?track=getting-started#getting-started)
-- Redis Cloud:  [redislabs.com/redis-enterprise-cloud](https://redislabs.com/redis-enterprise-cloud)
-- Mailing list: [Google Groups](http://groups.google.com/group/terraform-tool)
-
-The Redis Enterprise Cloud Terraform provider is a plugin for Terraform that allows RediD Enterprise Cloud Pro customers to manage the full 
+The Redis Enterprise Cloud Terraform provider is a plugin for Terraform that allows Redis Enterprise Cloud Pro customers to manage the full 
 lifecyle of their subscriptions and related Redis databases.
 
 Requirements
@@ -18,7 +13,7 @@ Requirements
 Quick Starts
 ------------
 
-- [Using the provider](https://www.terraform.io/docs/providers/RedisLabs/rediscloud/index.html)
+- [Using the provider](https://registry.terraform.io/providers/RedisLabs/rediscloud/latest/docs)
 
 To use the Redis Enterprise Cloud Terraform provider you will need to set the following environment variables, 
 and these are created through the Redis Enterprise Cloud console under the settings menu.
