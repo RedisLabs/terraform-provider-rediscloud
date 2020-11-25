@@ -105,6 +105,7 @@ resource "rediscloud_subscription" "example" {
     region {
       region = "eu-west-1"
       networking_deployment_cidr = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
     }
   }
 
@@ -121,6 +122,13 @@ resource "rediscloud_subscription" "example" {
       name = "dataset-size"
       value = 40
     }
+  }
+}
+
+output "database_endpoints" {
+  value = {
+    for database in rediscloud_subscription.example.database:
+      database.name => database.public_endpoint
   }
 }
 ```
