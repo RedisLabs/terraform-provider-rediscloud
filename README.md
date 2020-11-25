@@ -13,7 +13,7 @@ Requirements
 Quick Starts
 ------------
 
-- [Using the provider](https://www.terraform.io/docs/providers/RedisLabs/rediscloud/index.html)
+- [Using the provider](https://registry.terraform.io/providers/RedisLabs/rediscloud/latest/docs)
 
 To use the Redis Enterprise Cloud Terraform provider you will need to set the following environment variables, 
 and these are created through the Redis Enterprise Cloud console under the settings menu.
