@@ -9,7 +9,7 @@ description: |-
 
 Creates a Subscription within your Redis Enterprise Cloud Account.
 This resource is responsible for creating subscriptions and the databases within that subscription. 
-This allows your Redis Enterprise Cloud Account to efficiently pack the databases within provisioned cloud provider compute instances.
+This allows Redis Enterprise Cloud to provision your databases in the most efficient way.
 
 ~> **Note:** The subscription resource manages changes to its databases by identifying a databases through its name.  This means **database names cannot be changed**, as this resource has no other way of being able to identify the database and would lead to the database to be destroyed.
 Due to the limitations mentioned above, the differences shown by Terraform will be different from normal plan.
@@ -150,13 +150,15 @@ The `allowlist` block supports:
 * `cidrs` - (Optional) Set of CIDR ranges that are allowed to access the databases associated with this subscription
 * `security_group_ids` - (Optional) Set of security groups that are allowed to access the databases associated with this subscription
 
+~> **Note:** `allowlist` is only available when you run on your own cloud account, and not one that Redis Labs provided (i.e `cloud_account_id` != 1)
+
 The `cloud_provider` block supports:
 
 * `provider` - (Optional) The cloud provider to use with the subscription, (either `AWS` or `GCP`). Default: ‘AWS’
 * `cloud_account_id` - (Optional) Cloud account identifier. Default: Redis Labs internal cloud account
-(using Cloud Account Id = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created
-only with Redis Labs internal cloud account.
-* `region` - (Required) Cloud networking details, per region (single region or multiple regions for Active-Active cluster only),
+(using Cloud Account ID = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created
+only with Redis Labs internal cloud account
+* `region` - (Required) Cloud networking details, per region,
 documented below
 
 The `database` block supports:

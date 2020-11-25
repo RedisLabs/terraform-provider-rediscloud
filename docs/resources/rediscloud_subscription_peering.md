@@ -7,11 +7,12 @@ description: |-
 
 # Resource: rediscloud_subscription_peering
 
-Creates an AWS VPC peering for an existing Redis Enterprise Cloud Subscription, allowing access to your subscription databases as if they were on the same network.
+Creates an AWS or GCP VPC peering for an existing Redis Enterprise Cloud Subscription, allowing access to your subscription databases as if they were on the same network.
 
-VPC peerings for Google Cloud Provider must be enabled using the GCloud command line.
+For AWS, peering should be accepted by the other side.
+For GCP, the opposite peering request should be submitted.
 
-## Example Usage
+## Example Usage - AWS
 
 ```hcl
 resource "rediscloud_subscription" "example" {
