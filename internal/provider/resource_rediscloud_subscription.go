@@ -466,12 +466,20 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 
-	allowlist, err := flattenSubscriptionAllowlist(ctx, subId, api)
+	providers, err := buildCreateCloudProviders(d.Get("cloud_provider"))
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("allowlist", allowlist); err != nil {
-		return diag.FromErr(err)
+
+	// CIDR whitelist is not allowed for Redis Labs internal resources subscription.
+	if redis.IntValue(providers[0].CloudAccountID) != 1 {
+		allowlist, err := flattenSubscriptionAllowlist(ctx, subId, api)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("allowlist", allowlist); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	flatDbs, err := flattenDatabases(ctx, subId, d.Get("database").(*schema.Set).List(), api)
