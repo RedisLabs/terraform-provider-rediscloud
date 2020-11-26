@@ -11,7 +11,7 @@ import (
 )
 
 func TestAccResourceRedisCloudSubscriptionPeering_basic(t *testing.T) {
-	t.Skip("Required environment variables currently not available under CI")
+	//t.Skip("Required environment variables currently not available under CI")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
@@ -43,7 +43,9 @@ func TestAccResourceRedisCloudSubscriptionPeering_basic(t *testing.T) {
 				Config: tf,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d*/\\d*$")),
+					resource.TestCheckResourceAttr(resourceName, "provider_name", "AWS"),
 					resource.TestCheckResourceAttrSet(resourceName, "status"),
+
 				),
 			},
 		},
@@ -90,6 +92,7 @@ resource "rediscloud_subscription" "example" {
 
 resource "rediscloud_subscription_peering" "test" {
   subscription_id = rediscloud_subscription.example.id
+  provider_name = "AWS"
   region = "%s"
   aws_account_id = "%s"
   vpc_id = "%s"
