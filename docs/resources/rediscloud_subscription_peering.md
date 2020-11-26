@@ -28,15 +28,37 @@ resource "rediscloud_subscription_peering" "example" {
 }
 ```
 
+## Example Usage - GCP
+
+```hcl
+resource "rediscloud_subscription" "example" {
+  // ...
+}
+
+resource "rediscloud_subscription_peering" "example" {
+   subscription_id = rediscloud_subscription.example.id
+   provider = "GCP"
+   gcp_project_id = "cloud-api-123456"
+   network_name = "cloud-api-vpc-peering-example"
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
 
+* `provider` - (Optional) The cloud provider to use with the vpc peering, (either `AWS` or `GCP`). Default: ‘AWS’
 * `subscription_id` - (Required) A valid subscription predefined in the current account
-* `region` - (Required) AWS Region that the VPC to be peered lives in
-* `aws_account_id` - (Required) AWS account id that the VPC to be peered lives in
-* `vpc_id` - (Required) Identifier of the VPC to be peered
-* `vpc_cidr` - (Required) CIDR range of the VPC to be peered 
+
+**AWS ONLY:**
+* `aws_account_id` - (Required AWS) AWS account ID that the VPC to be peered lives in
+* `region` - (Required AWS) AWS Region that the VPC to be peered lives in
+* `vpc_id` - (Required AWS) Identifier of the VPC to be peered
+* `vpc_cidr` - (Required AWS) CIDR range of the VPC to be peered 
+
+**GCP ONLY:**
+* `gcp_project_id` - (Required GCP) GCP project ID that the VPC to be peered lives in
+* `network_name` - (Required GCP) The name of the network to be peered
 
 ### Timeouts
 
