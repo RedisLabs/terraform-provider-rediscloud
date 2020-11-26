@@ -137,7 +137,7 @@ output "database_endpoints" {
 The following arguments are supported:
 
 * `name` - (Required) A meaningful name to identify the subscription
-* `payment_method_id` - (Required) A valid payment method pre-defined in the current account
+* `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types. 
 * `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of 'ram-and-flash’. Default: ‘ram’
 * `persistent_storage_encryption` - (Optional) Encrypt data stored in persistent storage. Required for a GCP subscription. Default: ‘true’
 * `allowlist` - (Optional) An allowlist object, documented below 
@@ -157,8 +157,7 @@ The `cloud_provider` block supports:
 * `cloud_account_id` - (Optional) Cloud account identifier. Default: Redis Labs internal cloud account
 (using Cloud Account ID = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created
 only with Redis Labs internal cloud account
-* `region` - (Required) Cloud networking details, per region,
-documented below
+* `region` - (Required) Cloud networking details, per region, documented below
 
 The `database` block supports:
 
