@@ -97,7 +97,6 @@ resource "rediscloud_subscription" "example" {
   name = "example"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
-  persistent_storage_encryption = false
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
@@ -140,7 +139,7 @@ The following arguments are supported:
 * `name` - (Required) A meaningful name to identify the subscription
 * `payment_method_id` - (Required) A valid payment method pre-defined in the current account
 * `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of 'ram-and-flash’. Default: ‘ram’
-* `persistent_storage_encryption` - (Optional) Encrypt data stored in persistent storage. Required for a GCP subscription. Default: ‘false’
+* `persistent_storage_encryption` - (Optional) Encrypt data stored in persistent storage. Required for a GCP subscription. Default: ‘true’
 * `allowlist` - (Optional) An allowlist object, documented below 
 * `cloud_provider` - (Required) A cloud provider object, documented below 
 * `database` - (Required) A database object, documented below
