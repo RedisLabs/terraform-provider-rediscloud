@@ -47,7 +47,7 @@ resource "rediscloud_subscription_peering" "example" {
 
 The following arguments are supported:
 
-* `provider` - (Optional) The cloud provider to use with the vpc peering, (either `AWS` or `GCP`). Default: ‘AWS’
+* `provider_name` - (Optional) The cloud provider to use with the vpc peering, (either `AWS` or `GCP`). Default: ‘AWS’
 * `subscription_id` - (Required) A valid subscription predefined in the current account
 
 **AWS ONLY:**

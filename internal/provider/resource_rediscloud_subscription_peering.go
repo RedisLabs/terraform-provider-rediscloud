@@ -49,10 +49,10 @@ func resourceRedisCloudSubscriptionPeering() *schema.Resource {
 				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 				ForceNew:         true,
 			},
-			"provider": {
+			"provider_name": {
 				Type:             schema.TypeString,
-				Required:         true,
 				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
+				Optional: true,
 				ForceNew:         true,
 				Default:          "AWS",
 			},
@@ -114,11 +114,11 @@ func resourceRedisCloudSubscriptionPeeringCreate(ctx context.Context, d *schema.
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
-	provider := d.Get("provider").(string)
+	providerName := d.Get("provider_name").(string)
 
 	peeringRequest := subscriptions.CreateVPCPeering{}
 
-	if provider == "AWS" {
+	if providerName == "AWS" {
 
 		region, ok := d.GetOk("region")
 		if !ok {
@@ -146,7 +146,7 @@ func resourceRedisCloudSubscriptionPeeringCreate(ctx context.Context, d *schema.
 		peeringRequest.VPCCidr = redis.String(vpcCIDR.(string))
 	}
 
-	if provider == "GCP" {
+	if providerName == "GCP" {
 
 		gcpProjectID, ok := d.GetOk("gcp_project_id")
 		if !ok {
@@ -158,9 +158,9 @@ func resourceRedisCloudSubscriptionPeeringCreate(ctx context.Context, d *schema.
 			return diag.Errorf("`network_name` must be set when `provider_name` is `GCP`")
 		}
 
-		peeringRequest.GCPProjectId = redis.String(gcpProjectID.(string))
-		peeringRequest.NetworkName = redis.String(networkName.(string))
-		peeringRequest.Provider = redis.String(strings.ToLower(provider))
+		peeringRequest.Provider = redis.String(strings.ToLower(providerName))
+		peeringRequest.VPCProjectUID = redis.String(gcpProjectID.(string))
+		peeringRequest.VPCNetworkName = redis.String(networkName.(string))
 	}
 
 	peering, err := api.client.Subscription.CreateVPCPeering(ctx, subId, peeringRequest)
@@ -202,19 +202,31 @@ func resourceRedisCloudSubscriptionPeeringRead(ctx context.Context, d *schema.Re
 		return diags
 	}
 
-	if err := d.Set("aws_account_id", redis.StringValue(peering.AWSAccountID)); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("vpc_id", redis.StringValue(peering.VPCId)); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("vpc_cidr", redis.StringValue(peering.VPCCidr)); err != nil {
-		return diag.FromErr(err)
-	}
 	if err := d.Set("status", redis.StringValue(peering.Status)); err != nil {
 		return diag.FromErr(err)
 	}
 
+	providerName := d.Get("provider_name").(string)
+
+	if providerName == "AWS" {
+		if err := d.Set("aws_account_id", redis.StringValue(peering.AWSAccountID)); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("vpc_id", redis.StringValue(peering.VPCId)); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("vpc_cidr", redis.StringValue(peering.VPCCidr)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+	if providerName == "GCP" {
+		if err := d.Set("gcp_project_id", redis.StringValue(peering.GCPProjectUID)); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("network_name", redis.StringValue(peering.NetworkName)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
 	return diags
 }
 
