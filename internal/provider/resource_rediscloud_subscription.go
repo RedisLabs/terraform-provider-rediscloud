@@ -84,7 +84,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Type:        schema.TypeBool,
 				ForceNew:    true,
 				Optional:    true,
-				Default:     false,
+				Default:     true,
 			},
 			"allowlist": {
 				Description: "An allowlist object",
