@@ -40,7 +40,7 @@ func TestAccDataSourceRedisCloudSubscription_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "cloud_provider.0.cloud_account_id"),
 					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.region.0.region", "eu-west-1"),
-					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.region.0.networking_deployment_cidr", "10.0.0.0/24"),
+					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.region.0.networks.0.networking_deployment_cidr", "10.0.0.0/24"),
 					resource.TestCheckResourceAttr(dataSourceName, "status", "active"),
 				),
 			},
