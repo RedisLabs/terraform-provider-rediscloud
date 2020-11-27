@@ -73,7 +73,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
-	//t.Skip("Required environment variables currently not available under CI")
+	t.Skip("Required environment variables currently not available under CI")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
