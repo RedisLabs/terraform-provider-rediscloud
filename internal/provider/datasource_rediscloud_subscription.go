@@ -154,10 +154,14 @@ func dataSourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.Resourc
 
 	sub := subs[0]
 
+	paymentMethodID := ""
+	if sub.PaymentMethodID != nil {
+		paymentMethodID = strconv.Itoa(redis.IntValue(sub.PaymentMethodID))
+	}
 	if err := d.Set("name", redis.StringValue(sub.Name)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("payment_method_id", strconv.Itoa(redis.IntValue(sub.PaymentMethodID))); err != nil {
+	if err := d.Set("payment_method_id", paymentMethodID); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("memory_storage", redis.StringValue(sub.MemoryStorage)); err != nil {
