@@ -51,8 +51,9 @@ func resourceRedisCloudSubscriptionPeering() *schema.Resource {
 			},
 			"provider_name": {
 				Type:             schema.TypeString,
+				Description:      "The cloud provider to use with the vpc peering, (either `AWS` or `GCP`)",
 				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
-				Optional: true,
+				Optional:         true,
 				ForceNew:         true,
 				Default:          "AWS",
 			},
