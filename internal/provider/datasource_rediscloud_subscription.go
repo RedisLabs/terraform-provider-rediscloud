@@ -86,20 +86,34 @@ func dataSourceRedisCloudSubscription() *schema.Resource {
 											Type: schema.TypeString,
 										},
 									},
-									"networking_deployment_cidr": {
-										Description: "Deployment CIDR mask",
-										Type:        schema.TypeString,
-										Computed:    true,
-									},
 									"networking_vpc_id": {
 										Description: "The ID of the VPC where the Redis Cloud subscription is deployed",
 										Type:        schema.TypeString,
 										Computed:    true,
 									},
-									"networking_subnet_id": {
-										Description: "The subnet that the subscription deploys into",
-										Type:        schema.TypeString,
+									"networks": {
+										Description: "List of networks used",
+										Type:        schema.TypeList,
 										Computed:    true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"networking_subnet_id": {
+													Description: "The subnet that the subscription deploys into",
+													Type:        schema.TypeString,
+													Computed:    true,
+												},
+												"networking_deployment_cidr": {
+													Description:      "Deployment CIDR mask",
+													Type:             schema.TypeString,
+													Computed:         true,
+												},
+												"networking_vpc_id": {
+													Description: "Either an existing VPC Id (already exists in the specific region) or create a new VPC (if no VPC is specified)",
+													Type:        schema.TypeString,
+													Computed:    true,
+												},
+											},
+										},
 									},
 								},
 							},
@@ -155,7 +169,7 @@ func dataSourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.Resourc
 	if err := d.Set("number_of_databases", redis.IntValue(sub.NumberOfDatabases)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("cloud_provider", flattenCloudDetails(sub.CloudDetails)); err != nil {
+	if err := d.Set("cloud_provider", flattenCloudDetails(sub.CloudDetails, false)); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("status", redis.StringValue(sub.Status)); err != nil {
