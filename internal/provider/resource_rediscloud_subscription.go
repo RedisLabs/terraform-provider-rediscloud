@@ -152,7 +152,6 @@ func resourceRedisCloudSubscription() *schema.Resource {
 								buf.WriteString(fmt.Sprintf("%s-", m["region"].(string)))
 								buf.WriteString(fmt.Sprintf("%t-", m["multiple_availability_zones"].(bool)))
 								buf.WriteString(fmt.Sprintf("%s-", m["preferred_availability_zones"].([]interface{})))
-								buf.WriteString(fmt.Sprintf("%s-", m["networking_vpc_id"].(string)))
 								if v, ok := m["multiple_availability_zones"].(bool); ok && !v {
 									buf.WriteString(fmt.Sprintf("%s-", m["networking_deployment_cidr"].(string)))
 								}
@@ -1061,7 +1060,6 @@ func flattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource b
 				"region":                       currentRegion.Region,
 				"multiple_availability_zones":  currentRegion.MultipleAvailabilityZones,
 				"preferred_availability_zones": currentRegion.PreferredAvailabilityZones,
-				"networking_vpc_id":            currentRegion.Networking[0].VPCId,
 				"networks":                     flattenNetworks(currentRegion.Networking),
 			}
 
