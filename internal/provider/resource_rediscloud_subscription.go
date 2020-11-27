@@ -411,7 +411,8 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 
 	// Create Subscription
 	name := d.Get("name").(string)
-	paymentMethodID, err := strconv.Atoi(d.Get("payment_method_id").(string))
+
+	paymentMethodID, err := readPaymentMethodID(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -422,7 +423,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	createSubscriptionRequest := subscriptions.CreateSubscription{
 		Name:                        redis.String(name),
 		DryRun:                      redis.Bool(false),
-		PaymentMethodID:             redis.Int(paymentMethodID),
+		PaymentMethodID:             paymentMethodID,
 		MemoryStorage:               redis.String(memoryStorage),
 		PersistentStorageEncryption: redis.Bool(persistentStorageEncryption),
 		CloudProviders:              providers,
@@ -557,12 +558,12 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 		}
 
 		if d.HasChange("payment_method_id") {
-			paymentMethodID, err := strconv.Atoi(d.Get("payment_method_id").(string))
+			paymentMethodID, err := readPaymentMethodID(d)
 			if err != nil {
 				return diag.FromErr(err)
 			}
 
-			updateSubscriptionRequest.PaymentMethodID = &paymentMethodID
+			updateSubscriptionRequest.PaymentMethodID = paymentMethodID
 		}
 
 		err = api.client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
@@ -1275,3 +1276,16 @@ func diff(oldSet *schema.Set, newSet *schema.Set, hashKey func(interface{}) stri
 
 	return addition, existing, deletion
 }
+
+func readPaymentMethodID(d *schema.ResourceData) (*int, error) {
+	pmID := d.Get("payment_method_id").(string)
+	if pmID != "" {
+		pmID, err := strconv.Atoi(pmID)
+		if err != nil {
+			return nil, err
+		}
+		return redis.Int(pmID), nil
+	}
+	return nil, nil
+}
+
