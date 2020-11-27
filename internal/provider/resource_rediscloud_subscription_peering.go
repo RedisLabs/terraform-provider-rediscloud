@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -48,34 +49,56 @@ func resourceRedisCloudSubscriptionPeering() *schema.Resource {
 				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 				ForceNew:         true,
 			},
+			"provider_name": {
+				Type:             schema.TypeString,
+				Description:      "The cloud provider to use with the vpc peering, (either `AWS` or `GCP`)",
+				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
+				Optional:         true,
+				ForceNew:         true,
+				Default:          "AWS",
+			},
 			"region": {
 				Description: "AWS Region that the VPC to be peered lives in",
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
+				Computed:    true,
 				ForceNew:    true,
 			},
 			"aws_account_id": {
 				Description: "AWS account id that the VPC to be peered lives in",
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
+				Computed:    true,
 				ForceNew:    true,
 			},
 			"vpc_id": {
 				Description: "Identifier of the VPC to be peered",
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
+				Computed:    true,
 				ForceNew:    true,
 			},
 			"vpc_cidr": {
 				Description: "CIDR range of the VPC to be peered",
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
+				Computed:    true,
 				ForceNew:    true,
 			},
 			"status": {
 				Description: "Current status of the account - `initiating-request`, `pending-acceptance`, `active`, `inactive` or `failed`",
 				Type:        schema.TypeString,
 				Computed:    true,
+			},
+			"gcp_project_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"network_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 		},
 	}
@@ -92,12 +115,56 @@ func resourceRedisCloudSubscriptionPeeringCreate(ctx context.Context, d *schema.
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
-	peering, err := api.client.Subscription.CreateVPCPeering(ctx, subId, subscriptions.CreateVPCPeering{
-		Region:       redis.String(d.Get("region").(string)),
-		AWSAccountID: redis.String(d.Get("aws_account_id").(string)),
-		VPCId:        redis.String(d.Get("vpc_id").(string)),
-		VPCCidr:      redis.String(d.Get("vpc_cidr").(string)),
-	})
+	providerName := d.Get("provider_name").(string)
+
+	peeringRequest := subscriptions.CreateVPCPeering{}
+
+	if providerName == "AWS" {
+
+		region, ok := d.GetOk("region")
+		if !ok {
+			return diag.Errorf("`region` must be set when `provider_name` is `AWS`")
+		}
+
+		awsAccountID, ok := d.GetOk("aws_account_id")
+		if !ok {
+			return diag.Errorf("`aws_account_id` must be set when `provider_name` is `AWS`")
+		}
+
+		vpcID, ok := d.GetOk("vpc_id")
+		if !ok {
+			return diag.Errorf("`vpc_id` must be set when `provider_name` is `AWS`")
+		}
+
+		vpcCIDR, ok := d.GetOk("vpc_cidr")
+		if !ok {
+			return diag.Errorf("`vpc_cidr` must be set when `provider_name` is `AWS`")
+		}
+
+		peeringRequest.Region = redis.String(region.(string))
+		peeringRequest.AWSAccountID = redis.String(awsAccountID.(string))
+		peeringRequest.VPCId = redis.String(vpcID.(string))
+		peeringRequest.VPCCidr = redis.String(vpcCIDR.(string))
+	}
+
+	if providerName == "GCP" {
+
+		gcpProjectID, ok := d.GetOk("gcp_project_id")
+		if !ok {
+			return diag.Errorf("`gcp_project_id` must be set when `provider_name` is `GCP`")
+		}
+
+		networkName, ok := d.GetOk("network_name")
+		if !ok {
+			return diag.Errorf("`network_name` must be set when `provider_name` is `GCP`")
+		}
+
+		peeringRequest.Provider = redis.String(strings.ToLower(providerName))
+		peeringRequest.VPCProjectUID = redis.String(gcpProjectID.(string))
+		peeringRequest.VPCNetworkName = redis.String(networkName.(string))
+	}
+
+	peering, err := api.client.Subscription.CreateVPCPeering(ctx, subId, peeringRequest)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -136,19 +203,31 @@ func resourceRedisCloudSubscriptionPeeringRead(ctx context.Context, d *schema.Re
 		return diags
 	}
 
-	if err := d.Set("aws_account_id", redis.StringValue(peering.AWSAccountID)); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("vpc_id", redis.StringValue(peering.VPCId)); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("vpc_cidr", redis.StringValue(peering.VPCCidr)); err != nil {
-		return diag.FromErr(err)
-	}
 	if err := d.Set("status", redis.StringValue(peering.Status)); err != nil {
 		return diag.FromErr(err)
 	}
 
+	providerName := d.Get("provider_name").(string)
+
+	if providerName == "AWS" {
+		if err := d.Set("aws_account_id", redis.StringValue(peering.AWSAccountID)); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("vpc_id", redis.StringValue(peering.VPCId)); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("vpc_cidr", redis.StringValue(peering.VPCCidr)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+	if providerName == "GCP" {
+		if err := d.Set("gcp_project_id", redis.StringValue(peering.GCPProjectUID)); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("network_name", redis.StringValue(peering.NetworkName)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
 	return diags
 }
 
