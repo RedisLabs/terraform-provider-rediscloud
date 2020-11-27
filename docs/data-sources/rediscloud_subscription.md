@@ -48,7 +48,13 @@ The cloud_provider `region` block supports:
 
 * `region` - Deployment region as defined by cloud provider
 * `multiple_availability_zones` - Support deployment on multiple availability zones within the selected region
-* `networking_deployment_cidr` - Deployment CIDR mask
-* `networking_subnet_id` - The subnet that the subscription deploys into
 * `networking_vpc_id` - The ID of the VPC where the Redis Cloud subscription is deployed.
 * `preferred_availability_zones` - List of availability zones used
+
+* `networks` - List of generated network configuration
+
+The `networks` block has these attributes:
+
+* `networking_subnet_id` - The subnet that the subscription deploys into
+* `networking_deployment_cidr` - Deployment CIDR mask for the generated
+* `networking_vpc_id` - VPC id for the generated network
