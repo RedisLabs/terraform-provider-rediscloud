@@ -1,8 +1,14 @@
 package provider
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"log"
+	"regexp"
+	"strconv"
+	"time"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -11,10 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"log"
-	"regexp"
-	"strconv"
-	"time"
 )
 
 func resourceRedisCloudSubscription() *schema.Resource {
@@ -144,6 +146,18 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Required:    true,
 							ForceNew:    true,
 							MinItems:    1,
+							Set: func(v interface{}) int {
+								var buf bytes.Buffer
+								m := v.(map[string]interface{})
+								buf.WriteString(fmt.Sprintf("%s-", m["region"].(string)))
+								buf.WriteString(fmt.Sprintf("%t-", m["multiple_availability_zones"].(bool)))
+								buf.WriteString(fmt.Sprintf("%s-", m["preferred_availability_zones"].([]interface{})))
+								if v, ok := m["multiple_availability_zones"].(bool); ok && !v {
+									buf.WriteString(fmt.Sprintf("%s-", m["networking_deployment_cidr"].(string)))
+								}
+
+								return schema.HashString(buf.String())
+							},
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"region": {
@@ -169,12 +183,10 @@ func resourceRedisCloudSubscription() *schema.Resource {
 										},
 									},
 									"networking_deployment_cidr": {
-										Description: "Deployment CIDR mask",
-										Type:        schema.TypeString,
-										// TODO this needs to be ForceNew as it can't be updated, but cannot also be Computed
-										// TODO need to see what the returned value is when only using redis internal account
-										Optional:         true,
-										Computed:         true,
+										Description:      "Deployment CIDR mask",
+										Type:             schema.TypeString,
+										ForceNew:         true,
+										Required:         true,
 										ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
 									},
 									"networking_vpc_id": {
@@ -184,10 +196,29 @@ func resourceRedisCloudSubscription() *schema.Resource {
 										Optional:    true,
 										Default:     "",
 									},
-									"networking_subnet_id": {
-										Description: "The subnet that the subscription deploys into",
-										Type:        schema.TypeString,
+									"networks": {
+										Description: "List of networks used",
+										Type:        schema.TypeList,
 										Computed:    true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"networking_subnet_id": {
+													Description: "The subnet that the subscription deploys into",
+													Type:        schema.TypeString,
+													Computed:    true,
+												},
+												"networking_deployment_cidr": {
+													Description: "Deployment CIDR mask",
+													Type:        schema.TypeString,
+													Computed:    true,
+												},
+												"networking_vpc_id": {
+													Description: "Either an existing VPC Id (already exists in the specific region) or create a new VPC (if no VPC is specified)",
+													Type:        schema.TypeString,
+													Computed:    true,
+												},
+											},
+										},
 									},
 								},
 							},
@@ -462,7 +493,7 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("cloud_provider", flattenCloudDetails(subscription.CloudDetails)); err != nil {
+	if err := d.Set("cloud_provider", flattenCloudDetails(subscription.CloudDetails, true)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -471,8 +502,8 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 
-	// CIDR whitelist is not allowed for Redis Labs internal resources subscription.
-	if redis.IntValue(providers[0].CloudAccountID) != 1 {
+	// CIDR allowlist is not allowed for Redis Labs internal resources subscription.
+	if len(providers) > 0 && redis.IntValue(providers[0].CloudAccountID) != 1 {
 		allowlist, err := flattenSubscriptionAllowlist(ctx, subId, api)
 		if err != nil {
 			return diag.FromErr(err)
@@ -1017,7 +1048,7 @@ func isNil(i interface{}) bool {
 	return false
 }
 
-func flattenCloudDetails(cloudDetails []*subscriptions.CloudDetail) []map[string]interface{} {
+func flattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource bool) []map[string]interface{} {
 	var cdl []map[string]interface{}
 
 	for _, currentCloudDetail := range cloudDetails {
@@ -1029,9 +1060,15 @@ func flattenCloudDetails(cloudDetails []*subscriptions.CloudDetail) []map[string
 				"region":                       currentRegion.Region,
 				"multiple_availability_zones":  currentRegion.MultipleAvailabilityZones,
 				"preferred_availability_zones": currentRegion.PreferredAvailabilityZones,
-				"networking_deployment_cidr":   currentRegion.Networking[0].DeploymentCIDR,
-				"networking_vpc_id":            currentRegion.Networking[0].VPCId,
-				"networking_subnet_id":         currentRegion.Networking[0].SubnetID,
+				"networks":                     flattenNetworks(currentRegion.Networking),
+			}
+
+			if isResource {
+				regionMapString["networking_deployment_cidr"] = currentRegion.Networking[0].DeploymentCIDR
+
+				if redis.BoolValue(currentRegion.MultipleAvailabilityZones) {
+					regionMapString["networking_deployment_cidr"] = ""
+				}
 			}
 
 			regions = append(regions, regionMapString)
@@ -1043,6 +1080,23 @@ func flattenCloudDetails(cloudDetails []*subscriptions.CloudDetail) []map[string
 			"region":           regions,
 		}
 		cdl = append(cdl, cdlMapString)
+	}
+
+	return cdl
+}
+
+func flattenNetworks(networks []*subscriptions.Networking) []map[string]interface{} {
+	var cdl []map[string]interface{}
+
+	for _, currentNetwork := range networks {
+
+		networkMapString := map[string]interface{}{
+			"networking_deployment_cidr": currentNetwork.DeploymentCIDR,
+			"networking_vpc_id":          currentNetwork.VPCId,
+			"networking_subnet_id":       currentNetwork.SubnetID,
+		}
+
+		cdl = append(cdl, networkMapString)
 	}
 
 	return cdl
