@@ -34,7 +34,7 @@ func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T)
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
-					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.0.networking_subnet_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
 					resource.TestCheckResourceAttr(resourceName, "database.#", "1"),
 					resource.TestMatchResourceAttr(resourceName, "database.0.db_id", regexp.MustCompile("^[1-9][0-9]*$")),
 					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
