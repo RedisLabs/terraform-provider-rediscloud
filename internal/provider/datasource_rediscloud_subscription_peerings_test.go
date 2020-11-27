@@ -101,6 +101,5 @@ resource "rediscloud_subscription_peering" "test" {
 
 data "rediscloud_subscription_peerings" "example" {
   subscription_id = rediscloud_subscription.example.id
-  provider_name = "AWS"
 }
 `
