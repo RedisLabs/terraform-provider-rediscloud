@@ -142,13 +142,18 @@ jobs:
       - run: make testacc
         if: steps.filter.outputs.code-changes == 'true'
         env:
-          REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_QA }}
-          REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_QA }}
-          REDISCLOUD_URL: https://qa-api.redislabs.com/v1/
-#          REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_PROD }}
-#          REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_PROD }}
-#          REDISCLOUD_URL: https://api.redislabs.com/v1/
-          AWS_TEST_CLOUD_ACCOUNT_NAME: oc
+#          REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_QA }}
+#          REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_QA }}
+#          REDISCLOUD_URL: https://qa-api.redislabs.com/v1/
+#          AWS_TEST_CLOUD_ACCOUNT_NAME: oc
+          REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_PROD }}
+          REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_PROD }}
+          REDISCLOUD_URL: https://api.redislabs.com/v1/
+          AWS_TEST_CLOUD_ACCOUNT_NAME: PM
+          AWS_PEERING_REGION: ${{ secrets.AWS_PEERING_REGION }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_VPC_CIDR: ${{ secrets.AWS_VPC_CIDR }}
+          AWS_VPC_ID: ${{ secrets.AWS_VPC_ID }}
           TF_ACC: true
           TF_LOG: debug
           AWS_ACCESS_KEY_ID: ${{ secrets.CLOUD_ACCOUNT_KEY }}
