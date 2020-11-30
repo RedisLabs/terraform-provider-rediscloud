@@ -151,7 +151,6 @@ func resourceRedisCloudSubscription() *schema.Resource {
 								m := v.(map[string]interface{})
 								buf.WriteString(fmt.Sprintf("%s-", m["region"].(string)))
 								buf.WriteString(fmt.Sprintf("%t-", m["multiple_availability_zones"].(bool)))
-								buf.WriteString(fmt.Sprintf("%s-", m["preferred_availability_zones"].([]interface{})))
 								if v, ok := m["multiple_availability_zones"].(bool); ok && !v {
 									buf.WriteString(fmt.Sprintf("%s-", m["networking_deployment_cidr"].(string)))
 								}
@@ -484,8 +483,12 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 	if err := d.Set("name", redis.StringValue(subscription.Name)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("payment_method_id", strconv.Itoa(redis.IntValue(subscription.PaymentMethodID))); err != nil {
-		return diag.FromErr(err)
+
+	if subscription.PaymentMethodID != nil && redis.IntValue(subscription.PaymentMethodID) != 0 {
+		paymentMethodID := strconv.Itoa(redis.IntValue(subscription.PaymentMethodID))
+		if err := d.Set("payment_method_id", paymentMethodID); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	if err := d.Set("memory_storage", redis.StringValue(subscription.MemoryStorage)); err != nil {
 		return diag.FromErr(err)
