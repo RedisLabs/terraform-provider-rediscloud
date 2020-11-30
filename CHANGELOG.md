@@ -2,18 +2,27 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+## 0.2.1 (Unreleased)
+
 ## 0.2.0 (Unreleased)
 
 ### Added
+
+- Support for GCP Subscription Peering
 - datasource_rediscloud_subscription_peerings to retrieve the subscription peering details
 
 ### Changed
 
 - Website documentation and HCL examples to correct spelling and update content
 - Changelog to record released content
+- `network_deployment_cidr` is now required and to resolve issues with plan convergence after a successful Terraform apply
+- `network_deployment_cidr` and `networking_vpc_id` were excluded from the hash calculation as 
+- `networks` added to the `region` block in subscription resource and data source to allow reading all different CIDR and subnets in Multi-AZ subscription
+- Fixed issues when creating a subscription without a payment method
 
 ### Removed
 
+- `network_deployment_subnet` was moved to the `networks` block in subscription resource and data source
 
 ## 0.1.1 (November 24, 2020)
 
