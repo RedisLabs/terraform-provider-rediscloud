@@ -25,9 +25,9 @@ func dataSourceRedisCloudSubscriptionPeerings() *schema.Resource {
 				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 			},
 			"status": {
-				Description:      "Current status of the account - `initiating-request`, `pending-acceptance`, `active`, `inactive` or `failed`",
-				Optional:         true,
-				Type:             schema.TypeString,
+				Description: "Current status of the account - `initiating-request`, `pending-acceptance`, `active`, `inactive` or `failed`",
+				Optional:    true,
+				Type:        schema.TypeString,
 				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice([]string{
 					subscriptions.VPCPeeringStatusInitiatingRequest,
 					subscriptions.VPCPeeringStatusActive,
@@ -72,13 +72,33 @@ func dataSourceRedisCloudSubscriptionPeerings() *schema.Resource {
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
-						"network_name": {
+						"gcp_network_name": {
 							Description: "The name of the network to be peered",
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
 						"status": {
 							Description: "Current status of the account - `initiating-request`, `pending-acceptance`, `active`, `inactive` or `failed`",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"aws_peering_id": {
+							Description: "Identifier of the AWS cloud peering",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"gcp_redis_project_id": {
+							Description: "Identifier of the Redis Enterprise Cloud GCP project to be peered",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"gcp_redis_network_name": {
+							Description: "The name of the Redis Enterprise Cloud network to be peered",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"gcp_peering_id": {
+							Description: "Identifier of the cloud peering",
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
@@ -161,14 +181,18 @@ func flattenVPCPeering(vpcPeerings []*subscriptions.VPCPeering) []map[string]int
 	for _, currentVPCPeering := range vpcPeerings {
 
 		peeringMapString := map[string]interface{}{
-			"peering_id":     currentVPCPeering.ID,
-			"provider_name":  resolveProviderFromVPCPeering(currentVPCPeering),
-			"status":         currentVPCPeering.Status,
-			"aws_account_id": currentVPCPeering.AWSAccountID,
-			"vpc_id":         currentVPCPeering.VPCId,
-			"vpc_cidr":       currentVPCPeering.VPCCidr,
-			"gcp_project_id": currentVPCPeering.GCPProjectUID,
-			"network_name":   currentVPCPeering.NetworkName,
+			"peering_id":             currentVPCPeering.ID,
+			"provider_name":          resolveProviderFromVPCPeering(currentVPCPeering),
+			"status":                 currentVPCPeering.Status,
+			"aws_account_id":         currentVPCPeering.AWSAccountID,
+			"aws_peering_id":         currentVPCPeering.AWSPeeringID,
+			"vpc_id":                 currentVPCPeering.VPCId,
+			"vpc_cidr":               currentVPCPeering.VPCCidr,
+			"gcp_project_id":         currentVPCPeering.GCPProjectUID,
+			"gcp_network_name":       currentVPCPeering.NetworkName,
+			"gcp_redis_project_id":   currentVPCPeering.RedisProjectUID,
+			"gcp_redis_network_name": currentVPCPeering.RedisNetworkName,
+			"gcp_peering_id":         currentVPCPeering.CloudPeeringID,
 		}
 
 		rl = append(rl, peeringMapString)

@@ -38,7 +38,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 	vpcId := os.Getenv("AWS_VPC_ID")
 	matchesRegex(t, vpcId, "^vpc-[a-z\\d]+$")
 
-  tf := fmt.Sprintf(testAccResourceRedisCloudSubscriptionPeeringAWS,
+	tf := fmt.Sprintf(testAccResourceRedisCloudSubscriptionPeeringAWS,
 		testCloudAccountName,
 		name,
 		subCidrRange,
@@ -65,6 +65,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "vpc_cidr"),
 					resource.TestCheckResourceAttrSet(resourceName, "region"),
+					resource.TestCheckResourceAttrSet(resourceName, "aws_peering_id"),
 				),
 			},
 		},
@@ -86,7 +87,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
 	resourceName := "rediscloud_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t)},
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -97,7 +98,10 @@ func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "provider_name", "GCP"),
 					resource.TestCheckResourceAttrSet(resourceName, "status"),
 					resource.TestCheckResourceAttrSet(resourceName, "gcp_project_id"),
-					resource.TestCheckResourceAttrSet(resourceName, "network_name"),
+					resource.TestCheckResourceAttrSet(resourceName, "gcp_network_name"),
+					resource.TestCheckResourceAttrSet(resourceName, "gcp_redis_project_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "gcp_redis_network_name"),
+					resource.TestCheckResourceAttrSet(resourceName, "gcp_peering_id"),
 				),
 			},
 		},
@@ -209,6 +213,6 @@ resource "rediscloud_subscription_peering" "test" {
   subscription_id = rediscloud_subscription.example.id
   provider_name = "GCP"
   gcp_project_id = "%s"
-  network_name = "%s"
+  gcp_network_name = "%s"
 }
 `

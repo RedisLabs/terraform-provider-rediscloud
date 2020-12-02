@@ -103,9 +103,9 @@ func dataSourceRedisCloudSubscription() *schema.Resource {
 													Computed:    true,
 												},
 												"networking_deployment_cidr": {
-													Description:      "Deployment CIDR mask",
-													Type:             schema.TypeString,
-													Computed:         true,
+													Description: "Deployment CIDR mask",
+													Type:        schema.TypeString,
+													Computed:    true,
 												},
 												"networking_vpc_id": {
 													Description: "Either an existing VPC Id (already exists in the specific region) or create a new VPC (if no VPC is specified)",

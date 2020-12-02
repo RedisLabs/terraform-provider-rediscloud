@@ -85,20 +85,42 @@ func resourceRedisCloudSubscriptionPeering() *schema.Resource {
 				Computed:    true,
 				ForceNew:    true,
 			},
+			"gcp_project_id": {
+				Description: "GCP project ID that the VPC to be peered lives in",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+			},
+			"gcp_network_name": {
+				Description: "The name of the network to be peered",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+			},
 			"status": {
 				Description: "Current status of the account - `initiating-request`, `pending-acceptance`, `active`, `inactive` or `failed`",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
-			"gcp_project_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+			"aws_peering_id": {
+				Description: "Identifier of the AWS cloud peering",
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
-			"network_name": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+			"gcp_redis_project_id": {
+				Description: "Identifier of the Redis Enterprise Cloud GCP project to be peered",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"gcp_redis_network_name": {
+				Description: "The name of the Redis Enterprise Cloud network to be peered",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"gcp_peering_id": {
+				Description: "Identifier of the cloud peering",
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
 		},
 	}
@@ -154,14 +176,14 @@ func resourceRedisCloudSubscriptionPeeringCreate(ctx context.Context, d *schema.
 			return diag.Errorf("`gcp_project_id` must be set when `provider_name` is `GCP`")
 		}
 
-		networkName, ok := d.GetOk("network_name")
+		gcpNetworkName, ok := d.GetOk("gcp_network_name")
 		if !ok {
 			return diag.Errorf("`network_name` must be set when `provider_name` is `GCP`")
 		}
 
 		peeringRequest.Provider = redis.String(strings.ToLower(providerName))
 		peeringRequest.VPCProjectUID = redis.String(gcpProjectID.(string))
-		peeringRequest.VPCNetworkName = redis.String(networkName.(string))
+		peeringRequest.VPCNetworkName = redis.String(gcpNetworkName.(string))
 	}
 
 	peering, err := api.client.Subscription.CreateVPCPeering(ctx, subId, peeringRequest)
@@ -213,6 +235,9 @@ func resourceRedisCloudSubscriptionPeeringRead(ctx context.Context, d *schema.Re
 		if err := d.Set("aws_account_id", redis.StringValue(peering.AWSAccountID)); err != nil {
 			return diag.FromErr(err)
 		}
+		if err := d.Set("aws_peering_id", redis.StringValue(peering.AWSPeeringID)); err != nil {
+			return diag.FromErr(err)
+		}
 		if err := d.Set("vpc_id", redis.StringValue(peering.VPCId)); err != nil {
 			return diag.FromErr(err)
 		}
@@ -224,9 +249,19 @@ func resourceRedisCloudSubscriptionPeeringRead(ctx context.Context, d *schema.Re
 		if err := d.Set("gcp_project_id", redis.StringValue(peering.GCPProjectUID)); err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("network_name", redis.StringValue(peering.NetworkName)); err != nil {
+		if err := d.Set("gcp_network_name", redis.StringValue(peering.NetworkName)); err != nil {
 			return diag.FromErr(err)
 		}
+		if err := d.Set("gcp_redis_project_id", redis.StringValue(peering.RedisProjectUID)); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("gcp_redis_network_name", redis.StringValue(peering.RedisNetworkName)); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("gcp_peering_id", redis.StringValue(peering.CloudPeeringID)); err != nil {
+			return diag.FromErr(err)
+		}
+
 	}
 	return diags
 }
