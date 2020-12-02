@@ -192,7 +192,7 @@ func flattenVPCPeering(vpcPeerings []*subscriptions.VPCPeering) []map[string]int
 			"gcp_network_name":       currentVPCPeering.NetworkName,
 			"gcp_redis_project_id":   currentVPCPeering.RedisProjectUID,
 			"gcp_redis_network_name": currentVPCPeering.RedisNetworkName,
-			"gcp_peering_id":       currentVPCPeering.CloudPeeringID,
+			"gcp_peering_id":         currentVPCPeering.CloudPeeringID,
 		}
 
 		rl = append(rl, peeringMapString)
