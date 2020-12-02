@@ -51,8 +51,8 @@ output "gcloud_peering_cmd" {
   ${rediscloud_subscription_peering.example.redis_network_name} \
   --project ${rediscloud_subscription_peering.example.gcp_project_id} \
   --network ${rediscloud_subscription_peering.example.gcp_network_name} \
-  --peer-project ${rediscloud_subscription_peering.example.redis_project_id} \
-  --peer-network ${rediscloud_subscription_peering.example.redis_network_name} \
+  --peer-project ${rediscloud_subscription_peering.example.gcp_redis_project_id} \
+  --peer-network ${rediscloud_subscription_peering.example.gcp_redis_network_name} \
   --auto-create-routes
   EOF
 }
@@ -92,8 +92,8 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 **GCP ONLY:**
 
-* `redis_project_id` Identifier of the Redis Enterprise Cloud GCP project to be peered
-* `redis_network_name` The name of the Redis Enterprise Cloud network to be peered
+* `gcp_redis_project_id` Identifier of the Redis Enterprise Cloud GCP project to be peered
+* `gcp_redis_network_name` The name of the Redis Enterprise Cloud network to be peered
 * `cloud_peering_id` Identifier of the cloud peering
 
 ## Import

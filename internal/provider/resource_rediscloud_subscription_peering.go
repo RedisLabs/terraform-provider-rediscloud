@@ -87,15 +87,15 @@ func resourceRedisCloudSubscriptionPeering() *schema.Resource {
 			},
 			"gcp_project_id": {
 				Description: "GCP project ID that the VPC to be peered lives in",
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
 			},
 			"gcp_network_name": {
 				Description: "The name of the network to be peered",
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
 			},
 			"status": {
 				Description: "Current status of the account - `initiating-request`, `pending-acceptance`, `active`, `inactive` or `failed`",
@@ -107,20 +107,20 @@ func resourceRedisCloudSubscriptionPeering() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
-			"redis_project_id": {
+			"gcp_redis_project_id": {
 				Description: "Identifier of the Redis Enterprise Cloud GCP project to be peered",
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
-			"redis_network_name": {
+			"gcp_redis_network_name": {
 				Description: "The name of the Redis Enterprise Cloud network to be peered",
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
 			"cloud_peering_id": {
 				Description: "Identifier of the cloud peering",
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
 		},
 	}
@@ -252,10 +252,10 @@ func resourceRedisCloudSubscriptionPeeringRead(ctx context.Context, d *schema.Re
 		if err := d.Set("gcp_network_name", redis.StringValue(peering.NetworkName)); err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("redis_project_id", redis.StringValue(peering.RedisProjectUID)); err != nil {
+		if err := d.Set("gcp_redis_project_id", redis.StringValue(peering.RedisProjectUID)); err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("redis_network_name", redis.StringValue(peering.RedisNetworkName)); err != nil {
+		if err := d.Set("gcp_redis_network_name", redis.StringValue(peering.RedisNetworkName)); err != nil {
 			return diag.FromErr(err)
 		}
 		if err := d.Set("cloud_peering_id", redis.StringValue(peering.CloudPeeringID)); err != nil {

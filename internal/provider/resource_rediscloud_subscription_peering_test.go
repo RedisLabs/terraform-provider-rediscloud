@@ -38,7 +38,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 	vpcId := os.Getenv("AWS_VPC_ID")
 	matchesRegex(t, vpcId, "^vpc-[a-z\\d]+$")
 
-  tf := fmt.Sprintf(testAccResourceRedisCloudSubscriptionPeeringAWS,
+	tf := fmt.Sprintf(testAccResourceRedisCloudSubscriptionPeeringAWS,
 		testCloudAccountName,
 		name,
 		subCidrRange,
@@ -87,7 +87,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
 	resourceName := "rediscloud_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t)},
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{

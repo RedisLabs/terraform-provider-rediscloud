@@ -1291,4 +1291,3 @@ func readPaymentMethodID(d *schema.ResourceData) (*int, error) {
 	}
 	return nil, nil
 }
-

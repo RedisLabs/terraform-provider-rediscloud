@@ -49,6 +49,6 @@ Each peering entry provides the following attributes
 **GCP ONLY:**
 * `gcp_project_id` GCP project ID that the VPC to be peered lives in
 * `gcp_network_name` The name of the network to be peered
-* `redis_project_id` Identifier of the Redis Enterprise Cloud GCP project to be peered
-* `redis_network_name` - The name of the Redis Enterprise Cloud network to be peered
+* `gcp_redis_project_id` Identifier of the Redis Enterprise Cloud GCP project to be peered
+* `gcp_redis_network_name` - The name of the Redis Enterprise Cloud network to be peered
 * `cloud_peering_id` - Identifier of the cloud peering
