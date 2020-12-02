@@ -48,7 +48,7 @@ resource "rediscloud_subscription_peering" "example" {
 output "gcloud_peering_cmd" {
   value = <<-EOF
   gcloud compute networks peerings create \
-  ${rediscloud_subscription_peering.example.redis_network_name} \
+  ${rediscloud_subscription_peering.example.gcp_redis_project_id} \
   --project ${rediscloud_subscription_peering.example.gcp_project_id} \
   --network ${rediscloud_subscription_peering.example.gcp_network_name} \
   --peer-project ${rediscloud_subscription_peering.example.gcp_redis_project_id} \
