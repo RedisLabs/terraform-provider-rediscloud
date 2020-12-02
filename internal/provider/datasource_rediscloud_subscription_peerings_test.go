@@ -42,10 +42,10 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 				Config: tf,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckTypeSetElemNestedAttrs(dataSourceName, "peerings.*", map[string]string{
-						"provider_name": "AWS",
+						"provider_name":  "AWS",
 						"aws_account_id": awsAccountId,
-						"vpc_id": awsVPCId,
-						"vpc_cidr": awsVPCCidr,
+						"vpc_id":         awsVPCId,
+						"vpc_cidr":       awsVPCCidr,
 					}),
 				),
 			},
