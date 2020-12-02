@@ -72,7 +72,7 @@ func dataSourceRedisCloudSubscriptionPeerings() *schema.Resource {
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
-						"network_name": {
+						"gcp_network_name": {
 							Description: "The name of the network to be peered",
 							Type:        schema.TypeString,
 							Computed:    true,
@@ -81,6 +81,26 @@ func dataSourceRedisCloudSubscriptionPeerings() *schema.Resource {
 							Description: "Current status of the account - `initiating-request`, `pending-acceptance`, `active`, `inactive` or `failed`",
 							Type:        schema.TypeString,
 							Computed:    true,
+						},
+						"aws_peering_id": {
+							Description: "Identifier of the AWS cloud peering",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"redis_project_id": {
+							Description: "Identifier of the Redis Enterprise Cloud GCP project to be peered",
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"redis_network_name": {
+							Description: "The name of the Redis Enterprise Cloud network to be peered",
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"cloud_peering_id": {
+							Description: "Identifier of the cloud peering",
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 					},
 				},
@@ -165,10 +185,14 @@ func flattenVPCPeering(vpcPeerings []*subscriptions.VPCPeering) []map[string]int
 			"provider_name":  resolveProviderFromVPCPeering(currentVPCPeering),
 			"status":         currentVPCPeering.Status,
 			"aws_account_id": currentVPCPeering.AWSAccountID,
+			"aws_peering_id": currentVPCPeering.AWSPeeringID,
 			"vpc_id":         currentVPCPeering.VPCId,
 			"vpc_cidr":       currentVPCPeering.VPCCidr,
 			"gcp_project_id": currentVPCPeering.GCPProjectUID,
-			"network_name":   currentVPCPeering.NetworkName,
+			"gcp_network_name":   currentVPCPeering.NetworkName,
+			"redis_project_id": currentVPCPeering.RedisProjectUID,
+			"redis_network_name": currentVPCPeering.RedisNetworkName,
+			"cloud_peering_id": currentVPCPeering.CloudPeeringID,
 		}
 
 		rl = append(rl, peeringMapString)

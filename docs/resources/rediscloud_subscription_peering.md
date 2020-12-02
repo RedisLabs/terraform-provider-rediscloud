@@ -30,6 +30,9 @@ resource "rediscloud_subscription_peering" "example" {
 
 ## Example Usage - GCP
 
+The following example shows how a subscription can be peered with a GCP project network.
+The terraform output value shows how an example gcloud command can be returned for the user to execute to complete the peering. 
+
 ```hcl
 resource "rediscloud_subscription" "example" {
   // ...
@@ -39,7 +42,19 @@ resource "rediscloud_subscription_peering" "example" {
    subscription_id = rediscloud_subscription.example.id
    provider = "GCP"
    gcp_project_id = "cloud-api-123456"
-   network_name = "cloud-api-vpc-peering-example"
+   gcp_network_name = "cloud-api-vpc-peering-example"
+}
+
+output "gcloud_peering_cmd" {
+  value = <<-EOF
+  gcloud compute networks peerings create \
+  ${rediscloud_subscription_peering.example.redis_network_name} \
+  --project ${rediscloud_subscription_peering.example.gcp_project_id} \
+  --network ${rediscloud_subscription_peering.example.gcp_network_name} \
+  --peer-project ${rediscloud_subscription_peering.example.redis_project_id} \
+  --peer-network ${rediscloud_subscription_peering.example.redis_network_name} \
+  --auto-create-routes
+  EOF
 }
 ```
 
@@ -58,7 +73,7 @@ The following arguments are supported:
 
 **GCP ONLY:**
 * `gcp_project_id` - (Required GCP) GCP project ID that the VPC to be peered lives in
-* `network_name` - (Required GCP) The name of the network to be peered
+* `gcp_network_name` - (Required GCP) The name of the network to be peered
 
 ### Timeouts
 
@@ -70,6 +85,16 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 ## Attribute reference
 
 * `status` is set to the current status of the account - `initiating-request`, `pending-acceptance`, `active`, `inactive` or `failed`.
+
+**AWS ONLY:**
+
+* `aws_peering_id` Identifier of the AWS cloud peering
+
+**GCP ONLY:**
+
+* `redis_project_id` Identifier of the Redis Enterprise Cloud GCP project to be peered
+* `redis_network_name` The name of the Redis Enterprise Cloud network to be peered
+* `cloud_peering_id` Identifier of the cloud peering
 
 ## Import
 
