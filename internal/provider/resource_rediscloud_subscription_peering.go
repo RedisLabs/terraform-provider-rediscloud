@@ -117,7 +117,7 @@ func resourceRedisCloudSubscriptionPeering() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
-			"cloud_peering_id": {
+			"gcp_peering_id": {
 				Description: "Identifier of the cloud peering",
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -258,7 +258,7 @@ func resourceRedisCloudSubscriptionPeeringRead(ctx context.Context, d *schema.Re
 		if err := d.Set("gcp_redis_network_name", redis.StringValue(peering.RedisNetworkName)); err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("cloud_peering_id", redis.StringValue(peering.CloudPeeringID)); err != nil {
+		if err := d.Set("gcp_peering_id", redis.StringValue(peering.CloudPeeringID)); err != nil {
 			return diag.FromErr(err)
 		}
 

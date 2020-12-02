@@ -97,7 +97,7 @@ func dataSourceRedisCloudSubscriptionPeerings() *schema.Resource {
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
-						"cloud_peering_id": {
+						"gcp_peering_id": {
 							Description: "Identifier of the cloud peering",
 							Type:        schema.TypeString,
 							Computed:    true,
@@ -192,7 +192,7 @@ func flattenVPCPeering(vpcPeerings []*subscriptions.VPCPeering) []map[string]int
 			"gcp_network_name":       currentVPCPeering.NetworkName,
 			"gcp_redis_project_id":   currentVPCPeering.RedisProjectUID,
 			"gcp_redis_network_name": currentVPCPeering.RedisNetworkName,
-			"cloud_peering_id":       currentVPCPeering.CloudPeeringID,
+			"gcp_peering_id":       currentVPCPeering.CloudPeeringID,
 		}
 
 		rl = append(rl, peeringMapString)

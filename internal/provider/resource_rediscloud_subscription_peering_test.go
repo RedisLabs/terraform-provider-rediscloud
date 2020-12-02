@@ -101,7 +101,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "gcp_network_name"),
 					resource.TestCheckResourceAttrSet(resourceName, "gcp_redis_project_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "gcp_redis_network_name"),
-					resource.TestCheckResourceAttrSet(resourceName, "cloud_peering_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "gcp_peering_id"),
 				),
 			},
 		},
