@@ -14,8 +14,7 @@ For GCP, the opposite peering request should be submitted.
 
 ## Example Usage - AWS
 
-The following example shows how a subscription can be peered with a AWS VPC.
-The terraform output value shows how an example `aws ec2 accept-vpc-peering-connection` command can be returned for the user to accept the peering request.
+The following example shows how a subscription can be peered with a AWS VPC using the rediscloud and google providers.
 
 ```hcl
 resource "rediscloud_subscription" "example" {
@@ -30,10 +29,9 @@ resource "rediscloud_subscription_peering" "example" {
    vpc_cidr = "10.0.0.0/8"
 }
 
-output "aws_peering_accept_cmd" {
-  value = <<-EOF
-  aws ec2 accept-vpc-peering-connection --vpc-peering-connection-id ${rediscloud_subscription_peering.example.aws_peering_id}
-  EOF
+resource "aws_vpc_peering_connection_accepter" "example-peering" {
+  vpc_peering_connection_id = rediscloud_subscription_peering.example.aws_peering_id
+  auto_accept               = true
 }
 ```
 
