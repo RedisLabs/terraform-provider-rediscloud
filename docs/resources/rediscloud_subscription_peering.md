@@ -14,8 +14,7 @@ For GCP, the opposite peering request should be submitted.
 
 ## Example Usage - AWS
 
-The following example shows how a subscription can be peered with a AWS VPC.
-The terraform output value shows how an example `aws ec2 accept-vpc-peering-connection` command can be returned for the user to accept the peering request.
+The following example shows how a subscription can be peered with a AWS VPC using the rediscloud and google providers.
 
 ```hcl
 resource "rediscloud_subscription" "example" {
@@ -30,17 +29,16 @@ resource "rediscloud_subscription_peering" "example" {
    vpc_cidr = "10.0.0.0/8"
 }
 
-output "aws_peering_accept_cmd" {
-  value = <<-EOF
-  aws ec2 accept-vpc-peering-connection --vpc-peering-connection-id ${rediscloud_subscription_peering.example.aws_peering_id}
-  EOF
+resource "aws_vpc_peering_connection_accepter" "example-peering" {
+  vpc_peering_connection_id = rediscloud_subscription_peering.example.aws_peering_id
+  auto_accept               = true
 }
 ```
 
 ## Example Usage - GCP
 
-The following example shows how a subscription can be peered with a GCP project network.
-The terraform output value shows how an example gcloud command can be returned for the user to execute to complete the peering. 
+The following example shows how a subscription can be peered with a GCP project network using the rediscloud and google providers.
+The example HCL locates the network details and creates/accepts the vpc peering connection through the Google provider.   
 
 ```hcl
 resource "rediscloud_subscription" "example" {
@@ -54,16 +52,22 @@ resource "rediscloud_subscription_peering" "example" {
    gcp_network_name = "cloud-api-vpc-peering-example"
 }
 
-output "gcloud_peering_cmd" {
-  value = <<-EOF
-  gcloud compute networks peerings create \
-  ${rediscloud_subscription_peering.example.gcp_redis_project_id} \
-  --project ${rediscloud_subscription_peering.example.gcp_project_id} \
-  --network ${rediscloud_subscription_peering.example.gcp_network_name} \
-  --peer-project ${rediscloud_subscription_peering.example.gcp_redis_project_id} \
-  --peer-network ${rediscloud_subscription_peering.example.gcp_redis_network_name} \
-  --auto-create-routes
-  EOF
+data "google_compute_network" "network" {
+  project = "my-gcp-project"
+  name = "my-gcp-vpc"
+}
+
+resource "rediscloud_subscription_peering" "example-peering" {
+  subscription_id = rediscloud_subscription.example.id
+  provider_name = "GCP"
+  gcp_project_id = data.google_compute_network.network.project
+  gcp_network_name = data.google_compute_network.network.name
+}
+
+resource "google_compute_network_peering" "example-peering" {
+  name         = "peering-gcp-example"
+  network      = data.google_compute_network.network.self_link
+  peer_network = "https://www.googleapis.com/compute/v1/projects/${rediscloud_subscription_peering.example.gcp_redis_project_id}/global/networks/${rediscloud_subscription_peering.example.gcp_redis_network_name}"
 }
 ```
 
