@@ -3,6 +3,7 @@ package provider
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -41,11 +42,12 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 			{
 				Config: tf,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckTypeSetElemNestedAttrs(dataSourceName, "peerings.*", map[string]string{
-						"provider_name":  "AWS",
-						"aws_account_id": awsAccountId,
-						"vpc_id":         awsVPCId,
-						"vpc_cidr":       awsVPCCidr,
+					resource.TestMatchTypeSetElemNestedAttrs(dataSourceName, "peerings.*", map[string]*regexp.Regexp{
+						"provider_name":  regexp.MustCompile("AWS"),
+						"aws_account_id": regexp.MustCompile(awsAccountId),
+						"vpc_id":         regexp.MustCompile(awsVPCId),
+						"vpc_cidr":       regexp.MustCompile(awsVPCCidr),
+						"aws_peering_id": regexp.MustCompile("^pcx-"),
 					}),
 				),
 			},
@@ -100,6 +102,6 @@ resource "rediscloud_subscription_peering" "test" {
 }
 
 data "rediscloud_subscription_peerings" "example" {
-  subscription_id = rediscloud_subscription.example.id
+  subscription_id = rediscloud_subscription_peering.test.subscription_id
 }
 `
