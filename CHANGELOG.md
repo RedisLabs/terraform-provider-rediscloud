@@ -2,7 +2,15 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+## 0.2.2 (Unreleased)
+
 ## 0.2.1 (Unreleased)
+
+### Changed
+
+- Updates to expose additional vpc peering attributes for GCP and AWS
+- Updates docs to include new attributes and expands examples to include output value for peering commands
+- Updates rediscloud-go-api to release v0.1.3
 
 ## 0.2.0 (November 30, 2020)
 
