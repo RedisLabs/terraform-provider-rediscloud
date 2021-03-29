@@ -12,7 +12,7 @@ The Subscription Peerings data source allows access to a list of VPC peerings fo
 
 ## Example Usage
 
-The following example returns a list of all modules available within your Redis Enterprise Cloud account.
+The following example returns a list of all VPC peering within a Subscription.
 
 ```hcl-terraform
 data "rediscloud_subscription_peerings" "example" {
