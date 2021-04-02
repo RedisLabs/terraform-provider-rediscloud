@@ -241,6 +241,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Description: "A meaningful name to identify the database",
 							Type:        schema.TypeString,
 							Required:    true,
+							ValidateDiagFunc: validateDiagFunc(validation.StringLenBetween(0, 40)),
 						},
 						"protocol": {
 							Description:      "The protocol that will be used to access the database, (either ‘redis’ or 'memcached’) ",
