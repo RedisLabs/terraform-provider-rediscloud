@@ -823,6 +823,20 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 		})
 	}
 
+	createModules := make([]*databases.CreateModule, 0)
+	module := db["module"]
+	for _, module := range module.([]interface{}) {
+		moduleMap := module.(map[string]interface{})
+
+		modName := moduleMap["name"].(string)
+
+		createModule := &databases.CreateModule{
+			Name: redis.String(modName),
+		}
+
+		createModules = append(createModules, createModule)
+	}
+
 	create := databases.CreateDatabase{
 		DryRun:               redis.Bool(false),
 		Name:                 redis.String(db["name"].(string)),
@@ -839,6 +853,7 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 		ReplicaOf: setToStringSlice(db["replica_of"].(*schema.Set)),
 		Password:  redis.String(db["password"].(string)),
 		SourceIP:  setToStringSlice(db["source_ips"].(*schema.Set)),
+		Modules: createModules,
 	}
 
 	averageItemSize := db["average_item_size_in_bytes"].(int)
@@ -888,6 +903,7 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 		SourceIP:        setToStringSlice(db["source_ips"].(*schema.Set)),
 		Alerts:          alerts,
 		ReplicaOf:       setToStringSlice(db["replica_of"].(*schema.Set)),
+
 	}
 
 	clientSSLCertificate := db["client_ssl_certificate"].(string)
