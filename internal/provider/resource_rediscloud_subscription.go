@@ -70,7 +70,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 			"payment_method_id": {
 				Description:      "A valid payment method pre-defined in the current account",
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 				Optional:         true,
 			},
 			"memory_storage": {
@@ -79,7 +79,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Optional:         true,
 				ForceNew:         true,
 				Default:          "ram",
-				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.MemoryStorageValues(), false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.MemoryStorageValues(), false)),
 			},
 			"persistent_storage_encryption": {
 				Description: "Encrypt data stored in persistent storage. Required for a GCP subscription",
@@ -101,7 +101,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Optional:    true,
 							Elem: &schema.Schema{
 								Type:             schema.TypeString,
-								ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
+								ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 							},
 						},
 						"security_group_ids": {
@@ -130,14 +130,14 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Optional:         true,
 							ForceNew:         true,
 							Default:          "AWS",
-							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
 						},
 						"cloud_account_id": {
 							Description:      "Cloud account identifier. Default: Redis Labs internal cloud account (using Cloud Account Id = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created only with Redis Labs internal cloud account",
 							Type:             schema.TypeString,
 							Optional:         true,
 							ForceNew:         true,
-							ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 							Default:          "1",
 						},
 						"region": {
@@ -186,7 +186,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 										Type:             schema.TypeString,
 										ForceNew:         true,
 										Required:         true,
-										ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
+										ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 									},
 									"networking_vpc_id": {
 										Description: "Either an existing VPC Id (already exists in the specific region) or create a new VPC (if no VPC is specified)",
@@ -246,7 +246,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Description:      "The protocol that will be used to access the database, (either ‘redis’ or 'memcached’) ",
 							Type:             schema.TypeString,
 							Required:         true,
-							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.ProtocolValues(), false)),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.ProtocolValues(), false)),
 						},
 						"memory_limit_in_gb": {
 							Description: "Maximum memory usage for this specific database",
@@ -281,7 +281,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Description:      "Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)",
 							Type:             schema.TypeString,
 							Required:         true,
-							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice([]string{"number-of-shards", "operations-per-second"}, false)),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice([]string{"number-of-shards", "operations-per-second"}, false)),
 						},
 						"throughput_measurement_value": {
 							Description: "Throughput value (as applies to selected measurement method)",
@@ -330,7 +330,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Optional:    true,
 							Elem: &schema.Schema{
 								Type:             schema.TypeString,
-								ValidateDiagFunc: validateDiagFunc(validation.IsURLWithScheme([]string{"redis"})),
+								ValidateDiagFunc: validation.ToDiagFunc(validation.IsURLWithScheme([]string{"redis"})),
 							},
 						},
 						"alert": {
@@ -343,7 +343,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 										Description:      "Alert name",
 										Type:             schema.TypeString,
 										Required:         true,
-										ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.AlertNameValues(), false)),
+										ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.AlertNameValues(), false)),
 									},
 									"value": {
 										Description: "Alert value",
@@ -376,7 +376,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							MinItems:    1,
 							Elem: &schema.Schema{
 								Type:             schema.TypeString,
-								ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
+								ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 							},
 						},
 						"hashing_policy": {

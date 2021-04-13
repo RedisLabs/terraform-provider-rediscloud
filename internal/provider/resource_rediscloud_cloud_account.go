@@ -70,7 +70,7 @@ func resourceRedisCloudCloudAccount() *schema.Resource {
 				Description:      "Cloud provider type - either `AWS` or `GCP`",
 				Type:             schema.TypeString,
 				Required:         true,
-				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
 				ForceNew:         true,
 			},
 			"sign_in_login_url": {

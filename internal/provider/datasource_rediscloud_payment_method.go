@@ -37,7 +37,7 @@ func dataSourceRedisCloudPaymentMethod() *schema.Resource {
 				Computed:    true,
 				Type:        schema.TypeString,
 
-				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d{4}$"), "must contain last four numbers of the card of the payment method")),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d{4}$"), "must contain last four numbers of the card of the payment method")),
 			},
 		},
 	}
