@@ -129,7 +129,7 @@ jobs:
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-pkg-mod-${{ hashFiles('go.sum') }}
-      - uses: dorny/paths-filter@v2.9.3
+      - uses: dorny/paths-filter@v2.10.0
         id: filter
         with:
           filters: |
