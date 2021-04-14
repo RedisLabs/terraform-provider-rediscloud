@@ -160,6 +160,42 @@ func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T)
 	})
 }
 
+func TestAccResourceRedisCloudSubscription_AddAdditionalDatabaseWithModule(t *testing.T) {
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	password := acctest.RandString(20)
+	password2 := acctest.RandString(20)
+	resourceName := "rediscloud_subscription.example"
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDb, testCloudAccountName, name, 1, password),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "database.#", "1"),
+					resource.TestMatchResourceAttr(resourceName, "database.0.db_id", regexp.MustCompile("^[1-9][0-9]*$")),
+					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
+				),
+			},
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionTwoDbWithModule, testCloudAccountName, name, 2, password, password2),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "database.#", "2"),
+					resource.TestMatchResourceAttr(resourceName, "database.1.db_id", regexp.MustCompile("^[1-9][0-9]*$")),
+					resource.TestCheckResourceAttr(resourceName, "database.1.name", "tf-database-2"),
+					resource.TestCheckResourceAttr(resourceName, "database.1.module.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "database.1.module.0.name", "RediSearch"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckSubscriptionDestroy(s *terraform.State) error {
 	client := testProvider.Meta().(*apiClient)
 
@@ -287,6 +323,69 @@ resource "rediscloud_subscription" "example" {
     throughput_measurement_by = "number-of-shards"
     throughput_measurement_value = 2
     password = "%s"
+  }
+}
+`
+
+const testAccResourceRedisCloudSubscriptionTwoDbWithModule = `
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS"
+  name = "%s"
+}
+
+resource "rediscloud_subscription" "example" {
+
+  name = "%s"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  memory_storage = "ram"
+
+  allowlist {
+    cidrs = ["192.168.0.0/16"]
+  }
+
+  cloud_provider {
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region = "eu-west-1"
+      networking_deployment_cidr = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+
+  database {
+    name = "tf-database"
+    protocol = "redis"
+    memory_limit_in_gb = %d
+    support_oss_cluster_api = true
+    data_persistence = "none"
+    replication = false
+    throughput_measurement_by = "operations-per-second"
+    password = "%s"
+    throughput_measurement_value = 10000
+    source_ips = ["10.0.0.0/8"]
+  }
+
+  database {
+    name = "tf-database-2"
+     protocol = "redis"
+    memory_limit_in_gb = 1
+    support_oss_cluster_api = true
+    data_persistence = "none"
+    replication = false
+    throughput_measurement_by = "operations-per-second"
+    password = "%s"
+    throughput_measurement_value = 10000
+    source_ips = ["10.0.0.0/8"]
+
+	module {
+		name = "RediSearch"
+	}
   }
 }
 `
