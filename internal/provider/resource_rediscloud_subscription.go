@@ -101,7 +101,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Optional:    true,
 							Elem: &schema.Schema{
 								Type:             schema.TypeString,
-								ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
+								ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
 							},
 						},
 						"security_group_ids": {
@@ -186,7 +186,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 										Type:             schema.TypeString,
 										ForceNew:         true,
 										Required:         true,
-										ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
+										ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
 									},
 									"networking_vpc_id": {
 										Description: "Either an existing VPC Id (already exists in the specific region) or create a new VPC (if no VPC is specified)",
@@ -377,7 +377,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							MinItems:    1,
 							Elem: &schema.Schema{
 								Type:             schema.TypeString,
-								ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
+								ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
 							},
 						},
 						"hashing_policy": {
