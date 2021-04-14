@@ -238,9 +238,9 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Computed:    true,
 						},
 						"name": {
-							Description: "A meaningful name to identify the database",
-							Type:        schema.TypeString,
-							Required:    true,
+							Description:      "A meaningful name to identify the database",
+							Type:             schema.TypeString,
+							Required:         true,
 							ValidateDiagFunc: validation.ToDiagFunc(validation.StringLenBetween(0, 40)),
 						},
 						"protocol": {
@@ -854,7 +854,7 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 		ReplicaOf: setToStringSlice(db["replica_of"].(*schema.Set)),
 		Password:  redis.String(db["password"].(string)),
 		SourceIP:  setToStringSlice(db["source_ips"].(*schema.Set)),
-		Modules: createModules,
+		Modules:   createModules,
 	}
 
 	averageItemSize := db["average_item_size_in_bytes"].(int)
@@ -904,7 +904,6 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 		SourceIP:        setToStringSlice(db["source_ips"].(*schema.Set)),
 		Alerts:          alerts,
 		ReplicaOf:       setToStringSlice(db["replica_of"].(*schema.Set)),
-
 	}
 
 	clientSSLCertificate := db["client_ssl_certificate"].(string)
