@@ -68,11 +68,6 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "aws_peering_id"),
 				),
 			},
-			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
 		},
 	})
 }
