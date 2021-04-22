@@ -68,7 +68,6 @@ github.com/aws/aws-sdk-go v1.15.78/go.mod h1:E3/ieXAlvM0XWO57iftYVDLLvQ824smPP3A
 github.com/aws/aws-sdk-go v1.25.3/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go v1.37.0 h1:GzFnhOIsrGyQ69s7VgqtrG2BG8v7X7vwB3Xpbd/DBBk=
 github.com/aws/aws-sdk-go v1.37.0/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
-github.com/bflad/gopaniccheck v0.1.0 h1:tJftp+bv42ouERmUMWLoUn/5bi/iQZjHPznM00cP/bU=
 github.com/bflad/gopaniccheck v0.1.0/go.mod h1:ZCj2vSr7EqVeDaqVsWN4n2MwdROx1YL+LFo47TSWtsA=
 github.com/bflad/tfproviderlint v0.26.0 h1:Xd+hbVlSQhKlXifpqmHPvlcnOK1lRS4IZf+cXBAUpCs=
 github.com/bflad/tfproviderlint v0.26.0/go.mod h1:7Z9Pyl1Z1UWJcPBuyjN89D2NaJGpjReQb5NoaaQCthQ=
@@ -219,12 +218,14 @@ github.com/hashicorp/terraform-exec v0.13.0/go.mod h1:SGhto91bVRlgXQWcJ5znSz+29U
 github.com/hashicorp/terraform-json v0.5.0/go.mod h1:eAbqb4w0pSlRmdvl8fOyHAi/+8jnkVYN28gJkSJrLhU=
 github.com/hashicorp/terraform-json v0.8.0 h1:XObQ3PgqU52YLQKEaJ08QtUshAfN3yu4u8ebSW0vztc=
 github.com/hashicorp/terraform-json v0.8.0/go.mod h1:3defM4kkMfttwiE7VakJDwCd4R+umhSQnvJwORXbprE=
-github.com/hashicorp/terraform-plugin-go v0.2.1 h1:EW/R8bB2Zbkjmugzsy1d27yS8/0454b3MtYHkzOknqA=
 github.com/hashicorp/terraform-plugin-go v0.2.1/go.mod h1:10V6F3taeDWVAoLlkmArKttR3IULlRWFAGtQIQTIDr4=
+github.com/hashicorp/terraform-plugin-go v0.3.0 h1:AJqYzP52JFYl9NABRI7smXI1pNjgR5Q/y2WyVJ/BOZA=
+github.com/hashicorp/terraform-plugin-go v0.3.0/go.mod h1:dFHsQMaTLpON2gWhVWT96fvtlc/MF1vSy3OdMhWBzdM=
 github.com/hashicorp/terraform-plugin-sdk v1.16.1 h1:G2iK7MBT4LuNcVASPXWS1ciBUuIm8oIY0zRfCmi3xy4=
 github.com/hashicorp/terraform-plugin-sdk v1.16.1/go.mod h1:KSsGcuZ1JRqnmYzz+sWIiUwNvJkzXbGRIdefwFfOdyY=
-github.com/hashicorp/terraform-plugin-sdk/v2 v2.5.0 h1:4EHNOAjwiYCeBxY16rt2KwyRNNVsCaVO3kWBbiXfYM0=
 github.com/hashicorp/terraform-plugin-sdk/v2 v2.5.0/go.mod h1:z+cMZ0iswzZOahBJ3XmNWgWkVnAd2bl8g+FhyyuPDH4=
+github.com/hashicorp/terraform-plugin-sdk/v2 v2.6.0 h1:mPZW0DDXlD70/Y+jenKz8fmkyxdmuE9T8mrftycxuZ0=
+github.com/hashicorp/terraform-plugin-sdk/v2 v2.6.0/go.mod h1:r2d5s4frIMvyjEuv4a47xI4f7mkaQlRu7bLgw2/LAaY=
 github.com/hashicorp/terraform-plugin-test/v2 v2.1.3 h1:sMsxHctzjATk+ICHAqiHFqLkjosl4fjMyFxMthLRH2Q=
 github.com/hashicorp/terraform-plugin-test/v2 v2.1.3/go.mod h1:pmaUHiUtDL/8Mz3FuyZ/vRDb0LpaOWQjVRW9ORF7FHs=
 github.com/hashicorp/terraform-svchost v0.0.0-20200729002733-f050f53b9734 h1:HKLsbzeOsfXmKNpr3GiT18XAblV0BjCbzL8KQAMZGa0=
