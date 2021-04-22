@@ -104,6 +104,11 @@ func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "gcp_peering_id"),
 				),
 			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
