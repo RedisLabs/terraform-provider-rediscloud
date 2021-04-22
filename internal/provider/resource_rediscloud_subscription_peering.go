@@ -210,6 +210,10 @@ func resourceRedisCloudSubscriptionPeeringRead(ctx context.Context, d *schema.Re
 		return diag.FromErr(err)
 	}
 
+	if err := d.Set("subscription_id", strconv.Itoa(subId)); err != nil {
+		return diag.FromErr(err)
+	}
+
 	peerings, err := api.client.Subscription.ListVPCPeering(ctx, subId)
 	if err != nil {
 		if _, ok := err.(*subscriptions.NotFound); ok {
@@ -229,7 +233,15 @@ func resourceRedisCloudSubscriptionPeeringRead(ctx context.Context, d *schema.Re
 		return diag.FromErr(err)
 	}
 
-	providerName := d.Get("provider_name").(string)
+	providerName := "AWS"
+
+	if redis.StringValue(peering.GCPProjectUID) != "" {
+		providerName = "GCP"
+	}
+
+	if err := d.Set("provider_name", providerName); err != nil {
+		return diag.FromErr(err)
+	}
 
 	if providerName == "AWS" {
 		if err := d.Set("aws_account_id", redis.StringValue(peering.AWSAccountID)); err != nil {

@@ -238,9 +238,9 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Computed:    true,
 						},
 						"name": {
-							Description: "A meaningful name to identify the database",
-							Type:        schema.TypeString,
-							Required:    true,
+							Description:      "A meaningful name to identify the database",
+							Type:             schema.TypeString,
+							Required:         true,
 							ValidateDiagFunc: validation.ToDiagFunc(validation.StringLenBetween(0, 40)),
 						},
 						"protocol": {
@@ -824,6 +824,20 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 		})
 	}
 
+	createModules := make([]*databases.CreateModule, 0)
+	module := db["module"]
+	for _, module := range module.([]interface{}) {
+		moduleMap := module.(map[string]interface{})
+
+		modName := moduleMap["name"].(string)
+
+		createModule := &databases.CreateModule{
+			Name: redis.String(modName),
+		}
+
+		createModules = append(createModules, createModule)
+	}
+
 	create := databases.CreateDatabase{
 		DryRun:               redis.Bool(false),
 		Name:                 redis.String(db["name"].(string)),
@@ -840,6 +854,7 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 		ReplicaOf: setToStringSlice(db["replica_of"].(*schema.Set)),
 		Password:  redis.String(db["password"].(string)),
 		SourceIP:  setToStringSlice(db["source_ips"].(*schema.Set)),
+		Modules:   createModules,
 	}
 
 	averageItemSize := db["average_item_size_in_bytes"].(int)
