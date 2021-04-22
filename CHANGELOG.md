@@ -11,7 +11,6 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 - Updates additional dependencies contributing to build
 
 ### Fixed
-
 - Terraform wants to replace fresh imported peering [#102](https://github.com/RedisLabs/terraform-provider-rediscloud/issues/102)
 - Need validation for length of the database name [#99](https://github.com/RedisLabs/terraform-provider-rediscloud/issues/99)
 - Modules not included when creating DB on existing subscription in GCP [#98](https://github.com/RedisLabs/terraform-provider-rediscloud/issues/98)
