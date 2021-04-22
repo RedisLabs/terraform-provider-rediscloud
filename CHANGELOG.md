@@ -4,6 +4,18 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ## 0.2.2 (Unreleased)
 
+### Changed
+
+- Updates dependency terraform-plugin-sdk/v2 v2.6.0
+- Updates dependency tfproviderlint v0.26.0
+- Updates additional dependencies contributing to build
+
+### Fixed
+
+- Terraform wants to replace fresh imported peering [#102](https://github.com/RedisLabs/terraform-provider-rediscloud/issues/102)
+- Need validation for length of the database name [#99](https://github.com/RedisLabs/terraform-provider-rediscloud/issues/99)
+- Modules not included when creating DB on existing subscription in GCP [#98](https://github.com/RedisLabs/terraform-provider-rediscloud/issues/98)
+
 ## 0.2.1 (December 7, 2020)
 
 ### Changed
