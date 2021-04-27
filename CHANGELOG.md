@@ -2,11 +2,11 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-## 0.2.2 (Unreleased)
+## 0.2.2 (April 27, 2021)
 
 ### Changed
 
-- Updates dependency terraform-plugin-sdk/v2 v2.6.0
+- Updates dependency terraform-plugin-sdk/v2 v2.6.1
 - Updates dependency tfproviderlint v0.26.0
 - Updates additional dependencies contributing to build
 
