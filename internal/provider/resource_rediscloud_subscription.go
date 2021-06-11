@@ -903,7 +903,11 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 		Password:        redis.String(db["password"].(string)),
 		SourceIP:        setToStringSlice(db["source_ips"].(*schema.Set)),
 		Alerts:          alerts,
-		ReplicaOf:       setToStringSlice(db["replica_of"].(*schema.Set)),
+	}
+
+	update.ReplicaOf = setToStringSlice(db["replica_of"].(*schema.Set))
+	if update.ReplicaOf == nil {
+		update.ReplicaOf = make([]*string, 0)
 	}
 
 	clientSSLCertificate := db["client_ssl_certificate"].(string)
