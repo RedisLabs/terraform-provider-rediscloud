@@ -197,7 +197,7 @@ func TestAccResourceRedisCloudSubscription_AddAdditionalDatabaseWithModule(t *te
 }
 
 func TestAccResourceRedisCloudSubscription_AddManageDatabaseReplication(t *testing.T) {
-	t.Skip("Long running test requiring local execution.")
+	//t.Skip("Long running test requiring local execution.")
 
 	originResourceName := "rediscloud_subscription.origin"
 	originSubName := acctest.RandomWithPrefix(testResourcePrefix)
