@@ -196,6 +196,50 @@ func TestAccResourceRedisCloudSubscription_AddAdditionalDatabaseWithModule(t *te
 	})
 }
 
+func TestAccResourceRedisCloudSubscription_AddManageDatabaseReplication(t *testing.T) {
+
+	originResourceName := "rediscloud_subscription.origin"
+	originSubName := acctest.RandomWithPrefix(testResourcePrefix)
+	originDatabaseName := "tf-database-origin"
+	originDatabasePassword := acctest.RandString(20)
+
+	replicaResourceName := "rediscloud_subscription.replica"
+	replicaSubName := acctest.RandomWithPrefix(testResourcePrefix)
+	replicaDatabaseName := "tf-database-replica"
+	replicaDatabasePassword := acctest.RandString(20)
+
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionsWithReplicaDB, testCloudAccountName, originSubName, originDatabaseName, originDatabasePassword, replicaSubName, replicaDatabaseName, replicaDatabasePassword),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(originResourceName, "name", originSubName),
+					resource.TestCheckResourceAttr(originResourceName, "database.#", "1"),
+					resource.TestCheckResourceAttr(originResourceName, "database.0.name", originDatabaseName),
+					resource.TestCheckResourceAttr(replicaResourceName, "name", replicaSubName),
+					resource.TestCheckResourceAttr(replicaResourceName, "database.#", "1"),
+					resource.TestCheckResourceAttr(replicaResourceName, "database.0.name", replicaDatabaseName),
+					resource.TestCheckResourceAttr(replicaResourceName, "database.0.replica_of.#", "1"),
+				),
+			},
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionsWithoutReplicaDB, testCloudAccountName, originSubName, originDatabaseName, originDatabasePassword, replicaSubName, replicaDatabaseName, replicaDatabasePassword),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(replicaResourceName, "name", replicaSubName),
+					resource.TestCheckResourceAttr(replicaResourceName, "database.#", "1"),
+					resource.TestCheckResourceAttr(replicaResourceName, "database.0.name", replicaDatabaseName),
+					resource.TestCheckResourceAttr(replicaResourceName, "database.0.replica_of.#", "0"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckSubscriptionDestroy(s *terraform.State) error {
 	client := testProvider.Meta().(*apiClient)
 
@@ -387,5 +431,168 @@ resource "rediscloud_subscription" "example" {
 		name = "RediSearch"
 	}
   }
+}
+`
+
+const testAccResourceRedisCloudSubscriptionsWithReplicaDB = `
+locals {
+  test_cloud_account_name = "%s"
+  origin_sub_name = "%s"
+  origin_db_name = "%s"
+  origin_db_password = "%s"
+  
+  replica_sub_name = "%s"
+  replica_db_name = "%s"
+  replica_db_password = "%s"
+}
+
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS"
+  name = local.test_cloud_account_name
+}
+
+resource "rediscloud_subscription" "origin" {
+
+  name                          = local.origin_sub_name
+  payment_method_id             = data.rediscloud_payment_method.card.id
+  memory_storage                = "ram"
+  persistent_storage_encryption = false
+
+  cloud_provider {
+    provider         = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region                       = "eu-west-2"
+      networking_deployment_cidr   = "10.0.0.0/24"
+      preferred_availability_zones = []
+    }
+  }
+
+  database {
+    name                         = local.origin_db_name
+    protocol                     = "redis"
+    memory_limit_in_gb           = 1
+    data_persistence             = "none"
+    throughput_measurement_by    = "operations-per-second"
+    throughput_measurement_value = 10000
+    password                     = local.origin_db_password
+  }
+
+}
+
+resource "rediscloud_subscription" "replica" {
+
+  name                          = local.replica_sub_name
+  payment_method_id             = data.rediscloud_payment_method.card.id
+  memory_storage                = "ram"
+  persistent_storage_encryption = false
+
+  cloud_provider {
+    provider         = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region                       = "eu-west-2"
+      networking_deployment_cidr   = "10.0.0.0/24"
+      preferred_availability_zones = []
+    }
+  }
+
+  database {
+    name                         = local.replica_db_name
+    protocol                     = "redis"
+    memory_limit_in_gb           = 1
+    data_persistence             = "none"
+    throughput_measurement_by    = "operations-per-second"
+    throughput_measurement_value = 10000
+    password                     = local.replica_db_password
+    replica_of                   = [ {for d in rediscloud_subscription.origin.database : d.name => "redis://${d.public_endpoint}"}[local.origin_db_name] ]
+  }
+
+}
+`
+
+const testAccResourceRedisCloudSubscriptionsWithoutReplicaDB = `
+locals {
+  test_cloud_account_name = "%s"
+  origin_sub_name = "%s"
+  origin_db_name = "%s"
+  origin_db_password = "%s"
+  
+  replica_sub_name = "%s"
+  replica_db_name = "%s"
+  replica_db_password = "%s"
+}
+
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS"
+  name = local.test_cloud_account_name
+}
+
+resource "rediscloud_subscription" "origin" {
+
+  name                          = local.origin_sub_name
+  payment_method_id             = data.rediscloud_payment_method.card.id
+  memory_storage                = "ram"
+  persistent_storage_encryption = false
+
+  cloud_provider {
+    provider         = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region                       = "eu-west-2"
+      networking_deployment_cidr   = "10.0.0.0/24"
+      preferred_availability_zones = []
+    }
+  }
+
+  database {
+    name                         = local.origin_db_name
+    protocol                     = "redis"
+    memory_limit_in_gb           = 1
+    data_persistence             = "none"
+    throughput_measurement_by    = "operations-per-second"
+    throughput_measurement_value = 10000
+    password                     = local.origin_db_password
+  }
+
+}
+
+resource "rediscloud_subscription" "replica" {
+
+  name                          = local.replica_sub_name
+  payment_method_id             = data.rediscloud_payment_method.card.id
+  memory_storage                = "ram"
+  persistent_storage_encryption = false
+
+  cloud_provider {
+    provider         = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region                       = "eu-west-2"
+      networking_deployment_cidr   = "10.0.0.0/24"
+      preferred_availability_zones = []
+    }
+  }
+
+  database {
+    name                         = local.replica_db_name
+    protocol                     = "redis"
+    memory_limit_in_gb           = 1
+    data_persistence             = "none"
+    throughput_measurement_by    = "operations-per-second"
+    throughput_measurement_value = 10000
+    password                     = local.replica_db_password
+  }
+
 }
 `
