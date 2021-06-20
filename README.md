@@ -1,7 +1,7 @@
 Terraform Provider Redis Cloud
 ==================
 
-The Redis Enterprise Cloud Terraform provider is a plugin for Terraform that allows Redis Enterprise Cloud Pro customers to manage the full 
+The Redis Enterprise Cloud Terraform provider is a plugin for Terraform that allows Redis Enterprise Cloud Flexible customers to manage the full 
 lifecyle of their subscriptions and related Redis databases.
 
 Requirements
