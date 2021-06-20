@@ -43,7 +43,7 @@ The `make build` command will build a local provider binary into a `bin` directo
 Installing the Provider
 -----------------------
 
-After the provider has been built locally it most be placed the user plugins directory so it can be discovered by the 
+After the provider has been built locally it must be placed in the user plugins directory so it can be discovered by the 
 Terraform CLI.  The default user plugins directory root is `~/.terraform.d/plugins`.  
 
 Use the following make command to install the provider locally.
@@ -51,7 +51,7 @@ Use the following make command to install the provider locally.
 $ make install_local
 ```
 
-The provider will now be installed that the following location ready to be used by Terraform
+The provider will now be installed in the following location ready to be used by Terraform
 ```
 ~/.terraform.d/plugins
 └── registry.terraform.io
@@ -65,7 +65,7 @@ The provider will now be installed that the following location ready to be used 
 The provider binary is built using a version number of `99.99.99` and this will allow terraform to use the locally 
 built provider over a released version.
 
-The terraform provider is now installed and now can be discovered by Terraform through the following HCL block.
+The terraform provider is installed and can now be discovered by Terraform through the following HCL block.
 
 ```hcl-terraform
 terraform {
