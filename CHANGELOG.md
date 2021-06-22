@@ -2,6 +2,16 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+## 0.2.3 (June 22, 2021)
+
+### Changed
+
+- Updates additional dependencies contributing to build
+
+### Fixed
+
+- replicaOf setting cannot be disabled from terraform [#121](https://github.com/RedisLabs/terraform-provider-rediscloud/issues/121)
+
 ## 0.2.2 (April 27, 2021)
 
 ### Changed
