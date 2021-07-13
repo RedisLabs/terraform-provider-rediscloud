@@ -510,7 +510,7 @@ resource "rediscloud_subscription" "replica" {
     throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 10000
     password                     = local.replica_db_password
-    replica_of                   = [ {for d in rediscloud_subscription.origin.database : d.name => "redis://${d.public_endpoint}"}[local.origin_db_name] ]
+    replica_of                   = nonsensitive([ {for d in rediscloud_subscription.origin.database : d.name => "redis://${d.public_endpoint}"}[local.origin_db_name] ])
   }
 
 }
