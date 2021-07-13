@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -225,6 +226,7 @@ func TestAccResourceRedisCloudSubscription_AddManageDatabaseReplication(t *testi
 					resource.TestCheckResourceAttr(replicaResourceName, "database.#", "1"),
 					resource.TestCheckResourceAttr(replicaResourceName, "database.0.name", replicaDatabaseName),
 					resource.TestCheckResourceAttr(replicaResourceName, "database.0.replica_of.#", "1"),
+					testAccCheckWaitForDuration(60),
 				),
 			},
 			{
@@ -238,6 +240,15 @@ func TestAccResourceRedisCloudSubscription_AddManageDatabaseReplication(t *testi
 			},
 		},
 	})
+}
+
+func testAccCheckWaitForDuration(seconds int) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+
+		time.Sleep(time.Duration(seconds) * time.Second)
+
+		return nil
+	}
 }
 
 func testAccCheckSubscriptionDestroy(s *terraform.State) error {
