@@ -226,7 +226,7 @@ func TestAccResourceRedisCloudSubscription_AddManageDatabaseReplication(t *testi
 					resource.TestCheckResourceAttr(replicaResourceName, "database.#", "1"),
 					resource.TestCheckResourceAttr(replicaResourceName, "database.0.name", replicaDatabaseName),
 					resource.TestCheckResourceAttr(replicaResourceName, "database.0.replica_of.#", "1"),
-					testAccCheckWaitForDuration(60),
+					//testAccCheckWaitForDuration(60),
 				),
 			},
 			{
