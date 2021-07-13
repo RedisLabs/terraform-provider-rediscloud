@@ -96,6 +96,7 @@ jobs:
         name: terraform init
         run: |
           # We need a file to initialize the provider
+          echo 'terraform { required_providers { rediscloud = { source  = "RedisLabs/rediscloud" version = "99.99.99" } } }' > providers.tf
           echo 'resource "rediscloud_subscription" "example" {}' > example.tf
           terraform init -plugin-dir terraform-plugin-dir
       - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
