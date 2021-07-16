@@ -14,7 +14,76 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
+
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	password := acctest.RandString(20)
+	resourceName := "rediscloud_subscription.example"
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	var subId int
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDb, testCloudAccountName, name, 1, password),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
+					resource.TestCheckResourceAttr(resourceName, "database.#", "1"),
+					resource.TestMatchResourceAttr(resourceName, "database.0.db_id", regexp.MustCompile("^[1-9][0-9]*$")),
+					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
+					func(s *terraform.State) error {
+						r := s.RootModule().Resources[resourceName]
+
+						var err error
+						subId, err = strconv.Atoi(r.Primary.ID)
+						if err != nil {
+							return err
+						}
+
+						client := testProvider.Meta().(*apiClient)
+						sub, err := client.client.Subscription.Get(context.TODO(), subId)
+						if err != nil {
+							return err
+						}
+
+						if redis.StringValue(sub.Name) != name {
+							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
+						}
+
+						listDb := client.client.Database.List(context.TODO(), subId)
+						if listDb.Next() != true {
+							return fmt.Errorf("no database found: %s", listDb.Err())
+						}
+						if listDb.Err() != nil {
+							return listDb.Err()
+						}
+
+						return nil
+					},
+				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T) {
+
+	t.Skip("Requires manual execution over CI execution")
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	password2 := acctest.RandString(20)
@@ -23,7 +92,7 @@ func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T)
 
 	var subId int
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
@@ -161,13 +230,16 @@ func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T)
 }
 
 func TestAccResourceRedisCloudSubscription_AddAdditionalDatabaseWithModule(t *testing.T) {
+
+	t.Skip("Requires manual execution over CI execution")
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	password2 := acctest.RandString(20)
 	resourceName := "rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
@@ -198,6 +270,8 @@ func TestAccResourceRedisCloudSubscription_AddAdditionalDatabaseWithModule(t *te
 
 func TestAccResourceRedisCloudSubscription_AddManageDatabaseReplication(t *testing.T) {
 
+	t.Skip("Requires manual execution over CI execution")
+
 	originResourceName := "rediscloud_subscription.origin"
 	originSubName := acctest.RandomWithPrefix(testResourcePrefix)
 	originDatabaseName := "tf-database-origin"
@@ -210,7 +284,7 @@ func TestAccResourceRedisCloudSubscription_AddManageDatabaseReplication(t *testi
 
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
@@ -510,7 +584,7 @@ resource "rediscloud_subscription" "replica" {
     throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 10000
     password                     = local.replica_db_password
-    replica_of                   = nonsensitive([ {for d in rediscloud_subscription.origin.database : d.name => "redis://${d.public_endpoint}"}[local.origin_db_name] ])
+    replica_of                   = [ {for d in rediscloud_subscription.origin.database : d.name => "redis://${d.public_endpoint}"}[local.origin_db_name] ]
   }
 
 }
