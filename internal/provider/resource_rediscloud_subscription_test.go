@@ -82,7 +82,9 @@ func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
 
 func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T) {
 
-	t.Skip("Requires manual execution over CI execution")
+	if testing.Short() {
+		t.Skip("Requires manual execution over CI execution")
+	}
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
@@ -231,7 +233,9 @@ func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T)
 
 func TestAccResourceRedisCloudSubscription_AddAdditionalDatabaseWithModule(t *testing.T) {
 
-	t.Skip("Requires manual execution over CI execution")
+	if testing.Short() {
+		t.Skip("Requires manual execution over CI execution")
+	}
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
@@ -270,7 +274,9 @@ func TestAccResourceRedisCloudSubscription_AddAdditionalDatabaseWithModule(t *te
 
 func TestAccResourceRedisCloudSubscription_AddManageDatabaseReplication(t *testing.T) {
 
-	t.Skip("Requires manual execution over CI execution")
+	if testing.Short() {
+		t.Skip("Requires manual execution over CI execution")
+	}
 
 	originResourceName := "rediscloud_subscription.origin"
 	originSubName := acctest.RandomWithPrefix(testResourcePrefix)
