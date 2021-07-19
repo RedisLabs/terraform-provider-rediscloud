@@ -9,11 +9,7 @@ PROVIDER_VERSION = 99.99.99
 PLUGINS_PATH = ~/.terraform.d/plugins
 PLUGINS_PROVIDER_PATH=$(PROVIDER_HOSTNAME)/$(PROVIDER_NAMESPACE)/$(PROVIDER_TYPE)/$(PROVIDER_VERSION)/$(PROVIDER_TARGET)
 
-# Use a parallelism of 4 by default for tests, overriding whatever GOMAXPROCS is
-# set to. For the acceptance tests especially, the main bottleneck affecting the
-# tests is network bandwidth and Fastly API rate limits. Therefore using the
-# system default value of GOMAXPROCS, which is usually determined by the number
-# of processors available, doesn't make the most sense.
+# Use a parallelism of 3 by default for tests, overriding whatever GOMAXPROCS is set to.
 TEST_PARALLELISM?=3
 
 .PHONY: build clean testacc install_local website website-test tfproviderlint
