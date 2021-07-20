@@ -19,6 +19,7 @@ build:
 	@echo "Building local provider binary"
 	@mkdir -p ./bin
 	go build -o bin/terraform-provider-rediscloud_v$(PROVIDER_VERSION)
+	@sh -c "'$(CURDIR)/scripts/generate-dev-overrides.sh'"
 
 clean:
 	@echo "Deleting local provider binary"
