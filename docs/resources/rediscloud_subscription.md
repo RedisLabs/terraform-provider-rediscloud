@@ -214,7 +214,7 @@ The database `module` block supports:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Used when creating the subscription
-* `update` - (Defaults to 10 mins) Used when updating the subscrition
+* `update` - (Defaults to 30 mins) Used when updating the subscription
 * `delete` - (Defaults to 10 mins) Used when destroying the subscription
 
 ## Attribute reference
