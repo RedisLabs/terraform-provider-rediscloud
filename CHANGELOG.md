@@ -2,6 +2,19 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+## 0.2.4 (July 24, 2021)
+
+### Changed
+
+- Updates additional dependencies contributing to build, (includes tfproviderlint v0.27.1)
+- Updates location of compiled provider as well as go and terraform versions [#129](https://github.com/RedisLabs/terraform-provider-rediscloud/pull/129)
+- Updates Terraform Plugin SDK to v2.7.0
+- Updates the subscription timeout value for update function to 30 minutes [#133](https://github.com/RedisLabs/terraform-provider-rediscloud/pull/133)
+
+### Fixed
+
+- Fixed parsing of log-levels by removing date/time prefix [#132](https://github.com/RedisLabs/terraform-provider-rediscloud/pull/132)
+
 ## 0.2.3 (June 22, 2021)
 
 ### Changed
