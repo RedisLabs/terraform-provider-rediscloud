@@ -8,7 +8,7 @@ Requirements
 ------------
 
 -	[Terraform](https://www.terraform.io/downloads.html) >= 0.12.x
--	[Go](https://golang.org/doc/install) >= 1.12
+-	[Go](https://golang.org/doc/install) >= 1.15
 
 Quick Starts
 ------------
@@ -101,6 +101,25 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 $ make testacc
 ```
 
+In order to run an individual acceptance test, the '-run' flag can be used together with a regular expression. 
+The following example uses a regular expression matching single test called 'TestAccResourceRedisCloudSubscription_createWithDatabase'.
+
+```sh
+$ make testacc TESTARGS='-run=TestAccResourceRedisCloudSubscription_createWithDatabase'
+```
+
+In order to run the tests with extra debugging context, prefix the make command with TF_LOG (see the [terraform documentation](https://www.terraform.io/docs/internals/debugging.html) for details).
+```sh
+$ TF_LOG=trace make testacc
+```
+
+By default, the tests run with a parallelism of 3. This can be reduced if some tests are failing due to network-related 
+issues, or increased if possible, to reduce the running time of the tests. Prefix the make command with TEST_PARALLELISM, 
+as in the following example, to configure this.
+```sh
+$ TEST_PARALLELISM=2 make testacc
+```
+
 Adding Dependencies
 -------------------
 
@@ -113,6 +132,5 @@ To add a new dependency `github.com/author/dependency` to your Terraform provide
 go get github.com/author/dependency
 go mod tidy
 ```
-
 
 Then commit the changes to `go.mod` and `go.sum`.
