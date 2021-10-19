@@ -115,7 +115,7 @@ func dataSourceRedisCloudDatabase() *schema.Resource {
 					},
 				},
 			},
-			"module": {
+			"modules": {
 				Description: "Redis modules that have been enabled on the database",
 				Type:        schema.TypeSet,
 				Computed:    true,
