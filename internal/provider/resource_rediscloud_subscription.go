@@ -73,6 +73,13 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 				Optional:         true,
 			},
+			"contract_payment_method_id": {
+				Computed:         true,
+				Description:      "Used internally to determine if the payment method is a contract",
+				Type:             schema.TypeString,
+				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
+				Optional:         true,
+			},
 			"memory_storage": {
 				Description:      "Memory storage preference: either ‘ram’ or a combination of 'ram-and-flash’",
 				Type:             schema.TypeString,
@@ -412,7 +419,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	// Create Subscription
 	name := d.Get("name").(string)
 
-	paymentMethodID, err := readPaymentMethodID(d)
+	paymentMethodID, err := readAttributeAsInt(d, "payment_method_id")
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -486,9 +493,22 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 	}
 
 	if subscription.PaymentMethodID != nil && redis.IntValue(subscription.PaymentMethodID) != 0 {
+		// If the payment_method_id value wasn't provided in the schema, but came from the API, then it's a contract payment
+		pmID := d.Get("payment_method_id")
 		paymentMethodID := strconv.Itoa(redis.IntValue(subscription.PaymentMethodID))
-		if err := d.Set("payment_method_id", paymentMethodID); err != nil {
-			return diag.FromErr(err)
+		if pmID == "" {
+			if err := d.Set("contract_payment_method_id", paymentMethodID); err != nil {
+				return diag.FromErr(err)
+			}
+		} else {
+			if err := d.Set("payment_method_id", paymentMethodID); err != nil {
+				return diag.FromErr(err)
+			}
+			// If payment_method_id was defined in the schema, then reset the other attribute filled by the API in previous runs
+			err := d.Set("contract_payment_method_id", "")
+			if err != nil {
+				return diag.FromErr(err)
+			}
 		}
 	}
 	if err := d.Set("memory_storage", redis.StringValue(subscription.MemoryStorage)); err != nil {
@@ -562,12 +582,22 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 		}
 
 		if d.HasChange("payment_method_id") {
-			paymentMethodID, err := readPaymentMethodID(d)
+			paymentMethodID, err := readAttributeAsInt(d, "payment_method_id")
 			if err != nil {
 				return diag.FromErr(err)
 			}
 
 			updateSubscriptionRequest.PaymentMethodID = paymentMethodID
+		} else {
+			pmID := d.Get("payment_method_id")
+			cpmID := d.Get("contract_payment_method_id")
+			if pmID == "" && cpmID != "" {
+				contractPaymentMethodID, err := readAttributeAsInt(d, "contract_payment_method_id")
+				if err != nil {
+					return diag.FromErr(err)
+				}
+				updateSubscriptionRequest.PaymentMethodID = contractPaymentMethodID
+			}
 		}
 
 		err = api.client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
@@ -1300,14 +1330,14 @@ func diff(oldSet *schema.Set, newSet *schema.Set, hashKey func(interface{}) stri
 	return addition, existing, deletion
 }
 
-func readPaymentMethodID(d *schema.ResourceData) (*int, error) {
-	pmID := d.Get("payment_method_id").(string)
-	if pmID != "" {
-		pmID, err := strconv.Atoi(pmID)
+func readAttributeAsInt(d *schema.ResourceData, key string) (*int, error) {
+	value := d.Get(key).(string)
+	if value != "" {
+		value, err := strconv.Atoi(value)
 		if err != nil {
 			return nil, err
 		}
-		return redis.Int(pmID), nil
+		return redis.Int(value), nil
 	}
 	return nil, nil
 }
