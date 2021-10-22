@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"regexp"
@@ -14,8 +15,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
+var contractFlag = flag.Bool("contract", false,
+	"Add this flag '-contract' to run only tests for contract associated accounts")
 
+func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
+	skipTest(t, *contractFlag)
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	resourceName := "rediscloud_subscription.example"
@@ -90,6 +94,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T) {
+	skipTest(t, *contractFlag)
 
 	if testing.Short() {
 		t.Skip("Requires manual execution over CI execution")
@@ -241,6 +246,7 @@ func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T)
 }
 
 func TestAccResourceRedisCloudSubscription_AddAdditionalDatabaseWithModule(t *testing.T) {
+	skipTest(t, *contractFlag)
 
 	if testing.Short() {
 		t.Skip("Requires manual execution over CI execution")
@@ -282,6 +288,7 @@ func TestAccResourceRedisCloudSubscription_AddAdditionalDatabaseWithModule(t *te
 }
 
 func TestAccResourceRedisCloudSubscription_AddManageDatabaseReplication(t *testing.T) {
+	skipTest(t, *contractFlag)
 
 	if testing.Short() {
 		t.Skip("Requires manual execution over CI execution")
@@ -329,7 +336,8 @@ func TestAccResourceRedisCloudSubscription_AddManageDatabaseReplication(t *testi
 	})
 }
 
-func TestAccResourceRedisCloudSubscription_createContractPayment(t *testing.T) {
+func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testing.T) {
+	skipTest(t, !*contractFlag)
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
