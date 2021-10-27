@@ -15,11 +15,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-var contractFlag = flag.Bool("contract", false,
-	"Add this flag '-contract' to run only tests for contract associated accounts")
-
 func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
-	skipTest(t, *contractFlag)
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	resourceName := "rediscloud_subscription.example"
@@ -33,7 +30,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionContractPayment, testCloudAccountName, name, 1, password),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDb, testCloudAccountName, name, 1, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -44,8 +41,6 @@ func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
-					resource.TestCheckNoResourceAttr(resourceName, "payment_method_id"),
-					resource.TestCheckResourceAttrSet(resourceName, "contract_payment_method_id"),
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
 
@@ -78,13 +73,6 @@ func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionContractPayment, testCloudAccountName, name, 1, password),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckNoResourceAttr(resourceName, "payment_method_id"),
-					resource.TestCheckResourceAttrSet(resourceName, "contract_payment_method_id"),
-				),
-			},
-			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -94,7 +82,6 @@ func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T) {
-	skipTest(t, *contractFlag)
 
 	if testing.Short() {
 		t.Skip("Requires manual execution over CI execution")
@@ -246,7 +233,6 @@ func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T)
 }
 
 func TestAccResourceRedisCloudSubscription_AddAdditionalDatabaseWithModule(t *testing.T) {
-	skipTest(t, *contractFlag)
 
 	if testing.Short() {
 		t.Skip("Requires manual execution over CI execution")
@@ -288,7 +274,6 @@ func TestAccResourceRedisCloudSubscription_AddAdditionalDatabaseWithModule(t *te
 }
 
 func TestAccResourceRedisCloudSubscription_AddManageDatabaseReplication(t *testing.T) {
-	skipTest(t, *contractFlag)
 
 	if testing.Short() {
 		t.Skip("Requires manual execution over CI execution")
@@ -337,7 +322,12 @@ func TestAccResourceRedisCloudSubscription_AddManageDatabaseReplication(t *testi
 }
 
 func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testing.T) {
-	skipTest(t, !*contractFlag)
+	var contractFlag = flag.Bool("contract", false,
+		"Add this flag '-contract' to run only tests for contract associated accounts")
+
+	if !*contractFlag {
+		t.Skip("The '-contract' parameter wasn't provided in the test command.")
+	}
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)

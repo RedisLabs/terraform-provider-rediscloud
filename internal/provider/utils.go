@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"sync"
-	"testing"
 )
 
 func validateDiagFunc(validateFunc func(interface{}, string) ([]string, []error)) schema.SchemaValidateDiagFunc {
@@ -76,10 +75,4 @@ func (m *perIdLock) get(id int) *sync.Mutex {
 	mutex := &sync.Mutex{}
 	m.store[id] = mutex
 	return mutex
-}
-
-func skipTest(t *testing.T, skip bool, args ...interface{}) {
-	if skip {
-		t.Skip(args)
-	}
 }

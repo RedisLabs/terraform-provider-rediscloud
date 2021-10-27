@@ -68,6 +68,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Optional:    true,
 			},
 			"payment_method_id": {
+				Computed:         true,
 				Description:      "A valid payment method pre-defined in the current account",
 				Type:             schema.TypeString,
 				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
@@ -505,8 +506,7 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 				return diag.FromErr(err)
 			}
 			// If payment_method_id was defined in the schema, then reset the other attribute filled by the API in previous runs
-			err := d.Set("contract_payment_method_id", "")
-			if err != nil {
+			if err := d.Set("contract_payment_method_id", ""); err != nil {
 				return diag.FromErr(err)
 			}
 		}
