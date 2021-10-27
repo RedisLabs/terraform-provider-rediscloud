@@ -353,8 +353,7 @@ func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testin
 					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
-					resource.TestCheckNoResourceAttr(resourceName, "payment_method_id"),
-					resource.TestCheckResourceAttrSet(resourceName, "contract_payment_method_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
 
@@ -389,8 +388,7 @@ func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testin
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionContractPayment, testCloudAccountName, name, 1, password),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckNoResourceAttr(resourceName, "payment_method_id"),
-					resource.TestCheckResourceAttrSet(resourceName, "contract_payment_method_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 				),
 			},
 			{
