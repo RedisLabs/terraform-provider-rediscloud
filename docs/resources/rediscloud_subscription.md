@@ -116,7 +116,12 @@ resource "rediscloud_subscription" "example" {
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
     password = random_password.password.result
-
+    dynamic "modules" {
+      for_each = ["RedisJSON", "RedisBloom"]
+      content {
+        name = modules.value
+      }
+    }
     alert {
       name = "dataset-size"
       value = 40
@@ -173,7 +178,7 @@ Can only be enabled if OSS Cluster API support is enabled. Default: 'false'
 * `replica_of` - (Optional) Set of Redis database URIs, in the format `redis://user:password@host:port`, that this
 database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided.
 Cannot be enabled when `support_oss_cluster_api` is enabled.
-* `module` - (Optional) A module object, documented below
+* `modules` - (Optional) Set of modules to enable on the database, documented below
 * `alert` - (Optional) Set of alerts to enable on the database, documented below
 * `data_persistence` - (Optional) Rate of database data persistence (in persistent storage). Default: ‘none’
 * `password` - (Required) Password used to access the database
@@ -205,7 +210,7 @@ The database `alert` block supports:
 * `name` (Required) Alert name
 * `value` (Required) Alert value
 
-The database `module` block supports:
+The database `modules` block supports:
 
 * `name` (Required) Name of the module to enable
 
