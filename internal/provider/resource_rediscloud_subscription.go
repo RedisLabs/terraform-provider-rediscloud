@@ -355,7 +355,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							},
 						},
 						"modules": {
-							Description: "Module objects",
+							Description: "Modules objects",
 							Type:        schema.TypeList,
 							Optional:    true,
 							MinItems:    1,
