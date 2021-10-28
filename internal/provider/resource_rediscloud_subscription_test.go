@@ -15,6 +15,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+var contractFlag = flag.Bool("contract", false,
+	"Add this flag '-contract' to run tests for contract associated accounts")
+
 func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
@@ -322,19 +325,16 @@ func TestAccResourceRedisCloudSubscription_AddManageDatabaseReplication(t *testi
 }
 
 func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testing.T) {
-	var contractFlag = flag.Bool("contract", false,
-		"Add this flag '-contract' to run only tests for contract associated accounts")
 
 	if !*contractFlag {
 		t.Skip("The '-contract' parameter wasn't provided in the test command.")
 	}
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
+	updatedName := fmt.Sprintf("%v-updatedName", name)
 	password := acctest.RandString(20)
 	resourceName := "rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-
-	var subId int
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
@@ -354,47 +354,14 @@ func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testin
 					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
-					func(s *terraform.State) error {
-						r := s.RootModule().Resources[resourceName]
-
-						var err error
-						subId, err = strconv.Atoi(r.Primary.ID)
-						if err != nil {
-							return err
-						}
-
-						client := testProvider.Meta().(*apiClient)
-						sub, err := client.client.Subscription.Get(context.TODO(), subId)
-						if err != nil {
-							return err
-						}
-
-						if redis.StringValue(sub.Name) != name {
-							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
-						}
-
-						listDb := client.client.Database.List(context.TODO(), subId)
-						if listDb.Next() != true {
-							return fmt.Errorf("no database found: %s", listDb.Err())
-						}
-						if listDb.Err() != nil {
-							return listDb.Err()
-						}
-
-						return nil
-					},
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionContractPayment, testCloudAccountName, name, 1, password),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionContractPayment, testCloudAccountName, updatedName, 1, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
 				),
-			},
-			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
 			},
 		},
 	})
