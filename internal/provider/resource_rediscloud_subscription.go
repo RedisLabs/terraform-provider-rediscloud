@@ -354,8 +354,8 @@ func resourceRedisCloudSubscription() *schema.Resource {
 								},
 							},
 						},
-						"modules": {
-							Description: "Modules objects",
+						"module": {
+							Description: "A module object",
 							Type:        schema.TypeList,
 							Optional:    true,
 							MinItems:    1,
@@ -774,7 +774,7 @@ func buildSubscriptionCreateDatabases(databases interface{}) []*subscriptions.Cr
 		averageItemSizeInBytes := databaseMap["average_item_size_in_bytes"].(int)
 
 		createModules := make([]*subscriptions.CreateModules, 0)
-		modules := databaseMap["modules"]
+		modules := databaseMap["module"]
 		for _, module := range modules.([]interface{}) {
 			moduleMap := module.(map[string]interface{})
 
@@ -824,7 +824,7 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 	}
 
 	createModules := make([]*databases.CreateModule, 0)
-	module := db["modules"]
+	module := db["module"]
 	for _, module := range module.([]interface{}) {
 		moduleMap := module.(map[string]interface{})
 
@@ -1187,7 +1187,7 @@ func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath
 		"throughput_measurement_value":          redis.IntValue(db.ThroughputMeasurement.Value),
 		"public_endpoint":                       redis.StringValue(db.PublicEndpoint),
 		"private_endpoint":                      redis.StringValue(db.PrivateEndpoint),
-		"modules":                               flattenModules(db.Modules),
+		"module":                                flattenModules(db.Modules),
 		"alert":                                 flattenAlerts(db.Alerts),
 		"external_endpoint_for_oss_cluster_api": externalOSSAPIEndpoint,
 		"password":                              password,
