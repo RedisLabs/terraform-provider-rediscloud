@@ -556,6 +556,7 @@ data "rediscloud_cloud_account" "account" {
 resource "rediscloud_subscription" "example" {
 
   name = "%s"
+  payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
 
   allowlist {
