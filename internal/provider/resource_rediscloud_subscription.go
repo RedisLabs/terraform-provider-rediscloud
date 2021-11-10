@@ -68,7 +68,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Optional:    true,
 			},
 			"payment_method_id": {
-				Computed: true,
+				Computed:         true,
 				Description:      "A valid payment method pre-defined in the current account",
 				Type:             schema.TypeString,
 				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
