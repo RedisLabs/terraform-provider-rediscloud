@@ -4,8 +4,16 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ## 0.2.5 (unreleased)
 
-- Updates Terraform Plugin SDK to v2.7.1
-- Updates additional dependencies contributing to build, (goreleaser-action 2.7.0)
+### Changed
+
+- Updates Terraform Plugin SDK to v2.8.0
+- Updates additional dependencies contributing to build, (goreleaser-action 2.8.0)
+- Updated README.md covering acceptance test execution
+
+### Fixed
+
+- Redis Cloud subscription update is failing due to missing payment method id [#149](https://github.com/RedisLabs/terraform-provider-rediscloud/pull/149)
+- Wrong syntax in example. [#153](https://github.com/RedisLabs/terraform-provider-rediscloud/pull/153)
 
 ## 0.2.4 (July 24, 2021)
 
