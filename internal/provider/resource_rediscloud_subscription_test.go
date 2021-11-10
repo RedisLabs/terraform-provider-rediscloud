@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"regexp"
@@ -13,6 +14,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
+
+var contractFlag = flag.Bool("contract", false,
+	"Add this flag '-contract' to run tests for contract associated accounts")
 
 func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
 
@@ -342,6 +346,49 @@ func TestAccResourceRedisCloudSubscription_AddManageDatabaseReplication(t *testi
 					resource.TestCheckResourceAttr(replicaResourceName, "database.#", "1"),
 					resource.TestCheckResourceAttr(replicaResourceName, "database.0.name", replicaDatabaseName),
 					resource.TestCheckResourceAttr(replicaResourceName, "database.0.replica_of.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testing.T) {
+
+	if !*contractFlag {
+		t.Skip("The '-contract' parameter wasn't provided in the test command.")
+	}
+
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	updatedName := fmt.Sprintf("%v-updatedName", name)
+	password := acctest.RandString(20)
+	resourceName := "rediscloud_subscription.example"
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionContractPayment, testCloudAccountName, name, 1, password),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
+					resource.TestCheckResourceAttr(resourceName, "database.#", "1"),
+					resource.TestMatchResourceAttr(resourceName, "database.0.db_id", regexp.MustCompile("^[1-9][0-9]*$")),
+					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
+				),
+			},
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionContractPayment, testCloudAccountName, updatedName, 1, password),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
 				),
 			},
 		},
@@ -755,5 +802,47 @@ resource "rediscloud_subscription" "replica" {
     password                     = local.replica_db_password
   }
 
+}
+`
+
+const testAccResourceRedisCloudSubscriptionContractPayment = `
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS" 
+  name = "%s"
+}
+
+resource "rediscloud_subscription" "example" {
+
+  name = "%s"
+  memory_storage = "ram"
+
+  allowlist {
+    cidrs = ["192.168.0.0/16"]
+  }
+
+  cloud_provider {
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region = "eu-west-1"
+      networking_deployment_cidr = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+
+  database {
+    name = "tf-database"
+    protocol = "redis"
+    memory_limit_in_gb = %d
+    support_oss_cluster_api = true
+    data_persistence = "none"
+    replication = false
+    throughput_measurement_by = "operations-per-second"
+    password = "%s"
+    throughput_measurement_value = 10000
+    source_ips = ["10.0.0.0/8"]
+  }
 }
 `
