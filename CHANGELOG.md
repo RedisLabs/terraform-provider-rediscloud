@@ -2,7 +2,11 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-## 0.2.7 (unreleased)
+## 0.2.7 (November 26 2021)
+
+### Fixed
+
+- Adjusts goreleaser configuration with go 1.17
 
 ## 0.2.6 (November 26 2021)
 
