@@ -391,6 +391,12 @@ func resourceRedisCloudSubscription() *schema.Resource {
 								// which isn't a valid Go regex
 							},
 						},
+						"enable_tls": {
+							Description: "Use TLS for authentication",
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Default:     false,
+						},
 					},
 				},
 			},
