@@ -869,8 +869,10 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 		create.AverageItemSizeInBytes = redis.Int(averageItemSize)
 	}
 
-	clientSSLCertificate := db["client_ssl_certificate"].(string)
-	if clientSSLCertificate != "" {
+	enableTls := db["enable_tls"].(bool)
+	if enableTls == true {
+		create.EnableTls = redis.Bool(enableTls)
+		clientSSLCertificate := db["client_ssl_certificate"].(string)
 		create.ClientSSLCertificate = redis.String(clientSSLCertificate)
 	}
 
@@ -917,8 +919,10 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 		update.ReplicaOf = make([]*string, 0)
 	}
 
-	clientSSLCertificate := db["client_ssl_certificate"].(string)
-	if clientSSLCertificate != "" {
+	enableTls := db["enable_tls"].(bool)
+	if enableTls == true {
+		update.EnableTls = redis.Bool(enableTls)
+		clientSSLCertificate := db["client_ssl_certificate"].(string)
 		update.ClientSSLCertificate = redis.String(clientSSLCertificate)
 	}
 
@@ -1201,6 +1205,7 @@ func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath
 		"password":                              password,
 		"source_ips":                            sourceIPs,
 		"hashing_policy":                        flattenRegexRules(db.Clustering.RegexRules),
+		"enable_tls":                            redis.Bool(*db.Security.EnableTls),
 	}
 
 	if db.ReplicaOf != nil {
