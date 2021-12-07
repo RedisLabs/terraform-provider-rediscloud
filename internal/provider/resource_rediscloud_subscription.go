@@ -869,10 +869,15 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 		create.AverageItemSizeInBytes = redis.Int(averageItemSize)
 	}
 
-	enableTls := db["enable_tls"].(bool)
-	if enableTls == true {
-		create.EnableTls = redis.Bool(enableTls)
-		clientSSLCertificate := db["client_ssl_certificate"].(string)
+	clientSSLCertificate := db["client_ssl_certificate"].(string)
+	if clientSSLCertificate != ""{
+		enableTls := db["enable_tls"].(bool)
+		if enableTls == true {
+			create.EnableTls = redis.Bool(enableTls)
+		} else {
+			// mTLS backward compatibility
+			create.EnableTls = nil
+		}
 		create.ClientSSLCertificate = redis.String(clientSSLCertificate)
 	}
 
@@ -919,10 +924,15 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 		update.ReplicaOf = make([]*string, 0)
 	}
 
-	enableTls := db["enable_tls"].(bool)
-	if enableTls == true {
-		update.EnableTls = redis.Bool(enableTls)
-		clientSSLCertificate := db["client_ssl_certificate"].(string)
+	clientSSLCertificate := db["client_ssl_certificate"].(string)
+	if clientSSLCertificate != ""{
+		enableTls := db["enable_tls"].(bool)
+		if enableTls == true {
+			update.EnableTls = redis.Bool(enableTls)
+		} else {
+			// mTLS backward compatibility
+			update.EnableTls = nil
+		}
 		update.ClientSSLCertificate = redis.String(clientSSLCertificate)
 	}
 
