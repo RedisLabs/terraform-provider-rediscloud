@@ -83,6 +83,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseAndSslCert(t *testi
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"database.0.client_ssl_certificate"},
 			},
 		},
 	})
