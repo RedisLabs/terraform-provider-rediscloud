@@ -14,7 +14,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestAccResourceRedisCloudSubscription_createWithDatabaseAndSslCert(t *testing.T) {
+// enable_tls=true, client_ssl_certificate=<valid>
+func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSslCert(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
@@ -22,7 +23,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseAndSslCert(t *testi
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	clientSslCertificate := os.Getenv("SSL_CERTIFICATE")
-	
+
 	var subId int
 
 	resource.Test(t, resource.TestCase{
@@ -31,7 +32,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseAndSslCert(t *testi
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithCert, testCloudAccountName, name, 1, password, clientSslCertificate),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, testCloudAccountName, name, 1, password, clientSslCertificate),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -89,14 +90,13 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseAndSslCert(t *testi
 	})
 }
 
-func TestAccResourceRedisCloudSubscription_createWithDatabaseAndInvalidSslCert(t *testing.T) {
+// enable_tls=true, client_ssl_certificate=""
+func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEmptySslCert(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	resourceName := "rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-
-	clientSslCertificate := os.Getenv("SSL_CERTIFICATE")
 
 	var subId int
 
@@ -106,7 +106,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseAndInvalidSslCert(t
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithCert, testCloudAccountName, name, 1, password, clientSslCertificate),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndWithoutCert, testCloudAccountName, name, 1, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -145,6 +145,8 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseAndInvalidSslCert(t
 							return listDb.Err()
 						}
 
+						//database := listDb.Value()
+
 						return nil
 					},
 				),
@@ -158,7 +160,51 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseAndInvalidSslCert(t
 	})
 }
 
-const testAccResourceRedisCloudSubscriptionOneDbWithCert = `
+// enable_tls=true, client_ssl_certificate=<invalid>
+func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndInvalidSslCert(t *testing.T) {
+
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	password := acctest.RandString(20)
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	invalidClientSslCertificate := os.Getenv("SSL_CERTIFICATE")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, testCloudAccountName, name, 1, password, invalidClientSslCertificate),
+				ExpectError: regexp.MustCompile("Error: 400 BAD_REQUEST - DATABASE_INVALID_CERT: Database certificate is invalid"),
+			},
+		},
+	})
+}
+
+// enable_tls=false, client_ssl_certificate=<invalid>
+func TestAccResourceRedisCloudSubscription_createWithDatabaseAndDisabledTlsAndInvalidCert(t *testing.T) {
+
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	password := acctest.RandString(20)
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	invalidClientSslCertificate := os.Getenv("SSL_CERTIFICATE")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, testCloudAccountName, name, 1, password, invalidClientSslCertificate),
+				ExpectError: regexp.MustCompile("Error: 400 BAD_REQUEST - DATABASE_INVALID_CERT: Database certificate is invalid"),
+			},
+		},
+	})
+}
+
+const testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
@@ -201,6 +247,100 @@ resource "rediscloud_subscription" "example" {
     throughput_measurement_value = 10000
     source_ips = ["10.0.0.0/8"]
 	enable_tls = true
+	client_ssl_certificate = "%s"
+  }
+}
+`
+
+const testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndWithoutCert = `
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS" 
+  name = "%s"
+}
+
+resource "rediscloud_subscription" "example" {
+
+  name = "%s"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  memory_storage = "ram"
+
+  allowlist {
+    cidrs = ["192.168.0.0/16"]
+  }
+
+  cloud_provider {
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region = "eu-west-1"
+      networking_deployment_cidr = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+
+  database {
+    name = "tf-database"
+    protocol = "redis"
+    memory_limit_in_gb = %d
+    support_oss_cluster_api = true
+    data_persistence = "none"
+    replication = false
+    throughput_measurement_by = "operations-per-second"
+    password = "%s"
+    throughput_measurement_value = 10000
+    source_ips = ["10.0.0.0/8"]
+	enable_tls = true
+  }
+}
+`
+
+const testAccResourceRedisCloudSubscriptionOneDbWithoutEnableTlsAndWithCert = `
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS" 
+  name = "%s"
+}
+
+resource "rediscloud_subscription" "example" {
+
+  name = "%s"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  memory_storage = "ram"
+
+  allowlist {
+    cidrs = ["192.168.0.0/16"]
+  }
+
+  cloud_provider {
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region = "eu-west-1"
+      networking_deployment_cidr = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+
+  database {
+    name = "tf-database"
+    protocol = "redis"
+    memory_limit_in_gb = %d
+    support_oss_cluster_api = true
+    data_persistence = "none"
+    replication = false
+    throughput_measurement_by = "operations-per-second"
+    password = "%s"
+    throughput_measurement_value = 10000
+    source_ips = ["10.0.0.0/8"]
 	client_ssl_certificate = "%s"
   }
 }
