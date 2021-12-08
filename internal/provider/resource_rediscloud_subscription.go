@@ -869,11 +869,24 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 		create.AverageItemSizeInBytes = redis.Int(averageItemSize)
 	}
 
-	enableTls := db["enable_tls"].(bool)
-	if enableTls == true {
-		create.EnableTls = redis.Bool(enableTls)
-		clientSSLCertificate := db["client_ssl_certificate"].(string)
-		create.ClientSSLCertificate = redis.String(clientSSLCertificate)
+	clientSSLCertificate := db["client_ssl_certificate"].(string)
+	enableTLS := db["enable_tls"].(bool)
+	if !enableTLS {
+		if clientSSLCertificate != "" {
+			// 5 & 6 & 8
+			create.ClientSSLCertificate = redis.String(clientSSLCertificate)
+		} else {
+			// 2
+			create.EnableTls = redis.Bool(enableTLS)
+		}
+	}
+	if enableTLS {
+		// 3
+		create.EnableTls = redis.Bool(enableTLS)
+		// 4 & 7
+		if clientSSLCertificate != "" {
+			create.ClientSSLCertificate = redis.String(clientSSLCertificate)
+		}
 	}
 
 	backupPath := db["periodic_backup_path"].(string)
@@ -919,11 +932,24 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 		update.ReplicaOf = make([]*string, 0)
 	}
 
-	enableTls := db["enable_tls"].(bool)
-	if enableTls == true {
-		update.EnableTls = redis.Bool(enableTls)
-		clientSSLCertificate := db["client_ssl_certificate"].(string)
-		update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+	clientSSLCertificate := db["client_ssl_certificate"].(string)
+	enableTLS := db["enable_tls"].(bool)
+	if !enableTLS {
+		if clientSSLCertificate != "" {
+			// 5 & 6 & 8
+			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+		} else {
+			// 2
+			update.EnableTls = redis.Bool(enableTLS)
+		}
+	}
+	if enableTLS {
+		// 3
+		update.EnableTls = redis.Bool(enableTLS)
+		// 4 & 7
+		if clientSSLCertificate != "" {
+			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+		}
 	}
 
 	regex := db["hashing_policy"].([]interface{})
