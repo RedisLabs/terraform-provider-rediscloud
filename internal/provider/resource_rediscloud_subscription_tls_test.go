@@ -145,7 +145,13 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEm
 							return listDb.Err()
 						}
 
-						//database := listDb.Value()
+						database := listDb.Value()
+						if *database.Security.EnableTls != true {
+							return fmt.Errorf("database Tls flag is not enabled: %v", *database.Security.SSLClientAuthentication)
+						}
+						if *database.Security.SSLClientAuthentication != false {
+							return fmt.Errorf("database SSL client Authentication is enabled: %v", *database.Security.SSLClientAuthentication)
+						}
 
 						return nil
 					},
