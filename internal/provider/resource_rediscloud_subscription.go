@@ -870,15 +870,23 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 	}
 
 	clientSSLCertificate := db["client_ssl_certificate"].(string)
-	if clientSSLCertificate != ""{
-		enableTls := db["enable_tls"].(bool)
-		if enableTls == true {
-			create.EnableTls = redis.Bool(enableTls)
+	enableTLS := db["enable_tls"].(bool)
+	if !enableTLS {
+		if clientSSLCertificate != "" {
+			// 5 & 6 & 8
+			create.ClientSSLCertificate = redis.String(clientSSLCertificate)
 		} else {
-			// mTLS backward compatibility
-			create.EnableTls = nil
+			// 2
+			create.EnableTls = redis.Bool(enableTLS)
 		}
-		create.ClientSSLCertificate = redis.String(clientSSLCertificate)
+	}
+	if enableTLS {
+		// 3
+		create.EnableTls = redis.Bool(enableTLS)
+		// 4 & 7
+		if clientSSLCertificate != "" {
+			create.ClientSSLCertificate = redis.String(clientSSLCertificate)
+		}
 	}
 
 	backupPath := db["periodic_backup_path"].(string)
@@ -925,15 +933,23 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 	}
 
 	clientSSLCertificate := db["client_ssl_certificate"].(string)
-	if clientSSLCertificate != ""{
-		enableTls := db["enable_tls"].(bool)
-		if enableTls == true {
-			update.EnableTls = redis.Bool(enableTls)
+	enableTLS := db["enable_tls"].(bool)
+	if !enableTLS {
+		if clientSSLCertificate != "" {
+			// 5 & 6 & 8
+			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
 		} else {
-			// mTLS backward compatibility
-			update.EnableTls = nil
+			// 2
+			update.EnableTls = redis.Bool(enableTLS)
 		}
-		update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+	}
+	if enableTLS {
+		// 3
+		update.EnableTls = redis.Bool(enableTLS)
+		// 4 & 7
+		if clientSSLCertificate != "" {
+			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+		}
 	}
 
 	regex := db["hashing_policy"].([]interface{})
