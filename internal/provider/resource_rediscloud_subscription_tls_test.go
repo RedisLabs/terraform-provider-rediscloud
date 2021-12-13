@@ -18,6 +18,14 @@ import (
 var tlsFlag = flag.Bool("tls", false,
 	"Add this flag '-tls' to run tests for subscriptions and databases that use TLS")
 
+func testAccTLSValidCertificatePreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "SSL_CERTIFICATE")
+}
+
+func testAccTLSInvalidCertificatePreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "SSL_CERTIFICATE_INVALID")
+}
+
 // enable_tls=true, client_ssl_certificate=<valid>
 func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSslCert(t *testing.T) {
 
@@ -35,7 +43,11 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 	var subId int
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccAwsPreExistingCloudAccountPreCheck(t)
+			testAccTLSValidCertificatePreCheck(t)
+		},
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -192,7 +204,11 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndIn
 	invalidClientSslCertificate := os.Getenv("SSL_CERTIFICATE_INVALID")
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccAwsPreExistingCloudAccountPreCheck(t)
+			testAccTLSInvalidCertificatePreCheck(t)
+		},
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -218,12 +234,16 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseAndDisabledTlsAndIn
 	invalidClientSslCertificate := os.Getenv("SSL_CERTIFICATE_INVALID")
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccAwsPreExistingCloudAccountPreCheck(t)
+			testAccTLSInvalidCertificatePreCheck(t)
+		},
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, testCloudAccountName, name, 1, password, invalidClientSslCertificate),
+				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithoutEnableTlsAndWithCert, testCloudAccountName, name, 1, password, invalidClientSslCertificate),
 				ExpectError: regexp.MustCompile("Error: 400 BAD_REQUEST - DATABASE_INVALID_CERT: Database certificate is invalid"),
 			},
 		},
