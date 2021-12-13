@@ -120,6 +120,14 @@ as in the following example, to configure this.
 $ TEST_PARALLELISM=2 make testacc
 ```
 
+A core set of Acceptance tests are executed through the build pipeline, (considered short tests).  
+Functionality that requires additional setup or environment variables can be executed using the following flags.
+
+| Flag      | Description                                       |
+|-----------|---------------------------------------------------|
+| `-tls`      | Allows execution of TLS based acceptance tests    |
+| `-contract` | Allows execution of contract payment method tests |
+
 Adding Dependencies
 -------------------
 
