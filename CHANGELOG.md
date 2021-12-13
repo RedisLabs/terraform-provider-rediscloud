@@ -2,7 +2,12 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-## 0.2.8 (unreleased)
+## 0.2.8 (December 14 2021)
+
+### Changed
+
+- Updates Subscription database to enable TLS
+- Updates Terraform Plugin SDK to v2.10.0
 
 ## 0.2.7 (November 26 2021)
 
