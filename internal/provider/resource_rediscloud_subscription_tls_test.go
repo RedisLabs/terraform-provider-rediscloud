@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+
 var tlsFlag = flag.Bool("tls", false,
 	"Add this flag '-tls' to run tests for subscriptions and databases that use TLS")
 
