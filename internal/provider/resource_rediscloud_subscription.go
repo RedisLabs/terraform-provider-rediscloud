@@ -390,6 +390,12 @@ func resourceRedisCloudSubscription() *schema.Resource {
 								// which isn't a valid Go regex
 							},
 						},
+						"enable_tls": {
+							Description: "Use TLS for authentication",
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Default:     false,
+						},
 					},
 				},
 			},
@@ -862,9 +868,24 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 		create.AverageItemSizeInBytes = redis.Int(averageItemSize)
 	}
 
+	// The cert validation is done by the API (HTTP 400 is returned if it's invalid).
 	clientSSLCertificate := db["client_ssl_certificate"].(string)
-	if clientSSLCertificate != "" {
-		create.ClientSSLCertificate = redis.String(clientSSLCertificate)
+	enableTLS := db["enable_tls"].(bool)
+	if enableTLS {
+		// TLS only: enable_tls=true, client_ssl_certificate="".
+		create.EnableTls = redis.Bool(enableTLS)
+		// mTLS: enableTls=true, non-empty client_ssl_certificate.
+		if clientSSLCertificate != "" {
+			create.ClientSSLCertificate = redis.String(clientSSLCertificate)
+		}
+	} else {
+		// mTLS (backward compatibility): enable_tls=false, non-empty client_ssl_certificate.
+		if clientSSLCertificate != "" {
+			create.ClientSSLCertificate = redis.String(clientSSLCertificate)
+		} else {
+			// Default: enable_tls=false, client_ssl_certificate=""
+			create.EnableTls = redis.Bool(enableTLS)
+		}
 	}
 
 	backupPath := db["periodic_backup_path"].(string)
@@ -910,9 +931,24 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 		update.ReplicaOf = make([]*string, 0)
 	}
 
+	// The cert validation is done by the API (HTTP 400 is returned if it's invalid).
 	clientSSLCertificate := db["client_ssl_certificate"].(string)
-	if clientSSLCertificate != "" {
-		update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+	enableTLS := db["enable_tls"].(bool)
+	if enableTLS {
+		// TLS only: enable_tls=true, client_ssl_certificate="".
+		update.EnableTls = redis.Bool(enableTLS)
+		// mTLS: enableTls=true, non-empty client_ssl_certificate.
+		if clientSSLCertificate != "" {
+			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+		}
+	} else {
+		// mTLS (backward compatibility): enable_tls=false, non-empty client_ssl_certificate.
+		if clientSSLCertificate != "" {
+			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+		} else {
+			// Default: enable_tls=false, client_ssl_certificate=""
+			update.EnableTls = redis.Bool(enableTLS)
+		}
 	}
 
 	regex := db["hashing_policy"].([]interface{})
@@ -1194,6 +1230,7 @@ func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath
 		"password":                              password,
 		"source_ips":                            sourceIPs,
 		"hashing_policy":                        flattenRegexRules(db.Clustering.RegexRules),
+		"enable_tls":                            redis.Bool(*db.Security.EnableTls),
 	}
 
 	if db.ReplicaOf != nil {
