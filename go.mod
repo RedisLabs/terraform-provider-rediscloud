@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/RedisLabs/rediscloud-go-api v0.1.6
-	github.com/bflad/tfproviderlint v0.27.1
+	github.com/bflad/tfproviderlint v0.28.0
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.10.1
 	golang.org/x/tools v0.0.0-20201124005743-911501bfb504 // indirect
@@ -23,7 +23,6 @@ require (
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/avast/retry-go v3.0.0+incompatible // indirect
 	github.com/aws/aws-sdk-go v1.37.0 // indirect
-	github.com/bflad/gopaniccheck v0.1.0 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bgentry/speakeasy v0.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
