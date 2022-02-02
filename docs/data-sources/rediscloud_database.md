@@ -55,6 +55,7 @@ database will be a replica of.
 hashing policy.
 * `public_endpoint` - Public endpoint to access the database
 * `private_endpoint` - Private endpoint to access the database
+* `enable_tls` - Enable TLS for database, default is `false`
 
 The `alert` block supports:
 
