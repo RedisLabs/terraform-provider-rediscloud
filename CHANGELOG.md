@@ -2,6 +2,17 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+## X.X.X (April 7 2022)
+
+### Changed
+
+- Updates X dependency to X version
+- Updates Terraform Plugin SDK to vX.X.X
+
+### Fixed
+
+- Fixed X error
+
 ## 0.2.9 (March 28 2022)
 
 ### Changed
