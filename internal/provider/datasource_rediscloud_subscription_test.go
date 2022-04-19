@@ -35,7 +35,6 @@ func TestAccDataSourceRedisCloudSubscription_basic(t *testing.T) {
 					resource.TestMatchResourceAttr(dataSourceName, "name", regexp.MustCompile(name)),
 					resource.TestCheckResourceAttrSet(dataSourceName, "payment_method_id"),
 					resource.TestMatchResourceAttr(dataSourceName, "memory_storage", regexp.MustCompile("ram")),
-					resource.TestCheckResourceAttr(dataSourceName, "persistent_storage_encryption", "false"),
 					resource.TestCheckResourceAttr(dataSourceName, "number_of_databases", "1"),
 					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "cloud_provider.0.cloud_account_id"),
@@ -65,7 +64,6 @@ resource "rediscloud_subscription" "example" {
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
-  persistent_storage_encryption = false
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
