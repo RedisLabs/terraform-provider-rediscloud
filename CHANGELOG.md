@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+## 0.3.0 (Unreleased)
+
+### Changed
+
+- Updates Subscription database schema to allow provisioning with multiple modules [#156](https://github.com/RedisLabs/terraform-provider-rediscloud/pull/156)
+
 ## 0.2.9 (March 28 2022)
 
 ### Changed
@@ -16,10 +22,6 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 - Updates Subscription database to enable TLS
 - Updates Terraform Plugin SDK to v2.10.0
-
-### Changed
-
-- Updates Subscription database schema to allow provisioning with multiple modules [#156](https://github.com/RedisLabs/terraform-provider-rediscloud/pull/156)
 
 ## 0.2.7 (November 26 2021)
 
