@@ -357,7 +357,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 						},
 						"module": {
 							Description: "A module object",
-							Type:        schema.TypeSet,
+							Type:        schema.TypeList,
 							Optional:    true,
 							MinItems:    1,
 							Elem: &schema.Resource{
@@ -781,8 +781,8 @@ func buildSubscriptionCreateDatabases(databases interface{}) []*subscriptions.Cr
 		averageItemSizeInBytes := databaseMap["average_item_size_in_bytes"].(int)
 
 		createModules := make([]*subscriptions.CreateModules, 0)
-		modules := databaseMap["module"].(*schema.Set)
-		for _, module := range modules.List() {
+		modules := databaseMap["module"]
+		for _, module := range modules.([]interface{}) {
 			moduleMap := module.(map[string]interface{})
 
 			modName := moduleMap["name"].(string)

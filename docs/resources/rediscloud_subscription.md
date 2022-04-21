@@ -214,6 +214,28 @@ The database `module` block supports:
 
 * `name` (Required) Name of the module to enable
 
+For example:
+```terraform
+  module {
+    name = "RedisJSON"
+  }
+  
+  module {
+    name = "RedisBloom"
+  }
+```
+The above can be expressed in a dynamic block:
+```terraform
+  dynamic "module" {
+    for_each = ["RedisJSON", "RedisBloom"]
+    content {
+      name = module.value
+    }
+  }
+```
+
+~> **Note:** You **CAN NOT** add / remove modules once they are assigned to the database.
+
 ### Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:
