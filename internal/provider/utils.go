@@ -76,3 +76,14 @@ func (m *perIdLock) get(id int) *sync.Mutex {
 	m.store[id] = mutex
 	return mutex
 }
+
+type hashedMap struct{
+	m map[string]interface{}
+	hash int
+}
+
+func (h *hashedMap) init(s *schema.Set, v interface{}) *hashedMap {
+	h.hash = s.F(v)
+	h.m = v.(map[string]interface{})
+	return h
+}
