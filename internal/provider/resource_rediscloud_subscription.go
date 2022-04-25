@@ -359,6 +359,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Description: "A module object",
 							Type:        schema.TypeList,
 							Optional:    true,
+							ForceNew:    true,
 							MinItems:    1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
