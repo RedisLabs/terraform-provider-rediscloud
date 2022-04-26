@@ -221,7 +221,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 			},
 			"database": {
 				Description: "A database object",
-				Type:        schema.TypeSet,
+				Type:        schema.TypeList,
 				Required:    true,
 				MinItems:    1,
 				Elem: &schema.Resource{
@@ -513,7 +513,7 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 		}
 	}
 
-	flatDbs, err := flattenDatabases(ctx, subId, d.Get("database").(*schema.Set).List(), api)
+	flatDbs, err := flattenDatabases(ctx, subId, d.Get("database").([]interface{}), api)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -573,7 +573,9 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 
 	if d.HasChange("database") || d.IsNewResource() {
 		oldDb, newDb := d.GetChange("database")
-		addition, existing, deletion := diff(oldDb.(*schema.Set), newDb.(*schema.Set), func(v interface{}) string {
+		oldDbList := oldDb.([]interface{})
+		newDbList := newDb.([]interface{})
+		addition, existing, deletion := diff(oldDbList, newDbList, func(v interface{}) string {
 			m := v.(map[string]interface{})
 			return m["name"].(string)
 		})
@@ -664,7 +666,7 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	for _, v := range d.Get("database").(*schema.Set).List() {
+	for _, v := range d.Get("database").([]interface{}) {
 		database := v.(map[string]interface{})
 
 		name := database["name"].(string)
@@ -756,7 +758,7 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 func buildSubscriptionCreateDatabases(databases interface{}) []*subscriptions.CreateDatabase {
 	createDatabases := make([]*subscriptions.CreateDatabase, 0)
 
-	for _, database := range databases.(*schema.Set).List() {
+	for _, database := range databases.([]interface{}) {
 		databaseMap := database.(map[string]interface{})
 
 		name := databaseMap["name"].(string)
@@ -1296,14 +1298,14 @@ func getDatabaseNameIdMap(ctx context.Context, subId int, client *apiClient) (ma
 	return ret, nil
 }
 
-func diff(oldSet *schema.Set, newSet *schema.Set, hashKey func(interface{}) string) ([]map[string]interface{}, []map[string]interface{}, []map[string]interface{}) {
+func diff(oldSet []interface{}, newSet []interface{}, hashKey func(interface{}) string) ([]map[string]interface{}, []map[string]interface{}, []map[string]interface{}) {
 	oldMap := map[string]map[string]interface{}{}
 	newMap := map[string]map[string]interface{}{}
 
-	for _, v := range oldSet.List() {
+	for _, v := range oldSet {
 		oldMap[hashKey(v)] = v.(map[string]interface{})
 	}
-	for _, v := range newSet.List() {
+	for _, v := range newSet {
 		newMap[hashKey(v)] = v.(map[string]interface{})
 	}
 
