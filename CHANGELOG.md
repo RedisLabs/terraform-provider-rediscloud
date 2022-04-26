@@ -5,7 +5,16 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 ## 0.3.0 (Unreleased)
 
 ### Added
+
 - Added support for the DataEvictionPolicy attribute in the _database_ data source and _subscription_ resource
+
+### Removed
+
+- Removed a deprecated attribute: persistent_storage_encryption 
+
+### Changed
+
+- Updates rediscloud-go-api to v0.1.7: removed the persistent_storage_encryption attribute from the API calls
 
 ## 0.2.9 (March 28 2022)
 

@@ -82,13 +82,6 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Default:          "ram",
 				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.MemoryStorageValues(), false)),
 			},
-			"persistent_storage_encryption": {
-				Description: "Encrypt data stored in persistent storage. Required for a GCP subscription",
-				Type:        schema.TypeBool,
-				ForceNew:    true,
-				Optional:    true,
-				Default:     true,
-			},
 			"allowlist": {
 				Description: "An allowlist object",
 				Type:        schema.TypeList,
@@ -431,14 +424,12 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	}
 
 	memoryStorage := d.Get("memory_storage").(string)
-	persistentStorageEncryption := d.Get("persistent_storage_encryption").(bool)
 
 	createSubscriptionRequest := subscriptions.CreateSubscription{
 		Name:                        redis.String(name),
 		DryRun:                      redis.Bool(false),
 		PaymentMethodID:             paymentMethodID,
 		MemoryStorage:               redis.String(memoryStorage),
-		PersistentStorageEncryption: redis.Bool(persistentStorageEncryption),
 		CloudProviders:              providers,
 		Databases:                   dbs,
 	}
@@ -505,9 +496,6 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 		}
 	}
 	if err := d.Set("memory_storage", redis.StringValue(subscription.MemoryStorage)); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("persistent_storage_encryption", redis.BoolValue(subscription.StorageEncryption)); err != nil {
 		return diag.FromErr(err)
 	}
 
