@@ -669,7 +669,6 @@ resource "rediscloud_subscription" "origin" {
   name                          = local.origin_sub_name
   payment_method_id             = data.rediscloud_payment_method.card.id
   memory_storage                = "ram"
-  persistent_storage_encryption = false
 
   cloud_provider {
     provider         = data.rediscloud_cloud_account.account.provider_type
@@ -698,7 +697,6 @@ resource "rediscloud_subscription" "replica" {
   name                          = local.replica_sub_name
   payment_method_id             = data.rediscloud_payment_method.card.id
   memory_storage                = "ram"
-  persistent_storage_encryption = false
 
   cloud_provider {
     provider         = data.rediscloud_cloud_account.account.provider_type
@@ -751,7 +749,6 @@ resource "rediscloud_subscription" "origin" {
   name                          = local.origin_sub_name
   payment_method_id             = data.rediscloud_payment_method.card.id
   memory_storage                = "ram"
-  persistent_storage_encryption = false
 
   cloud_provider {
     provider         = data.rediscloud_cloud_account.account.provider_type
@@ -780,7 +777,6 @@ resource "rediscloud_subscription" "replica" {
   name                          = local.replica_sub_name
   payment_method_id             = data.rediscloud_payment_method.card.id
   memory_storage                = "ram"
-  persistent_storage_encryption = false
 
   cloud_provider {
     provider         = data.rediscloud_cloud_account.account.provider_type

@@ -31,11 +31,6 @@ func dataSourceRedisCloudSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
-			"persistent_storage_encryption": {
-				Description: "Encrypt data stored in persistent storage. Required for a GCP subscription",
-				Type:        schema.TypeBool,
-				Computed:    true,
-			},
 			"number_of_databases": {
 				Description: "The number of databases that are linked to this subscription",
 				Type:        schema.TypeInt,
@@ -165,9 +160,6 @@ func dataSourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 	if err := d.Set("memory_storage", redis.StringValue(sub.MemoryStorage)); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("persistent_storage_encryption", redis.BoolValue(sub.StorageEncryption)); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("number_of_databases", redis.IntValue(sub.NumberOfDatabases)); err != nil {
