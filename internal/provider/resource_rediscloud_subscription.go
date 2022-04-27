@@ -1219,13 +1219,23 @@ func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath
 		"alert":                                 flattenAlerts(db.Alerts),
 		"external_endpoint_for_oss_cluster_api": externalOSSAPIEndpoint,
 		"password":                              password,
-		"source_ips":                            sourceIPs,
-		"hashing_policy":                        flattenRegexRules(db.Clustering.RegexRules),
 		"enable_tls":                            redis.Bool(*db.Security.EnableTls),
 	}
 
+	hashingPolicy := flattenRegexRules(db.Clustering.RegexRules)
+	if len(hashingPolicy) > 0 {
+		tf["hashing_policy"] = hashingPolicy
+	}
+
+	if len(sourceIPs) > 0 {
+		tf["source_ips"] = sourceIPs
+	}
+
 	if db.ReplicaOf != nil {
-		tf["replica_of"] = redis.StringSliceValue(db.ReplicaOf.Endpoints...)
+		replicaOf := redis.StringSliceValue(db.ReplicaOf.Endpoints...)
+		if len(replicaOf) > 0 {
+			tf["replica_of"] = replicaOf
+		}
 	}
 
 	if redis.BoolValue(db.Security.SSLClientAuthentication) {
