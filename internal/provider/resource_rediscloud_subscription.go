@@ -1299,15 +1299,15 @@ func getDatabaseNameIdMap(ctx context.Context, subId int, client *apiClient) (ma
 // diff: Checks the difference between two Sets based on their hashes and the hash keys.
 func diff(oldSet *schema.Set, newSet *schema.Set, hashKey func(interface{}) string) ([]map[string]interface{}, []map[string]interface{}, []map[string]interface{}) {
 
-	oldHashedMap := map[string]*hashedMap{}
-	newHashedMap := map[string]*hashedMap{}
+	oldHashedMap := map[string]*hashedSchema{}
+	newHashedMap := map[string]*hashedSchema{}
 
 	for _, v := range oldSet.List() {
-		h := hashedMap{}
+		h := hashedSchema{}
 		oldHashedMap[hashKey(v)] = h.init(oldSet, v)
 	}
 	for _, v := range newSet.List() {
-		h := hashedMap{}
+		h := hashedSchema{}
 		newHashedMap[hashKey(v)] = h.init(newSet, v)
 	}
 
