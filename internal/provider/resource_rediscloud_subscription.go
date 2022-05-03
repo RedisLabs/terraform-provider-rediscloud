@@ -1296,39 +1296,41 @@ func getDatabaseNameIdMap(ctx context.Context, subId int, client *apiClient) (ma
 	return ret, nil
 }
 
-// diff: Checks the difference between two Sets based on their hashes and the hash keys.
+// diff: Checks the difference between two Sets based on their hash keys and check if they were modified by generating
+//       a hash based on their attributes.
 func diff(oldSet *schema.Set, newSet *schema.Set, hashKey func(interface{}) string) ([]map[string]interface{}, []map[string]interface{}, []map[string]interface{}) {
 
-	oldHashedMap := map[string]*hashedSchema{}
-	newHashedMap := map[string]*hashedSchema{}
+	oldHashedMap := map[string]*hashedSet{}
+	newHashedMap := map[string]*hashedSet{}
 
 	for _, v := range oldSet.List() {
-		h := hashedSchema{}
+		h := hashedSet{}
 		oldHashedMap[hashKey(v)] = h.init(oldSet, v)
 	}
 	for _, v := range newSet.List() {
-		h := hashedSchema{}
+		h := hashedSet{}
 		newHashedMap[hashKey(v)] = h.init(newSet, v)
 	}
 
 	var addition, existing, deletion []map[string]interface{}
 
 	for k, newVal := range newHashedMap {
+		// Check if we're updating an existing block.
 		if oldVal, ok := oldHashedMap[k]; ok {
-			// The hashes are the same - this item is unchanged
+			// The hashes are the same - this block has NOT been changed.
 			if oldVal.hash == newVal.hash {
 				continue
 			}
-			// The hashes are different - this item was changed
+			// The hashes are different - this block was modified.
 			existing = append(existing, newVal.m)
-		// This item was recently added
+		// This block was recently added.
 		} else {
 			addition = append(addition, newVal.m)
 		}
 	}
 
 	for k, oldVal := range oldHashedMap {
-		// This item was deleted.
+		// This block was deleted.
 		if _, ok := newHashedMap[k]; !ok {
 			deletion = append(deletion, oldVal.m)
 		}
