@@ -70,6 +70,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 			"payment_method": {
 				Description:      "Payment method for the requested subscription. If credit card is specified, the payment method Id must be defined.",
 				Type:             schema.TypeString,
+				ForceNew:         true,
 				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^(credit-card|marketplace)$"), "must be 'credit-card' or 'marketplace'")),
 				Optional:         true,
 				Default:          "credit-card",
