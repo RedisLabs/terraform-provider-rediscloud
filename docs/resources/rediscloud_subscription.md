@@ -117,7 +117,12 @@ resource "rediscloud_subscription" "example" {
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
     password = random_password.password.result
-
+    dynamic "module" {
+      for_each = ["RedisJSON", "RedisBloom"]
+      content {
+        name = module.value
+      }
+    }
     alert {
       name = "dataset-size"
       value = 40
@@ -210,6 +215,28 @@ The database `alert` block supports:
 The database `module` block supports:
 
 * `name` (Required) Name of the module to enable
+
+For example:
+```terraform
+  module {
+    name = "RedisJSON"
+  }
+  
+  module {
+    name = "RedisBloom"
+  }
+```
+The above can be expressed in a dynamic block:
+```terraform
+  dynamic "module" {
+    for_each = ["RedisJSON", "RedisBloom"]
+    content {
+      name = module.value
+    }
+  }
+```
+
+~> **Note:** You **CAN NOT** add / remove modules once they are assigned to the database.
 
 ### Timeouts
 
