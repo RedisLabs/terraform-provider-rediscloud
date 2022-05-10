@@ -276,8 +276,10 @@ func TestAccResourceRedisCloudSubscription_AddAdditionalDatabaseWithModule(t *te
 	})
 }
 
-func TestAccResourceRedisCloudSubscription_AddDatabaseWithMultiModules(t *testing.T) {
-
+// Steps:
+// - Create a subscription with a multi-module db.
+// - Add another multi-module db to the subscription.
+func TestAccResourceRedisCloudSubscription_AddDatabasesWithMultiModules(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Requires manual execution over CI execution")
 	}
@@ -298,6 +300,17 @@ func TestAccResourceRedisCloudSubscription_AddDatabaseWithMultiModules(t *testin
 					resource.TestCheckResourceAttr(resourceName, "database.0.module.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.module.0.name", "RedisBloom"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.module.1.name", "RedisJSON"),
+				),
+			},
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionTwoDbsWithMultipleModules, testCloudAccountName, name, password, password),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "database.0.module.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.module.0.name", "RedisBloom"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.module.1.name", "RedisJSON"),
+					resource.TestCheckResourceAttr(resourceName, "database.1.module.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "database.1.module.0.name", "RedisBloom"),
+					resource.TestCheckResourceAttr(resourceName, "database.1.module.1.name", "RedisJSON"),
 				),
 			},
 		},
@@ -639,6 +652,80 @@ resource "rediscloud_subscription" "example" {
       }
     }
   }
+}
+`
+
+const testAccResourceRedisCloudSubscriptionTwoDbsWithMultipleModules = `
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS"
+  name = "%s"
+}
+
+resource "rediscloud_subscription" "example" {
+
+  name = "%s"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  memory_storage = "ram"
+
+  allowlist {
+    cidrs = ["192.168.0.0/16"]
+  }
+
+  cloud_provider {
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region = "eu-west-1"
+      networking_deployment_cidr = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+
+  database {
+    name = "tf-database-2"
+	protocol = "redis"
+    memory_limit_in_gb = 1
+    support_oss_cluster_api = true
+    data_persistence = "none"
+    replication = false
+    throughput_measurement_by = "operations-per-second"
+    password = "%s"
+    throughput_measurement_value = 10000
+    source_ips = ["10.0.0.0/8"]
+
+    dynamic "module" {
+      for_each = ["RedisJSON", "RedisBloom"]
+      content {
+        name = module.value
+      }
+    }
+  }
+  
+  database {
+    name = "tf-database-3"
+	protocol = "redis"
+    memory_limit_in_gb = 1
+    support_oss_cluster_api = true
+    data_persistence = "none"
+    replication = false
+    throughput_measurement_by = "operations-per-second"
+    password = "%s"
+    throughput_measurement_value = 10000
+    source_ips = ["10.0.0.0/8"]
+
+    dynamic "module" {
+      for_each = ["RedisJSON", "RedisBloom"]
+      content {
+        name = module.value
+      }
+    }
+  }
+  
 }
 `
 
