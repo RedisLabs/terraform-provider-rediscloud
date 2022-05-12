@@ -499,6 +499,9 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 			return diag.FromErr(err)
 		}
 	}
+	if err := d.Set("payment_method", redis.StringValue(subscription.PaymentMethod)); err != nil {
+		return diag.FromErr(err)
+	}
 	if err := d.Set("memory_storage", redis.StringValue(subscription.MemoryStorage)); err != nil {
 		return diag.FromErr(err)
 	}

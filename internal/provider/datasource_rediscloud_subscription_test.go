@@ -33,6 +33,7 @@ func TestAccDataSourceRedisCloudSubscription_basic(t *testing.T) {
 				Config: fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionDataSource, name) + fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionOneDb, testCloudAccountName, name, 1, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(dataSourceName, "name", regexp.MustCompile(name)),
+					resource.TestCheckResourceAttr(dataSourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "payment_method_id"),
 					resource.TestMatchResourceAttr(dataSourceName, "memory_storage", regexp.MustCompile("ram")),
 					resource.TestCheckResourceAttr(dataSourceName, "number_of_databases", "1"),
@@ -62,6 +63,7 @@ data "rediscloud_cloud_account" "account" {
 resource "rediscloud_subscription" "example" {
 
   name = "%s"
+  payment_method = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
 
