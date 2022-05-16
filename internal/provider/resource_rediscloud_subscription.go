@@ -67,6 +67,14 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 			},
+			"payment_method": {
+				Description:      "Payment method for the requested subscription. If credit card is specified, the payment method Id must be defined.",
+				Type:             schema.TypeString,
+				ForceNew:         true,
+				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^(credit-card|marketplace)$"), "must be 'credit-card' or 'marketplace'")),
+				Optional:         true,
+				Default:          "credit-card",
+			},
 			"payment_method_id": {
 				Computed:         true,
 				Description:      "A valid payment method pre-defined in the current account",
@@ -412,6 +420,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	// Create Subscription
 	name := d.Get("name").(string)
 
+	paymentMethod := d.Get("payment_method").(string)
 	paymentMethodID, err := readPaymentMethodID(d)
 	if err != nil {
 		return diag.FromErr(err)
@@ -420,12 +429,13 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	memoryStorage := d.Get("memory_storage").(string)
 
 	createSubscriptionRequest := subscriptions.CreateSubscription{
-		Name:                        redis.String(name),
-		DryRun:                      redis.Bool(false),
-		PaymentMethodID:             paymentMethodID,
-		MemoryStorage:               redis.String(memoryStorage),
-		CloudProviders:              providers,
-		Databases:                   dbs,
+		Name:            redis.String(name),
+		DryRun:          redis.Bool(false),
+		PaymentMethodID: paymentMethodID,
+		PaymentMethod:   redis.String(paymentMethod),
+		MemoryStorage:   redis.String(memoryStorage),
+		CloudProviders:  providers,
+		Databases:       dbs,
 	}
 
 	subId, err := api.client.Subscription.Create(ctx, createSubscriptionRequest)
@@ -488,6 +498,9 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 		if err := d.Set("payment_method_id", paymentMethodID); err != nil {
 			return diag.FromErr(err)
 		}
+	}
+	if err := d.Set("payment_method", redis.StringValue(subscription.PaymentMethod)); err != nil {
+		return diag.FromErr(err)
 	}
 	if err := d.Set("memory_storage", redis.StringValue(subscription.MemoryStorage)); err != nil {
 		return diag.FromErr(err)
