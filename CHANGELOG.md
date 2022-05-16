@@ -12,6 +12,9 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 - Updates rediscloud-go-api to v0.1.7: removed the persistent_storage_encryption attribute from the API calls
 
+### Changed
+
+- Updates Subscription database schema to allow provisioning with multiple modules [#156](https://github.com/RedisLabs/terraform-provider-rediscloud/pull/156)
 
 ## 0.2.9 (March 28 2022)
 
