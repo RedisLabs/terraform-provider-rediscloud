@@ -45,6 +45,7 @@ Each peering entry provides the following attributes
 * `vpc_id` Identifier of the VPC to be peered
 * `vpc_cidr` CIDR range of the VPC to be peered
 * `aws_peering_id` Identifier of the AWS cloud peering
+* `region` AWS Region that the VPC to be peered lives in
 
 **GCP ONLY:**
 * `gcp_project_id` GCP project ID that the VPC to be peered lives in
