@@ -360,7 +360,6 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Description: "A module object",
 							Type:        schema.TypeSet,
 							Optional:    true,
-							ForceNew:    true,
 							MinItems:    1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -599,6 +598,7 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 		} else {
 			// this is not a new resource, so these databases really do new to be created
 			for _, db := range addition {
+			// This loop with addition is triggered when another database is added to the subscription.
 				request := buildCreateDatabase(db)
 				id, err := api.client.Database.Create(ctx, subId, request)
 				if err != nil {
@@ -833,8 +833,8 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 	}
 
 	createModules := make([]*databases.CreateModule, 0)
-	module := db["module"]
-	for _, module := range module.([]interface{}) {
+	module := db["module"].(*schema.Set)
+	for _, module := range module.List() {
 		moduleMap := module.(map[string]interface{})
 
 		modName := moduleMap["name"].(string)
