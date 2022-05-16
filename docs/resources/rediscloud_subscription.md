@@ -95,6 +95,7 @@ resource "random_password" "password" {
 resource "rediscloud_subscription" "example" {
 
   name = "example"
+  payment_method = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
 
@@ -142,6 +143,7 @@ output "database_endpoints" {
 The following arguments are supported:
 
 * `name` - (Required) A meaningful name to identify the subscription
+* `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined.
 * `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types. 
 * `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of 'ram-and-flash’. Default: ‘ram’
 * `persistent_storage_encryption` - (Optional) Encrypt data stored in persistent storage. Required for a GCP subscription. Default: ‘true’
