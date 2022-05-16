@@ -21,6 +21,11 @@ func dataSourceRedisCloudSubscription() *schema.Resource {
 				Computed:    true,
 				Optional:    true,
 			},
+			"payment_method": {
+				Description: "Payment method for the requested subscription. Either 'credit-card' or 'marketplace'",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"payment_method_id": {
 				Description: "A valid payment method pre-defined in the current account",
 				Type:        schema.TypeString,
@@ -157,6 +162,9 @@ func dataSourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 	if err := d.Set("payment_method_id", paymentMethodID); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("payment_method", sub.PaymentMethod); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("memory_storage", redis.StringValue(sub.MemoryStorage)); err != nil {

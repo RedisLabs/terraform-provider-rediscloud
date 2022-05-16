@@ -67,6 +67,14 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 			},
+			"payment_method": {
+				Description:      "Payment method for the requested subscription. If credit card is specified, the payment method Id must be defined.",
+				Type:             schema.TypeString,
+				ForceNew:         true,
+				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^(credit-card|marketplace)$"), "must be 'credit-card' or 'marketplace'")),
+				Optional:         true,
+				Default:          "credit-card",
+			},
 			"payment_method_id": {
 				Computed:         true,
 				Description:      "A valid payment method pre-defined in the current account",
@@ -411,6 +419,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	// Create Subscription
 	name := d.Get("name").(string)
 
+	paymentMethod := d.Get("payment_method").(string)
 	paymentMethodID, err := readPaymentMethodID(d)
 	if err != nil {
 		return diag.FromErr(err)
@@ -419,12 +428,13 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	memoryStorage := d.Get("memory_storage").(string)
 
 	createSubscriptionRequest := subscriptions.CreateSubscription{
-		Name:                        redis.String(name),
-		DryRun:                      redis.Bool(false),
-		PaymentMethodID:             paymentMethodID,
-		MemoryStorage:               redis.String(memoryStorage),
-		CloudProviders:              providers,
-		Databases:                   dbs,
+		Name:            redis.String(name),
+		DryRun:          redis.Bool(false),
+		PaymentMethodID: paymentMethodID,
+		PaymentMethod:   redis.String(paymentMethod),
+		MemoryStorage:   redis.String(memoryStorage),
+		CloudProviders:  providers,
+		Databases:       dbs,
 	}
 
 	subId, err := api.client.Subscription.Create(ctx, createSubscriptionRequest)
@@ -487,6 +497,9 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 		if err := d.Set("payment_method_id", paymentMethodID); err != nil {
 			return diag.FromErr(err)
 		}
+	}
+	if err := d.Set("payment_method", redis.StringValue(subscription.PaymentMethod)); err != nil {
+		return diag.FromErr(err)
 	}
 	if err := d.Set("memory_storage", redis.StringValue(subscription.MemoryStorage)); err != nil {
 		return diag.FromErr(err)
@@ -1296,30 +1309,43 @@ func getDatabaseNameIdMap(ctx context.Context, subId int, client *apiClient) (ma
 	return ret, nil
 }
 
+// diff: Checks the difference between two Sets based on their hash keys and check if they were modified by generating
+//       a hash based on their attributes.
 func diff(oldSet *schema.Set, newSet *schema.Set, hashKey func(interface{}) string) ([]map[string]interface{}, []map[string]interface{}, []map[string]interface{}) {
-	oldMap := map[string]map[string]interface{}{}
-	newMap := map[string]map[string]interface{}{}
+
+	oldHashedMap := map[string]*hashedSet{}
+	newHashedMap := map[string]*hashedSet{}
 
 	for _, v := range oldSet.List() {
-		oldMap[hashKey(v)] = v.(map[string]interface{})
+		h := hashedSet{}
+		oldHashedMap[hashKey(v)] = h.init(oldSet, v)
 	}
 	for _, v := range newSet.List() {
-		newMap[hashKey(v)] = v.(map[string]interface{})
+		h := hashedSet{}
+		newHashedMap[hashKey(v)] = h.init(newSet, v)
 	}
 
 	var addition, existing, deletion []map[string]interface{}
 
-	for k, v := range newMap {
-		if _, ok := oldMap[k]; ok {
-			existing = append(existing, v)
+	for k, newVal := range newHashedMap {
+		// Check if we're updating an existing block.
+		if oldVal, ok := oldHashedMap[k]; ok {
+			// The hashes are the same - this block has NOT been changed.
+			if oldVal.hash == newVal.hash {
+				continue
+			}
+			// The hashes are different - this block was modified.
+			existing = append(existing, newVal.m)
+		// This block was recently added.
 		} else {
-			addition = append(addition, v)
+			addition = append(addition, newVal.m)
 		}
 	}
 
-	for k, v := range oldMap {
-		if _, ok := newMap[k]; !ok {
-			deletion = append(deletion, v)
+	for k, oldVal := range oldHashedMap {
+		// This block was deleted.
+		if _, ok := newHashedMap[k]; !ok {
+			deletion = append(deletion, oldVal.m)
 		}
 	}
 
