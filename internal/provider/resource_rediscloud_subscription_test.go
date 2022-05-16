@@ -634,7 +634,7 @@ resource "rediscloud_subscription" "example" {
   }
 
   database {
-    name = "tf-database-2"
+    name = "tf-database-0"
 	protocol = "redis"
     memory_limit_in_gb = 1
     support_oss_cluster_api = true
@@ -687,7 +687,7 @@ resource "rediscloud_subscription" "example" {
   }
 
   database {
-    name = "tf-database-2"
+    name = "tf-database-0"
 	protocol = "redis"
     memory_limit_in_gb = 1
     support_oss_cluster_api = true
@@ -707,7 +707,7 @@ resource "rediscloud_subscription" "example" {
   }
   
   database {
-    name = "tf-database-3"
+    name = "tf-database-1"
 	protocol = "redis"
     memory_limit_in_gb = 1
     support_oss_cluster_api = true
