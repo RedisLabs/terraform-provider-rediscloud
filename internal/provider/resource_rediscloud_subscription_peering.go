@@ -256,6 +256,9 @@ func resourceRedisCloudSubscriptionPeeringRead(ctx context.Context, d *schema.Re
 		if err := d.Set("vpc_cidr", redis.StringValue(peering.VPCCidr)); err != nil {
 			return diag.FromErr(err)
 		}
+		if err := d.Set("region", redis.StringValue(peering.Region)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	if providerName == "GCP" {
 		if err := d.Set("gcp_project_id", redis.StringValue(peering.GCPProjectUID)); err != nil {
