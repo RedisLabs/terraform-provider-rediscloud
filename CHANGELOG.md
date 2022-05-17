@@ -7,6 +7,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 ### Added
 
 - Added support for the DataEviction attribute in the _database_ data source and _subscription_ resource
+- Added paymentMethod field to Subscription resource
 
 ### Removed
 
@@ -15,6 +16,8 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 ### Changed
 
 - Updates rediscloud-go-api to v0.1.7: removed the persistent_storage_encryption attribute from the API calls
+- Updates Subscription database schema to allow provisioning with multiple modules [#156](https://github.com/RedisLabs/terraform-provider-rediscloud/pull/156)
+- Adds region attribute to Peering resource (for Read method) and data resource
 
 ## 0.2.9 (March 28 2022)
 
