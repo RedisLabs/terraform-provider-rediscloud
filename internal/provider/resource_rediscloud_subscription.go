@@ -26,7 +26,15 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		ReadContext:   resourceRedisCloudSubscriptionRead,
 		UpdateContext: resourceRedisCloudSubscriptionUpdate,
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
-
+		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, i interface{}) error {
+			dbMap := d.Get("database.0").(map[string]interface{})
+			oldName, newName := d.GetChange("database.0.name")
+			if oldName != newName && dbMap["force_recreate"] == false {
+				panic(fmt.Sprintf("DB '%s': To change the name, you need to recreate the database. " +
+					"\n 'force_recreate=true' must be set.", newName))
+			}
+			return nil
+		},
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 				subId, err := strconv.Atoi(d.Id())
@@ -235,6 +243,12 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				MaxItems:    1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"force_recreate": {
+							Description: "Toggle on to recreate the database",
+							Type:        schema.TypeBool,
+							Default:     false,
+							Optional:    true,
+						},
 						"db_id": {
 							Description: "Identifier of the database created",
 							Type:        schema.TypeInt,
