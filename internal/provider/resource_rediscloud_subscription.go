@@ -680,7 +680,7 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	for _, v := range d.Get("database").([]interface{}) {
+	for _, v := range d.Get("database").(*schema.Set).List() {
 		database := v.(map[string]interface{})
 
 		name := database["name"].(string)
@@ -786,8 +786,8 @@ func buildSubscriptionCreateDatabases(databases interface{}) []*subscriptions.Cr
 		averageItemSizeInBytes := databaseMap["average_item_size_in_bytes"].(int)
 
 		createModules := make([]*subscriptions.CreateModules, 0)
-		modules := databaseMap["module"]
-		for _, module := range modules.([]interface{}) {
+		modules := databaseMap["module"].(*schema.Set)
+		for _, module := range modules.List() {
 			moduleMap := module.(map[string]interface{})
 
 			modName := moduleMap["name"].(string)
@@ -836,8 +836,8 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 	}
 
 	createModules := make([]*databases.CreateModule, 0)
-	module := db["module"]
-	for _, module := range module.([]interface{}) {
+	module := db["module"].(*schema.Set)
+	for _, module := range module.List() {
 		moduleMap := module.(map[string]interface{})
 
 		modName := moduleMap["name"].(string)
