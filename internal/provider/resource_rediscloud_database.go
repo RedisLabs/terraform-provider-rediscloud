@@ -23,24 +23,17 @@ func resourceRedisCloudDatabase() *schema.Resource {
 
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-				subId, err := strconv.Atoi(d.Id())
-				if err != nil {
-					return nil, err
-				}
+				subId := d.Get("subscription_id").(int)
 
 				// Populate the names of databases that already exist so that `flattenDatabases` can iterate over them
 				api := meta.(*apiClient)
-				list := api.client.Database.List(ctx, subId)
-				var dbs []map[string]interface{}
-				for list.Next() {
-					dbs = append(dbs, map[string]interface{}{
-						"name": redis.StringValue(list.Value().Name),
-					})
+				dbMap := d.Get("database").(map[string]interface{})
+				dbId := dbMap["db_id"].(int)
+				db, dbErr := api.client.Database.Get(ctx, subId, dbId)
+				if dbErr != nil {
+					diag.FromErr(dbErr)
 				}
-				if list.Err() != nil {
-					return nil, list.Err()
-				}
-				if err := d.Set("database", dbs); err != nil {
+				if err := d.Set("database", db); err != nil {
 					return nil, err
 				}
 
@@ -418,8 +411,8 @@ func resourceRedisCloudDatabaseDelete(ctx context.Context, d *schema.ResourceDat
 	api := meta.(*apiClient)
 
 	var diags diag.Diagnostics
-
-	subId, err := strconv.Atoi(d.Id())
+	subscriptionId := d.Get("subscription_id").(string)
+	subId, err := strconv.Atoi(subscriptionId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
