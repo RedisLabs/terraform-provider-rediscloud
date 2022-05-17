@@ -694,7 +694,7 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	for _, v := range d.Get("database").(*schema.Set).List() {
+	for _, v := range d.Get("database").([]interface{}) {
 		database := v.(map[string]interface{})
 
 		name := database["name"].(string)
