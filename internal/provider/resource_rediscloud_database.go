@@ -231,6 +231,7 @@ func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceDat
 	memoryLimitInGB := d.Get("memory_limit_in_gb").(float64)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
 	dataPersistence := d.Get("data_persistence").(string)
+	password := d.Get("password").(string)
 	replication := d.Get("replication").(bool)
 	throughputMeasurementBy := d.Get("throughput_measurement_by").(string)
 	throughputMeasurementValue := d.Get("throughput_measurement_value").(int)
@@ -269,6 +270,7 @@ func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceDat
 	createDatabase := databases.CreateDatabase{
 		Name:                 redis.String(name),
 		Protocol:             redis.String(protocol),
+		Password:             redis.String(password),
 		MemoryLimitInGB:      redis.Float64(memoryLimitInGB),
 		SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
 		DataPersistence:      redis.String(dataPersistence),
@@ -278,9 +280,12 @@ func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceDat
 			Value: redis.Int(throughputMeasurementValue),
 		},
 		Modules:                createModules,
-		AverageItemSizeInBytes: redis.Int(averageItemSizeInBytes),
 		Alerts:                 createAlerts,
 	}
+
+		if averageItemSizeInBytes > 0 {
+			createDatabase.AverageItemSizeInBytes = &averageItemSizeInBytes
+		}
 
 	dbId, err := api.client.Database.Create(ctx, subId, createDatabase)
 	if err != nil {
