@@ -274,6 +274,12 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Optional:    true,
 							Default:     "none",
 						},
+						"data_eviction": {
+							Description: "The data items eviction method",
+							Type:        schema.TypeString,
+							Optional:    true,
+							Default:     "volatile-lru",
+						},
 						"replication": {
 							Description: "Databases replication",
 							Type:        schema.TypeBool,
@@ -922,10 +928,11 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 			By:    redis.String(db["throughput_measurement_by"].(string)),
 			Value: redis.Int(db["throughput_measurement_value"].(int)),
 		},
-		DataPersistence: redis.String(db["data_persistence"].(string)),
-		Password:        redis.String(db["password"].(string)),
-		SourceIP:        setToStringSlice(db["source_ips"].(*schema.Set)),
-		Alerts:          alerts,
+		DataPersistence:    redis.String(db["data_persistence"].(string)),
+		DataEvictionPolicy: redis.String(db["data_eviction"].(string)),
+		Password:           redis.String(db["password"].(string)),
+		SourceIP:           setToStringSlice(db["source_ips"].(*schema.Set)),
+		Alerts:             alerts,
 	}
 
 	update.ReplicaOf = setToStringSlice(db["replica_of"].(*schema.Set))
@@ -1221,6 +1228,7 @@ func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath
 		"memory_limit_in_gb":                    redis.Float64Value(db.MemoryLimitInGB),
 		"support_oss_cluster_api":               redis.BoolValue(db.SupportOSSClusterAPI),
 		"data_persistence":                      redis.StringValue(db.DataPersistence),
+		"data_eviction":                         redis.StringValue(db.DataEvictionPolicy),
 		"replication":                           redis.BoolValue(db.Replication),
 		"throughput_measurement_by":             redis.StringValue(db.ThroughputMeasurement.By),
 		"throughput_measurement_value":          redis.IntValue(db.ThroughputMeasurement.Value),
