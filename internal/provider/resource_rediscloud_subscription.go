@@ -26,7 +26,15 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		ReadContext:   resourceRedisCloudSubscriptionRead,
 		UpdateContext: resourceRedisCloudSubscriptionUpdate,
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
-
+		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, i interface{}) error {
+			dbMap := d.Get("database.0").(map[string]interface{})
+			oldName, newName := d.GetChange("database.0.name")
+			if oldName != newName && dbMap["force_recreate"] == false {
+				panic(fmt.Sprintf("DB '%s': To change the name, you need to recreate the database. " +
+					"\n 'force_recreate=true' must be set.", newName))
+			}
+			return nil
+		},
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 				subId, err := strconv.Atoi(d.Id())
@@ -229,11 +237,18 @@ func resourceRedisCloudSubscription() *schema.Resource {
 			},
 			"database": {
 				Description: "A database object",
-				Type:        schema.TypeSet,
+				Type:        schema.TypeList,
 				Required:    true,
 				MinItems:    1,
+				MaxItems:    1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"force_recreate": {
+							Description: "Toggle on to recreate the database",
+							Type:        schema.TypeBool,
+							Default:     false,
+							Optional:    true,
+						},
 						"db_id": {
 							Description: "Identifier of the database created",
 							Type:        schema.TypeInt,
@@ -525,7 +540,7 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 		}
 	}
 
-	flatDbs, err := flattenDatabases(ctx, subId, d.Get("database").(*schema.Set).List(), api)
+	flatDbs, err := flattenDatabases(ctx, subId, d.Get("database").([]interface{}), api)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -585,7 +600,9 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 
 	if d.HasChange("database") || d.IsNewResource() {
 		oldDb, newDb := d.GetChange("database")
-		addition, existing, deletion := diff(oldDb.(*schema.Set), newDb.(*schema.Set), func(v interface{}) string {
+		oldDbList := oldDb.([]interface{})
+		newDbList := newDb.([]interface{})
+		addition, existing, deletion := diff(oldDbList, newDbList, func(v interface{}) string {
 			m := v.(map[string]interface{})
 			return m["name"].(string)
 		})
@@ -769,7 +786,7 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 func buildSubscriptionCreateDatabases(databases interface{}) []*subscriptions.CreateDatabase {
 	createDatabases := make([]*subscriptions.CreateDatabase, 0)
 
-	for _, database := range databases.(*schema.Set).List() {
+	for _, database := range databases.([]interface{}) {
 		databaseMap := database.(map[string]interface{})
 
 		name := databaseMap["name"].(string)
@@ -1309,43 +1326,30 @@ func getDatabaseNameIdMap(ctx context.Context, subId int, client *apiClient) (ma
 	return ret, nil
 }
 
-// diff: Checks the difference between two Sets based on their hash keys and check if they were modified by generating
-//       a hash based on their attributes.
-func diff(oldSet *schema.Set, newSet *schema.Set, hashKey func(interface{}) string) ([]map[string]interface{}, []map[string]interface{}, []map[string]interface{}) {
+func diff(oldSet []interface{}, newSet []interface{}, hashKey func(interface{}) string) ([]map[string]interface{}, []map[string]interface{}, []map[string]interface{}) {
+	oldMap := map[string]map[string]interface{}{}
+	newMap := map[string]map[string]interface{}{}
 
-	oldHashedMap := map[string]*hashedSet{}
-	newHashedMap := map[string]*hashedSet{}
-
-	for _, v := range oldSet.List() {
-		h := hashedSet{}
-		oldHashedMap[hashKey(v)] = h.init(oldSet, v)
+	for _, v := range oldSet {
+		oldMap[hashKey(v)] = v.(map[string]interface{})
 	}
-	for _, v := range newSet.List() {
-		h := hashedSet{}
-		newHashedMap[hashKey(v)] = h.init(newSet, v)
+	for _, v := range newSet {
+		newMap[hashKey(v)] = v.(map[string]interface{})
 	}
 
 	var addition, existing, deletion []map[string]interface{}
 
-	for k, newVal := range newHashedMap {
-		// Check if we're updating an existing block.
-		if oldVal, ok := oldHashedMap[k]; ok {
-			// The hashes are the same - this block has NOT been changed.
-			if oldVal.hash == newVal.hash {
-				continue
-			}
-			// The hashes are different - this block was modified.
-			existing = append(existing, newVal.m)
-		// This block was recently added.
+	for k, v := range newMap {
+		if _, ok := oldMap[k]; ok {
+			existing = append(existing, v)
 		} else {
-			addition = append(addition, newVal.m)
+			addition = append(addition, v)
 		}
 	}
 
-	for k, oldVal := range oldHashedMap {
-		// This block was deleted.
-		if _, ok := newHashedMap[k]; !ok {
-			deletion = append(deletion, oldVal.m)
+	for k, v := range oldMap {
+		if _, ok := newMap[k]; !ok {
+			deletion = append(deletion, v)
 		}
 	}
 
