@@ -57,7 +57,7 @@ func dataSourceRedisCloudDatabase() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
-			"data_eviction_policy": {
+			"data_eviction": {
 				Description: "The data items eviction method",
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -212,7 +212,7 @@ func dataSourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceDat
 	if err := d.Set("data_persistence", redis.StringValue(db.DataPersistence)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("data_eviction_policy", redis.StringValue(db.DataEvictionPolicy)); err != nil {
+	if err := d.Set("data_eviction", redis.StringValue(db.DataEvictionPolicy)); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("replication", redis.BoolValue(db.Replication)); err != nil {

@@ -29,7 +29,7 @@ func TestAccDataSourceRedisCloudDatabase_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(dataSourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(dataSourceName, "data_persistence", "none"),
-					resource.TestCheckResourceAttr(dataSourceName, "data_eviction_policy", "volatile-lru"),
+					resource.TestCheckResourceAttr(dataSourceName, "data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttr(dataSourceName, "replication", "false"),
 					resource.TestCheckResourceAttr(dataSourceName, "throughput_measurement_by", "operations-per-second"),
 					resource.TestCheckResourceAttr(dataSourceName, "throughput_measurement_value", "10000"),

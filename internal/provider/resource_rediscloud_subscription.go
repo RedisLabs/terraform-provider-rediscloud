@@ -266,7 +266,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Optional:    true,
 							Default:     "none",
 						},
-						"data_eviction_policy": {
+						"data_eviction": {
 							Description: "The data items eviction method",
 							Type:        schema.TypeString,
 							Optional:    true,
@@ -426,12 +426,12 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	memoryStorage := d.Get("memory_storage").(string)
 
 	createSubscriptionRequest := subscriptions.CreateSubscription{
-		Name:                        redis.String(name),
-		DryRun:                      redis.Bool(false),
-		PaymentMethodID:             paymentMethodID,
-		MemoryStorage:               redis.String(memoryStorage),
-		CloudProviders:              providers,
-		Databases:                   dbs,
+		Name:            redis.String(name),
+		DryRun:          redis.Bool(false),
+		PaymentMethodID: paymentMethodID,
+		MemoryStorage:   redis.String(memoryStorage),
+		CloudProviders:  providers,
+		Databases:       dbs,
 	}
 
 	subId, err := api.client.Subscription.Create(ctx, createSubscriptionRequest)
@@ -916,7 +916,7 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 			Value: redis.Int(db["throughput_measurement_value"].(int)),
 		},
 		DataPersistence:    redis.String(db["data_persistence"].(string)),
-		DataEvictionPolicy: redis.String(db["data_eviction_policy"].(string)),
+		DataEvictionPolicy: redis.String(db["data_eviction"].(string)),
 		Password:           redis.String(db["password"].(string)),
 		SourceIP:           setToStringSlice(db["source_ips"].(*schema.Set)),
 		Alerts:             alerts,
@@ -1215,7 +1215,7 @@ func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath
 		"memory_limit_in_gb":                    redis.Float64Value(db.MemoryLimitInGB),
 		"support_oss_cluster_api":               redis.BoolValue(db.SupportOSSClusterAPI),
 		"data_persistence":                      redis.StringValue(db.DataPersistence),
-		"data_eviction_policy":                  redis.StringValue(db.DataEvictionPolicy),
+		"data_eviction":                         redis.StringValue(db.DataEvictionPolicy),
 		"replication":                           redis.BoolValue(db.Replication),
 		"throughput_measurement_by":             redis.StringValue(db.ThroughputMeasurement.By),
 		"throughput_measurement_value":          redis.IntValue(db.ThroughputMeasurement.Value),

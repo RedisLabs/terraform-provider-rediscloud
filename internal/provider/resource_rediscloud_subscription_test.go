@@ -44,7 +44,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
-					resource.TestCheckResourceAttr(resourceName, "database.0.data_eviction_policy", "volatile-lru"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.data_eviction", "volatile-lru"),
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
 
@@ -116,7 +116,7 @@ func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T)
 					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
-					resource.TestCheckResourceAttr(resourceName, "database.0.data_eviction_policy", "volatile-lru"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.data_eviction", "volatile-lru"),
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
 
@@ -355,7 +355,7 @@ func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testin
 					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
-					resource.TestCheckResourceAttr(resourceName, "database.0.data_eviction_policy", "volatile-lru"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 				),
 			},
@@ -435,7 +435,7 @@ resource "rediscloud_subscription" "example" {
     memory_limit_in_gb = %d
     support_oss_cluster_api = true
     data_persistence = "none"
-	data_eviction_policy = "volatile-lru"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "operations-per-second"
     password = "%s"
@@ -482,7 +482,7 @@ resource "rediscloud_subscription" "example" {
     memory_limit_in_gb = %d
     support_oss_cluster_api = true
     data_persistence = "none"
-	data_eviction_policy = "volatile-lru"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "operations-per-second"
     password = "%s"
@@ -495,7 +495,7 @@ resource "rediscloud_subscription" "example" {
     protocol = "memcached"
     memory_limit_in_gb = 2
     data_persistence = "none"
-	data_eviction_policy = "volatile-lru"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "number-of-shards"
     throughput_measurement_value = 2
@@ -541,7 +541,7 @@ resource "rediscloud_subscription" "example" {
     memory_limit_in_gb = %d
     support_oss_cluster_api = true
     data_persistence = "none"
-	data_eviction_policy = "volatile-lru"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "operations-per-second"
     password = "%s"
@@ -555,7 +555,7 @@ resource "rediscloud_subscription" "example" {
     memory_limit_in_gb = 1
     support_oss_cluster_api = true
     data_persistence = "none"
-	data_eviction_policy = "volatile-lru"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "operations-per-second"
     password = "%s"
@@ -761,7 +761,7 @@ resource "rediscloud_subscription" "example" {
     memory_limit_in_gb = %d
     support_oss_cluster_api = true
     data_persistence = "none"
-	data_eviction_policy = "volatile-lru"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "operations-per-second"
     password = "%s"

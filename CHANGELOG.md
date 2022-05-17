@@ -6,7 +6,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
-- Added support for the DataEvictionPolicy attribute in the _database_ data source and _subscription_ resource
+- Added support for the DataEviction attribute in the _database_ data source and _subscription_ resource
 
 ### Removed
 
