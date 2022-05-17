@@ -510,63 +510,6 @@ func resourceRedisCloudDatabaseDelete(ctx context.Context, d *schema.ResourceDat
 	return diags
 }
 
-func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCloudProvider, error) {
-	createCloudProviders := make([]*subscriptions.CreateCloudProvider, 0)
-
-	for _, provider := range providers.([]interface{}) {
-		providerMap := provider.(map[string]interface{})
-
-		providerStr := providerMap["provider"].(string)
-		cloudAccountID, err := strconv.Atoi(providerMap["cloud_account_id"].(string))
-		if err != nil {
-			return nil, err
-		}
-
-		createRegions := make([]*subscriptions.CreateRegion, 0)
-		if regions := providerMap["region"].(*schema.Set).List(); len(regions) != 0 {
-
-			for _, region := range regions {
-				regionMap := region.(map[string]interface{})
-
-				regionStr := regionMap["region"].(string)
-				multipleAvailabilityZones := regionMap["multiple_availability_zones"].(bool)
-				preferredAZs := regionMap["preferred_availability_zones"].([]interface{})
-
-				createRegion := subscriptions.CreateRegion{
-					Region:                     redis.String(regionStr),
-					MultipleAvailabilityZones:  redis.Bool(multipleAvailabilityZones),
-					PreferredAvailabilityZones: interfaceToStringSlice(preferredAZs),
-				}
-
-				if v, ok := regionMap["networking_deployment_cidr"]; ok && v != "" {
-					createRegion.Networking = &subscriptions.CreateNetworking{
-						DeploymentCIDR: redis.String(v.(string)),
-					}
-				}
-
-				if v, ok := regionMap["networking_vpc_id"]; ok && v != "" {
-					if createRegion.Networking == nil {
-						createRegion.Networking = &subscriptions.CreateNetworking{}
-					}
-					createRegion.Networking.VPCId = redis.String(v.(string))
-				}
-
-				createRegions = append(createRegions, &createRegion)
-			}
-		}
-
-		createCloudProvider := &subscriptions.CreateCloudProvider{
-			Provider:       redis.String(providerStr),
-			CloudAccountID: redis.Int(cloudAccountID),
-			Regions:        createRegions,
-		}
-
-		createCloudProviders = append(createCloudProviders, createCloudProvider)
-	}
-
-	return createCloudProviders, nil
-}
-
 func buildCreateDatabases(databases interface{}) []*subscriptions.CreateDatabase {
 	createDatabases := make([]*subscriptions.CreateDatabase, 0)
 
@@ -771,59 +714,6 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 	return update
 }
 
-func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) error {
-	wait := &resource.StateChangeConf{
-		Delay:   10 * time.Second,
-		Pending: []string{subscriptions.SubscriptionStatusPending},
-		Target:  []string{subscriptions.SubscriptionStatusActive},
-		Timeout: 20 * time.Minute,
-
-		Refresh: func() (result interface{}, state string, err error) {
-			log.Printf("[DEBUG] Waiting for subscription %d to be active", id)
-
-			subscription, err := api.client.Subscription.Get(ctx, id)
-			if err != nil {
-				return nil, "", err
-			}
-
-			return redis.StringValue(subscription.Status), redis.StringValue(subscription.Status), nil
-		},
-	}
-	if _, err := wait.WaitForStateContext(ctx); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient) error {
-	wait := &resource.StateChangeConf{
-		Delay:   10 * time.Second,
-		Pending: []string{subscriptions.SubscriptionStatusDeleting},
-		Target:  []string{"deleted"},
-		Timeout: 10 * time.Minute,
-
-		Refresh: func() (result interface{}, state string, err error) {
-			log.Printf("[DEBUG] Waiting for subscription %d to be deleted", id)
-
-			subscription, err := api.client.Subscription.Get(ctx, id)
-			if err != nil {
-				if _, ok := err.(*subscriptions.NotFound); ok {
-					return "deleted", "deleted", nil
-				}
-				return nil, "", err
-			}
-
-			return redis.StringValue(subscription.Status), redis.StringValue(subscription.Status), nil
-		},
-	}
-	if _, err := wait.WaitForStateContext(ctx); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClient) error {
 	wait := &resource.StateChangeConf{
 		Delay: 10 * time.Second,
@@ -857,39 +747,6 @@ func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClien
 	return nil
 }
 
-func flattenSubscriptionAllowlist(ctx context.Context, subId int, api *apiClient) ([]map[string]interface{}, error) {
-	allowlist, err := api.client.Subscription.GetCIDRAllowlist(ctx, subId)
-	if err != nil {
-		return nil, err
-	}
-
-	if !isNil(allowlist.Errors) {
-		return nil, fmt.Errorf("unable to read allowlist for subscription %d: %v", subId, allowlist.Errors)
-	}
-
-	var cidrs []string
-	for _, cidr := range allowlist.CIDRIPs {
-		cidrs = append(cidrs, redis.StringValue(cidr))
-	}
-	var sgs []string
-	for _, sg := range allowlist.SecurityGroupIDs {
-		sgs = append(sgs, redis.StringValue(sg))
-	}
-
-	tfs := map[string]interface{}{}
-
-	if len(cidrs) != 0 {
-		tfs["cidrs"] = cidrs
-	}
-	if len(sgs) != 0 {
-		tfs["security_group_ids"] = sgs
-	}
-	if len(tfs) == 0 {
-		return nil, nil
-	}
-
-	return []map[string]interface{}{tfs}, nil
-}
 
 func isNil(i interface{}) bool {
 	if i == nil {
@@ -909,60 +766,6 @@ func isNil(i interface{}) bool {
 	}
 
 	return false
-}
-
-func flattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource bool) []map[string]interface{} {
-	var cdl []map[string]interface{}
-
-	for _, currentCloudDetail := range cloudDetails {
-
-		var regions []interface{}
-		for _, currentRegion := range currentCloudDetail.Regions {
-
-			regionMapString := map[string]interface{}{
-				"region":                       currentRegion.Region,
-				"multiple_availability_zones":  currentRegion.MultipleAvailabilityZones,
-				"preferred_availability_zones": currentRegion.PreferredAvailabilityZones,
-				"networks":                     flattenNetworks(currentRegion.Networking),
-			}
-
-			if isResource {
-				regionMapString["networking_deployment_cidr"] = currentRegion.Networking[0].DeploymentCIDR
-
-				if redis.BoolValue(currentRegion.MultipleAvailabilityZones) {
-					regionMapString["networking_deployment_cidr"] = ""
-				}
-			}
-
-			regions = append(regions, regionMapString)
-		}
-
-		cdlMapString := map[string]interface{}{
-			"provider":         currentCloudDetail.Provider,
-			"cloud_account_id": strconv.Itoa(redis.IntValue(currentCloudDetail.CloudAccountID)),
-			"region":           regions,
-		}
-		cdl = append(cdl, cdlMapString)
-	}
-
-	return cdl
-}
-
-func flattenNetworks(networks []*subscriptions.Networking) []map[string]interface{} {
-	var cdl []map[string]interface{}
-
-	for _, currentNetwork := range networks {
-
-		networkMapString := map[string]interface{}{
-			"networking_deployment_cidr": currentNetwork.DeploymentCIDR,
-			"networking_vpc_id":          currentNetwork.VPCId,
-			"networking_subnet_id":       currentNetwork.SubnetID,
-		}
-
-		cdl = append(cdl, networkMapString)
-	}
-
-	return cdl
 }
 
 func flattenDatabases(ctx context.Context, subId int, databases []interface{}, api *apiClient) ([]interface{}, error) {
@@ -1151,16 +954,4 @@ func diff(oldSet *schema.Set, newSet *schema.Set, hashKey func(interface{}) stri
 	}
 
 	return addition, existing, deletion
-}
-
-func readPaymentMethodID(d *schema.ResourceData) (*int, error) {
-	pmID := d.Get("payment_method_id").(string)
-	if pmID != "" {
-		pmID, err := strconv.Atoi(pmID)
-		if err != nil {
-			return nil, err
-		}
-		return redis.Int(pmID), nil
-	}
-	return nil, nil
 }
