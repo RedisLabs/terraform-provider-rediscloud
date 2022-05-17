@@ -19,7 +19,7 @@ func resourceRedisCloudDatabase() *schema.Resource {
 		CreateContext: resourceRedisCloudDatabaseCreate,
 		ReadContext:   resourceRedisCloudDatabaseRead,
 		UpdateContext: resourceRedisCloudDatabaseUpdate,
-		DeleteContext: resourceRedisCloudDatabaseDelete,
+		//DeleteContext: resourceRedisCloudDatabaseDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
