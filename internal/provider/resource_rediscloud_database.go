@@ -19,7 +19,7 @@ func resourceRedisCloudDatabase() *schema.Resource {
 		CreateContext: resourceRedisCloudDatabaseCreate,
 		ReadContext:   resourceRedisCloudDatabaseRead,
 		UpdateContext: resourceRedisCloudDatabaseUpdate,
-		//DeleteContext: resourceRedisCloudDatabaseDelete,
+		DeleteContext: resourceRedisCloudDatabaseDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
@@ -437,125 +437,94 @@ func resourceRedisCloudDatabaseDelete(ctx context.Context, d *schema.ResourceDat
 }
 
 func resourceRedisCloudDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	//api := meta.(*apiClient)
+	api := meta.(*apiClient)
 
-	//subId, err := strconv.Atoi(d.Id())
-	//if err != nil {
-	//	return diag.FromErr(err)
-	//}
-	//
-	//subscriptionMutex.Lock(subId)
-	//defer subscriptionMutex.Unlock(subId)
-	//
-	//if d.HasChange("allowlist") {
-	//	cidrs := setToStringSlice(d.Get("allowlist.0.cidrs").(*schema.Set))
-	//	sgs := setToStringSlice(d.Get("allowlist.0.security_group_ids").(*schema.Set))
-	//
-	//	err := api.client.Subscription.UpdateCIDRAllowlist(ctx, subId, subscriptions.UpdateCIDRAllowlist{
-	//		CIDRIPs:          cidrs,
-	//		SecurityGroupIDs: sgs,
-	//	})
-	//	if err != nil {
-	//		return diag.FromErr(err)
-	//	}
-	//}
-	//
-	//if d.HasChanges("name", "payment_method_id") {
-	//	updateSubscriptionRequest := subscriptions.UpdateSubscription{}
-	//
-	//	if d.HasChange("name") {
-	//		name := d.Get("name").(string)
-	//		updateSubscriptionRequest.Name = &name
-	//	}
-	//
-	//	if d.HasChange("payment_method_id") {
-	//		paymentMethodID, err := readPaymentMethodID(d)
-	//		if err != nil {
-	//			return diag.FromErr(err)
-	//		}
-	//
-	//		updateSubscriptionRequest.PaymentMethodID = paymentMethodID
-	//	}
-	//
-	//	err = api.client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
-	//	if err != nil {
-	//		return diag.FromErr(err)
-	//	}
-	//}
-	//
-	//if d.HasChange("database") || d.IsNewResource() {
-	//	oldDb, newDb := d.GetChange("database")
-	//	addition, existing, deletion := diff(oldDb.(*schema.Set), newDb.(*schema.Set), func(v interface{}) string {
-	//		m := v.(map[string]interface{})
-	//		return m["name"].(string)
-	//	})
-	//
-	//	if d.IsNewResource() {
-	//		// Terraform will report all of the databases that were just created in resourceRedisCloudSubscriptionCreate
-	//		// as newly added, but they have been created by the create subscription call. All that needs to happen to
-	//		// them is to be updated like 'normal' existing databases.
-	//		existing = addition
-	//	} else {
-	//		// this is not a new resource, so these databases really do new to be created
-	//		for _, db := range addition {
-	//			// This loop with addition is triggered when another database is added to the subscription.
-	//			request := buildCreateDatabase(db)
-	//			id, err := api.client.Database.Create(ctx, subId, request)
-	//			if err != nil {
-	//				return diag.FromErr(err)
-	//			}
-	//
-	//			log.Printf("[DEBUG] Created database %d", id)
-	//
-	//			if err := waitForDatabaseToBeActive(ctx, subId, id, api); err != nil {
-	//				return diag.FromErr(err)
-	//			}
-	//		}
-	//
-	//		// Certain values - like the hashing policy - can only be set on an update, so the newly created databases
-	//		// need to be updated straight away
-	//		existing = append(existing, addition...)
-	//	}
-	//
-	//	nameId, err := getDatabaseNameIdMap(ctx, subId, api)
-	//	if err != nil {
-	//		return diag.FromErr(err)
-	//	}
-	//
-	//	for _, db := range existing {
-	//		update := buildUpdateDatabase(db)
-	//		dbId := nameId[redis.StringValue(update.Name)]
-	//
-	//		log.Printf("[DEBUG] Updating database %s (%d)", redis.StringValue(update.Name), dbId)
-	//
-	//		err = api.client.Database.Update(ctx, subId, dbId, update)
-	//		if err != nil {
-	//			return diag.FromErr(err)
-	//		}
-	//
-	//		if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-	//			return diag.FromErr(err)
-	//		}
-	//	}
-	//
-	//	for _, db := range deletion {
-	//		name := db["name"].(string)
-	//		id := nameId[name]
-	//
-	//		log.Printf("[DEBUG] Deleting database %s (%d)", name, id)
-	//
-	//		err = api.client.Database.Delete(ctx, subId, id)
-	//		if err != nil {
-	//			return diag.FromErr(err)
-	//		}
-	//	}
-	//}
-	//
-	//if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-	//	return diag.FromErr(err)
-	//}
+	subId := d.Get("subscription_id").(int)
 
-	return resourceRedisCloudSubscriptionRead(ctx, d, meta)
+	dbId, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	subscriptionMutex.Lock(subId)
+	defer subscriptionMutex.Unlock(subId)
+
+	var alerts []*databases.UpdateAlert
+	for _, alert := range d.Get("alert").(*schema.Set).List() {
+		dbAlert := alert.(map[string]interface{})
+
+		alerts = append(alerts, &databases.UpdateAlert{
+			Name:  redis.String(dbAlert["name"].(string)),
+			Value: redis.Int(dbAlert["value"].(int)),
+		})
+	}
+
+	update := databases.UpdateDatabase{
+		Name:                 redis.String(d.Get("name").(string)),
+		MemoryLimitInGB:      redis.Float64(d.Get("memory_limit_in_gb").(float64)),
+		SupportOSSClusterAPI: redis.Bool(d.Get("support_oss_cluster_api").(bool)),
+		Replication:          redis.Bool(d.Get("replication").(bool)),
+		ThroughputMeasurement: &databases.UpdateThroughputMeasurement{
+			By:    redis.String(d.Get("throughput_measurement_by").(string)),
+			Value: redis.Int(d.Get("throughput_measurement_value").(int)),
+		},
+		DataPersistence: redis.String(d.Get("data_persistence").(string)),
+		Password:        redis.String(d.Get("password").(string)),
+		SourceIP:        setToStringSlice(d.Get("source_ips").(*schema.Set)),
+		Alerts:          alerts,
+	}
+
+	update.ReplicaOf = setToStringSlice(d.Get("replica_of").(*schema.Set))
+	if update.ReplicaOf == nil {
+		update.ReplicaOf = make([]*string, 0)
+	}
+
+	// The cert validation is done by the API (HTTP 400 is returned if it's invalid).
+	clientSSLCertificate := d.Get("client_ssl_certificate").(string)
+	enableTLS := d.Get("enable_tls").(bool)
+	if enableTLS {
+		// TLS only: enable_tls=true, client_ssl_certificate="".
+		update.EnableTls = redis.Bool(enableTLS)
+		// mTLS: enableTls=true, non-empty client_ssl_certificate.
+		if clientSSLCertificate != "" {
+			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+		}
+	} else {
+		// mTLS (backward compatibility): enable_tls=false, non-empty client_ssl_certificate.
+		if clientSSLCertificate != "" {
+			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+		} else {
+			// Default: enable_tls=false, client_ssl_certificate=""
+			update.EnableTls = redis.Bool(enableTLS)
+		}
+	}
+
+	regex := d.Get("hashing_policy").([]interface{})
+	if len(regex) != 0 {
+		update.RegexRules = interfaceToStringSlice(regex)
+	}
+
+	backupPath := d.Get("periodic_backup_path").(string)
+	if backupPath != "" {
+		update.PeriodicBackupPath = redis.String(backupPath)
+	}
+
+	update.UseExternalEndpointForOSSClusterAPI = redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool))
+
+	err = api.client.Database.Update(ctx, subId, dbId, update)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return diag.FromErr(err)
+	}
+
+	return resourceRedisCloudDatabaseRead(ctx, d, meta)
 }
 
 func buildCreateDatabases(databases interface{}) []*subscriptions.CreateDatabase {
