@@ -2,8 +2,10 @@ package provider
 
 import (
 	"context"
-	"strconv"
-	"time"
+	"fmt"
+"strconv"
+	"strings"
+"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -23,20 +25,10 @@ func resourceRedisCloudDatabase() *schema.Resource {
 
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-				subId := d.Get("subscription_id").(int)
-
-				// Populate the names of databases that already exist so that `flattenDatabases` can iterate over them
-				api := meta.(*apiClient)
-				dbMap := d.Get("database").(map[string]interface{})
-				dbId := dbMap["db_id"].(int)
-				db, dbErr := api.client.Database.Get(ctx, subId, dbId)
-				if dbErr != nil {
-					diag.FromErr(dbErr)
-				}
-				if err := d.Set("database", db); err != nil {
+				_, _, err := toDatabaseId(d.Id())
+				if err != nil {
 					return nil, err
 				}
-
 				return []*schema.ResourceData{d}, nil
 			},
 		},
@@ -314,11 +306,15 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 
 	var diags diag.Diagnostics
 
-	dbId, err := strconv.Atoi(d.Id())
+	subId, dbId, err := toDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	subId := d.Get("subscription_id").(int)
+	
+	// We are not import this resource, so we can read the subscription_id defined in this resource.
+	if subId == 0 {
+		subId = d.Get("subscription_id").(int)
+	}
 
 	//subscription, err := api.client.Subscription.Get(ctx, subId)
 	db, err := api.client.Database.Get(ctx, subId, dbId)
@@ -580,4 +576,32 @@ func buildCreateDatabases(databases interface{}) []*subscriptions.CreateDatabase
 	}
 
 	return createDatabases
+}
+
+func toDatabaseId(id string) (int, int, error) {
+	parts := strings.Split(id, "/")
+
+    if len(parts) > 2 {
+        return 0, 0, fmt.Errorf("invalid id: %s", id)
+    }
+    
+    if len(parts) == 1 {
+        dbId, err := strconv.Atoi(parts[0])
+        if err != nil {
+            return 0, 0, err
+        }
+        return 0, dbId, nil
+    }
+
+	sub, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	dbId, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return sub, dbId, nil
 }
