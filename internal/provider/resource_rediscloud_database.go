@@ -484,7 +484,7 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 	return resourceRedisCloudSubscriptionRead(ctx, d, meta)
 }
 
-func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*apiClient)
 
@@ -498,39 +498,14 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
-	nameId, err := getDatabaseNameIdMap(ctx, subId, api)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	for _, v := range d.Get("database").(*schema.Set).List() {
-		database := v.(map[string]interface{})
-
-		name := database["name"].(string)
-		if id, ok := nameId[name]; ok {
-			log.Printf("[DEBUG] Deleting database %d on subscription %d", id, subId)
-
-			dbErr := api.client.Database.Delete(ctx, subId, id)
-			if dbErr != nil {
-				diag.FromErr(dbErr)
-			}
-		} else {
-			log.Printf("[DEBUG] Database %s no longer exists", name)
-		}
-	}
-
-	// Delete subscription once all databases are deleted
-	err = api.client.Subscription.Delete(ctx, subId)
-	if err != nil {
-		return diag.FromErr(err)
+	dbMap := d.Get("database").(map[string]interface{})
+	dbId := dbMap["db_id"].(int)
+	dbErr := api.client.Database.Delete(ctx, subId, dbId)
+	if dbErr != nil {
+		diag.FromErr(dbErr)
 	}
 
 	d.SetId("")
-
-	err = waitForSubscriptionToBeDeleted(ctx, subId, api)
-	if err != nil {
-		return diag.FromErr(err)
-	}
 
 	return diags
 }
