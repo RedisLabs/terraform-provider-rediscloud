@@ -413,6 +413,29 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 	return diags
 }
 
+func resourceRedisCloudDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	// use the meta value to retrieve your client from the provider configure method
+	api := meta.(*apiClient)
+
+	var diags diag.Diagnostics
+
+	subId, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	subscriptionMutex.Lock(subId)
+	defer subscriptionMutex.Unlock(subId)
+
+	dbMap := d.Get("database").(map[string]interface{})
+	dbId := dbMap["db_id"].(int)
+	dbErr := api.client.Database.Delete(ctx, subId, dbId)
+	if dbErr != nil {
+		diag.FromErr(dbErr)
+	}
+	return diags
+}
+
 func resourceRedisCloudDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	//api := meta.(*apiClient)
 
