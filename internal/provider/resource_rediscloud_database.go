@@ -53,6 +53,7 @@ func resourceRedisCloudDatabase() *schema.Resource {
 				Description: "Identifier of the subscription",
 				Type:        schema.TypeInt,
 				Required:    true,
+				ForceNew:    true,
 			},
 			"db_id": {
 				Description: "Identifier of the database created",
