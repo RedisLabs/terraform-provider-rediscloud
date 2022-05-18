@@ -7,7 +7,8 @@ import (
 	"log"
 	"regexp"
 	"strconv"
-	"time"
+	"strings"
+"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
@@ -28,8 +29,9 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
 		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, i interface{}) error {
 			dbMap := d.Get("database.0").(map[string]interface{})
+			recreateDb := dbMap["recreate_db_by_name_change"].(bool)
 			oldName, newName := d.GetChange("database.0.name")
-			if len(oldName.(string)) > 0 && oldName != newName && dbMap["recreate_db_by_name_change"] == false {
+			if len(oldName.(string)) > 0 && oldName != newName && recreateDb == false {
 				panic(fmt.Sprintf("DB '%s': To change the name, you need to recreate the database. " +
 					"\n 'recreate_db_by_name_change=true' must be set.", newName))
 			}
@@ -37,24 +39,19 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		},
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-				subId, err := strconv.Atoi(d.Id())
+				subId, dbId, err := toSubscriptionId(d.Id())
 				if err != nil {
 					return nil, err
 				}
 
 				// Populate the names of databases that already exist so that `flattenDatabases` can iterate over them
 				api := meta.(*apiClient)
-				list := api.client.Database.List(ctx, subId)
-				var dbs []map[string]interface{}
-				for list.Next() {
-					dbs = append(dbs, map[string]interface{}{
-						"name": redis.StringValue(list.Value().Name),
-					})
+				db, err := api.client.Database.Get(ctx, subId, dbId)
+				if err != nil {
+					d.SetId("")
+					return nil, err
 				}
-				if list.Err() != nil {
-					return nil, list.Err()
-				}
-				if err := d.Set("database", dbs); err != nil {
+				if err := d.Set("database", db); err != nil {
 					return nil, err
 				}
 
@@ -489,7 +486,7 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 
 	var diags diag.Diagnostics
 
-	subId, err := strconv.Atoi(d.Id())
+	subId, _, err := toSubscriptionId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -1366,4 +1363,32 @@ func readPaymentMethodID(d *schema.ResourceData) (*int, error) {
 		return redis.Int(pmID), nil
 	}
 	return nil, nil
+}
+
+func toSubscriptionId(id string) (int, int, error) {
+	parts := strings.Split(id, "/")
+
+	if len(parts) > 2 {
+		return 0, 0, fmt.Errorf("invalid id: %s", id)
+	}
+
+	if len(parts) == 1 {
+		subId, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return 0, 0, err
+		}
+		return subId, 0, nil
+	}
+
+	subId, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	dbId, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return subId, dbId, nil
 }
