@@ -29,9 +29,9 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, i interface{}) error {
 			dbMap := d.Get("database.0").(map[string]interface{})
 			oldName, newName := d.GetChange("database.0.name")
-			if oldName != "" && oldName != newName && dbMap["force_recreate"] == false {
-				panic(fmt.Sprintf("DB '%s': To change the name, you need to recreate the database. "+
-					"\n 'force_recreate=true' must be set.", newName))
+			if len(oldName.(string)) > 0 && oldName != newName && dbMap["recreate_db_by_name_change"] == false {
+				panic(fmt.Sprintf("DB '%s': To change the name, you need to recreate the database. " +
+					"\n 'recreate_db_by_name_change=true' must be set.", newName))
 			}
 			return nil
 		},
@@ -243,8 +243,8 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				MaxItems:    1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"force_recreate": {
-							Description: "Toggle on to recreate the database",
+						"recreate_db_by_name_change": {
+							Description: "To change the name, the database needs to be recreated. Default: false",
 							Type:        schema.TypeBool,
 							Default:     false,
 							Optional:    true,
@@ -615,7 +615,7 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 		} else {
 			// this is not a new resource, so these databases really do new to be created
 			for _, db := range addition {
-				// This loop with addition is triggered when another database is added to the subscription.
+			// This loop with addition is triggered when another database is added to the subscription.
 				request := buildCreateDatabase(db)
 				id, err := api.client.Database.Create(ctx, subId, request)
 				if err != nil {
