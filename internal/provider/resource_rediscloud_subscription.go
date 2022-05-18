@@ -29,8 +29,8 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, i interface{}) error {
 			dbMap := d.Get("database.0").(map[string]interface{})
 			oldName, newName := d.GetChange("database.0.name")
-			if oldName != newName && dbMap["force_recreate"] == false {
-				panic(fmt.Sprintf("DB '%s': To change the name, you need to recreate the database. " +
+			if oldName != "" && oldName != newName && dbMap["force_recreate"] == false {
+				panic(fmt.Sprintf("DB '%s': To change the name, you need to recreate the database. "+
 					"\n 'force_recreate=true' must be set.", newName))
 			}
 			return nil
@@ -615,7 +615,7 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 		} else {
 			// this is not a new resource, so these databases really do new to be created
 			for _, db := range addition {
-			// This loop with addition is triggered when another database is added to the subscription.
+				// This loop with addition is triggered when another database is added to the subscription.
 				request := buildCreateDatabase(db)
 				id, err := api.client.Database.Create(ctx, subId, request)
 				if err != nil {

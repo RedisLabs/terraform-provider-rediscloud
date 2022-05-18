@@ -217,9 +217,11 @@ func resourceRedisCloudDatabase() *schema.Resource {
 
 func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
+	
 	subId := d.Get("subscription_id").(int)
+	subscriptionMutex.Lock(subId)
+	defer subscriptionMutex.Unlock(subId)
 
-	// NEW
 	name := d.Get("name").(string)
 	protocol := d.Get("protocol").(string)
 	memoryLimitInGB := d.Get("memory_limit_in_gb").(float64)
@@ -273,13 +275,13 @@ func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceDat
 			By:    redis.String(throughputMeasurementBy),
 			Value: redis.Int(throughputMeasurementValue),
 		},
-		Modules:                createModules,
-		Alerts:                 createAlerts,
+		Modules: createModules,
+		Alerts:  createAlerts,
 	}
 
-		if averageItemSizeInBytes > 0 {
-			createDatabase.AverageItemSizeInBytes = &averageItemSizeInBytes
-		}
+	if averageItemSizeInBytes > 0 {
+		createDatabase.AverageItemSizeInBytes = &averageItemSizeInBytes
+	}
 
 	dbId, err := api.client.Database.Create(ctx, subId, createDatabase)
 	if err != nil {
@@ -414,8 +416,9 @@ func resourceRedisCloudDatabaseDelete(ctx context.Context, d *schema.ResourceDat
 	api := meta.(*apiClient)
 
 	var diags diag.Diagnostics
-	subscriptionId := d.Get("subscription_id").(string)
-	subId, err := strconv.Atoi(subscriptionId)
+	subId := d.Get("subscription_id").(int)
+
+	dbId, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -423,8 +426,6 @@ func resourceRedisCloudDatabaseDelete(ctx context.Context, d *schema.ResourceDat
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
-	dbMap := d.Get("database").(map[string]interface{})
-	dbId := dbMap["db_id"].(int)
 	dbErr := api.client.Database.Delete(ctx, subId, dbId)
 	if dbErr != nil {
 		diag.FromErr(dbErr)
@@ -435,13 +436,12 @@ func resourceRedisCloudDatabaseDelete(ctx context.Context, d *schema.ResourceDat
 func resourceRedisCloudDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
-	subId := d.Get("subscription_id").(int)
-
 	dbId, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
+	subId := d.Get("subscription_id").(int)
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
