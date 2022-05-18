@@ -3,9 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
-"strconv"
+	"strconv"
 	"strings"
-"time"
+	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -25,10 +25,17 @@ func resourceRedisCloudDatabase() *schema.Resource {
 
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-				_, _, err := toDatabaseId(d.Id())
+				subId, dbId, err := toDatabaseId(d.Id())
 				if err != nil {
 					return nil, err
 				}
+				if err := d.Set("subscription_id", subId); err != nil {
+					return nil, err
+				}
+				if err := d.Set("db_id", dbId); err != nil {
+					return nil, err
+				}
+				d.SetId(strconv.Itoa(dbId))
 				return []*schema.ResourceData{d}, nil
 			},
 		},
@@ -188,6 +195,7 @@ func resourceRedisCloudDatabase() *schema.Resource {
 			"source_ips": {
 				Description: "Set of CIDR addresses to allow access to the database",
 				Type:        schema.TypeSet,
+				Computed:    true,
 				Optional:    true,
 				MinItems:    1,
 				Elem: &schema.Schema{
@@ -199,6 +207,7 @@ func resourceRedisCloudDatabase() *schema.Resource {
 				Description: "List of regular expression rules to shard the database by. See the documentation on clustering for more information on the hashing policy - https://docs.redislabs.com/latest/rc/concepts/clustering/",
 				Type:        schema.TypeList,
 				Optional:    true,
+				Computed:    true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 					// Can't check that these are valid regex rules as the service wants something like `(?<tag>.*)`
@@ -217,7 +226,7 @@ func resourceRedisCloudDatabase() *schema.Resource {
 
 func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
-	
+
 	subId := d.Get("subscription_id").(int)
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
@@ -312,16 +321,16 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	
+
 	// We are not import this resource, so we can read the subscription_id defined in this resource.
 	if subId == 0 {
 		subId = d.Get("subscription_id").(int)
 	}
 
-	//subscription, err := api.client.Subscription.Get(ctx, subId)
 	db, err := api.client.Database.Get(ctx, subId, dbId)
 	if err != nil {
-		return diag.FromErr(err)
+		d.SetId("")
+		return diags
 	}
 
 	// Sets
@@ -581,19 +590,19 @@ func buildCreateDatabases(databases interface{}) []*subscriptions.CreateDatabase
 func toDatabaseId(id string) (int, int, error) {
 	parts := strings.Split(id, "/")
 
-    if len(parts) > 2 {
-        return 0, 0, fmt.Errorf("invalid id: %s", id)
-    }
-    
-    if len(parts) == 1 {
-        dbId, err := strconv.Atoi(parts[0])
-        if err != nil {
-            return 0, 0, err
-        }
-        return 0, dbId, nil
-    }
+	if len(parts) > 2 {
+		return 0, 0, fmt.Errorf("invalid id: %s", id)
+	}
 
-	sub, err := strconv.Atoi(parts[0])
+	if len(parts) == 1 {
+		dbId, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return 0, 0, err
+		}
+		return 0, dbId, nil
+	}
+
+	subId, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return 0, 0, err
 	}
@@ -603,5 +612,5 @@ func toDatabaseId(id string) (int, int, error) {
 		return 0, 0, err
 	}
 
-	return sub, dbId, nil
+	return subId, dbId, nil
 }
