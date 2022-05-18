@@ -9,13 +9,12 @@ import (
 	"strconv"
 	"testing"
 
-
-"github.com/RedisLabs/rediscloud-go-api/redis"
-"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-"github.com/stretchr/testify/assert"
+	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/stretchr/testify/assert"
 )
 
 var contractFlag = flag.Bool("contract", false,
@@ -493,7 +492,6 @@ func testSetFunc(v interface{}) int {
 	return schema.HashString(result)
 }
 
-
 // Tests the diff() function. Checks if the function detects a new or modified database.
 func TestDiffFunction(t *testing.T) {
 	var oldDbBlocks []interface{}
@@ -501,28 +499,28 @@ func TestDiffFunction(t *testing.T) {
 
 	// The user created 3 dbs
 	oldDbBlocks = append(oldDbBlocks, map[string]interface{}{
-		"name": "db-0",
+		"name":               "db-0",
 		"memory_limit_in_gb": 1,
 	}, map[string]interface{}{
-		"name": "db-1",
+		"name":               "db-1",
 		"memory_limit_in_gb": 1,
-	},map[string]interface{}{
-		"name": "db-2",
+	}, map[string]interface{}{
+		"name":               "db-2",
 		"memory_limit_in_gb": 1,
 	})
 
 	// The user deleted db-0, modified db-1, added db-3 (new).
-	newDbBlocks = append(newDbBlocks,map[string]interface{}{
-		"name": "db-1",
+	newDbBlocks = append(newDbBlocks, map[string]interface{}{
+		"name":               "db-1",
 		"memory_limit_in_gb": 2,
-	},map[string]interface{}{
-		"name": "db-2",
+	}, map[string]interface{}{
+		"name":               "db-2",
 		"memory_limit_in_gb": 1,
-	},map[string]interface{}{
-		"name": "db-3",
+	}, map[string]interface{}{
+		"name":               "db-3",
 		"memory_limit_in_gb": 1,
 	})
-	
+
 	oldSet := schema.NewSet(testSetFunc, oldDbBlocks)
 	newSet := schema.NewSet(testSetFunc, newDbBlocks)
 
@@ -530,11 +528,11 @@ func TestDiffFunction(t *testing.T) {
 		m := v.(map[string]interface{})
 		return m["name"].(string)
 	})
-	
+
 	assert.Len(t, addition, 1)
 	assert.Len(t, existing, 1)
 	assert.Len(t, deletion, 1)
-	
+
 	assert.Equal(t, addition[0]["name"], "db-3")
 	assert.Equal(t, existing[0]["name"], "db-1")
 	assert.Equal(t, deletion[0]["name"], "db-0")
