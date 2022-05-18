@@ -495,7 +495,7 @@ func testSetFunc(v interface{}) int {
 
 
 // Tests the diff() function. Checks if the function detects a new or modified database.
-func TestDiffFunctionOneModifiedDb(t *testing.T) {
+func TestDiffFunction(t *testing.T) {
 	var oldDbBlocks []interface{}
 	var newDbBlocks []interface{}
 
