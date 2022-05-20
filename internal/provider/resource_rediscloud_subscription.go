@@ -343,6 +343,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Description: "Set of Redis database URIs, in the format `redis://user:password@host:port`, that this database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided",
 							Type:        schema.TypeSet,
 							Optional:    true,
+							Computed:    true,
 							Elem: &schema.Schema{
 								Type:             schema.TypeString,
 								ValidateDiagFunc: validateDiagFunc(validation.IsURLWithScheme([]string{"redis"})),
@@ -386,6 +387,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 						"source_ips": {
 							Description: "Set of CIDR addresses to allow access to the database",
 							Type:        schema.TypeSet,
+							Computed:    true,
 							Optional:    true,
 							MinItems:    1,
 							Elem: &schema.Schema{
@@ -396,6 +398,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 						"hashing_policy": {
 							Description: "List of regular expression rules to shard the database by. See the documentation on clustering for more information on the hashing policy - https://docs.redislabs.com/latest/rc/concepts/clustering/",
 							Type:        schema.TypeList,
+							Computed:    true,
 							Optional:    true,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
