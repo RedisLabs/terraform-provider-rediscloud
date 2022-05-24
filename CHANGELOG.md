@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-## 0.3.0 (Unreleased)
+## 0.3.0 (May 24 2022)
 
 ### Added
 
