@@ -18,6 +18,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 - Updates rediscloud-go-api to v0.1.7: removed the persistent_storage_encryption attribute from the API calls
 - Adds region attribute to Peering resource (for Read method) and data resource
 - Patch a vulnerability: CVE-2022-29810 by upgrading go-getter v1.5.3 -> v1.5.11
+- Fix timing on large subscription: reduce PUT requests
 
 ## 0.2.9 (March 28 2022)
 
