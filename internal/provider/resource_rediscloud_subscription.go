@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-"time"
+	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
@@ -27,6 +27,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		ReadContext:   resourceRedisCloudSubscriptionRead,
 		UpdateContext: resourceRedisCloudSubscriptionUpdate,
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
+
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 				subId, dbId, err := toSubscriptionId(d.Id())
@@ -270,6 +271,12 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Optional:    true,
 							Default:     "none",
 						},
+						"data_eviction": {
+							Description: "The data items eviction method",
+							Type:        schema.TypeString,
+							Optional:    true,
+							Default:     "volatile-lru",
+						},
 						"replication": {
 							Description: "Databases replication",
 							Type:        schema.TypeBool,
@@ -355,9 +362,10 @@ func resourceRedisCloudSubscription() *schema.Resource {
 						},
 						"module": {
 							Description: "A module object",
-							Type:        schema.TypeSet,
+							Type:        schema.TypeList,
 							Optional:    true,
 							MinItems:    1,
+							MaxItems:    1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"name": {
@@ -743,8 +751,8 @@ func buildSubscriptionCreateDatabases(databases interface{}) []*subscriptions.Cr
 		averageItemSizeInBytes := databaseMap["average_item_size_in_bytes"].(int)
 
 		createModules := make([]*subscriptions.CreateModules, 0)
-		modules := databaseMap["module"].(*schema.Set)
-		for _, module := range modules.List() {
+		modules := databaseMap["module"]
+		for _, module := range modules.([]interface{}) {
 			moduleMap := module.(map[string]interface{})
 
 			modName := moduleMap["name"].(string)
@@ -793,8 +801,8 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 	}
 
 	createModules := make([]*databases.CreateModule, 0)
-	module := db["module"].(*schema.Set)
-	for _, module := range module.List() {
+	module := db["module"]
+	for _, module := range module.([]interface{}) {
 		moduleMap := module.(map[string]interface{})
 
 		modName := moduleMap["name"].(string)
@@ -882,10 +890,11 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 			By:    redis.String(db["throughput_measurement_by"].(string)),
 			Value: redis.Int(db["throughput_measurement_value"].(int)),
 		},
-		DataPersistence: redis.String(db["data_persistence"].(string)),
-		Password:        redis.String(db["password"].(string)),
-		SourceIP:        setToStringSlice(db["source_ips"].(*schema.Set)),
-		Alerts:          alerts,
+		DataPersistence:    redis.String(db["data_persistence"].(string)),
+		DataEvictionPolicy: redis.String(db["data_eviction"].(string)),
+		Password:           redis.String(db["password"].(string)),
+		SourceIP:           setToStringSlice(db["source_ips"].(*schema.Set)),
+		Alerts:             alerts,
 	}
 
 	update.ReplicaOf = setToStringSlice(db["replica_of"].(*schema.Set))
@@ -1181,6 +1190,7 @@ func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath
 		"memory_limit_in_gb":                    redis.Float64Value(db.MemoryLimitInGB),
 		"support_oss_cluster_api":               redis.BoolValue(db.SupportOSSClusterAPI),
 		"data_persistence":                      redis.StringValue(db.DataPersistence),
+		"data_eviction":                         redis.StringValue(db.DataEvictionPolicy),
 		"replication":                           redis.BoolValue(db.Replication),
 		"throughput_measurement_by":             redis.StringValue(db.ThroughputMeasurement.By),
 		"throughput_measurement_value":          redis.IntValue(db.ThroughputMeasurement.Value),
