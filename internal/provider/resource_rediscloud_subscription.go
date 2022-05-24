@@ -35,14 +35,21 @@ func resourceRedisCloudSubscription() *schema.Resource {
 					return nil, err
 				}
 
-				// Populate the names of databases that already exist so that `flattenDatabases` can iterate over them
+				// Populate the names of databases that already exist so that `flattenDatabase` can iterate over them
+				// The READ operation is triggered after IMPORT, so let it handle flattening the db.
 				api := meta.(*apiClient)
 				db, err := api.client.Database.Get(ctx, subId, dbId)
+				
+				var dbs []map[string]interface{}
+				dbs = append(dbs, map[string]interface{}{
+					"db_id": redis.Int(*db.ID),
+				})
+				
 				if err != nil {
 					d.SetId("")
 					return nil, err
 				}
-				if err := d.Set("database", db); err != nil {
+				if err := d.Set("database", dbs); err != nil {
 					return nil, err
 				}
 
@@ -532,7 +539,8 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 		}
 	}
 
-	flatDbs, err := flattenDatabases(ctx, subId, d.Get("database").([]interface{}), api)
+	db := d.Get("database").([]interface{})[0].(map[string]interface{})
+	flatDbs, err := flattenDatabase(ctx, subId, db, api)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -1133,40 +1141,23 @@ func flattenNetworks(networks []*subscriptions.Networking) []map[string]interfac
 	return cdl
 }
 
-func flattenDatabases(ctx context.Context, subId int, databases []interface{}, api *apiClient) ([]interface{}, error) {
-	nameId, err := getDatabaseNameIdMap(ctx, subId, api)
+func flattenDatabase(ctx context.Context, subId int, database map[string]interface{}, api *apiClient) ([]interface{}, error) {
+
+	var flattened []interface{}
+	dbId := database["db_id"].(int)
+
+	db, err := api.client.Database.Get(ctx, subId, dbId)
 	if err != nil {
 		return nil, err
 	}
 
-	var flattened []interface{}
-	for _, v := range databases {
-		database := v.(map[string]interface{})
-		name := database["name"].(string)
-		id, ok := nameId[name]
-		if !ok {
-			log.Printf("database %d not found: %s", id, err)
-			continue
-		}
+	certificate := database["client_ssl_certificate"].(string)
+	backupPath := database["periodic_backup_path"].(string)
+	averageItemSizeInBytes := database["average_item_size_in_bytes"].(int)
+	existingPassword := database["password"].(string)
+	existingSourceIPs := database["source_ips"].(*schema.Set)
+	externalOSSAPIEndpoint := database["external_endpoint_for_oss_cluster_api"].(bool)
 
-		db, err := api.client.Database.Get(ctx, subId, id)
-		if err != nil {
-			return nil, err
-		}
-
-		cert := database["client_ssl_certificate"].(string)
-		backupPath := database["periodic_backup_path"].(string)
-		averageItemSize := database["average_item_size_in_bytes"].(int)
-		existingPassword := database["password"].(string)
-		existingSourceIPs := database["source_ips"].(*schema.Set)
-		external := database["external_endpoint_for_oss_cluster_api"].(bool)
-
-		flattened = append(flattened, flattenDatabase(cert, external, backupPath, averageItemSize, existingPassword, existingSourceIPs, db))
-	}
-	return flattened, nil
-}
-
-func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath string, averageItemSizeInBytes int, existingPassword string, existingSourceIp *schema.Set, db *databases.Database) map[string]interface{} {
 	password := existingPassword
 	if redis.StringValue(db.Protocol) == "redis" {
 		// TODO need to check if this is expected behaviour or not
@@ -1176,7 +1167,7 @@ func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath
 	var sourceIPs []string
 	if len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0" {
 		// The API handles an empty list as ["0.0.0.0/0"] but need to be careful to match the input to avoid Terraform detecting drift
-		if existingSourceIp.Len() != 0 {
+		if existingSourceIPs.Len() != 0 {
 			sourceIPs = redis.StringSliceValue(db.Security.SourceIPs...)
 		}
 	} else {
@@ -1221,7 +1212,8 @@ func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath
 		tf["periodic_backup_path"] = backupPath
 	}
 
-	return tf
+	flattened = append(flattened, tf)
+	return flattened, nil
 }
 
 func flattenAlerts(alerts []*databases.Alert) []map[string]interface{} {
