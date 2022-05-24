@@ -27,16 +27,6 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		ReadContext:   resourceRedisCloudSubscriptionRead,
 		UpdateContext: resourceRedisCloudSubscriptionUpdate,
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
-		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, i interface{}) error {
-			dbMap := d.Get("database.0").(map[string]interface{})
-			recreateDb := dbMap["recreate_db_by_name_change"].(bool)
-			oldName, newName := d.GetChange("database.0.name")
-			if len(oldName.(string)) > 0 && oldName != newName && recreateDb == false {
-				panic(fmt.Sprintf("DB '%s': To change the name, you need to recreate the database. " +
-					"\n 'recreate_db_by_name_change=true' must be set.", newName))
-			}
-			return nil
-		},
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 				subId, dbId, err := toSubscriptionId(d.Id())
@@ -240,12 +230,6 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				MaxItems:    1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"recreate_db_by_name_change": {
-							Description: "To change the name, the database needs to be recreated. Default: false",
-							Type:        schema.TypeBool,
-							Default:     false,
-							Optional:    true,
-						},
 						"db_id": {
 							Description: "Identifier of the database created",
 							Type:        schema.TypeInt,
@@ -599,72 +583,31 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 	}
 
 	if d.HasChange("database") || d.IsNewResource() {
-		oldDb, newDb := d.GetChange("database")
-		oldDbList := oldDb.([]interface{})
-		newDbList := newDb.([]interface{})
-		addition, existing, deletion := diff(oldDbList, newDbList, func(v interface{}) string {
-			m := v.(map[string]interface{})
-			return m["name"].(string)
-		})
+		db := d.Get("database").([]interface{})[0].(map[string]interface{})
+		dbId := db["db_id"].(int)
+		update := buildUpdateDatabase(db)
 
 		if d.IsNewResource() {
 			// Terraform will report all of the databases that were just created in resourceRedisCloudSubscriptionCreate
 			// as newly added, but they have been created by the create subscription call. All that needs to happen to
-			// them is to be updated like 'normal' existing databases.
-			existing = addition
-		} else {
-			// this is not a new resource, so these databases really do new to be created
-			for _, db := range addition {
-			// This loop with addition is triggered when another database is added to the subscription.
-				request := buildCreateDatabase(db)
-				id, err := api.client.Database.Create(ctx, subId, request)
-				if err != nil {
-					return diag.FromErr(err)
-				}
-
-				log.Printf("[DEBUG] Created database %d", id)
-
-				if err := waitForDatabaseToBeActive(ctx, subId, id, api); err != nil {
-					return diag.FromErr(err)
-				}
+			// them is to be updated like 'normal' existing databases. At this moment we don't know the db_id,
+			// so we need to fetch a list of all dbs in the subscription to get the id based on the name.
+			nameId, err := getDatabaseNameIdMap(ctx, subId, api)
+			if err != nil {
+				return diag.FromErr(err)
 			}
-
-			// Certain values - like the hashing policy - can only be set on an update, so the newly created databases
-			// need to be updated straight away
-			existing = append(existing, addition...)
+			dbId = nameId[redis.StringValue(update.Name)]
 		}
 
-		nameId, err := getDatabaseNameIdMap(ctx, subId, api)
+		log.Printf("[DEBUG] Updating database %s (%d)", redis.StringValue(update.Name), dbId)
+
+		err = api.client.Database.Update(ctx, subId, dbId, update)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 
-		for _, db := range existing {
-			update := buildUpdateDatabase(db)
-			dbId := nameId[redis.StringValue(update.Name)]
-
-			log.Printf("[DEBUG] Updating database %s (%d)", redis.StringValue(update.Name), dbId)
-
-			err = api.client.Database.Update(ctx, subId, dbId, update)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-
-			if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-				return diag.FromErr(err)
-			}
-		}
-
-		for _, db := range deletion {
-			name := db["name"].(string)
-			id := nameId[name]
-
-			log.Printf("[DEBUG] Deleting database %s (%d)", name, id)
-
-			err = api.client.Database.Delete(ctx, subId, id)
-			if err != nil {
-				return diag.FromErr(err)
-			}
+		if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+			return diag.FromErr(err)
 		}
 	}
 
@@ -1324,36 +1267,6 @@ func getDatabaseNameIdMap(ctx context.Context, subId int, client *apiClient) (ma
 		return nil, list.Err()
 	}
 	return ret, nil
-}
-
-func diff(oldSet []interface{}, newSet []interface{}, hashKey func(interface{}) string) ([]map[string]interface{}, []map[string]interface{}, []map[string]interface{}) {
-	oldMap := map[string]map[string]interface{}{}
-	newMap := map[string]map[string]interface{}{}
-
-	for _, v := range oldSet {
-		oldMap[hashKey(v)] = v.(map[string]interface{})
-	}
-	for _, v := range newSet {
-		newMap[hashKey(v)] = v.(map[string]interface{})
-	}
-
-	var addition, existing, deletion []map[string]interface{}
-
-	for k, v := range newMap {
-		if _, ok := oldMap[k]; ok {
-			existing = append(existing, v)
-		} else {
-			addition = append(addition, v)
-		}
-	}
-
-	for k, v := range oldMap {
-		if _, ok := newMap[k]; !ok {
-			deletion = append(deletion, v)
-		}
-	}
-
-	return addition, existing, deletion
 }
 
 func readPaymentMethodID(d *schema.ResourceData) (*int, error) {
