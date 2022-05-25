@@ -27,6 +27,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		ReadContext:   resourceRedisCloudSubscriptionRead,
 		UpdateContext: resourceRedisCloudSubscriptionUpdate,
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
+
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 				subId, dbId, err := toSubscriptionId(d.Id())
@@ -34,14 +35,21 @@ func resourceRedisCloudSubscription() *schema.Resource {
 					return nil, err
 				}
 
-				// Populate the names of databases that already exist so that `flattenDatabases` can iterate over them
+				// Populate the names of databases that already exist so that `flattenDatabase` can iterate over them
+				// The READ operation is triggered after IMPORT, so let it handle flattening the db.
 				api := meta.(*apiClient)
 				db, err := api.client.Database.Get(ctx, subId, dbId)
+
+				var dbs []map[string]interface{}
+				dbs = append(dbs, map[string]interface{}{
+					"db_id": redis.Int(*db.ID),
+				})
+
 				if err != nil {
 					d.SetId("")
 					return nil, err
 				}
-				if err := d.Set("database", db); err != nil {
+				if err := d.Set("database", dbs); err != nil {
 					return nil, err
 				}
 
@@ -230,12 +238,6 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				MaxItems:    1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"recreate_db_by_name_change": {
-							Description: "To change the name, the database needs to be recreated. Default: false",
-							Type:        schema.TypeBool,
-							Default:     false,
-							Optional:    true,
-						},
 						"db_id": {
 							Description: "Identifier of the database created",
 							Type:        schema.TypeInt,
@@ -275,6 +277,12 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Type:        schema.TypeString,
 							Optional:    true,
 							Default:     "none",
+						},
+						"data_eviction": {
+							Description: "The data items eviction method",
+							Type:        schema.TypeString,
+							Optional:    true,
+							Default:     "volatile-lru",
 						},
 						"replication": {
 							Description: "Databases replication",
@@ -361,9 +369,10 @@ func resourceRedisCloudSubscription() *schema.Resource {
 						},
 						"module": {
 							Description: "A module object",
-							Type:        schema.TypeSet,
+							Type:        schema.TypeList,
 							Optional:    true,
 							MinItems:    1,
+							MaxItems:    1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"name": {
@@ -530,7 +539,8 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 		}
 	}
 
-	flatDbs, err := flattenDatabases(ctx, subId, d.Get("database").([]interface{}), api)
+	db := d.Get("database").([]interface{})[0].(map[string]interface{})
+	flatDbs, err := flattenDatabase(ctx, subId, db, api)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -589,70 +599,31 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 	}
 
 	if d.HasChange("database") || d.IsNewResource() {
-		oldDb, newDb := d.GetChange("database")
-		oldDbList := oldDb.([]interface{})
-		newDbList := newDb.([]interface{})
-		addition, existing, deletion := diff(oldDbList, newDbList, func(v interface{}) string {
-			m := v.(map[string]interface{})
-			return strconv.Itoa(m["db_id"].(int))
-		})
+		db := d.Get("database").([]interface{})[0].(map[string]interface{})
+		dbId := db["db_id"].(int)
+		update := buildUpdateDatabase(db)
 
 		if d.IsNewResource() {
 			// Terraform will report all of the databases that were just created in resourceRedisCloudSubscriptionCreate
 			// as newly added, but they have been created by the create subscription call. All that needs to happen to
-			// them is to be updated like 'normal' existing databases.
-			existing = addition
-		} else {
-			// this is not a new resource, so these databases really do new to be created
-			for _, db := range addition {
-				// This loop with addition is triggered when another database is added to the subscription.
-				request := buildCreateDatabase(db)
-				id, err := api.client.Database.Create(ctx, subId, request)
-				if err != nil {
-					return diag.FromErr(err)
-				}
-
-				log.Printf("[DEBUG] Created database %d", id)
-
-				if err := waitForDatabaseToBeActive(ctx, subId, id, api); err != nil {
-					return diag.FromErr(err)
-				}
+			// them is to be updated like 'normal' existing databases. At this moment we don't know the db_id,
+			// so we need to fetch a list of all dbs in the subscription to get the id based on the name.
+			nameId, err := getDatabaseNameIdMap(ctx, subId, api)
+			if err != nil {
+				return diag.FromErr(err)
 			}
-
-			// Certain values - like the hashing policy - can only be set on an update, so the newly created databases
-			// need to be updated straight away
-			existing = append(existing, addition...)
+			dbId = nameId[redis.StringValue(update.Name)]
 		}
 
+		log.Printf("[DEBUG] Updating database %s (%d)", redis.StringValue(update.Name), dbId)
+
+		err = api.client.Database.Update(ctx, subId, dbId, update)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 
-		for _, db := range existing {
-			update := buildUpdateDatabase(db)
-			dbId := db["db_id"].(int)
-			log.Printf("[DEBUG] Updating database %s (%d)", redis.StringValue(update.Name), dbId)
-
-			err = api.client.Database.Update(ctx, subId, dbId, update)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-
-			if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-				return diag.FromErr(err)
-			}
-		}
-
-		for _, db := range deletion {
-			name := db["name"].(string)
-			id := db["db_id"].(int)
-
-			log.Printf("[DEBUG] Deleting database %s (%d)", name, id)
-
-			err = api.client.Database.Delete(ctx, subId, id)
-			if err != nil {
-				return diag.FromErr(err)
-			}
+		if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+			return diag.FromErr(err)
 		}
 	}
 
@@ -788,8 +759,8 @@ func buildSubscriptionCreateDatabases(databases interface{}) []*subscriptions.Cr
 		averageItemSizeInBytes := databaseMap["average_item_size_in_bytes"].(int)
 
 		createModules := make([]*subscriptions.CreateModules, 0)
-		modules := databaseMap["module"].(*schema.Set)
-		for _, module := range modules.List() {
+		modules := databaseMap["module"]
+		for _, module := range modules.([]interface{}) {
 			moduleMap := module.(map[string]interface{})
 
 			modName := moduleMap["name"].(string)
@@ -838,8 +809,8 @@ func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
 	}
 
 	createModules := make([]*databases.CreateModule, 0)
-	module := db["module"].(*schema.Set)
-	for _, module := range module.List() {
+	module := db["module"]
+	for _, module := range module.([]interface{}) {
 		moduleMap := module.(map[string]interface{})
 
 		modName := moduleMap["name"].(string)
@@ -927,10 +898,11 @@ func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
 			By:    redis.String(db["throughput_measurement_by"].(string)),
 			Value: redis.Int(db["throughput_measurement_value"].(int)),
 		},
-		DataPersistence: redis.String(db["data_persistence"].(string)),
-		Password:        redis.String(db["password"].(string)),
-		SourceIP:        setToStringSlice(db["source_ips"].(*schema.Set)),
-		Alerts:          alerts,
+		DataPersistence:    redis.String(db["data_persistence"].(string)),
+		DataEvictionPolicy: redis.String(db["data_eviction"].(string)),
+		Password:           redis.String(db["password"].(string)),
+		SourceIP:           setToStringSlice(db["source_ips"].(*schema.Set)),
+		Alerts:             alerts,
 	}
 
 	update.ReplicaOf = setToStringSlice(db["replica_of"].(*schema.Set))
@@ -1169,40 +1141,23 @@ func flattenNetworks(networks []*subscriptions.Networking) []map[string]interfac
 	return cdl
 }
 
-func flattenDatabases(ctx context.Context, subId int, databases []interface{}, api *apiClient) ([]interface{}, error) {
-	nameId, err := getDatabaseNameIdMap(ctx, subId, api)
+func flattenDatabase(ctx context.Context, subId int, database map[string]interface{}, api *apiClient) ([]interface{}, error) {
+
+	var flattened []interface{}
+	dbId := database["db_id"].(int)
+
+	db, err := api.client.Database.Get(ctx, subId, dbId)
 	if err != nil {
 		return nil, err
 	}
 
-	var flattened []interface{}
-	for _, v := range databases {
-		database := v.(map[string]interface{})
-		name := database["name"].(string)
-		id, ok := nameId[name]
-		if !ok {
-			log.Printf("database %d not found: %s", id, err)
-			continue
-		}
+	certificate := database["client_ssl_certificate"].(string)
+	backupPath := database["periodic_backup_path"].(string)
+	averageItemSizeInBytes := database["average_item_size_in_bytes"].(int)
+	existingPassword := database["password"].(string)
+	existingSourceIPs := database["source_ips"].(*schema.Set)
+	externalOSSAPIEndpoint := database["external_endpoint_for_oss_cluster_api"].(bool)
 
-		db, err := api.client.Database.Get(ctx, subId, id)
-		if err != nil {
-			return nil, err
-		}
-
-		cert := database["client_ssl_certificate"].(string)
-		backupPath := database["periodic_backup_path"].(string)
-		averageItemSize := database["average_item_size_in_bytes"].(int)
-		existingPassword := database["password"].(string)
-		existingSourceIPs := database["source_ips"].(*schema.Set)
-		external := database["external_endpoint_for_oss_cluster_api"].(bool)
-
-		flattened = append(flattened, flattenDatabase(cert, external, backupPath, averageItemSize, existingPassword, existingSourceIPs, db))
-	}
-	return flattened, nil
-}
-
-func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath string, averageItemSizeInBytes int, existingPassword string, existingSourceIp *schema.Set, db *databases.Database) map[string]interface{} {
 	password := existingPassword
 	if redis.StringValue(db.Protocol) == "redis" {
 		// TODO need to check if this is expected behaviour or not
@@ -1212,7 +1167,7 @@ func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath
 	var sourceIPs []string
 	if len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0" {
 		// The API handles an empty list as ["0.0.0.0/0"] but need to be careful to match the input to avoid Terraform detecting drift
-		if existingSourceIp.Len() != 0 {
+		if existingSourceIPs.Len() != 0 {
 			sourceIPs = redis.StringSliceValue(db.Security.SourceIPs...)
 		}
 	} else {
@@ -1226,6 +1181,7 @@ func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath
 		"memory_limit_in_gb":                    redis.Float64Value(db.MemoryLimitInGB),
 		"support_oss_cluster_api":               redis.BoolValue(db.SupportOSSClusterAPI),
 		"data_persistence":                      redis.StringValue(db.DataPersistence),
+		"data_eviction":                         redis.StringValue(db.DataEvictionPolicy),
 		"replication":                           redis.BoolValue(db.Replication),
 		"throughput_measurement_by":             redis.StringValue(db.ThroughputMeasurement.By),
 		"throughput_measurement_value":          redis.IntValue(db.ThroughputMeasurement.Value),
@@ -1256,7 +1212,8 @@ func flattenDatabase(certificate string, externalOSSAPIEndpoint bool, backupPath
 		tf["periodic_backup_path"] = backupPath
 	}
 
-	return tf
+	flattened = append(flattened, tf)
+	return flattened, nil
 }
 
 func flattenAlerts(alerts []*databases.Alert) []map[string]interface{} {
@@ -1312,36 +1269,6 @@ func getDatabaseNameIdMap(ctx context.Context, subId int, client *apiClient) (ma
 		return nil, list.Err()
 	}
 	return ret, nil
-}
-
-func diff(oldSet []interface{}, newSet []interface{}, hashKey func(interface{}) string) ([]map[string]interface{}, []map[string]interface{}, []map[string]interface{}) {
-	oldMap := map[string]map[string]interface{}{}
-	newMap := map[string]map[string]interface{}{}
-
-	for _, v := range oldSet {
-		oldMap[hashKey(v)] = v.(map[string]interface{})
-	}
-	for _, v := range newSet {
-		newMap[hashKey(v)] = v.(map[string]interface{})
-	}
-
-	var addition, existing, deletion []map[string]interface{}
-
-	for k, v := range newMap {
-		if _, ok := oldMap[k]; ok {
-			existing = append(existing, v)
-		} else {
-			addition = append(addition, v)
-		}
-	}
-
-	for k, v := range oldMap {
-		if _, ok := newMap[k]; !ok {
-			deletion = append(deletion, v)
-		}
-	}
-
-	return addition, existing, deletion
 }
 
 func readPaymentMethodID(d *schema.ResourceData) (*int, error) {
