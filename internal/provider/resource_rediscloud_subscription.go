@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-"time"
+	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
@@ -27,16 +27,6 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		ReadContext:   resourceRedisCloudSubscriptionRead,
 		UpdateContext: resourceRedisCloudSubscriptionUpdate,
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
-		CustomizeDiff: func(ctx context.Context, d *schema.ResourceDiff, i interface{}) error {
-			dbMap := d.Get("database.0").(map[string]interface{})
-			recreateDb := dbMap["recreate_db_by_name_change"].(bool)
-			oldName, newName := d.GetChange("database.0.name")
-			if len(oldName.(string)) > 0 && oldName != newName && recreateDb == false {
-				panic(fmt.Sprintf("DB '%s': To change the name, you need to recreate the database. " +
-					"\n 'recreate_db_by_name_change=true' must be set.", newName))
-			}
-			return nil
-		},
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 				subId, dbId, err := toSubscriptionId(d.Id())
@@ -604,7 +594,7 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 		newDbList := newDb.([]interface{})
 		addition, existing, deletion := diff(oldDbList, newDbList, func(v interface{}) string {
 			m := v.(map[string]interface{})
-			return m["name"].(string)
+			return strconv.Itoa(m["db_id"].(int))
 		})
 
 		if d.IsNewResource() {
@@ -615,7 +605,7 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 		} else {
 			// this is not a new resource, so these databases really do new to be created
 			for _, db := range addition {
-			// This loop with addition is triggered when another database is added to the subscription.
+				// This loop with addition is triggered when another database is added to the subscription.
 				request := buildCreateDatabase(db)
 				id, err := api.client.Database.Create(ctx, subId, request)
 				if err != nil {
@@ -634,15 +624,13 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 			existing = append(existing, addition...)
 		}
 
-		nameId, err := getDatabaseNameIdMap(ctx, subId, api)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 
 		for _, db := range existing {
 			update := buildUpdateDatabase(db)
-			dbId := nameId[redis.StringValue(update.Name)]
-
+			dbId := db["db_id"].(int)
 			log.Printf("[DEBUG] Updating database %s (%d)", redis.StringValue(update.Name), dbId)
 
 			err = api.client.Database.Update(ctx, subId, dbId, update)
@@ -657,7 +645,7 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 
 		for _, db := range deletion {
 			name := db["name"].(string)
-			id := nameId[name]
+			id := db["db_id"].(int)
 
 			log.Printf("[DEBUG] Deleting database %s (%d)", name, id)
 
