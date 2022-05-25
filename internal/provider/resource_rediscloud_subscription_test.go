@@ -12,6 +12,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -47,6 +48,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.data_eviction", "volatile-lru"),
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
 
@@ -118,6 +120,7 @@ func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T)
 					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.data_eviction", "volatile-lru"),
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
 
@@ -279,47 +282,6 @@ func TestAccResourceRedisCloudSubscription_AddAdditionalDatabaseWithModule(t *te
 	})
 }
 
-// Steps:
-// - Create a subscription with a multi-module db.
-// - Add another multi-module db to the subscription.
-func TestAccResourceRedisCloudSubscription_AddDatabasesWithMultiModules(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Requires manual execution over CI execution")
-	}
-
-	name := acctest.RandomWithPrefix(testResourcePrefix)
-	password := acctest.RandString(20)
-	resourceName := "rediscloud_subscription.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionDbWithMultipleModules, testCloudAccountName, name, password),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "database.0.module.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "database.0.module.0.name", "RedisBloom"),
-					resource.TestCheckResourceAttr(resourceName, "database.0.module.1.name", "RedisJSON"),
-				),
-			},
-			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionTwoDbsWithMultipleModules, testCloudAccountName, name, password, password),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "database.0.module.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "database.0.module.0.name", "RedisBloom"),
-					resource.TestCheckResourceAttr(resourceName, "database.0.module.1.name", "RedisJSON"),
-					resource.TestCheckResourceAttr(resourceName, "database.1.module.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "database.1.module.0.name", "RedisBloom"),
-					resource.TestCheckResourceAttr(resourceName, "database.1.module.1.name", "RedisJSON"),
-				),
-			},
-		},
-	})
-}
-
 func TestAccResourceRedisCloudSubscription_AddManageDatabaseReplication(t *testing.T) {
 
 	if testing.Short() {
@@ -397,6 +359,7 @@ func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testin
 					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 				),
 			},
@@ -480,6 +443,13 @@ func testAccCheckSubscriptionDestroy(s *terraform.State) error {
 	return nil
 }
 
+// A simple Set function to generate a hash based on two attributes.
+func testSetFunc(v interface{}) int {
+	m := v.(map[string]interface{})
+	result := fmt.Sprintf("%s%d", m["name"].(string), m["memory_limit_in_gb"].(int))
+	return schema.HashString(result)
+}
+
 const testAccResourceRedisCloudSubscriptionOneDb = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
@@ -517,6 +487,7 @@ resource "rediscloud_subscription" "example" {
     memory_limit_in_gb = %d
     support_oss_cluster_api = true
     data_persistence = "none"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "operations-per-second"
     password = "%s"
@@ -563,6 +534,7 @@ resource "rediscloud_subscription" "example" {
     memory_limit_in_gb = %d
     support_oss_cluster_api = true
     data_persistence = "none"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "operations-per-second"
     password = "%s"
@@ -575,6 +547,7 @@ resource "rediscloud_subscription" "example" {
     protocol = "memcached"
     memory_limit_in_gb = 2
     data_persistence = "none"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "number-of-shards"
     throughput_measurement_value = 2
@@ -620,6 +593,7 @@ resource "rediscloud_subscription" "example" {
     memory_limit_in_gb = %d
     support_oss_cluster_api = true
     data_persistence = "none"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "operations-per-second"
     password = "%s"
@@ -633,6 +607,7 @@ resource "rediscloud_subscription" "example" {
     memory_limit_in_gb = 1
     support_oss_cluster_api = true
     data_persistence = "none"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "operations-per-second"
     password = "%s"
@@ -643,133 +618,6 @@ resource "rediscloud_subscription" "example" {
 		name = "RediSearch"
 	}
   }
-}
-`
-
-const testAccResourceRedisCloudSubscriptionDbWithMultipleModules = `
-data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
-}
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS"
-  name = "%s"
-}
-
-resource "rediscloud_subscription" "example" {
-
-  name = "%s"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-
-  allowlist {
-    cidrs = ["192.168.0.0/16"]
-  }
-
-  cloud_provider {
-    provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region = "eu-west-1"
-      networking_deployment_cidr = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
-    }
-  }
-
-  database {
-    name = "tf-database-0"
-	protocol = "redis"
-    memory_limit_in_gb = 1
-    support_oss_cluster_api = true
-    data_persistence = "none"
-    replication = false
-    throughput_measurement_by = "operations-per-second"
-    password = "%s"
-    throughput_measurement_value = 10000
-    source_ips = ["10.0.0.0/8"]
-
-    dynamic "module" {
-      for_each = ["RedisJSON", "RedisBloom"]
-      content {
-        name = module.value
-      }
-    }
-  }
-}
-`
-
-const testAccResourceRedisCloudSubscriptionTwoDbsWithMultipleModules = `
-data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
-}
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS"
-  name = "%s"
-}
-
-resource "rediscloud_subscription" "example" {
-
-  name = "%s"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-
-  allowlist {
-    cidrs = ["192.168.0.0/16"]
-  }
-
-  cloud_provider {
-    provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region = "eu-west-1"
-      networking_deployment_cidr = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
-    }
-  }
-
-  database {
-    name = "tf-database-0"
-	protocol = "redis"
-    memory_limit_in_gb = 1
-    support_oss_cluster_api = true
-    data_persistence = "none"
-    replication = false
-    throughput_measurement_by = "operations-per-second"
-    password = "%s"
-    throughput_measurement_value = 10000
-    source_ips = ["10.0.0.0/8"]
-
-    dynamic "module" {
-      for_each = ["RedisJSON", "RedisBloom"]
-      content {
-        name = module.value
-      }
-    }
-  }
-  
-  database {
-    name = "tf-database-1"
-	protocol = "redis"
-    memory_limit_in_gb = 1
-    support_oss_cluster_api = true
-    data_persistence = "none"
-    replication = false
-    throughput_measurement_by = "operations-per-second"
-    password = "%s"
-    throughput_measurement_value = 10000
-    source_ips = ["10.0.0.0/8"]
-
-    dynamic "module" {
-      for_each = ["RedisJSON", "RedisBloom"]
-      content {
-        name = module.value
-      }
-    }
-  }
-  
 }
 `
 
@@ -965,6 +813,7 @@ resource "rediscloud_subscription" "example" {
     memory_limit_in_gb = %d
     support_oss_cluster_api = true
     data_persistence = "none"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "operations-per-second"
     password = "%s"

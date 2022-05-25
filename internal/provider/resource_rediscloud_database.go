@@ -63,7 +63,6 @@ func resourceRedisCloudDatabase() *schema.Resource {
 				Description:      "A meaningful name to identify the database",
 				Type:             schema.TypeString,
 				Required:         true,
-				ForceNew:         true,
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringLenBetween(0, 40)),
 			},
 			"protocol": {
