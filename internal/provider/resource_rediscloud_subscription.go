@@ -614,12 +614,23 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 			}
 			dbId = nameId[redis.StringValue(update.Name)]
 		}
-
-		log.Printf("[DEBUG] Updating database %s (%d)", redis.StringValue(update.Name), dbId)
-
-		err = api.client.Database.Update(ctx, subId, dbId, update)
+		_, err := api.client.Database.Get(ctx, subId, dbId)
 		if err != nil {
-			return diag.FromErr(err)
+			// TODO: uncomment this line when NotFound is merged into api.client.Database
+			//if _, ok := err.(*databases.NotFound); ok {
+			create := buildCreateDatabase(db)
+			log.Printf("[DEBUG] Creating database %s", redis.StringValue(create.Name))
+			dbId, err = api.client.Database.Create(ctx, subId, create)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			// }
+		} else {
+			log.Printf("[DEBUG] Updating database %s (%d)", redis.StringValue(update.Name), dbId)
+			err = api.client.Database.Update(ctx, subId, dbId, update)
+			if err != nil {
+				return diag.FromErr(err)
+			}
 		}
 
 		if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
@@ -1144,8 +1155,15 @@ func flattenNetworks(networks []*subscriptions.Networking) []map[string]interfac
 func flattenDatabase(ctx context.Context, subId int, database map[string]interface{}, api *apiClient) ([]interface{}, error) {
 
 	var flattened []interface{}
-	dbId := database["db_id"].(int)
 
+	dbList := api.client.Database.List(ctx, subId)
+	var dbId int
+	if dbList.Next() {
+		dbId = *dbList.Value().ID
+	} else {
+		return []interface{}{}, nil
+
+	}
 	db, err := api.client.Database.Get(ctx, subId, dbId)
 	if err != nil {
 		return nil, err

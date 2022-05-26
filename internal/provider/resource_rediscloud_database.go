@@ -328,11 +328,12 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 
 	db, err := api.client.Database.Get(ctx, subId, dbId)
 	if err != nil {
-		if _, ok := err.(*databases.NotFound); ok {
-			d.SetId("")
-			return diags
-		}
-		return diag.FromErr(err)
+		// TODO: Add back in these lines after `NotFound` is merged into the api client
+		//if _, ok := err.(*databases.NotFound); ok {
+		d.SetId("")
+		return diags
+		//}
+		//return diag.FromErr(err)
 	}
 
 	// Sets

@@ -28,7 +28,11 @@ website/node_modules
 *.iml
 
 website/vendor
+vendor
+.vscode/
 
+# makefile
+terraform-provider-rediscloud
 
 # Test exclusions
 !command/test-fixtures/**/*.tfstate
