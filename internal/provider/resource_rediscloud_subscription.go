@@ -230,65 +230,21 @@ func resourceRedisCloudSubscription() *schema.Resource {
 					},
 				},
 			},
-			"database": {
-				Description: "A database object",
+			"creation_plan": {
+				Description: "Information about the planned databases used to optimise the database infrastructure. This information is only used when creating a new subscription and any changes will be ignored after this.",
 				Type:        schema.TypeList,
-				Required:    true,
-				MinItems:    1,
 				MaxItems:    1,
+				Optional:    true,
+				// TODO: diff suppress func is causing problems (i.e. plan = {})
+				// DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+				// 	return !(old == "")
+				// },
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"db_id": {
-							Description: "Identifier of the database created",
-							Type:        schema.TypeInt,
-							Computed:    true,
-						},
-						"name": {
-							Description:      "A meaningful name to identify the database",
-							Type:             schema.TypeString,
-							Required:         true,
-							ValidateDiagFunc: validation.ToDiagFunc(validation.StringLenBetween(0, 40)),
-						},
-						"protocol": {
-							Description:      "The protocol that will be used to access the database, (either ‘redis’ or 'memcached’) ",
-							Type:             schema.TypeString,
-							Required:         true,
-							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.ProtocolValues(), false)),
-						},
 						"memory_limit_in_gb": {
 							Description: "Maximum memory usage for this specific database",
 							Type:        schema.TypeFloat,
 							Required:    true,
-						},
-						"support_oss_cluster_api": {
-							Description: "Support Redis open-source (OSS) Cluster API",
-							Type:        schema.TypeBool,
-							Optional:    true,
-							Default:     false,
-						},
-						"external_endpoint_for_oss_cluster_api": {
-							Description: "Should use the external endpoint for open-source (OSS) Cluster API",
-							Type:        schema.TypeBool,
-							Optional:    true,
-							Default:     false,
-						},
-						"data_persistence": {
-							Description: "Rate of database data persistence (in persistent storage)",
-							Type:        schema.TypeString,
-							Optional:    true,
-							Default:     "none",
-						},
-						"data_eviction": {
-							Description: "The data items eviction method",
-							Type:        schema.TypeString,
-							Optional:    true,
-							Default:     "volatile-lru",
-						},
-						"replication": {
-							Description: "Databases replication",
-							Type:        schema.TypeBool,
-							Optional:    true,
-							Default:     true,
 						},
 						"throughput_measurement_by": {
 							Description:      "Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)",
@@ -309,107 +265,11 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							// specified. SDK's catch-all issue around this: https://github.com/hashicorp/terraform-plugin-sdk/issues/261
 							Default: 0,
 						},
-						"password": {
-							Description: "Password used to access the database",
-							Type:        schema.TypeString,
-							Required:    true,
-							Sensitive:   true,
-						},
-						"public_endpoint": {
-							Description: "Public endpoint to access the database",
-							Type:        schema.TypeString,
-							Computed:    true,
-						},
-						"private_endpoint": {
-							Description: "Private endpoint to access the database",
-							Type:        schema.TypeString,
-							Computed:    true,
-						},
-						"client_ssl_certificate": {
-							Description: "SSL certificate to authenticate user connections",
-							Type:        schema.TypeString,
+						"number_of_databases": {
+							Description: "The planned number of databases",
+							Type:        schema.TypeInt,
 							Optional:    true,
-							Default:     "",
-						},
-						"periodic_backup_path": {
-							Description: "Path that will be used to store database backup files",
-							Type:        schema.TypeString,
-							Optional:    true,
-							Default:     "",
-						},
-						"replica_of": {
-							Description: "Set of Redis database URIs, in the format `redis://user:password@host:port`, that this database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided",
-							Type:        schema.TypeSet,
-							Optional:    true,
-							Computed:    true,
-							Elem: &schema.Schema{
-								Type:             schema.TypeString,
-								ValidateDiagFunc: validateDiagFunc(validation.IsURLWithScheme([]string{"redis"})),
-							},
-						},
-						"alert": {
-							Description: "Set of alerts to enable on the database",
-							Type:        schema.TypeSet,
-							Optional:    true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"name": {
-										Description:      "Alert name",
-										Type:             schema.TypeString,
-										Required:         true,
-										ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.AlertNameValues(), false)),
-									},
-									"value": {
-										Description: "Alert value",
-										Type:        schema.TypeInt,
-										Required:    true,
-									},
-								},
-							},
-						},
-						"module": {
-							Description: "A module object",
-							Type:        schema.TypeList,
-							Optional:    true,
-							MinItems:    1,
-							MaxItems:    1,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"name": {
-										Description: "Name of the module to enable",
-										Type:        schema.TypeString,
-										Required:    true,
-									},
-								},
-							},
-						},
-						"source_ips": {
-							Description: "Set of CIDR addresses to allow access to the database",
-							Type:        schema.TypeSet,
-							Computed:    true,
-							Optional:    true,
-							MinItems:    1,
-							Elem: &schema.Schema{
-								Type:             schema.TypeString,
-								ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
-							},
-						},
-						"hashing_policy": {
-							Description: "List of regular expression rules to shard the database by. See the documentation on clustering for more information on the hashing policy - https://docs.redislabs.com/latest/rc/concepts/clustering/",
-							Type:        schema.TypeList,
-							Computed:    true,
-							Optional:    true,
-							Elem: &schema.Schema{
-								Type: schema.TypeString,
-								// Can't check that these are valid regex rules as the service wants something like `(?<tag>.*)`
-								// which isn't a valid Go regex
-							},
-						},
-						"enable_tls": {
-							Description: "Use TLS for authentication",
-							Type:        schema.TypeBool,
-							Optional:    true,
-							Default:     false,
+							Default:     0,
 						},
 					},
 				},
@@ -428,7 +288,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	}
 
 	// Create databases
-	dbs := buildSubscriptionCreateDatabases(d.Get("database"))
+	var dbs []*subscriptions.CreateDatabase
 
 	// Create Subscription
 	name := d.Get("name").(string)
@@ -440,6 +300,16 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	}
 
 	memoryStorage := d.Get("memory_storage").(string)
+
+	// Create dummy databases if a creation_plan is provided
+	plan := d.Get("creation_plan")
+	if plan != nil {
+		dbs = buildSubscriptionCreatePlanDatabases(plan)
+	}
+	// TODO: add else body for when creation_plan is not provided
+	// else {
+	//	buildSubscriptionCreatePlanDatabases([default values for mimimal database])
+	//}
 
 	createSubscriptionRequest := subscriptions.CreateSubscription{
 		Name:            redis.String(name),
@@ -472,6 +342,11 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 
 		if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 			return diag.FromErr(err)
+		}
+		// Delete each dummy database
+		dbErr := api.client.Database.Delete(ctx, subId, dbId)
+		if dbErr != nil {
+			diag.FromErr(dbErr)
 		}
 	}
 	if dbList.Err() != nil {
@@ -539,15 +414,6 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 		}
 	}
 
-	db := d.Get("database").([]interface{})[0].(map[string]interface{})
-	flatDbs, err := flattenDatabase(ctx, subId, db, api)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("database", flatDbs); err != nil {
-		return diag.FromErr(err)
-	}
-
 	return diags
 }
 
@@ -598,46 +464,6 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 		}
 	}
 
-	if d.HasChange("database") || d.IsNewResource() {
-		db := d.Get("database").([]interface{})[0].(map[string]interface{})
-		dbId := db["db_id"].(int)
-		update := buildUpdateDatabase(db)
-
-		if d.IsNewResource() {
-			// Terraform will report all of the databases that were just created in resourceRedisCloudSubscriptionCreate
-			// as newly added, but they have been created by the create subscription call. All that needs to happen to
-			// them is to be updated like 'normal' existing databases. At this moment we don't know the db_id,
-			// so we need to fetch a list of all dbs in the subscription to get the id based on the name.
-			nameId, err := getDatabaseNameIdMap(ctx, subId, api)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-			dbId = nameId[redis.StringValue(update.Name)]
-		}
-		_, err := api.client.Database.Get(ctx, subId, dbId)
-		if err != nil {
-			// TODO: uncomment this line when NotFound is merged into api.client.Database
-			//if _, ok := err.(*databases.NotFound); ok {
-			create := buildCreateDatabase(db)
-			log.Printf("[DEBUG] Creating database %s", redis.StringValue(create.Name))
-			dbId, err = api.client.Database.Create(ctx, subId, create)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-			// }
-		} else {
-			log.Printf("[DEBUG] Updating database %s (%d)", redis.StringValue(update.Name), dbId)
-			err = api.client.Database.Update(ctx, subId, dbId, update)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-		}
-
-		if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-			return diag.FromErr(err)
-		}
-	}
-
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
@@ -658,27 +484,6 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
-
-	nameId, err := getDatabaseNameIdMap(ctx, subId, api)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	for _, v := range d.Get("database").([]interface{}) {
-		database := v.(map[string]interface{})
-
-		name := database["name"].(string)
-		if id, ok := nameId[name]; ok {
-			log.Printf("[DEBUG] Deleting database %d on subscription %d", id, subId)
-
-			dbErr := api.client.Database.Delete(ctx, subId, id)
-			if dbErr != nil {
-				diag.FromErr(dbErr)
-			}
-		} else {
-			log.Printf("[DEBUG] Database %s no longer exists", name)
-		}
-	}
 
 	// Delete subscription once all databases are deleted
 	err = api.client.Subscription.Delete(ctx, subId)
@@ -753,209 +558,35 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 	return createCloudProviders, nil
 }
 
-func buildSubscriptionCreateDatabases(databases interface{}) []*subscriptions.CreateDatabase {
+func buildSubscriptionCreatePlanDatabases(plans interface{}) []*subscriptions.CreateDatabase {
+
 	createDatabases := make([]*subscriptions.CreateDatabase, 0)
+	for _, plan := range plans.([]interface{}) {
+		planMap := plan.(map[string]interface{})
 
-	for _, database := range databases.([]interface{}) {
-		databaseMap := database.(map[string]interface{})
-
-		name := databaseMap["name"].(string)
-		protocol := databaseMap["protocol"].(string)
-		memoryLimitInGB := databaseMap["memory_limit_in_gb"].(float64)
-		supportOSSClusterAPI := databaseMap["support_oss_cluster_api"].(bool)
-		dataPersistence := databaseMap["data_persistence"].(string)
-		replication := databaseMap["replication"].(bool)
-		throughputMeasurementBy := databaseMap["throughput_measurement_by"].(string)
-		throughputMeasurementValue := databaseMap["throughput_measurement_value"].(int)
-		averageItemSizeInBytes := databaseMap["average_item_size_in_bytes"].(int)
-
-		createModules := make([]*subscriptions.CreateModules, 0)
-		modules := databaseMap["module"]
-		for _, module := range modules.([]interface{}) {
-			moduleMap := module.(map[string]interface{})
-
-			modName := moduleMap["name"].(string)
-
-			createModule := &subscriptions.CreateModules{
-				Name: redis.String(modName),
-			}
-
-			createModules = append(createModules, createModule)
-		}
+		memoryLimitInGB := planMap["memory_limit_in_gb"].(float64)
+		throughputMeasurementBy := planMap["throughput_measurement_by"].(string)
+		throughputMeasurementValue := planMap["throughput_measurement_value"].(int)
+		averageItemSizeInBytes := planMap["average_item_size_in_bytes"].(int)
+		numberOfDatabases := planMap["number_of_databases"].(int)
 
 		createDatabase := &subscriptions.CreateDatabase{
-			Name:                 redis.String(name),
-			Protocol:             redis.String(protocol),
-			MemoryLimitInGB:      redis.Float64(memoryLimitInGB),
-			SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
-			DataPersistence:      redis.String(dataPersistence),
-			Replication:          redis.Bool(replication),
+			Name:                   redis.String("dummy-database"),
+			Protocol:               redis.String("redis"),
+			MemoryLimitInGB:        redis.Float64(memoryLimitInGB),
+			SupportOSSClusterAPI:   redis.Bool(false),
+			Replication:            redis.Bool(true),
+			DataPersistence:        redis.String("none"),
+			AverageItemSizeInBytes: redis.Int(averageItemSizeInBytes),
 			ThroughputMeasurement: &subscriptions.CreateThroughput{
 				By:    redis.String(throughputMeasurementBy),
 				Value: redis.Int(throughputMeasurementValue),
 			},
-			Quantity: redis.Int(1),
-			Modules:  createModules,
+			Quantity: redis.Int(numberOfDatabases),
 		}
-
-		if averageItemSizeInBytes > 0 {
-			createDatabase.AverageItemSizeInBytes = &averageItemSizeInBytes
-		}
-
 		createDatabases = append(createDatabases, createDatabase)
 	}
-
 	return createDatabases
-}
-
-func buildCreateDatabase(db map[string]interface{}) databases.CreateDatabase {
-	var alerts []*databases.CreateAlert
-	for _, alert := range db["alert"].(*schema.Set).List() {
-		dbAlert := alert.(map[string]interface{})
-
-		alerts = append(alerts, &databases.CreateAlert{
-			Name:  redis.String(dbAlert["name"].(string)),
-			Value: redis.Int(dbAlert["value"].(int)),
-		})
-	}
-
-	createModules := make([]*databases.CreateModule, 0)
-	module := db["module"]
-	for _, module := range module.([]interface{}) {
-		moduleMap := module.(map[string]interface{})
-
-		modName := moduleMap["name"].(string)
-
-		createModule := &databases.CreateModule{
-			Name: redis.String(modName),
-		}
-
-		createModules = append(createModules, createModule)
-	}
-
-	create := databases.CreateDatabase{
-		DryRun:               redis.Bool(false),
-		Name:                 redis.String(db["name"].(string)),
-		Protocol:             redis.String(db["protocol"].(string)),
-		MemoryLimitInGB:      redis.Float64(db["memory_limit_in_gb"].(float64)),
-		SupportOSSClusterAPI: redis.Bool(db["support_oss_cluster_api"].(bool)),
-		DataPersistence:      redis.String(db["data_persistence"].(string)),
-		Replication:          redis.Bool(db["replication"].(bool)),
-		ThroughputMeasurement: &databases.CreateThroughputMeasurement{
-			By:    redis.String(db["throughput_measurement_by"].(string)),
-			Value: redis.Int(db["throughput_measurement_value"].(int)),
-		},
-		Alerts:    alerts,
-		ReplicaOf: setToStringSlice(db["replica_of"].(*schema.Set)),
-		Password:  redis.String(db["password"].(string)),
-		SourceIP:  setToStringSlice(db["source_ips"].(*schema.Set)),
-		Modules:   createModules,
-	}
-
-	averageItemSize := db["average_item_size_in_bytes"].(int)
-	if averageItemSize > 0 {
-		create.AverageItemSizeInBytes = redis.Int(averageItemSize)
-	}
-
-	// The cert validation is done by the API (HTTP 400 is returned if it's invalid).
-	clientSSLCertificate := db["client_ssl_certificate"].(string)
-	enableTLS := db["enable_tls"].(bool)
-	if enableTLS {
-		// TLS only: enable_tls=true, client_ssl_certificate="".
-		create.EnableTls = redis.Bool(enableTLS)
-		// mTLS: enableTls=true, non-empty client_ssl_certificate.
-		if clientSSLCertificate != "" {
-			create.ClientSSLCertificate = redis.String(clientSSLCertificate)
-		}
-	} else {
-		// mTLS (backward compatibility): enable_tls=false, non-empty client_ssl_certificate.
-		if clientSSLCertificate != "" {
-			create.ClientSSLCertificate = redis.String(clientSSLCertificate)
-		} else {
-			// Default: enable_tls=false, client_ssl_certificate=""
-			create.EnableTls = redis.Bool(enableTLS)
-		}
-	}
-
-	backupPath := db["periodic_backup_path"].(string)
-	if backupPath != "" {
-		create.PeriodicBackupPath = redis.String(backupPath)
-	}
-
-	if v, ok := db["external_endpoint_for_oss_cluster_api"]; ok {
-		create.UseExternalEndpointForOSSClusterAPI = redis.Bool(v.(bool))
-	}
-
-	return create
-}
-
-func buildUpdateDatabase(db map[string]interface{}) databases.UpdateDatabase {
-	var alerts []*databases.UpdateAlert
-	for _, alert := range db["alert"].(*schema.Set).List() {
-		dbAlert := alert.(map[string]interface{})
-
-		alerts = append(alerts, &databases.UpdateAlert{
-			Name:  redis.String(dbAlert["name"].(string)),
-			Value: redis.Int(dbAlert["value"].(int)),
-		})
-	}
-
-	update := databases.UpdateDatabase{
-		Name:                 redis.String(db["name"].(string)),
-		MemoryLimitInGB:      redis.Float64(db["memory_limit_in_gb"].(float64)),
-		SupportOSSClusterAPI: redis.Bool(db["support_oss_cluster_api"].(bool)),
-		Replication:          redis.Bool(db["replication"].(bool)),
-		ThroughputMeasurement: &databases.UpdateThroughputMeasurement{
-			By:    redis.String(db["throughput_measurement_by"].(string)),
-			Value: redis.Int(db["throughput_measurement_value"].(int)),
-		},
-		DataPersistence:    redis.String(db["data_persistence"].(string)),
-		DataEvictionPolicy: redis.String(db["data_eviction"].(string)),
-		Password:           redis.String(db["password"].(string)),
-		SourceIP:           setToStringSlice(db["source_ips"].(*schema.Set)),
-		Alerts:             alerts,
-	}
-
-	update.ReplicaOf = setToStringSlice(db["replica_of"].(*schema.Set))
-	if update.ReplicaOf == nil {
-		update.ReplicaOf = make([]*string, 0)
-	}
-
-	// The cert validation is done by the API (HTTP 400 is returned if it's invalid).
-	clientSSLCertificate := db["client_ssl_certificate"].(string)
-	enableTLS := db["enable_tls"].(bool)
-	if enableTLS {
-		// TLS only: enable_tls=true, client_ssl_certificate="".
-		update.EnableTls = redis.Bool(enableTLS)
-		// mTLS: enableTls=true, non-empty client_ssl_certificate.
-		if clientSSLCertificate != "" {
-			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
-		}
-	} else {
-		// mTLS (backward compatibility): enable_tls=false, non-empty client_ssl_certificate.
-		if clientSSLCertificate != "" {
-			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
-		} else {
-			// Default: enable_tls=false, client_ssl_certificate=""
-			update.EnableTls = redis.Bool(enableTLS)
-		}
-	}
-
-	regex := db["hashing_policy"].([]interface{})
-	if len(regex) != 0 {
-		update.RegexRules = interfaceToStringSlice(regex)
-	}
-
-	backupPath := db["periodic_backup_path"].(string)
-	if backupPath != "" {
-		update.PeriodicBackupPath = redis.String(backupPath)
-	}
-
-	if v, ok := db["external_endpoint_for_oss_cluster_api"]; ok {
-		update.UseExternalEndpointForOSSClusterAPI = redis.Bool(v.(bool))
-	}
-
-	return update
 }
 
 func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) error {
@@ -1150,88 +781,6 @@ func flattenNetworks(networks []*subscriptions.Networking) []map[string]interfac
 	}
 
 	return cdl
-}
-
-func flattenDatabase(ctx context.Context, subId int, database map[string]interface{}, api *apiClient) ([]interface{}, error) {
-
-	var flattened []interface{}
-
-	dbList := api.client.Database.List(ctx, subId)
-	var dbId int
-	if dbList.Next() {
-		dbId = *dbList.Value().ID
-	} else {
-		return []interface{}{}, nil
-
-	}
-	db, err := api.client.Database.Get(ctx, subId, dbId)
-	if err != nil {
-		return nil, err
-	}
-
-	certificate := database["client_ssl_certificate"].(string)
-	backupPath := database["periodic_backup_path"].(string)
-	averageItemSizeInBytes := database["average_item_size_in_bytes"].(int)
-	existingPassword := database["password"].(string)
-	existingSourceIPs := database["source_ips"].(*schema.Set)
-	externalOSSAPIEndpoint := database["external_endpoint_for_oss_cluster_api"].(bool)
-
-	password := existingPassword
-	if redis.StringValue(db.Protocol) == "redis" {
-		// TODO need to check if this is expected behaviour or not
-		password = redis.StringValue(db.Security.Password)
-	}
-
-	var sourceIPs []string
-	if len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0" {
-		// The API handles an empty list as ["0.0.0.0/0"] but need to be careful to match the input to avoid Terraform detecting drift
-		if existingSourceIPs.Len() != 0 {
-			sourceIPs = redis.StringSliceValue(db.Security.SourceIPs...)
-		}
-	} else {
-		sourceIPs = redis.StringSliceValue(db.Security.SourceIPs...)
-	}
-
-	tf := map[string]interface{}{
-		"db_id":                                 redis.IntValue(db.ID),
-		"name":                                  redis.StringValue(db.Name),
-		"protocol":                              redis.StringValue(db.Protocol),
-		"memory_limit_in_gb":                    redis.Float64Value(db.MemoryLimitInGB),
-		"support_oss_cluster_api":               redis.BoolValue(db.SupportOSSClusterAPI),
-		"data_persistence":                      redis.StringValue(db.DataPersistence),
-		"data_eviction":                         redis.StringValue(db.DataEvictionPolicy),
-		"replication":                           redis.BoolValue(db.Replication),
-		"throughput_measurement_by":             redis.StringValue(db.ThroughputMeasurement.By),
-		"throughput_measurement_value":          redis.IntValue(db.ThroughputMeasurement.Value),
-		"public_endpoint":                       redis.StringValue(db.PublicEndpoint),
-		"private_endpoint":                      redis.StringValue(db.PrivateEndpoint),
-		"module":                                flattenModules(db.Modules),
-		"alert":                                 flattenAlerts(db.Alerts),
-		"external_endpoint_for_oss_cluster_api": externalOSSAPIEndpoint,
-		"password":                              password,
-		"source_ips":                            sourceIPs,
-		"hashing_policy":                        flattenRegexRules(db.Clustering.RegexRules),
-		"enable_tls":                            redis.Bool(*db.Security.EnableTls),
-	}
-
-	if db.ReplicaOf != nil {
-		tf["replica_of"] = redis.StringSliceValue(db.ReplicaOf.Endpoints...)
-	}
-
-	if redis.BoolValue(db.Security.SSLClientAuthentication) {
-		tf["client_ssl_certificate"] = certificate
-	}
-
-	if averageItemSizeInBytes > 0 {
-		tf["average_item_size_in_bytes"] = averageItemSizeInBytes
-	}
-
-	if backupPath != "" {
-		tf["periodic_backup_path"] = backupPath
-	}
-
-	flattened = append(flattened, tf)
-	return flattened, nil
 }
 
 func flattenAlerts(alerts []*databases.Alert) []map[string]interface{} {
