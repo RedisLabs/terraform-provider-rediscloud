@@ -287,9 +287,6 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	// Create databases
-	var dbs []*subscriptions.CreateDatabase
-
 	// Create Subscription
 	name := d.Get("name").(string)
 
@@ -301,15 +298,24 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 
 	memoryStorage := d.Get("memory_storage").(string)
 
-	// Create dummy databases if a creation_plan is provided
+	// Create databases
+	var dbs []*subscriptions.CreateDatabase
+
 	plan := d.Get("creation_plan")
-	if plan != nil {
-		dbs = buildSubscriptionCreatePlanDatabases(plan)
+	// If no creation plan is specified, create a default one
+	if len(plan.([]interface{})) == 0 {
+		plan = []interface{}{
+			map[string]interface{}{
+				"memory_limit_in_gb":           float64(1),
+				"throughput_measurement_by":    "operations-per-second",
+				"throughput_measurement_value": 10000,
+				"average_item_size_in_bytes":   1,
+				"number_of_databases":          1,
+			},
+		}
 	}
-	// TODO: add else body for when creation_plan is not provided
-	// else {
-	//	buildSubscriptionCreatePlanDatabases([default values for mimimal database])
-	//}
+	// Create dummy databases
+	dbs = buildSubscriptionCreatePlanDatabases(plan)
 
 	createSubscriptionRequest := subscriptions.CreateSubscription{
 		Name:            redis.String(name),
