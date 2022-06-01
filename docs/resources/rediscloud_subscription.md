@@ -178,6 +178,7 @@ Cannot be enabled when `support_oss_cluster_api` is enabled.
 * `module` - (Optional) A module object, documented below
 * `alert` - (Optional) Set of alerts to enable on the database, documented below
 * `data_persistence` - (Optional) Rate of database data persistence (in persistent storage). Default: ‘none’
+* `data_eviction` - (Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru')
 * `password` - (Required) Password used to access the database
 * `replication` - (Optional) Databases replication. Default: ‘true’
 * `throughput_measurement_by` - (Required) Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)

@@ -46,6 +46,7 @@ data "rediscloud_database" "example" {
 database will be a replica of.
 * `alert` - Set of alerts to enable on the database, documented below.
 * `data_persistence` - The rate of database data persistence (in persistent storage).
+* `data_eviction` - The data items eviction policy.
 * `password` - The password used to access the database - not present on `memcached` protocol databases.
 * `replication` - Database replication.
 * `throughput_measurement_by` - The throughput measurement method.
