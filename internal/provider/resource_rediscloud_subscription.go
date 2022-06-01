@@ -242,7 +242,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"memory_limit_in_gb": {
-							Description: "Maximum memory usage for this specific database",
+							Description: "Maximum memory usage for each database",
 							Type:        schema.TypeFloat,
 							Required:    true,
 							ForceNew:    true,
@@ -574,31 +574,29 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 func buildSubscriptionCreatePlanDatabases(plans interface{}) []*subscriptions.CreateDatabase {
 
 	createDatabases := make([]*subscriptions.CreateDatabase, 0)
-	for _, plan := range plans.([]interface{}) {
-		planMap := plan.(map[string]interface{})
+	planMap := plans.([]interface{})[0].(map[string]interface{})
 
-		memoryLimitInGB := planMap["memory_limit_in_gb"].(float64)
-		throughputMeasurementBy := planMap["throughput_measurement_by"].(string)
-		throughputMeasurementValue := planMap["throughput_measurement_value"].(int)
-		averageItemSizeInBytes := planMap["average_item_size_in_bytes"].(int)
-		numberOfDatabases := planMap["number_of_databases"].(int)
+	memoryLimitInGB := planMap["memory_limit_in_gb"].(float64)
+	throughputMeasurementBy := planMap["throughput_measurement_by"].(string)
+	throughputMeasurementValue := planMap["throughput_measurement_value"].(int)
+	averageItemSizeInBytes := planMap["average_item_size_in_bytes"].(int)
+	numberOfDatabases := planMap["number_of_databases"].(int)
 
-		createDatabase := &subscriptions.CreateDatabase{
-			Name:                   redis.String("dummy-database"),
-			Protocol:               redis.String("redis"),
-			MemoryLimitInGB:        redis.Float64(memoryLimitInGB),
-			SupportOSSClusterAPI:   redis.Bool(false),
-			Replication:            redis.Bool(true),
-			DataPersistence:        redis.String("none"),
-			AverageItemSizeInBytes: redis.Int(averageItemSizeInBytes),
-			ThroughputMeasurement: &subscriptions.CreateThroughput{
-				By:    redis.String(throughputMeasurementBy),
-				Value: redis.Int(throughputMeasurementValue),
-			},
-			Quantity: redis.Int(numberOfDatabases),
-		}
-		createDatabases = append(createDatabases, createDatabase)
+	createDatabase := &subscriptions.CreateDatabase{
+		Name:                   redis.String("dummy-database"),
+		Protocol:               redis.String("redis"),
+		MemoryLimitInGB:        redis.Float64(memoryLimitInGB),
+		SupportOSSClusterAPI:   redis.Bool(false),
+		Replication:            redis.Bool(true),
+		DataPersistence:        redis.String("none"),
+		AverageItemSizeInBytes: redis.Int(averageItemSizeInBytes),
+		ThroughputMeasurement: &subscriptions.CreateThroughput{
+			By:    redis.String(throughputMeasurementBy),
+			Value: redis.Int(throughputMeasurementValue),
+		},
+		Quantity: redis.Int(numberOfDatabases),
 	}
+	createDatabases = append(createDatabases, createDatabase)
 	return createDatabases
 }
 
