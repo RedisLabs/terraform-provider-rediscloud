@@ -316,18 +316,6 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	var dbs []*subscriptions.CreateDatabase
 
 	plan := d.Get("creation_plan")
-	// If no creation plan is specified, create a default one
-	if len(plan.([]interface{})) == 0 {
-		plan = []interface{}{
-			map[string]interface{}{
-				"memory_limit_in_gb":           float64(1),
-				"throughput_measurement_by":    "operations-per-second",
-				"throughput_measurement_value": 10000,
-				"average_item_size_in_bytes":   1,
-				"quantity":                     1,
-			},
-		}
-	}
 	// Create dummy databases
 	dbs = buildSubscriptionCreatePlanDatabases(plan)
 
