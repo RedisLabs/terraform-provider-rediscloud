@@ -271,7 +271,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							// specified. SDK's catch-all issue around this: https://github.com/hashicorp/terraform-plugin-sdk/issues/261
 							Default: 0,
 						},
-						"number_of_databases": {
+						"quantity": {
 							Description: "The planned number of databases",
 							Type:        schema.TypeInt,
 							Optional:    true,
@@ -317,7 +317,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 				"throughput_measurement_by":    "operations-per-second",
 				"throughput_measurement_value": 10000,
 				"average_item_size_in_bytes":   1,
-				"number_of_databases":          1,
+				"quantity":          1,
 			},
 		}
 	}
@@ -580,7 +580,7 @@ func buildSubscriptionCreatePlanDatabases(plans interface{}) []*subscriptions.Cr
 	throughputMeasurementBy := planMap["throughput_measurement_by"].(string)
 	throughputMeasurementValue := planMap["throughput_measurement_value"].(int)
 	averageItemSizeInBytes := planMap["average_item_size_in_bytes"].(int)
-	numberOfDatabases := planMap["number_of_databases"].(int)
+	quantity := planMap["quantity"].(int)
 
 	createDatabase := &subscriptions.CreateDatabase{
 		Name:                   redis.String("dummy-database"),
@@ -594,7 +594,7 @@ func buildSubscriptionCreatePlanDatabases(plans interface{}) []*subscriptions.Cr
 			By:    redis.String(throughputMeasurementBy),
 			Value: redis.Int(throughputMeasurementValue),
 		},
-		Quantity: redis.Int(numberOfDatabases),
+		Quantity: redis.Int(quantity),
 	}
 	createDatabases = append(createDatabases, createDatabase)
 	return createDatabases
