@@ -29,33 +29,9 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
 
 		Importer: &schema.ResourceImporter{
-			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-				subId, dbId, err := toSubscriptionId(d.Id())
-				if err != nil {
-					return nil, err
-				}
-
-				// Populate the names of databases that already exist so that `flattenDatabase` can iterate over them
-				// The READ operation is triggered after IMPORT, so let it handle flattening the db.
-				api := meta.(*apiClient)
-				db, err := api.client.Database.Get(ctx, subId, dbId)
-
-				var dbs []map[string]interface{}
-				dbs = append(dbs, map[string]interface{}{
-					"db_id": redis.Int(*db.ID),
-				})
-
-				if err != nil {
-					d.SetId("")
-					return nil, err
-				}
-				if err := d.Set("database", dbs); err != nil {
-					return nil, err
-				}
-
-				return []*schema.ResourceData{d}, nil
-			},
-		},
+		  // Let the READ operation do the heavy lifting for importing values from the API.
+	      StateContext: schema.ImportStatePassthroughContext,
+	    },
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(30 * time.Minute),
@@ -234,11 +210,14 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Description: "Information about the planned databases used to optimise the database infrastructure. This information is only used when creating a new subscription and any changes will be ignored after this.",
 				Type:        schema.TypeList,
 				MaxItems:    1,
-				Required:    true,
-				// TODO: diff suppress func is causing problems (i.e. plan = {})
-				// DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-				// 	return !(old == "")
-				// },
+				// The field is required when the user provisions a new subscription.
+				// The block is ignored in the UPDATE operation and after IMPORTing the resource.
+				// Custom validation is handled in the CREATE operation.
+				Optional:    true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					// Ignore further changes in the creation_plan block.
+					return !(old == "")
+				},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"memory_limit_in_gb": {
@@ -315,9 +294,15 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	// Create databases
 	var dbs []*subscriptions.CreateDatabase
 
-	plan := d.Get("creation_plan")
+	plan := d.Get("creation_plan").([]interface{})
+	
+	if len(plan) == 0 {
+		return diag.Errorf(`The "creation_plan" block is required.`)
+	}
+	
 	// Create dummy databases
-	dbs = buildSubscriptionCreatePlanDatabases(plan)
+	planMap := plan[0].(map[string]interface{})
+	dbs = buildSubscriptionCreatePlanDatabases(planMap)
 
 	createSubscriptionRequest := subscriptions.CreateSubscription{
 		Name:            redis.String(name),
@@ -566,10 +551,9 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 	return createCloudProviders, nil
 }
 
-func buildSubscriptionCreatePlanDatabases(plans interface{}) []*subscriptions.CreateDatabase {
+func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*subscriptions.CreateDatabase {
 
 	createDatabases := make([]*subscriptions.CreateDatabase, 0)
-	planMap := plans.([]interface{})[0].(map[string]interface{})
 
 	memoryLimitInGB := planMap["memory_limit_in_gb"].(float64)
 	throughputMeasurementBy := planMap["throughput_measurement_by"].(string)
