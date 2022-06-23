@@ -577,7 +577,7 @@ func buildSubscriptionCreatePlanDatabases(plans interface{}) []*subscriptions.Cr
 	averageItemSizeInBytes := planMap["average_item_size_in_bytes"].(int)
 	quantity := planMap["quantity"].(int)
 	supportOSSClusterAPI := planMap["support_oss_cluster_api"].(bool)
-	replication := planMap["Replication"].(bool)
+	replication := planMap["replication"].(bool)
 
 	createDatabase := &subscriptions.CreateDatabase{
 		Name:                   redis.String("dummy-database"),
