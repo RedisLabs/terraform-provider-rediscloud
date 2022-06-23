@@ -234,7 +234,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Description: "Information about the planned databases used to optimise the database infrastructure. This information is only used when creating a new subscription and any changes will be ignored after this.",
 				Type:        schema.TypeList,
 				MaxItems:    1,
-				Optional:    true,
+				Required:    true,
 				// TODO: diff suppress func is causing problems (i.e. plan = {})
 				// DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 				// 	return !(old == "")
@@ -329,7 +329,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 				"throughput_measurement_by":    "operations-per-second",
 				"throughput_measurement_value": 10000,
 				"average_item_size_in_bytes":   1,
-				"quantity":          1,
+				"quantity":                     1,
 			},
 		}
 	}
