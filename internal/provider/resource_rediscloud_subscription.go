@@ -278,6 +278,12 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							ForceNew:    true,
 							Default:     1,
 						},
+						"support_oss_cluster_api": {
+							Description: "Support Redis open-source (OSS) Cluster API",
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Default:     false,
+						},
 					},
 				},
 			},
@@ -581,12 +587,13 @@ func buildSubscriptionCreatePlanDatabases(plans interface{}) []*subscriptions.Cr
 	throughputMeasurementValue := planMap["throughput_measurement_value"].(int)
 	averageItemSizeInBytes := planMap["average_item_size_in_bytes"].(int)
 	quantity := planMap["quantity"].(int)
+	supportOSSClusterAPI := planMap["support_oss_cluster_api"].(bool)
 
 	createDatabase := &subscriptions.CreateDatabase{
 		Name:                   redis.String("dummy-database"),
 		Protocol:               redis.String("redis"),
 		MemoryLimitInGB:        redis.Float64(memoryLimitInGB),
-		SupportOSSClusterAPI:   redis.Bool(false),
+		SupportOSSClusterAPI:   redis.Bool(supportOSSClusterAPI),
 		Replication:            redis.Bool(true),
 		DataPersistence:        redis.String("none"),
 		AverageItemSizeInBytes: redis.Int(averageItemSizeInBytes),
