@@ -284,6 +284,12 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Optional:    true,
 							Default:     false,
 						},
+						"replication": {
+							Description: "Databases replication",
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Default:     true,
+						},
 					},
 				},
 			},
@@ -588,13 +594,14 @@ func buildSubscriptionCreatePlanDatabases(plans interface{}) []*subscriptions.Cr
 	averageItemSizeInBytes := planMap["average_item_size_in_bytes"].(int)
 	quantity := planMap["quantity"].(int)
 	supportOSSClusterAPI := planMap["support_oss_cluster_api"].(bool)
+	replication := planMap["Replication"].(bool)
 
 	createDatabase := &subscriptions.CreateDatabase{
 		Name:                   redis.String("dummy-database"),
 		Protocol:               redis.String("redis"),
 		MemoryLimitInGB:        redis.Float64(memoryLimitInGB),
 		SupportOSSClusterAPI:   redis.Bool(supportOSSClusterAPI),
-		Replication:            redis.Bool(true),
+		Replication:            redis.Bool(replication),
 		DataPersistence:        redis.String("none"),
 		AverageItemSizeInBytes: redis.Int(averageItemSizeInBytes),
 		ThroughputMeasurement: &subscriptions.CreateThroughput{
