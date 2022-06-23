@@ -250,17 +250,15 @@ func resourceRedisCloudSubscription() *schema.Resource {
 						"throughput_measurement_by": {
 							Description:      "Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)",
 							Type:             schema.TypeString,
-							Optional:         true,
+							Required:         true,
 							ForceNew:         true,
 							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice([]string{"number-of-shards", "operations-per-second"}, false)),
-							Default:          "operations-per-second",
 						},
 						"throughput_measurement_value": {
 							Description: "Throughput value (as applies to selected measurement method)",
 							Type:        schema.TypeInt,
-							Optional:    true,
+							Required:    true,
 							ForceNew:    true,
-							Default:     10000,
 						},
 						"average_item_size_in_bytes": {
 							Description: "Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes) of the items stored in the database",
@@ -274,21 +272,18 @@ func resourceRedisCloudSubscription() *schema.Resource {
 						"quantity": {
 							Description: "The planned number of databases",
 							Type:        schema.TypeInt,
-							Optional:    true,
+							Required:    true,
 							ForceNew:    true,
-							Default:     1,
 						},
 						"support_oss_cluster_api": {
 							Description: "Support Redis open-source (OSS) Cluster API",
 							Type:        schema.TypeBool,
-							Optional:    true,
-							Default:     false,
+							Required:    true,
 						},
 						"replication": {
 							Description: "Databases replication",
 							Type:        schema.TypeBool,
-							Optional:    true,
-							Default:     true,
+							Required:    true,
 						},
 					},
 				},
@@ -602,7 +597,6 @@ func buildSubscriptionCreatePlanDatabases(plans interface{}) []*subscriptions.Cr
 		MemoryLimitInGB:        redis.Float64(memoryLimitInGB),
 		SupportOSSClusterAPI:   redis.Bool(supportOSSClusterAPI),
 		Replication:            redis.Bool(replication),
-		DataPersistence:        redis.String("none"),
 		AverageItemSizeInBytes: redis.Int(averageItemSizeInBytes),
 		ThroughputMeasurement: &subscriptions.CreateThroughput{
 			By:    redis.String(throughputMeasurementBy),
