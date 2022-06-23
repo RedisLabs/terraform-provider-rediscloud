@@ -215,8 +215,11 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				// Custom validation is handled in the CREATE operation.
 				Optional:    true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					// Ignore further changes in the creation_plan block.
-					return !(old == "")
+					if d.Id() == "" {
+						// We don't want to ignore the block if the resource is about to be created.
+						return false
+					}
+					return true
 				},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -224,26 +227,22 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Description: "Maximum memory usage for each database",
 							Type:        schema.TypeFloat,
 							Required:    true,
-							ForceNew:    true,
 						},
 						"throughput_measurement_by": {
 							Description:      "Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)",
 							Type:             schema.TypeString,
 							Required:         true,
-							ForceNew:         true,
 							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice([]string{"number-of-shards", "operations-per-second"}, false)),
 						},
 						"throughput_measurement_value": {
 							Description: "Throughput value (as applies to selected measurement method)",
 							Type:        schema.TypeInt,
 							Required:    true,
-							ForceNew:    true,
 						},
 						"average_item_size_in_bytes": {
 							Description: "Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes) of the items stored in the database",
 							Type:        schema.TypeInt,
 							Optional:    true,
-							ForceNew:    true,
 							// Setting default to 0 so that the hash func produces the same hash when this field is not
 							// specified. SDK's catch-all issue around this: https://github.com/hashicorp/terraform-plugin-sdk/issues/261
 							Default: 0,
@@ -252,7 +251,6 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Description: "The planned number of databases",
 							Type:        schema.TypeInt,
 							Required:    true,
-							ForceNew:    true,
 						},
 						"support_oss_cluster_api": {
 							Description: "Support Redis open-source (OSS) Cluster API",
