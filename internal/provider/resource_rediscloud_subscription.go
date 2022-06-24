@@ -210,8 +210,8 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Description: "Information about the planned databases used to optimise the database infrastructure. This information is only used when creating a new subscription and any changes will be ignored after this.",
 				Type:        schema.TypeList,
 				MaxItems:    1,
-				// The field is required when the user provisions a new subscription.
-				// The block is ignored in the UPDATE operation and after IMPORTing the resource.
+				// The block is required when the user provisions a new subscription.
+				// The block is ignored in the UPDATE operation or after IMPORTing the resource.
 				// Custom validation is handled in the CREATE operation.
 				Optional:    true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
@@ -251,6 +251,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Description: "The planned number of databases",
 							Type:        schema.TypeInt,
 							Required:    true,
+							ValidateFunc: validation.IntAtLeast(1),
 						},
 						"support_oss_cluster_api": {
 							Description: "Support Redis open-source (OSS) Cluster API",
