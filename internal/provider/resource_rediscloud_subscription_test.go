@@ -12,7 +12,6 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -22,33 +21,34 @@ var contractFlag = flag.Bool("contract", false,
 var marketplaceFlag = flag.Bool("marketplace", false,
 	"Add this flag '-marketplace' to run tests for marketplace associated accounts")
 
-func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
+func TestAccResourceRedisCloudSubscription(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	password := acctest.RandString(20)
 	resourceName := "rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	var subId int
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDb, testCloudAccountName, name, 1, password),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscription, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
 					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
-					resource.TestCheckResourceAttr(resourceName, "database.#", "1"),
-					resource.TestMatchResourceAttr(resourceName, "database.0.db_id", regexp.MustCompile("^[1-9][0-9]*$")),
-					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
-					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
-					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
-					resource.TestCheckResourceAttr(resourceName, "database.0.data_eviction", "volatile-lru"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.replication", "false"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.throughput_measurement_by", "operations-per-second"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.throughput_measurement_value", "10000"),
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
 
@@ -68,22 +68,44 @@ func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
 						}
 
-						listDb := client.client.Database.List(context.TODO(), subId)
-						if listDb.Next() != true {
-							return fmt.Errorf("no database found: %s", listDb.Err())
-						}
-						if listDb.Err() != nil {
-							return listDb.Err()
-						}
+						// TODO: Check if the dummy databases were deleted and separate dbs are attached to the subscription
+						//listDb := client.client.Database.List(context.TODO(), subId)
+						//if listDb.Next() != true {
+						//	return fmt.Errorf("no database found: %s", listDb.Err())
+						//}
+						//if listDb.Err() != nil {
+						//	return listDb.Err()
+						//}
 
 						return nil
 					},
 				),
 			},
 			{
+				// Checks if the changes in the creation plan are ignored.
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionNoCreationPlan, testCloudAccountName, name),
+                Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.replication", "false"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.throughput_measurement_by", "operations-per-second"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.throughput_measurement_value", "10000"),
+				),
+			},
+			{
+				// Checks if the creation_plan block is ignored after the IMPORT operation.
 				ResourceName:      resourceName,
 				ImportState:       true,
-				ImportStateVerify: true,
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					creationPlan := states[0].Attributes["creation_plan.#"]
+					if creationPlan != "0" {
+						return fmt.Errorf("Unexpected creation_plan block. Should be 0, instead of  %s", creationPlan)
+					}
+					return nil
+				},
 			},
 		},
 	})
@@ -109,7 +131,7 @@ func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T)
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDb, testCloudAccountName, name, 1, password),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscription, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -196,7 +218,7 @@ func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T)
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDb, testCloudAccountName, name, 2, password),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscription, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "database.#", "1"),
@@ -248,8 +270,6 @@ func TestAccResourceRedisCloudSubscription_AddAdditionalDatabaseWithModule(t *te
 	}
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	password := acctest.RandString(20)
-	password2 := acctest.RandString(20)
 	resourceName := "rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -259,16 +279,14 @@ func TestAccResourceRedisCloudSubscription_AddAdditionalDatabaseWithModule(t *te
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDb, testCloudAccountName, name, 1, password),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscription, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
-					resource.TestCheckResourceAttr(resourceName, "database.#", "1"),
-					resource.TestMatchResourceAttr(resourceName, "database.0.db_id", regexp.MustCompile("^[1-9][0-9]*$")),
-					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionTwoDbWithModule, testCloudAccountName, name, 2, password, password2),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscription, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "database.#", "2"),
@@ -443,14 +461,9 @@ func testAccCheckSubscriptionDestroy(s *terraform.State) error {
 	return nil
 }
 
-// A simple Set function to generate a hash based on two attributes.
-func testSetFunc(v interface{}) int {
-	m := v.(map[string]interface{})
-	result := fmt.Sprintf("%s%d", m["name"].(string), m["memory_limit_in_gb"].(int))
-	return schema.HashString(result)
-}
 
-const testAccResourceRedisCloudSubscriptionOneDb = `
+// TF config for provisioning a new subscription.
+const testAccResourceRedisCloudSubscription = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
@@ -481,21 +494,52 @@ resource "rediscloud_subscription" "example" {
     }
   }
 
-  database {
-    name = "tf-database"
-    protocol = "redis"
-    memory_limit_in_gb = %d
-    support_oss_cluster_api = true
-    data_persistence = "none"
-	data_eviction = "volatile-lru"
-    replication = false
+  creation_plan {
+    memory_limit_in_gb = 1
     throughput_measurement_by = "operations-per-second"
-    password = "%s"
     throughput_measurement_value = 10000
-    source_ips = ["10.0.0.0/8"]
+    average_item_size_in_bytes = 1
+    quantity = 1
+    replication=false
+    support_oss_cluster_api=false
   }
 }
 `
+
+// TF config for provisioning a subscription without the creation_plan block.
+const testAccResourceRedisCloudSubscriptionNoCreationPlan = `
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS"
+  name = "%s"
+}
+
+resource "rediscloud_subscription" "example" {
+
+  name = "%s"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  memory_storage = "ram"
+
+  allowlist {
+    cidrs = ["192.168.0.0/16"]
+  }
+
+  cloud_provider {
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region = "eu-west-1"
+      networking_deployment_cidr = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+}
+`
+
 
 const testAccResourceRedisCloudSubscriptionTwoDbs = `
 data "rediscloud_payment_method" "card" {
