@@ -69,14 +69,19 @@ func TestAccResourceRedisCloudSubscription(t *testing.T) {
 						}
 
 						// TODO: Check if the dummy databases were deleted and separate dbs are attached to the subscription
-						//listDb := client.client.Database.List(context.TODO(), subId)
-						//if listDb.Next() != true {
-						//	return fmt.Errorf("no database found: %s", listDb.Err())
-						//}
-						//if listDb.Err() != nil {
-						//	return listDb.Err()
-						//}
-
+						listDb := client.client.Database.List(context.TODO(), subId)
+						if listDb.Next() != true {
+							return fmt.Errorf("no database found: %s", listDb.Err())
+						}
+						if listDb.Err() != nil {
+							return listDb.Err()
+						}
+						
+					dbName :=	*listDb.Value().Name
+					expectedDbName := "tf-database-1"
+					if dbName != expectedDbName {
+						return fmt.Errorf("incorrect database in subId (%d): Expected %s, got %s", subId, expectedDbName, dbName)
+					}
 						return nil
 					},
 				),
@@ -504,6 +509,21 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api=false
   }
 }
+
+resource "rediscloud_database" "first_database" {
+    subscription_id = rediscloud_subscription.example.id
+    name = "tf-database-1"
+    protocol = "redis"
+    memory_limit_in_gb = 1
+    data_persistence = "none"
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 10000
+    password = "salted-and-encrypted-banana"
+    alert {
+      name = "dataset-size"
+      value = 40
+    }
+}
 `
 
 // TF config for provisioning a subscription without the creation_plan block.
@@ -538,6 +558,22 @@ resource "rediscloud_subscription" "example" {
     }
   }
 }
+
+resource "rediscloud_database" "first_database" {
+    subscription_id = rediscloud_subscription.example.id
+    name = "tf-database-1"
+    protocol = "redis"
+    memory_limit_in_gb = 1
+    data_persistence = "none"
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 10000
+    password = "salted-and-encrypted-banana"
+    alert {
+      name = "dataset-size"
+      value = 40
+    }
+}
+
 `
 
 

@@ -7,8 +7,7 @@ import (
 	"log"
 	"regexp"
 	"strconv"
-	"strings"
-	"time"
+		"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
@@ -355,7 +354,7 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 
 	var diags diag.Diagnostics
 
-	subId, _, err := toSubscriptionId(d.Id())
+	subId, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -838,32 +837,4 @@ func readPaymentMethodID(d *schema.ResourceData) (*int, error) {
 		return redis.Int(pmID), nil
 	}
 	return nil, nil
-}
-
-func toSubscriptionId(id string) (int, int, error) {
-	parts := strings.Split(id, "/")
-
-	if len(parts) > 2 {
-		return 0, 0, fmt.Errorf("invalid id: %s", id)
-	}
-
-	if len(parts) == 1 {
-		subId, err := strconv.Atoi(parts[0])
-		if err != nil {
-			return 0, 0, err
-		}
-		return subId, 0, nil
-	}
-
-	subId, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return 0, 0, err
-	}
-
-	dbId, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return 0, 0, err
-	}
-
-	return subId, dbId, nil
 }
