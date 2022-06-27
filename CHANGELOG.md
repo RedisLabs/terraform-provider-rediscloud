@@ -7,6 +7,9 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 ### Added
 - Added the creation_plan block in the subscription resource schema.
 
+### Removed
+- Removed the database block from the subscription resource schema.
+
 ## 0.3.0 (May 24 2022)
 
 ### Added
