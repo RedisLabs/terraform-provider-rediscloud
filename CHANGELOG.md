@@ -6,6 +6,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 - Added the creation_plan block in the subscription resource schema.
+- Multi-modules: Added the "modules" attribute into the creation_plan block 
 
 ### Removed
 - Removed the database block from the subscription resource schema.

@@ -43,6 +43,9 @@ func TestAccResourceRedisCloudSubscription(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.0", "RedisJSON"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.1", "RedisBloom"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.replication", "false"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "false"),
@@ -233,13 +236,14 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    memory_limit_in_gb = 1
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
     average_item_size_in_bytes = 1
+    memory_limit_in_gb = 1
+    modules = ["RedisJSON", "RedisBloom"]
     quantity = 1
     replication=false
     support_oss_cluster_api=false
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 10000
   }
 }
 `

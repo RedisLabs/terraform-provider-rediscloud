@@ -101,6 +101,8 @@ The `creation_plan` block supports:
 * `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes)
 of the items stored in the database. Default: 0
+* `modules` - (Optional) a list of modules that will be used in the databases 
+under this subscription. For example: `modules = ["RedisJSON", RedisBloom"]`.
 
 The cloud_provider `region` block supports:
 
