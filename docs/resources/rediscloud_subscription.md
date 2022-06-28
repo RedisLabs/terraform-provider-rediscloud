@@ -95,14 +95,13 @@ The `creation_plan` block supports:
 
 * `memory_limit_in_gb` - (Required) Maximum memory usage for the initial databases
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
-* `modules` - (Optional) A list of modules.
 * `replication` - (Required) Databases replication.
 * `throughput_measurement_by` - (Required) Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)
 * `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes)
 of the items stored in the database. Default: 0
-* `modules` - (Optional) a list of modules that will be used in the databases 
-under this subscription. For example: `modules = ["RedisJSON", RedisBloom"]`.
+* `modules` - (Optional) a list of modules that will be used by the databases under this subscription. 
+Example: `modules = ["RedisJSON", RedisBloom"]`.
 
 The cloud_provider `region` block supports:
 
