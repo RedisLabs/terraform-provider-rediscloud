@@ -97,6 +97,7 @@ The `creation_plan` block supports:
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `modules` - (Optional) a list of modules that will be used by the databases in this subscription. 
 Example: `modules = ["RedisJSON", RedisBloom"]`.
+* `quantity` - (Required) The planned number of databases.
 * `replication` - (Required) Databases replication.
 * `throughput_measurement_by` - (Required) Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)
 * `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
