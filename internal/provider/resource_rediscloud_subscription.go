@@ -263,7 +263,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Required:    true,
 						},
 						"modules": {
-							Description: "Modules for the databases",
+							Description: "Modules that will be used by the databases in this subscription.",
 							Type:        schema.TypeList,
 							Optional:    true,
 							Elem: &schema.Schema{
