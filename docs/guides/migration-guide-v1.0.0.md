@@ -25,7 +25,7 @@ Those enhancements are described below:
   `database` block inside the subscription resource. A `TypeSet` was used by the `database` attribute where an index
   value of the block is calculated by the hash of the attributes. That means, if you change an attribute inside the
   block, then Terraform would produce the misleading plan telling you that the whole database is going to be recreated.
-  However, under the hood, the provider doesn't delete the database and just updates the attributes unless the `name`
+  However, under the hood, the provider doesn't delete the database and only updates its properties unless the `name`
   attribute was changed. In order to fix this, the database block has been moved to a separate resource.
 * **Separate database resource**: In order to fix the misleading plan, the database block has been moved to a separate
   resource. This allows the user to take greater control over the database resource. That is:
