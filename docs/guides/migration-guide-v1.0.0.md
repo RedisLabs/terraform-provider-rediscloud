@@ -38,8 +38,7 @@ Those enhancements are described below:
 
 ## Run migration
 
-The breaking changes were introduced in version `1.0.0` of the provider. More specifically,
-the `rediscloud_subscription` no longer supports the `database` block, and a new block called `creation_plan` has been
+The `rediscloud_subscription` no longer supports the `database` block, and a new block called `creation_plan` has been
 introduced. In this case, you only need to modify your existing `rediscloud_subscription` schema and create a new
 resource called `rediscloud_database` for each of your databases in the subscription.
 
@@ -92,7 +91,7 @@ resource "rediscloud_subscription" "example" {
 To use the latest schema, you need to modify the `rediscloud_subscription` resource and add new `rediscloud_database`
 resources for your databases. Like so:
 
-* New configuration (>= `1.0.0`).
+* New configuration (>= `1.0.0`):
 
   ```hcl
   terraform {
@@ -130,9 +129,10 @@ resources for your databases. Like so:
   }
 
   // The database block has been moved to a separate resource - rediscloud_database.
+  // The attributes of the database are the same as the ones in the database block in the old subscription resource schema. 
+  // With the exception of the `subscription_id` attribute.
   resource "rediscloud_database" "first_database" {
-      // The attributes of the database are the same as the ones in the database block in the subscription resource. 
-      // With the exception of the `subscription_id` attribute.
+      // Attach the database to the subscription.
       subscription_id = rediscloud_subscription.example.id
       name = "tf-example-database"
       protocol = "redis"
