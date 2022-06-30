@@ -47,7 +47,7 @@ The `rediscloud_subscription` no longer supports the `database` block, and a new
 introduced. In this case, you only need to modify your existing `rediscloud_subscription` schema and create a new
 resource called `rediscloud_database` for each of your databases in the subscription.
 
-~> **Note**: If you want to create a new subscription, then the `creation_plan` block is required.
+~> **Note:** If you want to create a new subscription, then the `creation_plan` block is required.
 
 Here is an example of an old Terraform configuration:
 
