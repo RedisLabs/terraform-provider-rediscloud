@@ -5,8 +5,7 @@ subcategory: "Guides"
 
 # Migrating to version v1.0.0
 
-This guide is for the users who want to migrate their old Terraform configurations (`RedisLabs/rediscloud` `< v1.0.0`)
-to the latest version.
+This guide is for the users who want to migrate their old Terraform configurations to `v1.0.0`.
 
 The migration is safe, simple and will not alter any of the existing resources in your infrastructure.
 The process is as follows:
@@ -17,7 +16,7 @@ The process is as follows:
 
 ## Why would I want to migrate?
 
-The version `>= 1.0.0` of the provider contains breaking changes in the schemas.
+The version `v1.0.0` of the provider contains breaking changes in the schemas.
 However, those changes help to improve the user experience and database management.
 Those enhancements are described below:
 
