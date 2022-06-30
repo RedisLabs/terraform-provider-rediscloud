@@ -1,9 +1,9 @@
 ---
-page_title: "Upgrading to version v1.0.0"
-subcategory: "Migration"
+page_title: "Migrating to version v1.0.0"
+subcategory: "Guides"
 ---
 
-# Migration guide
+# Migrating to version v1.0.0
 
 This guide is for the users who want to migrate their old Terraform configurations (`RedisLabs/rediscloud` `< v1.0.0`)
 to the latest version.
@@ -33,7 +33,7 @@ Those enhancements are described below:
   * importing specific databases in the state,
   * simpler database management through the provider.
 
-## Prerequisites:
+## Prerequisites
 
 * The RedisCloud provider `>= 1.0.0`.
 * Backup your Terraform state: Make sure you have a backup of your state before you start the migration.
