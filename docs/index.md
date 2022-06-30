@@ -42,44 +42,55 @@ This can also be set by the `REDISCLOUD_URL` environment variable.
 * `secret_key` - (Optional) This is the Redis Enterprise Cloud API secret key. It must be provided but can also be set
 by the `REDISCLOUD_SECRET_KEY` environment variable.
 
-
 # Migration guide
 
-
-This guide is for the users who want to migrate their old Terraform configurations (`RedisLabs/rediscloud` `< v1.0.0`) to the latest version.
+This guide is for the users who want to migrate their old Terraform configurations (`RedisLabs/rediscloud` `< v1.0.0`)
+to the latest version.
 
 The migration is safe, simple and will not alter any of the existing resources in your infrastructure.
 The process is as follows:
+
 1. Update your HCL files to use the latest version of the schemas for your subscriptions and databases.
 2. Import your resources into a new Terraform state file.
 3. Verify that the resources are imported correctly.
 
 ## Why would I want to migrate?
+
 The version `>= 1.0.0` of the provider contains breaking changes in the schemas.
-However, those changes help to improve the user experience and database management. 
+However, those changes help to improve the user experience and database management.
 Those enhancements are described below:
-* **Fixed the misleading plan**: In the old versions of the provider, the databases could be created in the 
-`database` block inside the subscription resource. A `TypeSet` was used by the `database` attribute where an index value of the block is calculated by the hash of the attributes. That means, if you change an attribute inside the block, then Terraform would produce the misleading plan telling you that the whole database is going to be recreated. However, under the hood the provider doesn't delete the database and just updates the attributes, unless the `name` attribute was changed. In order to fix this, the database block has been moved to a separate resource. 
-* **Separate database resource**: In order to fix the misleading plan, the database block has been moved to a separate resource. This allows the user to take a greater control over the database resource. That is:
-  * easier access to the attributes of the database, 
+
+* **Fixed the misleading plan**: In the old versions of the provider, the databases could be created in the
+  `database` block inside the subscription resource. A `TypeSet` was used by the `database` attribute where an index
+  value of the block is calculated by the hash of the attributes. That means, if you change an attribute inside the
+  block, then Terraform would produce the misleading plan telling you that the whole database is going to be recreated.
+  However, under the hood, the provider doesn't delete the database and just updates the attributes unless the `name`
+  attribute was changed. In order to fix this, the database block has been moved to a separate resource.
+* **Separate database resource**: In order to fix the misleading plan, the database block has been moved to a separate
+  resource. This allows the user to take greater control over the database resource. That is:
+  * easier access to the attributes of the database,
   * importing specific databases in the state,
   * simpler database management through the provider.
 
-
 ## Prerequisites:
+
 * The RedisCloud provider `>= 1.0.0`.
 * Backup your Terraform state: Make sure you have a backup of your state before you start the migration.
 * Access to the Redis Cloud API: Make sure that the provider can connect to RedisCloud.
-* Empty state file: Make sure to run the migration with an empty state file. You can do that by creating a new directory with your Terraform configuration files. 
-
+* Empty state file: Make sure to run the migration with an empty state file. You can do that by creating a new directory
+  with your Terraform configuration files.
 
 ## Run migration
 
-The breaking changes were introduced in the version `1.0.0` of the provider. More specifically, the `rediscloud_subscription` no longer supports the `database` block, and a new block called `creation_plan` has been introduced. In this case, you only need to modify your existing `rediscloud_subscription` schema and create a new resource called `rediscloud_database` for each of your database in the subscription.
+The breaking changes were introduced in version `1.0.0` of the provider. More specifically,
+the `rediscloud_subscription` no longer supports the `database` block, and a new block called `creation_plan` has been
+introduced. In this case, you only need to modify your existing `rediscloud_subscription` schema and create a new
+resource called `rediscloud_database` for each of your databases in the subscription.
 
 **Note**: If you want to create a new subscription, then the `creation_plan` block is required.
 
 Here is an example of an old Terraform configuration:
+
 ```hcl
 terraform {
   required_providers {
@@ -97,31 +108,33 @@ data "rediscloud_payment_method" "card" {
 // This resource needs to be updated to the new schema
 resource "rediscloud_subscription" "example" {
 
-  name = "example"
-  payment_method = "credit-card"
+  name              = "example"
+  payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
+  memory_storage    = "ram"
 
-  cloud_provider {...}
+  cloud_provider { ... }
 
   // This block will be migrated to a separate resource
   database {
-    name = "tf-example-database"
-    protocol = "redis"
-    memory_limit_in_gb = 1
-    data_persistence = "none"
-    throughput_measurement_by = "operations-per-second"
+    name                         = "tf-example-database"
+    protocol                     = "redis"
+    memory_limit_in_gb           = 1
+    data_persistence             = "none"
+    throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 10000
-    password = "encrypted-password-0"
+    password                     = "encrypted-password-0"
 
     alert {
-      name = "dataset-size"
+      name  = "dataset-size"
       value = 40
     }
   }
 }
 ```
-To use the latest schema, you need to modify the `rediscloud_subscription` resource and add new `rediscloud_database` resources for your databases. Like so:
+
+To use the latest schema, you need to modify the `rediscloud_subscription` resource and add new `rediscloud_database`
+resources for your databases. Like so:
 
 * New configuration (>= `1.0.0`).
 
@@ -191,7 +204,8 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
     # Import the database resource. The last argument contains the subscription id and the database id separated by a slash.
     terraform import rediscloud_database.first_database <subscription id>/<database id>;
     ```
-    **OPTIONAL**: If you have other resources like `rediscloud_cloud_account` or `rediscloud_subscription_peering`, then you can import them as well:
+   **OPTIONAL**: If you have other resources like `rediscloud_cloud_account` or `rediscloud_subscription_peering`, then
+   you can import them as well:
      ```bash
      # Import rediscloud_cloud_account
      terraform import rediscloud_cloud_account.cloud_example <cloud account id>;
@@ -208,7 +222,8 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
     terraform state show rediscloud_subscription.example;
     terraform state show rediscloud_database.first_database;
     ```
-    **OPTIONAL**: If you have other resources like `rediscloud_cloud_account` or `rediscloud_subscription_peering`, then you can check if they are valid:
+   **OPTIONAL**: If you have other resources like `rediscloud_cloud_account` or `rediscloud_subscription_peering`, then
+   you can check if they are valid:
      ```bash
      # Check if the cloud account resource is valid
      terraform state show rediscloud_cloud_account.cloud_example;
