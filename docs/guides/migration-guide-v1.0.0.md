@@ -11,7 +11,7 @@ to the latest version.
 The migration is safe, simple and will not alter any of the existing resources in your infrastructure.
 The process is as follows:
 
-1. Update your HCL files to use the latest version of the schemas for your subscriptions and databases.
+1. Update your HCL files to use the latest version of the schemas for your subscription and database resources.
 2. Import your resources into a new Terraform state file.
 3. Verify that the resources are imported correctly.
 
@@ -47,7 +47,7 @@ The `rediscloud_subscription` no longer supports the `database` block, and a new
 introduced. In this case, you only need to modify your existing `rediscloud_subscription` schema and create a new
 resource called `rediscloud_database` for each of your databases in the subscription.
 
-**Note**: If you want to create a new subscription, then the `creation_plan` block is required.
+~> **Note**: If you want to create a new subscription, then the `creation_plan` block is required.
 
 Here is an example of an old Terraform configuration:
 
