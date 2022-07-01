@@ -26,7 +26,7 @@ Those enhancements are described below:
   block, then Terraform would produce the misleading plan telling you that the whole database is going to be recreated.
   However, under the hood, the provider doesn't delete the database and only updates its properties unless the `name`
   attribute was changed. In order to fix this, the database block has been moved to a separate resource.
-* **Separate database resource**: In order to fix the misleading plan, the database block has been moved to a separate
+* **Separate database resource**: As mentioned, the database block has been moved to a separate
   resource. This allows the user to take greater control over the database resource. That is:
   * easier access to the attributes of the database,
   * importing specific databases in the state,
