@@ -94,6 +94,12 @@ func resourceRedisCloudDatabase() *schema.Resource {
 				Optional:    true,
 				Default:     "none",
 			},
+			"data_eviction": {
+				Description: "(Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru')",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "volatile-lru",
+			},
 			"replication": {
 				Description: "Databases replication",
 				Type:        schema.TypeBool,
@@ -104,6 +110,7 @@ func resourceRedisCloudDatabase() *schema.Resource {
 				Description:      "Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)",
 				Type:             schema.TypeString,
 				Required:         true,
+				ForceNew:         true,
 				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice([]string{"number-of-shards", "operations-per-second"}, false)),
 			},
 			"throughput_measurement_value": {
@@ -122,8 +129,9 @@ func resourceRedisCloudDatabase() *schema.Resource {
 			"password": {
 				Description: "Password used to access the database",
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
 				Sensitive:   true,
+				Computed:    true,
 			},
 			"public_endpoint": {
 				Description: "Public endpoint to access the database",
@@ -181,6 +189,7 @@ func resourceRedisCloudDatabase() *schema.Resource {
 				Type:        schema.TypeSet,
 				Optional:    true,
 				MinItems:    1,
+				ForceNew:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -235,6 +244,7 @@ func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceDat
 	memoryLimitInGB := d.Get("memory_limit_in_gb").(float64)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
 	dataPersistence := d.Get("data_persistence").(string)
+	dataEviction := d.Get("data_eviction").(string)
 	password := d.Get("password").(string)
 	replication := d.Get("replication").(bool)
 	throughputMeasurementBy := d.Get("throughput_measurement_by").(string)
@@ -278,6 +288,7 @@ func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceDat
 		MemoryLimitInGB:      redis.Float64(memoryLimitInGB),
 		SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
 		DataPersistence:      redis.String(dataPersistence),
+		DataEvictionPolicy:   redis.String(dataEviction),
 		Replication:          redis.Bool(replication),
 		ThroughputMeasurement: &databases.CreateThroughputMeasurement{
 			By:    redis.String(throughputMeasurementBy),
@@ -362,6 +373,10 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
+	if err := d.Set("data_eviction", redis.StringValue(db.DataEvictionPolicy)); err != nil {
+		return diag.FromErr(err)
+	}
+
 	if err := d.Set("replication", redis.BoolValue(db.Replication)); err != nil {
 		return diag.FromErr(err)
 	}
@@ -390,6 +405,7 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
+	// TODO: why is this commented out?
 	//if err := d.Set("external_endpoint_for_oss_cluster_api"); err != nil {
 	//	return diag.FromErr(err)
 	//}
@@ -476,10 +492,11 @@ func resourceRedisCloudDatabaseUpdate(ctx context.Context, d *schema.ResourceDat
 			By:    redis.String(d.Get("throughput_measurement_by").(string)),
 			Value: redis.Int(d.Get("throughput_measurement_value").(int)),
 		},
-		DataPersistence: redis.String(d.Get("data_persistence").(string)),
-		Password:        redis.String(d.Get("password").(string)),
-		SourceIP:        setToStringSlice(d.Get("source_ips").(*schema.Set)),
-		Alerts:          alerts,
+		DataPersistence:    redis.String(d.Get("data_persistence").(string)),
+		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
+		Password:           redis.String(d.Get("password").(string)),
+		SourceIP:           setToStringSlice(d.Get("source_ips").(*schema.Set)),
+		Alerts:             alerts,
 	}
 
 	update.ReplicaOf = setToStringSlice(d.Get("replica_of").(*schema.Set))
