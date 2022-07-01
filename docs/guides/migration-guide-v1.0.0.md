@@ -134,7 +134,7 @@ resources for your databases. Like so:
 
   // The database block has been moved to a separate resource - rediscloud_database.
   // The attributes of the database are the same as the ones in the database block in the old subscription resource schema. 
-  // With the exception of the `subscription_id` attribute.
+  // With the exception of the new `subscription_id` attribute.
   resource "rediscloud_database" "first_database" {
       // Attach the database to the subscription.
       subscription_id = rediscloud_subscription.example.id
