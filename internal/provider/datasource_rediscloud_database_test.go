@@ -32,7 +32,7 @@ func TestAccDataSourceRedisCloudDatabase_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttr(dataSourceName, "replication", "false"),
 					resource.TestCheckResourceAttr(dataSourceName, "throughput_measurement_by", "operations-per-second"),
-					resource.TestCheckResourceAttr(dataSourceName, "throughput_measurement_value", "10000"),
+					resource.TestCheckResourceAttr(dataSourceName, "throughput_measurement_value", "1000"),
 					resource.TestCheckResourceAttr(dataSourceName, "password", password),
 					resource.TestCheckResourceAttrSet(dataSourceName, "public_endpoint"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "private_endpoint"),
@@ -75,9 +75,9 @@ resource "rediscloud_subscription" "example" {
     modules = ["RedisJSON", "RedisBloom"]
     quantity = 1
     replication=false
-    support_oss_cluster_api=false
+    support_oss_cluster_api=true
     throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
+    throughput_measurement_value = 1000
   }
 }
 
@@ -91,6 +91,7 @@ resource "rediscloud_database" "example" {
     throughput_measurement_value = 1000
 	password                     = "%s"
 	support_oss_cluster_api	     = true
+	replication				     = false
 }
 
 data "rediscloud_database" "example" {
