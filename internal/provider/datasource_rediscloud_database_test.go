@@ -90,6 +90,7 @@ resource "rediscloud_database" "example" {
     throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 1000
 	password                     = "%s"
+	support_oss_cluster_api	     = true
 }
 
 data "rediscloud_database" "example" {

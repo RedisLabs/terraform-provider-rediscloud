@@ -162,7 +162,6 @@ resource "rediscloud_subscription" "example" {
   creation_plan {
     average_item_size_in_bytes = 1
     memory_limit_in_gb = 1
-    modules = ["RedisJSON", "RedisBloom"]
     quantity = 1
     replication=false
     support_oss_cluster_api=false
@@ -204,7 +203,6 @@ resource "rediscloud_subscription" "example" {
   creation_plan {
     average_item_size_in_bytes = 1
     memory_limit_in_gb = 1
-    modules = ["RedisJSON", "RedisBloom"]
     quantity = 1
     replication=false
     support_oss_cluster_api=false
