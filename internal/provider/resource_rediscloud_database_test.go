@@ -9,7 +9,7 @@ import (
 )
 
 // Tests the multi-modules feature in a database resource.
-func TestAccResourceRedisCloudDatabaseMultiModules(t *testing.T) {
+func TestAccResourceRedisCloudDatabase_MultiModules(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	dbName := "db-multi-modules"
 	resourceName := "rediscloud_database.example"

@@ -20,7 +20,9 @@ var contractFlag = flag.Bool("contract", false,
 var marketplaceFlag = flag.Bool("marketplace", false,
 	"Add this flag '-marketplace' to run tests for marketplace associated accounts")
 
-func TestAccResourceRedisCloudSubscription(t *testing.T) {
+
+// Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the subscription resource.
+func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	resourceName := "rediscloud_subscription.example"
