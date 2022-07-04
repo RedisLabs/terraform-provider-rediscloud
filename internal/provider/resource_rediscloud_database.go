@@ -122,8 +122,9 @@ func resourceRedisCloudDatabase() *schema.Resource {
 			"password": {
 				Description: "Password used to access the database",
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
 				Sensitive:   true,
+				Computed:    true,
 			},
 			"public_endpoint": {
 				Description: "Public endpoint to access the database",

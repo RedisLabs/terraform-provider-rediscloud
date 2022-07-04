@@ -69,17 +69,26 @@ resource "rediscloud_subscription" "example" {
     }
   }
 
-  database {
-    name = "tf-database"
-    protocol = "redis"
+  creation_plan {
+    average_item_size_in_bytes = 1
     memory_limit_in_gb = 1
-    support_oss_cluster_api = true
-    data_persistence = "none"
-    replication = false
+    modules = ["RedisJSON", "RedisBloom"]
+    quantity = 1
+    replication=false
+    support_oss_cluster_api=false
     throughput_measurement_by = "operations-per-second"
-    password = "%s"
     throughput_measurement_value = 10000
   }
+}
+
+resource "rediscloud_database" "example" {
+    subscription_id              = rediscloud_subscription.example.id
+    name                         = "tf-database"
+    protocol                     = "redis"
+    memory_limit_in_gb           = 1
+    data_persistence             = "none"
+    throughput_measurement_by    = "operations-per-second"
+    throughput_measurement_value = 1000
 }
 
 data "rediscloud_database" "example" {
