@@ -42,7 +42,6 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 		testCloudAccountName,
 		name,
 		subCidrRange,
-		password,
 		peeringRegion,
 		accountId,
 		vpcId,
@@ -79,11 +78,9 @@ func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
 	}
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	password := acctest.RandString(20)
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudSubscriptionPeeringGCP,
 		name,
-		password,
 		os.Getenv("GCP_VPC_PROJECT"),
 		os.Getenv("GCP_VPC_ID"),
 	)
