@@ -94,6 +94,6 @@ resource "rediscloud_database" "example" {
 
 data "rediscloud_database" "example" {
   subscription_id = rediscloud_subscription.example.id
-  name = "tf-database"
+  name = rediscloud_database.example.name
 }
 `
