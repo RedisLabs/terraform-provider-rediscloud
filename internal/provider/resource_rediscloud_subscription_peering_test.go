@@ -13,7 +13,6 @@ import (
 func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	password := acctest.RandString(20)
 
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
