@@ -35,7 +35,7 @@ func resourceRedisCloudDatabase() *schema.Resource {
 				if err := d.Set("db_id", dbId); err != nil {
 					return nil, err
 				}
-				d.SetId(strconv.Itoa(dbId))
+				d.SetId(buildResourceId(subId, dbId))
 				return []*schema.ResourceData{d}, nil
 			},
 		},
@@ -307,7 +307,7 @@ func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	d.SetId(strconv.Itoa(dbId))
+	d.SetId(buildResourceId(subId, dbId))
 
 	// Confirm Subscription Active status
 	err = waitForDatabaseToBeActive(ctx, subId, dbId, api)
@@ -405,15 +405,11 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
-	// TODO: why is this commented out?
-	//if err := d.Set("external_endpoint_for_oss_cluster_api"); err != nil {
-	//	return diag.FromErr(err)
-	//}
+	if err := d.Set("external_endpoint_for_oss_cluster_api",
+		d.Get("external_endpoint_for_oss_cluster_api").(bool)); err != nil {
+		return diag.FromErr(err)
+	}
 
-	//if redis.StringValue(db.Protocol) == "redis" {
-	//	// TODO need to check if this is expected behaviour or not
-	//	password = redis.StringValue(db.Security.Password)
-	//}
 	if err := d.Set("password", db.Security.Password); err != nil {
 		return diag.FromErr(err)
 	}
@@ -446,7 +442,7 @@ func resourceRedisCloudDatabaseDelete(ctx context.Context, d *schema.ResourceDat
 	var diags diag.Diagnostics
 	subId := d.Get("subscription_id").(int)
 
-	dbId, err := strconv.Atoi(d.Id())
+	_, dbId, err := toDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
