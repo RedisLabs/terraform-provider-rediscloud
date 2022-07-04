@@ -89,6 +89,7 @@ resource "rediscloud_database" "example" {
     data_persistence             = "none"
     throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 1000
+	password                     = "%s"
 }
 
 data "rediscloud_database" "example" {
