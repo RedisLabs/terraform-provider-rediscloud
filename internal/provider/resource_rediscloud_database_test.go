@@ -127,9 +127,6 @@ func TestAccResourceRedisCloudDatabase(t *testing.T) {
 				ResourceName:      "rediscloud_database.no_password_database",
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"average_item_size_in_bytes",
-				},
 			},
 		},
 	})
