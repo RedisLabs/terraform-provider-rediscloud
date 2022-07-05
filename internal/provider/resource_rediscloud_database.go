@@ -35,7 +35,7 @@ func resourceRedisCloudDatabase() *schema.Resource {
 				if err := d.Set("db_id", dbId); err != nil {
 					return nil, err
 				}
-				d.SetId(strconv.Itoa(dbId))
+				d.SetId(buildResourceId(subId, dbId))
 				return []*schema.ResourceData{d}, nil
 			},
 		},
@@ -122,8 +122,9 @@ func resourceRedisCloudDatabase() *schema.Resource {
 			"password": {
 				Description: "Password used to access the database",
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
 				Sensitive:   true,
+				Computed:    true,
 			},
 			"public_endpoint": {
 				Description: "Public endpoint to access the database",
@@ -176,16 +177,21 @@ func resourceRedisCloudDatabase() *schema.Resource {
 					},
 				},
 			},
-			"module": {
-				Description: "A module object",
+			"modules": {
+				Description: "Modules to be provisioned in the database",
 				Type:        schema.TypeSet,
-				Optional:    true,
-				MinItems:    1,
+				// In TF <0.12 List of objects is not supported, so we need to opt-in to use this old behaviour.
+				ConfigMode: schema.SchemaConfigModeAttr,
+				Optional:   true,
+				// The API doesn't allow to update/delete modules. Unless we recreate the database.
+				ForceNew: true,
+				MinItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
 							Description: "Name of the module to enable",
 							Type:        schema.TypeString,
+							ForceNew:    true,
 							Required:    true,
 						},
 					},
@@ -242,7 +248,7 @@ func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceDat
 	averageItemSizeInBytes := d.Get("average_item_size_in_bytes").(int)
 
 	createModules := make([]*databases.CreateModule, 0)
-	modules := d.Get("module").(*schema.Set)
+	modules := d.Get("modules").(*schema.Set)
 	for _, module := range modules.List() {
 		moduleMap := module.(map[string]interface{})
 
@@ -296,7 +302,7 @@ func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	d.SetId(strconv.Itoa(dbId))
+	d.SetId(buildResourceId(subId, dbId))
 
 	// Confirm Subscription Active status
 	err = waitForDatabaseToBeActive(ctx, subId, dbId, api)
@@ -382,7 +388,7 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("module", flattenModules(db.Modules)); err != nil {
+	if err := d.Set("modules", flattenModules(db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -390,14 +396,15 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
-	//if err := d.Set("external_endpoint_for_oss_cluster_api"); err != nil {
-	//	return diag.FromErr(err)
-	//}
+	if err := d.Set("average_item_size_in_bytes", d.Get("average_item_size_in_bytes").(int)); err != nil {
+		return diag.FromErr(err)
+	}
 
-	//if redis.StringValue(db.Protocol) == "redis" {
-	//	// TODO need to check if this is expected behaviour or not
-	//	password = redis.StringValue(db.Security.Password)
-	//}
+	if err := d.Set("external_endpoint_for_oss_cluster_api",
+		d.Get("external_endpoint_for_oss_cluster_api").(bool)); err != nil {
+		return diag.FromErr(err)
+	}
+
 	if err := d.Set("password", db.Security.Password); err != nil {
 		return diag.FromErr(err)
 	}
@@ -430,7 +437,7 @@ func resourceRedisCloudDatabaseDelete(ctx context.Context, d *schema.ResourceDat
 	var diags diag.Diagnostics
 	subId := d.Get("subscription_id").(int)
 
-	dbId, err := strconv.Atoi(d.Id())
+	_, dbId, err := toDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -7,6 +7,8 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 ### Added
 - Added the creation_plan block in the subscription resource schema.
 - Added the migration guide to help users with migrating their old Terraform configuration files to v1.0.0.
+- Multi-modules: Added the "modules" attribute into the creation_plan block 
+and the database resource schema
 
 ### Removed
 - Removed the database block from the subscription resource schema.
