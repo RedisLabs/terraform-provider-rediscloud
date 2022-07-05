@@ -24,9 +24,9 @@ func TestAccResourceRedisCloudDatabase_MultiModules(t *testing.T) {
 				Config: fmt.Sprintf(testAccResourceRedisCloudDatabaseMultiModules, testCloudAccountName, name, dbName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", dbName),
-					resource.TestCheckResourceAttr(resourceName, "module.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "module.0.name", "RedisBloom"),
-					resource.TestCheckResourceAttr(resourceName, "module.1.name", "RedisJSON"),
+					resource.TestCheckResourceAttr(resourceName, "modules.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
+					resource.TestCheckResourceAttr(resourceName, "modules.1.name", "RedisJSON"),
 				),
 			},
 			{
@@ -92,13 +92,14 @@ resource "rediscloud_database" "example" {
     throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 1000
 
-    module {
-      name  = "RedisJSON"
-    }
-
-    module {
-      name  = "RedisBloom"
-    }
+    modules = [
+        {
+          "name": "RedisJSON"
+        },
+        {
+          "name": "RedisBloom"
+        }
+    ]
 
     alert {
       name  = "latency"
