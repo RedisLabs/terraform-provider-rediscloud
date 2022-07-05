@@ -188,8 +188,9 @@ func resourceRedisCloudDatabase() *schema.Resource {
 				Description: "A module object",
 				Type:        schema.TypeSet,
 				Optional:    true,
-				MinItems:    1,
-				ForceNew:    true,
+				// The API doesn't allow to update/delete modules. Unless we recreate the database.
+				ForceNew: true,
+				MinItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -402,6 +403,10 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 	}
 
 	if err := d.Set("alert", flattenAlerts(db.Alerts)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("average_item_size_in_bytes", d.Get("average_item_size_in_bytes").(int)); err != nil {
 		return diag.FromErr(err)
 	}
 

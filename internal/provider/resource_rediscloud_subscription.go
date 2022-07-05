@@ -7,7 +7,6 @@ import (
 	"log"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -263,6 +262,14 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Type:        schema.TypeBool,
 							Required:    true,
 						},
+						"modules": {
+							Description: "Modules that will be used by the databases in this subscription.",
+							Type:        schema.TypeList,
+							Optional:    true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
 					},
 				},
 			},
@@ -355,7 +362,7 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 
 	var diags diag.Diagnostics
 
-	subId, _, err := toSubscriptionId(d.Id())
+	subId, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -561,6 +568,12 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 	quantity := planMap["quantity"].(int)
 	supportOSSClusterAPI := planMap["support_oss_cluster_api"].(bool)
 	replication := planMap["replication"].(bool)
+	// Add modules to the request
+	var modules []*subscriptions.CreateModules
+	for _, v := range planMap["modules"].([]interface{}) {
+		module := v.(string)
+		modules = append(modules, &subscriptions.CreateModules{Name: &module})
+	}
 
 	createDatabase := &subscriptions.CreateDatabase{
 		Name:                   redis.String("dummy-database"),
@@ -574,6 +587,7 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 			Value: redis.Int(throughputMeasurementValue),
 		},
 		Quantity: redis.Int(quantity),
+		Modules:  modules,
 	}
 	createDatabases = append(createDatabases, createDatabase)
 	return createDatabases
@@ -840,32 +854,4 @@ func readPaymentMethodID(d *schema.ResourceData) (*int, error) {
 		return redis.Int(pmID), nil
 	}
 	return nil, nil
-}
-
-func toSubscriptionId(id string) (int, int, error) {
-	parts := strings.Split(id, "/")
-
-	if len(parts) > 2 {
-		return 0, 0, fmt.Errorf("invalid id: %s", id)
-	}
-
-	if len(parts) == 1 {
-		subId, err := strconv.Atoi(parts[0])
-		if err != nil {
-			return 0, 0, err
-		}
-		return subId, 0, nil
-	}
-
-	subId, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return 0, 0, err
-	}
-
-	dbId, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return 0, 0, err
-	}
-
-	return subId, dbId, nil
 }
