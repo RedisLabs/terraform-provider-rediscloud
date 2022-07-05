@@ -13,7 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestAccResourceRedisCloudDatabase(t *testing.T) {
+// Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the database resource.
+func TestAccResourceRedisCloudDatabase_CRUDI(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
