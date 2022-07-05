@@ -460,7 +460,7 @@ func resourceRedisCloudDatabaseDelete(ctx context.Context, d *schema.ResourceDat
 func resourceRedisCloudDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
-	dbId, err := strconv.Atoi(d.Id())
+	_, dbId, err := toDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

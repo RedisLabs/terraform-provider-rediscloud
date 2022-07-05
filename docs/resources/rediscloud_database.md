@@ -7,7 +7,7 @@ Database resource in the Terraform provider Redis Cloud.
 
 # Resource: rediscloud_database
 
-Creates a Database within a specified subscription in your Redis Enterprise Cloud Account.
+Creates a Database within a specified Subscription in your Redis Enterprise Cloud Account.
 
 ## Example Usage
 
@@ -52,6 +52,7 @@ resource "rediscloud_subscription" "example" {
   }
 }
 
+// The primary database to provision
 resource "rediscloud_database" "example" {
     subscription_id = rediscloud_subscription.example.id
     name = "example-database"
@@ -67,8 +68,6 @@ resource "rediscloud_database" "example" {
     average_item_size_in_bytes = 0
     client_ssl_certificate = "" 
     periodic_backup_path = ""
-    // TODO: Consider making a separate example
-    replica_of = [format("redis://%s", rediscloud_database.example.public_endpoint)]
    
     module {
      name = "RedisBloom"
@@ -83,6 +82,7 @@ resource "rediscloud_database" "example" {
     }
 }
 
+// An example of how a replica database can be provisioned
 resource "rediscloud_database" "example_replica" {
     subscription_id = rediscloud_subscription.example.id
     name = "example-replica"
@@ -101,8 +101,10 @@ The following arguments are supported:
 * `subscription_id`: (Required) The ID of the subscription to create the database in.
 * `name` - (Required) A meaningful name to identify the database. Caution should be taken when changing this value - see
   the top of the page for more information.
-* `protocol` - (Optional) The protocol that will be used to access the database, (either ‘redis’ or 'memcached’) Default: ‘redis’
+* `throughput_measurement_by` - (Required) Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)
+* `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
 * `memory_limit_in_gb` - (Required) Maximum memory usage for this specific database
+* `protocol` - (Optional) The protocol that will be used to access the database, (either ‘redis’ or 'memcached’) Default: ‘redis’
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `external_endpoint_for_oss_cluster_api` - (Optional) Should use the external endpoint for open-source (OSS) Cluster API.
   Can only be enabled if OSS Cluster API support is enabled. Default: 'false'
@@ -117,8 +119,6 @@ The following arguments are supported:
 * `data_eviction` - (Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru')
 * `password` - (Optional) Password to access the database. If omitted, a random 32 character long alphanumeric password will be automatically generated
 * `replication` - (Optional) Databases replication. Default: ‘true’
-* `throughput_measurement_by` - (Required) Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)
-* `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes)
   of the items stored in the database. Default: 1000
 * `source_ips` - (Optional) Set of CIDR addresses to allow access to the database. Defaults to allowing traffic.

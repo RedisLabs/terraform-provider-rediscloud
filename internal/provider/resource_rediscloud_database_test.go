@@ -17,8 +17,8 @@ func TestAccResourceRedisCloudDatabase(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
-	databaseName := "example"
-	resourceName := "rediscloud_database." + databaseName
+	resourceName := "rediscloud_database.example"
+	subscriptionResourceName := "rediscloud_subscription.example"
 	replicaResourceName := "rediscloud_database.example_replica"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -29,16 +29,17 @@ func TestAccResourceRedisCloudDatabase(t *testing.T) {
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
+			// Test database and replica database creation
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudDatabase, testCloudAccountName, name, databaseName, password) + testAccResourceRedisCloudDatabaseReplica,
+				Config: fmt.Sprintf(testAccResourceRedisCloudDatabase, testCloudAccountName, name, password) + testAccResourceRedisCloudDatabaseReplica,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
+					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "3"),
 					resource.TestCheckResourceAttr(resourceName, "replication", "false"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_by", "operations-per-second"),
-					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_value", "10000"),
+					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_value", "1000"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
 					resource.TestCheckResourceAttr(resourceName, "data_eviction", "allkeys-random"),
 					resource.TestCheckResourceAttr(resourceName, "average_item_size_in_bytes", "0"),
@@ -50,20 +51,18 @@ func TestAccResourceRedisCloudDatabase(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "module.0.name", "RedisBloom"),
 					// Replica tests
 					resource.TestCheckResourceAttr(replicaResourceName, "name", "example-replica"),
-					resource.TestCheckResourceAttr(replicaResourceName, "protocol", "redis"),
 					// should be the value specified in the replica config, rather than the primary database
 					resource.TestCheckResourceAttr(replicaResourceName, "memory_limit_in_gb", "1"),
-					// should be the same as the primary database
-					resource.TestCheckResourceAttr(replicaResourceName, "data_eviction", "allkeys-random"),
+					resource.TestCheckResourceAttr(replicaResourceName, "replica_of.#", "1"),
 
 					// Test databases exist
 					func(s *terraform.State) error {
-						r := s.RootModule().Resources["rediscloud_subscription.example"]
+						r := s.RootModule().Resources[subscriptionResourceName]
 
 						var err error
 						subId, err = strconv.Atoi(r.Primary.ID)
 						if err != nil {
-							return err
+							return fmt.Errorf("couldn't parse the subscription ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
 						client := testProvider.Meta().(*apiClient)
@@ -90,15 +89,15 @@ func TestAccResourceRedisCloudDatabase(t *testing.T) {
 			},
 			// Test database is updated successfully
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudDatabaseUpdate, testCloudAccountName, name, databaseName),
+				Config: fmt.Sprintf(testAccResourceRedisCloudDatabaseUpdate, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", databaseName+"-updated"),
+					resource.TestCheckResourceAttr(resourceName, "name", "example-updated"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "replication", "true"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_by", "operations-per-second"),
-					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_value", "20000"),
+					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_value", "2000"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "aof-every-write"),
 					resource.TestCheckResourceAttr(resourceName, "data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttr(resourceName, "average_item_size_in_bytes", "0"),
@@ -108,41 +107,11 @@ func TestAccResourceRedisCloudDatabase(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "password", "updated-password"),
 					resource.TestCheckResourceAttr(resourceName, "module.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "module.0.name", "RedisBloom"),
-
-					func(s *terraform.State) error {
-						r := s.RootModule().Resources["rediscloud_subscription.example"]
-
-						var err error
-						subId, err = strconv.Atoi(r.Primary.ID)
-						if err != nil {
-							return err
-						}
-
-						client := testProvider.Meta().(*apiClient)
-						sub, err := client.client.Subscription.Get(context.TODO(), subId)
-						if err != nil {
-							return err
-						}
-
-						if redis.StringValue(sub.Name) != name {
-							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
-						}
-
-						listDb := client.client.Database.List(context.TODO(), subId)
-						if listDb.Next() != true {
-							return fmt.Errorf("no database found: %s", listDb.Err())
-						}
-						if listDb.Err() != nil {
-							return listDb.Err()
-						}
-
-						return nil
-					},
 				),
 			},
 			// Test that a 32-character password is generated when no password is provided
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudDatabaseNoPassword, testCloudAccountName, name, databaseName),
+				Config: fmt.Sprintf(testAccResourceRedisCloudDatabaseNoPassword, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					func(s *terraform.State) error {
 						is := s.RootModule().Resources["rediscloud_database.no_password_database"].Primary
@@ -153,18 +122,20 @@ func TestAccResourceRedisCloudDatabase(t *testing.T) {
 					},
 				),
 			},
-			// TODO: Import test
-			//{
-			//	ResourceName:      resourceName,
-			//	ImportState:       true,
-			//	ImportStateVerify: true,
-			//},
+			// Test that that database is imported successfully
+			{
+				ResourceName:      "rediscloud_database.no_password_database",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"average_item_size_in_bytes",
+				},
+			},
 		},
 	})
 }
 
-// Destroy test
-// TODO: change this to delete databases
+// Verify that the databases are deleted successfully by checking that the subscription is deleted
 func testAccCheckDatabaseDestroy(s *terraform.State) error {
 	client := testProvider.Meta().(*apiClient)
 
@@ -227,7 +198,7 @@ resource "rediscloud_subscription" "example" {
   creation_plan {
     memory_limit_in_gb = 1
     throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
+    throughput_measurement_value = 1000
     average_item_size_in_bytes = 1
     quantity = 1
     replication=false
@@ -241,13 +212,13 @@ resource "rediscloud_subscription" "example" {
 const testAccResourceRedisCloudDatabase = subscriptionBoilerplate + `
 resource "rediscloud_database" "example" {
     subscription_id = rediscloud_subscription.example.id
-    name = "%s"
+    name = "example"
     protocol = "redis"
     memory_limit_in_gb = 3
     data_persistence = "none"
 	data_eviction = "allkeys-random"
     throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
+    throughput_measurement_value = 1000
 	password = "%s"
 	support_oss_cluster_api = false 
 	external_endpoint_for_oss_cluster_api = false
@@ -271,16 +242,15 @@ resource "rediscloud_database" "example" {
 const testAccResourceRedisCloudDatabaseNoPassword = subscriptionBoilerplate + `
 resource "rediscloud_database" "no_password_database" {
     subscription_id = rediscloud_subscription.example.id
-    name = "%s"
+    name = "example-no-password"
     protocol = "redis"
     memory_limit_in_gb = 3
     data_persistence = "none"
     throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000   
+    throughput_measurement_value = 1000   
 } 
 `
 
-// TODO: Replica test
 // TF config for provisioning a database which is a replica of an existing database
 const testAccResourceRedisCloudDatabaseReplica = `
 resource "rediscloud_database" "example_replica" {
@@ -289,24 +259,22 @@ resource "rediscloud_database" "example_replica" {
   protocol = "redis"
   memory_limit_in_gb = 1
   throughput_measurement_by = "operations-per-second"
-  throughput_measurement_value = 10000
+  throughput_measurement_value = 1000
   replica_of = [format("redis://%s", rediscloud_database.example.public_endpoint)]
 } 
 `
 
-// Update tests
-// TODO: Update test
 // TF config for updating a database
 const testAccResourceRedisCloudDatabaseUpdate = subscriptionBoilerplate + `
 resource "rediscloud_database" "example" {
     subscription_id = rediscloud_subscription.example.id
-    name = "%s-updated"
+    name = "example-updated"
     protocol = "redis"
     memory_limit_in_gb = 1
     data_persistence = "aof-every-write"
 	data_eviction = "volatile-lru"
     throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 20000
+    throughput_measurement_value = 2000
 	password = "updated-password"
 	support_oss_cluster_api = true 
 	external_endpoint_for_oss_cluster_api = true
