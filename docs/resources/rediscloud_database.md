@@ -115,7 +115,7 @@ The following arguments are supported:
 * `replica_of` - (Optional) Set of Redis database URIs, in the format `redis://user:password@host:port`, that this
   database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided.
   Cannot be enabled when `support_oss_cluster_api` is enabled.
-* `module` - (Optional) A module object, documented below
+* `modules` - (Optional) A modules object, documented below
 * `alert` - (Optional) Set of alerts to enable on the database, documented below
 * `data_persistence` - (Optional) Rate of database data persistence (in persistent storage). Default: ‘none’
 * `data_eviction` - (Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru')
