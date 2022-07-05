@@ -9,7 +9,6 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -184,10 +183,12 @@ func resourceRedisCloudDatabase() *schema.Resource {
 					},
 				},
 			},
-			"module": {
-				Description: "A module object",
+			"modules": {
+				Description: "Modules to be provisioned in the database",
 				Type:        schema.TypeSet,
-				Optional:    true,
+				// In TF <0.12 List of objects is not supported, so we need to opt-in to use this old behaviour.
+				ConfigMode: schema.SchemaConfigModeAttr,
+				Optional:   true,
 				// The API doesn't allow to update/delete modules. Unless we recreate the database.
 				ForceNew: true,
 				MinItems: 1,
@@ -196,6 +197,7 @@ func resourceRedisCloudDatabase() *schema.Resource {
 						"name": {
 							Description: "Name of the module to enable",
 							Type:        schema.TypeString,
+							ForceNew:    true,
 							Required:    true,
 						},
 					},
@@ -253,7 +255,7 @@ func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceDat
 	averageItemSizeInBytes := d.Get("average_item_size_in_bytes").(int)
 
 	createModules := make([]*databases.CreateModule, 0)
-	modules := d.Get("module").(*schema.Set)
+	modules := d.Get("modules").(*schema.Set)
 	for _, module := range modules.List() {
 		moduleMap := module.(map[string]interface{})
 
@@ -398,7 +400,7 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("module", flattenModules(db.Modules)); err != nil {
+	if err := d.Set("modules", flattenModules(db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -551,61 +553,6 @@ func resourceRedisCloudDatabaseUpdate(ctx context.Context, d *schema.ResourceDat
 	}
 
 	return resourceRedisCloudDatabaseRead(ctx, d, meta)
-}
-
-func buildCreateDatabases(databases interface{}) []*subscriptions.CreateDatabase {
-	createDatabases := make([]*subscriptions.CreateDatabase, 0)
-
-	for _, database := range databases.(*schema.Set).List() {
-		databaseMap := database.(map[string]interface{})
-
-		name := databaseMap["name"].(string)
-		protocol := databaseMap["protocol"].(string)
-		memoryLimitInGB := databaseMap["memory_limit_in_gb"].(float64)
-		supportOSSClusterAPI := databaseMap["support_oss_cluster_api"].(bool)
-		dataPersistence := databaseMap["data_persistence"].(string)
-		replication := databaseMap["replication"].(bool)
-		throughputMeasurementBy := databaseMap["throughput_measurement_by"].(string)
-		throughputMeasurementValue := databaseMap["throughput_measurement_value"].(int)
-		averageItemSizeInBytes := databaseMap["average_item_size_in_bytes"].(int)
-
-		createModules := make([]*subscriptions.CreateModules, 0)
-		modules := databaseMap["module"].(*schema.Set)
-		for _, module := range modules.List() {
-			moduleMap := module.(map[string]interface{})
-
-			modName := moduleMap["name"].(string)
-
-			createModule := &subscriptions.CreateModules{
-				Name: redis.String(modName),
-			}
-
-			createModules = append(createModules, createModule)
-		}
-
-		createDatabase := &subscriptions.CreateDatabase{
-			Name:                 redis.String(name),
-			Protocol:             redis.String(protocol),
-			MemoryLimitInGB:      redis.Float64(memoryLimitInGB),
-			SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
-			DataPersistence:      redis.String(dataPersistence),
-			Replication:          redis.Bool(replication),
-			ThroughputMeasurement: &subscriptions.CreateThroughput{
-				By:    redis.String(throughputMeasurementBy),
-				Value: redis.Int(throughputMeasurementValue),
-			},
-			Quantity: redis.Int(1),
-			Modules:  createModules,
-		}
-
-		if averageItemSizeInBytes > 0 {
-			createDatabase.AverageItemSizeInBytes = &averageItemSizeInBytes
-		}
-
-		createDatabases = append(createDatabases, createDatabase)
-	}
-
-	return createDatabases
 }
 
 func toDatabaseId(id string) (int, int, error) {

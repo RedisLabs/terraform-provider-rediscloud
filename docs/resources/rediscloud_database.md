@@ -69,12 +69,14 @@ resource "rediscloud_database" "example" {
     client_ssl_certificate = "" 
     periodic_backup_path = ""
    
-    module {
-     name = "RedisBloom"
-    }
-    module {
-     name = "RediSearch"
-    }
+    modules = [
+        {
+          "name": "RedisJSON"
+        },
+        {
+          "name": "RedisBloom"
+        }
+    ]
     
     alert {
       name = "dataset-size"
@@ -132,20 +134,21 @@ The `alert` block supports:
 * `name` (Required) Alert name
 * `value` (Required) Alert value
 
-The `module` block supports:
+The `modules` block supports:
 
 * `name` (Required) Name of the Redis Labs database module to enable
 
-Example:
+  Example:
   
   ```hcl
-      module {
-        name  = "RedisJSON"
-      }
-  
-      module {
-        name  = "RedisBloom"
-      }
+    modules = [
+        {
+          "name": "RedisJSON"
+        },
+        {
+          "name": "RedisBloom"
+        }
+    ]
   ```
 
 ### Timeouts
