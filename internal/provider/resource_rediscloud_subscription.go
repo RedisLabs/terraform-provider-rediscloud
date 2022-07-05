@@ -262,6 +262,14 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Type:        schema.TypeBool,
 							Required:    true,
 						},
+						"modules": {
+							Description: "Modules that will be used by the databases in this subscription.",
+							Type:        schema.TypeList,
+							Optional:    true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
 					},
 				},
 			},
@@ -560,6 +568,12 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 	quantity := planMap["quantity"].(int)
 	supportOSSClusterAPI := planMap["support_oss_cluster_api"].(bool)
 	replication := planMap["replication"].(bool)
+	// Add modules to the request
+	var modules []*subscriptions.CreateModules
+	for _, v := range planMap["modules"].([]interface{}) {
+		module := v.(string)
+		modules = append(modules, &subscriptions.CreateModules{Name: &module})
+	}
 
 	createDatabase := &subscriptions.CreateDatabase{
 		Name:                   redis.String("dummy-database"),
@@ -573,6 +587,7 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 			Value: redis.Int(throughputMeasurementValue),
 		},
 		Quantity: redis.Int(quantity),
+		Modules:  modules,
 	}
 	createDatabases = append(createDatabases, createDatabase)
 	return createDatabases

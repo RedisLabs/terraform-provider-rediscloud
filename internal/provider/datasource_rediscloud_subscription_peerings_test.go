@@ -12,7 +12,6 @@ import (
 
 func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	password := acctest.RandString(20)
 
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -27,7 +26,6 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 		testCloudAccountName,
 		name,
 		subCidrRange,
-		password,
 		awsRegion,
 		awsAccountId,
 		awsVPCId,
@@ -83,14 +81,14 @@ resource "rediscloud_subscription" "example" {
     }
   }
 
-  database {
-    name = "tf-database"
-    protocol = "redis"
-    memory_limit_in_gb = 1
-    data_persistence = "none"
-    throughput_measurement_by = "operations-per-second"
-    password = "%s"
-    throughput_measurement_value = 10000
+  creation_plan {
+    average_item_size_in_bytes   = 1
+    memory_limit_in_gb           = 1
+    quantity                     = 1
+    replication                  = false
+    support_oss_cluster_api      = false
+    throughput_measurement_by    = "operations-per-second"
+    throughput_measurement_value = 1000
   }
 }
 

@@ -12,7 +12,6 @@ import (
 
 func TestAccDataSourceRedisCloudSubscription_basic(t *testing.T) {
 	name := acctest.RandomWithPrefix("tf-test")
-	password := acctest.RandString(20)
 
 	resourceName := "rediscloud_subscription.example"
 	dataSourceName := "data.rediscloud_subscription.example"
@@ -24,13 +23,13 @@ func TestAccDataSourceRedisCloudSubscription_basic(t *testing.T) {
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionOneDb, testCloudAccountName, name, 1, password),
+				Config: fmt.Sprintf(testAccDatasourceRedisCloudSubscription, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "name", regexp.MustCompile(name)),
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionDataSource, name) + fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionOneDb, testCloudAccountName, name, 1, password),
+				Config: fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionDataSource, name) + fmt.Sprintf(testAccDatasourceRedisCloudSubscription, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(dataSourceName, "name", regexp.MustCompile(name)),
 					resource.TestCheckResourceAttr(dataSourceName, "payment_method", "credit-card"),
@@ -48,7 +47,7 @@ func TestAccDataSourceRedisCloudSubscription_basic(t *testing.T) {
 	})
 }
 
-const testAccDatasourceRedisCloudSubscriptionOneDb = `
+const testAccDatasourceRedisCloudSubscription = `
 
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
@@ -77,17 +76,25 @@ resource "rediscloud_subscription" "example" {
     }
   }
 
-  database {
-    name = "tf-database"
-    protocol = "redis"
-    memory_limit_in_gb = %d
-    support_oss_cluster_api = true
-    data_persistence = "none"
-    replication = false
-    throughput_measurement_by = "operations-per-second"
-    password = "%s"
-    throughput_measurement_value = 10000
+  creation_plan {
+    average_item_size_in_bytes   = 1
+    memory_limit_in_gb           = 1
+    quantity                     = 1
+    replication                  = false
+    support_oss_cluster_api      = false
+    throughput_measurement_by    = "operations-per-second"
+    throughput_measurement_value = 1000
   }
+}
+
+resource "rediscloud_database" "example" {
+    subscription_id              = rediscloud_subscription.example.id
+	name                         = "tf-database"
+    protocol                     = "redis"
+    memory_limit_in_gb           = 1
+    data_persistence             = "none"
+    throughput_measurement_by    = "operations-per-second"
+    throughput_measurement_value = 1000
 }
 `
 
