@@ -48,8 +48,8 @@ func TestAccResourceRedisCloudDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "periodic_backup_path", ""),
 					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(resourceName, "password", password),
-					resource.TestCheckResourceAttr(resourceName, "module.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "module.0.name", "RedisBloom"),
+					resource.TestCheckResourceAttr(resourceName, "modules.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
 					// Replica tests
 					resource.TestCheckResourceAttr(replicaResourceName, "name", "example-replica"),
 					// should be the value specified in the replica config, rather than the primary database
@@ -106,8 +106,8 @@ func TestAccResourceRedisCloudDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "periodic_backup_path", ""),
 					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(resourceName, "password", "updated-password"),
-					resource.TestCheckResourceAttr(resourceName, "module.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "module.0.name", "RedisBloom"),
+					resource.TestCheckResourceAttr(resourceName, "modules.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
 				),
 			},
 			// Test that a 32-character password is generated when no password is provided
@@ -231,9 +231,11 @@ resource "rediscloud_database" "example" {
 		value = 40
 	}
 	
-	module {
-		name = "RedisBloom"
-	}
+	modules = [
+        {
+          "name": "RedisBloom"
+        }
+    ]
 } 
 `
 
@@ -285,9 +287,11 @@ resource "rediscloud_database" "example" {
 		value = 80
 	}
 
-    module {
-		name = "RedisBloom"
-    }
+    modules = [
+        {
+          "name": "RedisBloom"
+        }
+    ]
 } 
 `
 const multiModulesSubscriptionBoilerplate = `
