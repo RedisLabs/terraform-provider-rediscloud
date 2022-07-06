@@ -65,7 +65,6 @@ resource "rediscloud_database" "example" {
     external_endpoint_for_oss_cluster_api = false
     replication = false
     average_item_size_in_bytes = 0
-    client_ssl_certificate = "" 
    
     modules = [
         {
