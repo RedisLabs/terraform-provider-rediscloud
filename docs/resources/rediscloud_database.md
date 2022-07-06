@@ -61,13 +61,10 @@ resource "rediscloud_database" "example" {
     data_persistence = "none"
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
-    password = "example-password"
     support_oss_cluster_api = false 
     external_endpoint_for_oss_cluster_api = false
     replication = false
     average_item_size_in_bytes = 0
-    client_ssl_certificate = "" 
-    periodic_backup_path = ""
    
     modules = [
         {
@@ -101,7 +98,7 @@ resource "rediscloud_database" "example_replica" {
 The following arguments are supported:
 
 * `subscription_id`: (Required) The ID of the subscription to create the database in.
-* `name` - (Required) A meaningful name to identify the database. Caution should be taken when changing this value - see
+* `name` - (Required) A meaningful name to identify the database.
   the top of the page for more information.
 * `throughput_measurement_by` - (Required) Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)
 * `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
@@ -115,7 +112,7 @@ The following arguments are supported:
 * `replica_of` - (Optional) Set of Redis database URIs, in the format `redis://user:password@host:port`, that this
   database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided.
   Cannot be enabled when `support_oss_cluster_api` is enabled.
-* `modules` - (Optional) A modules object, documented below
+* `modules` - (Optional) A list of modules objects, documented below
 * `alert` - (Optional) Set of alerts to enable on the database, documented below
 * `data_persistence` - (Optional) Rate of database data persistence (in persistent storage). Default: ‘none’
 * `data_eviction` - (Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru')

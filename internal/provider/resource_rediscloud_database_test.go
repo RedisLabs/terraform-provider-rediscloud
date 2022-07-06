@@ -245,7 +245,7 @@ resource "rediscloud_database" "no_password_database" {
     subscription_id = rediscloud_subscription.example.id
     name = "example-no-password"
     protocol = "redis"
-    memory_limit_in_gb = 3
+    memory_limit_in_gb = 1
     data_persistence = "none"
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 1000   
