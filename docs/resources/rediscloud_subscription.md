@@ -98,6 +98,7 @@ The `creation_plan` block supports:
 * `modules` - (Optional) a list of modules that will be used by the databases in this subscription. 
 Example: `modules = ["RedisJSON", RedisBloom"]`.
 * `replication` - (Required) Databases replication.
+* `quantity` - (Required) The planned number of databases.
 * `throughput_measurement_by` - (Required) Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)
 * `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes)
