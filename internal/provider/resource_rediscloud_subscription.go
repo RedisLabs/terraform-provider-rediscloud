@@ -7,7 +7,7 @@ import (
 	"log"
 	"regexp"
 	"strconv"
-		"time"
+	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
@@ -28,9 +28,9 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
 
 		Importer: &schema.ResourceImporter{
-		  // Let the READ operation do the heavy lifting for importing values from the API.
-	      StateContext: schema.ImportStatePassthroughContext,
-	    },
+			// Let the READ operation do the heavy lifting for importing values from the API.
+			StateContext: schema.ImportStatePassthroughContext,
+		},
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(30 * time.Minute),
@@ -212,7 +212,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				// The block is required when the user provisions a new subscription.
 				// The block is ignored in the UPDATE operation or after IMPORTing the resource.
 				// Custom validation is handled in the CREATE operation.
-				Optional:    true,
+				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if d.Id() == "" {
 						// We don't want to ignore the block if the resource is about to be created.
@@ -247,9 +247,9 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Default: 0,
 						},
 						"quantity": {
-							Description: "The planned number of databases",
-							Type:        schema.TypeInt,
-							Required:    true,
+							Description:  "The planned number of databases",
+							Type:         schema.TypeInt,
+							Required:     true,
 							ValidateFunc: validation.IntAtLeast(1),
 						},
 						"support_oss_cluster_api": {
@@ -301,11 +301,11 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	var dbs []*subscriptions.CreateDatabase
 
 	plan := d.Get("creation_plan").([]interface{})
-	
+
 	if len(plan) == 0 {
 		return diag.Errorf(`The "creation_plan" block is required.`)
 	}
-	
+
 	// Create dummy databases
 	planMap := plan[0].(map[string]interface{})
 	dbs = buildSubscriptionCreatePlanDatabases(planMap)
@@ -657,6 +657,8 @@ func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClien
 			databases.StatusActiveChangeDraft,
 			databases.StatusRCPDraft,
 			databases.StatusRCPChangePending,
+			databases.StatusProxyPolicyChangePending,
+			databases.StatusProxyPolicyChangeDraft,
 		},
 		Target:  []string{databases.StatusActive},
 		Timeout: 10 * time.Minute,
