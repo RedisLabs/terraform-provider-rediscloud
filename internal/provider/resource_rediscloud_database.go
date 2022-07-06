@@ -349,7 +349,6 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
-	// Sets
 
 	if err := d.Set("db_id", redis.IntValue(db.ID)); err != nil {
 		return diag.FromErr(err)
