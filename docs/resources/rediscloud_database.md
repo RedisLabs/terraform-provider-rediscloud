@@ -101,7 +101,7 @@ resource "rediscloud_database" "example_replica" {
 The following arguments are supported:
 
 * `subscription_id`: (Required) The ID of the subscription to create the database in.
-* `name` - (Required) A meaningful name to identify the database. Caution should be taken when changing this value - see
+* `name` - (Required) A meaningful name to identify the database.
   the top of the page for more information.
 * `throughput_measurement_by` - (Required) Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)
 * `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
