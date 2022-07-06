@@ -66,7 +66,6 @@ resource "rediscloud_database" "example" {
     replication = false
     average_item_size_in_bytes = 0
     client_ssl_certificate = "" 
-    periodic_backup_path = ""
    
     modules = [
         {
