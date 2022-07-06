@@ -131,7 +131,7 @@ The `alert` block supports:
 * `name` (Required) Alert name
 * `value` (Required) Alert value
 
-The `modules` block supports:
+The `modules` attribute supports:
 
 * `name` (Required) Name of the Redis Labs database module to enable
 
