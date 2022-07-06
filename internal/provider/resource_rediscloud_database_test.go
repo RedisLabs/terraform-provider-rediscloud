@@ -233,7 +233,7 @@ resource "rediscloud_database" "example" {
 	
 	modules = [
         {
-          "name": "RedisBloom"
+          name = "RedisBloom"
         }
     ]
 } 
@@ -289,7 +289,7 @@ resource "rediscloud_database" "example" {
 
     modules = [
         {
-          "name": "RedisBloom"
+          name = "RedisBloom"
         }
     ]
 } 
@@ -343,10 +343,10 @@ resource "rediscloud_database" "example" {
     throughput_measurement_value = 1000
     modules = [
         {
-          "name": "RedisJSON"
+          name = "RedisJSON"
         },
         {
-          "name": "RedisBloom"
+          name = "RedisBloom"
         }
     ]
     alert {

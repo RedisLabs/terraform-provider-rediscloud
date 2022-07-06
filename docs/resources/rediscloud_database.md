@@ -68,10 +68,10 @@ resource "rediscloud_database" "example" {
    
     modules = [
         {
-          "name": "RedisJSON"
+          name = "RedisJSON"
         },
         {
-          "name": "RedisBloom"
+          name = "RedisBloom"
         }
     ]
     
