@@ -417,10 +417,15 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("password", db.Security.Password); err != nil {
-		return diag.FromErr(err)
+	password := d.Get("password").(string)
+	if redis.StringValue(db.Protocol) == "redis" {
+		// Only db with the "redis" protocol returns the password.
+		password = redis.StringValue(db.Security.Password)
 	}
 
+	if err := d.Set("password", password); err != nil {
+		return diag.FromErr(err)
+	}
 	var sourceIPs []string
 	if len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0" {
 		// The API handles an empty list as ["0.0.0.0/0"] but need to be careful to match the input to avoid Terraform detecting drift
