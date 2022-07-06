@@ -109,7 +109,6 @@ func resourceRedisCloudDatabase() *schema.Resource {
 				Description:      "Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)",
 				Type:             schema.TypeString,
 				Required:         true,
-				ForceNew:         true,
 				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice([]string{"number-of-shards", "operations-per-second"}, false)),
 			},
 			"throughput_measurement_value": {
