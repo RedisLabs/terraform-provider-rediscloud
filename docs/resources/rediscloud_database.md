@@ -61,7 +61,6 @@ resource "rediscloud_database" "example" {
     data_persistence = "none"
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
-    password = "example-password"
     support_oss_cluster_api = false 
     external_endpoint_for_oss_cluster_api = false
     replication = false
