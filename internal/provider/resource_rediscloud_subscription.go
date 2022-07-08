@@ -20,8 +20,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-const creationPlanErrorMsg = `the "creation_plan" block is required`
-
 func resourceRedisCloudSubscription() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates a Subscription and database resources within your Redis Enterprise Cloud Account.",
@@ -30,10 +28,18 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		UpdateContext: resourceRedisCloudSubscriptionUpdate,
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
 		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
-			// Raise an error if a ForceNew attribute has been modified and the creation_plan block is not defined.
-			if _, exists := diff.GetOk("creation_plan"); exists {
+		    _, cPlanExists := diff.GetOk("creation_plan")
+			if cPlanExists {
 				return nil
 			}
+
+			const creationPlanErrorMsg = `the "creation_plan" block is required`
+			// The resource hasn't been created yet, but the creation plan is missing.
+			if diff.Id() == "" && !cPlanExists {
+				return fmt.Errorf(creationPlanErrorMsg)
+			}
+
+			// Raise an error if a ForceNew attribute has been modified and the creation_plan is missing.
 			for _, attrPath := range diff.GetChangedKeysPrefix("") {
 				keys := strings.Split(attrPath, ".")
 				for _, key := range keys {
@@ -230,7 +236,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				MaxItems:    1,
 				// The block is required when the user provisions a new subscription.
 				// The block is ignored in the UPDATE operation or after IMPORTing the resource.
-				// Custom validation is handled in the CREATE operation and in CustomizeDiff.
+				// Custom validation is handled in CustomizeDiff.
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if d.Id() == "" {
@@ -320,10 +326,6 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	var dbs []*subscriptions.CreateDatabase
 
 	plan := d.Get("creation_plan").([]interface{})
-
-	if len(plan) == 0 {
-		return diag.Errorf(creationPlanErrorMsg)
-	}
 
 	// Create dummy databases
 	planMap := plan[0].(map[string]interface{})
