@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"testing"
 
@@ -19,7 +20,6 @@ var contractFlag = flag.Bool("contract", false,
 
 var marketplaceFlag = flag.Bool("marketplace", false,
 	"Add this flag '-marketplace' to run tests for marketplace associated accounts")
-
 
 // Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the subscription resource.
 func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
@@ -77,7 +77,7 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 			},
 			{
 				// Checks if the changes in the creation plan are ignored.
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionNoCreationPlan, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionNoCreationPlan, testCloudAccountName, name, "ram"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "1"),
@@ -100,6 +100,12 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 					}
 					return nil
 				},
+			},
+			{
+				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
+				Config:       fmt.Sprintf(testAccResourceRedisCloudSubscriptionNoCreationPlan, testCloudAccountName, name, "ram-and-flash"),
+				ResourceName: resourceName,
+				ExpectError:  regexp.MustCompile(`Error: the "creation_plan" block is required`),
 			},
 		},
 	})
@@ -266,7 +272,7 @@ resource "rediscloud_subscription" "example" {
 
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
+  memory_storage = "%s"
 
   allowlist {
     cidrs = ["192.168.0.0/16"]

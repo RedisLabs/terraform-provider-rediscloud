@@ -7,7 +7,8 @@ import (
 	"log"
 	"regexp"
 	"strconv"
-		"time"
+	"strings"
+	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
@@ -19,6 +20,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+const creationPlanErrorMsg = `the "creation_plan" block is required`
+
 func resourceRedisCloudSubscription() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates a Subscription and database resources within your Redis Enterprise Cloud Account.",
@@ -26,11 +29,27 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		ReadContext:   resourceRedisCloudSubscriptionRead,
 		UpdateContext: resourceRedisCloudSubscriptionUpdate,
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
+		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
+			// Raise an error if a ForceNew attribute has been modified and the creation_plan block is not defined.
+			if _, exists := diff.GetOk("creation_plan"); exists {
+				return nil
+			}
+			for _, attrPath := range diff.GetChangedKeysPrefix("") {
+				keys := strings.Split(attrPath, ".")
+				for _, key := range keys {
+					switch key {
+					case "cloud_provider", "memory_storage", "payment_method":
+						return fmt.Errorf(creationPlanErrorMsg)
+					}
+				}
+			}
+			return nil
+		},
 
 		Importer: &schema.ResourceImporter{
-		  // Let the READ operation do the heavy lifting for importing values from the API.
-	      StateContext: schema.ImportStatePassthroughContext,
-	    },
+			// Let the READ operation do the heavy lifting for importing values from the API.
+			StateContext: schema.ImportStatePassthroughContext,
+		},
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(30 * time.Minute),
@@ -211,8 +230,8 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				MaxItems:    1,
 				// The block is required when the user provisions a new subscription.
 				// The block is ignored in the UPDATE operation or after IMPORTing the resource.
-				// Custom validation is handled in the CREATE operation.
-				Optional:    true,
+				// Custom validation is handled in the CREATE operation and in CustomizeDiff.
+				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if d.Id() == "" {
 						// We don't want to ignore the block if the resource is about to be created.
@@ -247,9 +266,9 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Default: 0,
 						},
 						"quantity": {
-							Description: "The planned number of databases",
-							Type:        schema.TypeInt,
-							Required:    true,
+							Description:  "The planned number of databases",
+							Type:         schema.TypeInt,
+							Required:     true,
 							ValidateFunc: validation.IntAtLeast(1),
 						},
 						"support_oss_cluster_api": {
@@ -301,11 +320,11 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	var dbs []*subscriptions.CreateDatabase
 
 	plan := d.Get("creation_plan").([]interface{})
-	
+
 	if len(plan) == 0 {
-		return diag.Errorf(`The "creation_plan" block is required.`)
+		return diag.Errorf(creationPlanErrorMsg)
 	}
-	
+
 	// Create dummy databases
 	planMap := plan[0].(map[string]interface{})
 	dbs = buildSubscriptionCreatePlanDatabases(planMap)
