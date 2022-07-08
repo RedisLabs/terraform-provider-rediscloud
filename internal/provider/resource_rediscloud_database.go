@@ -9,7 +9,6 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -93,6 +92,12 @@ func resourceRedisCloudDatabase() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     "none",
+			},
+			"data_eviction": {
+				Description: "(Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru')",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "volatile-lru",
 			},
 			"replication": {
 				Description: "Databases replication",
@@ -241,6 +246,7 @@ func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceDat
 	memoryLimitInGB := d.Get("memory_limit_in_gb").(float64)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
 	dataPersistence := d.Get("data_persistence").(string)
+	dataEviction := d.Get("data_eviction").(string)
 	password := d.Get("password").(string)
 	replication := d.Get("replication").(bool)
 	throughputMeasurementBy := d.Get("throughput_measurement_by").(string)
@@ -284,6 +290,7 @@ func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceDat
 		MemoryLimitInGB:      redis.Float64(memoryLimitInGB),
 		SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
 		DataPersistence:      redis.String(dataPersistence),
+		DataEvictionPolicy:   redis.String(dataEviction),
 		Replication:          redis.Bool(replication),
 		ThroughputMeasurement: &databases.CreateThroughputMeasurement{
 			By:    redis.String(throughputMeasurementBy),
@@ -334,15 +341,13 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 
 	db, err := api.client.Database.Get(ctx, subId, dbId)
 	if err != nil {
-		// TODO: Add back in these lines after `NotFound` is merged into the api client
-		//if _, ok := err.(*databases.NotFound); ok {
-		d.SetId("")
-		return diags
-		//}
-		//return diag.FromErr(err)
+		if _, ok := err.(*databases.NotFound); ok {
+			d.SetId("")
+			return diags
+		}
+		return diag.FromErr(err)
 	}
 
-	// Sets
 
 	if err := d.Set("db_id", redis.IntValue(db.ID)); err != nil {
 		return diag.FromErr(err)
@@ -365,6 +370,10 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 	}
 
 	if err := d.Set("data_persistence", redis.StringValue(db.DataPersistence)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("data_eviction", redis.StringValue(db.DataEvictionPolicy)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -405,10 +414,15 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("password", db.Security.Password); err != nil {
-		return diag.FromErr(err)
+	password := d.Get("password").(string)
+	if redis.StringValue(db.Protocol) == "redis" {
+		// Only db with the "redis" protocol returns the password.
+		password = redis.StringValue(db.Security.Password)
 	}
 
+	if err := d.Set("password", password); err != nil {
+		return diag.FromErr(err)
+	}
 	var sourceIPs []string
 	if len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0" {
 		// The API handles an empty list as ["0.0.0.0/0"] but need to be careful to match the input to avoid Terraform detecting drift
@@ -455,7 +469,7 @@ func resourceRedisCloudDatabaseDelete(ctx context.Context, d *schema.ResourceDat
 func resourceRedisCloudDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
-	dbId, err := strconv.Atoi(d.Id())
+	_, dbId, err := toDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -483,10 +497,11 @@ func resourceRedisCloudDatabaseUpdate(ctx context.Context, d *schema.ResourceDat
 			By:    redis.String(d.Get("throughput_measurement_by").(string)),
 			Value: redis.Int(d.Get("throughput_measurement_value").(int)),
 		},
-		DataPersistence: redis.String(d.Get("data_persistence").(string)),
-		Password:        redis.String(d.Get("password").(string)),
-		SourceIP:        setToStringSlice(d.Get("source_ips").(*schema.Set)),
-		Alerts:          alerts,
+		DataPersistence:    redis.String(d.Get("data_persistence").(string)),
+		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
+		Password:           redis.String(d.Get("password").(string)),
+		SourceIP:           setToStringSlice(d.Get("source_ips").(*schema.Set)),
+		Alerts:             alerts,
 	}
 
 	update.ReplicaOf = setToStringSlice(d.Get("replica_of").(*schema.Set))
@@ -540,61 +555,6 @@ func resourceRedisCloudDatabaseUpdate(ctx context.Context, d *schema.ResourceDat
 	}
 
 	return resourceRedisCloudDatabaseRead(ctx, d, meta)
-}
-
-func buildCreateDatabases(databases interface{}) []*subscriptions.CreateDatabase {
-	createDatabases := make([]*subscriptions.CreateDatabase, 0)
-
-	for _, database := range databases.(*schema.Set).List() {
-		databaseMap := database.(map[string]interface{})
-
-		name := databaseMap["name"].(string)
-		protocol := databaseMap["protocol"].(string)
-		memoryLimitInGB := databaseMap["memory_limit_in_gb"].(float64)
-		supportOSSClusterAPI := databaseMap["support_oss_cluster_api"].(bool)
-		dataPersistence := databaseMap["data_persistence"].(string)
-		replication := databaseMap["replication"].(bool)
-		throughputMeasurementBy := databaseMap["throughput_measurement_by"].(string)
-		throughputMeasurementValue := databaseMap["throughput_measurement_value"].(int)
-		averageItemSizeInBytes := databaseMap["average_item_size_in_bytes"].(int)
-
-		createModules := make([]*subscriptions.CreateModules, 0)
-		modules := databaseMap["module"].(*schema.Set)
-		for _, module := range modules.List() {
-			moduleMap := module.(map[string]interface{})
-
-			modName := moduleMap["name"].(string)
-
-			createModule := &subscriptions.CreateModules{
-				Name: redis.String(modName),
-			}
-
-			createModules = append(createModules, createModule)
-		}
-
-		createDatabase := &subscriptions.CreateDatabase{
-			Name:                 redis.String(name),
-			Protocol:             redis.String(protocol),
-			MemoryLimitInGB:      redis.Float64(memoryLimitInGB),
-			SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
-			DataPersistence:      redis.String(dataPersistence),
-			Replication:          redis.Bool(replication),
-			ThroughputMeasurement: &subscriptions.CreateThroughput{
-				By:    redis.String(throughputMeasurementBy),
-				Value: redis.Int(throughputMeasurementValue),
-			},
-			Quantity: redis.Int(1),
-			Modules:  createModules,
-		}
-
-		if averageItemSizeInBytes > 0 {
-			createDatabase.AverageItemSizeInBytes = &averageItemSizeInBytes
-		}
-
-		createDatabases = append(createDatabases, createDatabase)
-	}
-
-	return createDatabases
 }
 
 func toDatabaseId(id string) (int, int, error) {
