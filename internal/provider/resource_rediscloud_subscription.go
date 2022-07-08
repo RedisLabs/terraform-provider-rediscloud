@@ -35,7 +35,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 
 			const creationPlanErrorMsg = `the "creation_plan" block is required`
 			// The resource hasn't been created yet, but the creation plan is missing.
-			if diff.Id() == "" && !cPlanExists {
+			if diff.Id() == "" {
 				return fmt.Errorf(creationPlanErrorMsg)
 			}
 
