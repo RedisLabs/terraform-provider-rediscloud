@@ -7,6 +7,7 @@ import (
 	"log"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -26,6 +27,30 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		ReadContext:   resourceRedisCloudSubscriptionRead,
 		UpdateContext: resourceRedisCloudSubscriptionUpdate,
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
+		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
+		    _, cPlanExists := diff.GetOk("creation_plan")
+			if cPlanExists {
+				return nil
+			}
+
+			const creationPlanErrorMsg = `the "creation_plan" block is required`
+			// The resource hasn't been created yet, but the creation plan is missing.
+			if diff.Id() == "" {
+				return fmt.Errorf(creationPlanErrorMsg)
+			}
+
+			// Raise an error if a ForceNew attribute has been modified and the creation_plan is missing.
+			for _, attrPath := range diff.GetChangedKeysPrefix("") {
+				keys := strings.Split(attrPath, ".")
+				for _, key := range keys {
+					switch key {
+					case "cloud_provider", "memory_storage", "payment_method":
+						return fmt.Errorf(creationPlanErrorMsg)
+					}
+				}
+			}
+			return nil
+		},
 
 		Importer: &schema.ResourceImporter{
 			// Let the READ operation do the heavy lifting for importing values from the API.
@@ -211,7 +236,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				MaxItems:    1,
 				// The block is required when the user provisions a new subscription.
 				// The block is ignored in the UPDATE operation or after IMPORTing the resource.
-				// Custom validation is handled in the CREATE operation.
+				// Custom validation is handled in CustomizeDiff.
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if d.Id() == "" {
@@ -301,10 +326,6 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	var dbs []*subscriptions.CreateDatabase
 
 	plan := d.Get("creation_plan").([]interface{})
-
-	if len(plan) == 0 {
-		return diag.Errorf(`The "creation_plan" block is required.`)
-	}
 
 	// Create dummy databases
 	planMap := plan[0].(map[string]interface{})

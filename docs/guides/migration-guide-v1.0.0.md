@@ -190,5 +190,7 @@ resources for your databases. Like so:
      # Check if the peering resource is valid
      terraform state show rediscloud_subscription_peering.peering_example;
      ```
+   
+Finally, run `terraform plan` to verify that your new configuration matches the real world infrastructure.
 
 Congratulations! You have successfully migrated your Terraform configuration to the new schema.
