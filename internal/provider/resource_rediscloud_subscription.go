@@ -20,6 +20,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+// INCOMPATIBLE_MODULES List of incompatible modules that need to be allocated in a separate dummy database.
+var INCOMPATIBLE_MODULES = [...]string{"RedisGraph"}
+
 func resourceRedisCloudSubscription() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates a Subscription and database resources within your Redis Enterprise Cloud Account.",
@@ -28,7 +31,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		UpdateContext: resourceRedisCloudSubscriptionUpdate,
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
 		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
-		    _, cPlanExists := diff.GetOk("creation_plan")
+			_, cPlanExists := diff.GetOk("creation_plan")
 			if cPlanExists {
 				return nil
 			}
@@ -591,18 +594,23 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 	replication := planMap["replication"].(bool)
 	// Add modules to the request
 	var modules []*subscriptions.CreateModules
-	// If there is an incompatible module, then allocate it to a separate db.
-	var incompatibleModule string
+	// If there is an incompatible module, then allocate it to a separate dummy db.
+	var incompatibleModules []string
+
+out:
 	for _, v := range planMap["modules"].([]interface{}) {
 		module := v.(string)
-		if module == "RedisGraph" {
-			incompatibleModule = module
-			quantity = quantity - 1
-			continue
+		for _, incModule := range INCOMPATIBLE_MODULES {
+			if module == incModule {
+				incompatibleModules = append(incompatibleModules, module)
+				// separate a dummy db for the incompatible module
+				quantity = quantity - 1
+				continue out
+			}
 		}
 		modules = append(modules, &subscriptions.CreateModules{Name: &module})
 	}
-	
+
 	dbName := "dummy-database"
 	createDatabase := subscriptions.CreateDatabase{
 		Name:                   redis.String(dbName),
@@ -619,12 +627,12 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 		Modules:  modules,
 	}
 	createDatabases = append(createDatabases, &createDatabase)
-	
-	if incompatibleModule != "" {
+
+	for _, inCompatibleModule := range incompatibleModules {
 		createOneModuleDb := createDatabase
-		createOneModuleDb.Name = redis.String(dbName+"-"+incompatibleModule)
+		createOneModuleDb.Name = redis.String(dbName + "-" + inCompatibleModule)
 		createOneModuleDb.Quantity = redis.Int(1)
-		createOneModuleDb.Modules = []*subscriptions.CreateModules{{Name: &incompatibleModule}}
+		createOneModuleDb.Modules = []*subscriptions.CreateModules{{Name: &inCompatibleModule}}
 		createDatabases = append(createDatabases, &createOneModuleDb)
 	}
 	return createDatabases
