@@ -94,7 +94,7 @@ only with Redis Labs internal cloud account
 
 The `creation_plan` block supports:
 
-* `memory_limit_in_gb` - (Required) Maximum memory usage that will be used your databases.
+* `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database.
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `modules` - (Optional) a list of modules that will be used by the databases in this subscription. 
 Example: `modules = ["RedisJSON", RedisBloom"]`.
