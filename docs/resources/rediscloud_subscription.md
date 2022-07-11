@@ -101,9 +101,11 @@ Example: `modules = ["RedisJSON", RedisBloom"]`.
 * `replication` - (Required) Databases replication. Set to `true` if any of your databases will use replication.
 * `quantity` - (Required) The planned number of databases in the subscription.
 * `throughput_measurement_by` - (Required) Throughput measurement method that will be used by your databases, (either ‘number-of-shards’ or ‘operations-per-second’)
-* `throughput_measurement_value` - (Required) Throughput value that will be used by your databases (as applies to selected measurement method)
-* `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes)
-of the items stored in your databases. Default: 0
+* `throughput_measurement_value` - (Required) Throughput value that will be used by your databases (as applies to selected measurement method). The value needs to be the maximum throughput measurement value 
+defined in one of your databases.
+* `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. 
+Estimated average size (measured in bytes) of the items stored in the database. The value needs to 
+be the maximum average item size defined in one of your databases.  Default: 0
 
 The cloud_provider `region` block supports:
 

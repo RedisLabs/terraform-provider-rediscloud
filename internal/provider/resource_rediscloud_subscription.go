@@ -591,13 +591,21 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 	replication := planMap["replication"].(bool)
 	// Add modules to the request
 	var modules []*subscriptions.CreateModules
+	// If there is an incompatible module, then allocate it to a separate db.
+	var incompatibleModule string
 	for _, v := range planMap["modules"].([]interface{}) {
 		module := v.(string)
+		if module == "RedisGraph" {
+			incompatibleModule = module
+			quantity = quantity - 1
+			continue
+		}
 		modules = append(modules, &subscriptions.CreateModules{Name: &module})
 	}
-
-	createDatabase := &subscriptions.CreateDatabase{
-		Name:                   redis.String("dummy-database"),
+	
+	dbName := "dummy-database"
+	createDatabase := subscriptions.CreateDatabase{
+		Name:                   redis.String(dbName),
 		Protocol:               redis.String("redis"),
 		MemoryLimitInGB:        redis.Float64(memoryLimitInGB),
 		SupportOSSClusterAPI:   redis.Bool(supportOSSClusterAPI),
@@ -610,7 +618,15 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 		Quantity: redis.Int(quantity),
 		Modules:  modules,
 	}
-	createDatabases = append(createDatabases, createDatabase)
+	createDatabases = append(createDatabases, &createDatabase)
+	
+	if incompatibleModule != "" {
+		createOneModuleDb := createDatabase
+		createOneModuleDb.Name = redis.String(dbName+"-"+incompatibleModule)
+		createOneModuleDb.Quantity = redis.Int(1)
+		createOneModuleDb.Modules = []*subscriptions.CreateModules{{Name: &incompatibleModule}}
+		createDatabases = append(createDatabases, &createOneModuleDb)
+	}
 	return createDatabases
 }
 

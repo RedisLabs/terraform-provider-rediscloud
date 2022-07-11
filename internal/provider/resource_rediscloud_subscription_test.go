@@ -1,18 +1,19 @@
 package provider
 
 import (
-	"context"
-	"flag"
-	"fmt"
-	"os"
-	"regexp"
-	"strconv"
-	"testing"
 
-	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+"context"
+"flag"
+"fmt"
+"github.com/RedisLabs/rediscloud-go-api/redis"
+"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+"github.com/stretchr/testify/assert"
+"os"
+"regexp"
+"strconv"
+"testing"
 )
 
 var contractFlag = flag.Bool("contract", false,
@@ -181,6 +182,33 @@ func TestAccResourceRedisCloudSubscription_createUpdateMarketplacePayment(t *tes
 			},
 		},
 	})
+}
+
+// Checks if the incompatible module is allocated to a separate dummy db.
+func TestIncompatibleModule(t *testing.T) {
+	planMap := map[string]interface{}{
+		"average_item_size_in_bytes": 1000,
+		"memory_limit_in_gb": float64(1),
+		"modules": []interface{}{"RedisSearch", "RedisJSON", "RedisGraph"},
+		"quantity": 2,
+		"replication": false,
+		"support_oss_cluster_api": false,
+		"throughput_measurement_by": "operations-per-second",
+		"throughput_measurement_value": 10000,
+	}
+	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	assert.Len(t, createDbs, 2)
+	
+	incompatibleModule := "RedisGraph"
+	for _, createDb := range createDbs {
+		modules := createDb.Modules
+		if len(modules) == 1 {
+			assert.Equal(t, "dummy-database-"+incompatibleModule, *createDb.Name)
+			assert.Equal(t, &incompatibleModule, modules[0].Name)
+			continue
+		}
+		assert.Len(t, modules, 2)
+	}
 }
 
 func testAccCheckSubscriptionDestroy(s *terraform.State) error {
