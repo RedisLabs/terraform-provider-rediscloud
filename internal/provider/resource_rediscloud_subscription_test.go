@@ -257,7 +257,7 @@ func TestRediSearchModuleInCreatePlanDatabases(t *testing.T){
 	for _, createDb := range createDbs {
 		modules := createDb.Modules
 		if *modules[0].Name == "RediSearch" {
-			assert.Equal(t,"number-of-shards", createDb.ThroughputMeasurement.By)
+			assert.Equal(t,"number-of-shards", *createDb.ThroughputMeasurement.By)
 		}
 	}
 }
