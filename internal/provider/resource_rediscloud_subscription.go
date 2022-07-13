@@ -632,7 +632,9 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 			By:    redis.String(throughputMeasurementBy),
 			Value: redis.Int(throughputMeasurementValue),
 		}
-		if *modules[0].Name == "RediSearch" {
+		
+		// RediSearch doesn't work with "operations-per-second" throughput.
+		if len(modules) > 0 && *modules[0].Name == "RediSearch" {
 			createThroughput.By = redis.String("number-of-shards")
 		}
 		
