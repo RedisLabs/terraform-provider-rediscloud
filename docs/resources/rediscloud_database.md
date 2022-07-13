@@ -43,12 +43,12 @@ resource "rediscloud_subscription" "example" {
   creation_plan {
     average_item_size_in_bytes = 1
     memory_limit_in_gb = 1
-    quantity = 1
+    quantity = 2
     replication=false
     support_oss_cluster_api=false
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
-    modules = ["RediSearch", "RedisBloom"]
+    modules = ["RedisJSON", "RedisBloom"]
   }
 }
 
@@ -79,6 +79,8 @@ resource "rediscloud_database" "example" {
       name = "dataset-size"
       value = 40
     }
+    depends_on = [rediscloud_subscription.example]
+
 }
 
 // An example of how a replica database can be provisioned
@@ -90,6 +92,8 @@ resource "rediscloud_database" "example_replica" {
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
     replica_of = [format("redis://%s", rediscloud_database.example.public_endpoint)]
+    depends_on = [rediscloud_subscription.example]
+
 } 
 ```
 
