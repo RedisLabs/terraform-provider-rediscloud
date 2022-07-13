@@ -583,14 +583,27 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 }
 
 // getAllModules: Returns all modules that need to be allocated to each dummy db
-func getAllModules(modules []*string, number_of_databases int) []*string {
-	var result []*string
-	if number_of_databases < len(modules) {
-		number_of_databases = len(modules)
+func getAllModules(planModules []*string, quantity int) []*string {
+
+	var addedModules []*string
+	totalPlannedModules := len(planModules)
+	// If there are remaining dbs without modules, then allocate the modules from the first index.
+	if len(planModules) > 1 && quantity > totalPlannedModules {
+		diff := quantity - totalPlannedModules
+		n := 0
+		for i := 0; i < diff; i++ {
+			if i < totalPlannedModules {
+				addedModules = append(addedModules, planModules[i])
+			} else {
+				if n > totalPlannedModules-1 {
+					n = 0
+				}
+				addedModules = append(addedModules, planModules[n])
+				n++
+			}
+		}
 	}
-	for i := 0; i < number_of_databases; i++ {
-		result = append(result, modules[i%len(modules)])
-	}
+	result := append(planModules, addedModules...)
 	return result
 }
 
