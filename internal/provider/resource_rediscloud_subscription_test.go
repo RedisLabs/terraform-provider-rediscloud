@@ -105,7 +105,7 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
 				Config:       fmt.Sprintf(testAccResourceRedisCloudSubscriptionNoCreationPlan, testCloudAccountName, name, "ram-and-flash"),
 				ResourceName: resourceName,
-				ExpectError:  regexp.MustCompile(`Error: ForceNew attribute "memory_storage" has been modified. The new subscription requires the creation_plan block`),
+				ExpectError:  regexp.MustCompile(`Error: ForceNew attribute "cloud_provider" has been modified. The new subscription requires the creation_plan block`),
 			},
 		},
 	})
