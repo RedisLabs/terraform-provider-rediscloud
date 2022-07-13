@@ -33,10 +33,9 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				return nil
 			}
 
-			const creationPlanErrorMsg = `the "creation_plan" block is required`
 			// The resource hasn't been created yet, but the creation plan is missing.
 			if diff.Id() == "" {
-				return fmt.Errorf(creationPlanErrorMsg)
+				return fmt.Errorf(`the "creation_plan" block is required`)
 			}
 
 			// Raise an error if a ForceNew attribute has been modified and the creation_plan is missing.
@@ -45,7 +44,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				for _, key := range keys {
 					switch key {
 					case "cloud_provider", "memory_storage", "payment_method":
-						return fmt.Errorf(creationPlanErrorMsg)
+						return fmt.Errorf(`ForceNew attribute "%s" has been modified. The new subscription requires the creation_plan block`, key)
 					}
 				}
 			}
