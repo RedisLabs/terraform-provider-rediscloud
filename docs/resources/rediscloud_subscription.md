@@ -78,8 +78,8 @@ The following arguments are supported:
 
 The `allowlist` block supports:
 
+* `security_group_ids` - (Requiured) Set of security groups that are allowed to access the databases associated with this subscription
 * `cidrs` - (Optional) Set of CIDR ranges that are allowed to access the databases associated with this subscription
-* `security_group_ids` - (Optional) Set of security groups that are allowed to access the databases associated with this subscription
 
 ~> **Note:** `allowlist` is only available when you run on your own cloud account, and not one that Redis Labs provided (i.e `cloud_account_id` != 1)
 
@@ -94,9 +94,9 @@ only with Redis Labs internal cloud account
 The `creation_plan` block supports:
 
 * `memory_limit_in_gb` - (Required) Maximum memory usage for the initial databases
-* `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
-* `modules` - (Optional) a list of modules that will be used by the databases in this subscription. 
+* `modules` - (Required) a list of modules that will be used by the databases in this subscription. 
 Example: `modules = ["RedisJSON", RedisBloom"]`.
+* `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `replication` - (Required) Databases replication.
 * `quantity` - (Required) The planned number of databases.
 * `throughput_measurement_by` - (Required) Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)
