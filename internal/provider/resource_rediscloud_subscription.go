@@ -7,8 +7,7 @@ import (
 	"log"
 	"regexp"
 	"strconv"
-	"strings"
-	"time"
+		"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
@@ -33,17 +32,6 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				return nil
 			}
 
-			// Raise an error if a ForceNew attribute has been modified and the creation_plan is missing.
-			for _, attrPath := range diff.GetChangedKeysPrefix("") {
-				keys := strings.Split(attrPath, ".")
-				for _, key := range keys {
-					switch key {
-					case "cloud_provider", "memory_storage", "payment_method":
-						return fmt.Errorf(`ForceNew attribute "%s" has been modified. The new subscription requires the creation_plan block`, key)
-					}
-				}
-			}
-			
 			// The resource hasn't been created yet, but the creation plan is missing.
 			if diff.Id() == "" {
 				return fmt.Errorf(`the "creation_plan" block is required`)
