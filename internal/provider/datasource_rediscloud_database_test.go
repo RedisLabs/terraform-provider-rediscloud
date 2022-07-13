@@ -78,6 +78,7 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api=true
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 1000
+	modules = []
   }
 }
 
