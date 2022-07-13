@@ -112,7 +112,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 						"security_group_ids": {
 							Description: "Set of security groups that are allowed to access the databases associated with this subscription",
 							Type:        schema.TypeSet,
-							Optional:    true,
+							Required:    true,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
