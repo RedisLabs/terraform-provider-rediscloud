@@ -78,7 +78,7 @@ The following arguments are supported:
 
 The `allowlist` block supports:
 
-* `security_group_ids` - (Requiured) Set of security groups that are allowed to access the databases associated with this subscription
+* `security_group_ids` - (Required) Set of security groups that are allowed to access the databases associated with this subscription
 * `cidrs` - (Optional) Set of CIDR ranges that are allowed to access the databases associated with this subscription
 
 ~> **Note:** `allowlist` is only available when you run on your own cloud account, and not one that Redis Labs provided (i.e `cloud_account_id` != 1)
