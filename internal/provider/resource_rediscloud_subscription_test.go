@@ -223,8 +223,8 @@ func TestModulesAllocationWhenQuantityHigherModules(t *testing.T) {
 	}
 }
 
-func TestNoModulesInCreatePlanDatabases(t *testing.T){
-		planMap := map[string]interface{}{
+func TestNoModulesInCreatePlanDatabases(t *testing.T) {
+	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,
 		"memory_limit_in_gb":           float64(1),
 		"modules":                      []interface{}{},
@@ -242,8 +242,8 @@ func TestNoModulesInCreatePlanDatabases(t *testing.T){
 	}
 }
 
-func TestRediSearchModuleInCreatePlanDatabases(t *testing.T){
-		planMap := map[string]interface{}{
+func TestRediSearchModuleInCreatePlanDatabases(t *testing.T) {
+	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,
 		"memory_limit_in_gb":           float64(1),
 		"modules":                      []interface{}{"RediSearch"},
@@ -257,7 +257,7 @@ func TestRediSearchModuleInCreatePlanDatabases(t *testing.T){
 	for _, createDb := range createDbs {
 		modules := createDb.Modules
 		if *modules[0].Name == "RediSearch" {
-			assert.Equal(t,"number-of-shards", *createDb.ThroughputMeasurement.By)
+			assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
 		}
 	}
 }

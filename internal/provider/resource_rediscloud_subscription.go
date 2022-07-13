@@ -583,26 +583,28 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 }
 
 // getAllModules: Returns all modules that need to be allocated to each dummy db
-func getAllModules(planModules []*string, quantity int) []*string{
+func getAllModules(planModules []*string, quantity int) []*string {
 
 	var addedModules []*string
 	totalPlannedModules := len(planModules)
 	// If there are remaining dbs without modules, then allocate the modules from the first index.
-	if len(planModules) > 1 && quantity > totalPlannedModules{
+	if len(planModules) > 1 && quantity > totalPlannedModules {
 		diff := quantity - totalPlannedModules
 		n := 0
 		for i := 0; i < diff; i++ {
 			if i < totalPlannedModules {
 				addedModules = append(addedModules, planModules[i])
 			} else {
-				if n > totalPlannedModules - 1 {n = 0}
+				if n > totalPlannedModules-1 {
+					n = 0
+				}
 				addedModules = append(addedModules, planModules[n])
 				n++
 			}
 		}
 	}
 	result := append(planModules, addedModules...)
-    return result
+	return result
 }
 
 func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*subscriptions.CreateDatabase {
@@ -635,12 +637,12 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 			By:    redis.String(throughputMeasurementBy),
 			Value: redis.Int(throughputMeasurementValue),
 		}
-		
+
 		// RediSearch doesn't work with "operations-per-second" throughput.
 		if len(modules) > 0 && *modules[0].Name == "RediSearch" {
 			createThroughput.By = redis.String("number-of-shards")
 		}
-		
+
 		createDatabase := subscriptions.CreateDatabase{
 			Name:                   redis.String(dbName + strconv.Itoa(idx)),
 			Protocol:               redis.String("redis"),
@@ -649,8 +651,8 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 			Replication:            redis.Bool(replication),
 			AverageItemSizeInBytes: redis.Int(averageItemSizeInBytes),
 			ThroughputMeasurement:  createThroughput,
-			Quantity: redis.Int(1),
-			Modules:  modules,
+			Quantity:               redis.Int(1),
+			Modules:                modules,
 		}
 		createDatabases = append(createDatabases, &createDatabase)
 	}
