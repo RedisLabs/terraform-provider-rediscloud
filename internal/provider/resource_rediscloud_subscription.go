@@ -629,8 +629,7 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 		for i, v := range allModules {
 			modules = append(modules, &subscriptions.CreateModules{Name: v})
 			// Remove the module from the modules list since it's already allocated.
-			allModules[i] = allModules[len(allModules)-1]
-			allModules = allModules[:len(allModules)-1]
+			allModules = allModules[i+1:]
 			break
 		}
 		createThroughput := &subscriptions.CreateThroughput{
