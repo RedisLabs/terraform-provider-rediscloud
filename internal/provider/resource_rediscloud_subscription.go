@@ -28,7 +28,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		UpdateContext: resourceRedisCloudSubscriptionUpdate,
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
 		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
-		    _, cPlanExists := diff.GetOk("creation_plan")
+			_, cPlanExists := diff.GetOk("creation_plan")
 			if cPlanExists {
 				return nil
 			}
@@ -597,7 +597,7 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 	}
 
 	createDatabase := &subscriptions.CreateDatabase{
-		Name:                   redis.String("dummy-database"),
+		Name:                   redis.String("creation-plan-db"),
 		Protocol:               redis.String("redis"),
 		MemoryLimitInGB:        redis.Float64(memoryLimitInGB),
 		SupportOSSClusterAPI:   redis.Bool(supportOSSClusterAPI),
