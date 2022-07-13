@@ -588,7 +588,7 @@ func getAllModules(planModules []*string, quantity int) []*string{
 	var addedModules []*string
 	totalPlannedModules := len(planModules)
 	// If there are remaining dbs without modules, then allocate the modules from the first index.
-	if quantity > totalPlannedModules{
+	if len(planModules) > 1 && quantity > totalPlannedModules{
 		diff := quantity - totalPlannedModules
 		n := 0
 		for i := 0; i < diff; i++ {

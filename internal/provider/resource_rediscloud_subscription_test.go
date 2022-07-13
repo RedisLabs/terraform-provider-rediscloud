@@ -223,6 +223,25 @@ func TestModulesAllocationWhenQuantityHigherModules(t *testing.T) {
 	}
 }
 
+func TestNoModulesInCreatePlanDatabases(t *testing.T){
+		planMap := map[string]interface{}{
+		"average_item_size_in_bytes":   1000,
+		"memory_limit_in_gb":           float64(1),
+		"modules":                      []interface{}{},
+		"quantity":                     2,
+		"replication":                  false,
+		"support_oss_cluster_api":      false,
+		"throughput_measurement_by":    "operations-per-second",
+		"throughput_measurement_value": 10000,
+	}
+	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	assert.Len(t, createDbs, 2)
+	for _, createDb := range createDbs {
+		modules := createDb.Modules
+		assert.Len(t, modules, 0)
+	}
+}
+
 func testAccCheckSubscriptionDestroy(s *terraform.State) error {
 	client := testProvider.Meta().(*apiClient)
 
