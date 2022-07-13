@@ -506,6 +506,9 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return diag.FromErr(err)
+	}
 	// Delete subscription once all databases are deleted
 	err = api.client.Subscription.Delete(ctx, subId)
 	if err != nil {
