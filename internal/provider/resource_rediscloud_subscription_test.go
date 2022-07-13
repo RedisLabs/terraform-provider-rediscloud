@@ -195,12 +195,18 @@ func TestModulesAllocationWhenQuantityLowerThanModules(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
+	
+	var allModules = map[string]int{}
 	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
 	assert.Len(t, createDbs, 3)
 	for _, createDb := range createDbs {
 		modules := createDb.Modules
 		assert.Len(t, modules, 1)
+		allModules[*modules[0].Name]++
 	}
+	assert.Equal(t, 1, allModules["RediSearch"])
+	assert.Equal(t, 1, allModules["RedisJSON"])
+	assert.Equal(t, 1, allModules["RedisGraph"])
 }
 
 // Checks if modules are allocated correctly into each dummy db if quantity exceeded the number of the modules.
@@ -215,12 +221,19 @@ func TestModulesAllocationWhenQuantityHigherModules(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
+	
+	var allModules = map[string]int{}
 	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
 	assert.Len(t, createDbs, 7)
 	for _, createDb := range createDbs {
 		modules := createDb.Modules
 		assert.Len(t, modules, 1)
+		allModules[*modules[0].Name]++
 	}
+	assert.Equal(t, 3, allModules["RedisJSON"])
+	assert.Equal(t, 2, allModules["RedisGraph"])
+	assert.Equal(t, 2, allModules["RedisBloom"])
+	
 }
 
 func TestNoModulesInCreatePlanDatabases(t *testing.T) {
@@ -246,8 +259,8 @@ func TestRediSearchModuleInCreatePlanDatabases(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,
 		"memory_limit_in_gb":           float64(1),
-		"modules":                      []interface{}{"RediSearch"},
-		"quantity":                     1,
+		"modules":                      []interface{}{"RediSearch", "RedisBloom"},
+		"quantity":                     2,
 		"replication":                  false,
 		"support_oss_cluster_api":      false,
 		"throughput_measurement_by":    "operations-per-second",
@@ -258,7 +271,12 @@ func TestRediSearchModuleInCreatePlanDatabases(t *testing.T) {
 		modules := createDb.Modules
 		if *modules[0].Name == "RediSearch" {
 			assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
+			continue
 		}
+		if *modules[0].Name == "RedisBloom" {
+			assert.Equal(t, "operations-per-second", *createDb.ThroughputMeasurement.By)
+		}
+		
 	}
 }
 
