@@ -130,6 +130,7 @@ resources for your databases. Like so:
       throughput_measurement_by = "operations-per-second"
       throughput_measurement_value = 10000
       modules = ["RedisJSON", "RedisBloom"]
+    }
   }
 
   // The database block has been moved to a separate resource - rediscloud_database.

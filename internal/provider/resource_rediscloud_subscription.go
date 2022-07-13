@@ -623,7 +623,7 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 	// Takes the max between the specified quantity and modules
 	quantity = int(math.Max(float64(quantity), float64(len(planModules))))
 	// Allocate 1 module per 1 dummy db to avoid an incompatible module.
-	dbName := "dummy-database-"
+	dbName := "creation-plan-db-"
 	for idx := 1; idx <= quantity; idx++ {
 		var modules []*subscriptions.CreateModules
 		for i, v := range allModules {
