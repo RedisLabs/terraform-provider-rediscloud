@@ -28,7 +28,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 		UpdateContext: resourceRedisCloudSubscriptionUpdate,
 		DeleteContext: resourceRedisCloudSubscriptionDelete,
 		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
-		    _, cPlanExists := diff.GetOk("creation_plan")
+			_, cPlanExists := diff.GetOk("creation_plan")
 			if cPlanExists {
 				return nil
 			}
@@ -290,7 +290,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 						"modules": {
 							Description: "Modules that will be used by the databases in this subscription.",
 							Type:        schema.TypeList,
-							Optional:    true,
+							Required:    true,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
