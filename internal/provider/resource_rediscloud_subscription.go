@@ -7,7 +7,7 @@ import (
 	"log"
 	"regexp"
 	"strconv"
-		"time"
+	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
