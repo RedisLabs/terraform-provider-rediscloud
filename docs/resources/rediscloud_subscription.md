@@ -104,6 +104,8 @@ Example: `modules = ["RedisJSON", RedisBloom"]`.
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes)
 of the items stored in the database. Default: 0
 
+~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `memory_storage`, `cloud_provider` or `payment_method`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
+
 The cloud_provider `region` block supports:
 
 * `region` - (Required) Deployment region as defined by cloud provider
