@@ -8,16 +8,15 @@ description: |-
 # Resource: rediscloud_subscription
 
 Creates a Subscription within your Redis Enterprise Cloud Account.
-This resource is responsible for creating subscriptions and the dummy databases within
+This resource is responsible for creating subscriptions and the databases within
  that subscription. This allows Redis Enterprise Cloud to provision
 your databases defined in separate resources in the most efficient way.
 
-~> **Note:** The creation_plan block allows the API server to create a well-optimised hardware specification for your databases in the cluster. Before creating a subscription, specify how many databases you want to have and the attributes
-that your databases will use. The provider will create the dummy databases with properties specified in the block, 
-those databases will be deleted after creating the subscription. Next, the databases defined as separate resources 
-will be attached to the subscription. This allows the API server to determine an optimised hardware specification for your 
-databases in the cluster.
-The creation_plan block can ONLY be used for provisioning new 
+~> **Note:** The creation_plan block allows the API server to create a well-optimised hardware specification for your databases in the cluster.
+The attributes inside the block are used by the provider to create initial 
+databases. Those databases will be deleted after provisioning a new 
+subscription, then the databases defined as separate resources will be attached to 
+the subscription. The creation_plan block can ONLY be used for provisioning new 
 subscriptions, the block will be ignored if you make any further changes or try importing the resource (e.g. `terraform import` ...).  
 
 ## Example Usage
@@ -96,7 +95,7 @@ The `creation_plan` block supports:
 
 * `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database.
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
-* `modules` - (Optional) a list of modules that will be used by the databases in this subscription. Each module will be allocated per dummy database.
+* `modules` - (Optional) a list of modules that will be used by the databases in this subscription. Each module will be allocated per creation-plan database.
 Example: `modules = ["RedisJSON", RedisBloom"]`.
 * `replication` - (Required) Databases replication. Set to `true` if any of your databases will use replication.
 * `quantity` - (Required) The planned number of databases in the subscription.
@@ -107,7 +106,7 @@ defined in one of your databases.
 Estimated average size (measured in bytes) of the items stored in the database. The value needs to 
 be the maximum average item size defined in one of your databases.  Default: 0
 
-~>**Note:** If the number of modules exceeds the `quantity` then additional dummy databases will be created with the modules defined in the `modules` block.
+~>**Note:** If the number of modules exceeds the `quantity` then additional creation-plan databases will be created with the modules defined in the `modules` block.
 
 The cloud_provider `region` block supports:
 

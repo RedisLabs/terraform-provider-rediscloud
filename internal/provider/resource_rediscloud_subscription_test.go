@@ -183,7 +183,7 @@ func TestAccResourceRedisCloudSubscription_createUpdateMarketplacePayment(t *tes
 	})
 }
 
-// Checks if modules are allocated correctly into each dummy db if the number of modules exceeded quantity of the dbs.
+// Checks if modules are allocated correctly into each creation-plan db if the number of modules exceeded quantity of the dbs.
 func TestModulesAllocationWhenQuantityLowerThanModules(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,
@@ -209,7 +209,7 @@ func TestModulesAllocationWhenQuantityLowerThanModules(t *testing.T) {
 	assert.Equal(t, 1, allModules["RedisGraph"])
 }
 
-// Checks if modules are allocated correctly into each dummy db if quantity exceeded the number of the modules.
+// Checks if modules are allocated correctly into each creation-plan db if quantity exceeded the number of the modules.
 func TestModulesAllocationWhenQuantityHigherModules(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,

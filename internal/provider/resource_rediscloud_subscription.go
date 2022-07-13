@@ -328,7 +328,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 
 	plan := d.Get("creation_plan").([]interface{})
 
-	// Create dummy databases
+	// Create creation-plan databases
 	planMap := plan[0].(map[string]interface{})
 	dbs = buildSubscriptionCreatePlanDatabases(planMap)
 
@@ -364,7 +364,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 		if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 			return diag.FromErr(err)
 		}
-		// Delete each dummy database
+		// Delete each creation-plan database
 		dbErr := api.client.Database.Delete(ctx, subId, dbId)
 		if dbErr != nil {
 			diag.FromErr(dbErr)
@@ -582,7 +582,7 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 	return createCloudProviders, nil
 }
 
-// getAllModules: Returns all modules that need to be allocated to each dummy db
+// getAllModules: Returns all modules that need to be allocated to each creation-plan db
 func getAllModules(planModules []*string, quantity int) []*string {
 
 	var addedModules []*string
@@ -622,7 +622,7 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 	allModules := getAllModules(planModules, quantity)
 	// Takes the max between the specified quantity and modules
 	quantity = int(math.Max(float64(quantity), float64(len(planModules))))
-	// Allocate 1 module per 1 dummy db to avoid an incompatible module.
+	// Allocate 1 module per 1 creation-plan db to avoid an incompatible module.
 	dbName := "creation-plan-db-"
 	for idx := 1; idx <= quantity; idx++ {
 		var modules []*subscriptions.CreateModules
