@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -581,6 +582,29 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 	return createCloudProviders, nil
 }
 
+// getAllModules: Returns all modules that need to be allocated to each dummy db
+func getAllModules(planModules []*string, quantity int) []*string{
+
+	var addedModules []*string
+	totalPlannedModules := len(planModules)
+	// If there are remaining dbs without modules, then allocate the modules from the first index.
+	if quantity > totalPlannedModules{
+		diff := quantity - totalPlannedModules
+		n := 0
+		for i := 0; i < diff; i++ {
+			if i < totalPlannedModules {
+				addedModules = append(addedModules, planModules[i])
+			} else {
+				if n > totalPlannedModules - 1 {n = 0}
+				addedModules = append(addedModules, planModules[n])
+				n++
+			}
+		}
+	}
+	result := append(planModules, addedModules...)
+    return result
+}
+
 func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*subscriptions.CreateDatabase {
 
 	createDatabases := make([]*subscriptions.CreateDatabase, 0)
@@ -592,48 +616,37 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 	quantity := planMap["quantity"].(int)
 	supportOSSClusterAPI := planMap["support_oss_cluster_api"].(bool)
 	replication := planMap["replication"].(bool)
-	// Add modules to the request
-	var modules []*subscriptions.CreateModules
-	// If there is an incompatible module, then allocate it to a separate dummy db.
-	var incompatibleModules []string
-
-out:
-	for _, v := range planMap["modules"].([]interface{}) {
-		module := v.(string)
-		for _, incModule := range INCOMPATIBLE_MODULES {
-			if module == incModule {
-				incompatibleModules = append(incompatibleModules, module)
-				// separate a dummy db for the incompatible module
-				quantity = quantity - 1
-				continue out
-			}
+	planModules := interfaceToStringSlice(planMap["modules"].([]interface{}))
+	allModules := getAllModules(planModules, quantity)
+	// Takes the max between the specified quantity and modules
+	quantity = int(math.Max(float64(quantity), float64(len(planModules))))
+	// Allocate 1 module per 1 dummy db to avoid an incompatible module.
+	dbName := "dummy-database-"
+	for idx := 1; idx <= quantity; idx++ {
+		var modules []*subscriptions.CreateModules
+		for i, v := range allModules {
+			modules = append(modules, &subscriptions.CreateModules{Name: v})
+			// Remove the module from the modules list since it's already allocated.
+			allModules[i] = allModules[len(allModules)-1]
+			allModules = allModules[:len(allModules)-1]
+			break
 		}
-		modules = append(modules, &subscriptions.CreateModules{Name: &module})
-	}
-
-	dbName := "dummy-database"
-	createDatabase := subscriptions.CreateDatabase{
-		Name:                   redis.String(dbName),
-		Protocol:               redis.String("redis"),
-		MemoryLimitInGB:        redis.Float64(memoryLimitInGB),
-		SupportOSSClusterAPI:   redis.Bool(supportOSSClusterAPI),
-		Replication:            redis.Bool(replication),
-		AverageItemSizeInBytes: redis.Int(averageItemSizeInBytes),
-		ThroughputMeasurement: &subscriptions.CreateThroughput{
-			By:    redis.String(throughputMeasurementBy),
-			Value: redis.Int(throughputMeasurementValue),
-		},
-		Quantity: redis.Int(quantity),
-		Modules:  modules,
-	}
-	createDatabases = append(createDatabases, &createDatabase)
-
-	for _, inCompatibleModule := range incompatibleModules {
-		createOneModuleDb := createDatabase
-		createOneModuleDb.Name = redis.String(dbName + "-" + inCompatibleModule)
-		createOneModuleDb.Quantity = redis.Int(1)
-		createOneModuleDb.Modules = []*subscriptions.CreateModules{{Name: &inCompatibleModule}}
-		createDatabases = append(createDatabases, &createOneModuleDb)
+		
+		createDatabase := subscriptions.CreateDatabase{
+			Name:                   redis.String(dbName + strconv.Itoa(idx)),
+			Protocol:               redis.String("redis"),
+			MemoryLimitInGB:        redis.Float64(memoryLimitInGB),
+			SupportOSSClusterAPI:   redis.Bool(supportOSSClusterAPI),
+			Replication:            redis.Bool(replication),
+			AverageItemSizeInBytes: redis.Int(averageItemSizeInBytes),
+			ThroughputMeasurement: &subscriptions.CreateThroughput{
+				By:    redis.String(throughputMeasurementBy),
+				Value: redis.Int(throughputMeasurementValue),
+			},
+			Quantity: redis.Int(1),
+			Modules:  modules,
+		}
+		createDatabases = append(createDatabases, &createDatabase)
 	}
 	return createDatabases
 }

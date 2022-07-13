@@ -183,8 +183,8 @@ func TestAccResourceRedisCloudSubscription_createUpdateMarketplacePayment(t *tes
 	})
 }
 
-// Checks if the incompatible module is allocated to a separate dummy db.
-func TestIncompatibleModule(t *testing.T) {
+// Checks if modules are allocated correctly into each dummy db if the number of modules exceeded quantity of the dbs.
+func TestModulesAllocationWhenQuantityLowerThanModules(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,
 		"memory_limit_in_gb":           float64(1),
@@ -196,17 +196,30 @@ func TestIncompatibleModule(t *testing.T) {
 		"throughput_measurement_value": 10000,
 	}
 	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
-	assert.Len(t, createDbs, 2)
-
-	incompatibleModule := "RedisGraph"
+	assert.Len(t, createDbs, 3)
 	for _, createDb := range createDbs {
 		modules := createDb.Modules
-		if len(modules) == 1 {
-			assert.Equal(t, "dummy-database-"+incompatibleModule, *createDb.Name)
-			assert.Equal(t, &incompatibleModule, modules[0].Name)
-			continue
-		}
-		assert.Len(t, modules, 2)
+		assert.Len(t, modules, 1)
+	}
+}
+
+// Checks if modules are allocated correctly into each dummy db if quantity exceeded the number of the modules.
+func TestModulesAllocationWhenQuantityHigherModules(t *testing.T) {
+	planMap := map[string]interface{}{
+		"average_item_size_in_bytes":   1000,
+		"memory_limit_in_gb":           float64(1),
+		"modules":                      []interface{}{"RedisJSON", "RedisGraph", "RedisBloom"},
+		"quantity":                     7,
+		"replication":                  false,
+		"support_oss_cluster_api":      false,
+		"throughput_measurement_by":    "operations-per-second",
+		"throughput_measurement_value": 10000,
+	}
+	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	assert.Len(t, createDbs, 7)
+	for _, createDb := range createDbs {
+		modules := createDb.Modules
+		assert.Len(t, modules, 1)
 	}
 }
 
