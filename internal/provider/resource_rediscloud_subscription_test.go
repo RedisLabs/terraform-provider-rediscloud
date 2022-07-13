@@ -242,6 +242,26 @@ func TestNoModulesInCreatePlanDatabases(t *testing.T){
 	}
 }
 
+func TestRediSearchModuleInCreatePlanDatabases(t *testing.T){
+		planMap := map[string]interface{}{
+		"average_item_size_in_bytes":   1000,
+		"memory_limit_in_gb":           float64(1),
+		"modules":                      []interface{}{"RediSearch"},
+		"quantity":                     1,
+		"replication":                  false,
+		"support_oss_cluster_api":      false,
+		"throughput_measurement_by":    "operations-per-second",
+		"throughput_measurement_value": 10000,
+	}
+	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	for _, createDb := range createDbs {
+		modules := createDb.Modules
+		if *modules[0].Name == "RediSearch" {
+			assert.Equal(t,"number-of-shards", createDb.ThroughputMeasurement.By)
+		}
+	}
+}
+
 func testAccCheckSubscriptionDestroy(s *terraform.State) error {
 	client := testProvider.Meta().(*apiClient)
 

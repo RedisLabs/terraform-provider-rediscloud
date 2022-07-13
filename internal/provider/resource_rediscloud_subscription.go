@@ -21,9 +21,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-// INCOMPATIBLE_MODULES List of incompatible modules that need to be allocated in a separate dummy database.
-var INCOMPATIBLE_MODULES = [...]string{"RedisGraph"}
-
 func resourceRedisCloudSubscription() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates a Subscription and database resources within your Redis Enterprise Cloud Account.",
@@ -631,6 +628,13 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 			allModules = allModules[:len(allModules)-1]
 			break
 		}
+		createThroughput := &subscriptions.CreateThroughput{
+			By:    redis.String(throughputMeasurementBy),
+			Value: redis.Int(throughputMeasurementValue),
+		}
+		if *modules[0].Name == "RediSearch" {
+			createThroughput.By = redis.String("number-of-shards")
+		}
 		
 		createDatabase := subscriptions.CreateDatabase{
 			Name:                   redis.String(dbName + strconv.Itoa(idx)),
@@ -639,10 +643,7 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 			SupportOSSClusterAPI:   redis.Bool(supportOSSClusterAPI),
 			Replication:            redis.Bool(replication),
 			AverageItemSizeInBytes: redis.Int(averageItemSizeInBytes),
-			ThroughputMeasurement: &subscriptions.CreateThroughput{
-				By:    redis.String(throughputMeasurementBy),
-				Value: redis.Int(throughputMeasurementValue),
-			},
+			ThroughputMeasurement:  createThroughput,
 			Quantity: redis.Int(1),
 			Modules:  modules,
 		}
