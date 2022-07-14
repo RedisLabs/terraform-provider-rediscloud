@@ -78,8 +78,8 @@ The following arguments are supported:
 
 The `allowlist` block supports:
 
+* `security_group_ids` - (Required) Set of security groups that are allowed to access the databases associated with this subscription
 * `cidrs` - (Optional) Set of CIDR ranges that are allowed to access the databases associated with this subscription
-* `security_group_ids` - (Optional) Set of security groups that are allowed to access the databases associated with this subscription
 
 ~> **Note:** `allowlist` is only available when you run on your own cloud account, and not one that Redis Labs provided (i.e `cloud_account_id` != 1)
 
@@ -93,16 +93,20 @@ only with Redis Labs internal cloud account
 
 The `creation_plan` block supports:
 
-* `memory_limit_in_gb` - (Required) Maximum memory usage for the initial databases
-* `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
-* `modules` - (Optional) a list of modules that will be used by the databases in this subscription. 
+* `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database.
+* `modules` - (Required) a list of modules that will be used by the databases in this subscription. 
 Example: `modules = ["RedisJSON", RedisBloom"]`.
-* `replication` - (Required) Databases replication.
-* `quantity` - (Required) The planned number of databases.
-* `throughput_measurement_by` - (Required) Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)
-* `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
-* `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes)
-of the items stored in the database. Default: 0
+* `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
+* `replication` - (Required) Databases replication. Set to `true` if any of your databases will use replication.
+* `quantity` - (Required) The planned number of databases in the subscription.
+* `throughput_measurement_by` - (Required) Throughput measurement method that will be used by your databases, (either ‘number-of-shards’ or ‘operations-per-second’)
+* `throughput_measurement_value` - (Required) Throughput value that will be used by your databases (as applies to selected measurement method). The value needs to be the maximum throughput measurement value 
+defined in one of your databases.
+* `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. 
+Estimated average size (measured in bytes) of the items stored in the database. The value needs to 
+be the maximum average item size defined in one of your databases.  Default: 0
+
+~>**Note:** If the number of modules exceeds the `quantity` then additional creation-plan databases will be created with the modules defined in the `modules` block.
 
 ~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `memory_storage`, `cloud_provider` or `payment_method`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
 

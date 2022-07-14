@@ -33,7 +33,7 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 	)
 	dataSourceName := "data.rediscloud_subscription_peerings.example"
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPeeringPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
@@ -89,6 +89,7 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api      = false
     throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 1000
+	modules = []
   }
 }
 
