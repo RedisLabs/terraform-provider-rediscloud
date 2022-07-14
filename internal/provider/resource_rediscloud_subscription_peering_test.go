@@ -2,12 +2,13 @@ package provider
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"net"
 	"os"
 	"regexp"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
@@ -167,6 +168,7 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api=false
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
+	modules = []
   }
 }
 
@@ -208,6 +210,7 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api=false
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
+	modules = []
   }
 }
 

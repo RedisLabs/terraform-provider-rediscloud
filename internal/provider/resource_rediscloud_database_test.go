@@ -182,6 +182,7 @@ resource "rediscloud_subscription" "example" {
 
   allowlist {
     cidrs = ["192.168.0.0/16"]
+	security_group_ids = []
   }
 
   cloud_provider {
@@ -202,6 +203,7 @@ resource "rediscloud_subscription" "example" {
     quantity = 1
     replication=false
     support_oss_cluster_api=false
+	modules = []
   }
 }
 `
@@ -309,6 +311,7 @@ resource "rediscloud_subscription" "example" {
   memory_storage    = "ram"
   allowlist {
     cidrs = ["192.168.0.0/16"]
+	security_group_ids = []
   }
   cloud_provider {
     provider         = data.rediscloud_cloud_account.account.provider_type

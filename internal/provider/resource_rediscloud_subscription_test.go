@@ -328,6 +328,7 @@ resource "rediscloud_subscription" "example" {
 
   allowlist {
     cidrs = ["192.168.0.0/16"]
+	security_group_ids = []
   }
 
   cloud_provider {
@@ -343,12 +344,12 @@ resource "rediscloud_subscription" "example" {
   creation_plan {
     average_item_size_in_bytes = 1
     memory_limit_in_gb = 1
-    modules = ["RedisJSON", "RedisBloom"]
     quantity = 1
     replication=false
     support_oss_cluster_api=false
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
+	modules = ["RedisJSON", "RedisBloom"]
   }
 }
 `
@@ -373,6 +374,7 @@ resource "rediscloud_subscription" "example" {
 
   allowlist {
     cidrs = ["192.168.0.0/16"]
+	security_group_ids = []
   }
 
   cloud_provider {
@@ -402,6 +404,7 @@ resource "rediscloud_subscription" "example" {
 
   allowlist {
     cidrs = ["192.168.0.0/16"]
+	security_group_ids = []
   }
 
   cloud_provider {
@@ -422,6 +425,7 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api=false
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
+	modules = []
   }
 }
 `
@@ -442,6 +446,7 @@ resource "rediscloud_subscription" "example" {
 
   allowlist {
     cidrs = ["192.168.0.0/16"]
+	security_group_ids = []
   }
 
   cloud_provider {
@@ -462,6 +467,7 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api=false
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
+	modules = []
   }
 }
 `

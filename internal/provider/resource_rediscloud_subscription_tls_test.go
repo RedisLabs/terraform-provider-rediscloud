@@ -15,7 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-
 var tlsFlag = flag.Bool("tls", false,
 	"Add this flag '-tls' to run tests for subscriptions and databases that use TLS")
 
@@ -270,6 +269,7 @@ resource "rediscloud_subscription" "example" {
 
   allowlist {
     cidrs = ["192.168.0.0/16"]
+	security_group_ids = []
   }
 
   cloud_provider {
@@ -318,6 +318,7 @@ resource "rediscloud_subscription" "example" {
 
   allowlist {
     cidrs = ["192.168.0.0/16"]
+	security_group_ids = []
   }
 
   cloud_provider {
@@ -365,6 +366,7 @@ resource "rediscloud_subscription" "example" {
 
   allowlist {
     cidrs = ["192.168.0.0/16"]
+	security_group_ids = []
   }
 
   cloud_provider {
