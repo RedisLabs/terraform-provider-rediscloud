@@ -4,15 +4,15 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"os"
-	"regexp"
-	"strconv"
-	"testing"
-
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/stretchr/testify/assert"
+	"os"
+	"regexp"
+	"strconv"
+	"testing"
 )
 
 var contractFlag = flag.Bool("contract", false,
@@ -30,7 +30,7 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 
 	var subId int
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
@@ -181,6 +181,103 @@ func TestAccResourceRedisCloudSubscription_createUpdateMarketplacePayment(t *tes
 			},
 		},
 	})
+}
+
+// Checks if modules are allocated correctly into each creation-plan db if the number of modules exceeded quantity of the dbs.
+func TestModulesAllocationWhenQuantityLowerThanModules(t *testing.T) {
+	planMap := map[string]interface{}{
+		"average_item_size_in_bytes":   1000,
+		"memory_limit_in_gb":           float64(1),
+		"modules":                      []interface{}{"RediSearch", "RedisJSON", "RedisGraph"},
+		"quantity":                     2,
+		"replication":                  false,
+		"support_oss_cluster_api":      false,
+		"throughput_measurement_by":    "operations-per-second",
+		"throughput_measurement_value": 10000,
+	}
+	
+	var allModules = map[string]int{}
+	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	assert.Len(t, createDbs, 3)
+	for _, createDb := range createDbs {
+		modules := createDb.Modules
+		assert.Len(t, modules, 1)
+		allModules[*modules[0].Name]++
+	}
+	assert.Equal(t, 1, allModules["RediSearch"])
+	assert.Equal(t, 1, allModules["RedisJSON"])
+	assert.Equal(t, 1, allModules["RedisGraph"])
+}
+
+// Checks if modules are allocated correctly into each creation-plan db if quantity exceeded the number of the modules.
+func TestModulesAllocationWhenQuantityHigherModules(t *testing.T) {
+	planMap := map[string]interface{}{
+		"average_item_size_in_bytes":   1000,
+		"memory_limit_in_gb":           float64(1),
+		"modules":                      []interface{}{"RedisJSON", "RedisGraph", "RedisBloom"},
+		"quantity":                     7,
+		"replication":                  false,
+		"support_oss_cluster_api":      false,
+		"throughput_measurement_by":    "operations-per-second",
+		"throughput_measurement_value": 10000,
+	}
+	
+	var allModules = map[string]int{}
+	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	assert.Len(t, createDbs, 7)
+	for _, createDb := range createDbs {
+		modules := createDb.Modules
+		assert.Len(t, modules, 1)
+		allModules[*modules[0].Name]++
+	}
+	assert.Equal(t, 3, allModules["RedisJSON"])
+	assert.Equal(t, 2, allModules["RedisGraph"])
+	assert.Equal(t, 2, allModules["RedisBloom"])
+	
+}
+
+func TestNoModulesInCreatePlanDatabases(t *testing.T) {
+	planMap := map[string]interface{}{
+		"average_item_size_in_bytes":   1000,
+		"memory_limit_in_gb":           float64(1),
+		"modules":                      []interface{}{},
+		"quantity":                     2,
+		"replication":                  false,
+		"support_oss_cluster_api":      false,
+		"throughput_measurement_by":    "operations-per-second",
+		"throughput_measurement_value": 10000,
+	}
+	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	assert.Len(t, createDbs, 2)
+	for _, createDb := range createDbs {
+		modules := createDb.Modules
+		assert.Len(t, modules, 0)
+	}
+}
+
+func TestRediSearchModuleInCreatePlanDatabases(t *testing.T) {
+	planMap := map[string]interface{}{
+		"average_item_size_in_bytes":   1000,
+		"memory_limit_in_gb":           float64(1),
+		"modules":                      []interface{}{"RediSearch", "RedisBloom"},
+		"quantity":                     2,
+		"replication":                  false,
+		"support_oss_cluster_api":      false,
+		"throughput_measurement_by":    "operations-per-second",
+		"throughput_measurement_value": 10000,
+	}
+	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	for _, createDb := range createDbs {
+		modules := createDb.Modules
+		if *modules[0].Name == "RediSearch" {
+			assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
+			continue
+		}
+		if *modules[0].Name == "RedisBloom" {
+			assert.Equal(t, "operations-per-second", *createDb.ThroughputMeasurement.By)
+		}
+		
+	}
 }
 
 func testAccCheckSubscriptionDestroy(s *terraform.State) error {
