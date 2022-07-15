@@ -513,8 +513,7 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 	// This additional wait ensures that the databases are deleted before the subscription is deleted.
-	//lintignore:R018
-	time.Sleep(10 * time.Second)
+	time.Sleep(10 * time.Second) //lintignore:R018
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
