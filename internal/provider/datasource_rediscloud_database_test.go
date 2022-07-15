@@ -15,7 +15,7 @@ func TestAccDataSourceRedisCloudDatabase_basic(t *testing.T) {
 
 	dataSourceName := "data.rediscloud_database.example"
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
