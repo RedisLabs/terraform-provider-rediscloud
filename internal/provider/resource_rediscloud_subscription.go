@@ -493,6 +493,14 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
+	// Wait for the subscription to be active before deleting it.
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return diag.FromErr(err)
+	}
+
+	// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
+	// This additional wait ensures that the databases are deleted before the subscription is deleted.
+	time.Sleep(10 * time.Second) //lintignore:R018
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
