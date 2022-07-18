@@ -8,7 +8,6 @@ import (
 	"math"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -34,21 +33,9 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				return nil
 			}
 
-			const creationPlanErrorMsg = `the "creation_plan" block is required`
 			// The resource hasn't been created yet, but the creation plan is missing.
 			if diff.Id() == "" {
-				return fmt.Errorf(creationPlanErrorMsg)
-			}
-
-			// Raise an error if a ForceNew attribute has been modified and the creation_plan is missing.
-			for _, attrPath := range diff.GetChangedKeysPrefix("") {
-				keys := strings.Split(attrPath, ".")
-				for _, key := range keys {
-					switch key {
-					case "cloud_provider", "memory_storage", "payment_method":
-						return fmt.Errorf(creationPlanErrorMsg)
-					}
-				}
+				return fmt.Errorf(`the "creation_plan" block is required`)
 			}
 			return nil
 		},
@@ -506,6 +493,14 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
+	// Wait for the subscription to be active before deleting it.
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return diag.FromErr(err)
+	}
+
+	// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
+	// This additional wait ensures that the databases are deleted before the subscription is deleted.
+	time.Sleep(10 * time.Second) //lintignore:R018
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
