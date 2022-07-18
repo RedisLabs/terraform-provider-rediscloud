@@ -117,12 +117,7 @@ resource "rediscloud_subscription" "example" {
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
     password = random_password.password.result
-    dynamic "module" {
-      for_each = ["RedisJSON", "RedisBloom"]
-      content {
-        name = module.value
-      }
-    }
+
     alert {
       name = "dataset-size"
       value = 40
@@ -183,6 +178,7 @@ Cannot be enabled when `support_oss_cluster_api` is enabled.
 * `module` - (Optional) A module object, documented below
 * `alert` - (Optional) Set of alerts to enable on the database, documented below
 * `data_persistence` - (Optional) Rate of database data persistence (in persistent storage). Default: ‘none’
+* `data_eviction` - (Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru')
 * `password` - (Required) Password used to access the database
 * `replication` - (Optional) Databases replication. Default: ‘true’
 * `throughput_measurement_by` - (Required) Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)
@@ -215,28 +211,6 @@ The database `alert` block supports:
 The database `module` block supports:
 
 * `name` (Required) Name of the module to enable
-
-For example:
-```terraform
-  module {
-    name = "RedisJSON"
-  }
-  
-  module {
-    name = "RedisBloom"
-  }
-```
-The above can be expressed in a dynamic block:
-```terraform
-  dynamic "module" {
-    for_each = ["RedisJSON", "RedisBloom"]
-    content {
-      name = module.value
-    }
-  }
-```
-
-~> **Note:** You **CAN NOT** add / remove modules once they are assigned to the database.
 
 ### Timeouts
 
