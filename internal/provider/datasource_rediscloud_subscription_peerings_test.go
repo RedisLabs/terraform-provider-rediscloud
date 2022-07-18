@@ -22,12 +22,13 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 	awsAccountId := os.Getenv("AWS_ACCOUNT_ID")
 	awsVPCId := os.Getenv("AWS_VPC_ID")
 	awsVPCCidr := os.Getenv("AWS_VPC_CIDR")
+	awsRegion := os.Getenv("AWS_PEERING_REGION")
 	tf := fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionPeeringsDataSource,
 		testCloudAccountName,
 		name,
 		subCidrRange,
 		password,
-		os.Getenv("AWS_PEERING_REGION"),
+		awsRegion,
 		awsAccountId,
 		awsVPCId,
 		awsVPCCidr,
@@ -48,6 +49,7 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 						"vpc_id":         regexp.MustCompile(awsVPCId),
 						"vpc_cidr":       regexp.MustCompile(awsVPCCidr),
 						"aws_peering_id": regexp.MustCompile("^pcx-"),
+						"region":         regexp.MustCompile(awsRegion),
 					}),
 				),
 			},
@@ -70,7 +72,6 @@ resource "rediscloud_subscription" "example" {
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
-  persistent_storage_encryption = false
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type

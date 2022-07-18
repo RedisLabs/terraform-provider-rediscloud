@@ -2,10 +2,31 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-## 0.2.9 (unreleased)
+## 0.3.0 (May 24 2022)
+
+### Added
+
+- Added support for the DataEviction attribute in the _database_ data source and _subscription_ resource
+- Added paymentMethod field to Subscription resource
+
+### Removed
+
+- Removed a deprecated attribute: persistent_storage_encryption 
+
+### Changed
+
+- Updates rediscloud-go-api to v0.1.7: removed the persistent_storage_encryption attribute from the API calls
+- Adds region attribute to Peering resource (for Read method) and data resource
+- Patch a vulnerability: CVE-2022-29810 by upgrading go-getter v1.5.3 -> v1.5.11
+- Fix timing on large subscription: reduce PUT requests
+
+## 0.2.9 (March 28 2022)
+
+### Changed
 
 - Updates additional dependencies contributing to build, (goreleaser-action 2.8.1)
 - Updates Terraform Plugin SDK to v2.10.1
+- Updates rediscloud-go-api dependency to v0.1.6 use correct content-type with API
 
 ## 0.2.8 (December 14 2021)
 

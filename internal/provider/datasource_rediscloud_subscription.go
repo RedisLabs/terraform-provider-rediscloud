@@ -21,6 +21,11 @@ func dataSourceRedisCloudSubscription() *schema.Resource {
 				Computed:    true,
 				Optional:    true,
 			},
+			"payment_method": {
+				Description: "Payment method for the requested subscription. Either 'credit-card' or 'marketplace'",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"payment_method_id": {
 				Description: "A valid payment method pre-defined in the current account",
 				Type:        schema.TypeString,
@@ -29,11 +34,6 @@ func dataSourceRedisCloudSubscription() *schema.Resource {
 			"memory_storage": {
 				Description: "Memory storage preference: either ‘ram’ or a combination of 'ram-and-flash’",
 				Type:        schema.TypeString,
-				Computed:    true,
-			},
-			"persistent_storage_encryption": {
-				Description: "Encrypt data stored in persistent storage. Required for a GCP subscription",
-				Type:        schema.TypeBool,
 				Computed:    true,
 			},
 			"number_of_databases": {
@@ -164,10 +164,10 @@ func dataSourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.Resourc
 	if err := d.Set("payment_method_id", paymentMethodID); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("memory_storage", redis.StringValue(sub.MemoryStorage)); err != nil {
+	if err := d.Set("payment_method", sub.PaymentMethod); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("persistent_storage_encryption", redis.BoolValue(sub.StorageEncryption)); err != nil {
+	if err := d.Set("memory_storage", redis.StringValue(sub.MemoryStorage)); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("number_of_databases", redis.IntValue(sub.NumberOfDatabases)); err != nil {

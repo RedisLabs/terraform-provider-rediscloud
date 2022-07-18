@@ -12,11 +12,16 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/stretchr/testify/assert"
 )
 
 var contractFlag = flag.Bool("contract", false,
 	"Add this flag '-contract' to run tests for contract associated accounts")
+
+var marketplaceFlag = flag.Bool("marketplace", false,
+	"Add this flag '-marketplace' to run tests for marketplace associated accounts")
 
 func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
 
@@ -44,6 +49,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabase(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.data_eviction", "volatile-lru"),
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
 
@@ -115,6 +121,7 @@ func TestAccResourceRedisCloudSubscription_addUpdateDeleteDatabase(t *testing.T)
 					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.data_eviction", "volatile-lru"),
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
 
@@ -353,6 +360,7 @@ func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testin
 					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
 					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 				),
 			},
@@ -360,6 +368,47 @@ func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testin
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionContractPayment, testCloudAccountName, updatedName, 1, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
+					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceRedisCloudSubscription_createUpdateMarketplacePayment(t *testing.T) {
+
+	if !*marketplaceFlag {
+		t.Skip("The '-marketplace' parameter wasn't provided in the test command.")
+	}
+
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	updatedName := fmt.Sprintf("%v-updatedName", name)
+	password := acctest.RandString(20)
+	resourceName := "rediscloud_subscription.example"
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, testCloudAccountName, name, 1, password),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
+					resource.TestCheckResourceAttr(resourceName, "database.#", "1"),
+					resource.TestMatchResourceAttr(resourceName, "database.0.db_id", regexp.MustCompile("^[1-9][0-9]*$")),
+					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
+					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
+				),
+			},
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, testCloudAccountName, updatedName, 1, password),
+				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
 				),
 			},
@@ -393,6 +442,59 @@ func testAccCheckSubscriptionDestroy(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+// A simple Set function to generate a hash based on two attributes.
+func testSetFunc(v interface{}) int {
+	m := v.(map[string]interface{})
+	result := fmt.Sprintf("%s%d", m["name"].(string), m["memory_limit_in_gb"].(int))
+	return schema.HashString(result)
+}
+
+// Tests the diff() function. Checks if the function detects a new or modified database.
+func TestDiffFunction(t *testing.T) {
+	var oldDbBlocks []interface{}
+	var newDbBlocks []interface{}
+
+	// The user created 3 dbs
+	oldDbBlocks = append(oldDbBlocks, map[string]interface{}{
+		"name":               "db-0",
+		"memory_limit_in_gb": 1,
+	}, map[string]interface{}{
+		"name":               "db-1",
+		"memory_limit_in_gb": 1,
+	}, map[string]interface{}{
+		"name":               "db-2",
+		"memory_limit_in_gb": 1,
+	})
+
+	// The user deleted db-0, modified db-1, added db-3 (new).
+	newDbBlocks = append(newDbBlocks, map[string]interface{}{
+		"name":               "db-1",
+		"memory_limit_in_gb": 2,
+	}, map[string]interface{}{
+		"name":               "db-2",
+		"memory_limit_in_gb": 1,
+	}, map[string]interface{}{
+		"name":               "db-3",
+		"memory_limit_in_gb": 1,
+	})
+
+	oldSet := schema.NewSet(testSetFunc, oldDbBlocks)
+	newSet := schema.NewSet(testSetFunc, newDbBlocks)
+
+	addition, existing, deletion := diff(oldSet, newSet, func(v interface{}) string {
+		m := v.(map[string]interface{})
+		return m["name"].(string)
+	})
+
+	assert.Len(t, addition, 1)
+	assert.Len(t, existing, 1)
+	assert.Len(t, deletion, 1)
+
+	assert.Equal(t, addition[0]["name"], "db-3")
+	assert.Equal(t, existing[0]["name"], "db-1")
+	assert.Equal(t, deletion[0]["name"], "db-0")
 }
 
 const testAccResourceRedisCloudSubscriptionOneDb = `
@@ -432,6 +534,7 @@ resource "rediscloud_subscription" "example" {
     memory_limit_in_gb = %d
     support_oss_cluster_api = true
     data_persistence = "none"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "operations-per-second"
     password = "%s"
@@ -478,6 +581,7 @@ resource "rediscloud_subscription" "example" {
     memory_limit_in_gb = %d
     support_oss_cluster_api = true
     data_persistence = "none"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "operations-per-second"
     password = "%s"
@@ -490,6 +594,7 @@ resource "rediscloud_subscription" "example" {
     protocol = "memcached"
     memory_limit_in_gb = 2
     data_persistence = "none"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "number-of-shards"
     throughput_measurement_value = 2
@@ -535,6 +640,7 @@ resource "rediscloud_subscription" "example" {
     memory_limit_in_gb = %d
     support_oss_cluster_api = true
     data_persistence = "none"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "operations-per-second"
     password = "%s"
@@ -548,6 +654,7 @@ resource "rediscloud_subscription" "example" {
     memory_limit_in_gb = 1
     support_oss_cluster_api = true
     data_persistence = "none"
+	data_eviction = "volatile-lru"
     replication = false
     throughput_measurement_by = "operations-per-second"
     password = "%s"
@@ -588,7 +695,6 @@ resource "rediscloud_subscription" "origin" {
   name                          = local.origin_sub_name
   payment_method_id             = data.rediscloud_payment_method.card.id
   memory_storage                = "ram"
-  persistent_storage_encryption = false
 
   cloud_provider {
     provider         = data.rediscloud_cloud_account.account.provider_type
@@ -617,7 +723,6 @@ resource "rediscloud_subscription" "replica" {
   name                          = local.replica_sub_name
   payment_method_id             = data.rediscloud_payment_method.card.id
   memory_storage                = "ram"
-  persistent_storage_encryption = false
 
   cloud_provider {
     provider         = data.rediscloud_cloud_account.account.provider_type
@@ -670,7 +775,6 @@ resource "rediscloud_subscription" "origin" {
   name                          = local.origin_sub_name
   payment_method_id             = data.rediscloud_payment_method.card.id
   memory_storage                = "ram"
-  persistent_storage_encryption = false
 
   cloud_provider {
     provider         = data.rediscloud_cloud_account.account.provider_type
@@ -699,7 +803,6 @@ resource "rediscloud_subscription" "replica" {
   name                          = local.replica_sub_name
   payment_method_id             = data.rediscloud_payment_method.card.id
   memory_storage                = "ram"
-  persistent_storage_encryption = false
 
   cloud_provider {
     provider         = data.rediscloud_cloud_account.account.provider_type
@@ -736,6 +839,50 @@ resource "rediscloud_subscription" "example" {
 
   name = "%s"
   memory_storage = "ram"
+
+  allowlist {
+    cidrs = ["192.168.0.0/16"]
+  }
+
+  cloud_provider {
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region = "eu-west-1"
+      networking_deployment_cidr = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+
+  database {
+    name = "tf-database"
+    protocol = "redis"
+    memory_limit_in_gb = %d
+    support_oss_cluster_api = true
+    data_persistence = "none"
+	data_eviction = "volatile-lru"
+    replication = false
+    throughput_measurement_by = "operations-per-second"
+    password = "%s"
+    throughput_measurement_value = 10000
+    source_ips = ["10.0.0.0/8"]
+  }
+}
+`
+
+const testAccResourceRedisCloudSubscriptionMarketplacePayment = `
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS" 
+  name = "%s"
+}
+
+resource "rediscloud_subscription" "example" {
+
+  name = "%s"
+  memory_storage = "ram"
+  payment_method = "marketplace"
 
   allowlist {
     cidrs = ["192.168.0.0/16"]
