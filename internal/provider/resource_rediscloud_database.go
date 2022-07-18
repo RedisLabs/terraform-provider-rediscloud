@@ -348,7 +348,6 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 		return diag.FromErr(err)
 	}
 
-
 	if err := d.Set("db_id", redis.IntValue(db.ID)); err != nil {
 		return diag.FromErr(err)
 	}
@@ -458,6 +457,10 @@ func resourceRedisCloudDatabaseDelete(ctx context.Context, d *schema.ResourceDat
 
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
+
+	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		return diag.FromErr(err)
+	}
 
 	dbErr := api.client.Database.Delete(ctx, subId, dbId)
 	if dbErr != nil {
