@@ -69,6 +69,7 @@ func resourceRedisCloudDatabase() *schema.Resource {
 				Type:             schema.TypeString,
 				Required:         true,
 				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.ProtocolValues(), false)),
+				ForceNew:         true,
 			},
 			"memory_limit_in_gb": {
 				Description: "Maximum memory usage for this specific database",
