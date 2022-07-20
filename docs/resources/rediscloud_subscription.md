@@ -70,7 +70,7 @@ The following arguments are supported:
 * `name` - (Required) A meaningful name to identify the subscription
 * `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined.
 * `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types. 
-* `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of 'ram-and-flash’. Default: ‘ram’
+* `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of ‘ram-and-flash’. Default: ‘ram’
 * `persistent_storage_encryption` - (Optional) Encrypt data stored in persistent storage. Required for a GCP subscription. Default: ‘true’
 * `allowlist` - (Optional) An allowlist object, documented below 
 * `cloud_provider` - (Required) A cloud provider object, documented below 
@@ -94,7 +94,7 @@ only with Redis Labs internal cloud account
 The `creation_plan` block supports:
 
 * `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database.
-* `modules` - (Required) a list of modules that will be used by the databases in this subscription. 
+* `modules` - (Required) a list of modules that will be used by the databases in this subscription. Not currently compatible with ‘ram-and-flash’ memory storage.
 Example: `modules = ["RedisJSON", RedisBloom"]`.
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `replication` - (Required) Databases replication. Set to `true` if any of your databases will use replication.
