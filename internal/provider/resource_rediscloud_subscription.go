@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math"
 	"regexp"
 	"strconv"
 	"time"
@@ -577,71 +576,78 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 	return createCloudProviders, nil
 }
 
-// getAllModules: Returns all modules that need to be allocated to each creation-plan db
-func getAllModules(planModules []*string, quantity int) []*string {
-
-	var addedModules []*string
-	totalPlannedModules := len(planModules)
-	// If there are remaining dbs without modules, then allocate the modules from the first index.
-	if len(planModules) > 1 && quantity > totalPlannedModules {
-		diff := quantity - totalPlannedModules
-		n := 0
-		for i := 0; i < diff; i++ {
-			if i < totalPlannedModules {
-				addedModules = append(addedModules, planModules[i])
-			} else {
-				if n > totalPlannedModules-1 {
-					n = 0
-				}
-				addedModules = append(addedModules, planModules[n])
-				n++
-			}
-		}
-	}
-	result := append(planModules, addedModules...)
-	return result
-}
-
 func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*subscriptions.CreateDatabase {
 
 	createDatabases := make([]*subscriptions.CreateDatabase, 0)
 
+	dbName := "creation-plan-db-"
+	idx := 1
 	memoryLimitInGB := planMap["memory_limit_in_gb"].(float64)
 	throughputMeasurementBy := planMap["throughput_measurement_by"].(string)
 	throughputMeasurementValue := planMap["throughput_measurement_value"].(int)
 	averageItemSizeInBytes := planMap["average_item_size_in_bytes"].(int)
-	quantity := planMap["quantity"].(int)
+	numDatabases := planMap["quantity"].(int)
 	supportOSSClusterAPI := planMap["support_oss_cluster_api"].(bool)
 	replication := planMap["replication"].(bool)
 	planModules := interfaceToStringSlice(planMap["modules"].([]interface{}))
-	allModules := getAllModules(planModules, quantity)
-	// Takes the max between the specified quantity and modules
-	quantity = int(math.Max(float64(quantity), float64(len(planModules))))
-	// Allocate 1 module per 1 creation-plan db to avoid an incompatible module.
-	dbName := "creation-plan-db-"
-	for idx := 1; idx <= quantity; idx++ {
-		var modules []*subscriptions.CreateModules
-		for i, v := range allModules {
-			modules = append(modules, &subscriptions.CreateModules{Name: v})
-			// Remove the module from the modules list since it's already allocated.
-			allModules = allModules[i+1:]
+
+	// Check if one of the modules is RedisGraph
+	containsGraph := false
+	for _, module := range planModules {
+		if *module == "RedisGraph" {
+			containsGraph = true
 			break
 		}
-		createThroughput := &subscriptions.CreateThroughput{
-			By:    redis.String(throughputMeasurementBy),
-			Value: redis.Int(throughputMeasurementValue),
-		}
+	}
 
-		// RediSearch doesn't work with "operations-per-second" throughput.
-		if len(modules) > 0 && *modules[0].Name == "RediSearch" {
-			if *createThroughput.By == "operations-per-second" {
-				createThroughput.By = redis.String("number-of-shards")
-				createThroughput.Value = redis.Int(10)
+	if !containsGraph {
+		var modules []*subscriptions.CreateModules
+		for _, v := range planModules {
+			modules = append(modules, &subscriptions.CreateModules{Name: v})
+		}
+		createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules, throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases)...)
+	} else {
+		// make RedisGraph module the first module, then append the rest of the modules
+		var modules []*subscriptions.CreateModules
+		modules = append(modules, &subscriptions.CreateModules{Name: redis.String("RedisGraph")})
+		for _, v := range planModules {
+			if *v != "RedisGraph" {
+				modules = append(modules, &subscriptions.CreateModules{Name: v})
 			}
 		}
+		if len(planModules) == 1 {
+			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules, throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases)...)
+		} else if len(planModules) > 1 {
+			// create a DB with the RedisGraph module
+			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[:1], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1)...)
+			if numDatabases == 1 {
+				// create one DB with all other modules
+				createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1)...)
+			} else if numDatabases > 1 {
+				// create the remaining DBs with all other modules
+				createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases-1)...)
+			}
+		}
+	}
+	return createDatabases
+}
 
+// createDatabase returns a CreateDatabase struct with the given parameters
+func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModules, throughputMeasurementBy string, throughputMeasurementValue int, memoryLimitInGB float64, averageItemSizeInBytes int, supportOSSClusterAPI bool, replication bool, numDatabases int) []*subscriptions.CreateDatabase {
+	createThroughput := &subscriptions.CreateThroughput{
+		By:    redis.String(throughputMeasurementBy),
+		Value: redis.Int(throughputMeasurementValue),
+	}
+	if len(modules) > 0 && *modules[0].Name == "RediSearch" {
+		if *createThroughput.By == "operations-per-second" {
+			createThroughput.By = redis.String("number-of-shards")
+			createThroughput.Value = redis.Int(10)
+		}
+	}
+	var databases []*subscriptions.CreateDatabase
+	for i := 0; i < numDatabases; i++ {
 		createDatabase := subscriptions.CreateDatabase{
-			Name:                   redis.String(dbName + strconv.Itoa(idx)),
+			Name:                   redis.String(dbName + strconv.Itoa(*idx)),
 			Protocol:               redis.String("redis"),
 			MemoryLimitInGB:        redis.Float64(memoryLimitInGB),
 			SupportOSSClusterAPI:   redis.Bool(supportOSSClusterAPI),
@@ -651,9 +657,10 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 			Quantity:               redis.Int(1),
 			Modules:                modules,
 		}
-		createDatabases = append(createDatabases, &createDatabase)
+		*idx++
+		databases = append(databases, &createDatabase)
 	}
-	return createDatabases
+	return databases
 }
 
 func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) error {
