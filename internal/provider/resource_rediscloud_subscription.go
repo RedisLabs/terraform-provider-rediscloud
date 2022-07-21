@@ -600,7 +600,7 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 		}
 	}
 
-	if !containsGraph {
+	if !containsGraph || len(planModules) <= 1 {
 		var modules []*subscriptions.CreateModules
 		for _, v := range planModules {
 			modules = append(modules, &subscriptions.CreateModules{Name: v})
@@ -615,18 +615,14 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 				modules = append(modules, &subscriptions.CreateModules{Name: v})
 			}
 		}
-		if len(planModules) == 1 {
-			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules, throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases)...)
-		} else if len(planModules) > 1 {
-			// create a DB with the RedisGraph module
-			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[:1], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1)...)
-			if numDatabases == 1 {
-				// create one DB with all other modules
-				createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1)...)
-			} else if numDatabases > 1 {
-				// create the remaining DBs with all other modules
-				createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases-1)...)
-			}
+		// create a DB with the RedisGraph module
+		createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[:1], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1)...)
+		if numDatabases == 1 {
+			// create one extra DB with all other modules
+			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1)...)
+		} else if numDatabases > 1 {
+			// create the remaining DBs with all other modules
+			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases-1)...)
 		}
 	}
 	return createDatabases
