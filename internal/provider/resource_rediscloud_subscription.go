@@ -342,6 +342,13 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
+	// There is a timing issue where the subscription is marked as active before the creation-plan databases are listed .
+	// This additional wait ensures that the databases will be listed before calling api.client.Database.List()
+	time.Sleep(10 * time.Second) //lintignore:R018
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return diag.FromErr(err)
+	}
+
 	// Locate Databases to confirm Active status
 	dbList := api.client.Database.List(ctx, subId)
 
