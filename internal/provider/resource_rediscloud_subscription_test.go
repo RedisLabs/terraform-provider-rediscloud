@@ -4,15 +4,16 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
+	"regexp"
+	"strconv"
+	"testing"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"regexp"
-	"strconv"
-	"testing"
 )
 
 var contractFlag = flag.Bool("contract", false,
@@ -183,57 +184,117 @@ func TestAccResourceRedisCloudSubscription_createUpdateMarketplacePayment(t *tes
 	})
 }
 
-// Checks if modules are allocated correctly into each creation-plan db if the number of modules exceeded quantity of the dbs.
-func TestModulesAllocationWhenQuantityLowerThanModules(t *testing.T) {
-	planMap := map[string]interface{}{
-		"average_item_size_in_bytes":   1000,
-		"memory_limit_in_gb":           float64(1),
-		"modules":                      []interface{}{"RediSearch", "RedisJSON", "RedisGraph"},
-		"quantity":                     2,
-		"replication":                  false,
-		"support_oss_cluster_api":      false,
-		"throughput_measurement_by":    "operations-per-second",
-		"throughput_measurement_value": 10000,
-	}
-	
-	var allModules = map[string]int{}
-	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
-	assert.Len(t, createDbs, 3)
-	for _, createDb := range createDbs {
-		modules := createDb.Modules
-		assert.Len(t, modules, 1)
-		allModules[*modules[0].Name]++
-	}
-	assert.Equal(t, 1, allModules["RediSearch"])
-	assert.Equal(t, 1, allModules["RedisJSON"])
-	assert.Equal(t, 1, allModules["RedisGraph"])
-}
-
-// Checks if modules are allocated correctly into each creation-plan db if quantity exceeded the number of the modules.
-func TestModulesAllocationWhenQuantityHigherModules(t *testing.T) {
+// Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is one.
+func TestModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
+	numDatabases := 1
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,
 		"memory_limit_in_gb":           float64(1),
 		"modules":                      []interface{}{"RedisJSON", "RedisGraph", "RedisBloom"},
-		"quantity":                     7,
+		"quantity":                     numDatabases,
 		"replication":                  false,
 		"support_oss_cluster_api":      false,
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	
-	var allModules = map[string]int{}
 	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
-	assert.Len(t, createDbs, 7)
+	otherDatabases := 0
+	graphDatabases := 0
+	for _, createDb := range createDbs {
+		var modules []string
+		for _, module := range createDb.Modules {
+			modules = append(modules, *module.Name)
+		}
+		if len(modules) == 1 && modules[0] == "RedisGraph" {
+			graphDatabases++
+		}
+		if len(modules) == 2 {
+			assert.ElementsMatch(t, modules, []string{"RedisJSON", "RedisBloom"})
+			otherDatabases++
+		}
+	}
+	assert.Len(t, createDbs, 2)
+	assert.True(t, graphDatabases == 1)
+	assert.True(t, otherDatabases == 1)
+}
+
+// Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is greater than one.
+func TestModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
+	numDatabases := 5
+	planMap := map[string]interface{}{
+		"average_item_size_in_bytes":   1000,
+		"memory_limit_in_gb":           float64(1),
+		"modules":                      []interface{}{"RedisJSON", "RedisGraph", "RedisBloom"},
+		"quantity":                     numDatabases,
+		"replication":                  false,
+		"support_oss_cluster_api":      false,
+		"throughput_measurement_by":    "operations-per-second",
+		"throughput_measurement_value": 10000,
+	}
+	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	graphDatabases := 0
+	otherDatabases := 0
+	for _, createDb := range createDbs {
+		var modules []string
+		for _, module := range createDb.Modules {
+			modules = append(modules, *module.Name)
+		}
+		if len(modules) == 1 && modules[0] == "RedisGraph" {
+			graphDatabases++
+		}
+		if len(modules) == 2 {
+			assert.ElementsMatch(t, modules, []interface{}{"RedisJSON", "RedisBloom"})
+			otherDatabases++
+		}
+	}
+	assert.True(t, graphDatabases == 1)
+	assert.True(t, otherDatabases == numDatabases-1)
+}
+
+// Checks that modules are allocated correctly into each creation-plan db if the only module is "RedisGraph".
+func TestModulesAllocationWhenOnlyGraphModule(t *testing.T) {
+	numDatabases := 5
+	planMap := map[string]interface{}{
+		"average_item_size_in_bytes":   1000,
+		"memory_limit_in_gb":           float64(1),
+		"modules":                      []interface{}{"RedisGraph"},
+		"quantity":                     numDatabases,
+		"replication":                  false,
+		"support_oss_cluster_api":      false,
+		"throughput_measurement_by":    "operations-per-second",
+		"throughput_measurement_value": 10000,
+	}
+	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	assert.Len(t, createDbs, numDatabases)
 	for _, createDb := range createDbs {
 		modules := createDb.Modules
-		assert.Len(t, modules, 1)
-		allModules[*modules[0].Name]++
+		assert.True(t, len(modules) == 1 && *modules[0].Name == "RedisGraph")
 	}
-	assert.Equal(t, 3, allModules["RedisJSON"])
-	assert.Equal(t, 2, allModules["RedisGraph"])
-	assert.Equal(t, 2, allModules["RedisBloom"])
-	
+}
+
+// Checks that modules are allocated correctly into the creation-plan dbs if "RedisGraph" is not included
+func TestModulesAllocationWhenNoGraph(t *testing.T) {
+	numDatabases := 5
+	planMap := map[string]interface{}{
+		"average_item_size_in_bytes":   1000,
+		"memory_limit_in_gb":           float64(1),
+		"modules":                      []interface{}{"RedisJSON", "RediSearch", "RedisBloom"},
+		"quantity":                     numDatabases,
+		"replication":                  false,
+		"support_oss_cluster_api":      false,
+		"throughput_measurement_by":    "operations-per-second",
+		"throughput_measurement_value": 10000,
+	}
+	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	assert.Len(t, createDbs, numDatabases)
+	for _, createDb := range createDbs {
+		var modules []string
+		for _, module := range createDb.Modules {
+			modules = append(modules, *module.Name)
+		}
+		assert.Len(t, modules, 3)
+		assert.ElementsMatch(t, modules, []interface{}{"RedisJSON", "RedisBloom", "RediSearch"})
+	}
 }
 
 func TestNoModulesInCreatePlanDatabases(t *testing.T) {
@@ -276,7 +337,7 @@ func TestRediSearchModuleInCreatePlanDatabases(t *testing.T) {
 		if *modules[0].Name == "RedisBloom" {
 			assert.Equal(t, "operations-per-second", *createDb.ThroughputMeasurement.By)
 		}
-		
+
 	}
 }
 
