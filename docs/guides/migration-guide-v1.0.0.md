@@ -1,50 +1,31 @@
 ---
-page_title: "Migrating to version v1.0.0"
+page_title: "Migrating to version v1.X.X"
 subcategory: "Guides"
 ---
 
-# Migrating to version v1.0.0
+# Migrating to version v1.X.X
 
-This guide is for the users who want to migrate their old Terraform configurations to `v1.0.0`.
+This guide is for the users who want to migrate their old Terraform configurations to `v1.X.X`.
 
-The migration is safe, simple and will not alter any of the existing resources in your infrastructure.
+The migration is safe, simple and will not alter any existing resources in your infrastructure.
 The process is as follows:
 
-1. Update your HCL files to use the latest version of the schemas for your subscription and database resources.
-2. Import your resources into a new Terraform state file.
-3. Verify that the resources are imported correctly.
-
 ## Why would I want to migrate?
+The new version allows greater control over the database resource. It provides easier access to the attributes of the database, importing specific databases to the TF state file, and simpler database management.
+All of these make the provider resources more stable and better for TF provisioning.   
 
-The version `v1.0.0` of the provider contains breaking changes in the schemas.
-However, those changes help to improve the user experience and database management.
-Those enhancements are described below:
-
-* **Fixed the misleading plan**: In the old versions of the provider, the databases could be created in the
-  `database` block inside the subscription resource. A `TypeSet` was used by the `database` attribute where an index
-  value of the block is calculated by the hash of the attributes. That means, if you change an attribute inside the
-  block, then Terraform would produce the misleading plan telling you that the whole database is going to be recreated.
-  However, under the hood, the provider doesn't delete the database and only updates its properties unless the `name`
-  attribute was changed. In order to fix this, the database block has been moved to a separate resource.
-* **Separate database resource**: As mentioned, the database block has been moved to a separate
-  resource. This allows the user to take greater control over the database resource. That is:
-  * easier access to the attributes of the database,
-  * importing specific databases in the state,
-  * simpler database management through the provider.
+The changes, such as new database resource extraction, can be found in the Terraform RedisCloud Provider CHANGELOG.
 
 ## Prerequisites
 
 * The RedisCloud provider `>= 1.0.0`.
-* Backup your Terraform state: Make sure you have a backup of your state before you start the migration.
-* Access to the Redis Cloud API: Make sure that the provider can connect to RedisCloud.
-* Empty state file: Make sure to run the migration with an empty state file. You can do that by creating a new directory
-  with your Terraform configuration files.
+* Backup Terraform configuration file (.tf) and State file (.tfstate)
+* Create an empty state file (.tfstate). You can create a new directory with your Terraform configuration files (.tf).
 
 ## Run migration
 
-The `rediscloud_subscription` no longer supports the `database` block, and a new block called `creation_plan` has been
-introduced. In this case, you only need to modify your existing `rediscloud_subscription` schema and create a new
-resource called `rediscloud_database` for each of your databases in the subscription.
+1. Update your HCL files to use the latest version of the schemas for your subscription and database resources.
+The ‘database’ block has been extracted from the `rediscloud_subscription` to a new resource called ‘rediscloud_subscription_database’. In addition, a new block called `creation_plan` has been introduced to the ‘rediscloud_subscription’. So, to migrate to the new version, all you need to do is to modify your existing `rediscloud_subscription` schema and create a new resource called `rediscloud_subscription_database` for each of your databases in the subscription.
 
 ~> **Note:** If you want to create a new subscription, then the `creation_plan` block is required.
 
@@ -92,8 +73,7 @@ resource "rediscloud_subscription" "example" {
 }
 ```
 
-To use the latest schema, you need to modify the `rediscloud_subscription` resource and add new `rediscloud_database`
-resources for your databases. Like so:
+To use the latest schema, you need to modify the `rediscloud_subscription` resource and add a new `rediscloud_subscription_database` resources for your databases. Like so:
 
 * New configuration (>= `1.0.0`):
 
@@ -118,9 +98,9 @@ resources for your databases. Like so:
   
     cloud_provider {...}
   
-    // Add this block if you want to create a new subscription. 
-    // Skip, if you are importing an existing subscription.
-    // In this block, define your hardware specification for you databases in the cluster.
+   	 // For migrating, you can skip this block,
+	// However, if you would like to modify a field that requires a re-creation of the subscription, the creation_plan will be asked. 
+    	// In this block, define your average database specification for your databases in the subscription. 
     creation_plan {
       average_item_size_in_bytes = 1
       memory_limit_in_gb = 1
@@ -133,8 +113,8 @@ resources for your databases. Like so:
     }
   }
 
-  // The database block has been moved to a separate resource - rediscloud_database.
-  // The attributes of the database are the same as the ones in the database block in the old subscription resource schema. 
+  // The database block has been extracted to a separate resource - ‘rediscloud_subscription_database’.
+  // The database attributes are the same as the ones in the previous database block in the old ‘redislcoud_subscription’ schema. 
   // With the exception of the new `subscription_id` attribute.
   resource "rediscloud_database" "first_database" {
       // Attach the database to the subscription.
@@ -154,19 +134,19 @@ resources for your databases. Like so:
   }
   ```
 
-#### Steps:
-
-1. Create a new directory with your new Terraform configuration files.
-2. Run `terraform init` to initialize the new directory.
-3. Run the following commands to import the resources into the state file:
+2. Create a new directory with your new Terraform configuration files.
+3. Run `terraform init` to initialize the new directory.
+4. Run the following commands to import the resources into the state file:
     ```bash
     # Import the subscription resource
     terraform import rediscloud_subscription.example <subscription id>;
     # Import the database resource. The last argument contains the subscription id and the database id separated by a slash.
-    terraform import rediscloud_database.first_database <subscription id>/<database id>;
+    terraform import rediscloud_database.first_database <subscription id>/<first database id>;
+    terraform import rediscloud_database.second_database <subscription id>/<second database id>;
+
     ```
    **OPTIONAL**: If you have other resources like `rediscloud_cloud_account` or `rediscloud_subscription_peering`, then
-   you can import them as well:
+   you will need to import them as well:
      ```bash
      # Import rediscloud_cloud_account
      terraform import rediscloud_cloud_account.cloud_example <cloud account id>;
@@ -175,13 +155,15 @@ resources for your databases. Like so:
      ```
 
 
-4. Verify that the new state file is valid:
+5. Verify that the new state file is valid:
     ```bash
     # List the resources in the state file
     terraform state list;
     # Check if the resources are valid
     terraform state show rediscloud_subscription.example;
     terraform state show rediscloud_database.first_database;
+    terraform state show rediscloud_database.second_database;
+
     ```
    **OPTIONAL**: If you have other resources like `rediscloud_cloud_account` or `rediscloud_subscription_peering`, then
    you can check if they are valid:
@@ -192,6 +174,7 @@ resources for your databases. Like so:
      terraform state show rediscloud_subscription_peering.peering_example;
      ```
    
-Finally, run `terraform plan` to verify that your new configuration matches the real world infrastructure.
+Finally, run `terraform plan` to verify that your new configuration matches the real infrastructure.
+Should receive a ‘no changes’ message back from the TF CLI. 
 
 Congratulations! You have successfully migrated your Terraform configuration to the new schema.
