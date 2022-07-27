@@ -74,7 +74,7 @@ The following arguments are supported:
 * `persistent_storage_encryption` - (Optional) Encrypt data stored in persistent storage. Required for a GCP subscription. Default: ‘true’
 * `allowlist` - (Optional) An allowlist object, documented below 
 * `cloud_provider` - (Required) A cloud provider object, documented below 
-* `database` - (Required) A database object, documented below
+* `creation_plan` - (Required) A creation plan object, documented below
 
 The `allowlist` block supports:
 
