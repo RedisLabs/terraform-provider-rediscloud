@@ -9,9 +9,8 @@ on:
       - main
 
 env:
-  GO_VERSION: "1.16"
-  GO111MODULE: on
-  TERRAFORM_VERSION: "1.0.0"
+  GO_VERSION: "1.18"
+  TERRAFORM_VERSION: "1.2.6"
 
 jobs:
   go_mod_download:
