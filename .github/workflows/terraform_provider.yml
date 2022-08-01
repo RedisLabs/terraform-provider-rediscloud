@@ -115,64 +115,6 @@ jobs:
           mkdir terraform-providers-schema
           terraform providers schema -json > terraform-providers-schema/schema.json
 
-  go_test:
-    name: go test
-    needs: [go_build]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2.4.0
-      - uses: actions/setup-go@v3
-        with:
-          go-version: ${{ env.GO_VERSION }}
-      # See also: https://github.com/actions/setup-go/issues/54
-      - name: go env
-        run: |
-          echo "GOCACHE=$(go env GOCACHE)" >> $GITHUB_ENV
-      - uses: actions/cache@v3.0.5
-        continue-on-error: true
-        timeout-minutes: 2
-        with:
-          path: ${{ env.GOCACHE }}
-          key: ${{ runner.os }}-GOCACHE-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/provider/**') }}
-      - uses: actions/cache@v3.0.5
-        continue-on-error: true
-        timeout-minutes: 2
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-pkg-mod-${{ hashFiles('go.sum') }}
-      - uses: dorny/paths-filter@v2.10.2
-        id: filter
-        with:
-          filters: |
-            code-changes:
-              - 'go.mod'
-              - 'go.sum'
-              - 'internal/**'
-              - '*.go'
-              - '.github/workflows/**'
-      - run: make testacc
-        if: steps.filter.outputs.code-changes == 'true'
-        env:
-          REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_QA }}
-          REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_QA }}
-          REDISCLOUD_URL: https://api-cloudapi.qa.redislabs.com/v1
-          AWS_TEST_CLOUD_ACCOUNT_NAME: oc
-#          REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_PROD }}
-#          REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_PROD }}
-#          REDISCLOUD_URL: https://api.redislabs.com/v1/
-#          AWS_TEST_CLOUD_ACCOUNT_NAME: PM
-          AWS_PEERING_REGION: ${{ secrets.AWS_PEERING_REGION }}
-          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-          AWS_VPC_CIDR: ${{ secrets.AWS_VPC_CIDR }}
-          AWS_VPC_ID: ${{ secrets.AWS_VPC_ID }}
-          TF_ACC: true
-          TF_LOG: debug
-          AWS_ACCESS_KEY_ID: ${{ secrets.CLOUD_ACCOUNT_KEY }}
-          AWS_ACCESS_SECRET_KEY: ${{ secrets.CLOUD_ACCOUNT_SECRET }}
-          AWS_CONSOLE_USERNAME: ${{ secrets.CLOUD_ACCOUNT_USERNAME }}
-          AWS_CONSOLE_PASSWORD: ${{ secrets.CLOUD_ACCOUNT_PASS }}
-          AWS_SIGNIN_URL: ${{ secrets.CLOUD_ACCOUNT_URL }}
-
   tfproviderlint:
     name: tfproviderlint
     needs: [go_build]
