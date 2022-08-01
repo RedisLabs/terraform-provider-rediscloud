@@ -12,8 +12,6 @@
 name: release
 on:
   push:
-    branches:
-      - demo_v1.0.0
     tags:
       - 'v*'
 jobs:
