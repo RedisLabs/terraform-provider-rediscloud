@@ -2,10 +2,11 @@ package provider
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"os"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccDataSourceRedisCloudDatabase_basic(t *testing.T) {
@@ -81,7 +82,7 @@ resource "rediscloud_subscription" "example" {
   }
 }
 
-resource "rediscloud_database" "example" {
+resource "rediscloud_subscription_database" "example" {
     subscription_id              = rediscloud_subscription.example.id
     name                         = "tf-database"
     protocol                     = "redis"
@@ -96,6 +97,6 @@ resource "rediscloud_database" "example" {
 
 data "rediscloud_database" "example" {
   subscription_id = rediscloud_subscription.example.id
-  name = rediscloud_database.example.name
+  name = rediscloud_subscription_database.example.name
 }
 `
