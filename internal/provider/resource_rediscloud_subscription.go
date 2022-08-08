@@ -641,10 +641,35 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 		By:    redis.String(throughputMeasurementBy),
 		Value: redis.Int(throughputMeasurementValue),
 	}
-	if len(modules) > 0 && *modules[0].Name == "RediSearch" {
-		if *createThroughput.By == "operations-per-second" {
-			createThroughput.By = redis.String("number-of-shards")
-			createThroughput.Value = redis.Int(10)
+	if len(modules) > 0 {
+		// if RediSearch is in the modules, then set the throughput to number-of-shards and convert the value
+		search := false
+		for _, module := range modules {
+			if *module.Name == "RediSearch" {
+				search = true
+				break
+			}
+		}
+		if search {
+			if *createThroughput.By == "operations-per-second" {
+				createThroughput.By = redis.String("number-of-shards")
+				if replication {
+					createThroughput.Value = redis.Int(*createThroughput.Value / 500)
+				} else {
+					createThroughput.Value = redis.Int(*createThroughput.Value / 1000)
+				}
+			}
+		}
+		// if RedisGraph is in the modules, set throughput to operations-per-second and convert the value
+		if *modules[0].Name == "RedisGraph" {
+			if *createThroughput.By == "number-of-shards" {
+				createThroughput.By = redis.String("operations-per-second")
+				if replication {
+					createThroughput.Value = redis.Int(*createThroughput.Value * 500)
+				} else {
+					createThroughput.Value = redis.Int(*createThroughput.Value * 250)
+				}
+			}
 		}
 	}
 	var databases []*subscriptions.CreateDatabase
