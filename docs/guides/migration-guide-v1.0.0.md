@@ -7,7 +7,7 @@ subcategory: "Guides"
 
 This guide is for the users who want to migrate their old Terraform configurations to `v1.X.X`.
 
-The migration is safe, simple and will not alter any existing resources in your infrastructure.
+The migration is safe, simple, and will not alter any existing resources in your infrastructure.
 The process is as follows:
 
 ## Why would I want to migrate?
@@ -20,16 +20,25 @@ The changes, such as new database resource extraction, can be found in the Terra
 
 * The RedisCloud provider `>= 1.0.0`.
 * Backup Terraform configuration file (.tf) and State file (.tfstate)
-* Create an empty state file (.tfstate). You can create a new directory with your Terraform configuration files (.tf).
+* Create a new directory with your Terraform configuration files (.tf).
 
 ## Run migration
 
-1. Update your HCL files to use the latest version of the schemas for your subscription and database resources.
-The ‘database’ block has been extracted from the `rediscloud_subscription` to a new resource called ‘rediscloud_subscription_database’. In addition, a new block called `creation_plan` has been introduced to the ‘rediscloud_subscription’. So, to migrate to the new version, all you need to do is to modify your existing `rediscloud_subscription` schema and create a new resource called `rediscloud_subscription_database` for each of your databases in the subscription.
+1. Modify your existing configuration file (.tf).
+1.1 Create a copy of your existing configuration file (.tf).
+1.2 In the configuration file, update the ‘version’ in the Redis cloud provider to use the latest (>=1.0.0).
+1.3 Extract the ‘database’ block from the `rediscloud_subscription` to a new resource called ‘rediscloud_subscription_database’.
+A new block called `creation_plan` has been introduced to the ‘rediscloud_subscription’ resource. So, to migrate to the latest version, all you need to do is to modify your existing `rediscloud_subscription` schema and create a new resource called `rediscloud_subscription_database` for each of your databases in the subscription.
 
-~> **Note:** If you want to create a new subscription, then the `creation_plan` block is required.
 
-Here is an example of an old Terraform configuration:
+
+
+
+
+
+~> **Note:** The ‘module’ block that was part of the ‘database’ block has been modified to a list object. ‘rediscloud_subscription_database is now supporting multiple modules per DB.
+
+Here is an example of an old Terraform configuration (< `1.0.0`):
 
 ```hcl
 terraform {
@@ -116,7 +125,7 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
   // The database block has been extracted to a separate resource - ‘rediscloud_subscription_database’.
   // The database attributes are the same as the ones in the previous database block in the old ‘redislcoud_subscription’ schema. 
   // With the exception of the new `subscription_id` attribute.
-  resource "rediscloud_database" "first_database" {
+  resource "‘rediscloud_subscription_database" "first_database" {
       // Attach the database to the subscription.
       subscription_id = rediscloud_subscription.example.id
       name = "tf-example-database"
@@ -133,16 +142,13 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
       }
   }
   ```
-
-2. Create a new directory with your new Terraform configuration files.
-3. Run `terraform init` to initialize the new directory.
 4. Run the following commands to import the resources into the state file:
     ```bash
     # Import the subscription resource
     terraform import rediscloud_subscription.example <subscription id>;
     # Import the database resource. The last argument contains the subscription id and the database id separated by a slash.
-    terraform import rediscloud_database.first_database <subscription id>/<first database id>;
-    terraform import rediscloud_database.second_database <subscription id>/<second database id>;
+    terraform import ‘rediscloud_subscription_database.first_database <subscription id>/<first database id>;
+    terraform import ‘rediscloud_subscription_database.second_database <subscription id>/<second database id>;
 
     ```
    **OPTIONAL**: If you have other resources like `rediscloud_cloud_account` or `rediscloud_subscription_peering`, then
@@ -161,8 +167,8 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
     terraform state list;
     # Check if the resources are valid
     terraform state show rediscloud_subscription.example;
-    terraform state show rediscloud_database.first_database;
-    terraform state show rediscloud_database.second_database;
+    terraform state show ‘rediscloud_subscription_database.first_database;
+    terraform state show ‘rediscloud_subscription_database.second_database;
 
     ```
    **OPTIONAL**: If you have other resources like `rediscloud_cloud_account` or `rediscloud_subscription_peering`, then
@@ -174,7 +180,8 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
      terraform state show rediscloud_subscription_peering.peering_example;
      ```
    
-Finally, run `terraform plan` to verify that your new configuration matches the real infrastructure.
+Finally, run `terraform plan` to verify that your new configuration matches the actual infrastructure.
 Should receive a ‘no changes’ message back from the TF CLI. 
 
 Congratulations! You have successfully migrated your Terraform configuration to the new schema.
+
