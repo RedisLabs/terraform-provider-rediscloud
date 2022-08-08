@@ -88,7 +88,7 @@ resource "rediscloud_subscription" "example" {
   }
 }
 
-resource "rediscloud_database" "example" {
+resource "rediscloud_subscription_database" "example" {
     subscription_id              = rediscloud_subscription.example.id
 	name                         = "tf-database"
     protocol                     = "redis"

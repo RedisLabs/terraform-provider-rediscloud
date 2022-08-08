@@ -14,13 +14,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceRedisCloudDatabase() *schema.Resource {
+func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates database resource within a subscription in your Redis Enterprise Cloud Account.",
-		CreateContext: resourceRedisCloudDatabaseCreate,
-		ReadContext:   resourceRedisCloudDatabaseRead,
-		UpdateContext: resourceRedisCloudDatabaseUpdate,
-		DeleteContext: resourceRedisCloudDatabaseDelete,
+		CreateContext: resourceRedisCloudSubscriptionDatabaseCreate,
+		ReadContext:   resourceRedisCloudSubscriptionDatabaseRead,
+		UpdateContext: resourceRedisCloudSubscriptionDatabaseUpdate,
+		DeleteContext: resourceRedisCloudSubscriptionDatabaseDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
@@ -235,7 +235,7 @@ func resourceRedisCloudDatabase() *schema.Resource {
 	}
 }
 
-func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	subId := d.Get("subscription_id").(int)
@@ -322,10 +322,10 @@ func resourceRedisCloudDatabaseCreate(ctx context.Context, d *schema.ResourceDat
 
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
-	return resourceRedisCloudDatabaseRead(ctx, d, meta)
+	return resourceRedisCloudSubscriptionDatabaseRead(ctx, d, meta)
 }
 
-func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudSubscriptionDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	var diags diag.Diagnostics
@@ -444,7 +444,7 @@ func resourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceData,
 	return diags
 }
 
-func resourceRedisCloudDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudSubscriptionDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*apiClient)
 
@@ -470,7 +470,7 @@ func resourceRedisCloudDatabaseDelete(ctx context.Context, d *schema.ResourceDat
 	return diags
 }
 
-func resourceRedisCloudDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudSubscriptionDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	_, dbId, err := toDatabaseId(d.Id())
@@ -558,7 +558,7 @@ func resourceRedisCloudDatabaseUpdate(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	return resourceRedisCloudDatabaseRead(ctx, d, meta)
+	return resourceRedisCloudSubscriptionDatabaseRead(ctx, d, meta)
 }
 
 func toDatabaseId(id string) (int, int, error) {
