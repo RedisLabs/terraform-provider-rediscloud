@@ -126,7 +126,7 @@ func resourceRedisCloudDatabase() *schema.Resource {
 				Default: 0,
 			},
 			"password": {
-				Description: "Password used to access the database",
+				Description: "Password used to access the database. If left empty, the password will be generated automatically",
 				Type:        schema.TypeString,
 				Optional:    true,
 				Sensitive:   true,
