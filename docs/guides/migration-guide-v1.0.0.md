@@ -95,7 +95,7 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
       }
     }
   }
-
+  
   data "rediscloud_payment_method" "card" {
     card_type = "Visa"
   }
@@ -107,21 +107,21 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
   
     cloud_provider {...}
   
-   	// For migrating, you can skip this block,
+    // For migrating, you can skip this block,
 	  // However, if you would like to modify a field that requires a re-creation of the subscription, the creation_plan will be asked. 
-      // In this block, define your average database specification for your databases in the subscription. 
-      creation_plan {
-        average_item_size_in_bytes = 1
-        memory_limit_in_gb = 1
-        quantity = 1
-        replication=false
-        support_oss_cluster_api=false
-        throughput_measurement_by = "operations-per-second"
-        throughput_measurement_value = 10000
-        modules = ["RedisJSON", "RedisBloom"]
-      }
+    // In this block, define your average database specification for your databases in the subscription. 
+    creation_plan {
+      average_item_size_in_bytes = 1
+      memory_limit_in_gb = 1
+      quantity = 1
+      replication=false
+      support_oss_cluster_api=false
+      throughput_measurement_by = "operations-per-second"
+      throughput_measurement_value = 10000
+      modules = ["RedisJSON", "RedisBloom"]
+    }
   }
-
+  
   // The database block has been extracted to a separate resource - ‘rediscloud_subscription_database’.
   // The database attributes are the same as the ones in the previous database block in the old ‘redislcoud_subscription’ schema. 
   // With the exception of the new `subscription_id` attribute.
@@ -149,7 +149,7 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
     # Import the database resource. The last argument contains the subscription id and the database id separated by a slash.
     terraform import ‘rediscloud_subscription_database.first_database <subscription id>/<first database id>;
     terraform import ‘rediscloud_subscription_database.second_database <subscription id>/<second database id>;
-
+   
     ```
    **OPTIONAL**: If you have other resources like `rediscloud_cloud_account` or `rediscloud_subscription_peering`, then
    you will need to import them as well:
@@ -169,7 +169,7 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
     terraform state show rediscloud_subscription.example;
     terraform state show ‘rediscloud_subscription_database.first_database;
     terraform state show ‘rediscloud_subscription_database.second_database;
-
+   
     ```
    **OPTIONAL**: If you have other resources like `rediscloud_cloud_account` or `rediscloud_subscription_peering`, then
    you can check if they are valid:
@@ -180,6 +180,7 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
      terraform state show rediscloud_subscription_peering.peering_example;
      ```
    
+
 Finally, run `terraform plan` to verify that your new configuration matches the actual infrastructure.
 Should receive a ‘no changes’ message back from the TF CLI. 
 
