@@ -316,29 +316,72 @@ func TestNoModulesInCreatePlanDatabases(t *testing.T) {
 	}
 }
 
-func TestRediSearchModuleInCreatePlanDatabases(t *testing.T) {
+func TestRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,
 		"memory_limit_in_gb":           float64(1),
-		"modules":                      []interface{}{"RediSearch", "RedisBloom"},
+		"modules":                      []interface{}{"RediSearch"},
 		"quantity":                     2,
 		"replication":                  false,
 		"support_oss_cluster_api":      false,
 		"throughput_measurement_by":    "operations-per-second",
-		"throughput_measurement_value": 10000,
+		"throughput_measurement_value": 12000,
 	}
 	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
-	for _, createDb := range createDbs {
-		modules := createDb.Modules
-		if *modules[0].Name == "RediSearch" {
-			assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
-			continue
-		}
-		if *modules[0].Name == "RedisBloom" {
-			assert.Equal(t, "operations-per-second", *createDb.ThroughputMeasurement.By)
-		}
+	createDb := createDbs[0]
+	assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
+	assert.Equal(t, 12000/1000, *createDb.ThroughputMeasurement.Value)
+}
 
+func TestRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
+	planMap := map[string]interface{}{
+		"average_item_size_in_bytes":   1000,
+		"memory_limit_in_gb":           float64(1),
+		"modules":                      []interface{}{"RediSearch"},
+		"quantity":                     2,
+		"replication":                  true,
+		"support_oss_cluster_api":      false,
+		"throughput_measurement_by":    "operations-per-second",
+		"throughput_measurement_value": 12000,
 	}
+	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	createDb := createDbs[0]
+	assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
+	assert.Equal(t, 12000/500, *createDb.ThroughputMeasurement.Value)
+}
+
+func TestRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
+	planMap := map[string]interface{}{
+		"average_item_size_in_bytes":   1000,
+		"memory_limit_in_gb":           float64(1),
+		"modules":                      []interface{}{"RedisGraph"},
+		"quantity":                     2,
+		"replication":                  false,
+		"support_oss_cluster_api":      false,
+		"throughput_measurement_by":    "number-of-shards",
+		"throughput_measurement_value": 2,
+	}
+	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	createDb := createDbs[0]
+	assert.Equal(t, "operations-per-second", *createDb.ThroughputMeasurement.By)
+	assert.Equal(t, 2*250, *createDb.ThroughputMeasurement.Value)
+}
+
+func TestRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
+	planMap := map[string]interface{}{
+		"average_item_size_in_bytes":   1000,
+		"memory_limit_in_gb":           float64(1),
+		"modules":                      []interface{}{"RedisGraph"},
+		"quantity":                     2,
+		"replication":                  true,
+		"support_oss_cluster_api":      false,
+		"throughput_measurement_by":    "number-of-shards",
+		"throughput_measurement_value": 2,
+	}
+	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	createDb := createDbs[0]
+	assert.Equal(t, "operations-per-second", *createDb.ThroughputMeasurement.By)
+	assert.Equal(t, 2*500, *createDb.ThroughputMeasurement.Value)
 }
 
 func testAccCheckSubscriptionDestroy(s *terraform.State) error {
