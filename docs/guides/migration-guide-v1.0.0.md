@@ -1,6 +1,7 @@
 ---
 page_title: "Migrating to version v1.X.X"
 subcategory: "Guides"
+
 ---
 
 # Migrating to version v1.X.X
@@ -11,6 +12,7 @@ The migration is safe, simple, and will not alter any existing resources in your
 The process is as follows:
 
 ## Why would I want to migrate?
+
 The new version allows greater control over the database resource. It provides easier access to the attributes of the database, importing specific databases to the TF state file, and simpler database management.
 All of these make the provider resources more stable and better for TF provisioning.   
 
@@ -25,10 +27,10 @@ The changes, such as new database resource extraction, can be found in the Terra
 ## Run migration
 
 1. Modify your existing configuration file (.tf).
-1.1 Create a copy of your existing configuration file (.tf).
-1.2 In the configuration file, update the ‘version’ in the Redis cloud provider to use the latest (>=1.0.0).
-1.3 Extract the ‘database’ block from the `rediscloud_subscription` to a new resource called ‘rediscloud_subscription_database’.
-A new block called `creation_plan` has been introduced to the ‘rediscloud_subscription’ resource. So, to migrate to the latest version, all you need to do is to modify your existing `rediscloud_subscription` schema and create a new resource called `rediscloud_subscription_database` for each of your databases in the subscription.
+   1.1 Create a copy of your existing configuration file (.tf).
+   1.2 In the configuration file, update the ‘version’ in the Redis cloud provider to use the latest (>=1.0.0).
+   1.3 Extract the ‘database’ block from the `rediscloud_subscription` to a new resource called ‘rediscloud_subscription_database’.
+   A new block called `creation_plan` has been introduced to the ‘rediscloud_subscription’ resource. So, to migrate to the latest version, all you need to do is to modify your existing `rediscloud_subscription` schema and create a new resource called `rediscloud_subscription_database` for each of your databases in the subscription.
 
 
 
@@ -108,8 +110,8 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
     cloud_provider {...}
   
     // For migrating, you can skip this block,
-	  // However, if you would like to modify a field that requires a re-creation of the subscription, the creation_plan will be asked. 
-    // In this block, define your average database specification for your databases in the subscription. 
+    // However, if you would like to modify a field that requires a re-creation of the subscription, the creation_plan will be asked. 
+    // In this block, define your average database specification for your databases in the subscription.
     creation_plan {
       average_item_size_in_bytes = 1
       memory_limit_in_gb = 1
@@ -142,44 +144,50 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
       }
   }
   ```
+
 4. Run the following commands to import the resources into the state file:
-    ```bash
-    # Import the subscription resource
-    terraform import rediscloud_subscription.example <subscription id>;
-    # Import the database resource. The last argument contains the subscription id and the database id separated by a slash.
-    terraform import ‘rediscloud_subscription_database.first_database <subscription id>/<first database id>;
-    terraform import ‘rediscloud_subscription_database.second_database <subscription id>/<second database id>;
+
+   ```bash
+   # Import the subscription resource
+   terraform import rediscloud_subscription.example <subscription id>;
+   # Import the database resource. The last argument contains the subscription id and the database id separated by a slash.
+   terraform import ‘rediscloud_subscription_database.first_database <subscription id>/<first database id>;
+   terraform import ‘rediscloud_subscription_database.second_database <subscription id>/<second database id>;
    
-    ```
+   ```
+
    **OPTIONAL**: If you have other resources like `rediscloud_cloud_account` or `rediscloud_subscription_peering`, then
    you will need to import them as well:
+
      ```bash
-     # Import rediscloud_cloud_account
-     terraform import rediscloud_cloud_account.cloud_example <cloud account id>;
-     # Import the peering resource. The last argument contains the subscription id and the peering id separated by a slash.
-     terraform import rediscloud_subscription_peering.peering_example <subscription_id>/<cloud account id>;
+   # Import rediscloud_cloud_account
+   terraform import rediscloud_cloud_account.cloud_example <cloud account id>;
+   # Import the peering resource. The last argument contains the subscription id and the peering id separated by a slash.
+   terraform import rediscloud_subscription_peering.peering_example <subscription_id>/<cloud account id>;
      ```
 
 
 5. Verify that the new state file is valid:
-    ```bash
-    # List the resources in the state file
-    terraform state list;
-    # Check if the resources are valid
-    terraform state show rediscloud_subscription.example;
-    terraform state show ‘rediscloud_subscription_database.first_database;
-    terraform state show ‘rediscloud_subscription_database.second_database;
+
+   ```bash
+   # List the resources in the state file
+   terraform state list;
+   # Check if the resources are valid
+   terraform state show rediscloud_subscription.example;
+   terraform state show ‘rediscloud_subscription_database.first_database;
+   terraform state show ‘rediscloud_subscription_database.second_database;
    
-    ```
+   ```
+
    **OPTIONAL**: If you have other resources like `rediscloud_cloud_account` or `rediscloud_subscription_peering`, then
    you can check if they are valid:
+
      ```bash
-     # Check if the cloud account resource is valid
-     terraform state show rediscloud_cloud_account.cloud_example;
-     # Check if the peering resource is valid
-     terraform state show rediscloud_subscription_peering.peering_example;
+   # Check if the cloud account resource is valid
+   terraform state show rediscloud_cloud_account.cloud_example;
+   # Check if the peering resource is valid
+   terraform state show rediscloud_subscription_peering.peering_example;
      ```
-   
 
 Finally, run `terraform plan` to verify that your new configuration matches the actual infrastructure.
 Should receive a ‘no changes’ message back from the TF CLI. 
