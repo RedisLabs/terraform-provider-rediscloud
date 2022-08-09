@@ -1,11 +1,11 @@
 ---
 layout: "rediscloud"
-page_title: "Redis Cloud: rediscloud_database"
+page_title: "Redis Cloud: rediscloud_subscription_database"
 description: |-
 Database resource in the Terraform provider Redis Cloud.
 ---
 
-# Resource: rediscloud_database
+# Resource: rediscloud_subscription_database
 
 Creates a Database within a specified Subscription in your Redis Enterprise Cloud Account.
 
@@ -53,7 +53,7 @@ resource "rediscloud_subscription" "example" {
 }
 
 // The primary database to provision
-resource "rediscloud_database" "example" {
+resource "rediscloud_subscription_database" "example" {
     subscription_id = rediscloud_subscription.example.id
     name = "example-database"
     protocol = "redis"
@@ -84,14 +84,14 @@ resource "rediscloud_database" "example" {
 }
 
 // An example of how a replica database can be provisioned
-resource "rediscloud_database" "example_replica" {
+resource "rediscloud_subscription_database" "example_replica" {
     subscription_id = rediscloud_subscription.example.id
     name = "example-replica"
     protocol = "redis"
     memory_limit_in_gb = 1
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
-    replica_of = [format("redis://%s", rediscloud_database.example.public_endpoint)]
+    replica_of = [format("redis://%s", rediscloud_subscription_database.example.public_endpoint)]
     depends_on = [rediscloud_subscription.example]
 
 } 
@@ -167,9 +167,9 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/l
 * `private_endpoint` - Private endpoint to access the database
 
 ## Import
-`rediscloud_database` can be imported using the ID of the subscription and the ID of the database in the format {subscription ID}/{database ID}, e.g.
+`rediscloud_subscription_database` can be imported using the ID of the subscription and the ID of the database in the format {subscription ID}/{database ID}, e.g.
 
 ```
-$ terraform import rediscloud_database.example_database 123456/12345678
+$ terraform import rediscloud_subscription_database.example_database 123456/12345678
 ```
 

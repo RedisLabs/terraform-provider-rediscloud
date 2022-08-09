@@ -51,10 +51,10 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_subscription_peerings": dataSourceRedisCloudSubscriptionPeerings(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
-				"rediscloud_cloud_account":        resourceRedisCloudCloudAccount(),
-				"rediscloud_subscription":         resourceRedisCloudSubscription(),
-				"rediscloud_database":             resourceRedisCloudDatabase(),
-				"rediscloud_subscription_peering": resourceRedisCloudSubscriptionPeering(),
+				"rediscloud_cloud_account":         resourceRedisCloudCloudAccount(),
+				"rediscloud_subscription":          resourceRedisCloudSubscription(),
+				"rediscloud_subscription_database": resourceRedisCloudSubscriptionDatabase(),
+				"rediscloud_subscription_peering":  resourceRedisCloudSubscriptionPeering(),
 			},
 		}
 
