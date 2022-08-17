@@ -24,10 +24,10 @@ The changes, such as new database resource extraction, can be found in the Terra
 
 ## Run migration
 
-1. Modify your existing configuration file (.tf).
-1.1 Create a copy of your existing configuration file (.tf).
-1.2 In the configuration file, update the ‘version’ in the Redis cloud provider to use the latest (>=1.0.0).
-1.3 Extract the ‘database’ block from the `rediscloud_subscription` to a new resource called ‘rediscloud_subscription_database’.
+1. Modify your existing configuration file (.tf).  
+1.1 Create a copy of your existing configuration file (.tf).  
+1.2 In the configuration file, update the ‘version’ in the Redis cloud provider to use the latest (>=1.0.0).  
+1.3 Extract the ‘database’ block from the `rediscloud_subscription` to a new resource called ‘rediscloud_subscription_database’.  
 1.4 Add a new field to the ‘rediscloud_subscription_database’ resource, called ‘subscription_id’.
 A new block called `creation_plan` has been introduced to the ‘rediscloud_subscription’ resource. So, to migrate to the latest version, all you need to do is to modify your existing `rediscloud_subscription` schema and create a new resource called `rediscloud_subscription_database` for each of your databases in the subscription.
 
