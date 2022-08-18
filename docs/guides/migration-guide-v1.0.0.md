@@ -102,8 +102,8 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
   
     cloud_provider {...}
   
-   	// For migrating, you can skip this block,
-	  // However, if you would like to modify a field that requires a re-creation of the subscription, the creation_plan will be asked. 
+    // For migrating, you can skip this block,
+	// However, if you would like to modify a field that requires a re-creation of the subscription, the creation_plan will be asked. 
     // In this block, define your average database specification for your databases in the subscription. 
     creation_plan {
       average_item_size_in_bytes = 1
@@ -137,7 +137,9 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
       }
   }
   ```
-4. Run the following commands to import the resources into the state file:
+2.  Initialize the working directory containing the new Terraform configuration files.
+     terraform init;
+3. Run the following commands to import the resources into the state file:
     ```bash
     # Import the subscription resource
     terraform import rediscloud_subscription.example <subscription id>;
@@ -155,7 +157,7 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
      ```
 
 
-5. Verify that the new state file is valid:
+4. Verify that the new state file is valid:
     ```bash
     # List the resources in the state file
     terraform state list;
