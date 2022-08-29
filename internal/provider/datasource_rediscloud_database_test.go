@@ -2,10 +2,11 @@ package provider
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"os"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccDataSourceRedisCloudDatabase_basic(t *testing.T) {
@@ -32,7 +33,7 @@ func TestAccDataSourceRedisCloudDatabase_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttr(dataSourceName, "replication", "false"),
 					resource.TestCheckResourceAttr(dataSourceName, "throughput_measurement_by", "operations-per-second"),
-					resource.TestCheckResourceAttr(dataSourceName, "throughput_measurement_value", "10000"),
+					resource.TestCheckResourceAttr(dataSourceName, "throughput_measurement_value", "1000"),
 					resource.TestCheckResourceAttr(dataSourceName, "password", password),
 					resource.TestCheckResourceAttrSet(dataSourceName, "public_endpoint"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "private_endpoint"),
@@ -69,21 +70,33 @@ resource "rediscloud_subscription" "example" {
     }
   }
 
-  database {
-    name = "tf-database"
-    protocol = "redis"
+  creation_plan {
+    average_item_size_in_bytes = 1
     memory_limit_in_gb = 1
-    support_oss_cluster_api = true
-    data_persistence = "none"
-    replication = false
+    quantity = 1
+    replication=false
+    support_oss_cluster_api=true
     throughput_measurement_by = "operations-per-second"
-    password = "%s"
-    throughput_measurement_value = 10000
+    throughput_measurement_value = 1000
+	modules = ["RedisJSON", "RedisBloom"]
   }
+}
+
+resource "rediscloud_subscription_database" "example" {
+    subscription_id              = rediscloud_subscription.example.id
+    name                         = "tf-database"
+    protocol                     = "redis"
+    memory_limit_in_gb           = 1
+    data_persistence             = "none"
+    throughput_measurement_by    = "operations-per-second"
+    throughput_measurement_value = 1000
+	password                     = "%s"
+	support_oss_cluster_api	     = true
+	replication				     = false
 }
 
 data "rediscloud_database" "example" {
   subscription_id = rediscloud_subscription.example.id
-  name = "tf-database"
+  name = rediscloud_subscription_database.example.name
 }
 `

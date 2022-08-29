@@ -2,11 +2,21 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-## 0.4.0 (unreleased)
+## 1.0.0 (X July 2022)
+
+### Added
+- Added the creation_plan block in the subscription resource schema.
+- Added a new resource type: `rediscloud_subscription_database`.
+- Added the migration guide to help users with migrating their old Terraform configuration files to v1.0.0.
+- Multi-modules: Added the "modules" attribute into the creation_plan block 
+and the database resource schema
 
 ### Changed
 
 - Updates to dependencies and CI related actions
+
+### Removed
+- Removed the database block from the subscription resource schema.
 
 ## 0.3.0 (May 24 2022)
 

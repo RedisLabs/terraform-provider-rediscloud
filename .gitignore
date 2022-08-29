@@ -28,7 +28,8 @@ website/node_modules
 *.iml
 
 website/vendor
-
+vendor
+.vscode/
 
 # Test exclusions
 !command/test-fixtures/**/*.tfstate
