@@ -191,7 +191,7 @@ func resourceRedisCloudSubscriptionPeeringCreate(ctx context.Context, d *schema.
 		return diag.FromErr(err)
 	}
 
-	d.SetId(buildVpcPeeringId(subId, peering))
+	d.SetId(buildResourceId(subId, peering))
 
 	err = waitForPeeringToBeInitiated(ctx, subId, peering, api)
 	if err != nil {
@@ -305,10 +305,6 @@ func resourceRedisCloudSubscriptionPeeringDelete(ctx context.Context, d *schema.
 	d.SetId("")
 
 	return diags
-}
-
-func buildVpcPeeringId(subId int, id int) string {
-	return fmt.Sprintf("%d/%d", subId, id)
 }
 
 func toVpcPeeringId(id string) (int, int, error) {

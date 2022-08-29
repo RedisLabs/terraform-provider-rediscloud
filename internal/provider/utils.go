@@ -77,16 +77,8 @@ func (m *perIdLock) get(id int) *sync.Mutex {
 	return mutex
 }
 
-// m: contains attributes in a block (e.g. database)
-// hash: is calculated based on attributes in the block.
-type hashedSet struct{
-	m map[string]interface{}
-	hash int
-}
 
-func (h *hashedSet) init(s *schema.Set, v interface{}) *hashedSet {
-	// s.F contains a default function for hashing "schema.Set".
-	h.hash = s.F(v)
-	h.m = v.(map[string]interface{})
-	return h
+// IDs of any resources dependent on a subscription need to be divided by a slash. In this format: <sub id>/<resource id>.
+func buildResourceId(subId int, id int) string {
+	return fmt.Sprintf("%d/%d", subId, id)
 }
