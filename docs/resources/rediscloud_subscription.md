@@ -117,6 +117,10 @@ The cloud_provider `region` block supports:
 * `networking_vpc_id` - (Optional) Either an existing VPC Id (already exists in the specific region) or create a new VPC
 (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4625884ad’) and existing
 within the hosting account.
+* `preferred_availability_zones` - (Required) Availability zones deployment preferences (for the selected provider & region).
+
+~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI. 
+This difference in behaviour is to guarantee that a plan after an apply does not generate differences.
 
 ### Timeouts
 
