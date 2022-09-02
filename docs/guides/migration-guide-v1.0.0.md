@@ -153,7 +153,7 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
      # Import rediscloud_cloud_account
      terraform import rediscloud_cloud_account.cloud_example <cloud account id>;
      # Import the peering resource. The last argument contains the subscription id and the peering id separated by a slash.
-     terraform import rediscloud_subscription_peering.peering_example <subscription_id>/<cloud account id>;
+     terraform import rediscloud_subscription_peering.peering_example <subscription_id>/<peering_id>;
      ```
 
 
