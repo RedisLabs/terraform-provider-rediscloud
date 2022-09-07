@@ -503,9 +503,11 @@ func resourceRedisCloudSubscriptionDatabaseUpdate(ctx context.Context, d *schema
 		},
 		DataPersistence:    redis.String(d.Get("data_persistence").(string)),
 		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
-		Password:           redis.String(d.Get("password").(string)),
 		SourceIP:           setToStringSlice(d.Get("source_ips").(*schema.Set)),
 		Alerts:             alerts,
+	}
+	if d.Get("password").(string) != "" {
+		update.Password = redis.String(d.Get("password").(string))
 	}
 
 	update.ReplicaOf = setToStringSlice(d.Get("replica_of").(*schema.Set))
