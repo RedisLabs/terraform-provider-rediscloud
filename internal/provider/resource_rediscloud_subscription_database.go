@@ -240,7 +240,6 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 
 	subId := d.Get("subscription_id").(int)
 	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
 
 	name := d.Get("name").(string)
 	protocol := d.Get("protocol").(string)
@@ -322,7 +321,8 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
-	return resourceRedisCloudSubscriptionDatabaseRead(ctx, d, meta)
+	subscriptionMutex.Unlock(subId)
+	return resourceRedisCloudSubscriptionDatabaseUpdate(ctx, d, meta)
 }
 
 func resourceRedisCloudSubscriptionDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
