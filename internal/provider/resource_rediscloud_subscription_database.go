@@ -285,7 +285,6 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 	createDatabase := databases.CreateDatabase{
 		Name:                 redis.String(name),
 		Protocol:             redis.String(protocol),
-		Password:             redis.String(password),
 		MemoryLimitInGB:      redis.Float64(memoryLimitInGB),
 		SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
 		DataPersistence:      redis.String(dataPersistence),
@@ -297,6 +296,9 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 		},
 		Modules: createModules,
 		Alerts:  createAlerts,
+	}
+	if password != "" {
+		createDatabase.Password = redis.String(password)
 	}
 
 	if averageItemSizeInBytes > 0 {
