@@ -251,12 +251,12 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Required:    true,
 						},
 						"average_item_size_in_bytes": {
-							Description: "Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes) of the items stored in the database",
-							Type:        schema.TypeInt,
-							Optional:    true,
-							// Setting default to 0 so that the hash func produces the same hash when this field is not
-							// specified. SDK's catch-all issue around this: https://github.com/hashicorp/terraform-plugin-sdk/issues/261
-							Default: 0,
+							Description:  "Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes) of the items stored in the database",
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Computed:     true,
+							Default:      nil,
+							ValidateFunc: validation.IntAtLeast(1),
 						},
 						"quantity": {
 							Description:  "The planned number of databases",
@@ -675,15 +675,17 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 	var databases []*subscriptions.CreateDatabase
 	for i := 0; i < numDatabases; i++ {
 		createDatabase := subscriptions.CreateDatabase{
-			Name:                   redis.String(dbName + strconv.Itoa(*idx)),
-			Protocol:               redis.String("redis"),
-			MemoryLimitInGB:        redis.Float64(memoryLimitInGB),
-			SupportOSSClusterAPI:   redis.Bool(supportOSSClusterAPI),
-			Replication:            redis.Bool(replication),
-			AverageItemSizeInBytes: redis.Int(averageItemSizeInBytes),
-			ThroughputMeasurement:  createThroughput,
-			Quantity:               redis.Int(1),
-			Modules:                modules,
+			Name:                  redis.String(dbName + strconv.Itoa(*idx)),
+			Protocol:              redis.String("redis"),
+			MemoryLimitInGB:       redis.Float64(memoryLimitInGB),
+			SupportOSSClusterAPI:  redis.Bool(supportOSSClusterAPI),
+			Replication:           redis.Bool(replication),
+			ThroughputMeasurement: createThroughput,
+			Quantity:              redis.Int(1),
+			Modules:               modules,
+		}
+		if averageItemSizeInBytes > 0 {
+			createDatabase.AverageItemSizeInBytes = redis.Int(averageItemSizeInBytes)
 		}
 		*idx++
 		databases = append(databases, &createDatabase)
