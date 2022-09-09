@@ -206,7 +206,6 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 			"source_ips": {
 				Description: "Set of CIDR addresses to allow access to the database",
 				Type:        schema.TypeSet,
-				Computed:    true,
 				Optional:    true,
 				MinItems:    1,
 				Elem: &schema.Schema{
@@ -240,7 +239,6 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 
 	subId := d.Get("subscription_id").(int)
 	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
 
 	name := d.Get("name").(string)
 	protocol := d.Get("protocol").(string)
@@ -287,7 +285,6 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 	createDatabase := databases.CreateDatabase{
 		Name:                 redis.String(name),
 		Protocol:             redis.String(protocol),
-		Password:             redis.String(password),
 		MemoryLimitInGB:      redis.Float64(memoryLimitInGB),
 		SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
 		DataPersistence:      redis.String(dataPersistence),
@@ -299,6 +296,9 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 		},
 		Modules: createModules,
 		Alerts:  createAlerts,
+	}
+	if password != "" {
+		createDatabase.Password = redis.String(password)
 	}
 
 	if averageItemSizeInBytes > 0 {
@@ -322,7 +322,8 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
-	return resourceRedisCloudSubscriptionDatabaseRead(ctx, d, meta)
+	subscriptionMutex.Unlock(subId)
+	return resourceRedisCloudSubscriptionDatabaseUpdate(ctx, d, meta)
 }
 
 func resourceRedisCloudSubscriptionDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -424,7 +425,7 @@ func resourceRedisCloudSubscriptionDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 	var sourceIPs []string
-	if len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0" {
+	if !(len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0") {
 		// The API handles an empty list as ["0.0.0.0/0"] but need to be careful to match the input to avoid Terraform detecting drift
 		sourceIPs = redis.StringSliceValue(db.Security.SourceIPs...)
 	}
@@ -503,9 +504,15 @@ func resourceRedisCloudSubscriptionDatabaseUpdate(ctx context.Context, d *schema
 		},
 		DataPersistence:    redis.String(d.Get("data_persistence").(string)),
 		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
-		Password:           redis.String(d.Get("password").(string)),
 		SourceIP:           setToStringSlice(d.Get("source_ips").(*schema.Set)),
 		Alerts:             alerts,
+	}
+	if len(setToStringSlice(d.Get("source_ips").(*schema.Set))) == 0 {
+		update.SourceIP = []*string{redis.String("0.0.0.0/0")}
+	}
+
+	if d.Get("password").(string) != "" {
+		update.Password = redis.String(d.Get("password").(string))
 	}
 
 	update.ReplicaOf = setToStringSlice(d.Get("replica_of").(*schema.Set))
