@@ -33,7 +33,6 @@ output "rediscloud_subscription" {
 
 * `payment_method_id` - A valid payment method pre-defined in the current account
 * `memory_storage` - Memory storage preference: either ‘ram’ or a combination of 'ram-and-flash’
-* `persistent_storage_encryption` - Encrypt data stored in persistent storage. Required for a GCP subscription.
 * `cloud_provider` - A cloud provider object, documented below
 * `number_of_databases` - The number of databases that are linked to this subscription.
 * `status` - Current status of the subscription 
