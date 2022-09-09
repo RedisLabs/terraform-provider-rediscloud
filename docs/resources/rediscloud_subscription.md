@@ -71,7 +71,6 @@ The following arguments are supported:
 * `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined.
 * `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types. 
 * `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of ‘ram-and-flash’. Default: ‘ram’
-* `persistent_storage_encryption` - (Optional) Encrypt data stored in persistent storage. Required for a GCP subscription. Default: ‘true’
 * `allowlist` - (Optional) An allowlist object, documented below 
 * `cloud_provider` - (Required) A cloud provider object, documented below 
 * `creation_plan` - (Required) A creation plan object, documented below
@@ -118,6 +117,10 @@ The cloud_provider `region` block supports:
 * `networking_vpc_id` - (Optional) Either an existing VPC Id (already exists in the specific region) or create a new VPC
 (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4625884ad’) and existing
 within the hosting account.
+* `preferred_availability_zones` - (Required) Availability zones deployment preferences (for the selected provider & region).
+
+~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI. 
+This difference in behaviour is to guarantee that a plan after an apply does not generate differences.
 
 ### Timeouts
 
