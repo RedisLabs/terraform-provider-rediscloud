@@ -2,6 +2,16 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+## 1.0.1 (Unreleased)
+
+### Changed
+- Changed the `average_item_size_in_bytes` attribute of the creation_plan block to send a “null” value to the API if omitted.
+
+### Fixed
+- Various documentation fixes
+- Fixed an issue where the `source_ips` and `enable_tls` attributes were not being provisioned correctly on the `rediscloud_subscription_database` resource
+
+
 ## 1.0.0 (30 August 2022)
 
 ### Added
