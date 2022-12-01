@@ -73,8 +73,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 			},
 			{
 				// Checks if the changes in the creation plan are ignored.
-				// TODO: look at "ram" parameter
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan, name, "ram"),
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
@@ -257,7 +256,7 @@ const testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan = `
   resource "rediscloud_active_active_subscription" "example" {
 	name = "%s"
 	payment_method_id = data.rediscloud_payment_method.card.id
-	cloud_provider = "%s"
+	cloud_provider = "AWS"
    
   }
 `

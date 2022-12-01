@@ -109,8 +109,7 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 							Required:    true,
 						},
 						"region": {
-							// TODO: Add description for the region.
-							Description: "",
+							Description: "Cloud networking details, per region (multiple regions for Active-Active cluster)",
 							Type:        schema.TypeSet,
 							Required:    true,
 							MinItems:    1,
@@ -134,12 +133,12 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 										ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
 									},
 									"write_operations_per_second": {
-										Description: "Write operations per second",
+										Description: "Write operations per second for creation plan databases",
 										Type:        schema.TypeInt,
 										Required:    true,
 									},
 									"read_operations_per_second": {
-										Description: "Write operations per second",
+										Description: "Write operations per second for creation plan databases",
 										Type:        schema.TypeInt,
 										Required:    true,
 									},
@@ -235,11 +234,6 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
-	// Some attributes on a database are not accessible by the subscription creation API.
-	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
-	// TODO: add this line back in when implemented
-	// can this just be a read?
-	//return resourceRedisCloudSubscriptionUpdate(ctx, d, meta)
 	return resourceRedisCloudActiveActiveSubscriptionRead(ctx, d, meta)
 }
 
@@ -276,7 +270,6 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		return diag.FromErr(err)
 	}
 
-	// TODO: write a better error message
 	cloudDetails := subscription.CloudDetails
 	if len(cloudDetails) == 0 {
 		return diag.FromErr(fmt.Errorf("Cloud details is empty. Subscription status: %s", redis.StringValue(subscription.Status)))
@@ -383,9 +376,6 @@ func buildCreateActiveActiveCloudProviders(provider string, creationPlan map[str
 
 			createRegion := subscriptions.CreateRegion{
 				Region: redis.String(regionStr),
-				// TODO: Need to see what the API defaults to
-				// MultipleAvailabilityZones:  redis.Bool(multipleAvailabilityZones),
-				// PreferredAvailabilityZones: interfaceToStringSlice(preferredAZs),
 			}
 
 			if v, ok := regionMap["networking_deployment_cidr"]; ok && v != "" {
@@ -423,9 +413,6 @@ func buildSubscriptionCreatePlanAADatabases(planMap map[string]interface{}) []*s
 
 	dbName := "creation-plan-db-"
 	idx := 1
-	// throughputMeasurementBy := planMap["throughput_measurement_by"].(string)
-	// throughputMeasurementValue := planMap["throughput_measurement_value"].(int)
-	// averageItemSizeInBytes := planMap["average_item_size_in_bytes"].(int)
 	numDatabases := planMap["quantity"].(int)
 	supportOSSClusterAPI := planMap["support_oss_cluster_api"].(bool)
 	regions := planMap["region"]
