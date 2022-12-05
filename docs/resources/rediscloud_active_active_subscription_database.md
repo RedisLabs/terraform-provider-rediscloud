@@ -13,21 +13,12 @@ Creates a Database within a specified Active Active Subscription in your Redis E
 
 ```hcl
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
-}
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS" 
-  name = "%s"
+	card_type = "Visa"
 }
 
 resource "rediscloud_active_active_subscription" "example" {
-
-  name = "%s"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-
+  name = "%s" 
+  payment_method_id = data.rediscloud_payment_method.card.id 
   cloud_provider = "AWS"
 
   creation_plan {

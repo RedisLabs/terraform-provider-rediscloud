@@ -29,12 +29,10 @@ func TestAccDataSourceRedisCloudActiveActiveDatabase_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "region", "eu-west-1"),
 					resource.TestCheckResourceAttr(dataSourceName, "memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(dataSourceName, "support_oss_cluster_api", "true"),
-					resource.TestCheckResourceAttr(dataSourceName, "data_persistence", "none"),
+					resource.TestCheckResourceAttr(dataSourceName, "global_data_persistence", "none"),
 					resource.TestCheckResourceAttr(dataSourceName, "data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttr(dataSourceName, "replication", "false"),
-					resource.TestCheckResourceAttr(dataSourceName, "throughput_measurement_by", "operations-per-second"),
-					resource.TestCheckResourceAttr(dataSourceName, "throughput_measurement_value", "1000"),
-					resource.TestCheckResourceAttr(dataSourceName, "password", password),
+					resource.TestCheckResourceAttr(dataSourceName, "global_password", password),
 					resource.TestCheckResourceAttrSet(dataSourceName, "public_endpoint"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "private_endpoint"),
 				),
@@ -45,21 +43,12 @@ func TestAccDataSourceRedisCloudActiveActiveDatabase_basic(t *testing.T) {
 
 const testAccDatasourceRedisCloudActiveActiveDatabase = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
-}
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS" 
-  name = "%s"
+	card_type = "Visa"
 }
 
 resource "rediscloud_active_active_subscription" "example" {
-
-  name = "%s"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-
+  name = "%s" 
+  payment_method_id = data.rediscloud_payment_method.card.id 
   cloud_provider = "AWS"
 
   creation_plan {

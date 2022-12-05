@@ -143,10 +143,9 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
-							Description:      "Region name",
-							Type:             schema.TypeString,
-							Required:         true,
-							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.RegionNameValues(), false)),
+							Description: "Region name",
+							Type:        schema.TypeString,
+							Required:    true,
 						},
 						"override_global_alert": {
 							Description: "Set of alerts to enable on the database",
@@ -387,18 +386,6 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("replication", redis.BoolValue(db.Replication)); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("throughput_measurement_by", redis.StringValue(db.ThroughputMeasurement.By)); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("throughput_measurement_value", redis.IntValue(db.ThroughputMeasurement.Value)); err != nil {
-		return diag.FromErr(err)
-	}
-
 	if err := d.Set("public_endpoint", redis.StringValue(db.PublicEndpoint)); err != nil {
 		return diag.FromErr(err)
 	}
@@ -412,10 +399,6 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 	}
 
 	if err := d.Set("alert", flattenAlerts(db.Alerts)); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("average_item_size_in_bytes", d.Get("average_item_size_in_bytes").(int)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -440,14 +423,6 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 	}
 
 	if err := d.Set("source_ips", sourceIPs); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("hashing_policy", flattenRegexRules(db.Clustering.RegexRules)); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("enable_tls", redis.Bool(*db.Security.EnableTls)); err != nil {
 		return diag.FromErr(err)
 	}
 
