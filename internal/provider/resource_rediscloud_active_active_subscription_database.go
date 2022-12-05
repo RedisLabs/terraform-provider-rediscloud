@@ -143,10 +143,9 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
-							Description:      "Region name",
-							Type:             schema.TypeString,
-							Required:         true,
-							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.RegionNameValues(), false)),
+							Description: "Region name",
+							Type:        schema.TypeString,
+							Required:    true,
 						},
 						"override_global_alert": {
 							Description: "Set of alerts to enable on the database",
@@ -253,30 +252,13 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 	protocol := "redis" // TODO: test leaving this out, or setting it to "redis" at the API client level
 	memoryLimitInGB := d.Get("memory_limit_in_gb").(float64)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
-	dataPersistence := d.Get("data_persistence").(string)
-	dataEviction := d.Get("data_eviction").(string)
-	password := d.Get("password").(string)
-	replication := d.Get("replication").(bool)
-	throughputMeasurementBy := d.Get("throughput_measurement_by").(string)
-	throughputMeasurementValue := d.Get("throughput_measurement_value").(int)
-	averageItemSizeInBytes := d.Get("average_item_size_in_bytes").(int)
-
-	createModules := make([]*databases.CreateModule, 0)
-	modules := d.Get("modules").(*schema.Set)
-	for _, module := range modules.List() {
-		moduleMap := module.(map[string]interface{})
-
-		modName := moduleMap["name"].(string)
-
-		createModule := &databases.CreateModule{
-			Name: redis.String(modName),
-		}
-
-		createModules = append(createModules, createModule)
-	}
+	useExternalEndpointForOSSClusterAPI := d.Get("external_endpoint_for_oss_cluster_api").(bool)
+	globalDataPersistence := d.Get("global_data_persistence").(string)
+	globalPassword := d.Get("global_password").(string)
+	globalSourceIp := setToStringSlice(d.Get("global_source_ips").(*schema.Set))
 
 	createAlerts := make([]*databases.CreateAlert, 0)
-	alerts := d.Get("alert").(*schema.Set)
+	alerts := d.Get("override_global_alert").(*schema.Set)
 	for _, alert := range alerts.List() {
 		alertMap := alert.(map[string]interface{})
 
@@ -291,30 +273,40 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 		createAlerts = append(createAlerts, createAlert)
 	}
 
-	createDatabase := databases.CreateDatabase{
-		Name:                 redis.String(name),
-		Protocol:             redis.String(protocol),
-		MemoryLimitInGB:      redis.Float64(memoryLimitInGB),
-		SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
-		DataPersistence:      redis.String(dataPersistence),
-		DataEvictionPolicy:   redis.String(dataEviction),
-		Replication:          redis.Bool(replication),
-		ThroughputMeasurement: &databases.CreateThroughputMeasurement{
-			By:    redis.String(throughputMeasurementBy),
-			Value: redis.Int(throughputMeasurementValue),
-		},
-		Modules: createModules,
-		Alerts:  createAlerts,
-	}
-	if password != "" {
-		createDatabase.Password = redis.String(password)
+	// Get regions from /subscriptions/{subscriptionId}/regions, this will use the Regions API
+	regions, err := api.client.Regions.List(ctx, subId)
+	if err != nil {
+		return diag.FromErr(err)
 	}
 
-	if averageItemSizeInBytes > 0 {
-		createDatabase.AverageItemSizeInBytes = &averageItemSizeInBytes
+	localThroughputs := make([]*databases.LocalThroughput, 0)
+	for _, region := range regions.Regions {
+		createLocalThroughput := &databases.LocalThroughput{
+			Region:                   redis.String(*region.Region),
+			WriteOperationsPerSecond: redis.Int(1000),
+			ReadOperationsPerSecond:  redis.Int(1000),
+		}
+
+		localThroughputs = append(localThroughputs, createLocalThroughput)
 	}
 
-	dbId, err := api.client.Database.Create(ctx, subId, createDatabase)
+	createDatabase := databases.CreateActiveActiveDatabase{
+		DryRun:                              redis.Bool(false),
+		Name:                                redis.String(name),
+		Protocol:                            redis.String(protocol),
+		MemoryLimitInGB:                     redis.Float64(memoryLimitInGB),
+		SupportOSSClusterAPI:                redis.Bool(supportOSSClusterAPI),
+		UseExternalEndpointForOSSClusterAPI: redis.Bool(useExternalEndpointForOSSClusterAPI),
+		GlobalDataPersistence:               redis.String(globalDataPersistence),
+		GlobalSourceIP:                      globalSourceIp,
+		GlobalAlerts:                        createAlerts,
+		LocalThroughputMeasurement:          localThroughputs,
+	}
+	if globalPassword != "" {
+		createDatabase.GlobalPassword = redis.String(globalPassword)
+	}
+
+	dbId, err := api.client.Database.ActiveActiveCreate(ctx, subId, createDatabase)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -332,7 +324,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
 	subscriptionMutex.Unlock(subId)
-	return resourceRedisCloudSubscriptionDatabaseUpdate(ctx, d, meta)
+	return resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx, d, meta)
 }
 
 func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -492,76 +484,92 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
-	var alerts []*databases.UpdateAlert
-	for _, alert := range d.Get("alert").(*schema.Set).List() {
+	var global_alerts []*databases.UpdateAlert
+	for _, alert := range d.Get("override_global_alert").(*schema.Set).List() {
 		dbAlert := alert.(map[string]interface{})
 
-		alerts = append(alerts, &databases.UpdateAlert{
+		global_alerts = append(global_alerts, &databases.UpdateAlert{
 			Name:  redis.String(dbAlert["name"].(string)),
 			Value: redis.Int(dbAlert["value"].(int)),
 		})
 	}
 
-	update := databases.UpdateDatabase{
-		Name:                 redis.String(d.Get("name").(string)),
-		MemoryLimitInGB:      redis.Float64(d.Get("memory_limit_in_gb").(float64)),
-		SupportOSSClusterAPI: redis.Bool(d.Get("support_oss_cluster_api").(bool)),
-		Replication:          redis.Bool(d.Get("replication").(bool)),
-		ThroughputMeasurement: &databases.UpdateThroughputMeasurement{
-			By:    redis.String(d.Get("throughput_measurement_by").(string)),
-			Value: redis.Int(d.Get("throughput_measurement_value").(int)),
-		},
-		DataPersistence:    redis.String(d.Get("data_persistence").(string)),
-		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
-		SourceIP:           setToStringSlice(d.Get("source_ips").(*schema.Set)),
-		Alerts:             alerts,
-	}
-	if len(setToStringSlice(d.Get("source_ips").(*schema.Set))) == 0 {
-		update.SourceIP = []*string{redis.String("0.0.0.0/0")}
+	// Make a list of region-specific configurations
+	var regions []*databases.LocalRegionProperties
+	for _, region := range d.Get("override_region").(*schema.Set).List() {
+		dbRegion := region.(map[string]interface{})
+
+		// Make a list of region-specific alert configurations for use in the regions list below
+		var override_alerts []*databases.UpdateAlert
+		// TODO: change this if we have to use a list of alerts
+		for _, alert := range d.Get("override_global_alert").(*schema.Set).List() {
+			dbAlert := alert.(map[string]interface{})
+
+			override_alerts = append(override_alerts, &databases.UpdateAlert{
+				Name:  redis.String(dbAlert["name"].(string)),
+				Value: redis.Int(dbAlert["value"].(int)),
+			})
+		}
+
+		regions = append(regions, &databases.LocalRegionProperties{
+			Region: redis.String(dbRegion["name"].(string)),
+			// TODO: do we need RemoteBackup?
+			// LocalThroughputMeasurement: &databases.LocalThroughput{
+			// 	Region:                   redis.String(dbRegion["name"].(string)),
+			// 	WriteOperationsPerSecond: redis.Int(dbRegion["write_operations_per_second"].(int)),
+			// 	ReadOperationsPerSecond:  redis.Int(dbRegion["read_operations_per_second"].(int)),
+			// },
+			DataPersistence: redis.String(dbRegion["override_global_data_persistence"].(string)),
+			Password:        redis.String(dbRegion["override_global_password"].(string)),
+			//TODO: SourceIP:        redis.StringSlice(dbRegion["override_global_source_ips"].([]string)...),
+			Alerts: override_alerts,
+		})
 	}
 
-	if d.Get("password").(string) != "" {
-		update.Password = redis.String(d.Get("password").(string))
+	// Populate the database update request with the required fields
+	update := databases.UpdateActiveActiveDatabase{
+		MemoryLimitInGB:                     redis.Float64(d.Get("memory_limit_in_gb").(float64)),
+		SupportOSSClusterAPI:                redis.Bool(d.Get("support_oss_cluster_api").(bool)),
+		UseExternalEndpointForOSSClusterAPI: redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool)),
+		//DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
+		GlobalDataPersistence: redis.String(d.Get("global_data_persistence").(string)),
+		GlobalAlerts:          global_alerts,
+		Regions:               regions,
 	}
 
-	update.ReplicaOf = setToStringSlice(d.Get("replica_of").(*schema.Set))
-	if update.ReplicaOf == nil {
-		update.ReplicaOf = make([]*string, 0)
+	// The below fields are optional and will only be sent in the request if they are present in the Terraform configuration
+	if len(setToStringSlice(d.Get("global_source_ips").(*schema.Set))) == 0 {
+		update.GlobalSourceIP = []*string{redis.String("0.0.0.0/0")}
 	}
 
+	if d.Get("global_password").(string) != "" {
+		update.GlobalPassword = redis.String(d.Get("global_password").(string))
+	}
+
+	// TODO: determine if these fields are required
 	// The cert validation is done by the API (HTTP 400 is returned if it's invalid).
-	clientSSLCertificate := d.Get("client_ssl_certificate").(string)
-	enableTLS := d.Get("enable_tls").(bool)
-	if enableTLS {
-		// TLS only: enable_tls=true, client_ssl_certificate="".
-		update.EnableTls = redis.Bool(enableTLS)
-		// mTLS: enableTls=true, non-empty client_ssl_certificate.
-		if clientSSLCertificate != "" {
-			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
-		}
-	} else {
-		// mTLS (backward compatibility): enable_tls=false, non-empty client_ssl_certificate.
-		if clientSSLCertificate != "" {
-			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
-		} else {
-			// Default: enable_tls=false, client_ssl_certificate=""
-			update.EnableTls = redis.Bool(enableTLS)
-		}
-	}
-
-	regex := d.Get("hashing_policy").([]interface{})
-	if len(regex) != 0 {
-		update.RegexRules = interfaceToStringSlice(regex)
-	}
-
-	backupPath := d.Get("periodic_backup_path").(string)
-	if backupPath != "" {
-		update.PeriodicBackupPath = redis.String(backupPath)
-	}
+	// clientSSLCertificate := d.Get("client_ssl_certificate").(string)
+	// enableTLS := d.Get("enable_tls").(bool)
+	// if enableTLS {
+	// TLS only: enable_tls=true, client_ssl_certificate="".
+	// update.EnableTls = redis.Bool(enableTLS)
+	// mTLS: enableTls=true, non-empty client_ssl_certificate.
+	// 	// if clientSSLCertificate != "" {
+	// 		update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+	// 	}
+	// } else {
+	// 	// mTLS (backward compatibility): enable_tls=false, non-empty client_ssl_certificate.
+	// 	if clientSSLCertificate != "" {
+	// 		update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+	// 	} else {
+	// 		// Default: enable_tls=false, client_ssl_certificate=""
+	// 		update.EnableTls = redis.Bool(enableTLS)
+	// 	}
+	// }
 
 	update.UseExternalEndpointForOSSClusterAPI = redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool))
 
-	err = api.client.Database.Update(ctx, subId, dbId, update)
+	err = api.client.Database.ActiveActiveUpdate(ctx, subId, dbId, update)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -574,5 +582,5 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 		return diag.FromErr(err)
 	}
 
-	return resourceRedisCloudSubscriptionDatabaseRead(ctx, d, meta)
+	return resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx, d, meta)
 }
