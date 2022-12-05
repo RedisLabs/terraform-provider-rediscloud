@@ -163,6 +163,8 @@ func TestAccResourceRedisCloudSubscriptionDatabase_MultiModules(t *testing.T) {
 	})
 }
 
+// TODO: Temp workaround setting cloud_account_id = 1
+// while cloud account is broken
 const subscriptionBoilerplate = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
@@ -187,7 +189,7 @@ resource "rediscloud_subscription" "example" {
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
+    cloud_account_id = 1
     region {
       region = "eu-west-1"
       networking_deployment_cidr = "10.0.0.0/24"
@@ -296,6 +298,9 @@ resource "rediscloud_subscription_database" "example" {
     ]
 } 
 `
+
+// TODO: Temp workaround setting cloud_account_id = 1
+// while cloud account is broken
 const multiModulesSubscriptionBoilerplate = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
@@ -315,7 +320,7 @@ resource "rediscloud_subscription" "example" {
   }
   cloud_provider {
     provider         = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
+    cloud_account_id = 1
     region {
       region                       = "eu-west-1"
       networking_deployment_cidr   = "10.0.0.0/24"

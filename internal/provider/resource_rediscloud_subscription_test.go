@@ -430,6 +430,8 @@ func testAccCheckSubscriptionDestroy(s *terraform.State) error {
 	return nil
 }
 
+// TODO: Temp workaround setting cloud_account_id = 1
+// while cloud account is broken
 // TF config for provisioning a new subscription.
 const testAccResourceRedisCloudSubscription = `
 data "rediscloud_payment_method" "card" {
@@ -455,7 +457,7 @@ resource "rediscloud_subscription" "example" {
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
+    cloud_account_id = 1
     region {
       region = "eu-west-1"
       networking_deployment_cidr = "10.0.0.0/24"
@@ -476,6 +478,8 @@ resource "rediscloud_subscription" "example" {
 }
 `
 
+// TODO: Temp workaround setting cloud_account_id = 1
+// while cloud account is broken
 // TF config for provisioning a subscription without the creation_plan block.
 const testAccResourceRedisCloudSubscriptionNoCreationPlan = `
 data "rediscloud_payment_method" "card" {
@@ -501,7 +505,7 @@ resource "rediscloud_subscription" "example" {
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
+    cloud_account_id = 1
     region {
       region = "eu-west-1"
       networking_deployment_cidr = "10.0.0.0/24"
@@ -511,6 +515,8 @@ resource "rediscloud_subscription" "example" {
 }
 `
 
+// TODO: Temp workaround setting cloud_account_id = 1
+// while cloud account is broken
 const testAccResourceRedisCloudSubscriptionContractPayment = `
 
 data "rediscloud_cloud_account" "account" {
@@ -531,7 +537,7 @@ resource "rediscloud_subscription" "example" {
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
+    cloud_account_id = 1
     region {
       region = "eu-west-1"
       networking_deployment_cidr = "10.0.0.0/24"
@@ -552,6 +558,8 @@ resource "rediscloud_subscription" "example" {
 }
 `
 
+// TODO: Temp workaround setting cloud_account_id = 1
+// while cloud account is broken
 const testAccResourceRedisCloudSubscriptionMarketplacePayment = `
 
 data "rediscloud_cloud_account" "account" {
@@ -573,7 +581,7 @@ resource "rediscloud_subscription" "example" {
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
+    cloud_account_id = 1
     region {
       region = "eu-west-1"
       networking_deployment_cidr = "10.0.0.0/24"

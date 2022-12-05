@@ -55,6 +55,8 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 	})
 }
 
+// TODO: Temp workaround setting cloud_account_id = 1
+// while cloud account is broken
 const testAccDatasourceRedisCloudSubscriptionPeeringsDataSource = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
@@ -73,7 +75,7 @@ resource "rediscloud_subscription" "example" {
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
+    cloud_account_id = 1
     region {
       region = "eu-west-1"
       networking_deployment_cidr = "%s"
