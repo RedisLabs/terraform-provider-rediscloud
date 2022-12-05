@@ -18,83 +18,53 @@ data "rediscloud_payment_method" "card" {
 
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
-  provider_type = "AWS"
+  provider_type = "AWS" 
+  name = "%s"
 }
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_active_active_subscription" "example" {
 
-  name = "example"
-  payment_method = "credit-card"
+  name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
 
-  cloud_provider {
-    provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region = "eu-west-1"
-      networking_deployment_cidr = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
-    }
-  }
+  cloud_provider = "AWS"
 
-  // This block needs to be defined for provisioning a new subscription.
-  // This allows creating a well-optimised hardware specification for databases in the cluster
   creation_plan {
-    average_item_size_in_bytes = 1
     memory_limit_in_gb = 1
-    quantity = 2
+    quantity = 1
     replication=false
-    support_oss_cluster_api=false
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-    modules = ["RedisJSON", "RedisBloom"]
+    support_oss_cluster_api=true
+	region {
+		region = "us-east-1"
+		networking_deployment_cidr = "192.168.0.0/24"
+		write_operations_per_second = 1000
+		read_operations_per_second = 1000
+	}
+	region {
+		region = "us-east-2"
+		networking_deployment_cidr = "10.0.1.0/24"
+		write_operations_per_second = 1000
+		read_operations_per_second = 1000
+	}
+	}
   }
 }
 
-// The primary database to provision
-resource "rediscloud_subscription_database" "example" {
-    subscription_id = rediscloud_subscription.example.id
-    name = "example-database"
-    protocol = "redis"
-    memory_limit_in_gb = 1
-    data_persistence = "none"
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-    support_oss_cluster_api = false 
-    external_endpoint_for_oss_cluster_api = false
-    replication = false
-    average_item_size_in_bytes = 0
-   
-    modules = [
-        {
-          name = "RedisJSON"
-        },
-        {
-          name = "RedisBloom"
-        }
-    ]
-    
-    alert {
-      name = "dataset-size"
-      value = 40
-    }
-    depends_on = [rediscloud_subscription.example]
-
+resource "rediscloud_subscription_active_active_database" "example" {
+    subscription_id              = rediscloud_subscription.example.id
+    name                         = "tf-database"
+    protocol                     = "redis"
+    memory_limit_in_gb           = 1
+    global_data_persistence      = "none"
+	global_password              = "%s"
+	support_oss_cluster_api	     = true
 }
 
-// An example of how a replica database can be provisioned
-resource "rediscloud_subscription_database" "example_replica" {
-    subscription_id = rediscloud_subscription.example.id
-    name = "example-replica"
-    protocol = "redis"
-    memory_limit_in_gb = 1
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-    replica_of = [format("redis://%s", rediscloud_subscription_database.example.public_endpoint)]
-    depends_on = [rediscloud_subscription.example]
-
-} 
+data "rediscloud_database" "example" {
+  subscription_id = rediscloud_subscription.example.id
+  name = rediscloud_subscription_database.example.name
+}
 ```
 
 ## Argument Reference
