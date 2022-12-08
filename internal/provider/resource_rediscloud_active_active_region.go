@@ -19,7 +19,7 @@ import (
 func resourceRedisCloudActiveActiveRegion() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates an Active Active Region and within your Redis Enterprise Cloud Account.",
-		CreateContext: resourceRedisCloudActiveActiveSubscriptionCreate,
+		CreateContext: resourceRedisCloudActiveActiveRegionCreate,
 		ReadContext:   resourceRedisCloudActiveActiveRegionRead,
 		//UpdateContext: resourceRedisCloudSubscriptionUpdate,
 		//DeleteContext: resourceRedisCloudSubscriptionDelete,
@@ -61,7 +61,7 @@ func resourceRedisCloudActiveActiveRegion() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 			},
-			"regions": {
+			"region": {
 				Description: "Cloud networking details, per region (multiple regions for Active-Active cluster)",
 				Type:        schema.TypeSet,
 				Required:    true,
@@ -74,24 +74,17 @@ func resourceRedisCloudActiveActiveRegion() *schema.Resource {
 				},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"region_id": {
-							Description:      "The region id",
-							Type:             schema.TypeString,
-							Required:         true,
-							ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
-							ForceNew:         true,
-						},
+						// "region_id": {
+						// 	Description:      "The region id",
+						// 	Type:             schema.TypeString,
+						// 	Required:         true,
+						// 	ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
+						// 	ForceNew:         true,
+						// },
 						"region": {
 							Description: "Deployment region as defined by cloud provider",
 							Type:        schema.TypeString,
 							Required:    true,
-						},
-						"deployment_cidr": {
-							Description:      "Deployment CIDR mask",
-							Type:             schema.TypeString,
-							ForceNew:         true,
-							Required:         true,
-							ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
 						},
 						"vpc_id": {
 							Description: "Identifier of the VPC to be peered",
@@ -101,7 +94,7 @@ func resourceRedisCloudActiveActiveRegion() *schema.Resource {
 						"recreate_region": {
 							Description: "Defines wheter the regions should be re-created",
 							Type:        schema.TypeBool,
-							Required:    false,
+							Required:    true,
 						},
 						"networking_deployment_cidr": {
 							Description:      "Deployment CIDR mask",
@@ -110,7 +103,7 @@ func resourceRedisCloudActiveActiveRegion() *schema.Resource {
 							ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
 						},
 
-						"databases": {
+						"database": {
 							Description: "TODO",
 							Type:        schema.TypeSet,
 							Required:    true,
@@ -135,12 +128,12 @@ func resourceRedisCloudActiveActiveRegion() *schema.Resource {
 										Type:        schema.TypeString,
 										Required:    true,
 									},
-									"write_operations_per_second": {
+									"local_write_operations_per_second": {
 										Description: "Write operations per second for creation plan databases",
 										Type:        schema.TypeInt,
 										Required:    true,
 									},
-									"read_operations_per_second": {
+									"local_read_operations_per_second": {
 										Description: "Write operations per second for creation plan databases",
 										Type:        schema.TypeInt,
 										Required:    true,
@@ -155,7 +148,7 @@ func resourceRedisCloudActiveActiveRegion() *schema.Resource {
 	}
 }
 
-func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudActiveActiveRegionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	var diags diag.Diagnostics
@@ -188,7 +181,27 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 
 	// Call GO API createRegion for all non-existing regions
 	for _, currentRegion := range createRegions {
-		api.client.Regions.Create(ctx, currentRegion)
+		createDatabases := make([]*regions.CreateDatabase, 0)
+		for _, database := range currentRegion.Databases {
+			localThroughputMeasurement := regions.CreateLocalThroughput{
+				Region:                   currentRegion.Region,
+				ReadOperationsPerSecond:  database.ReadOperationsPerSecond,
+				WriteOperationsPerSecond: database.WriteOperationsPerSecond,
+			}
+			createDatabase := regions.CreateDatabase{
+				Name:                  database.DatabaseName,
+				ThroughputMeasurement: &localThroughputMeasurement,
+			}
+			createDatabases = append(createDatabases, &createDatabase)
+		}
+
+		createRegion := regions.CreateRegion{
+			Region:         currentRegion.Region,
+			DeploymentCIDR: currentRegion.DeploymentCIDR,
+			// TODO
+			Databases: createDatabases,
+		}
+		api.client.Regions.Create(ctx, subId, createRegion)
 	}
 
 	return diags
