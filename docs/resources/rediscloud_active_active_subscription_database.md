@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_active_active_subscription_database"
 description: |-
-Database resource in the Terraform provider Redis Cloud.
+Database resource for Active-Active Subscripitons in the Terraform provider Redis Cloud.
 ---
 
 # Resource: rediscloud_active_active_subscription_database
@@ -42,40 +42,60 @@ resource "rediscloud_active_active_subscription" "example" {
   }
 }
 
-resource "rediscloud_subscription_active_active_database" "example" {
-    subscription_id              = rediscloud_subscription.example.id
-    name                         = "tf-database"
-    protocol                     = "redis"
-    memory_limit_in_gb           = 1
-    global_data_persistence      = "none"
-	global_password              = "%s"
-	support_oss_cluster_api	     = true
-}
+resource "rediscloud_active_active_subscription_database" "example" {
+    subscription_id = rediscloud_active_active_subscription.example.id
+    name = "example-database"
+    memory_limit_in_gb = 1
+    support_oss_cluster_api = false 
+    external_endpoint_for_oss_cluster_api = false
+	enable_tls = false
+	data_eviction = "volatile-lru"
+    
+    // OPTIONAL
+    global_data_persistence = "aof-every-1-second"
+    global_password = "some-random-pass-2" 
+    global_alert {
+		name = "dataset-size"
+		value = 40
+	}
+	// TODO: add source_ips example
+	
 
-data "rediscloud_database" "example" {
-  subscription_id = rediscloud_subscription.example.id
-  name = rediscloud_subscription_database.example.name
+  override_region {
+    name = "us-east-2"
+  }
+
+  override_region {
+    name = "us-east-1"
+    override_global_data_persistence = "none"
+	// TODO: add global_source_ips example
+    # override_global_source_ips = []
+    override_global_password = "region-specific-password"
+    override_global_alert {
+        name = "dataset-size"
+        value = 41
+    }
+   }
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-
 * `subscription_id`: (Required) The ID of the subscription to create the database in.
 * `name` - (Required) A meaningful name to identify the database.
   the top of the page for more information.
 * `memory_limit_in_gb` - (Required) Maximum memory usage for this specific database
-* `protocol` - (Optional) The protocol that will be used to access the database, (either ‘redis’ or 'memcached’) Default: ‘redis’
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `external_endpoint_for_oss_cluster_api` - (Optional) Should use the external endpoint for open-source (OSS) Cluster API.
   Can only be enabled if OSS Cluster API support is enabled. Default: 'false'
+* `enable_tls` - (Optional) Use TLS for authentication. Default: ‘false’
+* `client_ssl_certificate` - (Optional) SSL certificate to authenticate user connections.
+* `data_eviction` - (Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru')
 * `global_data_persistence` - (Optional) Rate of database data persistence (in persistent storage).
 * `global_password` - (Optional) Password used to access the database. If left empty, the password will be generated automatically.
-* `replica_of` - (Optional) Set of Redis database URIs, in the format `redis://user:password@host:port`, that this
-  database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided.
-  Cannot be enabled when `support_oss_cluster_api` is enabled.
-* `global_source_ips` - (Optional) Set of CIDR addresses to allow access to the database.
+* `global_alert` - (Optional) A block defining an alert to enable on the database, documented below, can be specified multiple times.
+* `global_source_ips` - (Optional) List of CIDR addresses to allow access to the database.
 * `override_global_alert` - (Optional) Set of alerts to enable on the database, documented below.
 * `override_region` - (Optional) Override region specific configuration, documented below.
 
@@ -103,13 +123,14 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/l
 ## Attribute reference
 
 * `db_id` - Identifier of the database created
+// TODO: these attributes are per region, so we need to figure out how to represent that
 * `public_endpoint` - Public endpoint to access the database
 * `private_endpoint` - Private endpoint to access the database
 
 ## Import
-`rediscloud_subscription_database` can be imported using the ID of the subscription and the ID of the database in the format {subscription ID}/{database ID}, e.g.
+`rediscloud_active_active_subscription_database` can be imported using the ID of the subscription and the ID of the database in the format {subscription ID}/{database ID}, e.g.
 
 ```
-$ terraform import rediscloud_subscription_database.example_database 123456/12345678
+$ terraform import rediscloud_active_active_subscription_database.example_database 123456/12345678
 ```
 
