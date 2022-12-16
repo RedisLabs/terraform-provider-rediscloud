@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/regions"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/google/go-cmp/cmp"
@@ -71,7 +72,8 @@ func resourceRedisCloudActiveActiveRegion() *schema.Resource {
 						"recreate_region": {
 							Description: "Defines wheter the regions should be re-created",
 							Type:        schema.TypeBool,
-							Required:    true,
+							Optional:    true,
+							Default:     false,
 						},
 						"networking_deployment_cidr": {
 							Description:      "Deployment CIDR mask",
@@ -119,7 +121,6 @@ func resourceRedisCloudActiveActiveRegion() *schema.Resource {
 
 func resourceRedisCloudActiveActiveRegionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
-
 	var diags diag.Diagnostics
 
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
@@ -127,7 +128,7 @@ func resourceRedisCloudActiveActiveRegionCreate(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
-	regionsFromResourceData := buildCreateActiveActiveRegions(d.Get("region").(*schema.Set))
+	// Get existing regions so we can do a manual diff
 	// Query API for existing Regions for a given Subscription
 	existingRegions, err := api.client.Regions.List(ctx, subId)
 	if err != nil {
@@ -140,6 +141,19 @@ func resourceRedisCloudActiveActiveRegionCreate(ctx context.Context, d *schema.R
 		existingRegionMap[*existingRegion.Region] = existingRegion
 	}
 
+	regionsFromResourceData := buildCreateActiveActiveRegions(d.Get("region").(*schema.Set))
+
+	err, _ = regionCreate(subId, existingRegionMap, regionsFromResourceData, ctx, d, meta)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	return diags
+}
+
+func regionCreate(subId int, existingRegionMap map[string]*regions.Region, regionsFromResourceData []*regions.Region, ctx context.Context, d *schema.ResourceData, meta interface{}) (error, []*regions.Region) {
+	api := meta.(*apiClient)
+
 	// Filter non-existing regions
 	createRegions := make([]*regions.Region, 0)
 	for _, currentRegion := range regionsFromResourceData {
@@ -150,7 +164,7 @@ func resourceRedisCloudActiveActiveRegionCreate(ctx context.Context, d *schema.R
 
 	// If no new regions were defined return
 	if len(createRegions) == 0 {
-		return diags
+		return nil, createRegions
 	}
 
 	// Call GO API createRegion for all non-existing regions
@@ -175,11 +189,11 @@ func resourceRedisCloudActiveActiveRegionCreate(ctx context.Context, d *schema.R
 			Databases:      createDatabases,
 		}
 
-		_, err = api.client.Regions.Create(ctx, subId, createRegion)
-	}
+		_, err := api.client.Regions.Create(ctx, subId, createRegion)
 
-	if err != nil {
-		return diag.FromErr(err)
+		if err != nil {
+			return err, createRegions
+		}
 	}
 
 	d.SetId(strconv.Itoa(subId))
@@ -189,17 +203,17 @@ func resourceRedisCloudActiveActiveRegionCreate(ctx context.Context, d *schema.R
 
 	// Wait for the subscription to be active before deleting it.
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return diag.FromErr(err)
+		return err, createRegions
 	}
 
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 	// This additional wait ensures that the databases are deleted before the subscription is deleted.
 	time.Sleep(10 * time.Second) //lintignore:R018
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return diag.FromErr(err)
+		return err, createRegions
 	}
 
-	return resourceRedisCloudActiveActiveRegionRead(ctx, d, meta)
+	return nil, createRegions
 }
 
 func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -239,6 +253,19 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 		}
 	}
 
+	// Handling region create
+	if len(regionsFromResourceData) > len(existingRegions.Regions) {
+		err, newRegionsCreated := regionCreate(subId, existingRegionMap, regionsFromResourceData, ctx, d, meta)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		// Updating existing ragion map
+		for _, newRegion := range newRegionsCreated {
+			existingRegionMap[*newRegion.Region] = newRegion
+		}
+	}
+
 	// Handling region delete
 	deleteRegions := make([]*regions.Region, 0)
 	if len(regionsFromResourceData) < len(existingRegions.Regions) && deleteRegionsFlag {
@@ -256,15 +283,13 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 		regiondDelete(ctx, d, subId, deleteRegions, meta)
 	}
 
-	// Handling re-create and DB update
+	// Handling region re-create
 	reCreateRegions := make([]*regions.Region, 0)
 	for _, currentRegion := range regionsFromResourceData {
 		existingRegion := existingRegionMap[*currentRegion.Region]
 		if !cmp.Equal(existingRegion, currentRegion) {
 			if shouldRecreateRegion(existingRegion, currentRegion, deleteRegionsFlag) {
 				reCreateRegions = append(reCreateRegions, currentRegion)
-			} else if shouldUpdateDatabaseOnly(existingRegion, currentRegion) {
-				// TODO
 			}
 		}
 	}
@@ -274,15 +299,73 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 		resourceRedisCloudActiveActiveRegionCreate(ctx, d, meta)
 	}
 
+	// Handling DB updates
+	err = performDbUpdates(ctx, meta, subId, regionsFromResourceData, existingRegionMap)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	return diags
 }
 
-func shouldRecreateRegion(existingRegion *regions.Region, resourceDataRegion *regions.Region, deleteRegionsFlag bool) bool {
-	return (*existingRegion.DeploymentCIDR != *resourceDataRegion.DeploymentCIDR) && *resourceDataRegion.RecreateRegion && deleteRegionsFlag
-}
+func performDbUpdates(ctx context.Context, meta interface{}, subId int, regionsFromResourceData []*regions.Region, existingRegionMap map[string]*regions.Region) error {
+	api := meta.(*apiClient)
 
-func shouldUpdateDatabaseOnly(existingRegion *regions.Region, resourceDataRegion *regions.Region) bool {
-	return existingRegion.DeploymentCIDR == resourceDataRegion.DeploymentCIDR && cmp.Equal(existingRegion.Databases, resourceDataRegion.Databases)
+	updateDBMap := make(map[int][]*databases.LocalRegionProperties)
+	for _, currentRegion := range regionsFromResourceData {
+		existingRegion := existingRegionMap[*currentRegion.Region]
+		if shouldUpdateDatabaseOnly(existingRegion, currentRegion) {
+			//Collect databases to a map <dbId, db>
+			existingDBMap := make(map[int]*regions.Database)
+			for _, db := range existingRegion.Databases {
+				existingDBMap[*db.DatabaseId] = db
+			}
+
+			for _, db := range currentRegion.Databases {
+				if !cmp.Equal(db, existingDBMap[*db.DatabaseId]) {
+					localThroughput := databases.LocalThroughput{
+						Region:                   currentRegion.Region,
+						WriteOperationsPerSecond: db.WriteOperationsPerSecond,
+						ReadOperationsPerSecond:  db.ReadOperationsPerSecond,
+					}
+					localRegionProperty := databases.LocalRegionProperties{
+						Region:                     currentRegion.Region,
+						LocalThroughputMeasurement: &localThroughput,
+					}
+					updateDBMap[*db.DatabaseId] = append(updateDBMap[*db.DatabaseId], &localRegionProperty)
+				}
+			}
+		}
+	}
+
+	if len(updateDBMap) > 0 {
+		for dbId, localRegionProperties := range updateDBMap {
+			updateActiveActiveDb := databases.UpdateActiveActiveDatabase{
+				Regions: localRegionProperties,
+			}
+			err := api.client.Database.ActiveActiveUpdate(ctx, subId, dbId, updateActiveActiveDb)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	subscriptionMutex.Lock(subId)
+	defer subscriptionMutex.Unlock(subId)
+
+	// Wait for the subscription to be active before deleting it.
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return err
+	}
+
+	// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
+	// This additional wait ensures that the databases are deleted before the subscription is deleted.
+	time.Sleep(10 * time.Second) //lintignore:R018
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func resourceRedisCloudActiveActiveRegionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -291,7 +374,6 @@ func resourceRedisCloudActiveActiveRegionRead(ctx context.Context, d *schema.Res
 	var diags diag.Diagnostics
 
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
-	// TODO: handle error
 	regions, err := api.client.Regions.List(ctx, subId)
 	if err != nil {
 		if _, ok := err.(*subscriptions.NotFound); ok {
@@ -305,7 +387,7 @@ func resourceRedisCloudActiveActiveRegionRead(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("region", buildActiveActiveRegionsResourceData(regions.Regions)); err != nil {
+	if err := d.Set("region", buildActiveActiveRegionsResourceData(regions.Regions, d)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -317,11 +399,9 @@ func resourceRedisCloudActiveActiveRegionDelete(ctx context.Context, d *schema.R
 	return resourceRedisCloudActiveActiveRegionRead(ctx, d, meta)
 }
 
-func regiondDelete(ctx context.Context, d *schema.ResourceData, subId int, regionsToDelete []*regions.Region, meta interface{}) diag.Diagnostics {
+func regiondDelete(ctx context.Context, d *schema.ResourceData, subId int, regionsToDelete []*regions.Region, meta interface{}) error {
 	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*apiClient)
-
-	var diags diag.Diagnostics
 
 	var deleteRegionArray []*regions.DeleteRegion
 	for _, region := range regionsToDelete {
@@ -337,7 +417,7 @@ func regiondDelete(ctx context.Context, d *schema.ResourceData, subId int, regio
 
 	err := api.client.Regions.DeleteWithQuery(ctx, subId, deleteRegions)
 	if err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	subscriptionMutex.Lock(subId)
@@ -345,21 +425,28 @@ func regiondDelete(ctx context.Context, d *schema.ResourceData, subId int, regio
 
 	// Wait for the subscription to be active before deleting it.
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 	// This additional wait ensures that the databases are deleted before the subscription is deleted.
 	time.Sleep(10 * time.Second) //lintignore:R018
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return diag.FromErr(err)
+		return err
 	}
 
-	return diags
+	return nil
 }
 
-func buildActiveActiveRegionsResourceData(regions []*regions.Region) []map[string]interface{} {
+func buildActiveActiveRegionsResourceData(regions []*regions.Region, d *schema.ResourceData) []map[string]interface{} {
 	var resourceDataMap []map[string]interface{}
+
+	resDataRegionsMap := d.Get("region").(*schema.Set)
+	regionByRegionIdMap := make(map[string]bool)
+	for _, resDataRegion := range resDataRegionsMap.List() {
+		resDataRegionMap := resDataRegion.(map[string]interface{})
+		regionByRegionIdMap[resDataRegionMap["region"].(string)] = resDataRegionMap["recreate_region"].(bool)
+	}
 
 	for _, currentRegion := range regions {
 		var databases []interface{}
@@ -376,6 +463,7 @@ func buildActiveActiveRegionsResourceData(regions []*regions.Region) []map[strin
 		regionMapString := map[string]interface{}{
 			"region_id":                  currentRegion.RegionId,
 			"region":                     currentRegion.Region,
+			"recreate_region":            regionByRegionIdMap[*currentRegion.Region],
 			"networking_deployment_cidr": currentRegion.DeploymentCIDR,
 			"vpc_id":                     currentRegion.VpcId,
 			"database":                   databases,
@@ -418,4 +506,12 @@ func buildCreateActiveActiveRegions(r *schema.Set) []*regions.Region {
 	}
 
 	return createRegions
+}
+
+func shouldRecreateRegion(existingRegion *regions.Region, resourceDataRegion *regions.Region, deleteRegionsFlag bool) bool {
+	return (*existingRegion.DeploymentCIDR != *resourceDataRegion.DeploymentCIDR) && *resourceDataRegion.RecreateRegion && deleteRegionsFlag
+}
+
+func shouldUpdateDatabaseOnly(existingRegion *regions.Region, resourceDataRegion *regions.Region) bool {
+	return *existingRegion.DeploymentCIDR == *resourceDataRegion.DeploymentCIDR && !cmp.Equal(existingRegion.Databases, resourceDataRegion.Databases) && !*resourceDataRegion.RecreateRegion
 }
