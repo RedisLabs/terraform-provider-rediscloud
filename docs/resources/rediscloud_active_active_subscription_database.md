@@ -77,6 +77,14 @@ resource "rediscloud_active_active_subscription_database" "example" {
     }
    }
 }
+
+output "us-east-public" {
+  value = rediscloud_active_active_subscription_database.example.public_endpoint.us-east-1
+}
+
+output "all-private-endpoints" {
+  value = rediscloud_active_active_subscription_database.example.private_endpoint
+}
 ```
 
 ## Argument Reference
@@ -123,9 +131,8 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/l
 ## Attribute reference
 
 * `db_id` - Identifier of the database created
-// TODO: these attributes are per region, so we need to figure out how to represent that
-* `public_endpoint` - Public endpoint to access the database
-* `private_endpoint` - Private endpoint to access the database
+* `public_endpoint` - A map of which public endpoints can to access the database per region, uses region name as key.
+* `private_endpoint` - A map of which private endpoints can to access the database per region, uses region name as key.
 
 ## Import
 `rediscloud_active_active_subscription_database` can be imported using the ID of the subscription and the ID of the database in the format {subscription ID}/{database ID}, e.g.
