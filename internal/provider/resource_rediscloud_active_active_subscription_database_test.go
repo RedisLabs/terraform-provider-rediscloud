@@ -29,7 +29,6 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database creation
-			// TODO: Test that override region fields correctly override the global fields
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabase, subscriptionName, name, password),
 				Check: resource.ComposeTestCheckFunc(
@@ -58,7 +57,6 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					// Check that global values are used for the second region where no override is set
 					resource.TestCheckResourceAttr(resourceName, "override_region.1.name", "us-east-2"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.1.override_global_data_persistence", "none"),
-					//TODO: set override region password in Read function
 					resource.TestCheckResourceAttr(resourceName, "override_region.1.override_global_password", ""),
 
 					// Test databases exist
@@ -210,14 +208,3 @@ resource "rediscloud_active_active_subscription_database" "example" {
 	}
 	} 
 	`
-
-// TF config for provisioning a database where the password is not specified
-// const testAccResourceRedisCloudActiveActiveSubscriptionImportDatabase = activeActiveSubscriptionBoilerplate + `
-// resource "rediscloud_active_active_subscription_database" "import_database" {
-//     subscription_id = rediscloud_active_active_subscription.example.id
-//     name = "%s"
-//     memory_limit_in_gb = 1
-//     support_oss_cluster_api = false
-//     external_endpoint_for_oss_cluster_api = false
-// }
-`
