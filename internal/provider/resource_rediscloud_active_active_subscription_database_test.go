@@ -59,7 +59,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					resource.TestCheckResourceAttr(resourceName, "override_region.1.name", "us-east-2"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.1.override_global_data_persistence", "none"),
 					//TODO: set override region password in Read function
-					// resource.TestCheckResourceAttr(resourceName, "override_region.1.override_global_password", password),
+					resource.TestCheckResourceAttr(resourceName, "override_region.1.override_global_password", ""),
 
 					// Test databases exist
 					func(s *terraform.State) error {
@@ -106,26 +106,12 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 			},
 			// TODO: Test it fails when a region not in the subscription is provided
 
-			// TODO: this test is failing because the global_password cannot be retrieved from the API and therefore cannot be set in the state
-			// Test that a 32-character password is generated when no password is provided
-			// {
-			// 	Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseNoPassword, subscriptionName, name),
-			// 	Check: resource.ComposeTestCheckFunc(
-			// 		func(s *terraform.State) error {
-			// 			is := s.RootModule().Resources["rediscloud_active_active_subscription_database.no_password_database"].Primary
-			// 			if len(is.Attributes["global_password"]) != 32 {
-			// 				return fmt.Errorf("password should be set to a random 32-character string")
-			// 			}
-			// 			return nil
-			// 		},
-			// 	),
-			// },
-			// // Test that that database is imported successfully
-			// {
-			// 	ResourceName:      "rediscloud_active_active_subscription_database.no_password_database",
-			// 	ImportState:       true,
-			// 	ImportStateVerify: true,
-			// },
+			// Test that that database is imported successfully
+			{
+				ResourceName:      "rediscloud_active_active_subscription_database.example",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -195,17 +181,6 @@ resource "rediscloud_active_active_subscription_database" "example" {
 } 
 `
 
-// TF config for provisioning a database where the password is not specified
-const testAccResourceRedisCloudActiveActiveSubscriptionDatabaseNoPassword = activeActiveSubscriptionBoilerplate + `
-resource "rediscloud_active_active_subscription_database" "no_password_database" {
-    subscription_id = rediscloud_active_active_subscription.example.id
-    name = "%s"
-    memory_limit_in_gb = 1
-    support_oss_cluster_api = false
-    external_endpoint_for_oss_cluster_api = false
-}
-`
-
 // TF config for updating a database
 const testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdate = activeActiveSubscriptionBoilerplate + `
 resource "rediscloud_active_active_subscription_database" "example" {
@@ -219,21 +194,30 @@ resource "rediscloud_active_active_subscription_database" "example" {
     global_data_persistence = "aof-every-1-second"
     global_password = "updated-password" 
     // global_source_ips = []
-    // global_alerts = []
 
-  override_region {
-    name = "us-east-2"
-  }
+	override_region {
+		name = "us-east-1"
+		override_global_data_persistence = "none"
+		# override_global_source_ips = []
+		override_global_password = "region-specific-password"
+		override_global_alert {
+			name = "dataset-size"
+			value = 41
+		}
+	}
+	override_region {
+	  name = "us-east-2"
+	}
+	} 
+	`
 
-  override_region {
-    name = "us-east-1"
-    override_global_data_persistence = "none"
-    # override_global_source_ips = []
-    override_global_password = "region-specific-password"
-    override_global_alert {
-        name = "dataset-size"
-        value = 41
-    }
-   }
-} 
+// TF config for provisioning a database where the password is not specified
+// const testAccResourceRedisCloudActiveActiveSubscriptionImportDatabase = activeActiveSubscriptionBoilerplate + `
+// resource "rediscloud_active_active_subscription_database" "import_database" {
+//     subscription_id = rediscloud_active_active_subscription.example.id
+//     name = "%s"
+//     memory_limit_in_gb = 1
+//     support_oss_cluster_api = false
+//     external_endpoint_for_oss_cluster_api = false
+// }
 `
