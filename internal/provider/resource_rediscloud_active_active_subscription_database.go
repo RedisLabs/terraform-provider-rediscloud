@@ -197,7 +197,12 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 					},
 				},
 			},
-			"region_endpoints": {
+			"public_endpoint": {
+				Description: "Region public and private endpoints to access the database",
+				Type:        schema.TypeMap,
+				Computed:    true,
+			},
+			"private_endpoint": {
 				Description: "Region public and private endpoints to access the database",
 				Type:        schema.TypeMap,
 				Computed:    true,
@@ -355,8 +360,8 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 	// TODO: set override_region
 
 	var region_db_configs []map[string]interface{}
-	// var region_endpoint_configs []map[string]interface{}
-	region_endpoint_config := make(map[string]interface{})
+	public_endpoint_config := make(map[string]interface{})
+	private_endpoint_config := make(map[string]interface{})
 	for _, region_db := range db.CrdbDatabases {
 		var sourceIPs []string
 		if !(len(region_db.Security.SourceIPs) == 1 && redis.StringValue(region_db.Security.SourceIPs[0]) == "0.0.0.0/0") {
@@ -387,17 +392,20 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 			region_db_config["override_global_alert"] = flattenAlerts(region_db.Alerts)
 		}
 
-		region_endpoint_config[redis.StringValue(region_db.Region)] = "private_endpoint: " + redis.StringValue(region_db.PublicEndpoint) + ", public_endpoint: " + redis.StringValue(region_db.PrivateEndpoint)
+		public_endpoint_config[redis.StringValue(region_db.Region)] = redis.StringValue(region_db.PublicEndpoint)
+		private_endpoint_config[redis.StringValue(region_db.Region)] = redis.StringValue(region_db.PrivateEndpoint)
 
 		region_db_configs = append(region_db_configs, region_db_config)
-		// region_endpoint_configs = append(region_endpoint_configs, region_endpoint_config)
 	}
 
 	if err := d.Set("override_region", region_db_configs); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("region_endpoints", region_endpoint_config); err != nil {
+	if err := d.Set("public_endpoint", public_endpoint_config); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("private_endpoint", private_endpoint_config); err != nil {
 		return diag.FromErr(err)
 	}
 
