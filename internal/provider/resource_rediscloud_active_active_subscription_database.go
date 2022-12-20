@@ -200,11 +200,17 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 				Description: "Region public and private endpoints to access the database",
 				Type:        schema.TypeMap,
 				Computed:    true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 			"private_endpoint": {
 				Description: "Region public and private endpoints to access the database",
 				Type:        schema.TypeMap,
 				Computed:    true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
 			},
 		},
 	}
