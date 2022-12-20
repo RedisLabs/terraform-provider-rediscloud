@@ -146,7 +146,6 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 				Optional:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						// TODO: add validation for region name, i.e. ensure that there are no duplicates
 						"name": {
 							Description: "Region name",
 							Type:        schema.TypeString,
@@ -357,8 +356,6 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 		return diag.FromErr(err)
 	}
 
-	// TODO: set override_region
-
 	var region_db_configs []map[string]interface{}
 	public_endpoint_config := make(map[string]interface{})
 	private_endpoint_config := make(map[string]interface{})
@@ -483,8 +480,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 		}
 
 		region_props := &databases.LocalRegionProperties{
-			Region: redis.String(dbRegion["name"].(string)),
-			// TODO: do we need RemoteBackup?
+			Region:          redis.String(dbRegion["name"].(string)),
 			DataPersistence: redis.String(dbRegion["override_global_data_persistence"].(string)),
 			SourceIP:        override_source_ips,
 			Alerts:          override_alerts,
@@ -521,26 +517,25 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 		update.GlobalPassword = redis.String(d.Get("global_password").(string))
 	}
 
-	// TODO: add this logic
-	// The cert validation is done by the API (HTTP 400 is returned if it's invalid).
-	// clientSSLCertificate := d.Get("client_ssl_certificate").(string)
-	// enableTLS := d.Get("enable_tls").(bool)
-	// if enableTLS {
-	// TLS only: enable_tls=true, client_ssl_certificate="".
-	// update.EnableTls = redis.Bool(enableTLS)
-	// mTLS: enableTls=true, non-empty client_ssl_certificate.
-	// 	// if clientSSLCertificate != "" {
-	// 		update.ClientSSLCertificate = redis.String(clientSSLCertificate)
-	// 	}
-	// } else {
-	// 	// mTLS (backward compatibility): enable_tls=false, non-empty client_ssl_certificate.
-	// 	if clientSSLCertificate != "" {
-	// 		update.ClientSSLCertificate = redis.String(clientSSLCertificate)
-	// 	} else {
-	// 		// Default: enable_tls=false, client_ssl_certificate=""
-	// 		update.EnableTls = redis.Bool(enableTLS)
-	// 	}
-	// }
+	//The cert validation is done by the API (HTTP 400 is returned if it's invalid).
+	clientSSLCertificate := d.Get("client_ssl_certificate").(string)
+	enableTLS := d.Get("enable_tls").(bool)
+	if enableTLS {
+		//TLS only: enable_tls=true, client_ssl_certificate="".
+		update.EnableTls = redis.Bool(enableTLS)
+		//mTLS: enableTls=true, non-empty client_ssl_certificate.
+		if clientSSLCertificate != "" {
+			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+		}
+	} else {
+		// mTLS (backward compatibility): enable_tls=false, non-empty client_ssl_certificate.
+		if clientSSLCertificate != "" {
+			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+		} else {
+			// Default: enable_tls=false, client_ssl_certificate=""
+			update.EnableTls = redis.Bool(enableTLS)
+		}
+	}
 
 	update.UseExternalEndpointForOSSClusterAPI = redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool))
 
