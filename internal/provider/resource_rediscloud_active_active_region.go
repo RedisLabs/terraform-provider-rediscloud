@@ -37,13 +37,13 @@ func resourceRedisCloudActiveActiveRegion() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
-				Description:      "A meaningful name to identify the subscription",
+				Description:      "ID of the subscription that the regions belong to",
 				Type:             schema.TypeString,
 				Required:         true,
 				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 			},
 			"delete_regions": {
-				Description: "TODO",
+				Description: "Delete regions flag has to be set for re-creating and deleting regions",
 				Type:        schema.TypeBool,
 				Optional:    true,
 			},
@@ -83,7 +83,7 @@ func resourceRedisCloudActiveActiveRegion() *schema.Resource {
 						},
 
 						"database": {
-							Description: "TODO",
+							Description: "The database resource",
 							Type:        schema.TypeSet,
 							Required:    true,
 							MinItems:    1,
@@ -143,7 +143,7 @@ func resourceRedisCloudActiveActiveRegionCreate(ctx context.Context, d *schema.R
 
 	regionsFromResourceData := buildCreateActiveActiveRegions(d.Get("region").(*schema.Set))
 
-	err, _ = regionCreate(subId, existingRegionMap, regionsFromResourceData, ctx, d, meta)
+	err, _ = regionCreate(subId, existingRegionMap, regionsFromResourceData, ctx, d, api)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -151,9 +151,7 @@ func resourceRedisCloudActiveActiveRegionCreate(ctx context.Context, d *schema.R
 	return diags
 }
 
-func regionCreate(subId int, existingRegionMap map[string]*regions.Region, regionsFromResourceData []*regions.Region, ctx context.Context, d *schema.ResourceData, meta interface{}) (error, []*regions.Region) {
-	api := meta.(*apiClient)
-
+func regionCreate(subId int, existingRegionMap map[string]*regions.Region, regionsFromResourceData []*regions.Region, ctx context.Context, d *schema.ResourceData, api *apiClient) (error, []*regions.Region) {
 	// Filter non-existing regions
 	createRegions := make([]*regions.Region, 0)
 	for _, currentRegion := range regionsFromResourceData {
@@ -255,7 +253,7 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 
 	// Handling region create
 	if len(regionsFromResourceData) > len(existingRegions.Regions) {
-		err, newRegionsCreated := regionCreate(subId, existingRegionMap, regionsFromResourceData, ctx, d, meta)
+		err, newRegionsCreated := regionCreate(subId, existingRegionMap, regionsFromResourceData, ctx, d, api)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -300,7 +298,7 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 	}
 
 	// Handling DB updates
-	err = performDbUpdates(ctx, meta, subId, regionsFromResourceData, existingRegionMap)
+	err = performDbUpdates(ctx, api, subId, regionsFromResourceData, existingRegionMap)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -308,9 +306,7 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 	return diags
 }
 
-func performDbUpdates(ctx context.Context, meta interface{}, subId int, regionsFromResourceData []*regions.Region, existingRegionMap map[string]*regions.Region) error {
-	api := meta.(*apiClient)
-
+func performDbUpdates(ctx context.Context, api *apiClient, subId int, regionsFromResourceData []*regions.Region, existingRegionMap map[string]*regions.Region) error {
 	updateDBMap := make(map[int][]*databases.LocalRegionProperties)
 	for _, currentRegion := range regionsFromResourceData {
 		existingRegion := existingRegionMap[*currentRegion.Region]
