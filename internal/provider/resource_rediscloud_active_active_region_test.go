@@ -23,6 +23,7 @@ func TestAccResourceRedisCloudActiveActiveRegion_CRUDI(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudCrateActiveActiveRegion, subName, dbName, dbPass),
