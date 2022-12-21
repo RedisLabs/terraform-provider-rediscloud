@@ -70,19 +70,19 @@ func TestAccResourceRedisCloudActiveActiveRegion_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1500"),
 				),
 			},
-			// { TODO: This currently not working due to DB override issues
-			// 	// Checks region DB updated correctly
-			// 	Config: fmt.Sprintf(testAccResourceRedisCloudUpdateDBActiveActiveRegion, subName, dbName, dbPass),
-			// 	Check: resource.ComposeTestCheckFunc(
-			// 		resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.3.0.0/24"),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1000"),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1000"),
-			// 	),
-			// },
+			{
+				// Checks region DB updated correctly
+				Config: fmt.Sprintf(testAccResourceRedisCloudUpdateDBActiveActiveRegion, subName, dbName, dbPass),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.3.0.0/24"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1000"),
+				),
+			},
 			{
 				// Checks region deleted correctly
 				Config: fmt.Sprintf(testAccResourceRedisCloudDeleteActiveActiveRegion, subName, dbName, dbPass),
@@ -138,21 +138,6 @@ resource "rediscloud_active_active_subscription_database" "example" {
     global_alert {
 		name = "dataset-size"
 		value = 40
-	}
-
-	override_region {
-		name = "us-east-1"
-		override_global_data_persistence = "aof-every-write"
-	}
-
-	override_region {
-		name = "us-east-2"
-		override_global_data_persistence = "aof-every-write"
-	}
-
-	override_region {
-		name = "eu-west-2"
-		override_global_data_persistence = "aof-every-write"
 	}
 } 
 
