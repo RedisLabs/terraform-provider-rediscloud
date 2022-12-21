@@ -401,8 +401,11 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 		region_db_configs = append(region_db_configs, region_db_config)
 	}
 
-	if err := d.Set("override_region", region_db_configs); err != nil {
-		return diag.FromErr(err)
+	// Only set override_region if it is defined in the config
+	if or := d.Get("override_region").(*schema.Set).List(); len(or) > 0 {
+		if err := d.Set("override_region", region_db_configs); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if err := d.Set("public_endpoint", public_endpoint_config); err != nil {
