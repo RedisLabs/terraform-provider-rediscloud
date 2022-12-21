@@ -58,32 +58,32 @@ func TestAccResourceRedisCloudActiveActiveRegion_CRUDI(t *testing.T) {
 					},
 				),
 			},
-			{
-				// Checks region re-created correctly
-				Config: fmt.Sprintf(testAccResourceRedisCloudReCreateActiveActiveRegion, subName, dbName, dbPass),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.3.0.0/24"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1500"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1500"),
-				),
-			},
-			{
-				// Checks region DB updated correctly
-				Config: fmt.Sprintf(testAccResourceRedisCloudUpdateDBActiveActiveRegion, subName, dbName, dbPass),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.3.0.0/24"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1000"),
-				),
-			},
+			// {
+			// 	// Checks region re-created correctly
+			// 	Config: fmt.Sprintf(testAccResourceRedisCloudReCreateActiveActiveRegion, subName, dbName, dbPass),
+			// 	Check: resource.ComposeTestCheckFunc(
+			// 		resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.3.0.0/24"),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1500"),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1500"),
+			// 	),
+			// },
+			// {
+			// 	// Checks region DB updated correctly
+			// 	Config: fmt.Sprintf(testAccResourceRedisCloudUpdateDBActiveActiveRegion, subName, dbName, dbPass),
+			// 	Check: resource.ComposeTestCheckFunc(
+			// 		resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.3.0.0/24"),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1000"),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1000"),
+			// 	),
+			// },
 			{
 				// Checks region deleted correctly
 				Config: fmt.Sprintf(testAccResourceRedisCloudDeleteActiveActiveRegion, subName, dbName, dbPass),
@@ -91,6 +91,17 @@ func TestAccResourceRedisCloudActiveActiveRegion_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "region.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "region.0.region", "us-east-1"),
 					resource.TestCheckResourceAttr(resourceName, "region.1.region", "us-east-2"),
+				),
+			},
+			{
+				// Checks region re-created correctly
+				Config: fmt.Sprintf(testAccResourceRedisCloudRemoveAndCreateSameTimeActiveActiveRegion, subName, dbName, dbPass),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "region.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "region.0.region", "us-east-1"),
+					resource.TestCheckResourceAttr(resourceName, "region.0.networking_deployment_cidr", "10.0.0.0/24"),
+					resource.TestCheckResourceAttr(resourceName, "region.0.region", "eu-west-1"),
+					resource.TestCheckResourceAttr(resourceName, "region.0.networking_deployment_cidr", "10.1.0.0/24"),
 				),
 			},
 		},
@@ -292,6 +303,38 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 	}
 	region {
 	  region = "us-east-2"
+	  networking_deployment_cidr = "10.1.0.0/24"
+	  recreate_region = false
+	  database {
+		id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
+		local_write_operations_per_second = 1000
+		local_read_operations_per_second = 1000
+	  }
+	}
+ }
+ 
+`
+
+// TF config for deleting a region
+const testAccResourceRedisCloudRemoveAndCreateSameTimeActiveActiveRegion = testAARegionsBoilerplate + `
+
+resource "rediscloud_active_active_subscription_regions" "example" {
+	subscription_id = rediscloud_active_active_subscription.example.id
+	delete_regions = true
+	region {
+	  region = "us-east-1"
+	  networking_deployment_cidr = "10.0.0.0/24"
+	  recreate_region = false
+	  database {
+		id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
+		local_write_operations_per_second = 1000
+		local_read_operations_per_second = 1000
+	  }
+	}
+	region {
+	  region = "eu-west-1"
 	  networking_deployment_cidr = "10.1.0.0/24"
 	  recreate_region = false
 	  database {

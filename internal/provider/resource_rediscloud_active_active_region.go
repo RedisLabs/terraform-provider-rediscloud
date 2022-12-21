@@ -143,15 +143,6 @@ func resourceRedisCloudActiveActiveRegionCreate(ctx context.Context, d *schema.R
 
 	regionsFromResourceData := buildCreateActiveActiveRegions(d.Get("region").(*schema.Set))
 
-	err, _ = regionCreate(subId, existingRegionMap, regionsFromResourceData, ctx, d, api)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	return diags
-}
-
-func regionCreate(subId int, existingRegionMap map[string]*regions.Region, regionsFromResourceData []*regions.Region, ctx context.Context, d *schema.ResourceData, api *apiClient) (error, []*regions.Region) {
 	// Filter non-existing regions
 	createRegions := make([]*regions.Region, 0)
 	for _, currentRegion := range regionsFromResourceData {
@@ -160,9 +151,18 @@ func regionCreate(subId int, existingRegionMap map[string]*regions.Region, regio
 		}
 	}
 
+	err = regionCreate(subId, createRegions, existingRegionMap, regionsFromResourceData, ctx, d, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	return diags
+}
+
+func regionCreate(subId int, createRegions []*regions.Region, existingRegionMap map[string]*regions.Region, regionsFromResourceData []*regions.Region, ctx context.Context, d *schema.ResourceData, api *apiClient) error {
 	// If no new regions were defined return
 	if len(createRegions) == 0 {
-		return nil, createRegions
+		return nil
 	}
 
 	// Call GO API createRegion for all non-existing regions
@@ -190,7 +190,7 @@ func regionCreate(subId int, existingRegionMap map[string]*regions.Region, regio
 		_, err := api.client.Regions.Create(ctx, subId, createRegion)
 
 		if err != nil {
-			return err, createRegions
+			return err
 		}
 	}
 
@@ -201,17 +201,17 @@ func regionCreate(subId int, existingRegionMap map[string]*regions.Region, regio
 
 	// Wait for the subscription to be active before deleting it.
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return err, createRegions
+		return err
 	}
 
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 	// This additional wait ensures that the databases are deleted before the subscription is deleted.
 	time.Sleep(10 * time.Second) //lintignore:R018
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return err, createRegions
+		return err
 	}
 
-	return nil, createRegions
+	return nil
 }
 
 func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -238,10 +238,22 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 
 	regionsFromResourceData := buildCreateActiveActiveRegions(d.Get("region").(*schema.Set))
 
-	deleteRegionsFlag := d.Get("delete_regions").(bool)
+	// Handling Delete Regions
+	deleteRegions := make([]*regions.Region, 0)
+	regionsToKeepMap := make(map[string]*regions.Region)
+	for _, regionToKeep := range regionsFromResourceData {
+		regionsToKeepMap[*regionToKeep.Region] = regionToKeep
+	}
 
+	for _, currentRegion := range existingRegions.Regions {
+		if _, ok := regionsToKeepMap[*currentRegion.Region]; !ok {
+			deleteRegions = append(deleteRegions, currentRegion)
+		}
+	}
+
+	deleteRegionsFlag := d.Get("delete_regions").(bool)
 	// Validations
-	if len(regionsFromResourceData) < len(existingRegions.Regions) && !deleteRegionsFlag {
+	if len(deleteRegions) > 0 && !deleteRegionsFlag {
 		return diag.Errorf("Region has been removed, but delete_regions flag was not set!")
 	}
 
@@ -251,34 +263,32 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 		}
 	}
 
+	if deleteRegionsFlag && len(deleteRegions) > 0 {
+		regiondDelete(ctx, d, subId, deleteRegions, meta)
+		// Updating existing ragion map
+		for _, removedRegion := range deleteRegions {
+			delete(existingRegionMap, *removedRegion.Region)
+		}
+	}
+
 	// Handling region create
-	if len(regionsFromResourceData) > len(existingRegions.Regions) {
-		err, newRegionsCreated := regionCreate(subId, existingRegionMap, regionsFromResourceData, ctx, d, api)
+	// Filter non-existing regions
+	createRegions := make([]*regions.Region, 0)
+	for _, currentRegion := range regionsFromResourceData {
+		if _, ok := existingRegionMap[*currentRegion.Region]; !ok {
+			createRegions = append(createRegions, currentRegion)
+		}
+	}
+	if len(createRegions) > 0 {
+		err := regionCreate(subId, createRegions, existingRegionMap, regionsFromResourceData, ctx, d, api)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 
 		// Updating existing ragion map
-		for _, newRegion := range newRegionsCreated {
+		for _, newRegion := range createRegions {
 			existingRegionMap[*newRegion.Region] = newRegion
 		}
-	}
-
-	// Handling region delete
-	deleteRegions := make([]*regions.Region, 0)
-	if len(regionsFromResourceData) < len(existingRegions.Regions) && deleteRegionsFlag {
-		regionsToKeepMap := make(map[string]*regions.Region)
-		for _, regionToKeep := range regionsFromResourceData {
-			regionsToKeepMap[*regionToKeep.Region] = regionToKeep
-		}
-
-		for _, currentRegion := range existingRegions.Regions {
-			if _, ok := regionsToKeepMap[*currentRegion.Region]; !ok {
-				deleteRegions = append(deleteRegions, currentRegion)
-			}
-		}
-
-		regiondDelete(ctx, d, subId, deleteRegions, meta)
 	}
 
 	// Handling region re-create
