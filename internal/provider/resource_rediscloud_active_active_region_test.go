@@ -7,13 +7,15 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccResourceRedisCloudActiveActiveRegion_CRUDI(t *testing.T) {
-
-	name := "test-sub-1" //acctest.RandomWithPrefix(testResourcePrefix)
+	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-regions-test"
+	dbName := acctest.RandomWithPrefix(testResourcePrefix) + "-regions" + "-db"
+	dbPass := acctest.RandString(20)
 	resourceName := "rediscloud_active_active_subscription_regions.example"
 
 	var subId int
@@ -23,10 +25,15 @@ func TestAccResourceRedisCloudActiveActiveRegion_CRUDI(t *testing.T) {
 		ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudCrateActiveActiveRegion),
+				Config: fmt.Sprintf(testAccResourceRedisCloudCrateActiveActiveRegion, subName, dbName, dbPass),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "subscription_id", "151945"),
 					resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.2.0.0/24"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1500"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1500"),
 
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
@@ -43,7 +50,7 @@ func TestAccResourceRedisCloudActiveActiveRegion_CRUDI(t *testing.T) {
 							return err
 						}
 
-						if redis.StringValue(sub.Name) != name {
+						if redis.StringValue(sub.Name) != subName {
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
 						}
 						return nil
@@ -52,10 +59,37 @@ func TestAccResourceRedisCloudActiveActiveRegion_CRUDI(t *testing.T) {
 			},
 			{
 				// Checks region re-created correctly
-				Config: fmt.Sprintf(testAccResourceRedisCloudUpdateActiveActiveRegion),
+				Config: fmt.Sprintf(testAccResourceRedisCloudReCreateActiveActiveRegion, subName, dbName, dbPass),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "subscription_id", "151945"),
+					resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.3.0.0/24"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1500"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1500"),
+				),
+			},
+			// { TODO: This currently not working due to DB override issues
+			// 	// Checks region DB updated correctly
+			// 	Config: fmt.Sprintf(testAccResourceRedisCloudUpdateDBActiveActiveRegion, subName, dbName, dbPass),
+			// 	Check: resource.ComposeTestCheckFunc(
+			// 		resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.3.0.0/24"),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1000"),
+			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1000"),
+			// 	),
+			// },
+			{
+				// Checks region deleted correctly
+				Config: fmt.Sprintf(testAccResourceRedisCloudDeleteActiveActiveRegion, subName, dbName, dbPass),
+				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "region.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "region.0.region", "us-east-1"),
+					resource.TestCheckResourceAttr(resourceName, "region.1.region", "us-east-2"),
 				),
 			},
 		},
@@ -78,45 +112,76 @@ resource "rediscloud_active_active_subscription" "example" {
 		support_oss_cluster_api=false
 		region {
 			region = "us-east-1"
-			networking_deployment_cidr = "192.168.0.0/24"
+			networking_deployment_cidr = "10.0.0.0/24"
 			write_operations_per_second = 1000
 			read_operations_per_second = 1000
 		}
 		region {
 			region = "us-east-2"
-			networking_deployment_cidr = "10.0.1.0/24"
+			networking_deployment_cidr = "10.1.0.0/24"
 			write_operations_per_second = 1000
 			read_operations_per_second = 1000
 		}
 	}
 }
 
+resource "rediscloud_active_active_subscription_database" "example" {
+    subscription_id = rediscloud_active_active_subscription.example.id
+    name = "%s"
+    memory_limit_in_gb = 3
+    support_oss_cluster_api = false 
+    external_endpoint_for_oss_cluster_api = false
+    
+    // OPTIONAL
+    global_data_persistence = "none"
+    global_password = "%s" 
+    global_alert {
+		name = "dataset-size"
+		value = 40
+	}
+
+	override_region {
+		name = "us-east-1"
+		override_global_data_persistence = "aof-every-write"
+	}
+
+	override_region {
+		name = "us-east-2"
+		override_global_data_persistence = "aof-every-write"
+	}
+
+	override_region {
+		name = "eu-west-2"
+		override_global_data_persistence = "aof-every-write"
+	}
+} 
+
 `
 
-// TF config for provisioning a new subscription.
+// TF config for provisioning a new region.
 const testAccResourceRedisCloudCrateActiveActiveRegion = testAARegionsBoilerplate + `
 
 resource "rediscloud_active_active_subscription_regions" "example" {
-	subscription_id = rediscloud_subscription.example.id
+	subscription_id = rediscloud_active_active_subscription.example.id
 	delete_regions = false
 	region {
 	  region = "us-east-1"
-	  networking_deployment_cidr = "10.0.0.0/24" 
+	  networking_deployment_cidr = "10.0.0.0/24"
 	  recreate_region = false
 	  database {
-		id = "7839"
-		database_name = "test-db-1"
+		id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
 	  }
 	}
 	region {
-	  region = "eu-west-1"
-	  networking_deployment_cidr = "10.1.0.0/24" 
+	  region = "us-east-2"
+	  networking_deployment_cidr = "10.1.0.0/24"
 	  recreate_region = false
 	  database {
-		id = "7839"
-		database_name = "test-db-1"
+		id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
 	  }
@@ -126,8 +191,8 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 		networking_deployment_cidr = "10.2.0.0/24" 
 		recreate_region = false
 		database {
-		  id = "7839"
-		  database_name = "test-db-1"
+		  id = rediscloud_active_active_subscription_database.example.db_id
+		  database_name = rediscloud_active_active_subscription_database.example.name
 		  local_write_operations_per_second = 1500
 		  local_read_operations_per_second = 1500
 		}
@@ -136,30 +201,30 @@ resource "rediscloud_active_active_subscription_regions" "example" {
  
 `
 
-// TF config for provisioning a new subscription.
-const testAccResourceRedisCloudUpdateActiveActiveRegion = `
+// TF config for re-creating a region
+const testAccResourceRedisCloudReCreateActiveActiveRegion = testAARegionsBoilerplate + `
 
 resource "rediscloud_active_active_subscription_regions" "example" {
-	subscription_id = 151945
+	subscription_id = rediscloud_active_active_subscription.example.id
 	delete_regions = true
 	region {
 	  region = "us-east-1"
-	  networking_deployment_cidr = "10.0.0.0/24" 
+	  networking_deployment_cidr = "10.0.0.0/24"
 	  recreate_region = false
 	  database {
-		id = "7839"
-		database_name = "test-db-1"
+		id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
 	  }
 	}
 	region {
-	  region = "eu-west-1"
-	  networking_deployment_cidr = "10.1.0.0/24" 
+	  region = "us-east-2"
+	  networking_deployment_cidr = "10.1.0.0/24"
 	  recreate_region = false
 	  database {
-		id = "7839"
-		database_name = "test-db-1"
+		id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
 	  }
@@ -169,12 +234,87 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 		networking_deployment_cidr = "10.3.0.0/24" 
 		recreate_region = true
 		database {
-		  id = "7839"
-		  database_name = "test-db-1"
+		  id = rediscloud_active_active_subscription_database.example.db_id
+		  database_name = rediscloud_active_active_subscription_database.example.name
 		  local_write_operations_per_second = 1500
 		  local_read_operations_per_second = 1500
 		}
 	  }
+ }
+ 
+`
+
+// TF config for updating DB of a region
+const testAccResourceRedisCloudUpdateDBActiveActiveRegion = testAARegionsBoilerplate + `
+
+resource "rediscloud_active_active_subscription_regions" "example" {
+	subscription_id = rediscloud_active_active_subscription.example.id
+	delete_regions = false
+	region {
+	  region = "us-east-1"
+	  networking_deployment_cidr = "10.0.0.0/24"
+	  recreate_region = false
+	  database {
+		id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
+		local_write_operations_per_second = 1000
+		local_read_operations_per_second = 1000
+	  }
+	}
+	region {
+	  region = "us-east-2"
+	  networking_deployment_cidr = "10.1.0.0/24"
+	  recreate_region = false
+	  database {
+		id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
+		local_write_operations_per_second = 1000
+		local_read_operations_per_second = 1000
+	  }
+	}
+	region {
+		region = "eu-west-2"
+		networking_deployment_cidr = "10.3.0.0/24" 
+		recreate_region = false
+		database {
+		  id = rediscloud_active_active_subscription_database.example.db_id
+		  database_name = rediscloud_active_active_subscription_database.example.name
+		  local_write_operations_per_second = 1000
+		  local_read_operations_per_second = 1000
+		}
+	  }
+ }
+ 
+`
+
+// TF config for deleting a region
+const testAccResourceRedisCloudDeleteActiveActiveRegion = testAARegionsBoilerplate + `
+
+resource "rediscloud_active_active_subscription_regions" "example" {
+	subscription_id = rediscloud_active_active_subscription.example.id
+	delete_regions = true
+	region {
+	  region = "us-east-1"
+	  networking_deployment_cidr = "10.0.0.0/24"
+	  recreate_region = false
+	  database {
+		id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
+		local_write_operations_per_second = 1000
+		local_read_operations_per_second = 1000
+	  }
+	}
+	region {
+	  region = "us-east-2"
+	  networking_deployment_cidr = "10.1.0.0/24"
+	  recreate_region = false
+	  database {
+		id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
+		local_write_operations_per_second = 1000
+		local_read_operations_per_second = 1000
+	  }
+	}
  }
  
 `
