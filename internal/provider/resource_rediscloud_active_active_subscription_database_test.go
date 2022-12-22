@@ -43,7 +43,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					resource.TestCheckResourceAttr(resourceName, "global_alert.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "global_alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(resourceName, "global_alert.0.value", "40"),
-					// TODO: check source_ips
+					resource.TestCheckResourceAttr(resourceName, "global_source_ips.#", "2"),
 
 					resource.TestCheckResourceAttr(resourceName, "override_region.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.name", "us-east-1"),
@@ -53,11 +53,15 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.value", "42"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_source_ips.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_source_ips.0", "192.175.0.0/16"),
 
 					// Check that global values are used for the second region where no override is set
 					resource.TestCheckResourceAttr(resourceName, "override_region.1.name", "us-east-2"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.1.override_global_data_persistence", "none"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.1.override_global_data_persistence", ""),
 					resource.TestCheckResourceAttr(resourceName, "override_region.1.override_global_password", ""),
+					resource.TestCheckResourceAttr(resourceName, "override_region.1.override_global_alert.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.1.override_source_ips.#", "0"),
 
 					// Test databases exist
 					func(s *terraform.State) error {
@@ -93,24 +97,31 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 			},
 			// TODO: fix these failing tests
 			// Test database is updated successfully
-			// {
-			// 	Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdate, subscriptionName, name),
-			// 	Check: resource.ComposeTestCheckFunc(
-			// 		resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
-			// 		resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
-			// 		resource.TestCheckResourceAttr(resourceName, "global_data_persistence", "aof-every-1-second"),
-			// 		resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
-			// 		resource.TestCheckResourceAttr(resourceName, "global_password", "updated-password"),
-			// 	),
-			// },
-			// TODO: Test it fails when a region not in the subscription is provided
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdate, subscriptionName, name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(resourceName, "global_data_persistence", "aof-every-1-second"),
+					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(resourceName, "global_password", "updated-password"),
 
-			// // Test that that database is imported successfully
-			// {
-			// 	ResourceName:      "rediscloud_active_active_subscription_database.example",
-			// 	ImportState:       true,
-			// 	ImportStateVerify: true,
-			// },
+					resource.TestCheckResourceAttr(resourceName, "override_region.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.name", "us-east-1"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_data_persistence", "none"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_password", "password-updated"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.name", "dataset-size"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.value", "41"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_source_ips.#", "0"),
+				),
+			},
+			// Test that that database is imported successfully
+			{
+				ResourceName:      "rediscloud_active_active_subscription_database.example",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -155,10 +166,9 @@ resource "rediscloud_active_active_subscription_database" "example" {
     support_oss_cluster_api = false 
     external_endpoint_for_oss_cluster_api = false
     
-    // OPTIONAL
     global_data_persistence = "none"
     global_password = "%s" 
-    // global_source_ips = []
+    global_source_ips = ["192.168.0.0/16", "192.170.0.0/16"]
     global_alert {
 		name = "dataset-size"
 		value = 40
@@ -166,7 +176,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
 	override_region {
 		name = "us-east-1"
 		override_global_data_persistence = "aof-every-write"
-		# override_global_source_ips = []
+		override_global_source_ips = ["192.175.0.0/16"]
 		override_global_password = "region-specific-password"
 		override_global_alert {
 			name = "dataset-size"
@@ -189,23 +199,18 @@ resource "rediscloud_active_active_subscription_database" "example" {
     support_oss_cluster_api = true 
     external_endpoint_for_oss_cluster_api = true
     
-    // OPTIONAL
     global_data_persistence = "aof-every-1-second"
     global_password = "updated-password" 
-    // global_source_ips = []
+    global_source_ips = ["192.170.0.0/16"]
 
 	override_region {
 		name = "us-east-1"
 		override_global_data_persistence = "none"
-		# override_global_source_ips = []
-		override_global_password = "region-specific-password"
+		override_global_password = "password-updated"
 		override_global_alert {
 			name = "dataset-size"
 			value = 41
 		}
-	}
-	override_region {
-	  name = "us-east-2"
 	}
 	} 
 	`
