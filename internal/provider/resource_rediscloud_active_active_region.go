@@ -257,12 +257,6 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 		return diag.Errorf("Region has been removed, but delete_regions flag was not set!")
 	}
 
-	for _, currentRegion := range regionsFromResourceData {
-		if !*currentRegion.RecreateRegion && *existingRegionMap[*currentRegion.Region].DeploymentCIDR != *currentRegion.DeploymentCIDR {
-			return diag.Errorf("Region %s needs to be recreated but recreate_region flag was not set!", *currentRegion.Region)
-		}
-	}
-
 	if deleteRegionsFlag && len(deleteRegions) > 0 {
 		regiondDelete(ctx, d, subId, deleteRegions, meta)
 		// Updating existing ragion map
@@ -288,6 +282,12 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 		// Updating existing ragion map
 		for _, newRegion := range createRegions {
 			existingRegionMap[*newRegion.Region] = newRegion
+		}
+	}
+
+	for _, currentRegion := range regionsFromResourceData {
+		if !*currentRegion.RecreateRegion && *existingRegionMap[*currentRegion.Region].DeploymentCIDR != *currentRegion.DeploymentCIDR {
+			return diag.Errorf("Region %s needs to be recreated but recreate_region flag was not set!", *currentRegion.Region)
 		}
 	}
 
