@@ -48,18 +48,16 @@ resource "rediscloud_active_active_subscription_database" "example" {
     memory_limit_in_gb = 1
     support_oss_cluster_api = false 
     external_endpoint_for_oss_cluster_api = false
-	enable_tls = false
-	data_eviction = "volatile-lru"
+    enable_tls = false
+    data_eviction = "volatile-lru"
     
-    // OPTIONAL
     global_data_persistence = "aof-every-1-second"
     global_password = "some-random-pass-2" 
+    global_source_ips = ["192.168.0.0/16"]
     global_alert {
 		name = "dataset-size"
 		value = 40
 	}
-	// TODO: add source_ips example
-	
 
   override_region {
     name = "us-east-2"
@@ -68,8 +66,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
   override_region {
     name = "us-east-1"
     override_global_data_persistence = "none"
-	// TODO: add global_source_ips example
-    # override_global_source_ips = []
+    override_global_source_ips = ["192.10.0.0/16"]
     override_global_password = "region-specific-password"
     override_global_alert {
         name = "dataset-size"
