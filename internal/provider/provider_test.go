@@ -35,7 +35,7 @@ func testAccAwsPreExistingCloudAccountPreCheck(t *testing.T) {
 }
 
 func testAccAwsCloudAccountPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_ACCESS_SECRET_KEY", "AWS_CONSOLE_USERNAME", "AWS_CONSOLE_PASSWORD", "AWS_SIGNIN_URL")
+	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_ACCESS_SECRET_KEY")
 }
 
 func testAccAwsPeeringPreCheck(t *testing.T) {

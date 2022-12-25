@@ -172,9 +172,6 @@ jobs:
           TF_LOG: debug
           AWS_ACCESS_KEY_ID: ${{ secrets.CLOUD_ACCOUNT_KEY }}
           AWS_ACCESS_SECRET_KEY: ${{ secrets.CLOUD_ACCOUNT_SECRET }}
-          AWS_CONSOLE_USERNAME: ${{ secrets.CLOUD_ACCOUNT_USERNAME }}
-          AWS_CONSOLE_PASSWORD: ${{ secrets.CLOUD_ACCOUNT_PASS }}
-          AWS_SIGNIN_URL: ${{ secrets.CLOUD_ACCOUNT_URL }}
 
   tfproviderlint:
     name: tfproviderlint

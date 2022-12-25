@@ -24,10 +24,7 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 	tf := fmt.Sprintf(testAccResourceRedisCloudCloudAccount,
 		os.Getenv("AWS_ACCESS_KEY_ID"),
 		os.Getenv("AWS_ACCESS_SECRET_KEY"),
-		os.Getenv("AWS_CONSOLE_USERNAME"),
-		os.Getenv("AWS_CONSOLE_PASSWORD"),
 		name,
-		os.Getenv("AWS_SIGNIN_URL"),
 	)
 	resourceName := "rediscloud_cloud_account.test"
 
