@@ -46,7 +46,7 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"access_secret_key", "console_username", "console_password", "sign_in_login_url"},
+				ImportStateVerifyIgnore: []string{"access_secret_key"},
 			},
 		},
 	})
@@ -84,10 +84,7 @@ const testAccResourceRedisCloudCloudAccount = `
 resource "rediscloud_cloud_account" "test" {
   access_key_id = "%s"
   access_secret_key = "%s"
-  console_username = "%s"
-  console_password = "%s"
   name = "%s"
   provider_type = "AWS"
-  sign_in_login_url = "%s"
 }
 `

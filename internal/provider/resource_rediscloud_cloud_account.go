@@ -50,17 +50,6 @@ func resourceRedisCloudCloudAccount() *schema.Resource {
 				Required:    true,
 				Sensitive:   true,
 			},
-			"console_password": {
-				Description: "Cloud provider management console password",
-				Type:        schema.TypeString,
-				Required:    true,
-				Sensitive:   true,
-			},
-			"console_username": {
-				Description: "Cloud provider management console username",
-				Type:        schema.TypeString,
-				Required:    true,
-			},
 			"name": {
 				Description: "Display name of the account",
 				Type:        schema.TypeString,
@@ -72,11 +61,6 @@ func resourceRedisCloudCloudAccount() *schema.Resource {
 				Required:         true,
 				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
 				ForceNew:         true,
-			},
-			"sign_in_login_url": {
-				Description: "Cloud provider management console login URL",
-				Type:        schema.TypeString,
-				Required:    true,
 			},
 			"status": {
 				Description: "The current status of the account - `draft`, `pending` or `active`",
@@ -92,20 +76,14 @@ func resourceRedisCloudCloudAccountCreate(ctx context.Context, d *schema.Resourc
 
 	accessKey := d.Get("access_key_id").(string)
 	secretKey := d.Get("access_secret_key").(string)
-	consolePassword := d.Get("console_password").(string)
-	consoleUsername := d.Get("console_username").(string)
 	name := d.Get("name").(string)
 	provider := d.Get("provider_type").(string)
-	signInLoginUrl := d.Get("sign_in_login_url").(string)
 
 	id, err := client.client.CloudAccount.Create(ctx, cloud_accounts.CreateCloudAccount{
 		AccessKeyID:     redis.String(accessKey),
 		AccessSecretKey: redis.String(secretKey),
-		ConsoleUsername: redis.String(consoleUsername),
-		ConsolePassword: redis.String(consolePassword),
 		Name:            redis.String(name),
 		Provider:        redis.String(provider),
-		SignInLoginURL:  redis.String(signInLoginUrl),
 	})
 	if err != nil {
 		return diag.FromErr(err)
@@ -192,18 +170,12 @@ func resourceRedisCloudCloudAccountUpdate(ctx context.Context, d *schema.Resourc
 
 	accessKey := d.Get("access_key_id").(string)
 	secretKey := d.Get("access_secret_key").(string)
-	consolePassword := d.Get("console_password").(string)
-	consoleUsername := d.Get("console_username").(string)
 	name := d.Get("name").(string)
-	signInLoginUrl := d.Get("sign_in_login_url").(string)
 
 	err = client.client.CloudAccount.Update(ctx, id, cloud_accounts.UpdateCloudAccount{
 		AccessKeyID:     redis.String(accessKey),
 		AccessSecretKey: redis.String(secretKey),
-		ConsoleUsername: redis.String(consoleUsername),
-		ConsolePassword: redis.String(consolePassword),
 		Name:            redis.String(name),
-		SignInLoginURL:  redis.String(signInLoginUrl),
 	})
 
 	if err != nil {
