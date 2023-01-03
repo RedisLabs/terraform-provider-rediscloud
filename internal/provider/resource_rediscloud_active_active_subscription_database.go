@@ -2,12 +2,14 @@ package provider
 
 import (
 	"context"
+	"log"
 	"reflect"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -441,6 +443,11 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseDelete(ctx context.Contex
 	if dbErr != nil {
 		diag.FromErr(dbErr)
 	}
+
+	err = waitForDatabaseToBeDeleted(ctx, subId, dbId, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	return diags
 }
 
@@ -562,4 +569,32 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 	}
 
 	return resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx, d, meta)
+}
+
+func waitForDatabaseToBeDeleted(ctx context.Context, subId int, dbId int, api *apiClient) error {
+	wait := &resource.StateChangeConf{
+		Delay:   10 * time.Second,
+		Pending: []string{"pending"},
+		Target:  []string{"deleted"},
+		Timeout: 10 * time.Minute,
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for datbase %d to be deleted", dbId)
+
+			_, err = api.client.Database.Get(ctx, subId, dbId)
+			if err != nil {
+				if _, ok := err.(*databases.NotFound); ok {
+					return "deleted", "deleted", nil
+				}
+				return nil, "", err
+			}
+
+			return "pending", "pending", nil
+		},
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }
