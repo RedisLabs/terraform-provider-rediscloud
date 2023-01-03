@@ -138,3 +138,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/l
 $ terraform import rediscloud_active_active_subscription_database.example_database 123456/12345678
 ```
 
+Note: Due to constraints in the Redis Cloud API, the import process will not import global attributes or override region attributes. If you wish to use these attributes in your Terraform configuraton, you will need to manually add them to your Terraform configuration and run `terraform apply` to update the database.
+
