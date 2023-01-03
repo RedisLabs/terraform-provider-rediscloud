@@ -95,8 +95,8 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 				ResourceName: resourceName,
 				ImportState:  true,
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
-					creationPlan := states[0].Attributes["creation_plan.#"]
-					if creationPlan != "0" {
+					creationPlan, ok := states[0].Attributes["creation_plan.#"]
+					if ok && creationPlan != "0" {
 						return fmt.Errorf("Unexpected creation_plan block. Should be 0, instead of  %s", creationPlan)
 					}
 					return nil
