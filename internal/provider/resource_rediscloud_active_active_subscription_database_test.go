@@ -118,6 +118,9 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 			},
 			// Test that that database is imported successfully
 			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseImport, subscriptionName, name),
+			},
+			{
 				ResourceName:      "rediscloud_active_active_subscription_database.example",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -165,6 +168,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
     memory_limit_in_gb = 3
     support_oss_cluster_api = false 
     external_endpoint_for_oss_cluster_api = false
+	enable_tls = false
     
     global_data_persistence = "none"
     global_password = "%s" 
@@ -212,5 +216,14 @@ resource "rediscloud_active_active_subscription_database" "example" {
 			value = 41
 		}
 	}
+	} 
+	`
+
+// TF config for updating a database
+const testAccResourceRedisCloudActiveActiveSubscriptionDatabaseImport = activeActiveSubscriptionBoilerplate + `
+resource "rediscloud_active_active_subscription_database" "example" {
+    subscription_id = rediscloud_active_active_subscription.example.id
+    name = "%s"
+    memory_limit_in_gb = 1
 	} 
 	`

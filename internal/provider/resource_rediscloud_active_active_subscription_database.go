@@ -83,7 +83,6 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 				Description: "Use TLS for authentication.",
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
 			},
 			"client_ssl_certificate": {
 				Description: "SSL certificate to authenticate user connections.",
@@ -100,7 +99,6 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 				Description: "Rate of database data persistence (in persistent storage)",
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "none",
 			},
 			"global_password": {
 				Description: "Password used to access the database. If left empty, the password will be generated automatically",
@@ -268,12 +266,19 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 		MemoryLimitInGB:                     redis.Float64(memoryLimitInGB),
 		SupportOSSClusterAPI:                redis.Bool(supportOSSClusterAPI),
 		UseExternalEndpointForOSSClusterAPI: redis.Bool(useExternalEndpointForOSSClusterAPI),
-		DataEvictionPolicy:                  redis.String(dataEviction),
-		GlobalDataPersistence:               redis.String(globalDataPersistence),
 		GlobalSourceIP:                      globalSourceIp,
 		GlobalAlerts:                        createAlerts,
 		LocalThroughputMeasurement:          localThroughputs,
 	}
+
+	if dataEviction != "" {
+		createDatabase.DataEvictionPolicy = redis.String(dataEviction)
+	}
+
+	if globalDataPersistence != "" {
+		createDatabase.GlobalDataPersistence = redis.String(globalDataPersistence)
+	}
+
 	if globalPassword != "" {
 		createDatabase.GlobalPassword = redis.String(globalPassword)
 	}
@@ -341,40 +346,15 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("memory_limit_in_gb", d.Get("memory_limit_in_gb").(float64)); err != nil {
-		return diag.FromErr(err)
-	}
-	// TODO: is there any difference between setting it to the existing value and not setting it at all?
-	if err := d.Set("enable_tls", d.Get("enable_tls").(bool)); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("client_ssl_certificate", d.Get("client_ssl_certificate")); err != nil {
-		return diag.FromErr(err)
-	}
-
 	if err := d.Set("support_oss_cluster_api", redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("external_endpoint_for_oss_cluster_api",
-		d.Get("external_endpoint_for_oss_cluster_api").(bool)); err != nil {
+	if err := d.Set("external_endpoint_for_oss_cluster_api", redis.BoolValue(db.UseExternalEndpointForOSSClusterAPI)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("global_data_persistence", d.Get("global_data_persistence")); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("global_alert", d.Get("global_alert")); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("global_password", d.Get("global_password")); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("global_source_ips", d.Get("global_source_ips")); err != nil {
+	if err := d.Set("memory_limit_in_gb", redis.Float64(*db.CrdbDatabases[0].MemoryLimitInGB)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -410,10 +390,12 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 			}
 		}
 
-		if *regionDb.Security.Password == d.Get("global_password").(string) {
-			regionDbConfig["override_global_password"] = ""
-		} else {
-			regionDbConfig["override_global_password"] = redis.StringValue(regionDb.Security.Password)
+		if stateOverridePassword := getStateOverrideRegion(d, redis.StringValue(regionDb.Region))["override_global_password"]; stateOverridePassword != "" {
+			if *regionDb.Security.Password == d.Get("global_password").(string) {
+				regionDbConfig["override_global_password"] = ""
+			} else {
+				regionDbConfig["override_global_password"] = redis.StringValue(regionDb.Security.Password)
+			}
 		}
 
 		stateOverrideAlerts := getStateAlertsFromDbRegion(getStateOverrideRegion(d, redis.StringValue(regionDb.Region)))
@@ -522,7 +504,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 		dataPersistence := dbRegion["override_global_data_persistence"].(string)
 		if dataPersistence != "" {
 			regionProps.DataPersistence = redis.String(dataPersistence)
-		} else {
+		} else if d.Get("global_data_persistence").(string) != "" {
 			regionProps.DataPersistence = redis.String(d.Get("global_data_persistence").(string))
 		}
 		password := dbRegion["override_global_password"].(string)
@@ -543,7 +525,6 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 		SupportOSSClusterAPI:                redis.Bool(d.Get("support_oss_cluster_api").(bool)),
 		UseExternalEndpointForOSSClusterAPI: redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool)),
 		DataEvictionPolicy:                  redis.String(d.Get("data_eviction").(string)),
-		GlobalDataPersistence:               redis.String(d.Get("global_data_persistence").(string)),
 		GlobalAlerts:                        globalAlerts,
 		GlobalSourceIP:                      globalSourceIps,
 		Regions:                             regions,
@@ -556,6 +537,10 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 
 	if d.Get("global_password").(string) != "" {
 		update.GlobalPassword = redis.String(d.Get("global_password").(string))
+	}
+
+	if d.Get("global_data_persistence").(string) != "" {
+		update.GlobalDataPersistence = redis.String(d.Get("global_data_persistence").(string))
 	}
 
 	//The cert validation is done by the API (HTTP 400 is returned if it's invalid).
