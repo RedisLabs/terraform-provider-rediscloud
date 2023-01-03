@@ -42,11 +42,11 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "false"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.0.write_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.0.read_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.1.write_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.1.read_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.write_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.read_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.write_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.read_operations_per_second", "1000"),
 
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
@@ -80,11 +80,11 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "false"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.0.write_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.0.read_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.1.write_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.1.read_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.write_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.read_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.write_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.read_operations_per_second", "1000"),
 				),
 			},
 			{
@@ -92,8 +92,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 				ResourceName: resourceName,
 				ImportState:  true,
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
-					creationPlan := states[0].Attributes["creation_plan.#"]
-					if creationPlan != "0" {
+					creationPlan, ok := states[0].Attributes["creation_plan.#"]
+					if ok && creationPlan != "0" {
 						return fmt.Errorf("Unexpected creation_plan block. Should be 0, instead of  %s", creationPlan)
 					}
 					return nil
@@ -129,11 +129,11 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.0.write_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.0.read_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.1.write_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.1.read_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.write_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.read_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.write_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.read_operations_per_second", "1000"),
 				),
 			},
 			{
@@ -168,11 +168,11 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.0.write_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.0.read_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.1.write_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.region.1.read_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.write_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.read_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.write_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.read_operations_per_second", "1000"),
 				),
 			},
 			{
