@@ -194,7 +194,7 @@ resource "rediscloud_subscription" "example" {
 
   cloud_provider {
     provider = "GCP"
-    cloud_account_id = 1
+    cloud_account_id = data.rediscloud_cloud_account.account.id
     region {
       region = "europe-west1"
       networking_deployment_cidr = "192.168.0.0/24"
