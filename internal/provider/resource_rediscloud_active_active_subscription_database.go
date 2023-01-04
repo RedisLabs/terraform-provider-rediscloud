@@ -2,7 +2,7 @@ package provider
 
 import (
 	"context"
-	"reflect"
+	"log"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
