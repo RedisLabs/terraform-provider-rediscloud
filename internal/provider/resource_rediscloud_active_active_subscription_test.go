@@ -215,7 +215,6 @@ func testAccCheckActiveActiveSubscriptionDestroy(s *terraform.State) error {
 
 // TF config for provisioning a new subscription.
 const testAccResourceRedisCloudActiveActiveSubscription = `
-  
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
 }
