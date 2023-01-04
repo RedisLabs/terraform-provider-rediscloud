@@ -31,7 +31,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscription, name),
@@ -122,7 +122,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionContractPayment, name),
@@ -160,7 +160,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionMarketplacePayment, name),
@@ -189,7 +189,7 @@ func testAccCheckActiveActiveSubscriptionDestroy(s *terraform.State) error {
 	client := testProvider.Meta().(*apiClient)
 
 	for _, r := range s.RootModule().Resources {
-		if r.Type != "rediscloud_subscription" {
+		if r.Type != "rediscloud_active_active_subscription" {
 			continue
 		}
 
