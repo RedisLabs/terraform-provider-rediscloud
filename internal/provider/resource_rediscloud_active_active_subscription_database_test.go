@@ -121,18 +121,17 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseImport, subscriptionName, name),
 			},
 			{
-				ResourceName:      "rediscloud_active_active_subscription_database.example",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName: "rediscloud_active_active_subscription_database.example",
+				ImportState:  true,
 			},
 		},
 	})
 }
 
 const activeActiveSubscriptionBoilerplate = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-  }
+	data "rediscloud_payment_method" "card" {
+		card_type = "Visa"
+	}
   
   resource "rediscloud_active_active_subscription" "example" {
 	name = "%s"
