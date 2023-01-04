@@ -63,3 +63,5 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/RedisLabs/rediscloud-go-api v0.1.12 => github.com/RedisLabs/rediscloud-go-api v0.1.10-0.20221222114151-bc788e6f18ba
