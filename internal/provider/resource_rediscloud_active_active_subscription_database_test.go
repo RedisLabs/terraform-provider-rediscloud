@@ -95,7 +95,6 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					},
 				),
 			},
-			// TODO: fix these failing tests
 			// Test database is updated successfully
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdate, subscriptionName, name),
