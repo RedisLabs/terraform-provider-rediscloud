@@ -19,8 +19,7 @@ import (
 
 func resourceRedisCloudActiveActiveSubscriptionPeering() *schema.Resource {
 	return &schema.Resource{
-		// TODO: update description
-		Description:   "Creates an AWS VPC peering for an existing Redis Enterprise Cloud Subscription, allowing access to your subscription databases as if they were on the same network.",
+		Description:   "Creates a VPC peering for an existing Redis Enterprise Cloud Active-Active Subscription, allowing access to your subscription databases as if they were on the same network.",
 		CreateContext: resourceRedisCloudSubscriptionActiveActivePeeringCreate,
 		ReadContext:   resourceRedisCloudSubscriptionActiveActivePeeringRead,
 		DeleteContext: resourceRedisCloudSubscriptionActiveActivePeeringDelete,

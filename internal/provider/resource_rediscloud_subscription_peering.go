@@ -3,6 +3,12 @@ package provider
 import (
 	"context"
 	"fmt"
+	"log"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
@@ -10,16 +16,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"log"
-	"regexp"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func resourceRedisCloudSubscriptionPeering() *schema.Resource {
 	return &schema.Resource{
-		Description:   "Creates an AWS VPC peering for an existing Redis Enterprise Cloud Subscription, allowing access to your subscription databases as if they were on the same network.",
+		Description:   "Creates a VPC peering for an existing Redis Enterprise Cloud Subscription, allowing access to your subscription databases as if they were on the same network.",
 		CreateContext: resourceRedisCloudSubscriptionPeeringCreate,
 		ReadContext:   resourceRedisCloudSubscriptionPeeringRead,
 		DeleteContext: resourceRedisCloudSubscriptionPeeringDelete,
