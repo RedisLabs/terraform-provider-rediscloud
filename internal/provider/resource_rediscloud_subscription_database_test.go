@@ -296,7 +296,6 @@ resource "rediscloud_subscription_database" "example" {
     ]
 } 
 `
-
 const multiModulesSubscriptionBoilerplate = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
