@@ -13,42 +13,38 @@ import (
 func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	type set struct {
-		m map[string]struct{}
+
+	//testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cidrRange := os.Getenv("AWS_VPC_CIDR")
+
+	// Choose a CIDR range for the subscription that's unlikely to overlap with any VPC CIDR
+	subCidrRange := "10.202.0.0/24"
+
+	overlap, err := cidrRangesOverlap(subCidrRange, cidrRange)
+	if err != nil {
+		t.Fatalf("AWS_VPC_CIDR is not a valid CIDR range %s: %s", cidrRange, err)
 	}
-	// testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-	os.Setenv("AWS_VPC_CIDR", "10.0.0.0/24")
+	if overlap {
+		subCidrRange = "172.16.0.0/24"
+	}
 
-	cidrRange := "10.0.30.0/24"
-	// Chose a CIDR range for the subscription that's unlikely to overlap with any VPC CIDR
-	// subCidrRange := [1]string{"101.0.10.0/24"}
-
-	// overlap, err := cidrRangesOverlapActiveActive(subCidrRange, cidrRange)
-	// if err != nil {
-	// 	t.Fatalf("AWS_VPC_CIDR is not a valid CIDR range %s: %s", cidrRange, err)
-	// }
-	// if overlap {
-	// 	subCidrRange = "172.16.0.0/24"
-	// }
 	os.Setenv("AWS_PEERING_REGION", "us-east-1")
 	os.Setenv("AWS_ACCOUNT_ID", "277885626557")
 	os.Setenv("AWS_VPC_ID", "vpc-0896d84b605a91d75")
 
-	sourceRegion := "us-east-1"
-	matchesRegex(t, sourceRegion, "^[a-z]+-[a-z]+-\\d+$")
+	peeringRegion := os.Getenv("AWS_PEERING_REGION")
+	matchesRegex(t, peeringRegion, "^[a-z]+-[a-z]+-\\d+$")
 
-	accountId := "277885626557"
+	accountId := os.Getenv("AWS_ACCOUNT_ID")
 	matchesRegex(t, accountId, "^\\d+$")
 
-	vpcId := "vpc-0896d84b605a91d75"
+	vpcId := os.Getenv("AWS_VPC_ID")
 	matchesRegex(t, vpcId, "^vpc-[a-z\\d]+$")
-
-	fmt.Println(sourceRegion)
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionPeeringAWS,
 		name,
-		// subCidrRange,
-		// sourceRegion,
+		subCidrRange,
+		peeringRegion,
 		accountId,
 		vpcId,
 		cidrRange,
@@ -119,27 +115,6 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_gcp(t *testing.T) 
 		},
 	})
 }
-
-func matchesRegexActiveActive(t *testing.T, value string, regex string) {
-	if !regexp.MustCompile(regex).MatchString(value) {
-		t.Fatalf("%s doesn't match regex %s", value, regex)
-	}
-}
-
-// func cidrRangesOverlapActiveActive(cidr1 string, cidr2 []string) (bool, error) {
-// 	_, first, err := net.ParseActiveActiveCIDR(cidr1)
-// 	if err != nil {
-// 		return false, err
-// 	}
-// 	_, second, err := net.ParseActiveActiveCIDR(cidr2)
-// 	if err != nil {
-// 		return false, err
-// 	}
-
-// 	overlaps := first.Contains(second.IP) || second.Contains(first.IP)
-
-// 	return overlaps, nil
-// }
 
 const testAccResourceRedisCloudActiveActiveSubscriptionPeeringAWS = `
 data "rediscloud_payment_method" "card" {
