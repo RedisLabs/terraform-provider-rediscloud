@@ -372,8 +372,8 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 		publicEndpointConfig[redis.StringValue(regionDb.Region)] = redis.StringValue(regionDb.PublicEndpoint)
 		privateEndpointConfig[redis.StringValue(regionDb.Region)] = redis.StringValue(regionDb.PrivateEndpoint)
 		// Check if the region is in the state as an override
-		x := getStateOverrideRegion(d, redis.StringValue(regionDb.Region))
-		if x == nil {
+		stateOverrideRegion := getStateOverrideRegion(d, redis.StringValue(regionDb.Region))
+		if stateOverrideRegion == nil {
 			continue
 		}
 		regionDbConfig := map[string]interface{}{
@@ -485,7 +485,6 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 	globalSourceIps := setToStringSlice(d.Get("global_source_ips").(*schema.Set))
 
 	// Make a list of region-specific configurations
-	// TODO: need to set the region not in the override list to the global values and remove the override from the state
 	var regions []*databases.LocalRegionProperties
 	for _, region := range d.Get("override_region").(*schema.Set).List() {
 		dbRegion := region.(map[string]interface{})
