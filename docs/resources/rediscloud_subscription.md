@@ -80,14 +80,14 @@ The `allowlist` block supports:
 * `security_group_ids` - (Required) Set of security groups that are allowed to access the databases associated with this subscription
 * `cidrs` - (Optional) Set of CIDR ranges that are allowed to access the databases associated with this subscription
 
-~> **Note:** `allowlist` is only available when you run on your own cloud account, and not one that Redis Labs provided (i.e `cloud_account_id` != 1)
+~> **Note:** `allowlist` is only available when you run on your own cloud account, and not one that Redis provided (i.e `cloud_account_id` != 1)
 
 The `cloud_provider` block supports:
 
 * `provider` - (Optional) The cloud provider to use with the subscription, (either `AWS` or `GCP`). Default: ‘AWS’
-* `cloud_account_id` - (Optional) Cloud account identifier. Default: Redis Labs internal cloud account
-(using Cloud Account ID = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created
-only with Redis Labs internal cloud account
+* `cloud_account_id` - (Optional) Cloud account identifier. Default: Redis internal cloud account
+(using Cloud Account ID = 1 implies using Redis internal cloud account). Note that a GCP subscription can be created
+only with Redis internal cloud account
 * `region` - (Required) Cloud networking details, per region, documented below
 
 The `creation_plan` block supports:
@@ -117,7 +117,7 @@ The cloud_provider `region` block supports:
 * `networking_vpc_id` - (Optional) Either an existing VPC Id (already exists in the specific region) or create a new VPC
 (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4625884ad’) and existing
 within the hosting account.
-* `preferred_availability_zones` - (Required) Availability zones deployment preferences (for the selected provider & region).
+* `preferred_availability_zones` - (Required) Availability zones deployment preferences (for the selected provider & region). If the subscription has launched in Redis internal AWS cloud account, you should specify the zone IDs rather than the zone names.
 
 ~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI. 
 This difference in behaviour is to guarantee that a plan after an apply does not generate differences.
