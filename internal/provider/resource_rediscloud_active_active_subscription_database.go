@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"log"
-	"reflect"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -86,7 +85,6 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 				Description: "Use TLS for authentication.",
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     false,
 			},
 			"client_ssl_certificate": {
 				Description: "SSL certificate to authenticate user connections.",
@@ -103,7 +101,6 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 				Description: "Rate of database data persistence (in persistent storage)",
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "none",
 			},
 			"global_password": {
 				Description: "Password used to access the database. If left empty, the password will be generated automatically",
@@ -193,7 +190,6 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 							Description: "Rate of database data persistence (in persistent storage)",
 							Type:        schema.TypeString,
 							Optional:    true,
-							Default:     "none",
 						},
 					},
 				},
@@ -228,6 +224,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 	memoryLimitInGB := d.Get("memory_limit_in_gb").(float64)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
 	useExternalEndpointForOSSClusterAPI := d.Get("external_endpoint_for_oss_cluster_api").(bool)
+	dataEviction := d.Get("data_eviction").(string)
 	globalDataPersistence := d.Get("global_data_persistence").(string)
 	globalPassword := d.Get("global_password").(string)
 	globalSourceIp := setToStringSlice(d.Get("global_source_ips").(*schema.Set))
@@ -271,11 +268,19 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 		MemoryLimitInGB:                     redis.Float64(memoryLimitInGB),
 		SupportOSSClusterAPI:                redis.Bool(supportOSSClusterAPI),
 		UseExternalEndpointForOSSClusterAPI: redis.Bool(useExternalEndpointForOSSClusterAPI),
-		GlobalDataPersistence:               redis.String(globalDataPersistence),
 		GlobalSourceIP:                      globalSourceIp,
 		GlobalAlerts:                        createAlerts,
 		LocalThroughputMeasurement:          localThroughputs,
 	}
+
+	if dataEviction != "" {
+		createDatabase.DataEvictionPolicy = redis.String(dataEviction)
+	}
+
+	if globalDataPersistence != "" {
+		createDatabase.GlobalDataPersistence = redis.String(globalDataPersistence)
+	}
+
 	if globalPassword != "" {
 		createDatabase.GlobalPassword = redis.String(globalPassword)
 	}
@@ -339,81 +344,85 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 		return diag.FromErr(err)
 	}
 
+	if err := d.Set("data_eviction", redis.StringValue(db.DataEvictionPolicy)); err != nil {
+		return diag.FromErr(err)
+	}
+
 	if err := d.Set("support_oss_cluster_api", redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("external_endpoint_for_oss_cluster_api",
-		d.Get("external_endpoint_for_oss_cluster_api").(bool)); err != nil {
+	if err := d.Set("external_endpoint_for_oss_cluster_api", redis.BoolValue(db.UseExternalEndpointForOSSClusterAPI)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("global_data_persistence", d.Get("global_data_persistence")); err != nil {
+	if err := d.Set("memory_limit_in_gb", redis.Float64(*db.CrdbDatabases[0].MemoryLimitInGB)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("global_alert", d.Get("global_alert")); err != nil {
+	if err := d.Set("enable_tls", redis.BoolValue(db.CrdbDatabases[0].Security.EnableTls)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("global_password", d.Get("global_password")); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("global_source_ips", d.Get("global_source_ips")); err != nil {
-		return diag.FromErr(err)
-	}
-
-	var region_db_configs []map[string]interface{}
-	public_endpoint_config := make(map[string]interface{})
-	private_endpoint_config := make(map[string]interface{})
-	for _, region_db := range db.CrdbDatabases {
+	var regionDbConfigs []map[string]interface{}
+	publicEndpointConfig := make(map[string]interface{})
+	privateEndpointConfig := make(map[string]interface{})
+	for _, regionDb := range db.CrdbDatabases {
+		// Set the endpoints for the region
+		publicEndpointConfig[redis.StringValue(regionDb.Region)] = redis.StringValue(regionDb.PublicEndpoint)
+		privateEndpointConfig[redis.StringValue(regionDb.Region)] = redis.StringValue(regionDb.PrivateEndpoint)
+		// Check if the region is in the state as an override
+		stateOverrideRegion := getStateOverrideRegion(d, redis.StringValue(regionDb.Region))
+		if stateOverrideRegion == nil {
+			continue
+		}
+		regionDbConfig := map[string]interface{}{
+			"name": redis.StringValue(regionDb.Region),
+		}
 		var sourceIPs []string
-		if !(len(region_db.Security.SourceIPs) == 1 && redis.StringValue(region_db.Security.SourceIPs[0]) == "0.0.0.0/0") {
+		if !(len(regionDb.Security.SourceIPs) == 1 && redis.StringValue(regionDb.Security.SourceIPs[0]) == "0.0.0.0/0") {
 			// The API handles an empty list as ["0.0.0.0/0"] but need to be careful to match the input to avoid Terraform detecting drift
-			sourceIPs = redis.StringSliceValue(region_db.Security.SourceIPs...)
+			sourceIPs = redis.StringSliceValue(regionDb.Security.SourceIPs...)
 		}
-		region_db_config := map[string]interface{}{
-			"name":                             redis.StringValue(region_db.Region),
-			"override_global_data_persistence": redis.StringValue(region_db.DataPersistence),
-			"override_global_source_ips":       sourceIPs,
-		}
-		if *region_db.Security.Password == d.Get("global_password").(string) {
-			region_db_config["override_global_password"] = ""
-		} else {
-			region_db_config["override_global_password"] = redis.StringValue(region_db.Security.Password)
-		}
-		var global_alerts []*databases.Alert
-		for _, alert := range d.Get("global_alert").(*schema.Set).List() {
-			dbAlert := alert.(map[string]interface{})
-			global_alerts = append(global_alerts, &databases.Alert{
-				Name:  redis.String(dbAlert["name"].(string)),
-				Value: redis.Int(dbAlert["value"].(int)),
-			})
-		}
-		if reflect.DeepEqual(global_alerts, region_db.Alerts) {
-			region_db_config["override_global_alert"] = []interface{}{}
-		} else {
-			region_db_config["override_global_alert"] = flattenAlerts(region_db.Alerts)
+		if stateSourceIPs := getStateOverrideRegion(d, redis.StringValue(regionDb.Region))["override_global_source_ips"]; stateSourceIPs != nil {
+			if len(stateSourceIPs.(*schema.Set).List()) > 0 {
+				regionDbConfig["override_global_source_ips"] = sourceIPs
+			}
 		}
 
-		public_endpoint_config[redis.StringValue(region_db.Region)] = redis.StringValue(region_db.PublicEndpoint)
-		private_endpoint_config[redis.StringValue(region_db.Region)] = redis.StringValue(region_db.PrivateEndpoint)
+		if stateDataPersistence := getStateOverrideRegion(d, redis.StringValue(regionDb.Region))["override_global_data_persistence"]; stateDataPersistence != nil {
+			if stateDataPersistence.(string) != "" {
+				regionDbConfig["override_global_data_persistence"] = regionDb.DataPersistence
+			}
+		}
 
-		region_db_configs = append(region_db_configs, region_db_config)
+		if stateOverridePassword := getStateOverrideRegion(d, redis.StringValue(regionDb.Region))["override_global_password"]; stateOverridePassword != "" {
+			if *regionDb.Security.Password == d.Get("global_password").(string) {
+				regionDbConfig["override_global_password"] = ""
+			} else {
+				regionDbConfig["override_global_password"] = redis.StringValue(regionDb.Security.Password)
+			}
+		}
+
+		stateOverrideAlerts := getStateAlertsFromDbRegion(getStateOverrideRegion(d, redis.StringValue(regionDb.Region)))
+		if len(stateOverrideAlerts) > 0 {
+			regionDbConfig["override_global_alert"] = flattenAlerts(regionDb.Alerts)
+		}
+
+		regionDbConfigs = append(regionDbConfigs, regionDbConfig)
 	}
 
 	// Only set override_region if it is defined in the config
-	if or := d.Get("override_region").(*schema.Set).List(); len(or) > 0 {
-		if err := d.Set("override_region", region_db_configs); err != nil {
+	if len(d.Get("override_region").(*schema.Set).List()) > 0 {
+		if err := d.Set("override_region", regionDbConfigs); err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
-	if err := d.Set("public_endpoint", public_endpoint_config); err != nil {
+	if err := d.Set("public_endpoint", publicEndpointConfig); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("private_endpoint", private_endpoint_config); err != nil {
+	if err := d.Set("private_endpoint", privateEndpointConfig); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -463,54 +472,61 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
-	var global_alerts []*databases.UpdateAlert
+	var globalAlerts []*databases.UpdateAlert
 	for _, alert := range d.Get("global_alert").(*schema.Set).List() {
 		dbAlert := alert.(map[string]interface{})
 
-		global_alerts = append(global_alerts, &databases.UpdateAlert{
+		globalAlerts = append(globalAlerts, &databases.UpdateAlert{
 			Name:  redis.String(dbAlert["name"].(string)),
 			Value: redis.Int(dbAlert["value"].(int)),
 		})
 	}
+
+	globalSourceIps := setToStringSlice(d.Get("global_source_ips").(*schema.Set))
 
 	// Make a list of region-specific configurations
 	var regions []*databases.LocalRegionProperties
 	for _, region := range d.Get("override_region").(*schema.Set).List() {
 		dbRegion := region.(map[string]interface{})
 
-		// Make a list of region-specific alert configurations for use in the regions list below
-		var override_alerts []*databases.UpdateAlert
-		for _, alert := range dbRegion["override_global_alert"].(*schema.Set).List() {
-			dbAlert := alert.(map[string]interface{})
-
-			override_alerts = append(override_alerts, &databases.UpdateAlert{
-				Name:  redis.String(dbAlert["name"].(string)),
-				Value: redis.Int(dbAlert["value"].(int)),
-			})
-		}
+		overrideAlerts := getStateAlertsFromDbRegion(getStateOverrideRegion(d, dbRegion["name"].(string)))
 
 		// Make a list of region-specific source IPs for use in the regions list below
-		var override_source_ips []*string
+		var overrideSourceIps []*string
 		for _, source_ip := range dbRegion["override_global_source_ips"].(*schema.Set).List() {
-			override_source_ips = append(override_source_ips, redis.String(source_ip.(string)))
+			overrideSourceIps = append(overrideSourceIps, redis.String(source_ip.(string)))
 		}
 
-		region_props := &databases.LocalRegionProperties{
-			Region:          redis.String(dbRegion["name"].(string)),
-			DataPersistence: redis.String(dbRegion["override_global_data_persistence"].(string)),
-			SourceIP:        override_source_ips,
-			Alerts:          override_alerts,
+		regionProps := &databases.LocalRegionProperties{
+			Region: redis.String(dbRegion["name"].(string)),
+		}
+
+		if len(overrideAlerts) > 0 {
+			regionProps.Alerts = overrideAlerts
+		} else if len(globalAlerts) > 0 {
+			regionProps.Alerts = globalAlerts
+		}
+		if len(overrideSourceIps) > 0 {
+			regionProps.SourceIP = overrideSourceIps
+		} else if len(globalSourceIps) > 0 {
+			regionProps.SourceIP = globalSourceIps
+		}
+		dataPersistence := dbRegion["override_global_data_persistence"].(string)
+		if dataPersistence != "" {
+			regionProps.DataPersistence = redis.String(dataPersistence)
+		} else if d.Get("global_data_persistence").(string) != "" {
+			regionProps.DataPersistence = redis.String(d.Get("global_data_persistence").(string))
 		}
 		password := dbRegion["override_global_password"].(string)
 		// If the password is not set, check if the global password is set and use that
 		if password != "" {
-			region_props.Password = redis.String(password)
+			regionProps.Password = redis.String(password)
 		} else {
 			if d.Get("global_password").(string) != "" {
-				region_props.Password = redis.String(d.Get("global_password").(string))
+				regionProps.Password = redis.String(d.Get("global_password").(string))
 			}
 		}
-		regions = append(regions, region_props)
+		regions = append(regions, regionProps)
 	}
 
 	// Populate the database update request with the required fields
@@ -518,19 +534,23 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 		MemoryLimitInGB:                     redis.Float64(d.Get("memory_limit_in_gb").(float64)),
 		SupportOSSClusterAPI:                redis.Bool(d.Get("support_oss_cluster_api").(bool)),
 		UseExternalEndpointForOSSClusterAPI: redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool)),
-		//DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
-		GlobalDataPersistence: redis.String(d.Get("global_data_persistence").(string)),
-		GlobalAlerts:          global_alerts,
-		Regions:               regions,
+		DataEvictionPolicy:                  redis.String(d.Get("data_eviction").(string)),
+		GlobalAlerts:                        globalAlerts,
+		GlobalSourceIP:                      globalSourceIps,
+		Regions:                             regions,
 	}
 
 	// The below fields are optional and will only be sent in the request if they are present in the Terraform configuration
-	if len(setToStringSlice(d.Get("global_source_ips").(*schema.Set))) == 0 {
+	if len(globalSourceIps) == 0 {
 		update.GlobalSourceIP = []*string{redis.String("0.0.0.0/0")}
 	}
 
 	if d.Get("global_password").(string) != "" {
 		update.GlobalPassword = redis.String(d.Get("global_password").(string))
+	}
+
+	if d.Get("global_data_persistence").(string) != "" {
+		update.GlobalDataPersistence = redis.String(d.Get("global_data_persistence").(string))
 	}
 
 	//The cert validation is done by the API (HTTP 400 is returned if it's invalid).
@@ -569,6 +589,34 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 	}
 
 	return resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx, d, meta)
+}
+
+func getStateOverrideRegion(d *schema.ResourceData, regionName string) map[string]interface{} {
+	for _, region := range d.Get("override_region").(*schema.Set).List() {
+		dbRegion := region.(map[string]interface{})
+		if dbRegion["name"].(string) == regionName {
+			return dbRegion
+		}
+	}
+	return nil
+}
+
+func getStateAlertsFromDbRegion(dbRegion map[string]interface{}) []*databases.UpdateAlert {
+	// Make a list of region-specific alert configurations for use in the regions list below
+	if dbRegion == nil {
+		return nil
+	} else if dbRegion["override_global_alert"] == nil {
+		return nil
+	}
+	var overrideAlerts []*databases.UpdateAlert
+	for _, alert := range dbRegion["override_global_alert"].(*schema.Set).List() {
+		dbAlert := alert.(map[string]interface{})
+		overrideAlerts = append(overrideAlerts, &databases.UpdateAlert{
+			Name:  redis.String(dbAlert["name"].(string)),
+			Value: redis.Int(dbAlert["value"].(int)),
+		})
+	}
+	return overrideAlerts
 }
 
 func waitForDatabaseToBeDeleted(ctx context.Context, subId int, dbId int, api *apiClient) error {

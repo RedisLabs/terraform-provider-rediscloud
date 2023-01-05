@@ -12,8 +12,6 @@ This resource is responsible for creating regions within
 that subscription. This allows Redis Enterprise Cloud to provision
 your regions defined in separate resources in the most efficient way.
 
-~> **Note:** Todo? 
-
 ## Example Usage
 
 ```hcl
