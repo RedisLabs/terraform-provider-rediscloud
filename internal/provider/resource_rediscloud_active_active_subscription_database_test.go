@@ -26,7 +26,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database creation
 			{
