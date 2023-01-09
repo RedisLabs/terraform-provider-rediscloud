@@ -3,7 +3,7 @@ module github.com/RedisLabs/terraform-provider-rediscloud
 go 1.17
 
 require (
-	github.com/RedisLabs/rediscloud-go-api v0.1.12
+	github.com/RedisLabs/rediscloud-go-api v0.1.13-0.20230109094057-61c214c106b8
 	github.com/bflad/tfproviderlint v0.28.1
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
@@ -63,5 +63,3 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/RedisLabs/rediscloud-go-api v0.1.12 => github.com/RedisLabs/rediscloud-go-api v0.1.10-0.20221222114151-bc788e6f18ba

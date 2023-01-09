@@ -236,7 +236,7 @@ func resourceRedisCloudSubscriptionActiveActivePeeringRead(ctx context.Context, 
 		return diag.FromErr(err)
 	}
 
-	peerings, err := api.client.Subscription.ListActiveActiveVPCPeering(ctx, subId) ///////////////////////////////////////
+	peerings, err := api.client.Subscription.ListActiveActiveVPCPeering(ctx, subId)
 	if err != nil {
 		if _, ok := err.(*subscriptions.NotFound); ok {
 			d.SetId("")
