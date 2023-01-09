@@ -275,7 +275,7 @@ func resourceRedisCloudSubscriptionActiveActivePeeringRead(ctx context.Context, 
 		if err := d.Set("vpc_id", redis.StringValue(peering.VPCId)); err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("vpc_cidrs", peering.VPCCidrs); err != nil {
+		if err := d.Set("vpc_cidrs", redis.StringSliceValue(peering.VPCCidrs...)); err != nil {
 			return diag.FromErr(err)
 		}
 		if err := d.Set("source_region", redis.StringValue(sourceRegion)); err != nil {
