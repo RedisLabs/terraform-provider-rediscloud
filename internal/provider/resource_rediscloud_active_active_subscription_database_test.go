@@ -197,9 +197,8 @@ resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 1
-	// TODO: set these to true once the API is fixed
-    support_oss_cluster_api = false 
-    external_endpoint_for_oss_cluster_api = false
+    support_oss_cluster_api = true 
+    external_endpoint_for_oss_cluster_api = true
     
     global_data_persistence = "aof-every-1-second"
     global_password = "updated-password" 

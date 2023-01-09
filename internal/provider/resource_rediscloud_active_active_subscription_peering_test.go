@@ -48,7 +48,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPeeringPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: tf,
@@ -86,7 +86,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_gcp(t *testing.T) 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: tf,
@@ -132,7 +132,7 @@ resource "rediscloud_active_active_subscription" "example" {
         }
         region {
             region = "us-east-2"
-            networking_deployment_cidr = %s
+            networking_deployment_cidr = "%s"
             write_operations_per_second = 1000
             read_operations_per_second = 1000
         }
@@ -143,7 +143,7 @@ resource "rediscloud_active_active_subscription_peering" "test" {
   subscription_id = rediscloud_active_active_subscription.example.id
   provider_name = "AWS"
   source_region = "us-east-2"
-  destination_region = %s
+  destination_region = "%s"
   aws_account_id = "%s"
   vpc_id = "%s"
   vpc_cidrs = ["%s"]
