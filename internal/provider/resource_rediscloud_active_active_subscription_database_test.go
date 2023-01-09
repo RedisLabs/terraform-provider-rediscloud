@@ -100,9 +100,8 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdate, subscriptionName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
-					// TODO: add back in when the API is fixed
-					// resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
-					// resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(resourceName, "global_data_persistence", "aof-every-1-second"),
 					resource.TestCheckResourceAttr(resourceName, "global_password", "updated-password"),
 
@@ -118,11 +117,10 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 			},
 			// Test that that database is imported successfully
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseImport, subscriptionName, name),
-			},
-			{
-				ResourceName: "rediscloud_active_active_subscription_database.example",
-				ImportState:  true,
+				Config:            fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseImport, subscriptionName, name),
+				ResourceName:      "rediscloud_active_active_subscription_database.example",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
