@@ -121,6 +121,22 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 				ResourceName:      "rediscloud_active_active_subscription_database.example",
 				ImportState:       true,
 				ImportStateVerify: true,
+				// global and override attributes not supported as part of import
+				ImportStateVerifyIgnore: []string{
+					"global_data_persistence",
+					"global_password",
+					"global_source_ips.#",
+					"global_source_ips.0",
+					"override_region.#",
+					"override_region.0.%",
+					"override_region.0.name",
+					"override_region.0.override_global_alert.#",
+					"override_region.0.override_global_alert.0.%",
+					"override_region.0.override_global_alert.0.name",
+					"override_region.0.override_global_alert.0.value",
+					"override_region.0.override_global_data_persistence",
+					"override_region.0.override_global_password",
+				},
 			},
 		},
 	})
