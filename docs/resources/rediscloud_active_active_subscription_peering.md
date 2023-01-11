@@ -1,13 +1,13 @@
 ---
 layout: "rediscloud"
-page_title: "Redis Cloud: rediscloud_subscription_peering"
+page_title: "Redis Cloud: rediscloud_active_active_subscription_peering"
 description: |-
-  Subscription VPC peering resource in the Terraform provider Redis Cloud.
+  Active-Active subscription VPC peering resource in the Terraform provider Redis Cloud.
 ---
 
 # Resource: rediscloud_subscription_peering
 
-Creates an AWS or GCP VPC peering for an existing Redis Enterprise Cloud Subscription, allowing access to your subscription databases as if they were on the same network.
+Creates an AWS or GCP VPC peering for an existing Redis Enterprise Cloud Subscription in multiple regions, allowing access to your subscription databases as if they were on the same network.
 
 For AWS, peering should be accepted by the other side.
 For GCP, the opposite peering request should be submitted.
@@ -21,16 +21,19 @@ resource "rediscloud_subscription" "example" {
   // ...
 }
 
-resource "rediscloud_subscription_peering" "example" {
+resource "rediscloud_active_active_subscription_peering" "example" {
    subscription_id = rediscloud_subscription.example.id
-   region = "eu-west-1"
+   source_region = "us-east-1"
+   destination_region = "eu-west-2"
    aws_account_id = "123456789012"
    vpc_id = "vpc-01234567890"
-   vpc_cidr = "10.0.0.0/8"
+   vpc_cidrs = [
+    "10.0.10.0/24"
+    ]
 }
 
 resource "aws_vpc_peering_connection_accepter" "example-peering" {
-  vpc_peering_connection_id = rediscloud_subscription_peering.example.aws_peering_id
+  vpc_peering_connection_id = rediscloud_active_active_subscription_peering.example.aws_peering_id
   auto_accept               = true
 }
 ```
@@ -50,7 +53,7 @@ data "google_compute_network" "network" {
   name = "my-gcp-vpc"
 }
 
-resource "rediscloud_subscription_peering" "example-peering" {
+resource "rediscloud_active_active_subscription_peering" "example-peering" {
   subscription_id = rediscloud_subscription.example.id
   provider_name = "GCP"
   gcp_project_id = data.google_compute_network.network.project
@@ -60,7 +63,7 @@ resource "rediscloud_subscription_peering" "example-peering" {
 resource "google_compute_network_peering" "example-peering" {
   name         = "peering-gcp-example"
   network      = data.google_compute_network.network.self_link
-  peer_network = "https://www.googleapis.com/compute/v1/projects/${rediscloud_subscription_peering.example.gcp_redis_project_id}/global/networks/${rediscloud_subscription_peering.example.gcp_redis_network_name}"
+  peer_network = "https://www.googleapis.com/compute/v1/projects/${rediscloud_active_active_subscription_peering.example.gcp_redis_project_id}/global/networks/${rediscloud_active_active_subscription_peering.example.gcp_redis_network_name}"
 }
 ```
 
@@ -74,6 +77,8 @@ The following arguments are supported:
 **AWS ONLY:**
 * `aws_account_id` - (Required AWS) AWS account ID that the VPC to be peered lives in
 * `region` - (Required AWS) AWS Region that the VPC to be peered lives in
+* `sourceRegion` -	(Required AWS) Name of region to create a VPC peering from
+* `destinationRegion` - (Required AWS) Name of region to create a VPC peering to
 * `vpc_id` - (Required AWS) Identifier of the VPC to be peered
 * `vpc_cidr` - (Required AWS) CIDR range of the VPC to be peered 
 

@@ -100,9 +100,8 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdate, subscriptionName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
-					// TODO: add back in when the API is fixed
-					// resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
-					// resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(resourceName, "global_data_persistence", "aof-every-1-second"),
 					resource.TestCheckResourceAttr(resourceName, "global_password", "updated-password"),
 
@@ -118,11 +117,26 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 			},
 			// Test that that database is imported successfully
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseImport, subscriptionName, name),
-			},
-			{
-				ResourceName: "rediscloud_active_active_subscription_database.example",
-				ImportState:  true,
+				Config:            fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseImport, subscriptionName, name),
+				ResourceName:      "rediscloud_active_active_subscription_database.example",
+				ImportState:       true,
+				ImportStateVerify: true,
+				// global and override attributes not supported as part of import
+				ImportStateVerifyIgnore: []string{
+					"global_data_persistence",
+					"global_password",
+					"global_source_ips.#",
+					"global_source_ips.0",
+					"override_region.#",
+					"override_region.0.%",
+					"override_region.0.name",
+					"override_region.0.override_global_alert.#",
+					"override_region.0.override_global_alert.0.%",
+					"override_region.0.override_global_alert.0.name",
+					"override_region.0.override_global_alert.0.value",
+					"override_region.0.override_global_data_persistence",
+					"override_region.0.override_global_password",
+				},
 			},
 		},
 	})
@@ -199,9 +213,8 @@ resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 1
-	// TODO: set these to true once the API is fixed
-    support_oss_cluster_api = false 
-    external_endpoint_for_oss_cluster_api = false
+    support_oss_cluster_api = true 
+    external_endpoint_for_oss_cluster_api = true
     
     global_data_persistence = "aof-every-1-second"
     global_password = "updated-password" 
