@@ -267,7 +267,8 @@ func resourceRedisCloudSubscription() *schema.Resource {
 						"support_oss_cluster_api": {
 							Description: "Support Redis open-source (OSS) Cluster API",
 							Type:        schema.TypeBool,
-							Required:    true,
+							Optional:    true,
+							Default:     false,
 						},
 						"replication": {
 							Description: "Databases replication",
