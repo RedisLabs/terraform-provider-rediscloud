@@ -3,17 +3,18 @@ package provider
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
+	"strings"
+	"testing"
+	"time"
+
 	rediscloud_api "github.com/RedisLabs/rediscloud-go-api"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"log"
-	"os"
-	"strings"
-	"testing"
-	"time"
 )
 
 const testResourcePrefix = "tf-test"
@@ -49,9 +50,13 @@ func init() {
 		Name: "rediscloud_subscription",
 		F:    testSweepSubscriptions,
 	})
+	resource.AddTestSweepers("rediscloud_active_active_subscription", &resource.Sweeper{
+		Name: "rediscloud_active_active_subscription",
+		F:    testSweepActiveActiveSubscriptions,
+	})
 	resource.AddTestSweepers("rediscloud_cloud_account", &resource.Sweeper{
 		Name:         "rediscloud_cloud_account",
-		Dependencies: []string{"rediscloud_subscription"}, // in case a subscription depends on an account
+		Dependencies: []string{"rediscloud_subscription", "rediscloud_active_active_subscription"}, // in case a subscription depends on an account
 		F:            testSweepCloudAccounts,
 	})
 }
@@ -102,6 +107,10 @@ func testSweepSubscriptions(region string) error {
 		}
 
 		if !strings.HasPrefix(redis.StringValue(sub.Name), "tf-test") {
+			continue
+		}
+
+		if redis.StringValue(sub.DeploymentType) != subscriptions.SubscriptionDeploymentTypeSingleRegion {
 			continue
 		}
 
@@ -162,4 +171,54 @@ func testSweepReadDatabases(client *rediscloud_api.Client, subId int) (bool, []i
 	}
 
 	return true, dbIds, nil
+}
+
+func testSweepActiveActiveSubscriptions(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return err
+	}
+
+	list, err := client.Subscription.List(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	for _, sub := range list {
+		if redis.StringValue(sub.Status) != subscriptions.SubscriptionStatusActive {
+			continue
+		}
+
+		if !strings.HasPrefix(redis.StringValue(sub.Name), "tf-test") {
+			continue
+		}
+
+		if redis.StringValue(sub.DeploymentType) != subscriptions.SubscriptionDeploymentTypeActiveActive {
+			continue
+		}
+
+		subId := redis.IntValue(sub.ID)
+		sweepSub, dbIds, err := testSweepReadDatabases(client, subId)
+		if err != nil {
+			return err
+		}
+
+		if !sweepSub {
+			continue
+		}
+
+		for _, db := range dbIds {
+			err := client.Database.Delete(context.TODO(), subId, db)
+			if err != nil {
+				return err
+			}
+		}
+
+		err = client.Subscription.Delete(context.TODO(), subId)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
