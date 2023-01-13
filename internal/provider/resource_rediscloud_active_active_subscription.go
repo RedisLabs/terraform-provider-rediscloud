@@ -106,7 +106,8 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 						"support_oss_cluster_api": {
 							Description: "Support Redis open-source (OSS) Cluster API",
 							Type:        schema.TypeBool,
-							Required:    true,
+							Optional:    true,
+							Default:     false,
 						},
 						"region": {
 							Description: "Cloud networking details, per region (multiple regions for Active-Active cluster)",

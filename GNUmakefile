@@ -22,8 +22,8 @@ $(BIN)/%:
 
 build:
 	@echo "Building local provider binary"
-	@mkdir -p ./$(BIN)
-	go build -o ./$(BIN)/terraform-provider-rediscloud_v$(PROVIDER_VERSION)
+	@mkdir -p $(BIN)
+	go build -o $(BIN)/terraform-provider-rediscloud_v$(PROVIDER_VERSION)
 	@sh -c "'$(CURDIR)/scripts/generate-dev-overrides.sh'"
 
 clean:
