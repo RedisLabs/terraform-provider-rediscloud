@@ -113,7 +113,7 @@ The cloud_provider `region` block supports:
 
 * `region` - (Required) Deployment region as defined by cloud provider
 * `multiple_availability_zones` - (Optional) Support deployment on multiple availability zones within the selected region. Default: ‘false’
-* `networking_deployment_cidr` - (Required) Deployment CIDR mask.
+* `networking_deployment_cidr` - (Required) Deployment CIDR mask. The total number of bits must be 24 (x.x.x.x/24).
 * `networking_vpc_id` - (Optional) Either an existing VPC Id (already exists in the specific region) or create a new VPC
 (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4625884ad’) and existing
 within the hosting account.
