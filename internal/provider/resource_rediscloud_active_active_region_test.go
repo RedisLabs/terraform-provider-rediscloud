@@ -26,7 +26,7 @@ func TestAccResourceRedisCloudActiveActiveRegion_CRUDI(t *testing.T) {
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudCrateActiveActiveRegion, subName, dbName, dbPass),
+				Config: fmt.Sprintf(testAccResourceRedisCloudCreateActiveActiveRegion, subName, dbName, dbPass),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
 					resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
@@ -104,6 +104,12 @@ func TestAccResourceRedisCloudActiveActiveRegion_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "region.1.networking_deployment_cidr", "10.1.0.0/24"),
 				),
 			},
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_regions"},
+			},
 		},
 	})
 }
@@ -156,7 +162,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
 `
 
 // TF config for provisioning a new region.
-const testAccResourceRedisCloudCrateActiveActiveRegion = testAARegionsBoilerplate + `
+const testAccResourceRedisCloudCreateActiveActiveRegion = testAARegionsBoilerplate + `
 
 resource "rediscloud_active_active_subscription_regions" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id

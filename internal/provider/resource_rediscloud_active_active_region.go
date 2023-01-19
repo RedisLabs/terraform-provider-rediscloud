@@ -218,7 +218,7 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 	api := meta.(*apiClient)
 	var diags diag.Diagnostics
 
-	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
+	subId, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -379,7 +379,7 @@ func resourceRedisCloudActiveActiveRegionRead(ctx context.Context, d *schema.Res
 
 	var diags diag.Diagnostics
 
-	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
+	subId, err := strconv.Atoi(d.Id())
 	regions, err := api.client.Regions.List(ctx, subId)
 	if err != nil {
 		if _, ok := err.(*subscriptions.NotFound); ok {
