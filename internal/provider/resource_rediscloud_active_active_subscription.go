@@ -366,7 +366,6 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 }
 
 func buildCreateActiveActiveCloudProviders(provider string, creationPlan map[string]interface{}) ([]*subscriptions.CreateCloudProvider, error) {
-
 	createRegions := make([]*subscriptions.CreateRegion, 0)
 	if regions := creationPlan["region"].(*schema.Set).List(); len(regions) != 0 {
 
@@ -409,12 +408,12 @@ func buildCreateActiveActiveCloudProviders(provider string, creationPlan map[str
 }
 
 func buildSubscriptionCreatePlanAADatabases(planMap map[string]interface{}) []*subscriptions.CreateDatabase {
-
 	createDatabases := make([]*subscriptions.CreateDatabase, 0)
 
 	dbName := "creation-plan-db-"
 	idx := 1
 	numDatabases := planMap["quantity"].(int)
+	memoryLimitInGB := planMap["memory_limit_in_gb"].(float64)
 	supportOSSClusterAPI := planMap["support_oss_cluster_api"].(bool)
 	regions := planMap["region"]
 	var localThroughputs []*subscriptions.CreateLocalThroughput
@@ -427,21 +426,20 @@ func buildSubscriptionCreatePlanAADatabases(planMap map[string]interface{}) []*s
 		})
 	}
 	// create the remaining DBs with all other modules
-	createDatabases = append(createDatabases, createAADatabase(dbName, &idx, supportOSSClusterAPI, localThroughputs, numDatabases)...)
+	createDatabases = append(createDatabases, createAADatabase(dbName, &idx, supportOSSClusterAPI, localThroughputs, numDatabases, memoryLimitInGB)...)
 
 	return createDatabases
 }
 
 // createDatabase returns a CreateDatabase struct with the given parameters
-func createAADatabase(dbName string, idx *int, supportOSSClusterAPI bool, localThroughputs []*subscriptions.CreateLocalThroughput, numDatabases int) []*subscriptions.CreateDatabase {
-
+func createAADatabase(dbName string, idx *int, supportOSSClusterAPI bool, localThroughputs []*subscriptions.CreateLocalThroughput, numDatabases int, memoryLimitInGB float64) []*subscriptions.CreateDatabase {
 	var databases []*subscriptions.CreateDatabase
 	for i := 0; i < numDatabases; i++ {
 		createDatabase := subscriptions.CreateDatabase{
 			Name:                       redis.String(dbName + strconv.Itoa(*idx)),
 			Protocol:                   redis.String("redis"),
 			SupportOSSClusterAPI:       redis.Bool(supportOSSClusterAPI),
-			MemoryLimitInGB:            redis.Float64(1000),
+			MemoryLimitInGB:            redis.Float64(memoryLimitInGB),
 			LocalThroughputMeasurement: localThroughputs,
 			Quantity:                   redis.Int(1),
 		}
