@@ -71,8 +71,9 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 			"cloud_provider": {
 				Description:      "A cloud provider string either GCP or AWS",
 				Type:             schema.TypeString,
-				Required:         true,
 				ForceNew:         true,
+				Optional:         true,
+				Default:          "AWS",
 				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^(GCP|AWS)$"), "must be 'GCP' or 'AWS'")),
 			},
 			"creation_plan": {
