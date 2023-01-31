@@ -258,6 +258,9 @@ func regionsCreate(ctx context.Context, subId int, regionsToCreate []*regions.Re
 		return nil
 	}
 
+	subscriptionMutex.Lock(subId)
+	defer subscriptionMutex.Unlock(subId)
+
 	// Call GO API createRegion for all non-existing regions
 	for _, currentRegion := range regionsToCreate {
 		createDatabases := make([]*regions.CreateDatabase, 0)
@@ -286,8 +289,6 @@ func regionsCreate(ctx context.Context, subId int, regionsToCreate []*regions.Re
 			return err
 		}
 
-		subscriptionMutex.Lock(subId)
-
 		// Wait for the subscription to be active before deleting it.
 		if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 			return err
@@ -299,8 +300,6 @@ func regionsCreate(ctx context.Context, subId int, regionsToCreate []*regions.Re
 		if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 			return err
 		}
-
-		subscriptionMutex.Unlock(subId)
 	}
 
 	return nil
@@ -332,6 +331,9 @@ func regionsUpdateDatabases(ctx context.Context, subId int, api *apiClient, regi
 	}
 
 	if len(databaseUpdates) > 0 {
+		subscriptionMutex.Lock(subId)
+		defer subscriptionMutex.Unlock(subId)
+
 		for dbId, localRegionProperties := range databaseUpdates {
 			dbUpdate := databases.UpdateActiveActiveDatabase{
 				Regions: localRegionProperties,
@@ -340,29 +342,28 @@ func regionsUpdateDatabases(ctx context.Context, subId int, api *apiClient, regi
 			if err != nil {
 				return err
 			}
+
+			// Wait for the subscription to be active before deleting it.
+			if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+				return err
+			}
+
+			// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
+			// This additional wait ensures that the databases are deleted before the subscription is deleted.
+			time.Sleep(10 * time.Second) //lintignore:R018
+			if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+				return err
+			}
 		}
-	}
-
-	// TODO: check mutex is locked early enough
-	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
-
-	// Wait for the subscription to be active before deleting it.
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return err
-	}
-
-	// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
-	// This additional wait ensures that the databases are deleted before the subscription is deleted.
-	time.Sleep(10 * time.Second) //lintignore:R018
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return err
 	}
 
 	return nil
 }
 
 func regionsDelete(ctx context.Context, subId int, regionsToDelete []*regions.Region, api *apiClient) error {
+	subscriptionMutex.Lock(subId)
+	defer subscriptionMutex.Unlock(subId)
+
 	deleteRegions := regions.DeleteRegions{}
 	for _, region := range regionsToDelete {
 		deleteRegion := regions.DeleteRegion{
@@ -375,9 +376,6 @@ func regionsDelete(ctx context.Context, subId int, regionsToDelete []*regions.Re
 	if err != nil {
 		return err
 	}
-
-	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
 
 	// Wait for the subscription to be active before deleting it.
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {

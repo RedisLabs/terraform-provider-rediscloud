@@ -248,6 +248,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 	// Get regions from /subscriptions/{subscriptionId}/regions, this will use the Regions API
 	regions, err := api.client.Regions.List(ctx, subId)
 	if err != nil {
+		subscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -288,11 +289,13 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 	// Confirm Subscription Active status before creating database
 	err = waitForSubscriptionToBeActive(ctx, subId, api)
 	if err != nil {
+		subscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
 	dbId, err := api.client.Database.ActiveActiveCreate(ctx, subId, createDatabase)
 	if err != nil {
+		subscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -301,10 +304,14 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 	// Confirm Database Active status
 	err = waitForDatabaseToBeActive(ctx, subId, dbId, api)
 	if err != nil {
+		subscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
-	// Locate Databases to confirm Active status
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		subscriptionMutex.Unlock(subId)
+		return diag.FromErr(err)
+	}
 
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
