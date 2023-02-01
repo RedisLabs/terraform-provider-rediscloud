@@ -8,9 +8,7 @@ description: |-
 # Resource: rediscloud_subscription
 
 Creates a Subscription within your Redis Enterprise Cloud Account.
-This resource is responsible for creating subscriptions and the databases within
- that subscription. This allows Redis Enterprise Cloud to provision
-your databases defined in separate resources in the most efficient way.
+This resource is responsible for creating and managing subscriptions.
 
 ~> **Note:** The creation_plan block allows the API server to create a well-optimised hardware specification for your databases in the cluster.
 The attributes inside the block are used by the provider to create initial 
@@ -31,9 +29,9 @@ data "rediscloud_cloud_account" "account" {
   provider_type = "AWS"
 }
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_subscription" "subscription-resource" {
 
-  name = "example"
+  name = "subscription-name"
   payment_method = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
@@ -68,8 +66,8 @@ resource "rediscloud_subscription" "example" {
 The following arguments are supported:
 
 * `name` - (Required) A meaningful name to identify the subscription
-* `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined.
-* `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types. 
+* `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'
+* `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types
 * `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of ‘ram-and-flash’. Default: ‘ram’
 * `allowlist` - (Optional) An allowlist object, documented below 
 * `cloud_provider` - (Required) A cloud provider object, documented below 
@@ -80,7 +78,7 @@ The `allowlist` block supports:
 * `security_group_ids` - (Required) Set of security groups that are allowed to access the databases associated with this subscription
 * `cidrs` - (Optional) Set of CIDR ranges that are allowed to access the databases associated with this subscription
 
-~> **Note:** `allowlist` is only available when you run on your own cloud account, and not one that Redis Labs provided (i.e `cloud_account_id` != 1)
+~> **Note:** `allowlist` is only available when you run on your own cloud account, and not one that Redis provided (i.e `cloud_account_id` != 1)
 
 The `cloud_provider` block supports:
 
@@ -88,22 +86,21 @@ The `cloud_provider` block supports:
 * `cloud_account_id` - (Optional) Cloud account identifier. Default: Redis Labs internal cloud account
 (using Cloud Account ID = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created
 only with Redis Labs internal cloud account
-* `region` - (Required) Cloud networking details, per region, documented below
+* `region` - (Required) A region object, documented below
 
 The `creation_plan` block supports:
 
 * `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database.
 * `modules` - (Required) a list of modules that will be used by the databases in this subscription. Not currently compatible with ‘ram-and-flash’ memory storage.
-Example: `modules = ["RedisJSON", RedisBloom"]`.
+Example: `modules = ["RedisJSON", RedisBloom"]`
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
-* `replication` - (Required) Databases replication. Set to `true` if any of your databases will use replication.
-* `quantity` - (Required) The planned number of databases in the subscription.
+* `replication` - (Required) Databases replication. Set to `true` if any of your databases will use replication
+* `quantity` - (Required) The planned number of databases in the subscription
 * `throughput_measurement_by` - (Required) Throughput measurement method that will be used by your databases, (either ‘number-of-shards’ or ‘operations-per-second’)
-* `throughput_measurement_value` - (Required) Throughput value that will be used by your databases (as applies to selected measurement method). The value needs to be the maximum throughput measurement value 
-defined in one of your databases.
-* `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. 
+* `throughput_measurement_value` - (Required) Throughput value that will be used by your databases (as applies to selected measurement method). The value needs to be the maximum throughput measurement value defined in one of your databases
+* `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters
 Estimated average size (measured in bytes) of the items stored in the database. The value needs to 
-be the maximum average item size defined in one of your databases.  Default: 0
+be the maximum average item size defined in one of your databases.  Default: 1000
 
 ~>**Note:** If the number of modules exceeds the `quantity` then additional creation-plan databases will be created with the modules defined in the `modules` block.
 
@@ -113,9 +110,9 @@ The cloud_provider `region` block supports:
 
 * `region` - (Required) Deployment region as defined by cloud provider
 * `multiple_availability_zones` - (Optional) Support deployment on multiple availability zones within the selected region. Default: ‘false’
-* `networking_deployment_cidr` - (Required) Deployment CIDR mask. The total number of bits must be 24 (x.x.x.x/24).
+* `networking_deployment_cidr` - (Required) Deployment CIDR mask. The total number of bits must be 24 (x.x.x.x/24)
 * `networking_vpc_id` - (Optional) Either an existing VPC Id (already exists in the specific region) or create a new VPC
-(if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4625884ad’) and existing
+(if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4986384ad’) and existing
 within the hosting account.
 * `preferred_availability_zones` - (Required) Availability zones deployment preferences (for the selected provider & region). If multiple_availability_zones is set to 'true', you must select three availability zones from the list.
 
@@ -147,7 +144,7 @@ The `networks` block has these attributes:
 `rediscloud_subscription` can be imported using the ID of the subscription, e.g.
 
 ```
-$ terraform import rediscloud_subscription.example 12345678
+$ terraform import rediscloud_subscription.subscription-resource 12345678
 ```
 
 ~> **Note:** the creation_plan block will be ignored during imports.
