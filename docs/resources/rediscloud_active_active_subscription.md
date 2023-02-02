@@ -34,7 +34,6 @@ resource "rediscloud_active_active_subscription" "example" {
 	creation_plan {
 	  memory_limit_in_gb = 1
 	  quantity = 1
-	  support_oss_cluster_api=false
 	  region {
 		  region = "us-east-1"
 		  networking_deployment_cidr = "192.168.0.0/24"
@@ -72,7 +71,6 @@ only with Redis Labs internal cloud account
 The `creation_plan` block supports:
 
 * `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database.
-* `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `quantity` - (Required) The planned number of databases in the subscription.
 
 

@@ -41,7 +41,6 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.write_operations_per_second", "1000"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.read_operations_per_second", "1000"),
@@ -79,7 +78,6 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.write_operations_per_second", "1000"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.read_operations_per_second", "1000"),
@@ -227,7 +225,6 @@ resource "rediscloud_active_active_subscription" "example" {
 	creation_plan {
 		memory_limit_in_gb = 1
 		quantity = 1
-		support_oss_cluster_api=false
 		region {
 			region = "us-east-1"
 			networking_deployment_cidr = "192.168.0.0/24"
@@ -267,7 +264,6 @@ resource "rediscloud_active_active_subscription" "example" {
 	creation_plan {
 	  	memory_limit_in_gb = 2
 	  	quantity = 1
-	  	support_oss_cluster_api=false
 	  	region {
 			region = "us-east-1"
 			networking_deployment_cidr = "192.168.0.0/24"
@@ -294,7 +290,6 @@ resource "rediscloud_active_active_subscription" "example" {
   creation_plan {
     memory_limit_in_gb = 2
     quantity = 1
-    support_oss_cluster_api=false
     region {
 		region = "us-east-1"
 		networking_deployment_cidr = "192.168.0.0/24"
