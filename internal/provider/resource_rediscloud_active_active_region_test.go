@@ -101,7 +101,7 @@ func TestAccResourceRedisCloudActiveActiveRegion_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "region.0.region", "us-east-1"),
 					resource.TestCheckResourceAttr(resourceName, "region.0.networking_deployment_cidr", "10.0.0.0/24"),
 					resource.TestCheckResourceAttr(resourceName, "region.1.region", "eu-west-1"),
-					resource.TestCheckResourceAttr(resourceName, "region.1.networking_deployment_cidr", "10.1.0.0/24"),
+					resource.TestCheckResourceAttr(resourceName, "region.1.networking_deployment_cidr", "10.2.0.0/24"),
 				),
 			},
 			{
@@ -341,7 +341,7 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 	}
 	region {
 	  region = "eu-west-1"
-	  networking_deployment_cidr = "10.1.0.0/24"
+	  networking_deployment_cidr = "10.2.0.0/24"
 	  recreate_region = false
 	  database {
 		id = rediscloud_active_active_subscription_database.example.db_id
