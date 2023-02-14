@@ -127,7 +127,6 @@ resource "rediscloud_active_active_subscription" "example" {
 	creation_plan {
 		memory_limit_in_gb = 1
 		quantity = 1
-		support_oss_cluster_api=false
 		region {
 			region = "us-east-1"
 			networking_deployment_cidr = "10.0.0.0/24"
