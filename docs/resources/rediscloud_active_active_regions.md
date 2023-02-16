@@ -20,10 +20,9 @@ resource "rediscloud_active_active_subscription_regions" "regions-resource" {
 	delete_regions = false
 	region {
 	  region = "us-east-1"
-	  networking_deployment_cidr = "10.0.0.0/24" 
-	  recreate_region = false
+	  networking_deployment_cidr = "192.168.0.0/24" 
 	  database {
-		database_id = rediscloud_active_active_subscription_database.database-resource.id
+		database_id = rediscloud_active_active_subscription_database.database-resource.db_id
     database_name = rediscloud_active_active_subscription_database.database-resource.name
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
@@ -32,25 +31,13 @@ resource "rediscloud_active_active_subscription_regions" "regions-resource" {
 	region {
 	  region = "us-east-2"
 	  networking_deployment_cidr = "10.1.0.0/24" 
-	  recreate_region = false
 	  database {
-		database_id = rediscloud_active_active_subscription_database.database-resource.id
+		database_id = rediscloud_active_active_subscription_database.database-resource.db_id
     database_name = rediscloud_active_active_subscription_database.database-resource.name
-		local_write_operations_per_second = 1000
-		local_read_operations_per_second = 1000
+		local_write_operations_per_second = 2000
+		local_read_operations_per_second = 4000
 	  }
 	}
-	region {
-		region = "eu-west-2"
-		networking_deployment_cidr = "10.2.0.0/24" 
-		recreate_region = false
-		database {
-		  database_id = rediscloud_active_active_subscription_database.database-resource.id
-      database_name = rediscloud_active_active_subscription_database.database-resource.name
-		  local_write_operations_per_second = 1500
-		  local_read_operations_per_second = 1500
-		}
-	  }
  }
 ```
 
