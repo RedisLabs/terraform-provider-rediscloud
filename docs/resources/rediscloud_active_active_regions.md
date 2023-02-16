@@ -27,7 +27,7 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 	  networking_deployment_cidr = "10.0.0.0/24" 
 	  recreate_region = false
 	  database {
-		id = "7839"
+		database_id = "7839"
 		database_name = "test-db-1"
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
@@ -38,7 +38,7 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 	  networking_deployment_cidr = "10.1.0.0/24" 
 	  recreate_region = false
 	  database {
-		id = "7839"
+		database_id = "7839"
 		database_name = "test-db-1"
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
@@ -49,7 +49,7 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 		networking_deployment_cidr = "10.2.0.0/24" 
 		recreate_region = false
 		database {
-		  id = "7839"
+		  database_id = "7839"
 		  database_name = "test-db-1"
 		  local_write_operations_per_second = 1500
 		  local_read_operations_per_second = 1500
@@ -78,7 +78,7 @@ The `region` block supports:
 
 The `database` block supports:
 
-* `id` - (Required) Database id beloging to the subscription
+* `database_id` - (Required) Database ID belonging to the subscription
 * `database_name` - (Required) Database name belonging to the subscription
 * `local_write_operations_per_second` - (Required) Local throughput measurement for an active-active region
 * `local_read_operations_per_second` - (Required) Local throughput measurement for an active-active region

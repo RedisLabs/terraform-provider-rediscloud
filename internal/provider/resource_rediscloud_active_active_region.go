@@ -89,7 +89,7 @@ func resourceRedisCloudActiveActiveRegion() *schema.Resource {
 							MinItems:    1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"id": {
+									"database_id": {
 										Description: "A numeric id for the database",
 										Type:        schema.TypeInt,
 										Required:    true,
@@ -405,7 +405,7 @@ func buildResourceDataFromAPIRegions(regionsFromAPI []*regions.Region, regionsFr
 		var dbs []interface{}
 		for _, database := range region.Databases {
 			databaseMapString := map[string]interface{}{
-				"id":                                database.DatabaseId,
+				"database_id":                       database.DatabaseId,
 				"database_name":                     database.DatabaseName,
 				"local_read_operations_per_second":  database.ReadOperationsPerSecond,
 				"local_write_operations_per_second": database.WriteOperationsPerSecond,
@@ -436,7 +436,7 @@ func buildRegionsFromResourceData(rd *schema.Set) map[string]*regions.Region {
 		for _, database := range regionMap["database"].(*schema.Set).List() {
 			databaseMap := database.(map[string]interface{})
 			db := regions.Database{
-				DatabaseId:               redis.Int(databaseMap["id"].(int)),
+				DatabaseId:               redis.Int(databaseMap["database_id"].(int)),
 				DatabaseName:             redis.String(databaseMap["database_name"].(string)),
 				ReadOperationsPerSecond:  redis.Int(databaseMap["local_read_operations_per_second"].(int)),
 				WriteOperationsPerSecond: redis.Int(databaseMap["local_write_operations_per_second"].(int)),
