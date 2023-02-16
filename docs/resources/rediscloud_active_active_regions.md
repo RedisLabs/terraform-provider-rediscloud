@@ -28,6 +28,7 @@ resource "rediscloud_active_active_subscription_regions" "regions-resource" {
 	  recreate_region = false
 	  database {
 		database_id = rediscloud_active_active_subscription_database.database-resource.id
+    database_name = rediscloud_active_active_subscription_database.database-resource.name
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
 	  }
@@ -38,6 +39,7 @@ resource "rediscloud_active_active_subscription_regions" "regions-resource" {
 	  recreate_region = false
 	  database {
 		database_id = rediscloud_active_active_subscription_database.database-resource.id
+    database_name = rediscloud_active_active_subscription_database.database-resource.name
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
 	  }
@@ -48,6 +50,7 @@ resource "rediscloud_active_active_subscription_regions" "regions-resource" {
 		recreate_region = false
 		database {
 		  database_id = rediscloud_active_active_subscription_database.database-resource.id
+      database_name = rediscloud_active_active_subscription_database.database-resource.name
 		  local_write_operations_per_second = 1500
 		  local_read_operations_per_second = 1500
 		}
@@ -73,6 +76,7 @@ The `region` block supports:
 The `database` block supports:
 
 * `database_id` - (Required) Database ID belonging to the subscription
+* `database_name` - (Required) Database name belonging to the subscription
 * `local_write_operations_per_second` - (Required) Local write operations per second for this active-active region
 * `local_read_operations_per_second` - (Required) Local read operations per second for this active-active region
 
