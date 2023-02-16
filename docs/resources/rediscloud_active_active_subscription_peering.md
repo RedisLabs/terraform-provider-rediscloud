@@ -27,9 +27,7 @@ resource "rediscloud_active_active_subscription_peering" "example" {
    destination_region = "eu-west-2"
    aws_account_id = "123456789012"
    vpc_id = "vpc-01234567890"
-   vpc_cidrs = [
-    "10.0.10.0/24"
-    ]
+   vpc_cidr = "10.0.10.0/24"
 }
 
 resource "aws_vpc_peering_connection_accepter" "example-peering" {
