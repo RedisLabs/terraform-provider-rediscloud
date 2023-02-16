@@ -14,11 +14,7 @@ your regions defined in separate resources in the most efficient way.
 
 ## Example Usage
 
-```hcl
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-}
-  
+```hcl  
 resource "rediscloud_active_active_subscription_regions" "regions-resource" {
 	subscription_id = rediscloud_active_active_subscription.subscription-resource.id
 	delete_regions = false
@@ -34,7 +30,7 @@ resource "rediscloud_active_active_subscription_regions" "regions-resource" {
 	  }
 	}
 	region {
-	  region = "eu-west-1"
+	  region = "us-east-2"
 	  networking_deployment_cidr = "10.1.0.0/24" 
 	  recreate_region = false
 	  database {
