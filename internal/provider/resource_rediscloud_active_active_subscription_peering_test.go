@@ -58,7 +58,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 					resource.TestCheckResourceAttrSet(resourceName, "provider_name"),
 					resource.TestCheckResourceAttrSet(resourceName, "aws_account_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
-					resource.TestCheckResourceAttr(resourceName, "vpc_cidrs.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "vpc_cidr", cidrRange),
 					resource.TestCheckResourceAttrSet(resourceName, "source_region"),
 					resource.TestCheckResourceAttrSet(resourceName, "destination_region"),
 					resource.TestCheckResourceAttrSet(resourceName, "aws_peering_id"),
@@ -145,7 +145,7 @@ resource "rediscloud_active_active_subscription_peering" "test" {
   destination_region = "%s"
   aws_account_id = "%s"
   vpc_id = "%s"
-  vpc_cidrs = ["%s"]
+  vpc_cidr = "%s"
 }
 `
 
