@@ -68,7 +68,6 @@ The following arguments are supported:
 
 The `region` block supports:
 
-* `region_id` - (Optional) Region ID
 * `region` - (Required) Region name
 * `vpc_id` - (Required) Identifier of the VPC to be peered
 * `networking_deployment_cidr` - (Required) Deployment CIDR mask
