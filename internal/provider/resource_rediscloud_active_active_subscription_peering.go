@@ -85,15 +85,12 @@ func resourceRedisCloudActiveActiveSubscriptionPeering() *schema.Resource {
 				Computed:    true,
 				ForceNew:    true,
 			},
-			"vpc_cidrs": {
-				Description: "CIDR range(s) of the VPC to be peered",
-				Type:        schema.TypeSet,
-				ForceNew:    true,
-				Optional:    true,
-				Elem: &schema.Schema{
-					Type:             schema.TypeString,
-					ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
-				},
+			"vpc_cidr": {
+				Description:      "CIDR range of the VPC to be peered",
+				Type:             schema.TypeString,
+				ForceNew:         true,
+				Optional:         true,
+				ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
 			},
 			"gcp_project_id": {
 				Description: "GCP project ID that the VPC to be peered lives in",
@@ -173,7 +170,7 @@ func resourceRedisCloudSubscriptionActiveActivePeeringCreate(ctx context.Context
 			return diag.Errorf("`vpc_id` must be set when `provider_name` is `AWS`")
 		}
 
-		vpcCIDRs, ok := d.GetOk("vpc_cidrs")
+		vpcCIDR, ok := d.GetOk("vpc_cidr")
 		if !ok {
 			return diag.Errorf("`vpc_cidrs` must be set when `provider_name` is `AWS`")
 		}
@@ -182,7 +179,7 @@ func resourceRedisCloudSubscriptionActiveActivePeeringCreate(ctx context.Context
 		peeringRequest.DestinationRegion = redis.String(destinationRegion.(string))
 		peeringRequest.AWSAccountID = redis.String(awsAccountID.(string))
 		peeringRequest.VPCId = redis.String(vpcID.(string))
-		peeringRequest.VPCCidrs = setToStringSlice(vpcCIDRs.(*schema.Set))
+		peeringRequest.VPCCidr = redis.String(vpcCIDR.(string))
 	}
 
 	if providerName == "GCP" {
@@ -275,7 +272,7 @@ func resourceRedisCloudSubscriptionActiveActivePeeringRead(ctx context.Context, 
 		if err := d.Set("vpc_id", redis.StringValue(peering.VPCId)); err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("vpc_cidrs", redis.StringSliceValue(peering.VPCCidrs...)); err != nil {
+		if err := d.Set("vpc_cidr", redis.StringValue(peering.VPCCidr)); err != nil {
 			return diag.FromErr(err)
 		}
 		if err := d.Set("source_region", redis.StringValue(sourceRegion)); err != nil {

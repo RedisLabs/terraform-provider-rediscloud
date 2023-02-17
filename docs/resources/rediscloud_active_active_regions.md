@@ -22,20 +22,20 @@ resource "rediscloud_active_active_subscription_regions" "regions-resource" {
 	  region = "us-east-1"
 	  networking_deployment_cidr = "192.168.0.0/24" 
 	  database {
-		database_id = rediscloud_active_active_subscription_database.database-resource.db_id
-    database_name = rediscloud_active_active_subscription_database.database-resource.name
-		local_write_operations_per_second = 1000
-		local_read_operations_per_second = 1000
+		  database_id = rediscloud_active_active_subscription_database.database-resource.db_id
+      database_name = rediscloud_active_active_subscription_database.database-resource.name
+		  local_write_operations_per_second = 1000
+		  local_read_operations_per_second = 1000
 	  }
 	}
 	region {
 	  region = "us-east-2"
 	  networking_deployment_cidr = "10.0.1.0/24" 
 	  database {
-		database_id = rediscloud_active_active_subscription_database.database-resource.db_id
-    database_name = rediscloud_active_active_subscription_database.database-resource.name
-		local_write_operations_per_second = 2000
-		local_read_operations_per_second = 4000
+		  database_id = rediscloud_active_active_subscription_database.database-resource.db_id
+      database_name = rediscloud_active_active_subscription_database.database-resource.name
+		  local_write_operations_per_second = 2000
+		  local_read_operations_per_second = 4000
 	  }
 	}
  }
@@ -51,7 +51,9 @@ The following arguments are supported:
 
 The `region` block supports:
 
+* `region_id` - (Computed) The ID of the region, as created by the API
 * `region` - (Required) Region name
+* `vpc_id` - (Computed) Identifier of the VPC to be peered, set by the API
 * `networking_deployment_cidr` - (Required) Deployment CIDR mask
 * `recreate_region` - (Optional) Protection flag, needs to be set if a region has to be re-created. A region will need to be re-created in the case of a change on the `networking_deployment_cidr` field. During re-create, the region will be deleted (so the `delete_regions` flag also needs to be set) and then created again. Default: 'false'
 * `database` - (Required) A block defining the write and read operations in the region, per database, documented below
