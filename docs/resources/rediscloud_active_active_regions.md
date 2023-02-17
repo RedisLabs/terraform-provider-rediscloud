@@ -14,47 +14,30 @@ your regions defined in separate resources in the most efficient way.
 
 ## Example Usage
 
-```hcl
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-}
-  
-resource "rediscloud_active_active_subscription_regions" "example" {
-	subscription_id = 151945
+```hcl  
+resource "rediscloud_active_active_subscription_regions" "regions-resource" {
+	subscription_id = rediscloud_active_active_subscription.subscription-resource.id
 	delete_regions = false
 	region {
 	  region = "us-east-1"
-	  networking_deployment_cidr = "10.0.0.0/24" 
-	  recreate_region = false
+	  networking_deployment_cidr = "192.168.0.0/24" 
 	  database {
-		database_id = "7839"
-		database_name = "test-db-1"
-		local_write_operations_per_second = 1000
-		local_read_operations_per_second = 1000
+		  database_id = rediscloud_active_active_subscription_database.database-resource.db_id
+      database_name = rediscloud_active_active_subscription_database.database-resource.name
+		  local_write_operations_per_second = 1000
+		  local_read_operations_per_second = 1000
 	  }
 	}
 	region {
-	  region = "eu-west-1"
-	  networking_deployment_cidr = "10.1.0.0/24" 
-	  recreate_region = false
+	  region = "us-east-2"
+	  networking_deployment_cidr = "10.0.1.0/24" 
 	  database {
-		database_id = "7839"
-		database_name = "test-db-1"
-		local_write_operations_per_second = 1000
-		local_read_operations_per_second = 1000
+		  database_id = rediscloud_active_active_subscription_database.database-resource.db_id
+      database_name = rediscloud_active_active_subscription_database.database-resource.name
+		  local_write_operations_per_second = 2000
+		  local_read_operations_per_second = 4000
 	  }
 	}
-	region {
-		region = "eu-west-2"
-		networking_deployment_cidr = "10.2.0.0/24" 
-		recreate_region = false
-		database {
-		  database_id = "7839"
-		  database_name = "test-db-1"
-		  local_write_operations_per_second = 1500
-		  local_read_operations_per_second = 1500
-		}
-	  }
  }
 ```
 
@@ -72,32 +55,30 @@ The `region` block supports:
 * `region` - (Required) Region name
 * `vpc_id` - (Computed) Identifier of the VPC to be peered, set by the API
 * `networking_deployment_cidr` - (Required) Deployment CIDR mask
-* `recreate_region` - (Optional) Flag, needs to be set if a region has to be re-created. A region will need to be re-created in the case of a change on 
-  the `networking_deployment_cidr` field. During re-create the region will be deleted (so the `delete_regions` flag also needs to be set) and then created again.
-* `database` - (Required) The database resource, documented below
+* `recreate_region` - (Optional) Protection flag, needs to be set if a region has to be re-created. A region will need to be re-created in the case of a change on the `networking_deployment_cidr` field. During re-create, the region will be deleted (so the `delete_regions` flag also needs to be set) and then created again. Default: 'false'
+* `database` - (Required) A block defining the write and read operations in the region, per database, documented below
 
 The `database` block supports:
 
 * `database_id` - (Required) Database ID belonging to the subscription
 * `database_name` - (Required) Database name belonging to the subscription
-* `local_write_operations_per_second` - (Required) Local throughput measurement for an active-active region
-* `local_read_operations_per_second` - (Required) Local throughput measurement for an active-active region
+* `local_write_operations_per_second` - (Required) Local write operations per second for this active-active region
+* `local_read_operations_per_second` - (Required) Local read operations per second for this active-active region
 
 
 ### Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 60 mins) Used when creating the subscription
-* `update` - (Defaults to 60 mins) Used when updating the subscription
-* `delete` - (Defaults to 10 mins) Used when destroying the subscription
+* `create` - (Defaults to 60 mins) Used when creating the regions
+* `update` - (Defaults to 60 mins) Used when updating the regions
+* `delete` - (Defaults to 10 mins) Used when destroying the regions
 
 ## Import
 
 `rediscloud_active_active_regions` can be imported using the ID of the subscription, e.g.
 
 ```
-$ terraform import rediscloud_active_active_regions.example 12345678
+$ terraform import rediscloud_active_active_regions.regions-resource 12345678
 ```
 
-~> **Note:** the creation_plan block will be ignored during imports.
