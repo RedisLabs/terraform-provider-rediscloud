@@ -24,8 +24,6 @@ resource "rediscloud_active_active_subscription" "subscription-resource" {
   creation_plan {
     memory_limit_in_gb = 1
     quantity = 1
-    replication=false
-    support_oss_cluster_api=true
 	region {
 		region = "us-east-1"
 		networking_deployment_cidr = "192.168.0.0/24"
@@ -36,7 +34,7 @@ resource "rediscloud_active_active_subscription" "subscription-resource" {
 		region = "us-east-2"
 		networking_deployment_cidr = "10.0.1.0/24"
 		write_operations_per_second = 1000
-		read_operations_per_second = 1000
+		read_operations_per_second = 2000
 	}
   }
 }
@@ -45,10 +43,6 @@ resource "rediscloud_active_active_subscription_database" "database-resource" {
     subscription_id = rediscloud_active_active_subscription.subscription-resource.id
     name = "database-name"
     memory_limit_in_gb = 1
-    support_oss_cluster_api = false
-    enable_tls = false
-    data_eviction = "volatile-lru"
-    
     global_data_persistence = "aof-every-1-second"
     global_password = "some-random-pass-2" 
     global_source_ips = ["192.168.0.0/16"]
@@ -73,11 +67,11 @@ resource "rediscloud_active_active_subscription_database" "database-resource" {
    }
 }
 
-output "us-east-public" {
+output "us-east-1-public-endpoints" {
   value = rediscloud_active_active_subscription_database.database-resource.public_endpoint.us-east-1
 }
 
-output "all-private-endpoints" {
+output "us-east-2-private-endpoints" {
   value = rediscloud_active_active_subscription_database.database-resource.private_endpoint.us-east-1
 }
 ```
