@@ -33,7 +33,7 @@ resource "rediscloud_active_active_subscription_peering" "peering-resource" {
 }
 
 resource "aws_vpc_peering_connection_accepter" "aws-peering-resource" {
-  vpc_peering_connection_id = rediscloud_active_active_subscription_peering.pering-resource.aws_peering_id
+  vpc_peering_connection_id = rediscloud_active_active_subscription_peering.peering-resource.aws_peering_id
   auto_accept               = true
 }
 ```
