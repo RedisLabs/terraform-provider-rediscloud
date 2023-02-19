@@ -63,7 +63,7 @@ resource "rediscloud_active_active_subscription_peering" "peering-resource" {
 resource "google_compute_network_peering" "gcp-peering-resource" {
   name         = "peering-gcp-example"
   network      = data.google_compute_network.network.self_link
-  peer_network = "https://www.googleapis.com/compute/v1/projects/${rediscloud_active_active_subscription_peering.peering-reasource.gcp_redis_project_id}/global/networks/${rediscloud_active_active_subscription_peering.example.gcp_redis_network_name}"
+  peer_network = "https://www.googleapis.com/compute/v1/projects/${rediscloud_active_active_subscription_peering.peering-resource.gcp_redis_project_id}/global/networks/${rediscloud_active_active_subscription_peering.example.gcp_redis_network_name}"
 }
 ```
 
