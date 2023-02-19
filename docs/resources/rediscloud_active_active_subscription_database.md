@@ -32,7 +32,7 @@ resource "rediscloud_active_active_subscription" "subscription-resource" {
 	}
 	region {
 		region = "us-east-2"
-		networking_deployment_cidr = ""10.0.1.0/24"
+		networking_deployment_cidr = "10.0.1.0/24"
 		write_operations_per_second = 1000
 		read_operations_per_second = 2000
 	}
