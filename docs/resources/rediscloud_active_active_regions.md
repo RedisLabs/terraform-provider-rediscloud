@@ -8,9 +8,7 @@ description: |-
 # Resource: rediscloud_active_active_regions
 
 Creates an Active Active Regions within your Redis Enterprise Cloud Account.
-This resource is responsible for creating regions within
-that subscription. This allows Redis Enterprise Cloud to provision
-your regions defined in separate resources in the most efficient way.
+This resource is responsible for creating and managing regions within that subscription. This allows Redis Enterprise Cloud to provision your cluster within each defined region in separate blocks efficiently.
 
 ## Example Usage
 
