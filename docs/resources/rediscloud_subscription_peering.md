@@ -97,7 +97,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Attribute reference
 
-* `status` is set to the current status of the account - `initiating-request`, `pending-acceptance`, `active`, `inactive` or `failed`.
+* `status` is set to the current status of the peering - `initiating-request`, `pending-acceptance`, `active`, `inactive` or `failed`.
 
 **AWS ONLY:**
 
