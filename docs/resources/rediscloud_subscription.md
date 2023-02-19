@@ -24,11 +24,6 @@ data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
 
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS"
-}
-
 resource "rediscloud_subscription" "subscription-resource" {
 
   name = "subscription-name"
@@ -38,11 +33,11 @@ resource "rediscloud_subscription" "subscription-resource" {
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
     region {
       region = "eu-west-1"
+      multiple_availability_zones = true
       networking_deployment_cidr = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
+      preferred_availability_zones = ["euw1-az1, euw1-az2, euw1-az3"]
     }
   }
 
@@ -52,8 +47,8 @@ resource "rediscloud_subscription" "subscription-resource" {
     average_item_size_in_bytes = 1
     memory_limit_in_gb = 2
     quantity = 1
-    replication=false
-    support_oss_cluster_api=false
+    replication= false
+    support_oss_cluster_api= false
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
     modules = ["RediSearch", "RedisBloom"]
