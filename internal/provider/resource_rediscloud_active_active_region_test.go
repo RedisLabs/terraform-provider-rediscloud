@@ -58,32 +58,32 @@ func TestAccResourceRedisCloudActiveActiveRegion_CRUDI(t *testing.T) {
 					},
 				),
 			},
-			// {
-			// 	// Checks region re-created correctly
-			// 	Config: fmt.Sprintf(testAccResourceRedisCloudReCreateActiveActiveRegion, subName, dbName, dbPass),
-			// 	Check: resource.ComposeTestCheckFunc(
-			// 		resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.3.0.0/24"),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1500"),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1500"),
-			// 	),
-			// },
-			// {
-			// 	// Checks region DB updated correctly
-			// 	Config: fmt.Sprintf(testAccResourceRedisCloudUpdateDBActiveActiveRegion, subName, dbName, dbPass),
-			// 	Check: resource.ComposeTestCheckFunc(
-			// 		resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.3.0.0/24"),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1000"),
-			// 		resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1000"),
-			// 	),
-			// },
+			{
+				// Checks region re-created correctly
+				Config: fmt.Sprintf(testAccResourceRedisCloudReCreateActiveActiveRegion, subName, dbName, dbPass),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.3.0.0/24"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1500"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1500"),
+				),
+			},
+			{
+				// Checks region DB updated correctly
+				Config: fmt.Sprintf(testAccResourceRedisCloudUpdateDBActiveActiveRegion, subName, dbName, dbPass),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.3.0.0/24"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1000"),
+				),
+			},
 			{
 				// Checks region deleted correctly
 				Config: fmt.Sprintf(testAccResourceRedisCloudDeleteActiveActiveRegion, subName, dbName, dbPass),
