@@ -165,3 +165,4 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/l
 ```
 $ terraform import rediscloud_subscription_database.database-resource 123456/12345678
 ```
+
