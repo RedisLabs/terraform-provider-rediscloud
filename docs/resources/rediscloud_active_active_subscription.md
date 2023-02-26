@@ -10,7 +10,7 @@ description: |-
 Creates an Active-Active Subscription within your Redis Enterprise Cloud Account.
 This resource is responsible for creating and managing subscriptions.
 
-~> **Note:** The creation_plan block allows the API server to create a well-optimised hardware specification for your databases in the cluster.
+~> **Note:** The creation_plan block allows the API server to create a well-optimised infrastructure for your databases in the cluster.
 The attributes inside the block are used by the provider to create initial 
 databases. Those databases will be deleted after provisioning a new 
 subscription, then the databases defined as separate resources will be attached to 
@@ -60,7 +60,7 @@ The following arguments are supported:
 
 The `creation_plan` block supports:
 
-* `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database.
+* `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database, including replication and other overhead
 * `quantity` - (Required) The planned number of databases in the subscription.
 
 The creation_plan `region` block supports:
