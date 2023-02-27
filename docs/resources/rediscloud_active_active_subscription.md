@@ -66,7 +66,7 @@ The `creation_plan` block supports:
 The creation_plan `region` block supports:
 
 * `region` - (Required) Deployment region as defined by cloud provider
-* `networking_deployment_cidr` - (Required) Deployment CIDR mask.
+* `networking_deployment_cidr` - (Required) Deployment CIDR mask. The total number of bits must be 24 (x.x.x.x/24)
 * `write_operations_per_second` - (Required) Throughput measurement for an active-active subscription
 * `read_operations_per_second` - (Required) Throughput measurement for an active-active subscription
 
