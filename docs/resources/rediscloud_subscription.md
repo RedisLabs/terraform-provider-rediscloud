@@ -10,7 +10,7 @@ description: |-
 Creates a Subscription within your Redis Enterprise Cloud Account.
 This resource is responsible for creating and managing subscriptions.
 
-~> **Note:** The creation_plan block allows the API server to create a well-optimised hardware specification for your databases in the cluster.
+~> **Note:** The creation_plan block allows the API server to create a well-optimised infrastructure for your databases in the cluster.
 The attributes inside the block are used by the provider to create initial 
 databases. Those databases will be deleted after provisioning a new 
 subscription, then the databases defined as separate resources will be attached to 
@@ -112,7 +112,7 @@ within the hosting account.
 * `preferred_availability_zones` - (Required) Availability zones deployment preferences (for the selected provider & region). If multiple_availability_zones is set to 'true', you must select three availability zones from the list.
 
 ~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI. 
-This difference in behaviour is to guarantee that a plan after an apply does not generate differences. In AWS Redis internal cloud account, please set the zone IDs.
+This difference in behaviour is to guarantee that a plan after an apply does not generate differences. In AWS Redis internal cloud account, please set the zone IDs (for example: `["use-az2", "use-az3", "use-az5"]`).
 
 ### Timeouts
 
