@@ -81,7 +81,7 @@ output "us-east-2-private-endpoints" {
 The following arguments are supported:
 * `subscription_id`: (Required) The ID of the Active-Active subscription to create the database in
 * `name` - (Required) A meaningful name to identify the database
-* `memory_limit_in_gb` - (Required) Maximum memory usage for this specific database
+* `memory_limit_in_gb` - (Required) Maximum memory usage for this specific database, including replication and other overhead
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `external_endpoint_for_oss_cluster_api` - (Optional) Should use the external endpoint for open-source (OSS) Cluster API.
   Can only be enabled if OSS Cluster API support is enabled. Default: 'false'
