@@ -52,7 +52,7 @@ The `region` block supports:
 * `region_id` - (Computed) The ID of the region, as created by the API
 * `region` - (Required) Region name
 * `vpc_id` - (Computed) Identifier of the VPC to be peered, set by the API
-* `networking_deployment_cidr` - (Required) Deployment CIDR mask
+* `networking_deployment_cidr` - (Required) Deployment CIDR mask. The total number of bits must be 24 (x.x.x.x/24)
 * `recreate_region` - (Optional) Protection flag, needs to be set if a region has to be re-created. A region will need to be re-created in the case of a change on the `networking_deployment_cidr` field. During re-create, the region will be deleted (so the `delete_regions` flag also needs to be set) and then created again. Default: 'false'
 * `database` - (Required) A block defining the write and read operations in the region, per database, documented below
 
