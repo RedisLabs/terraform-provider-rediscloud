@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_subscription_database"
 description: |-
-Database resource in the Terraform provider Redis Cloud.
+  Database resource in the Terraform provider Redis Cloud.
 ---
 
 # Resource: rediscloud_subscription_database
