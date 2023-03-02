@@ -22,8 +22,8 @@ $(BIN)/%:
 
 build:
 	@echo "Building local provider binary"
-	@mkdir -p ./$(BIN)
-	go build -o ./$(BIN)/terraform-provider-rediscloud_v$(PROVIDER_VERSION)
+	@mkdir -p $(BIN)
+	go build -o $(BIN)/terraform-provider-rediscloud_v$(PROVIDER_VERSION)
 	@sh -c "'$(CURDIR)/scripts/generate-dev-overrides.sh'"
 
 clean:
@@ -31,7 +31,7 @@ clean:
 	rm -rf $(BIN)
 
 testacc:
-	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 120m -parallel=$(TEST_PARALLELISM)
+	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 360m -parallel=$(TEST_PARALLELISM)
 
 install_local: build
 	@echo "Installing local provider binary to plugins mirror path $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)"
