@@ -159,7 +159,7 @@ jobs:
           REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_QA }}
           REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_QA }}
           REDISCLOUD_URL: https://api-cloudapi.qa.redislabs.com/v1
-          AWS_TEST_CLOUD_ACCOUNT_NAME: oc
+          AWS_TEST_CLOUD_ACCOUNT_NAME: EXTERNAL-CA-2023
 #          REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_PROD }}
 #          REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_PROD }}
 #          REDISCLOUD_URL: https://api.redislabs.com/v1/

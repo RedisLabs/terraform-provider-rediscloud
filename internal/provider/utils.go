@@ -77,7 +77,6 @@ func (m *perIdLock) get(id int) *sync.Mutex {
 	return mutex
 }
 
-
 // IDs of any resources dependent on a subscription need to be divided by a slash. In this format: <sub id>/<resource id>.
 func buildResourceId(subId int, id int) string {
 	return fmt.Sprintf("%d/%d", subId, id)

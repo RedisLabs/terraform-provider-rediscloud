@@ -45,13 +45,6 @@ resource "rediscloud_subscription" "example" {
   // ...
 }
 
-resource "rediscloud_subscription_peering" "example" {
-   subscription_id = rediscloud_subscription.example.id
-   provider_name = "GCP"
-   gcp_project_id = "cloud-api-123456"
-   gcp_network_name = "cloud-api-vpc-peering-example"
-}
-
 data "google_compute_network" "network" {
   project = "my-gcp-project"
   name = "my-gcp-vpc"
