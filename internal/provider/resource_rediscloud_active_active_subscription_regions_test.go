@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-func TestAccResourceRedisCloudActiveActiveRegion_CRUDI(t *testing.T) {
+func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T) {
 	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-regions-test"
 	dbName := acctest.RandomWithPrefix(testResourcePrefix) + "-regions" + "-db"
 	dbPass := acctest.RandString(20)

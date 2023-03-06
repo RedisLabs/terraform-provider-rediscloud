@@ -16,7 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceRedisCloudActiveActiveRegion() *schema.Resource {
+func resourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates an Active Active Region and within your Redis Enterprise Cloud Account.",
 		CreateContext: resourceRedisCloudActiveActiveRegionCreate,

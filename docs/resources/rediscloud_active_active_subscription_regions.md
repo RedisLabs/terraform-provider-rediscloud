@@ -1,14 +1,15 @@
 ---
 layout: "rediscloud"
-page_title: "Redis Cloud: rediscloud_active_active_regions"
+page_title: "Redis Cloud: rediscloud_active_active_subscription_regions"
 description: |-
   Regions resource in the Terraform provider Redis Cloud.
 ---
 
-# Resource: rediscloud_active_active_regions
+# Resource: rediscloud_active_active_subscription_regions
 
-Creates an Active Active Regions within your Redis Enterprise Cloud subscription.
-This resource is responsible for creating and managing regions within that subscription. This allows Redis Enterprise Cloud to efficiently provision your cluster within each defined region in a separate block.
+Manages regions within your Redis Enterprise Cloud Active-Active subscription.
+This resource is responsible for creating and managing regions within that subscription.
+This allows Redis Enterprise Cloud to efficiently provision your cluster within each defined region in a separate block.
 
 ## Example Usage
 
