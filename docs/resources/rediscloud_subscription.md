@@ -44,7 +44,6 @@ resource "rediscloud_subscription" "subscription-resource" {
   // This block needs to be defined for provisioning a new subscription.
   // This allows creating a well-optimised hardware specification for databases in the cluster
   creation_plan {
-    average_item_size_in_bytes = 1
     memory_limit_in_gb = 2
     quantity = 1
     replication= false
@@ -109,7 +108,7 @@ The cloud_provider `region` block supports:
 * `networking_vpc_id` - (Optional) Either an existing VPC Id (already exists in the specific region) or create a new VPC
 (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4986384ad’) and existing
 within the hosting account.
-* `preferred_availability_zones` - (Required) Availability zones deployment preferences (for the selected provider & region). If multiple_availability_zones is set to 'true', you must select three availability zones from the list.
+* `preferred_availability_zones` - (Required) Availability zones deployment preferences (for the selected provider & region). If multiple_availability_zones is set to 'true', select three availability zones from the list. If you don't want to specify preferred avaialbility zones, set this attribute to an empty list ('[]').
 
 ~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI. 
 This difference in behaviour is to guarantee that a plan after an apply does not generate differences. In AWS Redis internal cloud account, please set the zone IDs (for example: `["use-az2", "use-az3", "use-az5"]`).
