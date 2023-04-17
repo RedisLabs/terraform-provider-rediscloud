@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/RedisLabs/terraform-provider-rediscloud/internal/provider"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 	"log"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 )
 
 var (
