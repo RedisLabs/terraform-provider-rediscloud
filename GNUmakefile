@@ -40,7 +40,7 @@ install_local: build
 
 sweep:
 	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
-	go test ./internal/provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
+	go test ./provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
 
 tfproviderlintx: $(BIN)/tfproviderlint
 	$(BIN)/tfproviderlintx $(TFPROVIDERLINT_ARGS) ./...

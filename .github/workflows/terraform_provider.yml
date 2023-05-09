@@ -48,7 +48,7 @@ jobs:
         timeout-minutes: 2
         with:
           path: terraform-plugin-dir
-          key: ${{ runner.os }}-terraform-plugin-dir-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/provider/**') }}
+          key: ${{ runner.os }}-terraform-plugin-dir-${{ hashFiles('go.sum') }}-${{ hashFiles('provider/**') }}
       - if: steps.cache-terraform-plugin-dir.outputs.cache-hit != 'true' || steps.cache-terraform-plugin-dir.outcome == 'failure'
         uses: actions/setup-go@v3
         with:
@@ -62,7 +62,7 @@ jobs:
         uses: actions/cache@v3.0.5
         with:
           path: ${{ env.GOCACHE }}
-          key: ${{ runner.os }}-GOCACHE-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/provider/**') }}
+          key: ${{ runner.os }}-GOCACHE-${{ hashFiles('go.sum') }}-${{ hashFiles('provider/**') }}
       - if: steps.cache-terraform-plugin-dir.outputs.cache-hit != 'true' || steps.cache-terraform-plugin-dir.outcome == 'failure'
         uses: actions/cache@v3.0.5
         with:
@@ -84,13 +84,13 @@ jobs:
         timeout-minutes: 2
         with:
           path: terraform-providers-schema
-          key: ${{ runner.os }}-terraform-providers-schema-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/provider/**') }}
+          key: ${{ runner.os }}-terraform-providers-schema-${{ hashFiles('go.sum') }}-${{ hashFiles('provider/**') }}
       - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
         uses: actions/cache@v3.0.5
         timeout-minutes: 2
         with:
           path: terraform-plugin-dir
-          key: ${{ runner.os }}-terraform-plugin-dir-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/provider/**') }}
+          key: ${{ runner.os }}-terraform-plugin-dir-${{ hashFiles('go.sum') }}-${{ hashFiles('provider/**') }}
       - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
         uses: hashicorp/setup-terraform@v2.0.0
         with:
@@ -136,7 +136,7 @@ jobs:
         timeout-minutes: 2
         with:
           path: ${{ env.GOCACHE }}
-          key: ${{ runner.os }}-GOCACHE-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/provider/**') }}
+          key: ${{ runner.os }}-GOCACHE-${{ hashFiles('go.sum') }}-${{ hashFiles('provider/**') }}
       - uses: actions/cache@v3.0.5
         continue-on-error: true
         timeout-minutes: 2
@@ -194,7 +194,7 @@ jobs:
         timeout-minutes: 2
         with:
           path: ${{ env.GOCACHE }}
-          key: ${{ runner.os }}-GOCACHE-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/provider/**') }}
+          key: ${{ runner.os }}-GOCACHE-${{ hashFiles('go.sum') }}-${{ hashFiles('provider/**') }}
       - uses: actions/cache@v3.0.5
         continue-on-error: true
         timeout-minutes: 2
