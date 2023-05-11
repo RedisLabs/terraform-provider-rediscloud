@@ -133,6 +133,27 @@ func TestAccResourceRedisCloudSubscriptionDatabase_CRUDI(t *testing.T) {
 	})
 }
 
+func TestAccResourceRedisCloudSubscriptionDatabase_optionalAttributes(t *testing.T) {
+	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	resourceName := "rediscloud_subscription_database.example"
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabaseOptionalAttributes, testCloudAccountName, name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
+				),
+			},
+		},
+	})
+}
+
 // Tests the multi-modules feature in a database resource.
 func TestAccResourceRedisCloudSubscriptionDatabase_MultiModules(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
@@ -182,7 +203,7 @@ resource "rediscloud_subscription" "example" {
 
   allowlist {
     cidrs = ["192.168.0.0/16"]
-	security_group_ids = []
+    security_group_ids = []
   }
 
   cloud_provider {
@@ -203,7 +224,7 @@ resource "rediscloud_subscription" "example" {
     quantity = 1
     replication=false
     support_oss_cluster_api=false
-	modules = []
+    modules = []
   }
 }
 `
@@ -217,27 +238,38 @@ resource "rediscloud_subscription_database" "example" {
     protocol = "redis"
     memory_limit_in_gb = 3
     data_persistence = "none"
-	data_eviction = "allkeys-random"
+    data_eviction = "allkeys-random"
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 1000
-	password = "%s"
-	support_oss_cluster_api = false 
-	external_endpoint_for_oss_cluster_api = false
-	replication = false
-	average_item_size_in_bytes = 0
-	client_ssl_certificate = "" 
-	periodic_backup_path = ""
+    password = "%s"
+    support_oss_cluster_api = false 
+    external_endpoint_for_oss_cluster_api = false
+    replication = false
+    average_item_size_in_bytes = 0
+    client_ssl_certificate = "" 
+    periodic_backup_path = ""
 
-	alert {
-		name = "dataset-size"
-		value = 40
-	}
-	
-	modules = [
+    alert {
+        name = "dataset-size"
+        value = 40
+    }
+
+    modules = [
         {
           name = "RedisBloom"
         }
     ]
+} 
+`
+
+const testAccResourceRedisCloudSubscriptionDatabaseOptionalAttributes = subscriptionBoilerplate + `
+resource "rediscloud_subscription_database" "example" {
+    subscription_id = rediscloud_subscription.example.id
+    name = "example-no-protocol"
+    memory_limit_in_gb = 1
+    data_persistence = "none"
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 1000   
 } 
 `
 
@@ -338,7 +370,7 @@ resource "rediscloud_subscription" "example" {
 const testAccResourceRedisCloudSubscriptionDatabaseMultiModules = multiModulesSubscriptionBoilerplate + `
 resource "rediscloud_subscription_database" "example" {
     subscription_id              = rediscloud_subscription.example.id
-	name                         = "%s"
+    name                         = "%s"
     protocol                     = "redis"
     memory_limit_in_gb           = 1
     data_persistence             = "none"

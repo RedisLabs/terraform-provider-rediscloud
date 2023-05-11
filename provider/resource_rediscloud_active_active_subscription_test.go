@@ -165,6 +165,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.write_operations_per_second", "1000"),
@@ -225,6 +226,7 @@ resource "rediscloud_active_active_subscription" "example" {
 	creation_plan {
 		memory_limit_in_gb = 1
 		quantity = 1
+		support_oss_cluster_api = true
 		region {
 			region = "us-east-1"
 			networking_deployment_cidr = "192.168.0.0/24"
