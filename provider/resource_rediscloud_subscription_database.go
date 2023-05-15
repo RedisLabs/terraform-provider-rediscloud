@@ -67,9 +67,10 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 			"protocol": {
 				Description:      "The protocol that will be used to access the database, (either ‘redis’ or 'memcached’) ",
 				Type:             schema.TypeString,
-				Required:         true,
 				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.ProtocolValues(), false)),
+				Optional:         true,
 				ForceNew:         true,
+				Computed:         true,
 			},
 			"memory_limit_in_gb": {
 				Description: "Maximum memory usage for this specific database",
@@ -241,7 +242,6 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 	subscriptionMutex.Lock(subId)
 
 	name := d.Get("name").(string)
-	protocol := d.Get("protocol").(string)
 	memoryLimitInGB := d.Get("memory_limit_in_gb").(float64)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
 	dataPersistence := d.Get("data_persistence").(string)
@@ -284,7 +284,6 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 
 	createDatabase := databases.CreateDatabase{
 		Name:                 redis.String(name),
-		Protocol:             redis.String(protocol),
 		MemoryLimitInGB:      redis.Float64(memoryLimitInGB),
 		SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
 		DataPersistence:      redis.String(dataPersistence),
@@ -303,6 +302,10 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 
 	if averageItemSizeInBytes > 0 {
 		createDatabase.AverageItemSizeInBytes = &averageItemSizeInBytes
+	}
+
+	if v, ok := d.GetOk("protocol"); ok {
+		createDatabase.Protocol = redis.String(v.(string))
 	}
 
 	dbId, err := api.client.Database.Create(ctx, subId, createDatabase)

@@ -47,7 +47,6 @@ resource "rediscloud_subscription" "subscription-resource" {
     memory_limit_in_gb = 2
     quantity = 1
     replication= false
-    support_oss_cluster_api= false
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
     modules = ["RediSearch", "RedisBloom"]
@@ -85,7 +84,7 @@ only with Redis Labs internal cloud account
 The `creation_plan` block supports:
 
 * `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database.
-* `modules` - (Required) a list of modules that will be used by the databases in this subscription. Not currently compatible with ‘ram-and-flash’ memory storage.
+* `modules` - (Optional) a list of modules that will be used by the databases in this subscription. Not currently compatible with ‘ram-and-flash’ memory storage.
 Example: `modules = ["RedisJSON", RedisBloom"]`
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `replication` - (Required) Databases replication. Set to `true` if any of your databases will use replication
@@ -108,7 +107,7 @@ The cloud_provider `region` block supports:
 * `networking_vpc_id` - (Optional) Either an existing VPC Id (already exists in the specific region) or create a new VPC
 (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4986384ad’) and existing
 within the hosting account.
-* `preferred_availability_zones` - (Required) Availability zones deployment preferences (for the selected provider & region). If multiple_availability_zones is set to 'true', select three availability zones from the list. If you don't want to specify preferred avaialbility zones, set this attribute to an empty list ('[]').
+* `preferred_availability_zones` - (Optional) Availability zones deployment preferences (for the selected provider & region). If multiple_availability_zones is set to 'true', select three availability zones from the list. If you don't want to specify preferred availability zones, set this attribute to an empty list ('[]').
 
 ~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI. 
 This difference in behaviour is to guarantee that a plan after an apply does not generate differences. In AWS Redis internal cloud account, please set the zone IDs (for example: `["use-az2", "use-az3", "use-az5"]`).

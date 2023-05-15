@@ -150,7 +150,7 @@ jobs:
             code-changes:
               - 'go.mod'
               - 'go.sum'
-              - 'internal/**'
+              - 'provider/**'
               - '*.go'
               - '.github/workflows/**'
       - run: make testacc
