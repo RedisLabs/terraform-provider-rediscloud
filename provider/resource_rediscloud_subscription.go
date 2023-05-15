@@ -167,8 +167,9 @@ func resourceRedisCloudSubscription() *schema.Resource {
 									"preferred_availability_zones": {
 										Description: "List of availability zones used",
 										Type:        schema.TypeList,
-										Required:    true,
+										Optional:    true,
 										ForceNew:    true,
+										Computed:    true,
 										Elem: &schema.Schema{
 											Type: schema.TypeString,
 										},
@@ -278,7 +279,8 @@ func resourceRedisCloudSubscription() *schema.Resource {
 						"modules": {
 							Description: "Modules that will be used by the databases in this subscription.",
 							Type:        schema.TypeList,
-							Required:    true,
+							Optional:    true,
+							Computed:    true,
 							Elem: &schema.Schema{
 								Type: schema.TypeString,
 							},
@@ -930,19 +932,6 @@ func flattenRegexRules(rules []*databases.RegexRule) []string {
 	}
 
 	return ret
-}
-
-func getDatabaseNameIdMap(ctx context.Context, subId int, client *apiClient) (map[string]int, error) {
-	ret := map[string]int{}
-	list := client.client.Database.List(ctx, subId)
-	for list.Next() {
-		db := list.Value()
-		ret[redis.StringValue(db.Name)] = redis.IntValue(db.ID)
-	}
-	if list.Err() != nil {
-		return nil, list.Err()
-	}
-	return ret, nil
 }
 
 func readPaymentMethodID(d *schema.ResourceData) (*int, error) {

@@ -112,6 +112,27 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 	})
 }
 
+func TestAccResourceRedisCloudSubscription_preferredAZsModulesOptional(t *testing.T) {
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	resourceName := "rediscloud_subscription.example"
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionPreferredAZsModulesOptional, testCloudAccountName, name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testing.T) {
 
 	if !*contractFlag {
@@ -450,7 +471,7 @@ resource "rediscloud_subscription" "example" {
 
   allowlist {
     cidrs = ["192.168.0.0/16"]
-	security_group_ids = []
+    security_group_ids = []
   }
 
   cloud_provider {
@@ -471,7 +492,50 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api=false
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
-	modules = ["RedisJSON", "RedisBloom"]
+    modules = ["RedisJSON", "RedisBloom"]
+  }
+}
+`
+
+const testAccResourceRedisCloudSubscriptionPreferredAZsModulesOptional = `
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS" 
+  name = "%s"
+}
+
+resource "rediscloud_subscription" "example" {
+
+  name = "%s"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  memory_storage = "ram"
+
+  allowlist {
+    cidrs = ["192.168.0.0/16"]
+    security_group_ids = []
+  }
+
+  cloud_provider {
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region = "eu-west-1"
+      networking_deployment_cidr = "10.0.0.0/24"
+    }
+  }
+
+  creation_plan {
+    average_item_size_in_bytes = 1
+    memory_limit_in_gb = 1
+    quantity = 1
+    replication=false
+    support_oss_cluster_api=false
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 10000
   }
 }
 `
@@ -496,7 +560,7 @@ resource "rediscloud_subscription" "example" {
 
   allowlist {
     cidrs = ["192.168.0.0/16"]
-	security_group_ids = []
+    security_group_ids = []
   }
 
   cloud_provider {
@@ -526,7 +590,7 @@ resource "rediscloud_subscription" "example" {
 
   allowlist {
     cidrs = ["192.168.0.0/16"]
-	security_group_ids = []
+    security_group_ids = []
   }
 
   cloud_provider {
@@ -547,7 +611,7 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api=false
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
-	modules = []
+    modules = []
   }
 }
 `
@@ -568,7 +632,7 @@ resource "rediscloud_subscription" "example" {
 
   allowlist {
     cidrs = ["192.168.0.0/16"]
-	security_group_ids = []
+    security_group_ids = []
   }
 
   cloud_provider {
@@ -589,7 +653,7 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api=false
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
-	modules = []
+    modules = []
   }
 }
 `

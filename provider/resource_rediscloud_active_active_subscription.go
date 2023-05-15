@@ -104,6 +104,12 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 							Required:     true,
 							ValidateFunc: validation.IntAtLeast(1),
 						},
+						"support_oss_cluster_api": {
+							Description: "Support Redis open-source (OSS) Cluster API",
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Default:     false,
+						},
 						"region": {
 							Description: "Cloud networking details, per region (multiple regions for Active-Active cluster)",
 							Type:        schema.TypeSet,
@@ -410,6 +416,7 @@ func buildSubscriptionCreatePlanAADatabases(planMap map[string]interface{}) []*s
 	numDatabases := planMap["quantity"].(int)
 	memoryLimitInGB := planMap["memory_limit_in_gb"].(float64)
 	regions := planMap["region"]
+	supportOSSClusterAPI := planMap["support_oss_cluster_api"].(bool)
 	var localThroughputs []*subscriptions.CreateLocalThroughput
 	for _, v := range regions.(*schema.Set).List() {
 		region := v.(map[string]interface{})
@@ -420,13 +427,13 @@ func buildSubscriptionCreatePlanAADatabases(planMap map[string]interface{}) []*s
 		})
 	}
 	// create the remaining DBs with all other modules
-	createDatabases = append(createDatabases, createAADatabase(dbName, &idx, localThroughputs, numDatabases, memoryLimitInGB)...)
+	createDatabases = append(createDatabases, createAADatabase(dbName, &idx, localThroughputs, numDatabases, memoryLimitInGB, supportOSSClusterAPI)...)
 
 	return createDatabases
 }
 
 // createDatabase returns a CreateDatabase struct with the given parameters
-func createAADatabase(dbName string, idx *int, localThroughputs []*subscriptions.CreateLocalThroughput, numDatabases int, memoryLimitInGB float64) []*subscriptions.CreateDatabase {
+func createAADatabase(dbName string, idx *int, localThroughputs []*subscriptions.CreateLocalThroughput, numDatabases int, memoryLimitInGB float64, supportOSSClusterAPI bool) []*subscriptions.CreateDatabase {
 	var databases []*subscriptions.CreateDatabase
 	for i := 0; i < numDatabases; i++ {
 		createDatabase := subscriptions.CreateDatabase{
@@ -435,6 +442,7 @@ func createAADatabase(dbName string, idx *int, localThroughputs []*subscriptions
 			MemoryLimitInGB:            redis.Float64(memoryLimitInGB),
 			LocalThroughputMeasurement: localThroughputs,
 			Quantity:                   redis.Int(1),
+			SupportOSSClusterAPI:       redis.Bool(supportOSSClusterAPI),
 		}
 		*idx++
 		databases = append(databases, &createDatabase)
