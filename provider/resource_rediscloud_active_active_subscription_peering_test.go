@@ -59,6 +59,8 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 					resource.TestCheckResourceAttrSet(resourceName, "aws_account_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
 					resource.TestCheckResourceAttr(resourceName, "vpc_cidr", cidrRange),
+					resource.TestCheckResourceAttr(resourceName, "vpc_cidrs.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "vpc_cidrs.0", cidrRange),
 					resource.TestCheckResourceAttrSet(resourceName, "source_region"),
 					resource.TestCheckResourceAttrSet(resourceName, "destination_region"),
 					resource.TestCheckResourceAttrSet(resourceName, "aws_peering_id"),

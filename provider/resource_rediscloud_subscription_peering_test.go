@@ -62,7 +62,9 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "provider_name"),
 					resource.TestCheckResourceAttrSet(resourceName, "aws_account_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
-					resource.TestCheckResourceAttrSet(resourceName, "vpc_cidr"),
+					resource.TestCheckResourceAttr(resourceName, "vpc_cidr", cidrRange),
+					resource.TestCheckResourceAttr(resourceName, "vpc_cidrs.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "vpc_cidrs.0", cidrRange),
 					resource.TestCheckResourceAttrSet(resourceName, "region"),
 					resource.TestCheckResourceAttrSet(resourceName, "aws_peering_id"),
 				),
@@ -168,7 +170,6 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api=false
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
-	modules = []
   }
 }
 
@@ -178,7 +179,7 @@ resource "rediscloud_subscription_peering" "test" {
   region = "%s"
   aws_account_id = "%s"
   vpc_id = "%s"
-  vpc_cidr = "%s"
+  vpc_cidrs = ["%s"]
 }
 `
 

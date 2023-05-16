@@ -89,8 +89,24 @@ func resourceRedisCloudActiveActiveSubscriptionPeering() *schema.Resource {
 				Description:      "CIDR range of the VPC to be peered",
 				Type:             schema.TypeString,
 				ForceNew:         true,
+				Computed:         true,
 				Optional:         true,
 				ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
+				ConflictsWith:    []string{"vpc_cidrs"},
+				ExactlyOneOf:     []string{"vpc_cidrs", "vpc_cidr"},
+			},
+			"vpc_cidrs": {
+				Description: "CIDR ranges of the VPC to be peered",
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Computed:    true,
+				ForceNew:    true,
+				Elem: &schema.Schema{
+					Type:             schema.TypeString,
+					ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
+				},
+				ConflictsWith: []string{"vpc_cidr"},
+				ExactlyOneOf:  []string{"vpc_cidrs", "vpc_cidr"},
 			},
 			"gcp_project_id": {
 				Description: "GCP project ID that the VPC to be peered lives in",
@@ -170,16 +186,18 @@ func resourceRedisCloudSubscriptionActiveActivePeeringCreate(ctx context.Context
 			return diag.Errorf("`vpc_id` must be set when `provider_name` is `AWS`")
 		}
 
-		vpcCIDR, ok := d.GetOk("vpc_cidr")
-		if !ok {
-			return diag.Errorf("`vpc_cidrs` must be set when `provider_name` is `AWS`")
+		if vpcCIDR, ok := d.GetOk("vpc_cidr"); ok {
+			peeringRequest.VPCCidr = redis.String(vpcCIDR.(string))
+		} else if vpcCIDRs, ok := d.GetOk("vpc_cidrs"); ok {
+			peeringRequest.VPCCidrs = setToStringSlice(vpcCIDRs.(*schema.Set))
+		} else {
+			return diag.Errorf("`vpc_cidr` or `vpc_cidrs` must be set when `provider_name` is `AWS`")
 		}
 
 		peeringRequest.SourceRegion = redis.String(sourceRegion.(string))
 		peeringRequest.DestinationRegion = redis.String(destinationRegion.(string))
 		peeringRequest.AWSAccountID = redis.String(awsAccountID.(string))
 		peeringRequest.VPCId = redis.String(vpcID.(string))
-		peeringRequest.VPCCidr = redis.String(vpcCIDR.(string))
 	}
 
 	if providerName == "GCP" {
@@ -272,13 +290,36 @@ func resourceRedisCloudSubscriptionActiveActivePeeringRead(ctx context.Context, 
 		if err := d.Set("vpc_id", redis.StringValue(peering.VPCId)); err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("vpc_cidr", redis.StringValue(peering.VPCCidr)); err != nil {
-			return diag.FromErr(err)
-		}
 		if err := d.Set("source_region", redis.StringValue(sourceRegion)); err != nil {
 			return diag.FromErr(err)
 		}
 		if err := d.Set("destination_region", redis.StringValue(peering.RegionName)); err != nil {
+			return diag.FromErr(err)
+		}
+
+		// A peering that was created with `VPCCidrs` containing a single item will be read back with the `VPCCidr` set
+		// and `VPCCidrs` unset.
+		var vpcCidr *string
+		if peering.VPCCidr != nil {
+			vpcCidr = peering.VPCCidr
+		}
+
+		var cidrs []string
+		if len(peering.VPCCidrs) != 0 {
+			for _, cidr := range peering.VPCCidrs {
+				if vpcCidr == nil {
+					vpcCidr = cidr.VPCCidr
+				}
+				cidrs = append(cidrs, redis.StringValue(cidr.VPCCidr))
+			}
+		} else {
+			cidrs = []string{redis.StringValue(vpcCidr)}
+		}
+
+		if err := d.Set("vpc_cidr", redis.StringValue(vpcCidr)); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("vpc_cidrs", cidrs); err != nil {
 			return diag.FromErr(err)
 		}
 	}

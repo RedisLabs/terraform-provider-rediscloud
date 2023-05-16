@@ -36,14 +36,14 @@ testacc:
 install_local: build
 	@echo "Installing local provider binary to plugins mirror path $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)"
 	@mkdir -p $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)
-	@cp ./$(BIN)/terraform-provider-rediscloud_v$(PROVIDER_VERSION) $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)
+	@cp $(BIN)/terraform-provider-rediscloud_v$(PROVIDER_VERSION) $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)
 
 sweep:
 	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
 	go test ./provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
 
-tfproviderlintx: $(BIN)/tfproviderlint
+tfproviderlintx: $(BIN)/tfproviderlintx
 	$(BIN)/tfproviderlintx $(TFPROVIDERLINT_ARGS) ./...
 
-tfproviderlint: $(BIN)/tfproviderlintx
+tfproviderlint: $(BIN)/tfproviderlint
 	$(BIN)/tfproviderlint $(TFPROVIDERLINT_ARGS) ./...

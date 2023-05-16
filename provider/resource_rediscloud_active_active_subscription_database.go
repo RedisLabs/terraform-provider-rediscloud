@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -43,6 +44,23 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 			Read:   schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(30 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
+
+		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
+			var keys []string
+			for _, key := range diff.GetChangedKeysPrefix("override_region") {
+				if strings.HasSuffix(key, "time_utc") {
+					keys = append(keys, strings.TrimSuffix(key, ".0.time_utc"))
+				}
+			}
+
+			for _, key := range keys {
+				if err := remoteBackupIntervalSetCorrectly(key)(ctx, diff, i); err != nil {
+					return err
+				}
+			}
+
+			return nil
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -191,6 +209,39 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 							Type:        schema.TypeString,
 							Optional:    true,
 						},
+						"remote_backup": {
+							Description: "An object that specifies the backup options for the database in this region",
+							Type:        schema.TypeList,
+							Optional:    true,
+							MaxItems:    1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"interval": {
+										Description:      "Defines the frequency of the automatic backup",
+										Type:             schema.TypeString,
+										Required:         true,
+										ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.BackupIntervals(), false)),
+									},
+									"time_utc": {
+										Description:      "Defines the hour automatic backups are made - only applicable when interval is `every-12-hours` or `every-24-hours`",
+										Type:             schema.TypeString,
+										Optional:         true,
+										ValidateDiagFunc: isTime(),
+									},
+									"storage_type": {
+										Description:      "Defines the provider of the storage location",
+										Type:             schema.TypeString,
+										Required:         true,
+										ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.BackupStorageTypes(), false)),
+									},
+									"storage_path": {
+										Description: "Defines a URI representing the backup storage location",
+										Type:        schema.TypeString,
+										Required:    true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -209,6 +260,13 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
+			},
+			"port": {
+				Description:      "TCP port on which the database is available",
+				Type:             schema.TypeInt,
+				ValidateDiagFunc: validateDiagFunc(validation.IntBetween(10000, 19999)),
+				Optional:         true,
+				ForceNew:         true,
 			},
 		},
 	}
@@ -284,6 +342,10 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 
 	if globalPassword != "" {
 		createDatabase.GlobalPassword = redis.String(globalPassword)
+	}
+
+	if v, ok := d.GetOk("port"); ok {
+		createDatabase.PortNumber = redis.Int(v.(int))
 	}
 
 	// Confirm Subscription Active status before creating database
@@ -416,6 +478,8 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 			regionDbConfig["override_global_alert"] = flattenAlerts(regionDb.Alerts)
 		}
 
+		regionDbConfig["remote_backup"] = flattenBackupPlan(regionDb.Backup, getStateRemoteBackup(d, redis.StringValue(regionDb.Region)), "")
+
 		regionDbConfigs = append(regionDbConfigs, regionDbConfig)
 	}
 
@@ -500,8 +564,8 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 
 		// Make a list of region-specific source IPs for use in the regions list below
 		var overrideSourceIps []*string
-		for _, source_ip := range dbRegion["override_global_source_ips"].(*schema.Set).List() {
-			overrideSourceIps = append(overrideSourceIps, redis.String(source_ip.(string)))
+		for _, sourceIp := range dbRegion["override_global_source_ips"].(*schema.Set).List() {
+			overrideSourceIps = append(overrideSourceIps, redis.String(sourceIp.(string)))
 		}
 
 		regionProps := &databases.LocalRegionProperties{
@@ -533,6 +597,9 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 				regionProps.Password = redis.String(d.Get("global_password").(string))
 			}
 		}
+
+		regionProps.RemoteBackup = buildBackupPlan(dbRegion["remote_backup"], nil)
+
 		regions = append(regions, regionProps)
 	}
 
@@ -603,6 +670,16 @@ func getStateOverrideRegion(d *schema.ResourceData, regionName string) map[strin
 		dbRegion := region.(map[string]interface{})
 		if dbRegion["name"].(string) == regionName {
 			return dbRegion
+		}
+	}
+	return nil
+}
+
+func getStateRemoteBackup(d *schema.ResourceData, regionName string) []interface{} {
+	for _, region := range d.Get("override_region").(*schema.Set).List() {
+		dbRegion := region.(map[string]interface{})
+		if dbRegion["name"].(string) == regionName {
+			return dbRegion["remote_backup"].([]interface{})
 		}
 	}
 	return nil

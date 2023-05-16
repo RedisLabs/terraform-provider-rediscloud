@@ -69,7 +69,7 @@ func New(version string) func() *schema.Provider {
 }
 
 // Lock that must be acquired when modifying something related to a subscription as only one _thing_ can modify a subscription and all sub-resources at any time
-var subscriptionMutex = NewPerIdLock()
+var subscriptionMutex = newPerIdLock()
 
 type apiClient struct {
 	client *rediscloud_api.Client

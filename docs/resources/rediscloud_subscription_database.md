@@ -100,7 +100,7 @@ The following arguments are supported:
 * `throughput_measurement_by` - (Required) Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)
 * `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
 * `memory_limit_in_gb` - (Required) Maximum memory usage for this specific database
-* `protocol` - (Optional) The protocol that will be used to access the database, (either ‘redis’ or 'memcached’) Default: ‘redis’
+* `protocol` - (Optional) The protocol that will be used to access the database, (either ‘redis’ or ‘memcached’) Default: ‘redis’
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `external_endpoint_for_oss_cluster_api` - (Optional) Should use the external endpoint for open-source (OSS) Cluster API.
   Can only be enabled if OSS Cluster API support is enabled. Default: 'false'
@@ -122,6 +122,8 @@ The following arguments are supported:
   [the documentation on clustering](https://docs.redislabs.com/latest/rc/concepts/clustering/) for more information on the
   hashing policy. This cannot be set when `support_oss_cluster_api` is set to true.
 * `enable_tls` - (Optional) Use TLS for authentication. Default: ‘false’
+* `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999.
+* `remote_backup` (Optional) Specifies the backup options for the database, documented below
 
 The `alert` block supports:
 
@@ -144,6 +146,13 @@ The `modules` list supports:
         }
     ]
   ```
+
+The `remote_backup` block supports:
+
+* `interval` (Required) - Defines the frequency of the automatic backup
+* `time_utc` (Optional) - Defines the hour automatic backups are made - only applicable when interval is `every-12-hours` or `every-24-hours`
+* `storage_type` (Required) - Defines the provider of the storage location
+* `storage_path` (Required) - Defines a URI representing the backup storage location
 
 ### Timeouts
 
