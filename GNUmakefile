@@ -9,8 +9,8 @@ PROVIDER_VERSION = 99.99.99
 PLUGINS_PATH = ~/.terraform.d/plugins
 PLUGINS_PROVIDER_PATH=$(PROVIDER_HOSTNAME)/$(PROVIDER_NAMESPACE)/$(PROVIDER_TYPE)/$(PROVIDER_VERSION)/$(PROVIDER_TARGET)
 
-# Use a parallelism of 3 by default for tests, overriding whatever GOMAXPROCS is set to.
-TEST_PARALLELISM?=3
+# Use a parallelism of 2 by default for tests, overriding whatever GOMAXPROCS is set to.
+TEST_PARALLELISM?=2
 TESTARGS?=-short
 
 BIN=$(CURDIR)/bin

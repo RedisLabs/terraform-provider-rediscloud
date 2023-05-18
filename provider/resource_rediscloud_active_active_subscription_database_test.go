@@ -25,7 +25,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 
 	var subId int
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
@@ -152,7 +152,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_optionalAttribute
 	resourceName := "rediscloud_active_active_subscription_database.example"
 	portNumber := 10101
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
@@ -172,7 +172,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_timeUtcRequiresVa
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	password := acctest.RandString(20)
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
