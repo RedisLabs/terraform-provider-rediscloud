@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"testing"
 
@@ -25,7 +26,7 @@ func TestAccResourceRedisCloudSubscriptionDatabase_CRUDI(t *testing.T) {
 
 	var subId int
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
@@ -138,17 +139,36 @@ func TestAccResourceRedisCloudSubscriptionDatabase_optionalAttributes(t *testing
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	resourceName := "rediscloud_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	portNumber := 10101
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabaseOptionalAttributes, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabaseOptionalAttributes, testCloudAccountName, name, portNumber),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
+					resource.TestCheckResourceAttr(resourceName, "port", strconv.Itoa(portNumber)),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceRedisCloudSubscriptionDatabase_timeUtcRequiresValidInterval(t *testing.T) {
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabaseInvalidTimeUtc, testCloudAccountName, name),
+				ExpectError: regexp.MustCompile("unexpected value at remote_backup\\.0\\.time_utc - time_utc can only be set when interval is either every-24-hours or every-12-hours"),
 			},
 		},
 	})
@@ -269,7 +289,25 @@ resource "rediscloud_subscription_database" "example" {
     memory_limit_in_gb = 1
     data_persistence = "none"
     throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 1000   
+    throughput_measurement_value = 1000
+    port = %d
+} 
+`
+
+const testAccResourceRedisCloudSubscriptionDatabaseInvalidTimeUtc = subscriptionBoilerplate + `
+resource "rediscloud_subscription_database" "example" {
+    subscription_id = rediscloud_subscription.example.id
+    name = "example-no-protocol"
+    memory_limit_in_gb = 1
+    data_persistence = "none"
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 1000
+    remote_backup {
+        interval = "every-6-hours"
+        time_utc = "16:00"
+        storage_type = "aws-s3"
+        storage_path = "uri://interval.not.12.or.24.hours.test"
+    }
 } 
 `
 

@@ -13,7 +13,7 @@ Creates a Database within a specified Active-Active Subscription in your Redis E
 
 ```hcl
 data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
+  card_type = "Visa"
 }
 
 resource "rediscloud_active_active_subscription" "subscription-resource" {
@@ -24,18 +24,18 @@ resource "rediscloud_active_active_subscription" "subscription-resource" {
   creation_plan {
     memory_limit_in_gb = 1
     quantity = 1
-	region {
-		region = "us-east-1"
-		networking_deployment_cidr = "192.168.0.0/24"
-		write_operations_per_second = 1000
-		read_operations_per_second = 1000
-	}
-	region {
-		region = "us-east-2"
-		networking_deployment_cidr = "10.0.1.0/24"
-		write_operations_per_second = 1000
-		read_operations_per_second = 2000
-	}
+    region {
+      region = "us-east-1"
+      networking_deployment_cidr = "192.168.0.0/24"
+      write_operations_per_second = 1000
+      read_operations_per_second = 1000
+    }
+    region {
+      region = "us-east-2"
+      networking_deployment_cidr = "10.0.1.0/24"
+      write_operations_per_second = 1000
+      read_operations_per_second = 2000
+    }
   }
 }
 
@@ -47,23 +47,23 @@ resource "rediscloud_active_active_subscription_database" "database-resource" {
     global_password = "some-random-pass-2" 
     global_source_ips = ["192.168.0.0/16"]
     global_alert {
-	name = "dataset-size"
-	value = 40
+      name = "dataset-size"
+      value = 40
     }
 
     override_region {
-    	name = "us-east-2"
-        override_global_source_ips = ["192.10.0.0/16"]
+      name = "us-east-2"
+      override_global_source_ips = ["192.10.0.0/16"]
     }
 
     override_region {
-    	name = "us-east-1"
-    	override_global_data_persistence = "none"
-    	override_global_password = "region-specific-password"
-    	override_global_alert {
-        	name = "dataset-size"
-        	value = 60
-    	}
+      name = "us-east-1"
+      override_global_data_persistence = "none"
+      override_global_password = "region-specific-password"
+      override_global_alert {
+        name = "dataset-size"
+        value = 60
+      }
    }
 }
 
@@ -89,9 +89,10 @@ The following arguments are supported:
 * `client_ssl_certificate` - (Optional) SSL certificate to authenticate user connections.
 * `data_eviction` - (Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru')
 * `global_data_persistence` - (Optional) Global rate of database data persistence (in persistent storage) of regions that dont override global settings. Default: 'none'
-* `global_password` - (Optional) Password to access the database of regions that dont override global settings. If left empty, the password will be generated automatically
-* `global_alert` - (Optional) A block defining Redis database alert of regions that dont override global settings, documented below, can be specified multiple times
-* `global_source_ips` - (Optional)  List of source IP addresses or subnet masks of regions that dont override global settings. If specified, Redis clients will be able to connect to this database only from within the specified source IP addresses ranges (example: ['192.168.10.0/32', '192.168.12.0/24'])
+* `global_password` - (Optional) Password to access the database of regions that don't override global settings. If left empty, the password will be generated automatically
+* `global_alert` - (Optional) A block defining Redis database alert of regions that don't override global settings, documented below, can be specified multiple times
+* `global_source_ips` - (Optional)  List of source IP addresses or subnet masks of regions that don't override global settings. If specified, Redis clients will be able to connect to this database only from within the specified source IP addresses ranges (example: ['192.168.10.0/32', '192.168.12.0/24'])
+* `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999.
 * `override_region` - (Optional) Override region specific configuration, documented below
 
 
@@ -102,11 +103,19 @@ The `override_region` block supports:
 * `override_global_password` - (Optional) If specified, this regional instance of an Active-Active database password will be used to access the database
 * `override_global_source_ips` - (Optional)  List of regional instance of an Active-Active database source IP addresses or subnet masks. If specified, Redis clients will be able to connect to this database only from within the specified source IP addresses ranges (example: ['192.168.10.0/32', '192.168.12.0/24'] )
 * `override_global_data_persistence` - (Optional) Regional instance of an Active-Active database data persistence rate (in persistent storage)
+* `remote_backup` - (Optional) Specifies the backup options for the database in this region, documented below
 
 The `override_global_alert` block supports:
 
 * `name` - (Required) Alert name
 * `value` - (Required) Alert value
+
+The `remote_backup` block supports:
+
+* `interval` (Required) - Defines the frequency of the automatic backup
+* `time_utc` (Optional) - Defines the hour automatic backups are made - only applicable when interval is `every-12-hours` or `every-24-hours`
+* `storage_type` (Required) - Defines the provider of the storage location
+* `storage_path` (Required) - Defines a URI representing the backup storage location
 
 ### Timeouts
 
@@ -129,5 +138,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/l
 $ terraform import rediscloud_active_active_subscription_database.database-resource 123456/12345678
 ```
 
-Note: Due to constraints in the Redis Cloud API, the import process will not import global attributes or override region attributes. If you wish to use these attributes in your Terraform configuraton, you will need to manually add them to your Terraform configuration and run `terraform apply` to update the database.
+Note: Due to constraints in the Redis Cloud API, the import process will not import global attributes or override region attributes. If you wish to use these attributes in your Terraform configuration, you will need to manually add them to your Terraform configuration and run `terraform apply` to update the database.
 

@@ -46,6 +46,8 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 
+		CustomizeDiff: remoteBackupIntervalSetCorrectly("remote_backup"),
+
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
 				Description: "Identifier of the subscription",
@@ -150,10 +152,11 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 				Default:     "",
 			},
 			"periodic_backup_path": {
-				Description: "Path that will be used to store database backup files",
-				Type:        schema.TypeString,
-				Optional:    true,
-				Default:     "",
+				Description:   "Path that will be used to store database backup files",
+				Type:          schema.TypeString,
+				Optional:      true,
+				Default:       "",
+				ConflictsWith: []string{"remote_backup"},
 			},
 			"replica_of": {
 				Description: "Set of Redis database URIs, in the format `redis://user:password@host:port`, that this database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided",
@@ -231,6 +234,48 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 				Optional:    true,
 				Default:     false,
 			},
+			"port": {
+				Description:      "TCP port on which the database is available",
+				Type:             schema.TypeInt,
+				ValidateDiagFunc: validateDiagFunc(validation.IntBetween(10000, 19999)),
+				Optional:         true,
+				ForceNew:         true,
+			},
+			"remote_backup": {
+				Description:   "An object that specifies the backup options for the database",
+				Type:          schema.TypeList,
+				Optional:      true,
+				MaxItems:      1,
+				ConflictsWith: []string{"periodic_backup_path"},
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"interval": {
+							Description:      "Defines the frequency of the automatic backup",
+							Type:             schema.TypeString,
+							Required:         true,
+							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.BackupIntervals(), false)),
+						},
+						"time_utc": {
+							Description:      "Defines the hour automatic backups are made - only applicable when interval is `every-12-hours` or `every-24-hours`",
+							Type:             schema.TypeString,
+							Optional:         true,
+							ValidateDiagFunc: isTime(),
+							DiffSuppressFunc: skipDiffIfIntervalIs12And12HourTimeDiff,
+						},
+						"storage_type": {
+							Description:      "Defines the provider of the storage location",
+							Type:             schema.TypeString,
+							Required:         true,
+							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.BackupStorageTypes(), false)),
+						},
+						"storage_path": {
+							Description: "Defines a URI representing the backup storage location",
+							Type:        schema.TypeString,
+							Required:    true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -293,8 +338,9 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 			By:    redis.String(throughputMeasurementBy),
 			Value: redis.Int(throughputMeasurementValue),
 		},
-		Modules: createModules,
-		Alerts:  createAlerts,
+		Modules:      createModules,
+		Alerts:       createAlerts,
+		RemoteBackup: buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
 	}
 	if password != "" {
 		createDatabase.Password = redis.String(password)
@@ -306,6 +352,10 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 
 	if v, ok := d.GetOk("protocol"); ok {
 		createDatabase.Protocol = redis.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("port"); ok {
+		createDatabase.PortNumber = redis.Int(v.(int))
 	}
 
 	dbId, err := api.client.Database.Create(ctx, subId, createDatabase)
@@ -445,6 +495,10 @@ func resourceRedisCloudSubscriptionDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
+	if err := d.Set("remote_backup", flattenBackupPlan(db.Backup, d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path").(string))); err != nil {
+		return diag.FromErr(err)
+	}
+
 	return diags
 }
 
@@ -509,6 +563,7 @@ func resourceRedisCloudSubscriptionDatabaseUpdate(ctx context.Context, d *schema
 		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
 		SourceIP:           setToStringSlice(d.Get("source_ips").(*schema.Set)),
 		Alerts:             alerts,
+		RemoteBackup:       buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
 	}
 	if len(setToStringSlice(d.Get("source_ips").(*schema.Set))) == 0 {
 		update.SourceIP = []*string{redis.String("0.0.0.0/0")}
@@ -571,6 +626,58 @@ func resourceRedisCloudSubscriptionDatabaseUpdate(ctx context.Context, d *schema
 	return resourceRedisCloudSubscriptionDatabaseRead(ctx, d, meta)
 }
 
+func buildBackupPlan(data interface{}, periodicBackupPath interface{}) *databases.DatabaseBackupConfig {
+	var d map[string]interface{}
+
+	switch v := data.(type) {
+	case []interface{}:
+		if len(v) != 1 {
+			if periodicBackupPath == nil {
+				return &databases.DatabaseBackupConfig{Active: redis.Bool(false)}
+			} else {
+				return nil
+			}
+		}
+		d = v[0].(map[string]interface{})
+	default:
+		d = v.(map[string]interface{})
+	}
+
+	config := databases.DatabaseBackupConfig{
+		Active:      redis.Bool(true),
+		Interval:    redis.String(d["interval"].(string)),
+		StorageType: redis.String(d["storage_type"].(string)),
+		StoragePath: redis.String(d["storage_path"].(string)),
+	}
+
+	if v := d["time_utc"].(string); v != "" {
+		config.TimeUTC = redis.String(v)
+	}
+
+	return &config
+}
+
+func flattenBackupPlan(backup *databases.Backup, existing []interface{}, periodicBackupPath string) []map[string]interface{} {
+	if backup == nil || !redis.BoolValue(backup.Enabled) || periodicBackupPath != "" {
+		return nil
+	}
+
+	storageType := ""
+	if len(existing) == 1 {
+		d := existing[0].(map[string]interface{})
+		storageType = d["storage_type"].(string)
+	}
+
+	return []map[string]interface{}{
+		{
+			"interval":     redis.StringValue(backup.Interval),
+			"time_utc":     redis.StringValue(backup.TimeUTC),
+			"storage_type": storageType,
+			"storage_path": redis.StringValue(backup.Destination),
+		},
+	}
+}
+
 func toDatabaseId(id string) (int, int, error) {
 	parts := strings.Split(id, "/")
 
@@ -597,4 +704,52 @@ func toDatabaseId(id string) (int, int, error) {
 	}
 
 	return subId, dbId, nil
+}
+
+func skipDiffIfIntervalIs12And12HourTimeDiff(k, oldValue, newValue string, d *schema.ResourceData) bool {
+	// If interval is set to every 12 hours and the `time_utc` is in the afternoon,
+	// then the API will return the _morning_ time when queried.
+	// `interval` is assumed to be an attribute within the same block as the attribute being diffed.
+
+	parts := strings.Split(k, ".")
+	parts[len(parts)-1] = "interval"
+
+	var interval = d.Get(strings.Join(parts, "."))
+
+	if interval != databases.BackupIntervalEvery12Hours {
+		return false
+	}
+
+	oldTime, err := time.Parse("15:04", oldValue)
+	if err != nil {
+		return false
+	}
+	newTime, err := time.Parse("15:04", newValue)
+	if err != nil {
+		return false
+	}
+
+	return oldTime.Minute() == newTime.Minute() && oldTime.Add(12*time.Hour).Hour() == newTime.Hour()
+}
+
+func remoteBackupIntervalSetCorrectly(key string) schema.CustomizeDiffFunc {
+	// Validate multiple attributes - https://github.com/hashicorp/terraform-plugin-sdk/issues/233
+
+	return func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
+		if v, ok := diff.GetOk(key); ok {
+			backups := v.([]interface{})
+			if len(backups) == 1 {
+				v := backups[0].(map[string]interface{})
+
+				interval := v["interval"].(string)
+				timeUtc := v["time_utc"].(string)
+
+				if interval != databases.BackupIntervalEvery12Hours && interval != databases.BackupIntervalEvery24Hours && timeUtc != "" {
+					return fmt.Errorf("unexpected value at %s.0.time_utc - time_utc can only be set when interval is either %s or %s", key, databases.BackupIntervalEvery24Hours, databases.BackupIntervalEvery12Hours)
+				}
+			}
+		}
+		return nil
+	}
+
 }
