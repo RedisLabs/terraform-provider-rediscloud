@@ -30,8 +30,9 @@ clean:
 	@echo "Deleting local provider binary"
 	rm -rf $(BIN)
 
+# `-p=1` added to avoid testing packages in parallel which causes `go test` to not stream logs as they are written
 testacc:
-	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 360m -parallel=$(TEST_PARALLELISM)
+	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 360m -p=1 -parallel=$(TEST_PARALLELISM)
 
 install_local: build
 	@echo "Installing local provider binary to plugins mirror path $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)"
