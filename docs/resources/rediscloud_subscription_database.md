@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_subscription_database"
 description: |-
-Database resource in the Terraform provider Redis Cloud.
+  Database resource in the Terraform provider Redis Cloud.
 ---
 
 # Resource: rediscloud_subscription_database
@@ -95,12 +95,12 @@ resource "rediscloud_subscription_database" "database-resource-replica" {
 
 The following arguments are supported:
 
-* `subscription_id` - (Required) The ID of the subscription to create the database in
+* `subscription_id` - (Required) The ID of the subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
 * `name` - (Required) A meaningful name to identify the database
 * `throughput_measurement_by` - (Required) Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)
 * `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
 * `memory_limit_in_gb` - (Required) Maximum memory usage for this specific database
-* `protocol` - (Optional) The protocol that will be used to access the database, (either ‘redis’ or ‘memcached’) Default: ‘redis’
+* `protocol` - (Optional) The protocol that will be used to access the database, (either ‘redis’ or ‘memcached’) Default: ‘redis’. **Modifying this attribute will force creation of a new resource.**
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `external_endpoint_for_oss_cluster_api` - (Optional) Should use the external endpoint for open-source (OSS) Cluster API.
   Can only be enabled if OSS Cluster API support is enabled. Default: 'false'
@@ -109,7 +109,7 @@ The following arguments are supported:
 * `replica_of` - (Optional) Set of Redis database URIs, in the format `redis://user:password@host:port`, that this
   database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided.
   Cannot be enabled when `support_oss_cluster_api` is enabled.
-* `modules` - (Optional) A list of modules objects, documented below
+* `modules` - (Optional) A list of modules objects, documented below. **Modifying this attribute will force creation of a new resource.**
 * `alert` - (Optional) A block defining Redis database alert, documented below, can be specified multiple times
 * `data_persistence` - (Optional) Rate of database data persistence (in persistent storage). Default: ‘none’
 * `data_eviction` - (Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'). Default: 'volatile-lru'
@@ -122,7 +122,7 @@ The following arguments are supported:
   [the documentation on clustering](https://docs.redislabs.com/latest/rc/concepts/clustering/) for more information on the
   hashing policy. This cannot be set when `support_oss_cluster_api` is set to true.
 * `enable_tls` - (Optional) Use TLS for authentication. Default: ‘false’
-* `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999.
+* `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999. **Modifying this attribute will force creation of a new resource.**
 * `remote_backup` (Optional) Specifies the backup options for the database, documented below
 
 The `alert` block supports:
@@ -132,7 +132,7 @@ The `alert` block supports:
 
 The `modules` list supports:
 
-* `name` (Required) - Name of the Redis database module to enable
+* `name` (Required) - Name of the Redis database module to enable. **Modifying this attribute will force creation of a new resource.**
 
   Example:
   

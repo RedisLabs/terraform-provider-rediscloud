@@ -5,7 +5,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"log"
@@ -122,7 +122,7 @@ func resourceRedisCloudCloudAccountCreate(ctx context.Context, d *schema.Resourc
 }
 
 func waitForCloudAccountToBeActive(ctx context.Context, id int, client *apiClient) error {
-	wait := &resource.StateChangeConf{
+	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{cloud_accounts.StatusDraft, cloud_accounts.StatusChangeDraft},
 		Target:  []string{cloud_accounts.StatusActive},

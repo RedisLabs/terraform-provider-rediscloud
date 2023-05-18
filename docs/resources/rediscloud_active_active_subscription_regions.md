@@ -44,7 +44,7 @@ resource "rediscloud_active_active_subscription_regions" "regions-resource" {
 
 The following arguments are supported:
 
-* `subscription_id` - (Required) ID of the subscription that the regions belong to
+* `subscription_id` - (Required) ID of the subscription that the regions belong to. **Modifying this attribute will force creation of a new resource.**
 * `delete_regions` - (Optional) Flag required to be set when one or more regions is to be deleted, if the flag is not set an error will be thrown
 * `region` - (Required) Cloud networking details, per region, documented below
 

@@ -33,9 +33,9 @@ resource "rediscloud_subscription" "example" {
   cloud_provider {
     provider         = data.rediscloud_cloud_account.example.provider_type
     cloud_account_id = data.rediscloud_cloud_account.example.id
-    ...
+    # ...
   }
-  ...
+  # ...
 }
 
 ```
@@ -58,7 +58,7 @@ Note that drift cannot currently be detected for this.
 * `name` - (Required) Display name of the account.
 
 * `provider_type` - (Required) Cloud provider type - either `AWS` or `GCP`.
-Note that drift cannot currently be detected for this.
+Note that drift cannot currently be detected for this. **Modifying this attribute will force creation of a new resource.**
 
 * `sign_in_login_url` - (Required) Cloud provider management console login URL.
 Note that drift cannot currently be detected for this.

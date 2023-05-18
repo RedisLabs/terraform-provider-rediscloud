@@ -12,7 +12,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -387,7 +387,7 @@ func findActiveActiveVpcPeering(id int, regions []*subscriptions.ActiveActiveVpc
 }
 
 func waitForActiveActivePeeringToBeInitiated(ctx context.Context, subId, id int, api *apiClient) error {
-	wait := &resource.StateChangeConf{
+	wait := &retry.StateChangeConf{
 		Delay: 10 * time.Second,
 		Pending: []string{
 			subscriptions.VPCPeeringStatusInitiatingRequest,
