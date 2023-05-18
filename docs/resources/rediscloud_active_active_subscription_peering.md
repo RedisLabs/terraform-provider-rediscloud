@@ -77,7 +77,8 @@ The following arguments are supported:
 * `source_region` -	(Required) Name of the region to create the VPC peering from
 * `destination_region` - (Required) Name of the region to create the VPC peering to
 * `vpc_id` - (Required) Identifier of the VPC to be peered
-* `vpc_cidr` - (Required) CIDR range of the VPC to be peered 
+* `vpc_cidr` - (Optional) CIDR range of the VPC to be peered. Either this or `vpc_cidrs` must be specified
+* `vpc_cidrs` - (Optional) CIDR ranges of the VPC to be peered. Either this or `vpc_cidr` must be specified
 
 **GCP ONLY:**
 * `gcp_project_id` - (Required) GCP project ID that the VPC to be peered lives in

@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"os"
+	"regexp"
 	"strconv"
 	"testing"
 
@@ -23,7 +25,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 
 	var subId int
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
@@ -142,33 +144,74 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 	})
 }
 
+func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_optionalAttributes(t *testing.T) {
+	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
+	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
+	password := acctest.RandString(20)
+	resourceName := "rediscloud_active_active_subscription_database.example"
+	portNumber := 10101
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseOptionalAttributes, subscriptionName, name, password, portNumber),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "port", strconv.Itoa(portNumber)),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_timeUtcRequiresValidInterval(t *testing.T) {
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	password := acctest.RandString(20)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseInvalidTimeUtc, testCloudAccountName, name, password),
+				ExpectError: regexp.MustCompile("unexpected value at override_region\\.\\d*\\.remote_backup\\.0\\.time_utc - time_utc can only be set when interval is either every-24-hours or every-12-hours"),
+			},
+		},
+	})
+}
+
 const activeActiveSubscriptionBoilerplate = `
 	data "rediscloud_payment_method" "card" {
 		card_type = "Visa"
 	}
-  
-  resource "rediscloud_active_active_subscription" "example" {
-	name = "%s"
-	payment_method_id = data.rediscloud_payment_method.card.id
-	cloud_provider = "AWS"
-   
-	creation_plan {
-	  memory_limit_in_gb = 1
-	  quantity = 1
-	  region {
-		  region = "us-east-1"
-		  networking_deployment_cidr = "192.168.0.0/24"
-		  write_operations_per_second = 1000
-		  read_operations_per_second = 1000
-	  }
-	  region {
-		  region = "us-east-2"
-		  networking_deployment_cidr = "10.0.1.0/24"
-		  write_operations_per_second = 1000
-		  read_operations_per_second = 1000
-	  }
+
+	resource "rediscloud_active_active_subscription" "example" {
+		name = "%s"
+		payment_method_id = data.rediscloud_payment_method.card.id
+		cloud_provider = "AWS"
+
+		creation_plan {
+			memory_limit_in_gb = 1
+			quantity = 1
+			region {
+				region = "us-east-1"
+				networking_deployment_cidr = "192.168.0.0/24"
+				write_operations_per_second = 1000
+				read_operations_per_second = 1000
+			}
+			region {
+				region = "us-east-2"
+				networking_deployment_cidr = "10.0.1.0/24"
+				write_operations_per_second = 1000
+				read_operations_per_second = 1000
+			}
+		}
 	}
-  }
 `
 
 // Create and Read tests
@@ -239,3 +282,74 @@ resource "rediscloud_active_active_subscription_database" "example" {
     memory_limit_in_gb = 1
 	} 
 	`
+
+const testAccResourceRedisCloudActiveActiveSubscriptionDatabaseOptionalAttributes = activeActiveSubscriptionBoilerplate + `
+resource "rediscloud_active_active_subscription_database" "example" {
+	subscription_id = rediscloud_active_active_subscription.example.id
+	name = "%s"
+	memory_limit_in_gb = 3
+	support_oss_cluster_api = false 
+	external_endpoint_for_oss_cluster_api = false
+	enable_tls = false
+
+	global_data_persistence = "none"
+	global_password = "%s" 
+	global_source_ips = ["192.168.0.0/16", "192.170.0.0/16"]
+	global_alert {
+		name = "dataset-size"
+		value = 40
+	}
+	override_region {
+		name = "us-east-1"
+		override_global_data_persistence = "aof-every-write"
+		override_global_source_ips = ["192.175.0.0/16"]
+		override_global_password = "region-specific-password"
+		override_global_alert {
+			name = "dataset-size"
+			value = 42
+		}
+	}
+	override_region {
+		name = "us-east-2"
+	}
+	port = %d
+} 
+`
+
+const testAccResourceRedisCloudActiveActiveSubscriptionDatabaseInvalidTimeUtc = activeActiveSubscriptionBoilerplate + `
+resource "rediscloud_active_active_subscription_database" "example" {
+	subscription_id = rediscloud_active_active_subscription.example.id
+	name = "%s"
+	memory_limit_in_gb = 3
+	support_oss_cluster_api = false 
+	external_endpoint_for_oss_cluster_api = false
+	enable_tls = false
+
+	global_data_persistence = "none"
+	global_password = "%s" 
+	global_source_ips = ["192.168.0.0/16", "192.170.0.0/16"]
+	global_alert {
+		name = "dataset-size"
+		value = 40
+	}
+	override_region {
+		name = "us-east-1"
+		override_global_data_persistence = "aof-every-write"
+		override_global_source_ips = ["192.175.0.0/16"]
+		override_global_password = "region-specific-password"
+		override_global_alert {
+			name = "dataset-size"
+			value = 42
+		}
+		remote_backup {
+			interval = "every-6-hours"
+			time_utc = "16:00"
+			storage_type = "aws-s3"
+			storage_path = "uri://interval.not.12.or.24.hours.test"
+		}
+	}
+	override_region {
+		name = "us-east-2"
+	}
+} 
+`

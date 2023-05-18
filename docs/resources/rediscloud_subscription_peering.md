@@ -75,7 +75,8 @@ The following arguments are supported:
 * `aws_account_id` - (Required AWS) AWS account ID that the VPC to be peered lives in
 * `region` - (Required AWS) AWS Region that the VPC to be peered lives in
 * `vpc_id` - (Required AWS) Identifier of the VPC to be peered
-* `vpc_cidr` - (Required AWS) CIDR range of the VPC to be peered 
+* `vpc_cidr` - (Optional) CIDR range of the VPC to be peered. Either this or `vpc_cidrs` must be specified
+* `vpc_cidrs` - (Optional) CIDR ranges of the VPC to be peered. Either this or `vpc_cidr` must be specified
 
 **GCP ONLY:**
 * `gcp_project_id` - (Required GCP) GCP project ID that the VPC to be peered lives in

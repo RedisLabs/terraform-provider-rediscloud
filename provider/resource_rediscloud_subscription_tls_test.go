@@ -42,7 +42,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 
 	var subId int
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccAwsPreExistingCloudAccountPreCheck(t)
@@ -124,7 +124,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEm
 
 	var subId int
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
@@ -203,7 +203,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndIn
 
 	invalidClientSslCertificate := os.Getenv("SSL_CERTIFICATE_INVALID")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccAwsPreExistingCloudAccountPreCheck(t)
@@ -233,7 +233,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseAndDisabledTlsAndIn
 
 	invalidClientSslCertificate := os.Getenv("SSL_CERTIFICATE_INVALID")
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccAwsPreExistingCloudAccountPreCheck(t)

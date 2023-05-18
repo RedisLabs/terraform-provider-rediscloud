@@ -9,8 +9,8 @@ PROVIDER_VERSION = 99.99.99
 PLUGINS_PATH = ~/.terraform.d/plugins
 PLUGINS_PROVIDER_PATH=$(PROVIDER_HOSTNAME)/$(PROVIDER_NAMESPACE)/$(PROVIDER_TYPE)/$(PROVIDER_VERSION)/$(PROVIDER_TARGET)
 
-# Use a parallelism of 3 by default for tests, overriding whatever GOMAXPROCS is set to.
-TEST_PARALLELISM?=3
+# Use a parallelism of 2 by default for tests, overriding whatever GOMAXPROCS is set to.
+TEST_PARALLELISM?=2
 TESTARGS?=-short
 
 BIN=$(CURDIR)/bin
@@ -30,20 +30,21 @@ clean:
 	@echo "Deleting local provider binary"
 	rm -rf $(BIN)
 
+# `-p=1` added to avoid testing packages in parallel which causes `go test` to not stream logs as they are written
 testacc:
-	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 360m -parallel=$(TEST_PARALLELISM)
+	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 360m -p=1 -parallel=$(TEST_PARALLELISM)
 
 install_local: build
 	@echo "Installing local provider binary to plugins mirror path $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)"
 	@mkdir -p $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)
-	@cp ./$(BIN)/terraform-provider-rediscloud_v$(PROVIDER_VERSION) $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)
+	@cp $(BIN)/terraform-provider-rediscloud_v$(PROVIDER_VERSION) $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)
 
 sweep:
 	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
 	go test ./provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
 
-tfproviderlintx: $(BIN)/tfproviderlint
+tfproviderlintx: $(BIN)/tfproviderlintx
 	$(BIN)/tfproviderlintx $(TFPROVIDERLINT_ARGS) ./...
 
-tfproviderlint: $(BIN)/tfproviderlintx
+tfproviderlint: $(BIN)/tfproviderlint
 	$(BIN)/tfproviderlint $(TFPROVIDERLINT_ARGS) ./...

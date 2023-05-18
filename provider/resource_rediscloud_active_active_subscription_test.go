@@ -28,7 +28,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 
 	var subId int
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
@@ -117,7 +117,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 	updatedName := fmt.Sprintf("%v-updatedName", name)
 	resourceName := "rediscloud_active_active_subscription.example"
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
@@ -155,7 +155,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 	updatedName := fmt.Sprintf("%v-updatedName", name)
 	resourceName := "rediscloud_active_active_subscription.example"
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,

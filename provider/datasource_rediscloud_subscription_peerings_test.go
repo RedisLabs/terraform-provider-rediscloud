@@ -33,7 +33,7 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 	)
 	dataSourceName := "data.rediscloud_subscription_peerings.example"
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPeeringPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckSubscriptionDestroy,
