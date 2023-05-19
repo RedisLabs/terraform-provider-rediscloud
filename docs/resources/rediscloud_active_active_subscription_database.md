@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_active_active_subscription_database"
 description: |-
-Database resource for Active-Active Subscriptions in the Terraform provider Redis Cloud.
+  Database resource for Active-Active Subscriptions in the Terraform provider Redis Cloud.
 ---
 
 # Resource: rediscloud_active_active_subscription_database
@@ -79,8 +79,8 @@ output "us-east-2-private-endpoints" {
 ## Argument Reference
 
 The following arguments are supported:
-* `subscription_id`: (Required) The ID of the Active-Active subscription to create the database in
-* `name` - (Required) A meaningful name to identify the database
+* `subscription_id`: (Required) The ID of the Active-Active subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
+* `name` - (Required) A meaningful name to identify the database. **Modifying this attribute will force creation of a new resource.**
 * `memory_limit_in_gb` - (Required) Maximum memory usage for this specific database, including replication and other overhead
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `external_endpoint_for_oss_cluster_api` - (Optional) Should use the external endpoint for open-source (OSS) Cluster API.
@@ -92,7 +92,7 @@ The following arguments are supported:
 * `global_password` - (Optional) Password to access the database of regions that don't override global settings. If left empty, the password will be generated automatically
 * `global_alert` - (Optional) A block defining Redis database alert of regions that don't override global settings, documented below, can be specified multiple times
 * `global_source_ips` - (Optional)  List of source IP addresses or subnet masks of regions that don't override global settings. If specified, Redis clients will be able to connect to this database only from within the specified source IP addresses ranges (example: ['192.168.10.0/32', '192.168.12.0/24'])
-* `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999.
+* `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999. **Modifying this attribute will force creation of a new resource.**
 * `override_region` - (Optional) Override region specific configuration, documented below
 
 

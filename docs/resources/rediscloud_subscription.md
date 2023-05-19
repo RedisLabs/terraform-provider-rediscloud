@@ -59,11 +59,11 @@ resource "rediscloud_subscription" "subscription-resource" {
 The following arguments are supported:
 
 * `name` - (Required) A meaningful name to identify the subscription
-* `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'
+* `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'. **Modifying this attribute will force creation of a new resource.**
 * `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types
-* `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of ‘ram-and-flash’. Default: ‘ram’
+* `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of ‘ram-and-flash’. Default: ‘ram’. **Modifying this attribute will force creation of a new resource.**
 * `allowlist` - (Optional) An allowlist object, documented below 
-* `cloud_provider` - (Required) A cloud provider object, documented below 
+* `cloud_provider` - (Required) A cloud provider object, documented below. **Modifying this attribute will force creation of a new resource.**
 * `creation_plan` - (Required) A creation plan object, documented below
 
 The `allowlist` block supports:
@@ -75,11 +75,11 @@ The `allowlist` block supports:
 
 The `cloud_provider` block supports:
 
-* `provider` - (Optional) The cloud provider to use with the subscription, (either `AWS` or `GCP`). Default: ‘AWS’
-* `cloud_account_id` - (Optional) Cloud account identifier. Default: Redis Labs internal cloud account
+* `provider` - (Optional) The cloud provider to use with the subscription, (either `AWS` or `GCP`). Default: ‘AWS’. **Modifying this attribute will force creation of a new resource.**
+* `cloud_account_id` - (Optional) Cloud account identifier. Default: Redis Labs internal cloud account. **Modifying this attribute will force creation of a new resource.**
 (using Cloud Account ID = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created
 only with Redis Labs internal cloud account
-* `region` - (Required) A region object, documented below
+* `region` - (Required) A region object, documented below. **Modifying this attribute will force creation of a new resource.**
 
 The `creation_plan` block supports:
 
@@ -101,13 +101,13 @@ be the maximum average item size defined in one of your databases.  Default: 100
 
 The cloud_provider `region` block supports:
 
-* `region` - (Required) Deployment region as defined by cloud provider
-* `multiple_availability_zones` - (Optional) Support deployment on multiple availability zones within the selected region. Default: ‘false’
-* `networking_deployment_cidr` - (Required) Deployment CIDR mask. The total number of bits must be 24 (x.x.x.x/24)
+* `region` - (Required) Deployment region as defined by cloud provider. **Modifying this attribute will force creation of a new resource.**
+* `multiple_availability_zones` - (Optional) Support deployment on multiple availability zones within the selected region. Default: ‘false’. **Modifying this attribute will force creation of a new resource.**
+* `networking_deployment_cidr` - (Required) Deployment CIDR mask. The total number of bits must be 24 (x.x.x.x/24). **Modifying this attribute will force creation of a new resource.**
 * `networking_vpc_id` - (Optional) Either an existing VPC Id (already exists in the specific region) or create a new VPC
 (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4986384ad’) and existing
-within the hosting account.
-* `preferred_availability_zones` - (Optional) Availability zones deployment preferences (for the selected provider & region). If multiple_availability_zones is set to 'true', select three availability zones from the list. If you don't want to specify preferred availability zones, set this attribute to an empty list ('[]').
+within the hosting account. **Modifying this attribute will force creation of a new resource.**
+* `preferred_availability_zones` - (Optional) Availability zones deployment preferences (for the selected provider & region). If multiple_availability_zones is set to 'true', select three availability zones from the list. If you don't want to specify preferred availability zones, set this attribute to an empty list ('[]'). **Modifying this attribute will force creation of a new resource.**
 
 ~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI. 
 This difference in behaviour is to guarantee that a plan after an apply does not generate differences. In AWS Redis internal cloud account, please set the zone IDs (for example: `["use-az2", "use-az3", "use-az5"]`).

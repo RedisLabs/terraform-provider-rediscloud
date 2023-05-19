@@ -40,6 +40,7 @@ func resourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 				Description:      "ID of the subscription that the regions belong to",
 				Type:             schema.TypeString,
 				Required:         true,
+				ForceNew:         true,
 				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 			},
 			"delete_regions": {
