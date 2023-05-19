@@ -14,7 +14,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -675,7 +675,7 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 			}
 		}
 	}
-	var databases []*subscriptions.CreateDatabase
+	var dbs []*subscriptions.CreateDatabase
 	for i := 0; i < numDatabases; i++ {
 		createDatabase := subscriptions.CreateDatabase{
 			Name:                  redis.String(dbName + strconv.Itoa(*idx)),
@@ -691,13 +691,13 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 			createDatabase.AverageItemSizeInBytes = redis.Int(averageItemSizeInBytes)
 		}
 		*idx++
-		databases = append(databases, &createDatabase)
+		dbs = append(dbs, &createDatabase)
 	}
-	return databases
+	return dbs
 }
 
 func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) error {
-	wait := &resource.StateChangeConf{
+	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{subscriptions.SubscriptionStatusPending},
 		Target:  []string{subscriptions.SubscriptionStatusActive},
@@ -722,7 +722,7 @@ func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) 
 }
 
 func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient) error {
-	wait := &resource.StateChangeConf{
+	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{subscriptions.SubscriptionStatusDeleting},
 		Target:  []string{"deleted"},
@@ -750,7 +750,7 @@ func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient)
 }
 
 func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClient) error {
-	wait := &resource.StateChangeConf{
+	wait := &retry.StateChangeConf{
 		Delay: 10 * time.Second,
 		Pending: []string{
 			databases.StatusDraft,

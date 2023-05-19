@@ -9,7 +9,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -704,7 +704,7 @@ func getStateAlertsFromDbRegion(dbRegion map[string]interface{}) []*databases.Up
 }
 
 func waitForDatabaseToBeDeleted(ctx context.Context, subId int, dbId int, api *apiClient) error {
-	wait := &resource.StateChangeConf{
+	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{"pending"},
 		Target:  []string{"deleted"},

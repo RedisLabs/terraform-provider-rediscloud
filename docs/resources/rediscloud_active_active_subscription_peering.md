@@ -69,20 +69,20 @@ resource "google_compute_network_peering" "gcp-peering-resource" {
 
 The following arguments are supported:
 
-* `provider_name` - (Optional) The cloud provider to use with the vpc peering, (either `AWS` or `GCP`). Default: ‘AWS’
-* `subscription_id` - (Required) A valid Active-Active subscription predefined in the current account
+* `provider_name` - (Optional) The cloud provider to use with the vpc peering, (either `AWS` or `GCP`). Default: ‘AWS’. **Modifying this attribute will force creation of a new resource.**
+* `subscription_id` - (Required) A valid Active-Active subscription predefined in the current account. **Modifying this attribute will force creation of a new resource.**
 
 **AWS ONLY:**
-* `aws_account_id` - (Required) AWS account ID that the VPC to be peered lives in
-* `source_region` -	(Required) Name of the region to create the VPC peering from
-* `destination_region` - (Required) Name of the region to create the VPC peering to
-* `vpc_id` - (Required) Identifier of the VPC to be peered
-* `vpc_cidr` - (Optional) CIDR range of the VPC to be peered. Either this or `vpc_cidrs` must be specified
-* `vpc_cidrs` - (Optional) CIDR ranges of the VPC to be peered. Either this or `vpc_cidr` must be specified
+* `aws_account_id` - (Required) AWS account ID that the VPC to be peered lives in. **Modifying this attribute will force creation of a new resource.**
+* `source_region` -	(Required) Name of the region to create the VPC peering from. **Modifying this attribute will force creation of a new resource.**
+* `destination_region` - (Required) Name of the region to create the VPC peering to. **Modifying this attribute will force creation of a new resource.**
+* `vpc_id` - (Required) Identifier of the VPC to be peered. **Modifying this attribute will force creation of a new resource.**
+* `vpc_cidr` - (Optional) CIDR range of the VPC to be peered. Either this or `vpc_cidrs` must be specified. **Modifying this attribute will force creation of a new resource.**
+* `vpc_cidrs` - (Optional) CIDR ranges of the VPC to be peered. Either this or `vpc_cidr` must be specified. **Modifying this attribute will force creation of a new resource.**
 
 **GCP ONLY:**
-* `gcp_project_id` - (Required) GCP project ID that the VPC to be peered lives in
-* `gcp_network_name` - (Required) The name of the network to be peered
+* `gcp_project_id` - (Required) GCP project ID that the VPC to be peered lives in. **Modifying this attribute will force creation of a new resource.**
+* `gcp_network_name` - (Required) The name of the network to be peered. **Modifying this attribute will force creation of a new resource.**
 
 ### Timeouts
 

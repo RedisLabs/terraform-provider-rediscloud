@@ -68,19 +68,19 @@ resource "google_compute_network_peering" "example-peering" {
 
 The following arguments are supported:
 
-* `provider_name` - (Optional) The cloud provider to use with the vpc peering, (either `AWS` or `GCP`). Default: ‘AWS’
-* `subscription_id` - (Required) A valid subscription predefined in the current account
+* `provider_name` - (Optional) The cloud provider to use with the vpc peering, (either `AWS` or `GCP`). Default: ‘AWS’. **Modifying this attribute will force creation of a new resource.**
+* `subscription_id` - (Required) A valid subscription predefined in the current account. **Modifying this attribute will force creation of a new resource.**
 
 **AWS ONLY:**
-* `aws_account_id` - (Required AWS) AWS account ID that the VPC to be peered lives in
-* `region` - (Required AWS) AWS Region that the VPC to be peered lives in
-* `vpc_id` - (Required AWS) Identifier of the VPC to be peered
-* `vpc_cidr` - (Optional) CIDR range of the VPC to be peered. Either this or `vpc_cidrs` must be specified
-* `vpc_cidrs` - (Optional) CIDR ranges of the VPC to be peered. Either this or `vpc_cidr` must be specified
+* `aws_account_id` - (Required AWS) AWS account ID that the VPC to be peered lives in. **Modifying this attribute will force creation of a new resource.**
+* `region` - (Required AWS) AWS Region that the VPC to be peered lives in. **Modifying this attribute will force creation of a new resource.**
+* `vpc_id` - (Required AWS) Identifier of the VPC to be peered. **Modifying this attribute will force creation of a new resource.**
+* `vpc_cidr` - (Optional) CIDR range of the VPC to be peered. Either this or `vpc_cidrs` must be specified. **Modifying this attribute will force creation of a new resource.**
+* `vpc_cidrs` - (Optional) CIDR ranges of the VPC to be peered. Either this or `vpc_cidr` must be specified. **Modifying this attribute will force creation of a new resource.**
 
 **GCP ONLY:**
-* `gcp_project_id` - (Required GCP) GCP project ID that the VPC to be peered lives in
-* `gcp_network_name` - (Required GCP) The name of the network to be peered
+* `gcp_project_id` - (Required GCP) GCP project ID that the VPC to be peered lives in. **Modifying this attribute will force creation of a new resource.**
+* `gcp_network_name` - (Required GCP) The name of the network to be peered. **Modifying this attribute will force creation of a new resource.**
 
 ### Timeouts
 

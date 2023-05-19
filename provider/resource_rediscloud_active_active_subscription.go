@@ -274,7 +274,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 
 	cloudDetails := subscription.CloudDetails
 	if len(cloudDetails) == 0 {
-		return diag.FromErr(fmt.Errorf("Cloud details is empty. Subscription status: %s", redis.StringValue(subscription.Status)))
+		return diag.FromErr(fmt.Errorf("cloud details is empty. Subscription status: %s", redis.StringValue(subscription.Status)))
 	}
 	cloudProvider := cloudDetails[0].Provider
 	if err := d.Set("cloud_provider", cloudProvider); err != nil {

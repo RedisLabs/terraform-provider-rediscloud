@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"log"
 
@@ -12,10 +11,7 @@ import (
 var (
 	// Provided by goreleaser configuration for each binary
 	// Allows goreleaser to pass version details
-	version string = "dev"
-
-	// Allows goreleaser pass the specific commit details
-	commit string = ""
+	version = "dev"
 )
 
 func main() {
@@ -30,11 +26,8 @@ func main() {
 	log.SetFlags(0)
 
 	if debugMode {
-		err := plugin.Debug(context.Background(), "RedisLabs/rediscloud", opts)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		return
+		opts.Debug = true
+		opts.ProviderAddr = "RedisLabs/rediscloud"
 	}
 
 	plugin.Serve(opts)
