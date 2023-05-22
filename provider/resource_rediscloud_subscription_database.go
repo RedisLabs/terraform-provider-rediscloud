@@ -69,7 +69,7 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 			"protocol": {
 				Description:      "The protocol that will be used to access the database, (either ‘redis’ or 'memcached’) ",
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.ProtocolValues(), false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.ProtocolValues(), false)),
 				Optional:         true,
 				ForceNew:         true,
 				Computed:         true,
@@ -113,7 +113,7 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 				Description:      "Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)",
 				Type:             schema.TypeString,
 				Required:         true,
-				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice([]string{"number-of-shards", "operations-per-second"}, false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice([]string{"number-of-shards", "operations-per-second"}, false)),
 			},
 			"throughput_measurement_value": {
 				Description: "Throughput value (as applies to selected measurement method)",
@@ -164,7 +164,7 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 				Optional:    true,
 				Elem: &schema.Schema{
 					Type:             schema.TypeString,
-					ValidateDiagFunc: validateDiagFunc(validation.IsURLWithScheme([]string{"redis"})),
+					ValidateDiagFunc: validation.ToDiagFunc(validation.IsURLWithScheme([]string{"redis"})),
 				},
 			},
 			"alert": {
@@ -177,7 +177,7 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 							Description:      "Alert name",
 							Type:             schema.TypeString,
 							Required:         true,
-							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.AlertNameValues(), false)),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.AlertNameValues(), false)),
 						},
 						"value": {
 							Description: "Alert value",
@@ -214,7 +214,7 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 				MinItems:    1,
 				Elem: &schema.Schema{
 					Type:             schema.TypeString,
-					ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
+					ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 				},
 			},
 			"hashing_policy": {
@@ -237,7 +237,7 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 			"port": {
 				Description:      "TCP port on which the database is available",
 				Type:             schema.TypeInt,
-				ValidateDiagFunc: validateDiagFunc(validation.IntBetween(10000, 19999)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.IntBetween(10000, 19999)),
 				Optional:         true,
 				ForceNew:         true,
 			},
@@ -253,7 +253,7 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 							Description:      "Defines the frequency of the automatic backup",
 							Type:             schema.TypeString,
 							Required:         true,
-							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.BackupIntervals(), false)),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.BackupIntervals(), false)),
 						},
 						"time_utc": {
 							Description:      "Defines the hour automatic backups are made - only applicable when interval is `every-12-hours` or `every-24-hours`",
@@ -266,7 +266,7 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 							Description:      "Defines the provider of the storage location",
 							Type:             schema.TypeString,
 							Required:         true,
-							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.BackupStorageTypes(), false)),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.BackupStorageTypes(), false)),
 						},
 						"storage_path": {
 							Description: "Defines a URI representing the backup storage location",

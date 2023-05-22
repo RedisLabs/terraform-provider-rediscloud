@@ -137,7 +137,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 							Description:      "Alert name",
 							Type:             schema.TypeString,
 							Required:         true,
-							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.AlertNameValues(), false)),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.AlertNameValues(), false)),
 						},
 						"value": {
 							Description: "Alert value",
@@ -154,7 +154,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 				MinItems:    1,
 				Elem: &schema.Schema{
 					Type:             schema.TypeString,
-					ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
+					ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 				},
 			},
 			"override_region": {
@@ -178,7 +178,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 										Description:      "Alert name",
 										Type:             schema.TypeString,
 										Required:         true,
-										ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.AlertNameValues(), false)),
+										ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.AlertNameValues(), false)),
 									},
 									"value": {
 										Description: "Alert value",
@@ -201,7 +201,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 							MinItems:    1,
 							Elem: &schema.Schema{
 								Type:             schema.TypeString,
-								ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
+								ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 							},
 						},
 						"override_global_data_persistence": {
@@ -220,7 +220,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 										Description:      "Defines the frequency of the automatic backup",
 										Type:             schema.TypeString,
 										Required:         true,
-										ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.BackupIntervals(), false)),
+										ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.BackupIntervals(), false)),
 									},
 									"time_utc": {
 										Description:      "Defines the hour automatic backups are made - only applicable when interval is `every-12-hours` or `every-24-hours`",
@@ -232,7 +232,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 										Description:      "Defines the provider of the storage location",
 										Type:             schema.TypeString,
 										Required:         true,
-										ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.BackupStorageTypes(), false)),
+										ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.BackupStorageTypes(), false)),
 									},
 									"storage_path": {
 										Description: "Defines a URI representing the backup storage location",
@@ -264,7 +264,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 			"port": {
 				Description:      "TCP port on which the database is available",
 				Type:             schema.TypeInt,
-				ValidateDiagFunc: validateDiagFunc(validation.IntBetween(10000, 19999)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.IntBetween(10000, 19999)),
 				Optional:         true,
 				ForceNew:         true,
 			},
