@@ -57,7 +57,7 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Description:      "Payment method for the requested subscription. If credit card is specified, the payment method Id must be defined.",
 				Type:             schema.TypeString,
 				ForceNew:         true,
-				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^(credit-card|marketplace)$"), "must be 'credit-card' or 'marketplace'")),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(credit-card|marketplace)$"), "must be 'credit-card' or 'marketplace'")),
 				Optional:         true,
 				Default:          "credit-card",
 			},
@@ -65,7 +65,7 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Computed:         true,
 				Description:      "A valid payment method pre-defined in the current account",
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 				Optional:         true,
 			},
 			"cloud_provider": {
@@ -74,7 +74,7 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				ForceNew:         true,
 				Optional:         true,
 				Default:          "AWS",
-				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^(GCP|AWS)$"), "must be 'GCP' or 'AWS'")),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(GCP|AWS)$"), "must be 'GCP' or 'AWS'")),
 			},
 			"creation_plan": {
 				Description: "Information about the planned databases used to optimise the database infrastructure. This information is only used when creating a new subscription and any changes will be ignored after this.",
@@ -132,7 +132,7 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 										Description:      "Deployment CIDR mask",
 										Type:             schema.TypeString,
 										Required:         true,
-										ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
+										ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 									},
 									"write_operations_per_second": {
 										Description: "Write operations per second for creation plan databases",

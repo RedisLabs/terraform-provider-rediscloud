@@ -21,7 +21,7 @@ func dataSourceRedisCloudDatabase() *schema.Resource {
 			"subscription_id": {
 				Description:      "ID of the subscription that the database belongs to",
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 				Required:         true,
 			},
 			"name": {
