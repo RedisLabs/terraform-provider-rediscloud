@@ -21,7 +21,7 @@ func dataSourceRedisCloudRegions() *schema.Resource {
 				Description:      "The name of the cloud provider to filter returned regions, (accepted values are `AWS` or `GCP`).",
 				Optional:         true,
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
 			},
 			"regions": {
 				Description: "A list of regions from either a single or multiple cloud providers",

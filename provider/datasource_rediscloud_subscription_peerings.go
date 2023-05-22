@@ -22,13 +22,13 @@ func dataSourceRedisCloudSubscriptionPeerings() *schema.Resource {
 				Description:      "A valid subscription predefined in the current account",
 				Type:             schema.TypeString,
 				Required:         true,
-				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 			},
 			"status": {
 				Description: "Current status of the account - `initiating-request`, `pending-acceptance`, `active`, `inactive` or `failed`",
 				Optional:    true,
 				Type:        schema.TypeString,
-				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice([]string{
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice([]string{
 					subscriptions.VPCPeeringStatusInitiatingRequest,
 					subscriptions.VPCPeeringStatusActive,
 					subscriptions.VPCPeeringStatusInactive,

@@ -27,7 +27,7 @@ func dataSourceRedisCloudCloudAccount() *schema.Resource {
 				Description:      "The cloud provider of the cloud account, (either `AWS` or `GCP`)",
 				Optional:         true,
 				Computed:         true,
-				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
 			},
 			"name": {
 				Type:        schema.TypeString,

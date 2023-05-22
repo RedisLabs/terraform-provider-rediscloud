@@ -41,7 +41,7 @@ func resourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 				Type:             schema.TypeString,
 				Required:         true,
 				ForceNew:         true,
-				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 			},
 			"delete_regions": {
 				Description: "Delete regions flag has to be set for re-creating and deleting regions",
@@ -80,7 +80,7 @@ func resourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 							Description:      "Deployment CIDR mask",
 							Type:             schema.TypeString,
 							Required:         true,
-							ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 						},
 
 						"database": {

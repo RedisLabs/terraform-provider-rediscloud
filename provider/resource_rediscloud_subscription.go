@@ -61,7 +61,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Description:      "Payment method for the requested subscription. If credit card is specified, the payment method Id must be defined.",
 				Type:             schema.TypeString,
 				ForceNew:         true,
-				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^(credit-card|marketplace)$"), "must be 'credit-card' or 'marketplace'")),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(credit-card|marketplace)$"), "must be 'credit-card' or 'marketplace'")),
 				Optional:         true,
 				Default:          "credit-card",
 			},
@@ -69,7 +69,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Computed:         true,
 				Description:      "A valid payment method pre-defined in the current account",
 				Type:             schema.TypeString,
-				ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 				Optional:         true,
 			},
 			"memory_storage": {
@@ -78,7 +78,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Optional:         true,
 				ForceNew:         true,
 				Default:          "ram",
-				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(databases.MemoryStorageValues(), false)),
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.MemoryStorageValues(), false)),
 			},
 			"allowlist": {
 				Description: "An allowlist object",
@@ -93,7 +93,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Optional:    true,
 							Elem: &schema.Schema{
 								Type:             schema.TypeString,
-								ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
+								ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 							},
 						},
 						"security_group_ids": {
@@ -122,14 +122,14 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Optional:         true,
 							ForceNew:         true,
 							Default:          "AWS",
-							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
 						},
 						"cloud_account_id": {
 							Description:      "Cloud account identifier. Default: Redis Labs internal cloud account (using Cloud Account Id = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created only with Redis Labs internal cloud account",
 							Type:             schema.TypeString,
 							Optional:         true,
 							ForceNew:         true,
-							ValidateDiagFunc: validateDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 							Default:          "1",
 						},
 						"region": {
@@ -179,7 +179,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 										Type:             schema.TypeString,
 										ForceNew:         true,
 										Required:         true,
-										ValidateDiagFunc: validateDiagFunc(validation.IsCIDR),
+										ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 									},
 									"networking_vpc_id": {
 										Description: "Either an existing VPC Id (already exists in the specific region) or create a new VPC (if no VPC is specified)",
@@ -244,7 +244,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 							Description:      "Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)",
 							Type:             schema.TypeString,
 							Required:         true,
-							ValidateDiagFunc: validateDiagFunc(validation.StringInSlice([]string{"number-of-shards", "operations-per-second"}, false)),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice([]string{"number-of-shards", "operations-per-second"}, false)),
 						},
 						"throughput_measurement_value": {
 							Description: "Throughput value (as applies to selected measurement method)",
