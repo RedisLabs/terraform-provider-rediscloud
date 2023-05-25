@@ -240,7 +240,6 @@ resource "rediscloud_subscription" "example" {
     memory_limit_in_gb = 1
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 1000
-    average_item_size_in_bytes = 1
     quantity = 1
     replication=false
     support_oss_cluster_api=false
@@ -381,7 +380,7 @@ resource "rediscloud_subscription" "example" {
   memory_storage    = "ram"
   allowlist {
     cidrs = ["192.168.0.0/16"]
-	security_group_ids = []
+    security_group_ids = []
   }
   cloud_provider {
     provider         = data.rediscloud_cloud_account.account.provider_type
@@ -393,7 +392,6 @@ resource "rediscloud_subscription" "example" {
     }
   }
   creation_plan {
-    average_item_size_in_bytes   = 1
     memory_limit_in_gb           = 1
     quantity                     = 1
     replication                  = false

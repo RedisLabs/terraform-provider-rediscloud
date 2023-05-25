@@ -105,7 +105,7 @@ The following arguments are supported:
 * `external_endpoint_for_oss_cluster_api` - (Optional) Should use the external endpoint for open-source (OSS) Cluster API.
   Can only be enabled if OSS Cluster API support is enabled. Default: 'false'
 * `client_ssl_certificate` - (Optional) SSL certificate to authenticate user connections
-* `periodic_backup_path` - (Optional) Path that will be used to store database backup files
+* `periodic_backup_path` - (Optional) Path that will be used to store database backup files. **Deprecated: Use `remote_backup` block instead**
 * `replica_of` - (Optional) Set of Redis database URIs, in the format `redis://user:password@host:port`, that this
   database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided.
   Cannot be enabled when `support_oss_cluster_api` is enabled.
