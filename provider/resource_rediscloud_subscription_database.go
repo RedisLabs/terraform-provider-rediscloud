@@ -72,7 +72,7 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.ProtocolValues(), false)),
 				Optional:         true,
 				ForceNew:         true,
-				Computed:         true,
+				Default:          "redis",
 			},
 			"memory_limit_in_gb": {
 				Description: "Maximum memory usage for this specific database",
@@ -157,6 +157,7 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 				Optional:      true,
 				Default:       "",
 				ConflictsWith: []string{"remote_backup"},
+				Deprecated:    "Use `remote_backup` block instead",
 			},
 			"replica_of": {
 				Description: "Set of Redis database URIs, in the format `redis://user:password@host:port`, that this database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided",
@@ -287,6 +288,7 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 	subscriptionMutex.Lock(subId)
 
 	name := d.Get("name").(string)
+	protocol := d.Get("protocol").(string)
 	memoryLimitInGB := d.Get("memory_limit_in_gb").(float64)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
 	dataPersistence := d.Get("data_persistence").(string)
@@ -329,6 +331,7 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 
 	createDatabase := databases.CreateDatabase{
 		Name:                 redis.String(name),
+		Protocol:             redis.String(protocol),
 		MemoryLimitInGB:      redis.Float64(memoryLimitInGB),
 		SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
 		DataPersistence:      redis.String(dataPersistence),
@@ -348,10 +351,6 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 
 	if averageItemSizeInBytes > 0 {
 		createDatabase.AverageItemSizeInBytes = &averageItemSizeInBytes
-	}
-
-	if v, ok := d.GetOk("protocol"); ok {
-		createDatabase.Protocol = redis.String(v.(string))
 	}
 
 	if v, ok := d.GetOk("port"); ok {

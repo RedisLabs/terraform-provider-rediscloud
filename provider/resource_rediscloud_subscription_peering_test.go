@@ -163,7 +163,6 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    average_item_size_in_bytes = 1
     memory_limit_in_gb = 1
     quantity = 1
     replication=false
@@ -204,14 +203,13 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    average_item_size_in_bytes = 1
     memory_limit_in_gb = 1
     quantity = 1
     replication=false
     support_oss_cluster_api=false
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
-	modules = []
+    modules = []
   }
 }
 

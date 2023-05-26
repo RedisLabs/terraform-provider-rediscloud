@@ -313,13 +313,11 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	memoryStorage := d.Get("memory_storage").(string)
 
 	// Create databases
-	var dbs []*subscriptions.CreateDatabase
-
 	plan := d.Get("creation_plan").([]interface{})
 
 	// Create creation-plan databases
 	planMap := plan[0].(map[string]interface{})
-	dbs = buildSubscriptionCreatePlanDatabases(planMap)
+	dbs, diags := buildSubscriptionCreatePlanDatabases(memoryStorage, planMap)
 
 	createSubscriptionRequest := subscriptions.CreateSubscription{
 		Name:            redis.String(name),
@@ -333,7 +331,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 
 	subId, err := api.client.Subscription.Create(ctx, createSubscriptionRequest)
 	if err != nil {
-		return diag.FromErr(err)
+		return append(diags, diag.FromErr(err)...)
 	}
 
 	d.SetId(strconv.Itoa(subId))
@@ -341,14 +339,14 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	// Confirm Subscription Active status
 	err = waitForSubscriptionToBeActive(ctx, subId, api)
 	if err != nil {
-		return diag.FromErr(err)
+		return append(diags, diag.FromErr(err)...)
 	}
 
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are listed .
 	// This additional wait ensures that the databases will be listed before calling api.client.Database.List()
 	time.Sleep(10 * time.Second) //lintignore:R018
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return diag.FromErr(err)
+		return append(diags, diag.FromErr(err)...)
 	}
 
 	// Locate Databases to confirm Active status
@@ -358,7 +356,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 		dbId := *dbList.Value().ID
 
 		if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-			return diag.FromErr(err)
+			return append(diags, diag.FromErr(err)...)
 		}
 		// Delete each creation-plan database
 		dbErr := api.client.Database.Delete(ctx, subId, dbId)
@@ -367,12 +365,12 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 		}
 	}
 	if dbList.Err() != nil {
-		return diag.FromErr(dbList.Err())
+		return append(diags, diag.FromErr(dbList.Err())...)
 	}
 
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
-	return resourceRedisCloudSubscriptionUpdate(ctx, d, meta)
+	return append(diags, resourceRedisCloudSubscriptionUpdate(ctx, d, meta)...)
 }
 
 func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -586,7 +584,7 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 	return createCloudProviders, nil
 }
 
-func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*subscriptions.CreateDatabase {
+func buildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[string]interface{}) ([]*subscriptions.CreateDatabase, diag.Diagnostics) {
 
 	createDatabases := make([]*subscriptions.CreateDatabase, 0)
 
@@ -600,6 +598,18 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 	supportOSSClusterAPI := planMap["support_oss_cluster_api"].(bool)
 	replication := planMap["replication"].(bool)
 	planModules := interfaceToStringSlice(planMap["modules"].([]interface{}))
+
+	var warnings diag.Diagnostics
+	if memoryStorage == databases.MemoryStorageRam && averageItemSizeInBytes != 0 {
+		// TODO This should be changed to an error when releasing 2.0 of the provider
+		warnings = diag.Diagnostics{
+			diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  "`average_item_size_in_bytes` not applicable for `ram` memory storage ",
+				Detail:   "`average_item_size_in_bytes` is only applicable when `memory_storage` is `ram-and-flash`. This will be an error in a future release of the provider",
+			},
+		}
+	}
 
 	// Check if one of the modules is RedisGraph
 	containsGraph := false
@@ -635,7 +645,7 @@ func buildSubscriptionCreatePlanDatabases(planMap map[string]interface{}) []*sub
 			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases-1)...)
 		}
 	}
-	return createDatabases
+	return createDatabases, warnings
 }
 
 // createDatabase returns a CreateDatabase struct with the given parameters
