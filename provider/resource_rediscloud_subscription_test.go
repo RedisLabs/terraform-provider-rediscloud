@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -44,7 +46,7 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
 					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "0"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.0", "RedisJSON"),
@@ -81,7 +83,7 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionNoCreationPlan, testCloudAccountName, name, "ram"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "0"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.replication", "false"),
@@ -218,7 +220,8 @@ func TestModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRamAndFlash, planMap)
+	assert.Empty(t, diags)
 	otherDatabases := 0
 	graphDatabases := 0
 	for _, createDb := range createDbs {
@@ -243,7 +246,7 @@ func TestModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 func TestModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 	numDatabases := 5
 	planMap := map[string]interface{}{
-		"average_item_size_in_bytes":   1000,
+		"average_item_size_in_bytes":   0,
 		"memory_limit_in_gb":           float64(1),
 		"modules":                      []interface{}{"RedisJSON", "RedisGraph", "RedisBloom"},
 		"quantity":                     numDatabases,
@@ -252,7 +255,8 @@ func TestModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	assert.Empty(t, diags)
 	graphDatabases := 0
 	otherDatabases := 0
 	for _, createDb := range createDbs {
@@ -276,7 +280,7 @@ func TestModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 func TestModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 	numDatabases := 5
 	planMap := map[string]interface{}{
-		"average_item_size_in_bytes":   1000,
+		"average_item_size_in_bytes":   0,
 		"memory_limit_in_gb":           float64(1),
 		"modules":                      []interface{}{"RedisGraph"},
 		"quantity":                     numDatabases,
@@ -285,8 +289,9 @@ func TestModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, numDatabases)
+	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
 		modules := createDb.Modules
 		assert.True(t, len(modules) == 1 && *modules[0].Name == "RedisGraph")
@@ -297,7 +302,7 @@ func TestModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 func TestModulesAllocationWhenNoGraph(t *testing.T) {
 	numDatabases := 5
 	planMap := map[string]interface{}{
-		"average_item_size_in_bytes":   1000,
+		"average_item_size_in_bytes":   0,
 		"memory_limit_in_gb":           float64(1),
 		"modules":                      []interface{}{"RedisJSON", "RediSearch", "RedisBloom"},
 		"quantity":                     numDatabases,
@@ -306,8 +311,9 @@ func TestModulesAllocationWhenNoGraph(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, numDatabases)
+	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
 		var modules []string
 		for _, module := range createDb.Modules {
@@ -320,7 +326,7 @@ func TestModulesAllocationWhenNoGraph(t *testing.T) {
 
 func TestNoModulesInCreatePlanDatabases(t *testing.T) {
 	planMap := map[string]interface{}{
-		"average_item_size_in_bytes":   1000,
+		"average_item_size_in_bytes":   0,
 		"memory_limit_in_gb":           float64(1),
 		"modules":                      []interface{}{},
 		"quantity":                     2,
@@ -329,8 +335,9 @@ func TestNoModulesInCreatePlanDatabases(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, 2)
+	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
 		modules := createDb.Modules
 		assert.Len(t, modules, 0)
@@ -348,8 +355,9 @@ func TestNoAverageItemSizeInBytes(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, 2)
+	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
 		assert.Nil(t, createDb.AverageItemSizeInBytes)
 	}
@@ -357,7 +365,7 @@ func TestNoAverageItemSizeInBytes(t *testing.T) {
 
 func TestRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 	planMap := map[string]interface{}{
-		"average_item_size_in_bytes":   1000,
+		"average_item_size_in_bytes":   0,
 		"memory_limit_in_gb":           float64(1),
 		"modules":                      []interface{}{"RediSearch"},
 		"quantity":                     2,
@@ -366,7 +374,8 @@ func TestRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 12000,
 	}
-	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
 	assert.Equal(t, 12000/1000, *createDb.ThroughputMeasurement.Value)
@@ -374,7 +383,7 @@ func TestRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 
 func TestRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 	planMap := map[string]interface{}{
-		"average_item_size_in_bytes":   1000,
+		"average_item_size_in_bytes":   0,
 		"memory_limit_in_gb":           float64(1),
 		"modules":                      []interface{}{"RediSearch"},
 		"quantity":                     2,
@@ -383,7 +392,8 @@ func TestRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 12000,
 	}
-	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
 	assert.Equal(t, 12000/500, *createDb.ThroughputMeasurement.Value)
@@ -391,7 +401,7 @@ func TestRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 
 func TestRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 	planMap := map[string]interface{}{
-		"average_item_size_in_bytes":   1000,
+		"average_item_size_in_bytes":   0,
 		"memory_limit_in_gb":           float64(1),
 		"modules":                      []interface{}{"RedisGraph"},
 		"quantity":                     2,
@@ -400,7 +410,8 @@ func TestRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "operations-per-second", *createDb.ThroughputMeasurement.By)
 	assert.Equal(t, 2*250, *createDb.ThroughputMeasurement.Value)
@@ -417,7 +428,9 @@ func TestRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs := buildSubscriptionCreatePlanDatabases(planMap)
+	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	assert.Len(t, diags, 1, "Warning should be reported when storage was ram and using `average_item_size_in_bytes`")
+	assert.Equal(t, diag.Warning, diags[0].Severity)
 	createDb := createDbs[0]
 	assert.Equal(t, "operations-per-second", *createDb.ThroughputMeasurement.By)
 	assert.Equal(t, 2*500, *createDb.ThroughputMeasurement.Value)
@@ -485,7 +498,6 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    average_item_size_in_bytes = 1
     memory_limit_in_gb = 1
     quantity = 1
     replication=false
@@ -529,7 +541,6 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    average_item_size_in_bytes = 1
     memory_limit_in_gb = 1
     quantity = 1
     replication=false
@@ -604,7 +615,6 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    average_item_size_in_bytes = 1
     memory_limit_in_gb = 2
     quantity = 1
     replication=false
@@ -646,7 +656,6 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    average_item_size_in_bytes = 1
     memory_limit_in_gb = 2
     quantity = 1
     replication=false
