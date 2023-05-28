@@ -36,14 +36,12 @@ resource "rediscloud_subscription" "subscription-resource" {
   // This block needs to be defined for provisioning a new subscription.
   // This allows creating a well-optimised hardware specification for databases in the cluster
   creation_plan {
-    average_item_size_in_bytes = 1
-    memory_limit_in_gb = 1
+    memory_limit_in_gb = 15
     quantity = 2
-    replication=false
-    support_oss_cluster_api=false
+    replication=true
     throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-    modules = ["RedisJSON", "RedisBloom"]
+    throughput_measurement_value = 20000
+    modules = ["RedisJSON"]
   }
 }
 
@@ -51,21 +49,15 @@ resource "rediscloud_subscription" "subscription-resource" {
 resource "rediscloud_subscription_database" "database-resource" {
     subscription_id = rediscloud_subscription.subscription-resource.id
     name = "database-name"
-    protocol = "redis"
-    memory_limit_in_gb = 1
-    data_persistence = "none"
+    memory_limit_in_gb = 10
+    data_persistence = "aof-every-write"
     throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-    support_oss_cluster_api = false 
-    external_endpoint_for_oss_cluster_api = false
+    throughput_measurement_value = 20000
     replication = true
    
     modules = [
         {
           name = "RedisJSON"
-        },
-        {
-          name = "RedisBloom"
         }
     ]
     
@@ -81,10 +73,9 @@ resource "rediscloud_subscription_database" "database-resource" {
 resource "rediscloud_subscription_database" "database-resource-replica" {
     subscription_id = rediscloud_subscription.subscription-resource.id
     name = "database-name-replica"
-    protocol = "redis"
-    memory_limit_in_gb = 1
+    memory_limit_in_gb = 15
     throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
+    throughput_measurement_value = 20000
     replica_of = [format("redis://%s", rediscloud_subscription_database.database-resource.public_endpoint)]
     depends_on = [rediscloud_subscription.subscription-resource]
 
@@ -111,7 +102,7 @@ The following arguments are supported:
   Cannot be enabled when `support_oss_cluster_api` is enabled.
 * `modules` - (Optional) A list of modules objects, documented below. **Modifying this attribute will force creation of a new resource.**
 * `alert` - (Optional) A block defining Redis database alert, documented below, can be specified multiple times
-* `data_persistence` - (Optional) Rate of database data persistence (in persistent storage). Default: ‘none’
+* `data_persistence` - (Optional) Rate of database's storage data persistence (either: 'none', 'aof-every-1-second', 'aof-every-write', 'snapshot-every-1-hour', 'snapshot-every-6-hours' or 'snapshot-every-12-hours'). Default: ‘none’
 * `data_eviction` - (Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'). Default: 'volatile-lru'
 * `password` - (Optional) Password to access the database. If omitted, a random 32 character long alphanumeric password will be automatically generated
 * `replication` - (Optional) Databases replication. Default: ‘true’
