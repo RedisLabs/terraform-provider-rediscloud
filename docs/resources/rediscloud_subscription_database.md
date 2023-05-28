@@ -37,7 +37,7 @@ resource "rediscloud_subscription" "subscription-resource" {
   // This allows creating a well-optimised hardware specification for databases in the cluster
   creation_plan {
     memory_limit_in_gb = 15
-    quantity = 2
+    quantity = 1
     replication=true
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 20000
@@ -49,7 +49,7 @@ resource "rediscloud_subscription" "subscription-resource" {
 resource "rediscloud_subscription_database" "database-resource" {
     subscription_id = rediscloud_subscription.subscription-resource.id
     name = "database-name"
-    memory_limit_in_gb = 10
+    memory_limit_in_gb = 15
     data_persistence = "aof-every-write"
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 20000
@@ -68,18 +68,6 @@ resource "rediscloud_subscription_database" "database-resource" {
     depends_on = [rediscloud_subscription.subscription-resource]
 
 }
-
-// An example of how a replica database can be provisioned
-resource "rediscloud_subscription_database" "database-resource-replica" {
-    subscription_id = rediscloud_subscription.subscription-resource.id
-    name = "database-name-replica"
-    memory_limit_in_gb = 15
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 20000
-    replica_of = [format("redis://%s", rediscloud_subscription_database.database-resource.public_endpoint)]
-    depends_on = [rediscloud_subscription.subscription-resource]
-
-} 
 ```
 
 ## Argument Reference
