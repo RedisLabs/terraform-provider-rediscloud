@@ -44,12 +44,12 @@ resource "rediscloud_subscription" "subscription-resource" {
   // This block needs to be defined for provisioning a new subscription.
   // This allows creating a well-optimised hardware specification for databases in the cluster
   creation_plan {
-    memory_limit_in_gb = 2
+    memory_limit_in_gb = 15
     quantity = 1
-    replication= false
+    replication= true
     throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-    modules = ["RediSearch", "RedisBloom"]
+    throughput_measurement_value = 20000
+    modules = ["RedisJSON"]
   }
 }
 ```
@@ -87,7 +87,7 @@ The `creation_plan` block supports:
 * `modules` - (Optional) a list of modules that will be used by the databases in this subscription. Not currently compatible with ‘ram-and-flash’ memory storage.
 Example: `modules = ["RedisJSON", RedisBloom"]`
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
-* `replication` - (Required) Databases replication. Set to `true` if any of your databases will use replication
+* `replication` - (Optional) Databases replication. Default: ‘true’
 * `quantity` - (Required) The planned number of databases in the subscription
 * `throughput_measurement_by` - (Required) Throughput measurement method that will be used by your databases, (either ‘number-of-shards’ or ‘operations-per-second’)
 * `throughput_measurement_value` - (Required) Throughput value that will be used by your databases (as applies to selected measurement method). The value needs to be the maximum throughput measurement value defined in one of your databases
