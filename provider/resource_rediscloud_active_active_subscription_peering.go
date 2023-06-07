@@ -168,12 +168,12 @@ func resourceRedisCloudSubscriptionActiveActivePeeringCreate(ctx context.Context
 
 		sourceRegion, ok := d.GetOk("source_region")
 		if !ok {
-			return diag.Errorf("`region` must be set when `provider_name` is `AWS`")
+			return diag.Errorf("`source_region` must be set when `provider_name` is `AWS`")
 		}
 
 		destinationRegion, ok := d.GetOk("destination_region")
 		if !ok {
-			return diag.Errorf("`region` must be set when `provider_name` is `AWS`")
+			return diag.Errorf("`destination_region` must be set when `provider_name` is `AWS`")
 		}
 
 		awsAccountID, ok := d.GetOk("aws_account_id")
