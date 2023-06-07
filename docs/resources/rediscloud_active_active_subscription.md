@@ -62,7 +62,6 @@ The `creation_plan` block supports:
 
 * `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database, including replication and other overhead
 * `quantity` - (Required) The planned number of databases in the subscription.
-* `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 
 The creation_plan `region` block supports:
 
