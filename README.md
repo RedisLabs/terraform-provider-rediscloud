@@ -2,13 +2,13 @@ Terraform Provider Redis Cloud
 ==================
 
 The Redis Enterprise Cloud Terraform provider is a plugin for Terraform that allows Redis Enterprise Cloud Flexible customers to manage the full 
-lifecyle of their subscriptions and related Redis databases.
+lifecycle of their subscriptions and related Redis databases.
 
 Requirements
 ------------
 
--	[Terraform](https://www.terraform.io/downloads.html) >= 0.12.x
--	[Go](https://golang.org/doc/install) >= 1.15
+-	[Terraform](https://www.terraform.io/downloads.html) >= 1.x
+-	[Go](https://golang.org/doc/install) >= 1.19
 
 Quick Starts
 ------------
@@ -18,8 +18,8 @@ Quick Starts
 To use the Redis Enterprise Cloud Terraform provider you will need to set the following environment variables, 
 and these are created through the Redis Enterprise Cloud console under the settings menu.
 
-- REDISCLOUD_ACCESS_KEY - Account Cloud API Access Key
-- REDISCLOUD_SECRET_KEY - Individual user Cloud API Secret Key
+- `REDISCLOUD_ACCESS_KEY` - Account Cloud API Access Key
+- `REDISCLOUD_SECRET_KEY` - Individual user Cloud API Secret Key
 
 
 Developing the Provider
@@ -32,8 +32,8 @@ Building the Provider
 ---------------------
 
 1. Clone the repository
-1. Enter the repository directory
-1. Build the provider using the `make build` command: 
+2. Enter the repository directory
+3. Build the provider using the `make build` command: 
 ```sh
 $ make build
 ```
@@ -62,7 +62,7 @@ The provider will now be installed in the following location ready to be used by
                     └── terraform-provider-rediscloud_v99.99.99
 ```
 
-The provider binary is built using a version number of `99.99.99` and this will allow terraform to use the locally 
+The provider binary is built using a version number of `99.99.99` and this will allow Terraform to use the locally 
 built provider over a released version.
 
 The terraform provider is installed and can now be discovered by Terraform through the following HCL block.
@@ -78,8 +78,8 @@ terraform {
 }
 ``` 
 
-The following is an example of using the rediscloud_regions data-source to discover a list of supported regions.  It can be 
-used to verify that the provider is setup and installed correctly without incurring the cost of subscriptions and databases.
+The following is an example of using the `rediscloud_regions` data-source to discover a list of supported regions.  It can be 
+used to verify that the provider is set up and installed correctly without incurring the cost of subscriptions and databases.
 
 ```hcl-terraform
 data "rediscloud_regions" "example" {
@@ -123,8 +123,8 @@ $ TEST_PARALLELISM=2 make testacc
 A core set of Acceptance tests are executed through the build pipeline, (considered short tests).  
 Functionality that requires additional setup or environment variables can be executed using the following flags.
 
-| Flag      | Description                                       |
-|-----------|---------------------------------------------------|
+| Flag        | Description                                       |
+|-------------|---------------------------------------------------|
 | `-tls`      | Allows execution of TLS based acceptance tests    |
 | `-contract` | Allows execution of contract payment method tests |
 
@@ -132,7 +132,7 @@ Adding Dependencies
 -------------------
 
 This provider uses [Go modules](https://github.com/golang/go/wiki/Modules).
-Please see the Go documentation for the most up to date information about using Go modules.
+Please see the Go documentation for the most up-to-date information about using Go modules.
 
 To add a new dependency `github.com/author/dependency` to your Terraform provider:
 
@@ -142,3 +142,13 @@ go mod tidy
 ```
 
 Then commit the changes to `go.mod` and `go.sum`.
+
+Releasing the Provider
+----------------------
+
+The steps to release a provider are:
+1. Decide what the next version number will be. As this provider tries to follow [semantic versioning](https://semver.org/), the best strategy would be to look at the previous release number and decide whether the `MAJOR`, `MINOR` or `PATCH` version should be incremented.
+2. Create a new tag on your local copy of this Git repository in the format of `vMAJOR.MINOR.PATCH`, where `MAJOR.MINOR.PATCH` is the version number you settled on in the previous step.
+3. Push the tag from your local copy to GitHub. This will trigger the [release GitHub Action workflow](.github/workflows/release.yml) that will create the release for you.
+4. While you are waiting for GitHub to finish building the release, update the [CHANGELOG](./CHANGELOG.md) with what has been added, fixed and changed in this release.
+5. Once the release workflow has finished, the Terraform Registry will eventually spot the new version and update [the registry page](https://registry.terraform.io/providers/RedisLabs/rediscloud/latest) - this may take a few minutes.
