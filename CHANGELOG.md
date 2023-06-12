@@ -2,6 +2,47 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+## 1.2.0 (9 June 2023)
+
+## Added
+- Add support for using a custom port number in normal or active/active databases
+- Add support for configuring backups for normal or active/active databases
+- Add support for peering normal or active/active subscriptions with AWS VPCs that use multiple CIDR ranges
+
+### Fixed
+- Documentation fixes
+- Make CI runs stream test output rather than batching it up at the end
+
+### Changed
+- `rediscloud_subscription.preferred_availability_zones` changed to optional
+- `rediscloud_subscription.modules` changed to optional
+- `rediscloud_subscription_database.protocol` changed to default to `redis`
+- Mark `rediscloud_subscription_database.periodic_backup_path` as deprecated - use `remote_backup` instead.
+- Emit a warning if `average_item_size_in_bytes` has been specified when `memory_storage` is set to `ram` as this attribute is only applicable with `ram-and-flash` storage. 
+
+## 1.1.1 (6 March 2023)
+
+### Fixed
+- Documentation fixes
+
+## 1.1.0 (6 March 2023)
+
+### Added
+- Added support for active/active databases
+
+### Fixed
+- Documentation fixes
+
+## 1.0.3 (1 February 2023)
+
+### Fixed
+- Documentation fixes
+
+## 1.0.2 (16 January 2023)
+
+### Fixed
+- Documentation fixes
+
 ## 1.0.1 (12 September 2022)
 
 ### Changed
