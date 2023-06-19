@@ -34,9 +34,9 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 	dataSourceName := "data.rediscloud_subscription_peerings.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPeeringPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPeeringPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: tf,

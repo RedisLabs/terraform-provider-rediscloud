@@ -8,9 +8,9 @@ import (
 
 func TestAccDataSourceRedisCloudDatabaseModules_basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      nil, // database modules isn't a 'real' resource
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             nil, // database modules isn't a 'real' resource
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudDatabaseModules,

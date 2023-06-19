@@ -21,9 +21,9 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudCreateActiveActiveRegion, subName, dbName, dbPass),
@@ -45,7 +45,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 							return err
 						}
 
-						client := testProvider.Meta().(*apiClient)
+						client := sdkv2Provider.Meta().(*apiClient)
 						sub, err := client.client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err

@@ -13,9 +13,9 @@ func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
 	name := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      nil, // test doesn't create a resource at the moment, so don't need to check anything
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             nil, // test doesn't create a resource at the moment, so don't need to check anything
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccDatasourceRedisCloudCloudAccountDataSource, name),

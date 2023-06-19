@@ -17,9 +17,9 @@ func TestAccDataSourceRedisCloudDatabase_basic(t *testing.T) {
 	dataSourceName := "data.rediscloud_database.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccDatasourceRedisCloudDatabase, testCloudAccountName, name, password),

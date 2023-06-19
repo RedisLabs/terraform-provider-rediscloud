@@ -32,9 +32,9 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 	resourceName := "rediscloud_cloud_account.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckCloudAccountDestroy,
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             testAccCheckCloudAccountDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: tf,
@@ -56,7 +56,7 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 }
 
 func testAccCheckCloudAccountDestroy(s *terraform.State) error {
-	client := testProvider.Meta().(*apiClient)
+	client := sdkv2Provider.Meta().(*apiClient)
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_cloud_account" {
