@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var tlsFlag = flag.Bool("tls", false,
@@ -48,8 +48,8 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 			testAccAwsPreExistingCloudAccountPreCheck(t)
 			testAccTLSValidCertificatePreCheck(t)
 		},
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, testCloudAccountName, name, 1, password, clientSslCertificate),
@@ -72,7 +72,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 							return err
 						}
 
-						client := testProvider.Meta().(*apiClient)
+						client := sdkv2Provider.Meta().(*apiClient)
 						sub, err := client.client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
@@ -125,9 +125,9 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEm
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndWithoutCert, testCloudAccountName, name, 1, password),
@@ -150,7 +150,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEm
 							return err
 						}
 
-						client := testProvider.Meta().(*apiClient)
+						client := sdkv2Provider.Meta().(*apiClient)
 						sub, err := client.client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
@@ -209,8 +209,8 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndIn
 			testAccAwsPreExistingCloudAccountPreCheck(t)
 			testAccTLSInvalidCertificatePreCheck(t)
 		},
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, testCloudAccountName, name, 1, password, invalidClientSslCertificate),
@@ -239,8 +239,8 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseAndDisabledTlsAndIn
 			testAccAwsPreExistingCloudAccountPreCheck(t)
 			testAccTLSInvalidCertificatePreCheck(t)
 		},
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithoutEnableTlsAndWithCert, testCloudAccountName, name, 1, password, invalidClientSslCertificate),
