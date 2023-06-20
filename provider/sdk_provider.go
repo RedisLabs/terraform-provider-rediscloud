@@ -6,7 +6,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"log"
 	"os"
+	"strings"
 
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 )
@@ -66,7 +68,7 @@ func NewSdkProvider(version string) func() *schema.Provider {
 }
 
 func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	return func(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+	return func(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 		var config []rediscloudApi.Option
 		config = append(config, rediscloudApi.AdditionalUserAgent(p.UserAgent("terraform-provider-rediscloud", version)))
 
@@ -88,7 +90,7 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 			config = append(config, rediscloudApi.LogRequests(true))
 		}
 
-		config = append(config, rediscloudApi.Logger(&debugLogger{}))
+		config = append(config, rediscloudApi.Logger(&sdkDebugLogger{}))
 
 		client, err := rediscloudApi.NewClient(config...)
 		if err != nil {
@@ -99,4 +101,18 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 			client: client,
 		}, nil
 	}
+}
+
+type sdkDebugLogger struct{}
+
+func (d *sdkDebugLogger) Printf(format string, v ...interface{}) {
+	log.Printf("[DEBUG] [rediscloud-go-api] "+format, v...)
+}
+
+func (d *sdkDebugLogger) Println(v ...interface{}) {
+	var items []string
+	for _, i := range v {
+		items = append(items, fmt.Sprintf("%s", i))
+	}
+	log.Printf("[DEBUG] [rediscloud-go-api] %s", strings.Join(items, " "))
 }

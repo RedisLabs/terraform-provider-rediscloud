@@ -164,7 +164,7 @@ func (p *redisCloudProvider) Configure(ctx context.Context, req provider.Configu
 		config = append(config, rediscloudApi.LogRequests(true))
 	}
 
-	config = append(config, rediscloudApi.Logger(&debugLogger{}))
+	config = append(config, rediscloudApi.Logger(&frameworkDebugLogger{ctx}))
 
 	// TODO This block might not be necessary
 	ctx = tflog.SetField(ctx, "rediscloud_url", url)
@@ -209,4 +209,21 @@ func NewFrameworkProvider(version string) func() provider.Provider {
 			version: version,
 		}
 	}
+}
+
+type frameworkDebugLogger struct {
+	ctx context.Context
+}
+
+func (d *frameworkDebugLogger) Printf(format string, v ...interface{}) {
+	message := fmt.Sprintf(format, v...)
+	tflog.Debug(d.ctx, message)
+}
+
+func (d *frameworkDebugLogger) Println(v ...interface{}) {
+	var items []string
+	for _, i := range v {
+		items = append(items, fmt.Sprintf("%s", i))
+	}
+	tflog.Debug(d.ctx, strings.Join(items, " "))
 }
