@@ -1,21 +1,23 @@
 package provider
 
 import (
+	"context"
 	"fmt"
-	"log"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"strings"
 )
 
-type DebugLogger struct{}
+type debugLogger struct{}
 
-func (d *DebugLogger) Printf(format string, v ...interface{}) {
-	log.Printf("[DEBUG] [rediscloud-go-api] "+format, v...)
+func (d *debugLogger) Printf(ctx context.Context, format string, v ...interface{}) {
+	message := fmt.Sprintf("[rediscloud-go-api] "+format, v...)
+	tflog.Debug(ctx, message)
 }
 
-func (d *DebugLogger) Println(v ...interface{}) {
+func (d *debugLogger) Println(ctx context.Context, v ...interface{}) {
 	var items []string
 	for _, i := range v {
 		items = append(items, fmt.Sprintf("%s", i))
 	}
-	log.Printf("[DEBUG] [rediscloud-go-api] %s", strings.Join(items, " "))
+	tflog.Debug(ctx, fmt.Sprintf("[rediscloud-go-api] %s", strings.Join(items, " ")))
 }

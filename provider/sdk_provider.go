@@ -88,7 +88,7 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 			config = append(config, rediscloudApi.LogRequests(true))
 		}
 
-		config = append(config, rediscloudApi.Logger(&DebugLogger{}))
+		config = append(config, rediscloudApi.Logger(&debugLogger{}))
 
 		client, err := rediscloudApi.NewClient(config...)
 		if err != nil {

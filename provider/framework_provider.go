@@ -16,28 +16,28 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Ensure RedisCloudProvider satisfies provider interface.
-var _ provider.Provider = &RedisCloudProvider{}
+// Ensure redisCloudProvider satisfies provider interface.
+var _ provider.Provider = &redisCloudProvider{}
 
-// RedisCloudProvider defines the provider implementation.
-type RedisCloudProvider struct {
+// redisCloudProvider defines the provider implementation.
+type redisCloudProvider struct {
 	// version is set to the provider version on release, "dev" when the
 	// provider is built and ran locally, and "test" when running acceptance
 	// testing.
 	version string
 }
 
-// RedisCloudProviderModel describes the provider data model.
-type RedisCloudProviderModel struct {
+// redisCloudProviderModel describes the provider data model.
+type redisCloudProviderModel struct {
 	Url       types.String `tfsdk:"url"`
 	ApiKey    types.String `tfsdk:"api_key"`
 	SecretKey types.String `tfsdk:"secret_key"`
 }
 
-func (p *RedisCloudProvider) Metadata(_ context.Context, _ provider.MetadataRequest, _ *provider.MetadataResponse) {
+func (p *redisCloudProvider) Metadata(_ context.Context, _ provider.MetadataRequest, _ *provider.MetadataResponse) {
 }
 
-func (p *RedisCloudProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
+func (p *redisCloudProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"url": schema.StringAttribute{
@@ -57,7 +57,7 @@ func (p *RedisCloudProvider) Schema(_ context.Context, _ provider.SchemaRequest,
 	}
 }
 
-func (p *RedisCloudProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+func (p *redisCloudProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	tflog.Info(ctx, "Configuring Rediscloud client")
 
 	var config []rediscloudApi.Option
@@ -65,7 +65,7 @@ func (p *RedisCloudProvider) Configure(ctx context.Context, req provider.Configu
 	config = append(config, rediscloudApi.AdditionalUserAgent(ua))
 
 	// Retrieve provider data from configuration
-	var data RedisCloudProviderModel
+	var data redisCloudProviderModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -164,7 +164,7 @@ func (p *RedisCloudProvider) Configure(ctx context.Context, req provider.Configu
 		config = append(config, rediscloudApi.LogRequests(true))
 	}
 
-	config = append(config, rediscloudApi.Logger(&DebugLogger{}))
+	config = append(config, rediscloudApi.Logger(&debugLogger{}))
 
 	// TODO This block might not be necessary
 	ctx = tflog.SetField(ctx, "rediscloud_url", url)
@@ -190,7 +190,7 @@ func (p *RedisCloudProvider) Configure(ctx context.Context, req provider.Configu
 	resp.ResourceData = client
 }
 
-func (p *RedisCloudProvider) Resources(_ context.Context) []func() resource.Resource {
+func (p *redisCloudProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{}
 	//return []func() resource.Resource{
 	//	func() resource.Resource {
@@ -199,13 +199,13 @@ func (p *RedisCloudProvider) Resources(_ context.Context) []func() resource.Reso
 	//}
 }
 
-func (p *RedisCloudProvider) DataSources(_ context.Context) []func() datasource.DataSource {
+func (p *redisCloudProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{}
 }
 
 func NewFrameworkProvider(version string) func() provider.Provider {
 	return func() provider.Provider {
-		return &RedisCloudProvider{
+		return &redisCloudProvider{
 			version: version,
 		}
 	}
