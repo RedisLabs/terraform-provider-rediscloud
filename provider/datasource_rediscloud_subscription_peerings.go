@@ -116,7 +116,7 @@ func dataSourceRedisCloudSubscriptionPeerings() *schema.Resource {
 
 func dataSourceRedisCloudSubscriptionPeeringsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*ApiClient)
+	api := meta.(*apiClient)
 
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {

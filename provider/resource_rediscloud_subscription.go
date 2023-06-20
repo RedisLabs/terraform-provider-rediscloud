@@ -293,7 +293,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 }
 
 func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*ApiClient)
+	api := meta.(*apiClient)
 
 	// Create CloudProviders
 	providers, err := buildCreateCloudProviders(d.Get("cloud_provider"))
@@ -374,7 +374,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 }
 
 func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*ApiClient)
+	api := meta.(*apiClient)
 
 	var diags diag.Diagnostics
 
@@ -433,7 +433,7 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 }
 
 func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*ApiClient)
+	api := meta.(*apiClient)
 
 	subId, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -488,7 +488,7 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 
 func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
-	api := meta.(*ApiClient)
+	api := meta.(*apiClient)
 
 	var diags diag.Diagnostics
 
@@ -706,7 +706,7 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 	return dbs
 }
 
-func waitForSubscriptionToBeActive(ctx context.Context, id int, api *ApiClient) error {
+func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) error {
 	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{subscriptions.SubscriptionStatusPending},
@@ -731,7 +731,7 @@ func waitForSubscriptionToBeActive(ctx context.Context, id int, api *ApiClient) 
 	return nil
 }
 
-func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *ApiClient) error {
+func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient) error {
 	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{subscriptions.SubscriptionStatusDeleting},
@@ -759,7 +759,7 @@ func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *ApiClient)
 	return nil
 }
 
-func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *ApiClient) error {
+func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClient) error {
 	wait := &retry.StateChangeConf{
 		Delay: 10 * time.Second,
 		Pending: []string{
@@ -794,7 +794,7 @@ func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *ApiClien
 	return nil
 }
 
-func flattenSubscriptionAllowlist(ctx context.Context, subId int, api *ApiClient) ([]map[string]interface{}, error) {
+func flattenSubscriptionAllowlist(ctx context.Context, subId int, api *apiClient) ([]map[string]interface{}, error) {
 	allowlist, err := api.client.Subscription.GetCIDRAllowlist(ctx, subId)
 	if err != nil {
 		return nil, err

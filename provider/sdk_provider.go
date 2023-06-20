@@ -95,7 +95,7 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 			return nil, diag.FromErr(err)
 		}
 
-		return &ApiClient{
+		return &apiClient{
 			client: client,
 		}, nil
 	}

@@ -282,7 +282,7 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 }
 
 func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*ApiClient)
+	api := meta.(*apiClient)
 
 	subId := d.Get("subscription_id").(int)
 	subscriptionMutex.Lock(subId)
@@ -379,7 +379,7 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 }
 
 func resourceRedisCloudSubscriptionDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*ApiClient)
+	api := meta.(*apiClient)
 
 	var diags diag.Diagnostics
 
@@ -503,7 +503,7 @@ func resourceRedisCloudSubscriptionDatabaseRead(ctx context.Context, d *schema.R
 
 func resourceRedisCloudSubscriptionDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
-	api := meta.(*ApiClient)
+	api := meta.(*apiClient)
 
 	var diags diag.Diagnostics
 	subId := d.Get("subscription_id").(int)
@@ -528,7 +528,7 @@ func resourceRedisCloudSubscriptionDatabaseDelete(ctx context.Context, d *schema
 }
 
 func resourceRedisCloudSubscriptionDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*ApiClient)
+	api := meta.(*apiClient)
 
 	_, dbId, err := toDatabaseId(d.Id())
 	if err != nil {

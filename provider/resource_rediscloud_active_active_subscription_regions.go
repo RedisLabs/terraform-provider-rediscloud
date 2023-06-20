@@ -131,7 +131,7 @@ func resourceRedisCloudActiveActiveRegionCreate(ctx context.Context, d *schema.R
 }
 
 func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*ApiClient)
+	api := meta.(*apiClient)
 
 	subId, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -225,7 +225,7 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 }
 
 func resourceRedisCloudActiveActiveRegionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*ApiClient)
+	api := meta.(*apiClient)
 
 	subId, err := strconv.Atoi(d.Id())
 	existingRegions, err := api.client.Regions.List(ctx, subId)
@@ -253,7 +253,7 @@ func resourceRedisCloudActiveActiveRegionDelete(ctx context.Context, d *schema.R
 	return resourceRedisCloudActiveActiveRegionRead(ctx, d, meta)
 }
 
-func regionsCreate(ctx context.Context, subId int, regionsToCreate []*regions.Region, api *ApiClient) error {
+func regionsCreate(ctx context.Context, subId int, regionsToCreate []*regions.Region, api *apiClient) error {
 	// If no new regions were defined return
 	if len(regionsToCreate) == 0 {
 		return nil
@@ -306,7 +306,7 @@ func regionsCreate(ctx context.Context, subId int, regionsToCreate []*regions.Re
 	return nil
 }
 
-func regionsUpdateDatabases(ctx context.Context, subId int, api *ApiClient, regionsToUpdateDatabases []*regions.Region, existingRegionMap map[string]*regions.Region) error {
+func regionsUpdateDatabases(ctx context.Context, subId int, api *apiClient, regionsToUpdateDatabases []*regions.Region, existingRegionMap map[string]*regions.Region) error {
 	databaseUpdates := make(map[int][]*databases.LocalRegionProperties)
 	for _, desiredRegion := range regionsToUpdateDatabases {
 		// Collect existing databases to a map <dbId, db>
@@ -361,7 +361,7 @@ func regionsUpdateDatabases(ctx context.Context, subId int, api *ApiClient, regi
 	return nil
 }
 
-func regionsDelete(ctx context.Context, subId int, regionsToDelete []*regions.Region, api *ApiClient) error {
+func regionsDelete(ctx context.Context, subId int, regionsToDelete []*regions.Region, api *apiClient) error {
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 

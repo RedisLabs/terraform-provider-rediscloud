@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-// ApiClient will be offered by both Providers
-type ApiClient struct {
+// apiClient will be offered by both Providers
+type apiClient struct {
 	client *rediscloudApi.Client
 }
 

@@ -65,7 +65,7 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 							return err
 						}
 
-						client := sdkv2Provider.Meta().(*ApiClient)
+						client := sdkv2Provider.Meta().(*apiClient)
 						sub, err := client.client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
@@ -437,7 +437,7 @@ func TestRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 }
 
 func testAccCheckSubscriptionDestroy(s *terraform.State) error {
-	client := sdkv2Provider.Meta().(*ApiClient)
+	client := sdkv2Provider.Meta().(*apiClient)
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_subscription" {

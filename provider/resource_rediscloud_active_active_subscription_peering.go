@@ -150,7 +150,7 @@ func resourceRedisCloudActiveActiveSubscriptionPeering() *schema.Resource {
 }
 
 func resourceRedisCloudSubscriptionActiveActivePeeringCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*ApiClient)
+	api := meta.(*apiClient)
 
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
@@ -239,7 +239,7 @@ func resourceRedisCloudSubscriptionActiveActivePeeringCreate(ctx context.Context
 }
 
 func resourceRedisCloudSubscriptionActiveActivePeeringRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*ApiClient)
+	api := meta.(*apiClient)
 	var diags diag.Diagnostics
 
 	subId, id, err := toVpcPeeringId(d.Id())
@@ -349,7 +349,7 @@ func resourceRedisCloudSubscriptionActiveActivePeeringRead(ctx context.Context, 
 }
 
 func resourceRedisCloudSubscriptionActiveActivePeeringDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*ApiClient)
+	api := meta.(*apiClient)
 	var diags diag.Diagnostics
 
 	subId, id, err := toVpcPeeringId(d.Id())
@@ -386,7 +386,7 @@ func findActiveActiveVpcPeering(id int, regions []*subscriptions.ActiveActiveVpc
 	return nil, nil
 }
 
-func waitForActiveActivePeeringToBeInitiated(ctx context.Context, subId, id int, api *ApiClient) error {
+func waitForActiveActivePeeringToBeInitiated(ctx context.Context, subId, id int, api *apiClient) error {
 	wait := &retry.StateChangeConf{
 		Delay: 10 * time.Second,
 		Pending: []string{

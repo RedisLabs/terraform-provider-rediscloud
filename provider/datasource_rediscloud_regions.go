@@ -48,7 +48,7 @@ func dataSourceRedisCloudRegions() *schema.Resource {
 
 func dataSourceRedisCloudRegionsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*ApiClient)
+	api := meta.(*apiClient)
 
 	regions, err := api.client.Account.ListRegions(ctx)
 
