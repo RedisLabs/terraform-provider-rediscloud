@@ -20,7 +20,10 @@ func main() {
 	flag.BoolVar(&debugMode, "debug", false, "set to true to run the provider with support for debuggers like delve")
 	flag.Parse()
 
-	muxProviderServerCreator, err := provider.MuxProviderServerCreator(provider.New(version)())
+	muxProviderServerCreator, err := provider.MuxProviderServerCreator(
+		provider.NewSdkProvider(version)(),
+		provider.NewFrameworkProvider(version)(),
+	)
 
 	if err != nil {
 		log.Fatal(err)
@@ -36,7 +39,7 @@ func main() {
 	}
 
 	err = tf5server.Serve(
-		"registry.terraform.io/providers/RedisLabs/rediscloud",
+		"RedisLabs/rediscloud",
 		muxProviderServerCreator,
 		serveOpts...,
 	)

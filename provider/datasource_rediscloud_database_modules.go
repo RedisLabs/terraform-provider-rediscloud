@@ -38,7 +38,7 @@ func dataSourceRedisCloudDatabaseModules() *schema.Resource {
 
 func dataSourceRedisCloudDatabaseModulesRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*ApiClient)
 
 	modules, err := api.client.Account.ListDatabaseModules(ctx)
 

@@ -38,7 +38,7 @@ func dataSourceRedisCloudDataPersistence() *schema.Resource {
 
 func dataSourceRedisCloudDataPersistenceRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*ApiClient)
 
 	dataPersistence, err := api.client.Account.ListDataPersistence(ctx)
 

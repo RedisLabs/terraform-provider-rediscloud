@@ -45,7 +45,7 @@ func dataSourceRedisCloudPaymentMethod() *schema.Resource {
 
 func dataSourceRedisCloudPaymentMethodRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	client := meta.(*apiClient)
+	client := meta.(*ApiClient)
 
 	methods, err := client.client.Account.ListPaymentMethods(ctx)
 

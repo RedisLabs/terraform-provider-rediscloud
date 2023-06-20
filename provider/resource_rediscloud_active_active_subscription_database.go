@@ -273,7 +273,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 }
 
 func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*ApiClient)
 
 	subId := d.Get("subscription_id").(int)
 	subscriptionMutex.Lock(subId)
@@ -382,7 +382,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 }
 
 func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*ApiClient)
 
 	var diags diag.Diagnostics
 
@@ -502,7 +502,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 
 func resourceRedisCloudActiveActiveSubscriptionDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
-	api := meta.(*apiClient)
+	api := meta.(*ApiClient)
 
 	var diags diag.Diagnostics
 	subId := d.Get("subscription_id").(int)
@@ -532,7 +532,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseDelete(ctx context.Contex
 }
 
 func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*ApiClient)
 
 	_, dbId, err := toDatabaseId(d.Id())
 	if err != nil {
@@ -703,7 +703,7 @@ func getStateAlertsFromDbRegion(dbRegion map[string]interface{}) []*databases.Up
 	return overrideAlerts
 }
 
-func waitForDatabaseToBeDeleted(ctx context.Context, subId int, dbId int, api *apiClient) error {
+func waitForDatabaseToBeDeleted(ctx context.Context, subId int, dbId int, api *ApiClient) error {
 	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{"pending"},

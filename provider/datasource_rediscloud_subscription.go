@@ -127,7 +127,7 @@ func dataSourceRedisCloudSubscription() *schema.Resource {
 
 func dataSourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*ApiClient)
 
 	subs, err := api.client.Subscription.List(ctx)
 	if err != nil {

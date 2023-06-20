@@ -56,7 +56,7 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 }
 
 func testAccCheckCloudAccountDestroy(s *terraform.State) error {
-	client := sdkv2Provider.Meta().(*apiClient)
+	client := sdkv2Provider.Meta().(*ApiClient)
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_cloud_account" {

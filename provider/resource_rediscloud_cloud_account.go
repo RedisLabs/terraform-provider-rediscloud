@@ -88,7 +88,7 @@ func resourceRedisCloudCloudAccount() *schema.Resource {
 }
 
 func resourceRedisCloudCloudAccountCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*apiClient)
+	client := meta.(*ApiClient)
 
 	accessKey := d.Get("access_key_id").(string)
 	secretKey := d.Get("access_secret_key").(string)
@@ -121,7 +121,7 @@ func resourceRedisCloudCloudAccountCreate(ctx context.Context, d *schema.Resourc
 	return resourceRedisCloudCloudAccountRead(ctx, d, meta)
 }
 
-func waitForCloudAccountToBeActive(ctx context.Context, id int, client *apiClient) error {
+func waitForCloudAccountToBeActive(ctx context.Context, id int, client *ApiClient) error {
 	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{cloud_accounts.StatusDraft, cloud_accounts.StatusChangeDraft},
@@ -148,7 +148,7 @@ func waitForCloudAccountToBeActive(ctx context.Context, id int, client *apiClien
 }
 
 func resourceRedisCloudCloudAccountRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*apiClient)
+	client := meta.(*ApiClient)
 
 	var diags diag.Diagnostics
 
@@ -183,7 +183,7 @@ func resourceRedisCloudCloudAccountRead(ctx context.Context, d *schema.ResourceD
 }
 
 func resourceRedisCloudCloudAccountUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*apiClient)
+	client := meta.(*ApiClient)
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -214,7 +214,7 @@ func resourceRedisCloudCloudAccountUpdate(ctx context.Context, d *schema.Resourc
 }
 
 func resourceRedisCloudCloudAccountDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*apiClient)
+	client := meta.(*ApiClient)
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {

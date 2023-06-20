@@ -46,7 +46,7 @@ func dataSourceRedisCloudCloudAccount() *schema.Resource {
 
 func dataSourceRedisCloudCloudAccountRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	client := meta.(*apiClient)
+	client := meta.(*ApiClient)
 
 	accounts, err := client.client.CloudAccount.List(ctx)
 	if err != nil {
