@@ -2,15 +2,9 @@ package provider
 
 import (
 	"fmt"
-	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 	"log"
 	"strings"
 )
-
-// ApiClient will be offered by both Providers
-type ApiClient struct {
-	client *rediscloudApi.Client
-}
 
 type DebugLogger struct{}
 

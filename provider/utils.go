@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -9,6 +10,11 @@ import (
 	"sync"
 	"time"
 )
+
+// ApiClient will be offered by both Providers
+type ApiClient struct {
+	client *rediscloudApi.Client
+}
 
 // Lock that must be acquired when modifying something related to a subscription as only one _thing_ can modify a subscription and all sub-resources at any time
 var subscriptionMutex = newPerIdLock()
