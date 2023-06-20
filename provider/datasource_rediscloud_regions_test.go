@@ -3,14 +3,14 @@ package provider
 import (
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      nil, // regions isn't a 'real' resource
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             nil, // regions isn't a 'real' resource
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudRegions,
@@ -41,9 +41,9 @@ func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
 
 func TestAccDataSourceRedisCloudRegions_AWS(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      nil, // regions isn't a 'real' resource
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             nil, // regions isn't a 'real' resource
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudRegionsAWS,
@@ -65,9 +65,9 @@ func TestAccDataSourceRedisCloudRegions_AWS(t *testing.T) {
 
 func TestAccDataSourceRedisCloudRegions_GCP(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      nil, // regions isn't a 'real' resource
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             nil, // regions isn't a 'real' resource
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudRegionsGCP,
