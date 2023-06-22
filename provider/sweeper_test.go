@@ -9,33 +9,33 @@ import (
 	"testing"
 	"time"
 
-	rediscloud_api "github.com/RedisLabs/rediscloud-go-api"
+	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 const testResourcePrefix = "tf-test"
 
-var sweeperClients map[string]*rediscloud_api.Client
+var sweeperClients map[string]*rediscloudApi.Client
 
 func TestMain(m *testing.M) {
-	sweeperClients = make(map[string]*rediscloud_api.Client)
+	sweeperClients = make(map[string]*rediscloudApi.Client)
 	resource.TestMain(m)
 }
 
-func sharedClientForRegion(region string) (*rediscloud_api.Client, error) {
+func sharedClientForRegion(region string) (*rediscloudApi.Client, error) {
 	if client, ok := sweeperClients[region]; ok {
 		return client, nil
 	}
 
-	if os.Getenv(RedisCloudUrlEnvVar) == "" || os.Getenv(rediscloud_api.AccessKeyEnvVar) == "" || os.Getenv(rediscloud_api.SecretKeyEnvVar) == "" {
-		return nil, fmt.Errorf("must provide environment variables %s, %s, %s", RedisCloudUrlEnvVar, rediscloud_api.AccessKeyEnvVar, rediscloud_api.SecretKeyEnvVar)
+	if os.Getenv(RedisCloudUrlEnvVar) == "" || os.Getenv(rediscloudApi.AccessKeyEnvVar) == "" || os.Getenv(rediscloudApi.SecretKeyEnvVar) == "" {
+		return nil, fmt.Errorf("must provide environment variables %s, %s, %s", RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
 	}
 
-	client, err := rediscloud_api.NewClient(rediscloud_api.BaseURL(os.Getenv(RedisCloudUrlEnvVar)))
+	client, err := rediscloudApi.NewClient(rediscloudApi.BaseURL(os.Getenv(RedisCloudUrlEnvVar)))
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func testSweepSubscriptions(region string) error {
 	return nil
 }
 
-func testSweepReadDatabases(client *rediscloud_api.Client, subId int) (bool, []int, error) {
+func testSweepReadDatabases(client *rediscloudApi.Client, subId int) (bool, []int, error) {
 	var dbIds []int
 	list := client.Database.List(context.TODO(), subId)
 

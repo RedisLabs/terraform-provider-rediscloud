@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -10,21 +11,13 @@ import (
 	"time"
 )
 
-func setToStringSlice(set *schema.Set) []*string {
-	var ret []*string
-	for _, s := range set.List() {
-		ret = append(ret, redis.String(s.(string)))
-	}
-	return ret
+// apiClient will be offered by both Providers
+type apiClient struct {
+	client *rediscloudApi.Client
 }
 
-func interfaceToStringSlice(list []interface{}) []*string {
-	var ret []*string
-	for _, i := range list {
-		ret = append(ret, redis.String(i.(string)))
-	}
-	return ret
-}
+// Lock that must be acquired when modifying something related to a subscription as only one _thing_ can modify a subscription and all sub-resources at any time
+var subscriptionMutex = newPerIdLock()
 
 type perIdLock struct {
 	lock  sync.Mutex
@@ -56,6 +49,22 @@ func (m *perIdLock) get(id int) *sync.Mutex {
 	mutex := &sync.Mutex{}
 	m.store[id] = mutex
 	return mutex
+}
+
+func setToStringSlice(set *schema.Set) []*string {
+	var ret []*string
+	for _, s := range set.List() {
+		ret = append(ret, redis.String(s.(string)))
+	}
+	return ret
+}
+
+func interfaceToStringSlice(list []interface{}) []*string {
+	var ret []*string
+	for _, i := range list {
+		ret = append(ret, redis.String(i.(string)))
+	}
+	return ret
 }
 
 // IDs of any resources dependent on a subscription need to be divided by a slash. In this format: <sub id>/<resource id>.

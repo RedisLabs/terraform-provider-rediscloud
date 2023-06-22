@@ -1,33 +1,43 @@
 package provider
 
 import (
-	rediscloud_api "github.com/RedisLabs/rediscloud-go-api"
+	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-var testProvider *schema.Provider
-var providerFactories map[string]func() (*schema.Provider, error)
+var sdkProvider *schema.Provider
+var frameworkProvider provider.Provider
+
+var providerFactories map[string]func() (tfprotov5.ProviderServer, error)
 
 func init() {
-	testProvider = New("dev")()
-	providerFactories = map[string]func() (*schema.Provider, error){
-		"rediscloud": func() (*schema.Provider, error) {
-			return testProvider, nil
+	sdkProvider = NewSdkProvider("dev")()
+	frameworkProvider = NewFrameworkProvider("dev")()
+	providerFactories = map[string]func() (tfprotov5.ProviderServer, error){
+		"rediscloud": func() (tfprotov5.ProviderServer, error) {
+			// This method signature will include frameworkProvider
+			muxProviderServerCreator, err := MuxProviderServerCreator(sdkProvider, frameworkProvider)
+			if err != nil {
+				return nil, err
+			}
+			return muxProviderServerCreator(), nil
 		},
 	}
 }
 
-func TestProvider(t *testing.T) {
-	if err := New("dev")().InternalValidate(); err != nil {
+func TestSdkProvider(t *testing.T) {
+	if err := NewSdkProvider("dev")().InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 }
 
 func testAccPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, RedisCloudUrlEnvVar, rediscloud_api.AccessKeyEnvVar, rediscloud_api.SecretKeyEnvVar)
+	requireEnvironmentVariables(t, RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
 }
 
 func testAccAwsPreExistingCloudAccountPreCheck(t *testing.T) {
