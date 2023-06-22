@@ -1,7 +1,7 @@
 package provider
 
 import (
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"regexp"
 	"testing"
 )
@@ -9,9 +9,9 @@ import (
 func TestAccDataSourceRedisCloudPaymentMethod_basic(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: providerFactories,
-		CheckDestroy:             nil, // payment method isn't managed by this provider
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      nil, // payment method isn't managed by this provider
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudPaymentMethod,

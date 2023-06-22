@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 var activeActiveContractFlag = flag.Bool("activeActiveContract", false,
@@ -29,9 +29,9 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: providerFactories,
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscription, name),
@@ -56,7 +56,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 							return err
 						}
 
-						client := sdkv2Provider.Meta().(*apiClient)
+						client := testProvider.Meta().(*apiClient)
 						sub, err := client.client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
@@ -118,9 +118,9 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 	resourceName := "rediscloud_active_active_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProtoV5ProviderFactories: providerFactories,
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionContractPayment, name),
@@ -156,9 +156,9 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 	resourceName := "rediscloud_active_active_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProtoV5ProviderFactories: providerFactories,
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionMarketplacePayment, name),
@@ -184,7 +184,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 }
 
 func testAccCheckActiveActiveSubscriptionDestroy(s *terraform.State) error {
-	client := sdkv2Provider.Meta().(*apiClient)
+	client := testProvider.Meta().(*apiClient)
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_active_active_subscription" {

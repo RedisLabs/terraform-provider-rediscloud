@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T) {
@@ -21,9 +21,9 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: providerFactories,
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudCreateActiveActiveRegion, subName, dbName, dbPass),
@@ -45,7 +45,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 							return err
 						}
 
-						client := sdkv2Provider.Meta().(*apiClient)
+						client := testProvider.Meta().(*apiClient)
 						sub, err := client.client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err

@@ -14,7 +14,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 const testResourcePrefix = "tf-test"
