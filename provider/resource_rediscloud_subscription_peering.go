@@ -86,7 +86,6 @@ func resourceRedisCloudSubscriptionPeering() *schema.Resource {
 				Computed:      true,
 				ForceNew:      true,
 				ConflictsWith: []string{"vpc_cidrs"},
-				ExactlyOneOf:  []string{"vpc_cidrs", "vpc_cidr"},
 			},
 			"vpc_cidrs": {
 				Description: "CIDR ranges of the VPC to be peered",
@@ -99,7 +98,6 @@ func resourceRedisCloudSubscriptionPeering() *schema.Resource {
 					ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 				},
 				ConflictsWith: []string{"vpc_cidr"},
-				ExactlyOneOf:  []string{"vpc_cidrs", "vpc_cidr"},
 			},
 			"gcp_project_id": {
 				Description: "GCP project ID that the VPC to be peered lives in",
