@@ -235,6 +235,36 @@ func testSweepAcl(region string) error {
 
 	ctx := context.TODO()
 
+	users, err := client.Users.List(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		if !strings.HasPrefix(redis.StringValue(user.Name), testResourcePrefix) {
+			continue
+		}
+
+		if client.Users.Delete(ctx, redis.IntValue(user.ID)) != nil {
+			return err
+		}
+	}
+
+	roles, err := client.Roles.List(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, role := range roles {
+		if !strings.HasPrefix(redis.StringValue(role.Name), testResourcePrefix) {
+			continue
+		}
+
+		if client.Roles.Delete(ctx, redis.IntValue(role.ID)) != nil {
+			return err
+		}
+	}
+
 	rules, err := client.RedisRules.List(ctx)
 	if err != nil {
 		return err
@@ -251,21 +281,6 @@ func testSweepAcl(region string) error {
 		}
 
 		if client.RedisRules.Delete(ctx, redis.IntValue(rule.ID)) != nil {
-			return err
-		}
-	}
-
-	roles, err := client.Roles.List(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, role := range roles {
-		if !strings.HasPrefix(redis.StringValue(role.Name), testResourcePrefix) {
-			continue
-		}
-
-		if client.Roles.Delete(ctx, redis.IntValue(role.ID)) != nil {
 			return err
 		}
 	}
