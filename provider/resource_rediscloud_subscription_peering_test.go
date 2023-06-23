@@ -75,10 +75,6 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 
 func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
 
-	if testing.Short() {
-		t.Skip("Required environment variables currently not available under CI")
-	}
-
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudSubscriptionPeeringGCP,
@@ -194,7 +190,7 @@ resource "rediscloud_subscription" "example" {
 
   cloud_provider {
     provider = "GCP"
-    cloud_account_id = data.rediscloud_cloud_account.account.id
+    cloud_account_id = 1
     region {
       region = "europe-west1"
       networking_deployment_cidr = "192.168.0.0/24"
@@ -208,7 +204,7 @@ resource "rediscloud_subscription" "example" {
     replication=false
     support_oss_cluster_api=false
     throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
+    throughput_measurement_value = 1000
     modules = []
   }
 }
