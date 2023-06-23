@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"os"
 	"regexp"
 	"strconv"
@@ -32,9 +32,9 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 	resourceName := "rediscloud_cloud_account.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t); testAccAwsCloudAccountPreCheck(t) },
-		ProtoV5ProviderFactories: providerFactories,
-		CheckDestroy:             testAccCheckCloudAccountDestroy,
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckCloudAccountDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: tf,
@@ -56,7 +56,7 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 }
 
 func testAccCheckCloudAccountDestroy(s *terraform.State) error {
-	client := sdkv2Provider.Meta().(*apiClient)
+	client := testProvider.Meta().(*apiClient)
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_cloud_account" {

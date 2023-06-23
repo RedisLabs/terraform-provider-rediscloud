@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5/tf5server"
 	"log"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 )
 
 var (
@@ -20,29 +20,15 @@ func main() {
 	flag.BoolVar(&debugMode, "debug", false, "set to true to run the provider with support for debuggers like delve")
 	flag.Parse()
 
-	muxProviderServerCreator, err := provider.MuxProviderServerCreator(provider.New(version)())
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var serveOpts []tf5server.ServeOpt
+	opts := &plugin.ServeOpts{ProviderFunc: provider.New(version)}
 
 	// Prevent logger from prepending date/time to logs, which breaks log-level parsing/filtering
 	log.SetFlags(0)
 
 	if debugMode {
-		serveOpts = append(serveOpts, tf5server.WithManagedDebug())
+		opts.Debug = true
+		opts.ProviderAddr = "RedisLabs/rediscloud"
 	}
 
-	err = tf5server.Serve(
-		"registry.terraform.io/providers/RedisLabs/rediscloud",
-		muxProviderServerCreator,
-		serveOpts...,
-	)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	plugin.Serve(opts)
 }
