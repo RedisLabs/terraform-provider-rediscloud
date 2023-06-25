@@ -127,6 +127,8 @@ jobs:
           AWS_CONSOLE_USERNAME: ${{ secrets.CLOUD_ACCOUNT_USERNAME }}
           AWS_CONSOLE_PASSWORD: ${{ secrets.CLOUD_ACCOUNT_PASS }}
           AWS_SIGNIN_URL: ${{ secrets.CLOUD_ACCOUNT_URL }}
+          GCP_VPC_PROJECT: ${{ secrets.GCP_VPC_PROJECT }}
+          GCP_VPC_ID: ${{ secrets.GCP_VPC_ID }}
 
   tfproviderlint:
     name: tfproviderlint

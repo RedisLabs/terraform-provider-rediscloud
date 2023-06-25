@@ -93,7 +93,6 @@ func resourceRedisCloudActiveActiveSubscriptionPeering() *schema.Resource {
 				Optional:         true,
 				ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 				ConflictsWith:    []string{"vpc_cidrs"},
-				ExactlyOneOf:     []string{"vpc_cidrs", "vpc_cidr"},
 			},
 			"vpc_cidrs": {
 				Description: "CIDR ranges of the VPC to be peered",
@@ -106,7 +105,6 @@ func resourceRedisCloudActiveActiveSubscriptionPeering() *schema.Resource {
 					ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 				},
 				ConflictsWith: []string{"vpc_cidr"},
-				ExactlyOneOf:  []string{"vpc_cidrs", "vpc_cidr"},
 			},
 			"gcp_project_id": {
 				Description: "GCP project ID that the VPC to be peered lives in",
@@ -209,12 +207,12 @@ func resourceRedisCloudSubscriptionActiveActivePeeringCreate(ctx context.Context
 
 		gcpNetworkName, ok := d.GetOk("gcp_network_name")
 		if !ok {
-			return diag.Errorf("`network_name` must be set when `provider_name` is `GCP`")
+			return diag.Errorf("`gcp_network_name` must be set when `provider_name` is `GCP`")
 		}
 
 		sourceRegion, ok := d.GetOk("source_region")
 		if !ok {
-			return diag.Errorf("`region` must be set when `provider_name` is `GCP`")
+			return diag.Errorf("`source_region` must be set when `provider_name` is `GCP`")
 		}
 
 		peeringRequest.Provider = redis.String(strings.ToLower(providerName))
@@ -330,7 +328,7 @@ func resourceRedisCloudSubscriptionActiveActivePeeringRead(ctx context.Context, 
 		if err := d.Set("gcp_network_name", redis.StringValue(peering.NetworkName)); err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("source_region", redis.StringValue(peering.SourceRegion)); err != nil {
+		if err := d.Set("source_region", redis.StringValue(sourceRegion)); err != nil {
 			return diag.FromErr(err)
 		}
 		if err := d.Set("gcp_redis_project_id", redis.StringValue(peering.RedisProjectUID)); err != nil {
