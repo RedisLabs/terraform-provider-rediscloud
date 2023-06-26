@@ -34,9 +34,9 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscription, testCloudAccountName, name),
@@ -65,11 +65,7 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 							return err
 						}
 
-<<<<<<< HEAD
 						client := sdkProvider.Meta().(*apiClient)
-=======
-						client := testProvider.Meta().(*apiClient)
->>>>>>> ad681ae (Fix bug when peering a GCP VPC (#392))
 						sub, err := client.client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
@@ -124,9 +120,9 @@ func TestAccResourceRedisCloudSubscription_preferredAZsModulesOptional(t *testin
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionPreferredAZsModulesOptional, testCloudAccountName, name),
@@ -151,9 +147,9 @@ func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testin
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionContractPayment, testCloudAccountName, name),
@@ -188,9 +184,9 @@ func TestAccResourceRedisCloudSubscription_createUpdateMarketplacePayment(t *tes
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: providerFactories,
+		CheckDestroy:             testAccCheckSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, testCloudAccountName, name),
@@ -441,11 +437,7 @@ func TestRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 }
 
 func testAccCheckSubscriptionDestroy(s *terraform.State) error {
-<<<<<<< HEAD
 	client := sdkProvider.Meta().(*apiClient)
-=======
-	client := testProvider.Meta().(*apiClient)
->>>>>>> ad681ae (Fix bug when peering a GCP VPC (#392))
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_subscription" {
