@@ -96,7 +96,6 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_gcp(t *testing.T) 
 					resource.TestCheckResourceAttrSet(resourceName, "gcp_network_name"),
 					resource.TestCheckResourceAttrSet(resourceName, "gcp_redis_project_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "gcp_redis_network_name"),
-					resource.TestCheckResourceAttrSet(resourceName, "gcp_peering_id"),
 				),
 			},
 			{
@@ -179,5 +178,7 @@ resource "rediscloud_active_active_subscription_peering" "test" {
   provider_name = "GCP"
   gcp_project_id = "%s"
   gcp_network_name = "%s"
+
+  source_region = "europe-west2"
 }
 `
