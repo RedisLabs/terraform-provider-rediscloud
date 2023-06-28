@@ -10,7 +10,7 @@ import (
 )
 
 func TestAccDataSourceRedisCloudDatabase_basic(t *testing.T) {
-	name := acctest.RandomWithPrefix("tf-test")
+	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
