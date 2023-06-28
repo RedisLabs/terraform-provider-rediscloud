@@ -29,5 +29,5 @@ output "rediscloud_acl_rule" {
 
 * `id` - Identifier of the found Rule.
 * `name` - The Rule's name.
-* `rule` - The Rule itself.
+* `rule` - The ACL Rule itself.
 
