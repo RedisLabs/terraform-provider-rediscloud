@@ -233,7 +233,9 @@ func testSweepAcl(region string) error {
 		return err
 	}
 
-	rules, err := client.RedisRules.List(context.TODO())
+	ctx := context.TODO()
+
+	rules, err := client.RedisRules.List(ctx)
 	if err != nil {
 		return err
 	}
@@ -248,7 +250,22 @@ func testSweepAcl(region string) error {
 			continue
 		}
 
-		if client.RedisRules.Delete(context.TODO(), redis.IntValue(rule.ID)) != nil {
+		if client.RedisRules.Delete(ctx, redis.IntValue(rule.ID)) != nil {
+			return err
+		}
+	}
+
+	roles, err := client.Roles.List(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, role := range roles {
+		if !strings.HasPrefix(redis.StringValue(role.Name), testResourcePrefix) {
+			continue
+		}
+
+		if client.Roles.Delete(ctx, redis.IntValue(role.ID)) != nil {
 			return err
 		}
 	}
