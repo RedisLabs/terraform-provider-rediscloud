@@ -129,6 +129,11 @@ jobs:
           AWS_SIGNIN_URL: ${{ secrets.CLOUD_ACCOUNT_URL }}
           GCP_VPC_PROJECT: ${{ secrets.GCP_VPC_PROJECT }}
           GCP_VPC_ID: ${{ secrets.GCP_VPC_ID }}
+      - name: Test Summary
+        if: steps.filter.outputs.code-changes == 'true' && (success() || failure())
+        uses: test-summary/action@v2
+        with:
+          paths: "bin/unit-tests.xml"
 
   tfproviderlint:
     name: tfproviderlint
