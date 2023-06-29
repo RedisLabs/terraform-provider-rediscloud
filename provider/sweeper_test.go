@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	rediscloud_api "github.com/RedisLabs/rediscloud-go-api"
+	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -19,23 +19,23 @@ import (
 
 const testResourcePrefix = "tf-test"
 
-var sweeperClients map[string]*rediscloud_api.Client
+var sweeperClients map[string]*rediscloudApi.Client
 
 func TestMain(m *testing.M) {
-	sweeperClients = make(map[string]*rediscloud_api.Client)
+	sweeperClients = make(map[string]*rediscloudApi.Client)
 	resource.TestMain(m)
 }
 
-func sharedClientForRegion(region string) (*rediscloud_api.Client, error) {
+func sharedClientForRegion(region string) (*rediscloudApi.Client, error) {
 	if client, ok := sweeperClients[region]; ok {
 		return client, nil
 	}
 
-	if os.Getenv(RedisCloudUrlEnvVar) == "" || os.Getenv(rediscloud_api.AccessKeyEnvVar) == "" || os.Getenv(rediscloud_api.SecretKeyEnvVar) == "" {
-		return nil, fmt.Errorf("must provide environment variables %s, %s, %s", RedisCloudUrlEnvVar, rediscloud_api.AccessKeyEnvVar, rediscloud_api.SecretKeyEnvVar)
+	if os.Getenv(RedisCloudUrlEnvVar) == "" || os.Getenv(rediscloudApi.AccessKeyEnvVar) == "" || os.Getenv(rediscloudApi.SecretKeyEnvVar) == "" {
+		return nil, fmt.Errorf("must provide environment variables %s, %s, %s", RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
 	}
 
-	client, err := rediscloud_api.NewClient(rediscloud_api.BaseURL(os.Getenv(RedisCloudUrlEnvVar)))
+	client, err := rediscloudApi.NewClient(rediscloudApi.BaseURL(os.Getenv(RedisCloudUrlEnvVar)))
 	if err != nil {
 		return nil, err
 	}
@@ -59,6 +59,10 @@ func init() {
 		Dependencies: []string{"rediscloud_subscription", "rediscloud_active_active_subscription"}, // in case a subscription depends on an account
 		F:            testSweepCloudAccounts,
 	})
+	resource.AddTestSweepers("rediscloud_acl", &resource.Sweeper{
+		Name: "rediscloud_acl",
+		F:    testSweepAcl,
+	})
 }
 
 func testSweepCloudAccounts(region string) error {
@@ -77,7 +81,7 @@ func testSweepCloudAccounts(region string) error {
 			continue
 		}
 
-		if !strings.HasPrefix(redis.StringValue(account.Name), "tf-test") {
+		if !strings.HasPrefix(redis.StringValue(account.Name), testResourcePrefix) {
 			continue
 		}
 
@@ -106,7 +110,7 @@ func testSweepSubscriptions(region string) error {
 			continue
 		}
 
-		if !strings.HasPrefix(redis.StringValue(sub.Name), "tf-test") {
+		if !strings.HasPrefix(redis.StringValue(sub.Name), testResourcePrefix) {
 			continue
 		}
 
@@ -140,7 +144,7 @@ func testSweepSubscriptions(region string) error {
 	return nil
 }
 
-func testSweepReadDatabases(client *rediscloud_api.Client, subId int) (bool, []int, error) {
+func testSweepReadDatabases(client *rediscloudApi.Client, subId int) (bool, []int, error) {
 	var dbIds []int
 	list := client.Database.List(context.TODO(), subId)
 
@@ -189,7 +193,7 @@ func testSweepActiveActiveSubscriptions(region string) error {
 			continue
 		}
 
-		if !strings.HasPrefix(redis.StringValue(sub.Name), "tf-test") {
+		if !strings.HasPrefix(redis.StringValue(sub.Name), testResourcePrefix) {
 			continue
 		}
 
@@ -216,6 +220,35 @@ func testSweepActiveActiveSubscriptions(region string) error {
 
 		err = client.Subscription.Delete(context.TODO(), subId)
 		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func testSweepAcl(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return err
+	}
+
+	rules, err := client.RedisRules.List(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	for _, rule := range rules {
+		// There are 3 'default' rules which can't be deleted (Read-Only, Read-Write, Full-Access)
+		if redis.BoolValue(rule.IsDefault) {
+			continue
+		}
+
+		if !strings.HasPrefix(redis.StringValue(rule.Name), testResourcePrefix) {
+			continue
+		}
+
+		if client.RedisRules.Delete(context.TODO(), redis.IntValue(rule.ID)) != nil {
 			return err
 		}
 	}
