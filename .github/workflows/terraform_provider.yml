@@ -112,10 +112,6 @@ jobs:
           REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_QA }}
           REDISCLOUD_URL: https://api-cloudapi.qa.redislabs.com/v1
           AWS_TEST_CLOUD_ACCOUNT_NAME: "${{ secrets.AWS_TEST_CLOUD_ACCOUNT_NAME }}"
-#          REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_PROD }}
-#          REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_PROD }}
-#          REDISCLOUD_URL: https://api.redislabs.com/v1/
-#          AWS_TEST_CLOUD_ACCOUNT_NAME: PM
           AWS_PEERING_REGION: ${{ secrets.AWS_PEERING_REGION }}
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_VPC_CIDR: ${{ secrets.AWS_VPC_CIDR }}
@@ -129,6 +125,15 @@ jobs:
           AWS_SIGNIN_URL: ${{ secrets.CLOUD_ACCOUNT_URL }}
           GCP_VPC_PROJECT: ${{ secrets.GCP_VPC_PROJECT }}
           GCP_VPC_ID: ${{ secrets.GCP_VPC_ID }}
+      - name: Generate code coverage report
+        if: steps.filter.outputs.code-changes == 'true' && (success() || failure())
+        run: make generate_coverage
+      - name: Upload code coverage report
+        if: steps.filter.outputs.code-changes == 'true' && (success() || failure())
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage.html
+          path: bin/coverage.html
 
   tfproviderlint:
     name: tfproviderlint
@@ -140,3 +145,4 @@ jobs:
         with:
           go-version-file: go.mod
       - run: make tfproviderlint
+
