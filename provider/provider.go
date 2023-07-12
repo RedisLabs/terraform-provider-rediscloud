@@ -50,6 +50,7 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_subscription":          dataSourceRedisCloudSubscription(),
 				"rediscloud_subscription_peerings": dataSourceRedisCloudSubscriptionPeerings(),
 				"rediscloud_acl_rule":              dataSourceRedisCloudAclRule(),
+				"rediscloud_acl_role":              dataSourceRedisCloudAclRole(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
 				"rediscloud_cloud_account":                       resourceRedisCloudCloudAccount(),
@@ -61,6 +62,7 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_active_active_subscription_regions":  resourceRedisCloudActiveActiveSubscriptionRegions(),
 				"rediscloud_active_active_subscription_peering":  resourceRedisCloudActiveActiveSubscriptionPeering(),
 				"rediscloud_acl_rule":                            resourceRedisCloudAclRule(),
+				"rediscloud_acl_role":                            resourceRedisCloudAclRole(),
 			},
 		}
 
