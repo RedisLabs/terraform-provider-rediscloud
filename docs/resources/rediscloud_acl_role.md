@@ -12,20 +12,42 @@ Creates a Role in your Redis Enterprise Cloud Account.
 ## Example Usage
 
 ```hcl
-resource "rediscloud_acl_role" "role-resource" {
+resource "rediscloud_acl_role" "role-resource-implicit" {
   name = "fast-admin"
   rules {
-    name = "cache-reader-rule"
+    # An implicit dependency is recommended
+    name = rediscloud_acl_role.cache_reader.name
+    # Implicit dependencies used throughout
     databases {
-      subscription = 123456
-      database = 9829
-      regions = ["us-east-1", "us-east-2"]
+      subscription = rediscloud_active_active_subscription_database.subscription-resource-1.id
+      database = rediscloud_active_active_subscription_database.database-resource-1.db_id
+      regions = [
+        for r in rediscloud_active_active_subscription_regions.regions-resource.region : r.region
+      ]
     }
+    databases {
+      subscription = rediscloud_subscription.subscription-resource-2.id
+      database = rediscloud_subscription_database.database-resource-2.db_id
+    }
+  }
+}
+
+resource "rediscloud_acl_role" "role-resource-explicit" {
+  name = "fast-admin"
+  rules {
+    name = "cache-reader"
+    # Active-Active database omitted for brevity
     databases {
       subscription = 123456
       database = 9830
     }
   }
+  # An explicit resource dependency can be used if preferred
+  depends_on = [
+    rediscloud_acl_rule.cache_reader,
+    rediscloud_subscription.subscription-resource-2,
+    rediscloud_subscription_database.database-resource-2
+  ]
 }
 ```
 
@@ -39,7 +61,7 @@ The following arguments are supported:
 
 The `rules` list supports:
 
-* `name` (Required) - Name of the Rule.
+* `name` (Required) - Name of the Rule. It is recommended an implicit dependency is used here. `depends_on` could be used instead by waiting for a Rule resource with a matching `name`.
 * `databases` - (Required, minimum 1) a list of database association objects, documented below.
 
 The `databases` list supports:
