@@ -20,14 +20,14 @@ resource "rediscloud_acl_role" "role-resource-implicit" {
     # Implicit dependencies used throughout
     databases {
       subscription = rediscloud_active_active_subscription_database.subscription-resource-1.id
-      database = rediscloud_active_active_subscription_database.database-resource-1.db_id
-      regions = [
-        for r in rediscloud_active_active_subscription_regions.regions-resource.region : r.region
+      database     = rediscloud_active_active_subscription_database.database-resource-1.db_id
+      regions      = [
+        for r in rediscloud_active_active_subscription_database.database-resource-1.override_region : r.name
       ]
     }
     databases {
       subscription = rediscloud_subscription.subscription-resource-2.id
-      database = rediscloud_subscription_database.database-resource-2.db_id
+      database     = rediscloud_subscription_database.database-resource-2.db_id
     }
   }
 }
@@ -39,7 +39,7 @@ resource "rediscloud_acl_role" "role-resource-explicit" {
     # Active-Active database omitted for brevity
     databases {
       subscription = 123456
-      database = 9830
+      database     = 9830
     }
   }
   # An explicit resource dependency can be used if preferred
