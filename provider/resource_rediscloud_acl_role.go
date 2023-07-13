@@ -22,7 +22,6 @@ func resourceRedisCloudAclRole() *schema.Resource {
 		DeleteContext: resourceRedisCloudAclRoleDelete,
 
 		Importer: &schema.ResourceImporter{
-			// Let the READ operation do the heavy lifting for importing values from the API.
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 
@@ -35,7 +34,7 @@ func resourceRedisCloudAclRole() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Description: "A meaningful name to identify the role",
+				Description: "A meaningful name to identify the role, must be unique",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
@@ -201,7 +200,7 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 			return retry.RetryableError(fmt.Errorf("expected role %d to be deleted but was in state %s", id, redis.StringValue(role.Status)))
 		}
 		// Unclear at this point what's going on!
-		return retry.NonRetryableError(fmt.Errorf("unexpectederror getting role"))
+		return retry.NonRetryableError(fmt.Errorf("unexpected error getting role"))
 	})
 	if err != nil {
 		return diag.FromErr(err)

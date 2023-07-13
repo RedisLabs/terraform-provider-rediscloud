@@ -22,7 +22,6 @@ func resourceRedisCloudAclRule() *schema.Resource {
 		DeleteContext: resourceRedisCloudAclRuleDelete,
 
 		Importer: &schema.ResourceImporter{
-			// Let the READ operation do the heavy lifting for importing values from the API.
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 
@@ -35,7 +34,7 @@ func resourceRedisCloudAclRule() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Description: "A meaningful name to identify the rule. Must be unique.",
+				Description: "A meaningful name to identify the rule, must be unique",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
