@@ -25,10 +25,10 @@ func resourceRedisCloudAclUser() *schema.Resource {
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(3 * time.Minute),
-			Read:   schema.DefaultTimeout(1 * time.Minute),
-			Update: schema.DefaultTimeout(3 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Read:   schema.DefaultTimeout(3 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -157,10 +157,10 @@ func resourceRedisCloudAclUserDelete(ctx context.Context, d *schema.ResourceData
 		}
 
 		if user != nil {
-			return retry.RetryableError(fmt.Errorf("expected user to be deleted but was not"))
+			return retry.RetryableError(fmt.Errorf("expected user %d to be deleted but was not", id))
 		}
 		// Unclear at this point what's going on!
-		return retry.NonRetryableError(fmt.Errorf("error getting user: %s", err))
+		return retry.NonRetryableError(fmt.Errorf("unexpected error getting user"))
 	})
 	if err != nil {
 		return diag.FromErr(err)

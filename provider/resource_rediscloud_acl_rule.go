@@ -27,10 +27,10 @@ func resourceRedisCloudAclRule() *schema.Resource {
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(3 * time.Minute),
-			Read:   schema.DefaultTimeout(1 * time.Minute),
-			Update: schema.DefaultTimeout(3 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Read:   schema.DefaultTimeout(3 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -160,10 +160,10 @@ func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData
 		}
 
 		if rule != nil {
-			return retry.RetryableError(fmt.Errorf("expected rule to be deleted but was in state %s", redis.StringValue(rule.Status)))
+			return retry.RetryableError(fmt.Errorf("expected rule %d to be deleted but was in state %s", id, redis.StringValue(rule.Status)))
 		}
 		// Unclear at this point what's going on!
-		return retry.NonRetryableError(fmt.Errorf("error getting rule: %s", err))
+		return retry.NonRetryableError(fmt.Errorf("unexpected error getting rule"))
 	})
 	if err != nil {
 		return diag.FromErr(err)

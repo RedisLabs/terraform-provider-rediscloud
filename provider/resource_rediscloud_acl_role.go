@@ -27,10 +27,10 @@ func resourceRedisCloudAclRole() *schema.Resource {
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(3 * time.Minute),
-			Read:   schema.DefaultTimeout(1 * time.Minute),
-			Update: schema.DefaultTimeout(3 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Read:   schema.DefaultTimeout(3 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
@@ -198,10 +198,10 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 		}
 
 		if role != nil {
-			return retry.RetryableError(fmt.Errorf("expected role to be deleted but was in state %s", redis.StringValue(role.Status)))
+			return retry.RetryableError(fmt.Errorf("expected role %d to be deleted but was in state %s", id, redis.StringValue(role.Status)))
 		}
 		// Unclear at this point what's going on!
-		return retry.NonRetryableError(fmt.Errorf("error getting role: %s", err))
+		return retry.NonRetryableError(fmt.Errorf("unexpectederror getting role"))
 	})
 	if err != nil {
 		return diag.FromErr(err)
