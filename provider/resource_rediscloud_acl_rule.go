@@ -2,10 +2,13 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/redis_rules"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"log"
 	"strconv"
 	"time"
 )
@@ -64,6 +67,11 @@ func resourceRedisCloudAclRuleCreate(ctx context.Context, d *schema.ResourceData
 
 	d.SetId(strconv.Itoa(id))
 
+	err = waitForAclRuleToBeActive(ctx, id, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	return diags
 }
 
@@ -112,6 +120,11 @@ func resourceRedisCloudAclRuleUpdate(ctx context.Context, d *schema.ResourceData
 		if err != nil {
 			return diag.FromErr(err)
 		}
+
+		err = waitForAclRuleToBeActive(ctx, id, api)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return diags
@@ -134,5 +147,54 @@ func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData
 
 	d.SetId("")
 
+	err = retry.RetryContext(ctx, 5*time.Minute, func() *retry.RetryError {
+		rule, err := api.client.RedisRules.Get(ctx, id)
+
+		if err != nil {
+			if _, ok := err.(*redis_rules.NotFound); ok {
+				// All good, the resource is gone
+				return nil
+			}
+			// This was an unexpected error
+			return retry.NonRetryableError(fmt.Errorf("error getting rule: %s", err))
+		}
+
+		if rule != nil {
+			return retry.RetryableError(fmt.Errorf("expected rule to be deleted but was in state %s", redis.StringValue(rule.Status)))
+		}
+		// Unclear at this point what's going on!
+		return retry.NonRetryableError(fmt.Errorf("error getting rule: %s", err))
+	})
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	return diags
+}
+
+func waitForAclRuleToBeActive(ctx context.Context, id int, api *apiClient) error {
+	wait := &retry.StateChangeConf{
+		Delay: 5 * time.Second,
+		Pending: []string{
+			redis_rules.StatusPending,
+		},
+		Target:  []string{redis_rules.StatusActive},
+		Timeout: 5 * time.Minute,
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for rule %d to be active", id)
+
+			rule, err := api.client.RedisRules.Get(ctx, id)
+			if err != nil {
+				return nil, "", err
+			}
+
+			return redis.StringValue(rule.Status), redis.StringValue(rule.Status), nil
+		},
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }

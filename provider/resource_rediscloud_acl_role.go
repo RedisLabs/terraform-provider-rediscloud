@@ -2,10 +2,13 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/roles"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"log"
 	"strconv"
 	"time"
 )
@@ -103,6 +106,11 @@ func resourceRedisCloudAclRoleCreate(ctx context.Context, d *schema.ResourceData
 
 	d.SetId(strconv.Itoa(id))
 
+	err = waitForAclRoleToBeActive(ctx, id, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	return diags
 }
 
@@ -150,6 +158,11 @@ func resourceRedisCloudAclRoleUpdate(ctx context.Context, d *schema.ResourceData
 		if err != nil {
 			return diag.FromErr(err)
 		}
+
+		err = waitForAclRoleToBeActive(ctx, id, api)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return diags
@@ -171,6 +184,28 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 	}
 
 	d.SetId("")
+
+	err = retry.RetryContext(ctx, 5*time.Minute, func() *retry.RetryError {
+		role, err := api.client.Roles.Get(ctx, id)
+
+		if err != nil {
+			if _, ok := err.(*roles.NotFound); ok {
+				// All good, the resource is gone
+				return nil
+			}
+			// This was an unexpected error
+			return retry.NonRetryableError(fmt.Errorf("error getting role: %s", err))
+		}
+
+		if role != nil {
+			return retry.RetryableError(fmt.Errorf("expected role to be deleted but was in state %s", redis.StringValue(role.Status)))
+		}
+		// Unclear at this point what's going on!
+		return retry.NonRetryableError(fmt.Errorf("error getting role: %s", err))
+	})
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	return diags
 }
@@ -243,4 +278,31 @@ func flattenDatabases(databases []*roles.GetDatabaseInRuleInRoleResponse) []map[
 	}
 
 	return tfs
+}
+
+func waitForAclRoleToBeActive(ctx context.Context, id int, api *apiClient) error {
+	wait := &retry.StateChangeConf{
+		Delay: 5 * time.Second,
+		Pending: []string{
+			roles.StatusPending,
+		},
+		Target:  []string{roles.StatusActive},
+		Timeout: 5 * time.Minute,
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for role %d to be active", id)
+
+			role, err := api.client.Roles.Get(ctx, id)
+			if err != nil {
+				return nil, "", err
+			}
+
+			return redis.StringValue(role.Status), redis.StringValue(role.Status), nil
+		},
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }

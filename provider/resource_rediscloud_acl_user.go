@@ -2,9 +2,11 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/users"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"strconv"
 	"time"
@@ -141,6 +143,28 @@ func resourceRedisCloudAclUserDelete(ctx context.Context, d *schema.ResourceData
 	}
 
 	d.SetId("")
+
+	err = retry.RetryContext(ctx, 5*time.Minute, func() *retry.RetryError {
+		user, err := api.client.Users.Get(ctx, id)
+
+		if err != nil {
+			if _, ok := err.(*users.NotFound); ok {
+				// All good, the resource is gone
+				return nil
+			}
+			// This was an unexpected error
+			return retry.NonRetryableError(fmt.Errorf("error getting user: %s", err))
+		}
+
+		if user != nil {
+			return retry.RetryableError(fmt.Errorf("expected user to be deleted but was not"))
+		}
+		// Unclear at this point what's going on!
+		return retry.NonRetryableError(fmt.Errorf("error getting user: %s", err))
+	})
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	return diags
 }
