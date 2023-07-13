@@ -43,6 +43,7 @@ func resourceRedisCloudAclUser() *schema.Resource {
 			"password": {
 				Description: "The user's password",
 				Type:        schema.TypeString,
+				ForceNew:    true,
 				Required:    true,
 				Sensitive:   true,
 			},

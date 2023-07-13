@@ -25,12 +25,6 @@ func dataSourceRedisCloudAclUser() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
-			"password": {
-				Description: "The password to authenticate this User.",
-				Type:        schema.TypeString,
-				Computed:    true,
-				Sensitive:   true,
-			},
 		},
 	}
 }

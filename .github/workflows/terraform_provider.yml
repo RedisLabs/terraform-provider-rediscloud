@@ -110,7 +110,7 @@ jobs:
         env:
           REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_QA }}
           REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_QA }}
-          REDISCLOUD_URL: https://api-cloudapi.qa.redislabs.com/v1
+          REDISCLOUD_URL: https://api-k8s-cloudapi.qa.redislabs.com/v1
           AWS_TEST_CLOUD_ACCOUNT_NAME: "${{ secrets.AWS_TEST_CLOUD_ACCOUNT_NAME }}"
           AWS_PEERING_REGION: ${{ secrets.AWS_PEERING_REGION }}
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
