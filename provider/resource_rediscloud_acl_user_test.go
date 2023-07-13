@@ -27,9 +27,10 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 		fmt.Sprintf(referencableRole, exampleRoleName) +
 		fmt.Sprintf(testUser, testName, testPassword)
 
+	// The User will be updated because the Role's name will have changed
 	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
-		fmt.Sprintf(referencableRole, exampleRoleName) +
-		fmt.Sprintf(testUser, testName+"-updated", testPassword)
+		fmt.Sprintf(referencableRole, exampleRoleName+"-updated") +
+		fmt.Sprintf(testUser, testName, testPassword)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
@@ -73,8 +74,8 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 			{
 				Config: testUpdateTerraform,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "name", testName+"-updated"),
-					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "role", exampleRoleName),
+					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "name", testName),
+					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "role", exampleRoleName+"-updated"),
 				),
 			},
 			// Test that the user is imported successfully
@@ -106,7 +107,7 @@ func TestAccResourceRedisCloudAclUser_NewPassword(t *testing.T) {
 
 	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRole, exampleRoleName) +
-		fmt.Sprintf(testUser, testName+"-updated", testPassword+"-updated")
+		fmt.Sprintf(testUser, testName, testPassword+"-updated")
 
 	identifier := ""
 

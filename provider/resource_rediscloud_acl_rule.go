@@ -174,10 +174,8 @@ func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData
 
 func waitForAclRuleToBeActive(ctx context.Context, id int, api *apiClient) error {
 	wait := &retry.StateChangeConf{
-		Delay: 5 * time.Second,
-		Pending: []string{
-			redis_rules.StatusPending,
-		},
+		Delay:   5 * time.Second,
+		Pending: []string{redis_rules.StatusPending},
 		Target:  []string{redis_rules.StatusActive},
 		Timeout: 5 * time.Minute,
 
