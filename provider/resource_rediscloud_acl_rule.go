@@ -138,12 +138,6 @@ func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	// Resources can become randomly 'pending' and then refuse to delete
-	err = waitForAclRuleToBeActive(ctx, id, api)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
 	err = api.client.RedisRules.Delete(ctx, id)
 
 	if err != nil {
@@ -152,6 +146,7 @@ func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData
 
 	d.SetId("")
 
+	// Wait until it's really disappeared
 	err = retry.RetryContext(ctx, 5*time.Minute, func() *retry.RetryError {
 		rule, err := api.client.RedisRules.Get(ctx, id)
 

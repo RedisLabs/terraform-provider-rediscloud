@@ -145,6 +145,7 @@ func resourceRedisCloudAclUserDelete(ctx context.Context, d *schema.ResourceData
 
 	d.SetId("")
 
+	// Wait until it's really disappeared
 	err = retry.RetryContext(ctx, 5*time.Minute, func() *retry.RetryError {
 		user, err := api.client.Users.Get(ctx, id)
 

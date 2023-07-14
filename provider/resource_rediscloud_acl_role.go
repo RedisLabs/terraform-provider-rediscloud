@@ -176,12 +176,6 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	// Resources can become randomly 'pending' and then refuse to delete
-	err = waitForAclRoleToBeActive(ctx, id, api)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
 	err = api.client.Roles.Delete(ctx, id)
 
 	if err != nil {
@@ -190,6 +184,7 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 
 	d.SetId("")
 
+	// Wait until it's really disappeared
 	err = retry.RetryContext(ctx, 5*time.Minute, func() *retry.RetryError {
 		role, err := api.client.Roles.Get(ctx, id)
 
