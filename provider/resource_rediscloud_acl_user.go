@@ -36,6 +36,7 @@ func resourceRedisCloudAclUser() *schema.Resource {
 				Description: "A meaningful name to identify the user",
 				Type:        schema.TypeString,
 				Required:    true,
+				ForceNew:    true,
 			},
 			"role": {
 				Description: "The role which the user has",
