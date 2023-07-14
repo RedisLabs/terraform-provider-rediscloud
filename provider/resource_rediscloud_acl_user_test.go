@@ -90,6 +90,60 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 	})
 }
 
+func TestAccResourceRedisCloudAclUser_NewName(t *testing.T) {
+
+	prefix := acctest.RandomWithPrefix(testResourcePrefix)
+	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	exampleSubscriptionName := prefix + "-subscription"
+	exampleDatabasePassword := prefix + "aA.1"
+	exampleRoleName := prefix + "-role"
+
+	testName := prefix + "-test-user"
+	testPassword := prefix + "aA.1"
+
+	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+		fmt.Sprintf(referencableRole, exampleRoleName) +
+		fmt.Sprintf(testUser, testName, testPassword)
+
+	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+		fmt.Sprintf(referencableRole, exampleRoleName) +
+		fmt.Sprintf(testUser, testName+"-updated", testPassword)
+
+	identifier := ""
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckAclUserDestroy,
+		Steps: []resource.TestStep{
+			// Test user creation
+			{
+				Config: testCreateTerraform,
+				Check: resource.ComposeTestCheckFunc(
+					func(s *terraform.State) error {
+						r := s.RootModule().Resources["rediscloud_acl_user.test"]
+						identifier = r.Primary.ID
+						return nil
+					},
+				),
+			},
+			// Test user is updated successfully. A name change should forcibly generate a new entity with a new id
+			{
+				Config: testUpdateTerraform,
+				Check: resource.ComposeTestCheckFunc(
+					func(s *terraform.State) error {
+						r := s.RootModule().Resources["rediscloud_acl_user.test"]
+						if r.Primary.ID == identifier {
+							return fmt.Errorf("entity should have a new identifier, but is still: %s", identifier)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceRedisCloudAclUser_NewPassword(t *testing.T) {
 
 	prefix := acctest.RandomWithPrefix(testResourcePrefix)
