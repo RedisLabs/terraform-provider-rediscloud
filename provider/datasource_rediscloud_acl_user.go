@@ -11,7 +11,7 @@ import (
 
 func dataSourceRedisCloudAclUser() *schema.Resource {
 	return &schema.Resource{
-		Description: "The ACL User is an authenticated entity whose permissions are described by an associated Role.",
+		Description: "The ACL User is an authenticated entity whose permissions are described by an associated Role",
 		ReadContext: dataSourceRedisCloudAclUserRead,
 
 		Schema: map[string]*schema.Schema{
@@ -21,7 +21,7 @@ func dataSourceRedisCloudAclUser() *schema.Resource {
 				Required:    true,
 			},
 			"role": {
-				Description: "The Role which this User has.",
+				Description: "The Role which this User has",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
