@@ -34,9 +34,9 @@ The following arguments are supported:
 The `timeouts` block allows you to
 specify [timeouts](https://www.terraform.io/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 3 mins) Used when creating the Rule.
-* `update` - (Defaults to 3 mins) Used when updating the Rule.
-* `delete` - (Defaults to 1 mins) Used when destroying the Rule.
+* `create` - (Defaults to 5 mins) Used when creating the Rule.
+* `update` - (Defaults to 5 mins) Used when updating the Rule.
+* `delete` - (Defaults to 5 mins) Used when destroying the Rule.
 
 ## Attribute reference
 

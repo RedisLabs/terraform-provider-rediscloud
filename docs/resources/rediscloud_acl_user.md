@@ -35,21 +35,24 @@ resource "rediscloud_acl_user" "user-resource-explicit" {
 
 The following arguments are supported:
 
-* `name` - (Required) A meaningful name for the User. Must be unique. An error occurs if a user tries to connect to
+* `name` - (Required, change forces recreation) A meaningful name for the User. Must be unique. An error occurs if a
+  user tries to connect to
   a `memcached` database with the username `admin`.
 * `role` - (Required) The name of the Role held by the User. It is recommended an implicit dependency is used
   here. `depends_on` could be used instead by waiting for a Role resource with a matching `name`.
-* `password` - (Required) The password for this ACL User. Must contain a lower-case letter, a upper-case letter, a
-  number and a special character. Can be updated but is not returned as an attribute.
+* `password` - (Required, change forces recreation) The password for this ACL User. Must contain a lower-case letter, a
+  upper-case letter, a
+  number and a special character. Can be updated but since it is not returned by the API, we have no way of detecting
+  drift, so the entity would be entirely replaced. Take special care with multiple versions of Terraform State.
 
 ### Timeouts
 
 The `timeouts` block allows you to
 specify [timeouts](https://www.terraform.io/language/resources/syntax#operation-timeouts) for certain actions:
 
-* `create` - (Defaults to 3 mins) Used when creating the User.
-* `update` - (Defaults to 3 mins) Used when updating the User.
-* `delete` - (Defaults to 1 mins) Used when destroying the User.
+* `create` - (Defaults to 5 mins) Used when creating the User.
+* `update` - (Defaults to 5 mins) Used when updating the User.
+* `delete` - (Defaults to 5 mins) Used when destroying the User.
 
 ## Attribute reference
 
