@@ -56,7 +56,6 @@ func resourceRedisCloudAclUser() *schema.Resource {
 
 func resourceRedisCloudAclUserCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
-	var diags diag.Diagnostics
 
 	name := d.Get("name").(string)
 	role := d.Get("role").(string)
@@ -75,7 +74,7 @@ func resourceRedisCloudAclUserCreate(ctx context.Context, d *schema.ResourceData
 
 	d.SetId(strconv.Itoa(id))
 
-	return diags
+	return resourceRedisCloudAclUserRead(ctx, d, meta)
 }
 
 func resourceRedisCloudAclUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -104,7 +103,6 @@ func resourceRedisCloudAclUserRead(ctx context.Context, d *schema.ResourceData, 
 
 func resourceRedisCloudAclUserUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
-	var diags diag.Diagnostics
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -125,7 +123,7 @@ func resourceRedisCloudAclUserUpdate(ctx context.Context, d *schema.ResourceData
 		}
 	}
 
-	return diags
+	return resourceRedisCloudAclUserRead(ctx, d, meta)
 }
 
 func resourceRedisCloudAclUserDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {

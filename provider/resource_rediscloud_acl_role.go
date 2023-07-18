@@ -87,7 +87,6 @@ func resourceRedisCloudAclRole() *schema.Resource {
 
 func resourceRedisCloudAclRoleCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
-	var diags diag.Diagnostics
 
 	name := d.Get("name").(string)
 	associateWithRules := extractRules(d)
@@ -110,7 +109,7 @@ func resourceRedisCloudAclRoleCreate(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	return diags
+	return resourceRedisCloudAclRoleRead(ctx, d, meta)
 }
 
 func resourceRedisCloudAclRoleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -138,7 +137,6 @@ func resourceRedisCloudAclRoleRead(ctx context.Context, d *schema.ResourceData, 
 
 func resourceRedisCloudAclRoleUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
-	var diags diag.Diagnostics
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -164,7 +162,7 @@ func resourceRedisCloudAclRoleUpdate(ctx context.Context, d *schema.ResourceData
 		}
 	}
 
-	return diags
+	return resourceRedisCloudAclRoleRead(ctx, d, meta)
 }
 
 func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {

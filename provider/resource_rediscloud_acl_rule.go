@@ -49,7 +49,6 @@ func resourceRedisCloudAclRule() *schema.Resource {
 
 func resourceRedisCloudAclRuleCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
-	var diags diag.Diagnostics
 
 	name := d.Get("name").(string)
 	rule := d.Get("rule").(string)
@@ -71,7 +70,7 @@ func resourceRedisCloudAclRuleCreate(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	return diags
+	return resourceRedisCloudAclRuleRead(ctx, d, meta)
 }
 
 func resourceRedisCloudAclRuleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -100,7 +99,6 @@ func resourceRedisCloudAclRuleRead(ctx context.Context, d *schema.ResourceData, 
 
 func resourceRedisCloudAclRuleUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
-	var diags diag.Diagnostics
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -126,7 +124,7 @@ func resourceRedisCloudAclRuleUpdate(ctx context.Context, d *schema.ResourceData
 		}
 	}
 
-	return diags
+	return resourceRedisCloudAclRuleRead(ctx, d, meta)
 }
 
 func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
