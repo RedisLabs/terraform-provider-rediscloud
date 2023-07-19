@@ -206,7 +206,9 @@ resource "rediscloud_acl_role" "test" {
 		databases {
 			subscription = rediscloud_active_active_subscription.example.id
 			database = rediscloud_active_active_subscription_database.example.db_id
-			regions = ["us-east-1", "us-east-2"]
+			regions = [
+        		for r in rediscloud_active_active_subscription_database.example.override_region : r.name
+      		]
 		}
 	}
 }

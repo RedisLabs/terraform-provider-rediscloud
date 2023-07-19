@@ -11,7 +11,7 @@ import (
 
 func dataSourceRedisCloudAclRole() *schema.Resource {
 	return &schema.Resource{
-		Description: "The ACL Role grants a number of permissions to databases.",
+		Description: "The ACL Role grants a number of permissions to databases",
 		ReadContext: dataSourceRedisCloudAclRoleRead,
 
 		Schema: map[string]*schema.Schema{
@@ -21,34 +21,34 @@ func dataSourceRedisCloudAclRole() *schema.Resource {
 				Required:    true,
 			},
 			"rules": {
-				Description: "This Role's permissions and the databases to which they apply.",
+				Description: "This Role's permissions and the databases to which they apply",
 				Type:        schema.TypeSet,
 				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
-							Description: "The name of the Rule.",
+							Description: "The name of the Rule",
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
 						"databases": {
-							Description: "The databases to which this Rule applies.",
+							Description: "The databases to which this Rule applies",
 							Type:        schema.TypeSet,
 							Computed:    true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"subscription": {
-										Description: "The name of the Rule.",
+										Description: "The name of the Rule",
 										Type:        schema.TypeInt,
 										Computed:    true,
 									},
 									"database": {
-										Description: "The databases to which this Rule applies.",
+										Description: "The databases to which this Rule applies",
 										Type:        schema.TypeInt,
 										Computed:    true,
 									},
 									"regions": {
-										Description: "The regional deployments of this database to which the Rule applies. Only relevant to Active/Active databases, otherwise omit.",
+										Description: "The regional deployments of this database to which the Rule applies. Only relevant to Active/Active databases, otherwise omit",
 										Type:        schema.TypeSet,
 										Computed:    true,
 										Elem: &schema.Schema{

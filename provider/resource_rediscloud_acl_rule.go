@@ -2,10 +2,13 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/redis_rules"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"log"
 	"strconv"
 	"time"
 )
@@ -19,20 +22,19 @@ func resourceRedisCloudAclRule() *schema.Resource {
 		DeleteContext: resourceRedisCloudAclRuleDelete,
 
 		Importer: &schema.ResourceImporter{
-			// Let the READ operation do the heavy lifting for importing values from the API.
 			StateContext: schema.ImportStatePassthroughContext,
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(3 * time.Minute),
-			Read:   schema.DefaultTimeout(1 * time.Minute),
-			Update: schema.DefaultTimeout(3 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Read:   schema.DefaultTimeout(3 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 
 		Schema: map[string]*schema.Schema{
 			"name": {
-				Description: "A meaningful name to identify the rule. Must be unique.",
+				Description: "A meaningful name to identify the rule, must be unique",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
@@ -47,7 +49,6 @@ func resourceRedisCloudAclRule() *schema.Resource {
 
 func resourceRedisCloudAclRuleCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
-	var diags diag.Diagnostics
 
 	name := d.Get("name").(string)
 	rule := d.Get("rule").(string)
@@ -64,7 +65,12 @@ func resourceRedisCloudAclRuleCreate(ctx context.Context, d *schema.ResourceData
 
 	d.SetId(strconv.Itoa(id))
 
-	return diags
+	err = waitForAclRuleToBeActive(ctx, id, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	return resourceRedisCloudAclRuleRead(ctx, d, meta)
 }
 
 func resourceRedisCloudAclRuleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -78,6 +84,10 @@ func resourceRedisCloudAclRuleRead(ctx context.Context, d *schema.ResourceData, 
 
 	rule, err := api.client.RedisRules.Get(ctx, id)
 	if err != nil {
+		if _, ok := err.(*redis_rules.NotFound); ok {
+			d.SetId("")
+			return diags
+		}
 		return diag.FromErr(err)
 	}
 
@@ -93,7 +103,6 @@ func resourceRedisCloudAclRuleRead(ctx context.Context, d *schema.ResourceData, 
 
 func resourceRedisCloudAclRuleUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
-	var diags diag.Diagnostics
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -112,9 +121,14 @@ func resourceRedisCloudAclRuleUpdate(ctx context.Context, d *schema.ResourceData
 		if err != nil {
 			return diag.FromErr(err)
 		}
+
+		err = waitForAclRuleToBeActive(ctx, id, api)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
-	return diags
+	return resourceRedisCloudAclRuleRead(ctx, d, meta)
 }
 
 func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -134,5 +148,53 @@ func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData
 
 	d.SetId("")
 
+	// Wait until it's really disappeared
+	err = retry.RetryContext(ctx, 5*time.Minute, func() *retry.RetryError {
+		rule, err := api.client.RedisRules.Get(ctx, id)
+
+		if err != nil {
+			if _, ok := err.(*redis_rules.NotFound); ok {
+				// All good, the resource is gone
+				return nil
+			}
+			// This was an unexpected error
+			return retry.NonRetryableError(fmt.Errorf("error getting rule: %s", err))
+		}
+
+		if rule != nil {
+			return retry.RetryableError(fmt.Errorf("expected rule %d to be deleted but was in state %s", id, redis.StringValue(rule.Status)))
+		}
+		// Unclear at this point what's going on!
+		return retry.NonRetryableError(fmt.Errorf("unexpected error getting rule"))
+	})
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	return diags
+}
+
+func waitForAclRuleToBeActive(ctx context.Context, id int, api *apiClient) error {
+	wait := &retry.StateChangeConf{
+		Delay:   5 * time.Second,
+		Pending: []string{redis_rules.StatusPending},
+		Target:  []string{redis_rules.StatusActive},
+		Timeout: 5 * time.Minute,
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for rule %d to be active", id)
+
+			rule, err := api.client.RedisRules.Get(ctx, id)
+			if err != nil {
+				return nil, "", err
+			}
+
+			return redis.StringValue(rule.Status), redis.StringValue(rule.Status), nil
+		},
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }
