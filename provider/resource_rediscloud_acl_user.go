@@ -88,6 +88,10 @@ func resourceRedisCloudAclUserRead(ctx context.Context, d *schema.ResourceData, 
 
 	user, err := api.client.Users.Get(ctx, id)
 	if err != nil {
+		if _, ok := err.(*users.NotFound); ok {
+			d.SetId("")
+			return diags
+		}
 		return diag.FromErr(err)
 	}
 

@@ -123,6 +123,10 @@ func resourceRedisCloudAclRoleRead(ctx context.Context, d *schema.ResourceData, 
 
 	role, err := api.client.Roles.Get(ctx, id)
 	if err != nil {
+		if _, ok := err.(*roles.NotFound); ok {
+			d.SetId("")
+			return diags
+		}
 		return diag.FromErr(err)
 	}
 

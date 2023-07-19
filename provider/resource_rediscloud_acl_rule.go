@@ -84,6 +84,10 @@ func resourceRedisCloudAclRuleRead(ctx context.Context, d *schema.ResourceData, 
 
 	rule, err := api.client.RedisRules.Get(ctx, id)
 	if err != nil {
+		if _, ok := err.(*redis_rules.NotFound); ok {
+			d.SetId("")
+			return diags
+		}
 		return diag.FromErr(err)
 	}
 
