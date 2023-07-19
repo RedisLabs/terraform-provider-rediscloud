@@ -7,7 +7,8 @@ description: |-
 
 # Data Source: rediscloud_acl_rule
 
-The Rule (a.k.a Redis Rule, Redis ACL) data source allows access to an existing Rule within your Redis Enterprise Cloud Account.
+The Rule (a.k.a Redis Rule, Redis ACL) data source allows access to an existing Rule within your Redis Enterprise Cloud
+Account.
 
 ## Example Usage
 

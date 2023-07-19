@@ -11,7 +11,7 @@ import (
 
 func dataSourceRedisCloudAclRule() *schema.Resource {
 	return &schema.Resource{
-		Description: "The ACL Rule (known also as RedisRule) allows fine-grained permissions to be assigned to a subset of ACL Users.",
+		Description: "The ACL Rule (known also as RedisRule) allows fine-grained permissions to be assigned to a subset of ACL Users",
 		ReadContext: dataSourceRedisCloudAclRuleRead,
 
 		Schema: map[string]*schema.Schema{
