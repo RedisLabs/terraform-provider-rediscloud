@@ -20,7 +20,7 @@ func dataSourceRedisCloudAclRole() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 			},
-			"rules": {
+			"rule": {
 				Description: "This Role's permissions and the databases to which they apply",
 				Type:        schema.TypeSet,
 				Computed:    true,
@@ -31,7 +31,7 @@ func dataSourceRedisCloudAclRole() *schema.Resource {
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
-						"databases": {
+						"database": {
 							Description: "The databases to which this Rule applies",
 							Type:        schema.TypeSet,
 							Computed:    true,
@@ -95,7 +95,7 @@ func dataSourceRedisCloudAclRoleRead(ctx context.Context, d *schema.ResourceData
 	if err := d.Set("name", redis.StringValue(role.Name)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("rules", flattenRules(role.RedisRules)); err != nil {
+	if err := d.Set("rule", flattenRules(role.RedisRules)); err != nil {
 		return diag.FromErr(err)
 	}
 
