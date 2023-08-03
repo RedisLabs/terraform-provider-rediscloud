@@ -14,18 +14,18 @@ Creates a Role in your Redis Enterprise Cloud Account.
 ```hcl
 resource "rediscloud_acl_role" "role-resource-implicit" {
   name = "fast-admin"
-  rules {
+  rule {
     # An implicit dependency is recommended
     name = rediscloud_acl_role.cache_reader.name
     # Implicit dependencies used throughout
-    databases {
+    database {
       subscription = rediscloud_active_active_subscription_database.subscription-resource-1.id
       database     = rediscloud_active_active_subscription_database.database-resource-1.db_id
       regions      = [
         for r in rediscloud_active_active_subscription_database.database-resource-1.override_region : r.name
       ]
     }
-    databases {
+    database {
       subscription = rediscloud_subscription.subscription-resource-2.id
       database     = rediscloud_subscription_database.database-resource-2.db_id
     }
@@ -34,10 +34,10 @@ resource "rediscloud_acl_role" "role-resource-implicit" {
 
 resource "rediscloud_acl_role" "role-resource-explicit" {
   name = "fast-admin"
-  rules {
+  rule {
     name = "cache-reader"
     # Active-Active database omitted for brevity
-    databases {
+    database {
       subscription = 123456
       database     = 9830
     }
@@ -59,15 +59,15 @@ The following arguments are supported:
   referred to
   by name (and not ID), this could break existing references. See the [User](rediscloud_acl_user.md) resource
   documentation.**
-* `rules` - (Required, minimum 1) A list of rule association objects, documented below.
+* `rule` - (Required, minimum 1) A set of rule association objects, documented below.
 
-The `rules` list supports:
+The `rule` block supports:
 
 * `name` (Required) - Name of the Rule. It is recommended an implicit dependency is used here. `depends_on` could be
   used instead by waiting for a Rule resource with a matching `name`.
-* `databases` - (Required, minimum 1) a list of database association objects, documented below.
+* `database` - (Required, minimum 1) a set of database association objects, documented below.
 
-The `databases` list supports:
+The `database` block supports:
 
 * `subscription` (Required) - ID of the subscription containing the database.
 * `database` (Required) - ID of the database to which the Rule should apply.
@@ -86,14 +86,14 @@ specify [timeouts](https://www.terraform.io/language/resources/syntax#operation-
 
 * `id` - Identifier of the Role created.
 * `name` - The Role's name.
-* `rules` - The Rules associated with the Role.
+* `rule` - The Rules associated with the Role.
 
-The `rules` list is made of objects with:
+The `rule` block supports:
 
 * `name` - Name of the Rule.
-* `databases` - a list of database association objects, documented below.
+* `database` - The Databases the Rule applies to.
 
-The `databases` list is made of objects with:
+The `database` block supports:
 
 * `subscription` ID of the subscription containing the database.
 * `database` ID of the database to which the Rule should apply.

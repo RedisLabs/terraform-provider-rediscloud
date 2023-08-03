@@ -29,14 +29,14 @@ output "rediscloud_acl_role" {
 
 * `id` - Identifier of the found Role.
 * `name` - The Role's name.
-* `rules` - The Rules associated with the Role.
+* `rule` - The Rules associated with the Role.
 
-The `rules` list is made of objects with:
+The `rule` block supports:
 
 * `name` - Name of the Rule.
-* `databases` - a list of database association objects, documented below.
+* `database` - a set of database association objects, documented below.
 
-The `databases` list is made of objects with:
+The `database` block supports:
 
 * `subscription` ID of the subscription containing the database.
 * `database` ID of the database to which the Rule should apply.
