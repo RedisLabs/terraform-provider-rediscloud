@@ -38,7 +38,7 @@ func resourceRedisCloudAclRole() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 			},
-			"rules": {
+			"rule": {
 				Description: "A set of rules which apply to the role",
 				Type:        schema.TypeSet,
 				Required:    true,
@@ -50,7 +50,7 @@ func resourceRedisCloudAclRole() *schema.Resource {
 							Type:        schema.TypeString,
 							Required:    true,
 						},
-						"databases": {
+						"database": {
 							Description: "A set of databases to whom this rule applies within the role",
 							Type:        schema.TypeSet,
 							Required:    true,
@@ -133,7 +133,7 @@ func resourceRedisCloudAclRoleRead(ctx context.Context, d *schema.ResourceData, 
 	if err := d.Set("name", redis.StringValue(role.Name)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("rules", flattenRules(role.RedisRules)); err != nil {
+	if err := d.Set("rule", flattenRules(role.RedisRules)); err != nil {
 		return diag.FromErr(err)
 	}
 	return diags
@@ -147,7 +147,7 @@ func resourceRedisCloudAclRoleUpdate(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	if d.HasChanges("name", "rules") {
+	if d.HasChanges("name", "rule") {
 		updateRoleRequest := roles.CreateRoleRequest{}
 
 		name := d.Get("name").(string)
@@ -214,14 +214,14 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 
 func extractRules(d *schema.ResourceData) []*roles.CreateRuleInRoleRequest {
 	associateWithRules := make([]*roles.CreateRuleInRoleRequest, 0)
-	rules := d.Get("rules").(*schema.Set).List()
+	rules := d.Get("rule").(*schema.Set).List()
 	for _, rule := range rules {
 		ruleMap := rule.(map[string]interface{})
 
 		ruleName := ruleMap["name"].(string)
 		associateWithDatabases := make([]*roles.CreateDatabaseInRuleInRoleRequest, 0)
 
-		databases := ruleMap["databases"].(*schema.Set).List()
+		databases := ruleMap["database"].(*schema.Set).List()
 		for _, database := range databases {
 			databaseMap := database.(map[string]interface{})
 
@@ -258,8 +258,8 @@ func flattenRules(rules []*roles.GetRuleInRoleResponse) []map[string]interface{}
 
 	for _, rule := range rules {
 		tf := map[string]interface{}{
-			"name":      redis.StringValue(rule.RuleName),
-			"databases": flattenDatabases(rule.Databases),
+			"name":     redis.StringValue(rule.RuleName),
+			"database": flattenDatabases(rule.Databases),
 		}
 		tfs = append(tfs, tf)
 	}

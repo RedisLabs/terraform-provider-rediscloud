@@ -105,9 +105,9 @@ resource "rediscloud_subscription_database" "example" {
 
 resource "rediscloud_acl_role" "example" {
 	name = "%s"
-	rules {
+	rule {
 		name = "Read-Only"
-		databases {
+		database {
 			subscription = rediscloud_subscription.example.id
 			database = rediscloud_subscription_database.example.db_id
 		}

@@ -40,12 +40,12 @@ func TestAccDataSourceRedisCloudAclRole_Default(t *testing.T) {
 					resource.TestMatchResourceAttr(
 						"data.rediscloud_acl_role.test", "id", regexp.MustCompile("^\\d*$")),
 					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "name", testName),
-					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rules.#", "1"),
-					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rules.0.name", "Read-Only"),
-					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rules.0.databases.#", "1"),
-					resource.TestMatchResourceAttr("data.rediscloud_acl_role.test", "rules.0.databases.0.subscription", regexp.MustCompile("^\\d*$")),
-					resource.TestMatchResourceAttr("data.rediscloud_acl_role.test", "rules.0.databases.0.database", regexp.MustCompile("^\\d*$")),
-					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rules.0.databases.0.regions.#", "0"),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rule.#", "1"),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rule.0.name", "Read-Only"),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rule.0.database.#", "1"),
+					resource.TestMatchResourceAttr("data.rediscloud_acl_role.test", "rule.0.database.0.subscription", regexp.MustCompile("^\\d*$")),
+					resource.TestMatchResourceAttr("data.rediscloud_acl_role.test", "rule.0.database.0.database", regexp.MustCompile("^\\d*$")),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rule.0.database.0.regions.#", "0"),
 				),
 			},
 		},
@@ -105,9 +105,9 @@ resource "rediscloud_subscription_database" "example" {
 
 resource "rediscloud_acl_role" "test" {
 	name = "%s"
-	rules {
+	rule {
 		name = "Read-Only"
-		databases {
+		database {
 			subscription = rediscloud_subscription.example.id
 			database = rediscloud_subscription_database.example.db_id
 		}
