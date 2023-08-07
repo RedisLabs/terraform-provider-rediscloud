@@ -26,13 +26,6 @@ resource "rediscloud_acl_role" "role-resource" {
       database     = rediscloud_subscription_database.database-resource.db_id
     }
   }
-
-  # An explicit resource dependency can be used if preferred
-  depends_on = [
-    rediscloud_acl_rule.rule-resource,
-    rediscloud_subscription.subscription-resource,
-    rediscloud_subscription_database.database-resource
-  ]
 }
 ```
 
