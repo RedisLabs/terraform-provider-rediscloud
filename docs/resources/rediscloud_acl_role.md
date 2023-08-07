@@ -5,7 +5,7 @@ description: |-
   ACL Role resource in the Terraform provider Redis Cloud.
 ---
 
-# Resource: rediscloud_acl_rule
+# Resource: rediscloud_acl_role
 
 Creates a Role in your Redis Enterprise Cloud Account.
 
