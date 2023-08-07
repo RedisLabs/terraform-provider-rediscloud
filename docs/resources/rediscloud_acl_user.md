@@ -16,9 +16,6 @@ resource "rediscloud_acl_user" "user-resource" {
   name     = "my-user"
   role     = rediscloud_acl_role.role-resource.name
   password = "mY.passw0rd"
-  depends_on = [
-    rediscloud_acl_role.role-resource
-  ]
 }
 ```
 
