@@ -106,7 +106,7 @@ The following arguments are supported:
 
 The `alert` block supports:
 
-* `name` (Required) - Alert name
+* `name` (Required) - Alert name. (either: 'dataset-size', 'datasets-size', 'throughput-higher-than', 'throughput-lower-than', 'latency', 'syncsource-error', 'syncsource-lag' or 'connections-limit') 
 * `value` (Required) - Alert value
 
 The `modules` list supports:
