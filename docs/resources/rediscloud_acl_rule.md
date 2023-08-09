@@ -13,7 +13,7 @@ Creates a Rule (a.k.a Redis Rule, Redis ACL) in your Redis Enterprise Cloud Acco
 
 ```hcl
 resource "rediscloud_acl_rule" "rule-resource" {
-  name = "cache-reader-rule"
+  name = "my-rule"
   rule = "+@read ~cache:*"
 }
 ```
@@ -22,11 +22,8 @@ resource "rediscloud_acl_rule" "rule-resource" {
 
 The following arguments are supported:
 
-* `name` - (Required) A meaningful name for the rule. Must be unique. **This can be modified, but since the Rule is
-  referred to
-  by name (and not ID), this could break existing references. See the [Role](rediscloud_acl_role.md) resource
-  documentation.**
-* `rule` - (Required) The ACL rule itself, build up as permissions/restrictions written in
+* `name` - (Required) A meaningful name for the rule. Must be unique.
+* `rule` - (Required) The ACL rule itself, built up as permissions/restrictions written in
   the [ACL Syntax](https://docs.redis.com/latest/rc/security/access-control/data-access-control/configure-acls/#define-permissions-with-acl-syntax).
 
 ### Timeouts
