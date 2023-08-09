@@ -112,8 +112,8 @@ The `override_global_alert` block supports:
 
 The `remote_backup` block supports:
 
-* `interval` (Required) - Defines the frequency of the automatic backup
-* `time_utc` (Optional) - Defines the hour automatic backups are made - only applicable when interval is `every-12-hours` or `every-24-hours`
+* `interval` (Required) - Defines the interval between backups. Should be in the following format 'every-x-hours'. x is one of [24,12,6,4,2,1]. For example: 'every-4-hours'
+* `time_utc` (Optional) - Defines the hour automatic backups are made - only applicable when the interval is `every-12-hours` or `every-24-hours`. For example: '14:00'
 * `storage_type` (Required) - Defines the provider of the storage location
 * `storage_path` (Required) - Defines a URI representing the backup storage location
 
