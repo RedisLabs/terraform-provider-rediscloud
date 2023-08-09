@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+## 1.3.0 (7 August 2023)
+
+## Added
+- Added ACL resources and data sources (users, roles, rules)
+
 ## 1.2.0 (9 June 2023)
 
 ## Added
