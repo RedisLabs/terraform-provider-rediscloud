@@ -53,6 +53,7 @@ data "google_compute_network" "network" {
 
 resource "rediscloud_active_active_subscription_peering" "peering-resource" {
   subscription_id = rediscloud_active_active_subscription.subscription-resource.id
+  source_region = "us-central1"
   provider_name = "GCP"
   gcp_project_id = data.google_compute_network.network.project
   gcp_network_name = data.google_compute_network.network.name
@@ -71,10 +72,11 @@ The following arguments are supported:
 
 * `provider_name` - (Optional) The cloud provider to use with the vpc peering, (either `AWS` or `GCP`). Default: ‘AWS’. **Modifying this attribute will force creation of a new resource.**
 * `subscription_id` - (Required) A valid Active-Active subscription predefined in the current account. **Modifying this attribute will force creation of a new resource.**
+* `source_region` -	(Required) Name of the region to create the VPC peering from. **Modifying this attribute will force creation of a new resource.**
+
 
 **AWS ONLY:**
 * `aws_account_id` - (Required) AWS account ID that the VPC to be peered lives in. **Modifying this attribute will force creation of a new resource.**
-* `source_region` -	(Required) Name of the region to create the VPC peering from. **Modifying this attribute will force creation of a new resource.**
 * `destination_region` - (Required) Name of the region to create the VPC peering to. **Modifying this attribute will force creation of a new resource.**
 * `vpc_id` - (Required) Identifier of the VPC to be peered. **Modifying this attribute will force creation of a new resource.**
 * `vpc_cidr` - (Optional) CIDR range of the VPC to be peered. Either this or `vpc_cidrs` must be specified. **Modifying this attribute will force creation of a new resource.**
