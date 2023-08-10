@@ -4,24 +4,24 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ## 1.3.2 (9 October 2023)
 
-## Added
+### Added
 - Added a new environment variable `REDISCLOUD_SUBSCRIPTION_TIMEOUT` to allow
  configuring timeouts for subscriptions at the provider level. 
  This is a **TEMPORARY** solution and will be deleted in the next releases. 
 
 ## 1.3.1 (10 August 2023)
 
-## Fixed
+### Fixed
 - Documentation fixes
 
 ## 1.3.0 (7 August 2023)
 
-## Added
+### Added
 - Added ACL resources and data sources (users, roles, rules)
 
 ## 1.2.0 (9 June 2023)
 
-## Added
+### Added
 - Add support for using a custom port number in normal or active/active databases
 - Add support for configuring backups for normal or active/active databases
 - Add support for peering normal or active/active subscriptions with AWS VPCs that use multiple CIDR ranges
