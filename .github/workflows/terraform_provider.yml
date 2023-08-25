@@ -21,7 +21,7 @@ jobs:
     name: go build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.5.3
+      - uses: actions/checkout@v3.6.0
       - uses: actions/cache@v3.3.1
         continue-on-error: true
         id: cache-terraform-plugin-dir
@@ -45,7 +45,7 @@ jobs:
     needs: [go_build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.5.3
+      - uses: actions/checkout@v3.6.0
       - uses: actions/cache@v3.3.1
         continue-on-error: true
         id: cache-terraform-providers-schema
@@ -91,7 +91,7 @@ jobs:
     needs: [go_build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.5.3
+      - uses: actions/checkout@v3.6.0
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
@@ -140,7 +140,7 @@ jobs:
     needs: [go_build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.5.3
+      - uses: actions/checkout@v3.6.0
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
