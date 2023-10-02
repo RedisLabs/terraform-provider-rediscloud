@@ -711,7 +711,7 @@ func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) 
 		Delay:   10 * time.Second,
 		Pending: []string{subscriptions.SubscriptionStatusPending},
 		Target:  []string{subscriptions.SubscriptionStatusActive},
-		Timeout: 20 * time.Minute,
+		Timeout: 100 * time.Minute,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for subscription %d to be active", id)
@@ -774,7 +774,7 @@ func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClien
 			databases.StatusProxyPolicyChangeDraft,
 		},
 		Target:  []string{databases.StatusActive},
-		Timeout: 10 * time.Minute,
+		Timeout: 30 * time.Minute,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for database %d to be active", id)
