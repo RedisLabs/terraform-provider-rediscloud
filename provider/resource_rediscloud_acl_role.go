@@ -178,6 +178,28 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
+	// Every now and then the status of the role changes back to the 'pending' state after being fully created.
+	// The DELETE request will fail if the role is pending.
+	// This block queries the endpoint until the role is no longer in the 'pending' state.
+	err = retry.RetryContext(ctx, 5*time.Minute, func() *retry.RetryError {
+		role, err := api.client.Roles.Get(ctx, id)
+		if err != nil {
+			// This was an unexpected error
+			return retry.NonRetryableError(fmt.Errorf("error getting role: %s", err))
+		}
+		status := redis.StringValue(role.Status)
+		if status != roles.StatusPending {
+			// The role is ready for deletion
+			return nil
+		} else {
+			return retry.RetryableError(fmt.Errorf("can't delete the role %d in state %s", id, status))
+		}
+	})
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	err = api.client.Roles.Delete(ctx, id)
 
 	if err != nil {
@@ -187,7 +209,7 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 	d.SetId("")
 
 	// Wait until it's really disappeared
-	err = retry.RetryContext(ctx, 5*time.Minute, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, 10*time.Minute, func() *retry.RetryError {
 		role, err := api.client.Roles.Get(ctx, id)
 
 		if err != nil {
