@@ -205,7 +205,7 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 				if ruleId == asassignedRuleId {
 					ruleStatus := *rule.Status
 					if ruleStatus != "active" {
-						return retry.RetryableError(fmt.Errorf("can't delete the role %d in if a rule (%d) is in %s", id, ruleId, ruleStatus))
+						return retry.RetryableError(fmt.Errorf("can't delete the role %d if the rule (%d) is in %s", id, ruleId, ruleStatus))
 					}
 				}
 			}
