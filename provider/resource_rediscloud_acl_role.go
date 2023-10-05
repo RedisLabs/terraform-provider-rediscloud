@@ -9,6 +9,7 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/roles"
+	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/redis_rules"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -204,7 +205,7 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 				ruleId := *rule.ID
 				if ruleId == asassignedRuleId {
 					ruleStatus := *rule.Status
-					if ruleStatus != "active" {
+					if ruleStatus != redis_rules.StatusActive {
 						return retry.RetryableError(fmt.Errorf("can't delete the role %d if the rule (%d) is in %s", id, ruleId, ruleStatus))
 					}
 				}
