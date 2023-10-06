@@ -159,6 +159,11 @@ func resourceRedisCloudAclRoleUpdate(ctx context.Context, d *schema.ResourceData
 
 		waitForRulesDbToBeActive(ctx, d, api)
 
+		err = waitForAclRoleToBeActive(ctx, id, api)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
 		err = api.client.Roles.Update(ctx, id, updateRoleRequest)
 		if err != nil {
 			return diag.FromErr(err)
@@ -202,7 +207,7 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 		rules, err := api.client.RedisRules.List(ctx)
 		if err != nil {
 			// This was an unexpected error
-			return retry.NonRetryableError(fmt.Errorf("error getting role: %s", err))
+			return retry.NonRetryableError(fmt.Errorf("error getting rules: %s", err))
 		}
 		for _, rule := range rules {
 			for _, asassignedRuleId := range assignedRulesIds {
@@ -215,16 +220,15 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 				}
 			}
 		}
-
-		status := redis.StringValue(role.Status)
-		if status != roles.StatusPending {
-			// The role is ready for deletion
-			return nil
-		} else {
-			return retry.RetryableError(fmt.Errorf("can't delete the role %d in state %s", id, status))
-		}
+		// Unclear at this point what's going on!
+		return retry.NonRetryableError(fmt.Errorf("unexpected error getting role"))
 	})
 
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = waitForAclRoleToBeActive(ctx, id, api)
 	if err != nil {
 		return diag.FromErr(err)
 	}
