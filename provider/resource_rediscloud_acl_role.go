@@ -3,16 +3,14 @@ package provider
 import (
 	"context"
 	"fmt"
-	"log"
-	"strconv"
-	"time"
-
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/roles"
-	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/redis_rules"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"log"
+	"strconv"
+	"time"
 )
 
 func resourceRedisCloudAclRole() *schema.Resource {
@@ -180,51 +178,6 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	// Every now and then the status of the role changes back to the 'pending' state after being fully created.
-	// The DELETE request will fail if the role is pending.
-	// This block queries the endpoint until the role is no longer in the 'pending' state.
-	err = retry.RetryContext(ctx, 5*time.Minute, func() *retry.RetryError {
-		var assignedRulesIds []int
-		role, err := api.client.Roles.Get(ctx, id)
-		if err != nil {
-			// This was an unexpected error
-			return retry.NonRetryableError(fmt.Errorf("error getting role: %s", err))
-		}
-
-		// Check if the rules are not in the pending state
-		for _, redisRule := range role.RedisRules {
-			assignedRulesIds = append(assignedRulesIds, *redisRule.RuleId)
-		}
-		rules, err := api.client.RedisRules.List(ctx)
-		if err != nil {
-			// This was an unexpected error
-			return retry.NonRetryableError(fmt.Errorf("error getting role: %s", err))
-		}
-		for _, rule := range rules {
-			for _, asassignedRuleId := range assignedRulesIds {
-				ruleId := *rule.ID
-				if ruleId == asassignedRuleId {
-					ruleStatus := *rule.Status
-					if ruleStatus != redis_rules.StatusActive {
-						return retry.RetryableError(fmt.Errorf("can't delete the role %d if the rule (%d) is in %s", id, ruleId, ruleStatus))
-					}
-				}
-			}
-		}
-
-		status := redis.StringValue(role.Status)
-		if status != roles.StatusPending {
-			// The role is ready for deletion
-			return nil
-		} else {
-			return retry.RetryableError(fmt.Errorf("can't delete the role %d in state %s", id, status))
-		}
-	})
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
 	err = api.client.Roles.Delete(ctx, id)
 
 	if err != nil {
@@ -234,7 +187,7 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 	d.SetId("")
 
 	// Wait until it's really disappeared
-	err = retry.RetryContext(ctx, 10*time.Minute, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, 5*time.Minute, func() *retry.RetryError {
 		role, err := api.client.Roles.Get(ctx, id)
 
 		if err != nil {
