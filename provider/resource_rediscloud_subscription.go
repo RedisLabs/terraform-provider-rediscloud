@@ -708,22 +708,17 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 }
 
 func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) error {
-	// Allow configuring the subscription timeout via an environment variable.
-	timeout := 100
-	val, _ := os.LookupEnv("REDISCLOUD_SUBSCRIPTION_TIMEOUT")
-	if len(val) != 0 {
-		envTimeout, err := strconv.Atoi(val)
-		if err != nil {
-			return err
-		}
-		timeout = envTimeout
+	// TODO: Set timeout based on the timeouts block, instead of an env var.
+	timeout, err := getSubscriptionTimeout()
+	if err != nil {
+		return err
 	}
 
 	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{subscriptions.SubscriptionStatusPending},
 		Target:  []string{subscriptions.SubscriptionStatusActive},
-		Timeout: time.Duration(timeout) * time.Minute,
+		Timeout: timeout,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for subscription %d to be active", id)
@@ -744,11 +739,16 @@ func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) 
 }
 
 func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient) error {
+	timeout, err := getSubscriptionTimeout()
+	if err != nil {
+		return err
+	}
+
 	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{subscriptions.SubscriptionStatusDeleting},
 		Target:  []string{"deleted"},
-		Timeout: 10 * time.Minute,
+		Timeout: timeout,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for subscription %d to be deleted", id)
@@ -966,4 +966,19 @@ func readPaymentMethodID(d *schema.ResourceData) (*int, error) {
 		return redis.Int(pmID), nil
 	}
 	return nil, nil
+}
+
+func getSubscriptionTimeout() (time.Duration, error) {
+	// Allow configuring the subscription timeout via an environment variable.
+	timeout := 30
+	val, _ := os.LookupEnv("REDISCLOUD_SUBSCRIPTION_TIMEOUT")
+	if len(val) != 0 {
+		envTimeout, err := strconv.Atoi(val)
+		if err != nil {
+			return time.Duration(0), err
+		}
+		timeout = envTimeout
+	}
+	timeoutDuration := time.Duration(timeout) * time.Minute
+	return timeoutDuration, nil
 }
