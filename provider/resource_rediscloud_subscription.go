@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 	"strconv"
 	"time"
@@ -707,11 +708,22 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 }
 
 func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) error {
+	// Allow configuring the subscription timeout via an environment variable.
+	timeout := 100
+	val, _ := os.LookupEnv("REDISCLOUD_SUBSCRIPTION_TIMEOUT")
+	if len(val) != 0 {
+		envTimeout, err := strconv.Atoi(val)
+		if err != nil {
+			return err
+		}
+		timeout = envTimeout
+	}
+
 	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{subscriptions.SubscriptionStatusPending},
 		Target:  []string{subscriptions.SubscriptionStatusActive},
-		Timeout: 100 * time.Minute, // TODO: make this configurable
+		Timeout: time.Duration(timeout) * time.Minute,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for subscription %d to be active", id)
