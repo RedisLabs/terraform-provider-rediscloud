@@ -120,6 +120,9 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 * `update` - (Defaults to 30 mins) Used when updating the subscription
 * `delete` - (Defaults to 10 mins) Used when destroying the subscription
 
+~> **Note:** If the subscription still times out. You may also need to set `REDISCLOUD_SUBSCRIPTION_TIMEOUT`. 
+For example, to increase timeouts to 60 minutes set  `REDISCLOUD_SUBSCRIPTION_TIMEOUT=60`.
+
 ## Attribute reference
 
 The `region` block has these attributes:
