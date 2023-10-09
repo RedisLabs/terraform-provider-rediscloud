@@ -2,12 +2,17 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-## 1.3.1 (9 October 2023)
+## 1.3.2 (9 October 2023)
 
 ## Added
 - Added a new environment variable `REDISCLOUD_SUBSCRIPTION_TIMEOUT` to allow
  configuring timeouts for subscriptions at the provider level. 
  This is a **TEMPORARY** solution and will be deleted in the next releases. 
+
+## 1.3.1 (10 August 2023)
+
+## Fixed
+- Documentation fixes
 
 ## 1.3.0 (7 August 2023)
 
