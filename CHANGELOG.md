@@ -2,7 +2,7 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-## 1.3.1 (9 August 2023)
+## 1.3.1 (9 October 2023)
 
 ## Added
 - Added a new environment variable `REDISCLOUD_SUBSCRIPTION_TIMEOUT` to allow
