@@ -7,7 +7,7 @@ description: |-
 
 # Resource: rediscloud_subscription_database
 
-Creates a Database within a specified Subscription in your Redis Enterprise Cloud Account.
+Creates a Database within a specified Flexible Subscription in your Redis Enterprise Cloud Account.
 
 ## Example Usage
 
