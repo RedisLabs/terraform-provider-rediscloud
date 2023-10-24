@@ -32,7 +32,7 @@ func TestAccDataSourceRedisCloudAclRole_Default(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      nil, // test doesn't create a resource at the moment, so don't need to check anything
+		CheckDestroy:      testAccCheckAclRoleDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: createAndGetRoleTerraform,
@@ -86,7 +86,7 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api=true
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 1000
-	modules = ["RedisJSON", "RedisBloom"]
+	modules = []
   }
 }
 

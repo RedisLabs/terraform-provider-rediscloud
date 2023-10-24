@@ -85,6 +85,12 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 				Optional:    true,
 				Default:     false,
 			},
+			"resp_version": {
+				Description: "The database's RESP version",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+			},
 			"external_endpoint_for_oss_cluster_api": {
 				Description: "Should use the external endpoint for open-source (OSS) Cluster API",
 				Type:        schema.TypeBool,
@@ -235,6 +241,12 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 				Optional:    true,
 				Default:     false,
 			},
+			"enable_default_user": {
+				Description: "When 'true', enables connecting to the database with the 'default' user. Default: 'true'",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+			},
 			"port": {
 				Description:      "TCP port on which the database is available",
 				Type:             schema.TypeInt,
@@ -291,6 +303,7 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 	protocol := d.Get("protocol").(string)
 	memoryLimitInGB := d.Get("memory_limit_in_gb").(float64)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
+	respVersion := d.Get("resp_version").(string)
 	dataPersistence := d.Get("data_persistence").(string)
 	dataEviction := d.Get("data_eviction").(string)
 	password := d.Get("password").(string)
@@ -345,6 +358,7 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 		Alerts:       createAlerts,
 		RemoteBackup: buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
 	}
+
 	if password != "" {
 		createDatabase.Password = redis.String(password)
 	}
@@ -355,6 +369,10 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 
 	if v, ok := d.GetOk("port"); ok {
 		createDatabase.PortNumber = redis.Int(v.(int))
+	}
+
+	if respVersion != "" {
+		createDatabase.RespVersion = redis.String(respVersion)
 	}
 
 	dbId, err := api.client.Database.Create(ctx, subId, createDatabase)
@@ -373,7 +391,7 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 	// Locate Databases to confirm Active status
 
 	// Some attributes on a database are not accessible by the subscription creation API.
-	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
+	// Run the subscription update function to apply any additional changes to the databases, such as password, enableDefaultUser and so on.
 	subscriptionMutex.Unlock(subId)
 	return resourceRedisCloudSubscriptionDatabaseUpdate(ctx, d, meta)
 }
@@ -419,6 +437,10 @@ func resourceRedisCloudSubscriptionDatabaseRead(ctx context.Context, d *schema.R
 	}
 
 	if err := d.Set("support_oss_cluster_api", redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("resp_version", redis.StringValue(db.RespVersion)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -491,6 +513,10 @@ func resourceRedisCloudSubscriptionDatabaseRead(ctx context.Context, d *schema.R
 	}
 
 	if err := d.Set("enable_tls", redis.Bool(*db.Security.EnableTls)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("enable_default_user", redis.Bool(*db.Security.EnableDefaultUser)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -567,6 +593,7 @@ func resourceRedisCloudSubscriptionDatabaseUpdate(ctx context.Context, d *schema
 		SourceIP:           setToStringSlice(d.Get("source_ips").(*schema.Set)),
 		Alerts:             &alerts,
 		RemoteBackup:       buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		EnableDefaultUser:  redis.Bool(d.Get("enable_default_user").(bool)),
 	}
 	if len(setToStringSlice(d.Get("source_ips").(*schema.Set))) == 0 {
 		update.SourceIP = []*string{redis.String("0.0.0.0/0")}
@@ -612,6 +639,11 @@ func resourceRedisCloudSubscriptionDatabaseUpdate(ctx context.Context, d *schema
 	}
 
 	update.UseExternalEndpointForOSSClusterAPI = redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool))
+
+	respVersion := d.Get("resp_version").(string)
+	if respVersion != "" {
+		update.RespVersion = redis.String(respVersion)
+	}
 
 	err = api.client.Database.Update(ctx, subId, dbId, update)
 	if err != nil {

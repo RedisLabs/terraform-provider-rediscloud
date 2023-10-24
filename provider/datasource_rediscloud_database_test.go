@@ -29,6 +29,7 @@ func TestAccDataSourceRedisCloudDatabase_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "region", "eu-west-1"),
 					resource.TestCheckResourceAttr(dataSourceName, "memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(dataSourceName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(dataSourceName, "resp_version", "resp2"),
 					resource.TestCheckResourceAttr(dataSourceName, "data_persistence", "none"),
 					resource.TestCheckResourceAttr(dataSourceName, "data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttr(dataSourceName, "replication", "false"),
@@ -37,6 +38,7 @@ func TestAccDataSourceRedisCloudDatabase_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "password", password),
 					resource.TestCheckResourceAttrSet(dataSourceName, "public_endpoint"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "private_endpoint"),
+					resource.TestCheckResourceAttr(dataSourceName, "enable_default_user", "true"),
 				),
 			},
 		},
@@ -92,6 +94,7 @@ resource "rediscloud_subscription_database" "example" {
 	password                     = "%s"
 	support_oss_cluster_api	     = true
 	replication				     = false
+    enable_default_user 		 = true
 }
 
 data "rediscloud_database" "example" {

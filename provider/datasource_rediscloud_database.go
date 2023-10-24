@@ -52,6 +52,11 @@ func dataSourceRedisCloudDatabase() *schema.Resource {
 				Type:        schema.TypeBool,
 				Computed:    true,
 			},
+			"resp_version": {
+				Description: "The database's RESP version",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"data_persistence": {
 				Description: "The rate of database data persistence (in persistent storage)",
 				Type:        schema.TypeString,
@@ -142,6 +147,11 @@ func dataSourceRedisCloudDatabase() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"enable_default_user": {
+				Description: "When 'true', enables connecting to the database with the 'default' user. Default: 'true'",
+				Type:        schema.TypeBool,
+				Computed:    true,
+			},
 		},
 	}
 }
@@ -209,6 +219,9 @@ func dataSourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceDat
 	if err := d.Set("support_oss_cluster_api", redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {
 		return diag.FromErr(err)
 	}
+	if err := d.Set("resp_version", redis.StringValue(db.RespVersion)); err != nil {
+		return diag.FromErr(err)
+	}
 	if err := d.Set("data_persistence", redis.StringValue(db.DataPersistence)); err != nil {
 		return diag.FromErr(err)
 	}
@@ -247,6 +260,9 @@ func dataSourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 	if err := d.Set("hashing_policy", flattenRegexRules(db.Clustering.RegexRules)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("enable_default_user", redis.BoolValue(db.Security.EnableDefaultUser)); err != nil {
 		return diag.FromErr(err)
 	}
 
