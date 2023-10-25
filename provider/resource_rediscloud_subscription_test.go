@@ -218,7 +218,7 @@ func TestAccResourceRedisCloudSubscription_SearchModuleIncompatibleWithOperation
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionWithSearch, testCloudAccountName, name),
-				ExpectError: regexp.MustCompile("throughput may not be measured in operations-per-second while the search module is active"),
+				ExpectError: regexp.MustCompile("subscription could not be created: throughput may not be measured in operations-per-second while the RediSearch module is active"),
 			},
 		},
 	})
