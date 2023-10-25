@@ -7,7 +7,7 @@ description: |-
 
 # Resource: rediscloud_subscription
 
-Creates a Subscription within your Redis Enterprise Cloud Account.
+Creates a Flexible Subscription within your Redis Enterprise Cloud Account.
 This resource is responsible for creating and managing subscriptions.
 
 ~> **Note:** The creation_plan block allows the API server to create a well-optimised infrastructure for your databases in the cluster.
@@ -37,12 +37,12 @@ resource "rediscloud_subscription" "subscription-resource" {
       region = "eu-west-1"
       multiple_availability_zones = true
       networking_deployment_cidr = "10.0.0.0/24"
-      preferred_availability_zones = ["euw1-az1, euw1-az2, euw1-az3"]
+      preferred_availability_zones = ["euw1-az1", "euw1-az2", "euw1-az3"]
     }
   }
 
   // This block needs to be defined for provisioning a new subscription.
-  // This allows creating a well-optimised hardware specification for databases in the cluster
+  // This allows creation of a well-optimized hardware specification for databases in the cluster
   creation_plan {
     memory_limit_in_gb = 15
     quantity = 1
