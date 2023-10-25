@@ -543,7 +543,10 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
-	var globalAlerts []*databases.UpdateAlert
+	// Forcibly initialise, so we have a non-nil, zero-length slice
+	// A pointer to a nil-slice is interpreted as empty and omitted from the json payload
+	//goland:noinspection GoPreferNilSlice
+	globalAlerts := []*databases.UpdateAlert{}
 	for _, alert := range d.Get("global_alert").(*schema.Set).List() {
 		dbAlert := alert.(map[string]interface{})
 
@@ -573,9 +576,9 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 		}
 
 		if len(overrideAlerts) > 0 {
-			regionProps.Alerts = overrideAlerts
+			regionProps.Alerts = &overrideAlerts
 		} else if len(globalAlerts) > 0 {
-			regionProps.Alerts = globalAlerts
+			regionProps.Alerts = &globalAlerts
 		}
 		if len(overrideSourceIps) > 0 {
 			regionProps.SourceIP = overrideSourceIps
@@ -609,7 +612,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 		SupportOSSClusterAPI:                redis.Bool(d.Get("support_oss_cluster_api").(bool)),
 		UseExternalEndpointForOSSClusterAPI: redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool)),
 		DataEvictionPolicy:                  redis.String(d.Get("data_eviction").(string)),
-		GlobalAlerts:                        globalAlerts,
+		GlobalAlerts:                        &globalAlerts,
 		GlobalSourceIP:                      globalSourceIps,
 		Regions:                             regions,
 	}
@@ -692,7 +695,9 @@ func getStateAlertsFromDbRegion(dbRegion map[string]interface{}) []*databases.Up
 	} else if dbRegion["override_global_alert"] == nil {
 		return nil
 	}
-	var overrideAlerts []*databases.UpdateAlert
+	// Initialise to non-nil, zero-length slice.
+	//goland:noinspection GoPreferNilSlice
+	overrideAlerts := []*databases.UpdateAlert{}
 	for _, alert := range dbRegion["override_global_alert"].(*schema.Set).List() {
 		dbAlert := alert.(map[string]interface{})
 		overrideAlerts = append(overrideAlerts, &databases.UpdateAlert{
