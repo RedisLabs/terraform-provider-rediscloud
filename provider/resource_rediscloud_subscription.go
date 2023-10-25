@@ -675,7 +675,7 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 		Value: redis.Int(throughputMeasurementValue),
 	}
 	if len(modules) > 0 {
-		// if RediSearch is in the modules, then set the throughput to number-of-shards and convert the value
+		// if RediSearch is in the modules, throughput may not be operations-per-second
 		search := false
 		for _, module := range modules {
 			if *module.Name == "RediSearch" {
@@ -683,10 +683,8 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 				break
 			}
 		}
-		if search {
-			if *createThroughput.By == "operations-per-second" {
-				return nil, fmt.Errorf("throughput may not be measured in operations-per-second while the search module is active")
-			}
+		if search && *createThroughput.By == "operations-per-second" {
+			return nil, fmt.Errorf("throughput may not be measured in operations-per-second while the RediSearch module is active")
 		}
 		// if RedisGraph is in the modules, set throughput to operations-per-second and convert the value
 		if *modules[0].Name == "RedisGraph" {
