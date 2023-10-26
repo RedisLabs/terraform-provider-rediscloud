@@ -320,7 +320,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	planMap := plan[0].(map[string]interface{})
 	dbs, diags := buildSubscriptionCreatePlanDatabases(memoryStorage, planMap)
 	if diags.HasError() {
-		return append(diags, diag.FromErr(err)...)
+		return diags
 	}
 
 	createSubscriptionRequest := subscriptions.CreateSubscription{
@@ -603,16 +603,35 @@ func buildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 	replication := planMap["replication"].(bool)
 	planModules := interfaceToStringSlice(planMap["modules"].([]interface{}))
 
-	var warnings diag.Diagnostics
+	var diags diag.Diagnostics
 	if memoryStorage == databases.MemoryStorageRam && averageItemSizeInBytes != 0 {
 		// TODO This should be changed to an error when releasing 2.0 of the provider
-		warnings = diag.Diagnostics{
+		diags = diag.Diagnostics{
 			diag.Diagnostic{
 				Severity: diag.Warning,
 				Summary:  "`average_item_size_in_bytes` not applicable for `ram` memory storage ",
 				Detail:   "`average_item_size_in_bytes` is only applicable when `memory_storage` is `ram-and-flash`. This will be an error in a future release of the provider",
 			},
 		}
+	}
+
+	// Check if one of the modules is RedisSearch
+	containsSearch := false
+	for _, module := range planModules {
+		if *module == "RediSearch" {
+			containsSearch = true
+			break
+		}
+	}
+	// if RediSearch is in the modules, throughput may not be operations-per-second
+	if containsSearch && throughputMeasurementBy == "operations-per-second" {
+		errDiag := diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "subscription could not be created: throughput may not be measured by `operations-per-second` while the `RediSearch` module is active",
+			Detail:   "throughput may not be measured by `operations-per-second` while the `RediSearch` module is active. use an alternative measurement like `number_of_shards`",
+		}
+		// Short-circuit here, this is an unrecoverable situation
+		return nil, append(diags, errDiag)
 	}
 
 	// Check if one of the modules is RedisGraph
@@ -629,11 +648,7 @@ func buildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 		for _, v := range planModules {
 			modules = append(modules, &subscriptions.CreateModules{Name: v})
 		}
-		db, err := createDatabase(dbName, &idx, modules, throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases)
-		if err != nil {
-			return nil, diag.FromErr(err)
-		}
-		createDatabases = append(createDatabases, db...)
+		createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules, throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases)...)
 	} else {
 		// make RedisGraph module the first module, then append the rest of the modules
 		var modules []*subscriptions.CreateModules
@@ -644,48 +659,25 @@ func buildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 			}
 		}
 		// create a DB with the RedisGraph module
-		db, err := createDatabase(dbName, &idx, modules[:1], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1)
-		if err != nil {
-			return nil, diag.FromErr(err)
-		}
-		createDatabases = append(createDatabases, db...)
+		createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[:1], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1)...)
 		if numDatabases == 1 {
 			// create one extra DB with all other modules
-			db, err = createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1)
-			if err != nil {
-				return nil, diag.FromErr(err)
-			}
-			createDatabases = append(createDatabases, db...)
+			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1)...)
 		} else if numDatabases > 1 {
 			// create the remaining DBs with all other modules
-			db, err = createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases-1)
-			if err != nil {
-				return nil, diag.FromErr(err)
-			}
-			createDatabases = append(createDatabases, db...)
+			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases-1)...)
 		}
 	}
-	return createDatabases, warnings
+	return createDatabases, diags
 }
 
 // createDatabase returns a CreateDatabase struct with the given parameters
-func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModules, throughputMeasurementBy string, throughputMeasurementValue int, memoryLimitInGB float64, averageItemSizeInBytes int, supportOSSClusterAPI bool, replication bool, numDatabases int) ([]*subscriptions.CreateDatabase, error) {
+func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModules, throughputMeasurementBy string, throughputMeasurementValue int, memoryLimitInGB float64, averageItemSizeInBytes int, supportOSSClusterAPI bool, replication bool, numDatabases int) []*subscriptions.CreateDatabase {
 	createThroughput := &subscriptions.CreateThroughput{
 		By:    redis.String(throughputMeasurementBy),
 		Value: redis.Int(throughputMeasurementValue),
 	}
 	if len(modules) > 0 {
-		// if RediSearch is in the modules, throughput may not be operations-per-second
-		search := false
-		for _, module := range modules {
-			if *module.Name == "RediSearch" {
-				search = true
-				break
-			}
-		}
-		if search && *createThroughput.By == "operations-per-second" {
-			return nil, fmt.Errorf("subscription could not be created: throughput may not be measured in operations-per-second while the RediSearch module is active")
-		}
 		// if RedisGraph is in the modules, set throughput to operations-per-second and convert the value
 		if *modules[0].Name == "RedisGraph" {
 			if *createThroughput.By == "number-of-shards" {
@@ -716,7 +708,7 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 		*idx++
 		dbs = append(dbs, &createDatabase)
 	}
-	return dbs, nil
+	return dbs
 }
 
 func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) error {
