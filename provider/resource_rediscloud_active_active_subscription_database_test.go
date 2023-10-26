@@ -97,7 +97,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					},
 				),
 			},
-			// Test database is updated successfully, including deleting local alerts
+			// Test database is updated successfully, including updates to both global and local alerts
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdate, subscriptionName, name),
 				Check: resource.ComposeTestCheckFunc(
@@ -114,10 +114,13 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.name", "us-east-1"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_data_persistence", "none"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_password", "password-updated"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.name", "dataset-size"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.value", "41"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_source_ips.#", "0"),
 				),
 			},
+			// Test database is updated, including deletion of global and local alerts
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdateNoAlerts, subscriptionName, name),
 				Check: resource.ComposeTestCheckFunc(
@@ -289,6 +292,10 @@ resource "rediscloud_active_active_subscription_database" "example" {
 		name = "us-east-1"
 		override_global_data_persistence = "none"
 		override_global_password = "password-updated"
+		override_global_alert {
+			name = "dataset-size"
+			value = 41
+		}
 	}
 }
 `
@@ -319,8 +326,8 @@ resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 1
-	} 
-	`
+}
+`
 
 const testAccResourceRedisCloudActiveActiveSubscriptionDatabaseOptionalAttributes = activeActiveSubscriptionBoilerplate + `
 resource "rediscloud_active_active_subscription_database" "example" {
