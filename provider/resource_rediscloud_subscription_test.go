@@ -207,6 +207,23 @@ func TestAccResourceRedisCloudSubscription_createUpdateMarketplacePayment(t *tes
 	})
 }
 
+func TestAccResourceRedisCloudSubscription_SearchModuleIncompatibleWithOperationsPerSecond(t *testing.T) {
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionWithSearch, testCloudAccountName, name),
+				ExpectError: regexp.MustCompile("subscription could not be created: throughput may not be measured by `operations-per-second` while the `RediSearch` module is active"),
+			},
+		},
+	})
+}
+
 // Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is one.
 func TestModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 	numDatabases := 1
@@ -308,8 +325,8 @@ func TestModulesAllocationWhenNoGraph(t *testing.T) {
 		"quantity":                     numDatabases,
 		"replication":                  false,
 		"support_oss_cluster_api":      false,
-		"throughput_measurement_by":    "operations-per-second",
-		"throughput_measurement_value": 10000,
+		"throughput_measurement_by":    "number-of-shards",
+		"throughput_measurement_value": 2,
 	}
 	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, numDatabases)
@@ -371,17 +388,35 @@ func TestRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 		"quantity":                     2,
 		"replication":                  false,
 		"support_oss_cluster_api":      false,
-		"throughput_measurement_by":    "operations-per-second",
-		"throughput_measurement_value": 12000,
+		"throughput_measurement_by":    "number-of-shards",
+		"throughput_measurement_value": 2,
 	}
 	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
-	assert.Equal(t, 12000/1000, *createDb.ThroughputMeasurement.Value)
+	assert.Equal(t, 2, *createDb.ThroughputMeasurement.Value)
 }
 
 func TestRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
+	planMap := map[string]interface{}{
+		"average_item_size_in_bytes":   0,
+		"memory_limit_in_gb":           float64(1),
+		"modules":                      []interface{}{"RediSearch"},
+		"quantity":                     2,
+		"replication":                  true,
+		"support_oss_cluster_api":      false,
+		"throughput_measurement_by":    "number-of-shards",
+		"throughput_measurement_value": 2,
+	}
+	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	assert.Empty(t, diags)
+	createDb := createDbs[0]
+	assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
+	assert.Equal(t, 2, *createDb.ThroughputMeasurement.Value)
+}
+
+func TestRediSearchIncompatibleWithOperationsPerSec(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
 		"memory_limit_in_gb":           float64(1),
@@ -393,10 +428,10 @@ func TestRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 		"throughput_measurement_value": 12000,
 	}
 	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
-	assert.Empty(t, diags)
-	createDb := createDbs[0]
-	assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
-	assert.Equal(t, 12000/500, *createDb.ThroughputMeasurement.Value)
+	assert.Nil(t, createDbs)
+	assert.NotEmpty(t, diags)
+	assert.Len(t, diags, 1, "Error should be reported when using search with throughput_measurement_by=operations-per-second")
+	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
 func TestRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
@@ -505,6 +540,50 @@ resource "rediscloud_subscription" "example" {
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
     modules = ["RedisJSON", "RedisBloom"]
+  }
+}
+`
+
+const testAccResourceRedisCloudSubscriptionWithSearch = `
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS" 
+  name = "%s"
+}
+
+resource "rediscloud_subscription" "example" {
+
+  name = "%s"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  memory_storage = "ram"
+
+  allowlist {
+    cidrs = ["192.168.0.0/16"]
+    security_group_ids = []
+  }
+
+  cloud_provider {
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region = "eu-west-1"
+      networking_deployment_cidr = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+
+  creation_plan {
+    memory_limit_in_gb = 1
+    quantity = 1
+    replication=false
+    support_oss_cluster_api=false
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 10000
+    modules = ["RedisJSON", "RedisBloom", "RediSearch"]
   }
 }
 `
