@@ -539,7 +539,11 @@ func resourceRedisCloudSubscriptionDatabaseUpdate(ctx context.Context, d *schema
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
-	var alerts []*databases.UpdateAlert
+	// If the recommended approach is taken and there are 0 alerts, a nil-slice value is sent to the UpdateDatabase
+	// constructor. We instead want a non-nil (but zero length) slice to be passed forward.
+	//goland:noinspection GoPreferNilSlice
+	alerts := []*databases.UpdateAlert{}
+
 	for _, alert := range d.Get("alert").(*schema.Set).List() {
 		dbAlert := alert.(map[string]interface{})
 
@@ -561,7 +565,7 @@ func resourceRedisCloudSubscriptionDatabaseUpdate(ctx context.Context, d *schema
 		DataPersistence:    redis.String(d.Get("data_persistence").(string)),
 		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
 		SourceIP:           setToStringSlice(d.Get("source_ips").(*schema.Set)),
-		Alerts:             alerts,
+		Alerts:             &alerts,
 		RemoteBackup:       buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
 	}
 	if len(setToStringSlice(d.Get("source_ips").(*schema.Set))) == 0 {
