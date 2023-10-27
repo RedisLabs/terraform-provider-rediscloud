@@ -365,7 +365,8 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 	d.SetId(buildResourceId(subId, dbId))
 
 	// Confirm Subscription Active status
-	err = waitForDatabaseToBeActive(ctx, subId, dbId, api)
+	timeout := d.Timeout(schema.TimeoutCreate)
+	err = waitForDatabaseToBeActive(ctx, subId, dbId, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -516,7 +517,8 @@ func resourceRedisCloudSubscriptionDatabaseDelete(ctx context.Context, d *schema
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	timeout := d.Timeout(schema.TimeoutDelete)
+	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -618,11 +620,12 @@ func resourceRedisCloudSubscriptionDatabaseUpdate(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	}
 
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	timeout := d.Timeout(schema.TimeoutUpdate)
+	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := waitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 

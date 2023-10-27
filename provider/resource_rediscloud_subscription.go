@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"regexp"
 	"strconv"
 	"time"
@@ -341,7 +340,8 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	d.SetId(strconv.Itoa(subId))
 
 	// Confirm Subscription Active status
-	err = waitForSubscriptionToBeActive(ctx, subId, api)
+	timeout := d.Timeout(schema.TimeoutCreate)
+	err = waitForSubscriptionToBeActive(ctx, subId, api, timeout)
 	if err != nil {
 		return append(diags, diag.FromErr(err)...)
 	}
@@ -349,7 +349,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are listed .
 	// This additional wait ensures that the databases will be listed before calling api.client.Database.List()
 	time.Sleep(10 * time.Second) //lintignore:R018
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := waitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return append(diags, diag.FromErr(err)...)
 	}
 
@@ -359,7 +359,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	for dbList.Next() {
 		dbId := *dbList.Value().ID
 
-		if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		if err := waitForDatabaseToBeActive(ctx, subId, dbId, api, timeout); err != nil {
 			return append(diags, diag.FromErr(err)...)
 		}
 		// Delete each creation-plan database
@@ -483,7 +483,8 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 		}
 	}
 
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	timeout := d.Timeout(schema.TimeoutUpdate)
+	if err := waitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -505,14 +506,15 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 	defer subscriptionMutex.Unlock(subId)
 
 	// Wait for the subscription to be active before deleting it.
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	timeout := d.Timeout(schema.TimeoutDelete)
+	if err := waitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 	// This additional wait ensures that the databases are deleted before the subscription is deleted.
 	time.Sleep(10 * time.Second) //lintignore:R018
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := waitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 	// Delete subscription once all databases are deleted
@@ -523,7 +525,7 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 
 	d.SetId("")
 
-	err = waitForSubscriptionToBeDeleted(ctx, subId, api)
+	err = waitForSubscriptionToBeDeleted(ctx, subId, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -711,13 +713,7 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 	return dbs
 }
 
-func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) error {
-	// TODO: Set timeout based on the timeouts block, instead of an env var.
-	timeout, err := getSubscriptionTimeout()
-	if err != nil {
-		return err
-	}
-
+func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{subscriptions.SubscriptionStatusPending},
@@ -742,12 +738,7 @@ func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) 
 	return nil
 }
 
-func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient) error {
-	timeout, err := getSubscriptionTimeout()
-	if err != nil {
-		return err
-	}
-
+func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{subscriptions.SubscriptionStatusDeleting},
@@ -775,7 +766,7 @@ func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient)
 	return nil
 }
 
-func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClient) error {
+func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Delay: 10 * time.Second,
 		Pending: []string{
@@ -790,7 +781,7 @@ func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClien
 			databases.StatusProxyPolicyChangeDraft,
 		},
 		Target:  []string{databases.StatusActive},
-		Timeout: 30 * time.Minute,
+		Timeout: timeout,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for database %d to be active", id)
@@ -970,19 +961,4 @@ func readPaymentMethodID(d *schema.ResourceData) (*int, error) {
 		return redis.Int(pmID), nil
 	}
 	return nil, nil
-}
-
-func getSubscriptionTimeout() (time.Duration, error) {
-	// Allow configuring the subscription timeout via an environment variable.
-	timeout := 30
-	val, _ := os.LookupEnv("REDISCLOUD_SUBSCRIPTION_TIMEOUT")
-	if len(val) != 0 {
-		envTimeout, err := strconv.Atoi(val)
-		if err != nil {
-			return time.Duration(0), err
-		}
-		timeout = envTimeout
-	}
-	timeoutDuration := time.Duration(timeout) * time.Minute
-	return timeoutDuration, nil
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"log"
 	"strconv"
 	"time"
 )
@@ -72,6 +73,16 @@ func resourceRedisCloudAclUserCreate(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
+	// Sometimes ACL entities flip between Active and Pending a few times.
+	// This delay gives the API a chance to settle
+	// TODO Ultimately this is an API problem
+	time.Sleep(5 * time.Second) //lintignore:R018
+
+	err = waitForAclUserToBeActive(ctx, id, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	d.SetId(strconv.Itoa(id))
 
 	return resourceRedisCloudAclUserRead(ctx, d, meta)
@@ -125,6 +136,16 @@ func resourceRedisCloudAclUserUpdate(ctx context.Context, d *schema.ResourceData
 		if err != nil {
 			return diag.FromErr(err)
 		}
+
+		// Sometimes ACL Users and Roles flip between Active and Pending a few times.
+		// This delay gives the API a chance to settle
+		// TODO Ultimately this is an API problem
+		time.Sleep(5 * time.Second) //lintignore:R018
+
+		err = waitForAclUserToBeActive(ctx, id, api)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return resourceRedisCloudAclUserRead(ctx, d, meta)
@@ -171,4 +192,29 @@ func resourceRedisCloudAclUserDelete(ctx context.Context, d *schema.ResourceData
 	}
 
 	return diags
+}
+
+func waitForAclUserToBeActive(ctx context.Context, id int, api *apiClient) error {
+	wait := &retry.StateChangeConf{
+		Delay:   5 * time.Second,
+		Pending: []string{users.StatusPending},
+		Target:  []string{users.StatusActive},
+		Timeout: 5 * time.Minute,
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for user %d to be active", id)
+
+			user, err := api.client.Users.Get(ctx, id)
+			if err != nil {
+				return nil, "", err
+			}
+
+			return redis.StringValue(user.Status), redis.StringValue(user.Status), nil
+		},
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }
