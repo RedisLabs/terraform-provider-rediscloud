@@ -49,6 +49,9 @@ func TestAccResourceRedisCloudSubscriptionDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "periodic_backup_path", ""),
 					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(resourceName, "password", password),
+					resource.TestCheckResourceAttr(resourceName, "alert.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "alert.0.name", "dataset-size"),
+					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "40"),
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
 					// Replica tests
@@ -107,8 +110,18 @@ func TestAccResourceRedisCloudSubscriptionDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "periodic_backup_path", ""),
 					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(resourceName, "password", "updated-password"),
+					resource.TestCheckResourceAttr(resourceName, "alert.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "alert.0.name", "dataset-size"),
+					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "80"),
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
+				),
+			},
+			// Test that Alerts are deleted
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabaseUpdateDestroyAlerts, testCloudAccountName, name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "alert.#", "0"),
 				),
 			},
 			// Test that a 32-character password is generated when no password is provided
@@ -365,6 +378,31 @@ resource "rediscloud_subscription_database" "example" {
     ]
 } 
 `
+
+const testAccResourceRedisCloudSubscriptionDatabaseUpdateDestroyAlerts = subscriptionBoilerplate + `
+resource "rediscloud_subscription_database" "example" {
+    subscription_id = rediscloud_subscription.example.id
+    name = "example-updated"
+    protocol = "redis"
+    memory_limit_in_gb = 1
+    data_persistence = "aof-every-write"
+	data_eviction = "volatile-lru"
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 2000
+	password = "updated-password"
+	support_oss_cluster_api = true 
+	external_endpoint_for_oss_cluster_api = true
+	replication = true
+	average_item_size_in_bytes = 0
+
+    modules = [
+        {
+          name = "RedisBloom"
+        }
+    ]
+} 
+`
+
 const multiModulesSubscriptionBoilerplate = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"

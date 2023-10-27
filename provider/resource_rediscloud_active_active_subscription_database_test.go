@@ -97,7 +97,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					},
 				),
 			},
-			// Test database is updated successfully
+			// Test database is updated successfully, including updates to both global and local alerts
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdate, subscriptionName, name),
 				Check: resource.ComposeTestCheckFunc(
@@ -106,6 +106,9 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(resourceName, "global_data_persistence", "aof-every-1-second"),
 					resource.TestCheckResourceAttr(resourceName, "global_password", "updated-password"),
+					resource.TestCheckResourceAttr(resourceName, "global_alert.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "global_alert.0.name", "dataset-size"),
+					resource.TestCheckResourceAttr(resourceName, "global_alert.0.value", "60"),
 
 					resource.TestCheckResourceAttr(resourceName, "override_region.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.name", "us-east-1"),
@@ -114,6 +117,25 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.value", "41"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_source_ips.#", "0"),
+				),
+			},
+			// Test database is updated, including deletion of global and local alerts
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdateNoAlerts, subscriptionName, name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(resourceName, "global_data_persistence", "aof-every-1-second"),
+					resource.TestCheckResourceAttr(resourceName, "global_password", "updated-password"),
+					resource.TestCheckResourceAttr(resourceName, "global_alert.#", "0"),
+
+					resource.TestCheckResourceAttr(resourceName, "override_region.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.name", "us-east-1"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_data_persistence", "none"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_password", "password-updated"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_source_ips.#", "0"),
 				),
 			},
@@ -261,6 +283,10 @@ resource "rediscloud_active_active_subscription_database" "example" {
     global_data_persistence = "aof-every-1-second"
     global_password = "updated-password" 
     global_source_ips = ["192.170.0.0/16"]
+	global_alert {
+		name = "dataset-size"
+		value = 60
+	}
 
 	override_region {
 		name = "us-east-1"
@@ -271,8 +297,28 @@ resource "rediscloud_active_active_subscription_database" "example" {
 			value = 41
 		}
 	}
-	} 
-	`
+}
+`
+
+const testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdateNoAlerts = activeActiveSubscriptionBoilerplate + `
+resource "rediscloud_active_active_subscription_database" "example" {
+    subscription_id = rediscloud_active_active_subscription.example.id
+    name = "%s"
+    memory_limit_in_gb = 1
+    support_oss_cluster_api = true 
+    external_endpoint_for_oss_cluster_api = true
+    
+    global_data_persistence = "aof-every-1-second"
+    global_password = "updated-password" 
+    global_source_ips = ["192.170.0.0/16"]
+
+	override_region {
+		name = "us-east-1"
+		override_global_data_persistence = "none"
+		override_global_password = "password-updated"
+	}
+}
+`
 
 // TF config for updating a database
 const testAccResourceRedisCloudActiveActiveSubscriptionDatabaseImport = activeActiveSubscriptionBoilerplate + `
@@ -280,8 +326,8 @@ resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 1
-	} 
-	`
+}
+`
 
 const testAccResourceRedisCloudActiveActiveSubscriptionDatabaseOptionalAttributes = activeActiveSubscriptionBoilerplate + `
 resource "rediscloud_active_active_subscription_database" "example" {
