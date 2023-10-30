@@ -349,8 +349,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 	}
 
 	// Confirm Subscription Active status before creating database
-	timeout := d.Timeout(schema.TimeoutCreate)
-	err = waitForSubscriptionToBeActive(ctx, subId, api, timeout)
+	err = waitForSubscriptionToBeActive(ctx, subId, api)
 	if err != nil {
 		subscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
@@ -365,13 +364,13 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 	d.SetId(buildResourceId(subId, dbId))
 
 	// Confirm Database Active status
-	err = waitForDatabaseToBeActive(ctx, subId, dbId, api, timeout)
+	err = waitForDatabaseToBeActive(ctx, subId, dbId, api)
 	if err != nil {
 		subscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
-	if err := waitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		subscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
@@ -516,8 +515,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseDelete(ctx context.Contex
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
-	timeout := d.Timeout(schema.TimeoutDelete)
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api, timeout); err != nil {
+	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -659,12 +657,11 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 		return diag.FromErr(err)
 	}
 
-	timeout := d.Timeout(schema.TimeoutUpdate)
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api, timeout); err != nil {
+	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := waitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
 

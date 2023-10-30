@@ -10,6 +10,12 @@ import (
 	"time"
 )
 
+// This timeout is an absolute maximum used in some of the waitForStatus operations concerning creation and updating
+// Subscriptions and Databases. Reads and Deletions have their own, stricter timeouts because they consistently behave
+// well. The Terraform operation-level timeout should kick in way before we hit this and kill the task.
+// Unfortunately there's no "time-remaining-before-timeout" utility, or we could use that in the wait blocks.
+const safetyTimeout = 6 * time.Hour
+
 func setToStringSlice(set *schema.Set) []*string {
 	var ret []*string
 	for _, s := range set.List() {
