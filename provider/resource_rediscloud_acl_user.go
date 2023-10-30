@@ -73,7 +73,12 @@ func resourceRedisCloudAclUserCreate(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	// Sometimes ACL entities flip between Active and Pending a few times.
+	err = waitForAclUserToBeActive(ctx, id, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	// Sometimes ACL Users and Roles flip between Active and Pending a few times.
 	// This delay gives the API a chance to settle
 	// TODO Ultimately this is an API problem
 	time.Sleep(5 * time.Second) //lintignore:R018
@@ -133,6 +138,11 @@ func resourceRedisCloudAclUserUpdate(ctx context.Context, d *schema.ResourceData
 		updateUserRequest.Password = &password
 
 		err = api.client.Users.Update(ctx, id, updateUserRequest)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		err = waitForAclUserToBeActive(ctx, id, api)
 		if err != nil {
 			return diag.FromErr(err)
 		}

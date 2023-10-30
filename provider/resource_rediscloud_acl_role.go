@@ -104,6 +104,11 @@ func resourceRedisCloudAclRoleCreate(ctx context.Context, d *schema.ResourceData
 
 	d.SetId(strconv.Itoa(id))
 
+	err = waitForAclRoleToBeActive(ctx, id, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	// Sometimes ACL Users and Roles flip between Active and Pending a few times.
 	// This delay gives the API a chance to settle
 	// TODO Ultimately this is an API problem
@@ -161,6 +166,11 @@ func resourceRedisCloudAclRoleUpdate(ctx context.Context, d *schema.ResourceData
 		updateRoleRequest.RedisRules = rules
 
 		err = api.client.Roles.Update(ctx, id, updateRoleRequest)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		err = waitForAclRoleToBeActive(ctx, id, api)
 		if err != nil {
 			return diag.FromErr(err)
 		}
