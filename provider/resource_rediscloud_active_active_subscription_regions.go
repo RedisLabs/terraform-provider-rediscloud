@@ -185,7 +185,6 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 		}
 	}
 
-	timeout := d.Timeout(schema.TimeoutUpdate)
 	if len(regionsToCreate) > 0 {
 		err := regionsCreate(ctx, subId, regionsToCreate, api)
 		if err != nil {
@@ -205,7 +204,7 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 	}
 
 	if len(regionsToUpdateDatabases) > 0 {
-		err = regionsUpdateDatabases(ctx, subId, api, regionsToUpdateDatabases, existingRegionMap, timeout)
+		err = regionsUpdateDatabases(ctx, subId, api, regionsToUpdateDatabases, existingRegionMap)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -307,7 +306,7 @@ func regionsCreate(ctx context.Context, subId int, regionsToCreate []*regions.Re
 	return nil
 }
 
-func regionsUpdateDatabases(ctx context.Context, subId int, api *apiClient, regionsToUpdateDatabases []*regions.Region, existingRegionMap map[string]*regions.Region, timeout time.Duration) error {
+func regionsUpdateDatabases(ctx context.Context, subId int, api *apiClient, regionsToUpdateDatabases []*regions.Region, existingRegionMap map[string]*regions.Region) error {
 	databaseUpdates := make(map[int][]*databases.LocalRegionProperties)
 	for _, desiredRegion := range regionsToUpdateDatabases {
 		// Collect existing databases to a map <dbId, db>
