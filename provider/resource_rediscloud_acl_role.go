@@ -109,6 +109,16 @@ func resourceRedisCloudAclRoleCreate(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
+	// Sometimes ACL Users and Roles flip between Active and Pending a few times after creation/update.
+	// This delay gives the API a chance to settle
+	// TODO Ultimately this is an API problem
+	time.Sleep(10 * time.Second) //lintignore:R018
+
+	err = waitForAclRoleToBeActive(ctx, id, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	return resourceRedisCloudAclRoleRead(ctx, d, meta)
 }
 
@@ -159,6 +169,16 @@ func resourceRedisCloudAclRoleUpdate(ctx context.Context, d *schema.ResourceData
 		if err != nil {
 			return diag.FromErr(err)
 		}
+
+		err = waitForAclRoleToBeActive(ctx, id, api)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		// Sometimes ACL Users and Roles flip between Active and Pending a few times after creation/update.
+		// This delay gives the API a chance to settle
+		// TODO Ultimately this is an API problem
+		time.Sleep(10 * time.Second) //lintignore:R018
 
 		err = waitForAclRoleToBeActive(ctx, id, api)
 		if err != nil {
