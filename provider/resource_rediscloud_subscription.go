@@ -288,6 +288,19 @@ func resourceRedisCloudSubscription() *schema.Resource {
 					},
 				},
 			},
+			"redis_version": {
+				Description: "Version of Redis to create, either 'default' or 'latest'. Defaults to 'default'",
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if d.Id() == "" {
+						// We don't want to ignore the block if the resource is about to be created.
+						return false
+					}
+					return true
+				},
+			},
 		},
 	}
 }
@@ -330,6 +343,11 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 		MemoryStorage:   redis.String(memoryStorage),
 		CloudProviders:  providers,
 		Databases:       dbs,
+	}
+
+	redisVersion := d.Get("redis_version").(string)
+	if d.Get("redis_version").(string) != "" {
+		createSubscriptionRequest.RedisVersion = redis.String(redisVersion)
 	}
 
 	subId, err := api.client.Subscription.Create(ctx, createSubscriptionRequest)
