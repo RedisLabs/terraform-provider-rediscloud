@@ -294,10 +294,18 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Optional:    true,
 				ForceNew:    true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					// log.Printf("redis_version DiffSuppressFunc, id: '%s', new: '%s', old: '%s'", d.Id(), new, old)
 					if d.Id() == "" {
 						// We don't want to ignore the block if the resource is about to be created.
 						return false
 					}
+
+					if old == "" && new != "" {
+						// TODO Work on this logic... (remember resource_rediscloud_active_active_subscription.go)
+						// If the user is looking to influence the value, we care about this property
+						return false
+					}
+
 					return true
 				},
 			},

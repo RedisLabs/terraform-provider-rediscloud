@@ -154,6 +154,13 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 						// We don't want to ignore the block if the resource is about to be created.
 						return false
 					}
+
+					if old == "" && new != "" {
+						// TODO Work on this logic...
+						// If the user is looking to influence the value, we care about this property
+						return false
+					}
+
 					return true
 				},
 			},
