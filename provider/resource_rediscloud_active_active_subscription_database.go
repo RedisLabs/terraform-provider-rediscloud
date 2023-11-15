@@ -716,7 +716,7 @@ func waitForDatabaseToBeDeleted(ctx context.Context, subId int, dbId int, api *a
 		Timeout: 10 * time.Minute,
 
 		Refresh: func() (result interface{}, state string, err error) {
-			log.Printf("[DEBUG] Waiting for datbase %d to be deleted", dbId)
+			log.Printf("[DEBUG] Waiting for database %d to be deleted", dbId)
 
 			_, err = api.client.Database.Get(ctx, subId, dbId)
 			if err != nil {
