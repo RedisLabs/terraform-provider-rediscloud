@@ -32,6 +32,16 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 		fmt.Sprintf(referencableRole, exampleRoleName+"-updated") +
 		fmt.Sprintf(testUser, testName, testPassword)
 
+	testNewNameTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+		fmt.Sprintf(referencableRole, exampleRoleName+"-updated") +
+		fmt.Sprintf(testUser, testName+"-updated", testPassword)
+
+	testNewPasswordTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+		fmt.Sprintf(referencableRole, exampleRoleName+"-updated") +
+		fmt.Sprintf(testUser, testName+"-updated", testPassword+"-updated")
+
+	identifier := ""
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
@@ -43,6 +53,13 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "name", testName),
 					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "role", exampleRoleName),
+
+					// Take a snapshot of the ID
+					func(s *terraform.State) error {
+						r := s.RootModule().Resources["rediscloud_acl_user.test"]
+						identifier = r.Primary.ID
+						return nil
+					},
 
 					// Test user exists
 					func(s *terraform.State) error {
@@ -76,106 +93,26 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "name", testName),
 					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "role", exampleRoleName+"-updated"),
-				),
-			},
-			// Test that the user is imported successfully
-			{
-				Config:                  fmt.Sprintf(testUser, testName+"_updated", testPassword+"-updated"),
-				ResourceName:            "rediscloud_acl_user.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password"},
-			},
-		},
-	})
-}
 
-func TestAccResourceRedisCloudAclUser_NewName(t *testing.T) {
-
-	prefix := acctest.RandomWithPrefix(testResourcePrefix)
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-	exampleSubscriptionName := prefix + "-subscription"
-	exampleDatabasePassword := prefix + "aA.1"
-	exampleRoleName := prefix + "-role"
-
-	testName := prefix + "-test-user"
-	testPassword := prefix + "aA.1"
-
-	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
-		fmt.Sprintf(referencableRole, exampleRoleName) +
-		fmt.Sprintf(testUser, testName, testPassword)
-
-	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
-		fmt.Sprintf(referencableRole, exampleRoleName) +
-		fmt.Sprintf(testUser, testName+"-updated", testPassword)
-
-	identifier := ""
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckAclUserDestroy,
-		Steps: []resource.TestStep{
-			// Test user creation
-			{
-				Config: testCreateTerraform,
-				Check: resource.ComposeTestCheckFunc(
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources["rediscloud_acl_user.test"]
-						identifier = r.Primary.ID
+						if r.Primary.ID != identifier {
+							return fmt.Errorf("entity should have the same identifier, but has changed from %s to %s", identifier, r.Primary.ID)
+						}
 						return nil
 					},
 				),
 			},
 			// Test user is updated successfully. A name change should forcibly generate a new entity with a new id
+			// Take a snapshot of this new id
 			{
-				Config: testUpdateTerraform,
+				Config: testNewNameTerraform,
 				Check: resource.ComposeTestCheckFunc(
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources["rediscloud_acl_user.test"]
 						if r.Primary.ID == identifier {
 							return fmt.Errorf("entity should have a new identifier, but is still: %s", identifier)
 						}
-						return nil
-					},
-				),
-			},
-		},
-	})
-}
-
-func TestAccResourceRedisCloudAclUser_NewPassword(t *testing.T) {
-
-	prefix := acctest.RandomWithPrefix(testResourcePrefix)
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-	exampleSubscriptionName := prefix + "-subscription"
-	exampleDatabasePassword := prefix + "aA.1"
-	exampleRoleName := prefix + "-role"
-
-	testName := prefix + "-test-user"
-	testPassword := prefix + "aA.1"
-
-	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
-		fmt.Sprintf(referencableRole, exampleRoleName) +
-		fmt.Sprintf(testUser, testName, testPassword)
-
-	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
-		fmt.Sprintf(referencableRole, exampleRoleName) +
-		fmt.Sprintf(testUser, testName, testPassword+"-updated")
-
-	identifier := ""
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckAclUserDestroy,
-		Steps: []resource.TestStep{
-			// Test user creation
-			{
-				Config: testCreateTerraform,
-				Check: resource.ComposeTestCheckFunc(
-					func(s *terraform.State) error {
-						r := s.RootModule().Resources["rediscloud_acl_user.test"]
 						identifier = r.Primary.ID
 						return nil
 					},
@@ -183,7 +120,7 @@ func TestAccResourceRedisCloudAclUser_NewPassword(t *testing.T) {
 			},
 			// Test user is updated successfully. A password change should forcibly generate a new entity with a new id
 			{
-				Config: testUpdateTerraform,
+				Config: testNewPasswordTerraform,
 				Check: resource.ComposeTestCheckFunc(
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources["rediscloud_acl_user.test"]
@@ -193,6 +130,14 @@ func TestAccResourceRedisCloudAclUser_NewPassword(t *testing.T) {
 						return nil
 					},
 				),
+			},
+			// Test that the user is imported successfully
+			{
+				Config:                  fmt.Sprintf(testUser, testName+"-updated", testPassword+"-updated"),
+				ResourceName:            "rediscloud_acl_user.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
 			},
 		},
 	})
