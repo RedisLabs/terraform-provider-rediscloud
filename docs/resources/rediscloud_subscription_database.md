@@ -54,7 +54,9 @@ resource "rediscloud_subscription_database" "database-resource" {
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 20000
     replication = true
-   
+    resp_version = "resp2"
+    enable_default_user = true
+  
     modules = [
         {
           name = "RedisJSON"
@@ -81,6 +83,7 @@ The following arguments are supported:
 * `memory_limit_in_gb` - (Required) Maximum memory usage for this specific database
 * `protocol` - (Optional) The protocol that will be used to access the database, (either ‘redis’ or ‘memcached’) Default: ‘redis’. **Modifying this attribute will force creation of a new resource.**
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
+* `resp_version` - (Optional) Either `resp2` or `resp3`. Database's RESP version. Must be compatible with the Redis version.
 * `external_endpoint_for_oss_cluster_api` - (Optional) Should use the external endpoint for open-source (OSS) Cluster API.
   Can only be enabled if OSS Cluster API support is enabled. Default: 'false'
 * `client_ssl_certificate` - (Optional) SSL certificate to authenticate user connections
@@ -103,6 +106,7 @@ The following arguments are supported:
 * `enable_tls` - (Optional) Use TLS for authentication. Default: ‘false’
 * `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999. **Modifying this attribute will force creation of a new resource.**
 * `remote_backup` (Optional) Specifies the backup options for the database, documented below
+* `enable_default_user` (Optional) When `true` enables connecting to the database with the default user. Default `true`. 
 
 The `alert` block supports:
 

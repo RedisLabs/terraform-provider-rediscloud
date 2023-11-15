@@ -170,6 +170,14 @@ func resourceRedisCloudAclUserDelete(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
+	// Sometimes ACL Users and Roles flip between Active and Pending a few times after creation/update.
+	// This delay gives the API a chance to settle
+	// TODO Ultimately this is an API problem
+	err = waitForAclUserToBeActive(ctx, id, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	err = api.client.Users.Delete(ctx, id)
 
 	if err != nil {

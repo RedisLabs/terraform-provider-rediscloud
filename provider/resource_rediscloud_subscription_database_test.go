@@ -40,6 +40,7 @@ func TestAccResourceRedisCloudSubscriptionDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "3"),
 					resource.TestCheckResourceAttr(resourceName, "replication", "false"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp2"),
 					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_by", "operations-per-second"),
 					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_value", "1000"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
@@ -54,6 +55,7 @@ func TestAccResourceRedisCloudSubscriptionDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "40"),
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
+					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
 					// Replica tests
 					resource.TestCheckResourceAttr(replicaResourceName, "name", "example-replica"),
 					// should be the value specified in the replica config, rather than the primary database
@@ -101,6 +103,7 @@ func TestAccResourceRedisCloudSubscriptionDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "replication", "true"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp2"),
 					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_by", "operations-per-second"),
 					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_value", "2000"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "aof-every-write"),
@@ -115,6 +118,7 @@ func TestAccResourceRedisCloudSubscriptionDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "80"),
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
+					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
 				),
 			},
 			// Test that Alerts are deleted
@@ -217,6 +221,36 @@ func TestAccResourceRedisCloudSubscriptionDatabase_MultiModules(t *testing.T) {
 	})
 }
 
+func TestAccResourceRedisCloudSubscriptionDatabase_respversion(t *testing.T) {
+	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	resourceName := "rediscloud_subscription_database.example"
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	portNumber := 10101
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabaseRespVersions, testCloudAccountName, name, portNumber, "resp2"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp2"),
+				),
+			},
+			{
+				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabaseRespVersions, testCloudAccountName, name, portNumber, "resp3"),
+				ExpectError: regexp.MustCompile("Selected RESP version is not supported for this database version\\.*"),
+			},
+			{
+				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabaseRespVersions, testCloudAccountName, name, portNumber, "best_resp_100"),
+				ExpectError: regexp.MustCompile("Bad Request: JSON parameter contains unsupported fields / values. JSON parse error: Cannot deserialize value of type `mappings.RespVersion` from String \"best_resp_100\": not one of the values accepted for Enum class: \\[resp2, resp3]"),
+			},
+		},
+	})
+}
+
 const subscriptionBoilerplate = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
@@ -261,6 +295,44 @@ resource "rediscloud_subscription" "example" {
 }
 `
 
+const multiModulesSubscriptionBoilerplate = `
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+}
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type            = "AWS"
+  name                     = "%s"
+}
+resource "rediscloud_subscription" "example" {
+  name              = "%s"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  memory_storage    = "ram"
+  allowlist {
+    cidrs = ["192.168.0.0/16"]
+    security_group_ids = []
+  }
+  cloud_provider {
+    provider         = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region                       = "eu-west-1"
+      networking_deployment_cidr   = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+  creation_plan {
+    memory_limit_in_gb           = 1
+    quantity                     = 1
+    replication                  = false
+    support_oss_cluster_api      = false
+    throughput_measurement_by    = "operations-per-second"
+    throughput_measurement_value = 1000
+    modules                      = ["RedisJSON", "RedisBloom"]
+  }
+}
+`
+
 // Create and Read tests
 // TF config for provisioning a new database
 const testAccResourceRedisCloudSubscriptionDatabase = subscriptionBoilerplate + `
@@ -280,6 +352,7 @@ resource "rediscloud_subscription_database" "example" {
     average_item_size_in_bytes = 0
     client_ssl_certificate = "" 
     periodic_backup_path = ""
+	enable_default_user = true
 
     alert {
         name = "dataset-size"
@@ -303,7 +376,7 @@ resource "rediscloud_subscription_database" "example" {
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 1000
     port = %d
-} 
+}
 `
 
 const testAccResourceRedisCloudSubscriptionDatabaseInvalidTimeUtc = subscriptionBoilerplate + `
@@ -365,6 +438,7 @@ resource "rediscloud_subscription_database" "example" {
 	external_endpoint_for_oss_cluster_api = true
 	replication = true
 	average_item_size_in_bytes = 0
+	enable_default_user = true
 
 	alert {
 		name = "dataset-size"
@@ -403,44 +477,6 @@ resource "rediscloud_subscription_database" "example" {
 } 
 `
 
-const multiModulesSubscriptionBoilerplate = `
-data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
-}
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type            = "AWS"
-  name                     = "%s"
-}
-resource "rediscloud_subscription" "example" {
-  name              = "%s"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage    = "ram"
-  allowlist {
-    cidrs = ["192.168.0.0/16"]
-    security_group_ids = []
-  }
-  cloud_provider {
-    provider         = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region                       = "eu-west-1"
-      networking_deployment_cidr   = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
-    }
-  }
-  creation_plan {
-    memory_limit_in_gb           = 1
-    quantity                     = 1
-    replication                  = false
-    support_oss_cluster_api      = false
-    throughput_measurement_by    = "operations-per-second"
-    throughput_measurement_value = 1000
-    modules                      = ["RedisJSON", "RedisBloom"]
-  }
-}
-`
-
 const testAccResourceRedisCloudSubscriptionDatabaseMultiModules = multiModulesSubscriptionBoilerplate + `
 resource "rediscloud_subscription_database" "example" {
     subscription_id              = rediscloud_subscription.example.id
@@ -462,5 +498,18 @@ resource "rediscloud_subscription_database" "example" {
       name  = "latency"
       value = 11
     }
+}
+`
+
+const testAccResourceRedisCloudSubscriptionDatabaseRespVersions = subscriptionBoilerplate + `
+resource "rediscloud_subscription_database" "example" {
+    subscription_id = rediscloud_subscription.example.id
+    name = "example"
+    memory_limit_in_gb = 1
+    data_persistence = "none"
+	throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 1000
+    port = %d
+	resp_version = "%s"
 }
 `

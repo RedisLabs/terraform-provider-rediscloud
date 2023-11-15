@@ -37,7 +37,7 @@ func TestAccDataSourceRedisCloudAclUser_Default(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      nil, // test doesn't create a resource at the moment, so don't need to check anything
+		CheckDestroy:      testAccCheckAclUserDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: createAndGetUserTerraform,

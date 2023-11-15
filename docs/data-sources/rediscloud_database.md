@@ -42,6 +42,7 @@ data "rediscloud_database" "example" {
 * `protocol` - The protocol of the database.
 * `memory_limit_in_gb` - The maximum memory usage for the database.
 * `support_oss_cluster_api` - Supports the Redis open-source (OSS) Cluster API.
+* `resp_version` - Either `resp2` or `resp3`. Database's RESP version.
 * `replica_of` - The set of Redis database URIs, in the format `redis://user:password@host:port`, that this
 database will be a replica of.
 * `alert` - Set of alerts to enable on the database, documented below.
@@ -57,6 +58,7 @@ hashing policy.
 * `public_endpoint` - Public endpoint to access the database
 * `private_endpoint` - Private endpoint to access the database
 * `enable_tls` - Enable TLS for database, default is `false`
+* `enable_default_user` - When `true` enables connecting to the database with the default user. Default `true`.
 
 The `alert` block supports:
 
