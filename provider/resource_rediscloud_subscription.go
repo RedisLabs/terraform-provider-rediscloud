@@ -306,6 +306,8 @@ func resourceRedisCloudSubscription() *schema.Resource {
 
 					return true
 				},
+				ValidateDiagFunc: validation.ToDiagFunc(
+					validation.StringMatch(regexp.MustCompile("^(default|latest)$"), "must be 'default' or 'latest'")),
 			},
 		},
 	}
