@@ -288,6 +288,27 @@ func resourceRedisCloudSubscription() *schema.Resource {
 					},
 				},
 			},
+			"redis_version": {
+				Description: "Version of Redis to create, either 'default' or 'latest'. Defaults to 'default'",
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if d.Id() == "" {
+						// Consider the property if the resource is about to be created.
+						return false
+					}
+
+					if old != new {
+						// The user is requesting a change
+						return false
+					}
+
+					return true
+				},
+				ValidateDiagFunc: validation.ToDiagFunc(
+					validation.StringMatch(regexp.MustCompile("^(default|latest)$"), "must be 'default' or 'latest'")),
+			},
 		},
 	}
 }
@@ -330,6 +351,11 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 		MemoryStorage:   redis.String(memoryStorage),
 		CloudProviders:  providers,
 		Databases:       dbs,
+	}
+
+	redisVersion := d.Get("redis_version").(string)
+	if d.Get("redis_version").(string) != "" {
+		createSubscriptionRequest.RedisVersion = redis.String(redisVersion)
 	}
 
 	subId, err := api.client.Subscription.Create(ctx, createSubscriptionRequest)
@@ -627,7 +653,7 @@ func buildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 		errDiag := diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "subscription could not be created: throughput may not be measured by `operations-per-second` while the `RediSearch` module is active",
-			Detail:   "throughput may not be measured by `operations-per-second` while the `RediSearch` module is active. use an alternative measurement like `number_of_shards`",
+			Detail:   "throughput may not be measured by `operations-per-second` while the `RediSearch` module is active. use an alternative measurement like `number-of-shards`",
 		}
 		// Short-circuit here, this is an unrecoverable situation
 		return nil, append(diags, errDiag)

@@ -30,6 +30,7 @@ resource "rediscloud_subscription" "subscription-resource" {
   payment_method = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
+  redis_version = "latest"
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
@@ -62,6 +63,7 @@ The following arguments are supported:
 * `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'. **Modifying this attribute will force creation of a new resource.**
 * `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types
 * `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of ‘ram-and-flash’. Default: ‘ram’. **Modifying this attribute will force creation of a new resource.**
+* `redis_version` - (Optional) Either 'default' or 'latest'. If specified, the Redis Version defines the cluster version. Default: 'default'. **Modifying this attribute will force creation of a new resource.**
 * `allowlist` - (Optional) An allowlist object, documented below 
 * `cloud_provider` - (Required) A cloud provider object, documented below. **Modifying this attribute will force creation of a new resource.**
 * `creation_plan` - (Required) A creation plan object, documented below
@@ -139,5 +141,7 @@ The `networks` block has these attributes:
 ```
 $ terraform import rediscloud_subscription.subscription-resource 12345678
 ```
-
 ~> **Note:** the creation_plan block will be ignored during imports.
+
+~> **Note:** when importing an existing Subscription, upon providing a `redis_version`, Terraform will always try to
+recreate the resource. The API doesn't return this value, so we can't detect changes between states.
