@@ -224,6 +224,52 @@ func TestAccResourceRedisCloudSubscription_SearchModuleIncompatibleWithOperation
 	})
 }
 
+func TestAccResourceRedisCloudSubscription_RedisVersion(t *testing.T) {
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	identifier := ""
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionWithRedisVersion, testCloudAccountName, name, ""),
+				Check: resource.ComposeTestCheckFunc(
+					// Take a snapshot of the ID
+					func(s *terraform.State) error {
+						r := s.RootModule().Resources["rediscloud_subscription.test"]
+						identifier = r.Primary.ID
+						return nil
+					},
+				),
+			},
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionWithRedisVersion, testCloudAccountName, name, "redis_version = \"latest\""),
+				Check: resource.ComposeTestCheckFunc(
+					// Take a snapshot of the ID
+					func(s *terraform.State) error {
+						r := s.RootModule().Resources["rediscloud_subscription.test"]
+						if r.Primary.ID == identifier {
+							return fmt.Errorf("entity should have a different identifier, but was still %s", identifier)
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config:                  fmt.Sprintf(testAccResourceRedisCloudSubscriptionWithRedisVersion, testCloudAccountName, name, ""),
+				ResourceName:            "rediscloud_subscription.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"creation_plan", "redis_version"},
+			},
+		},
+	})
+}
+
 // Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is one.
 func TestModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 	numDatabases := 1
@@ -584,6 +630,52 @@ resource "rediscloud_subscription" "example" {
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
     modules = ["RedisJSON", "RedisBloom", "RediSearch"]
+  }
+}
+`
+
+const testAccResourceRedisCloudSubscriptionWithRedisVersion = `
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS" 
+  name = "%s"
+}
+
+resource "rediscloud_subscription" "test" {
+
+  name = "%s"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  memory_storage = "ram"
+  # redis_version here
+  %s
+
+  allowlist {
+    cidrs = ["192.168.0.0/16"]
+    security_group_ids = []
+  }
+
+  cloud_provider {
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region = "eu-west-1"
+      networking_deployment_cidr = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+
+  creation_plan {
+    memory_limit_in_gb = 1
+    quantity = 1
+    replication=false
+    support_oss_cluster_api=false
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 10000
+    modules = []
   }
 }
 `

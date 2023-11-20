@@ -28,6 +28,7 @@ resource "rediscloud_active_active_subscription" "subscription-resource" {
 	name = "subscription-name"
 	payment_method_id = data.rediscloud_payment_method.card.id
 	cloud_provider = "AWS"
+  redis_version = "latest"
    
 	creation_plan {
 	  memory_limit_in_gb = 1
@@ -56,6 +57,7 @@ The following arguments are supported:
 * `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'. **Modifying this attribute will force creation of a new resource.**
 * `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types 
 * `cloud_provider` - (Optional) The cloud provider to use with the subscription, (either `AWS` or `GCP`). Default: ‘AWS’. **Modifying this attribute will force creation of a new resource.**
+* `redis_version` - (Optional) Either 'default' or 'latest'. If specified, the Redis Version defines the cluster version. Default: 'default'. **Modifying this attribute will force creation of a new resource.**
 * `creation_plan` - (Required) A creation plan object, documented below
 
 The `creation_plan` block supports:
@@ -90,3 +92,7 @@ $ terraform import rediscloud_active_active_subscription.subscription-resource 1
 ```
 
 ~> **Note:** the creation_plan block will be ignored during imports.
+
+~> **Note:** when importing an existing Subscription, upon providing a `redis_version`, Terraform will always try to
+recreatethe resource. The API doesn't return this value, so we can't detect changes between states.
+
