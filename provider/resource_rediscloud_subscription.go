@@ -653,7 +653,7 @@ func buildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 		errDiag := diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "subscription could not be created: throughput may not be measured by `operations-per-second` while the `RediSearch` module is active",
-			Detail:   "throughput may not be measured by `operations-per-second` while the `RediSearch` module is active. use an alternative measurement like `number_of_shards`",
+			Detail:   "throughput may not be measured by `operations-per-second` while the `RediSearch` module is active. use an alternative measurement like `number-of-shards`",
 		}
 		// Short-circuit here, this is an unrecoverable situation
 		return nil, append(diags, errDiag)
