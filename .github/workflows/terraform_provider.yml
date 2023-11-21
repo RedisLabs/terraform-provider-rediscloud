@@ -21,7 +21,7 @@ jobs:
     name: go build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.5.3
+      - uses: actions/checkout@v4.1.1
       - uses: actions/cache@v3.3.2
         continue-on-error: true
         id: cache-terraform-plugin-dir
@@ -45,7 +45,7 @@ jobs:
     needs: [go_build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.5.3
+      - uses: actions/checkout@v4.1.1
       - uses: actions/cache@v3.3.2
         continue-on-error: true
         id: cache-terraform-providers-schema
@@ -60,7 +60,7 @@ jobs:
           path: terraform-plugin-dir
           key: ${{ runner.os }}-terraform-plugin-dir-${{ hashFiles('go.sum') }}-${{ hashFiles('provider/**') }}
       - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
-        uses: hashicorp/setup-terraform@v2.0.3
+        uses: hashicorp/setup-terraform@v3.0.0
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
           terraform_wrapper: false
@@ -91,7 +91,7 @@ jobs:
     needs: [go_build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.5.3
+      - uses: actions/checkout@v4.1.1
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
@@ -140,7 +140,7 @@ jobs:
     needs: [go_build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.5.3
+      - uses: actions/checkout@v4.1.1
       - uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
