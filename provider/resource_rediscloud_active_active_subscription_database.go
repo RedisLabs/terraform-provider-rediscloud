@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"log"
+	"regexp"
 	"strings"
 	"time"
 
@@ -268,6 +269,22 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 				Optional:         true,
 				ForceNew:         true,
 			},
+			"global_resp_version": {
+				Description: "The initial RESP version for all databases provisioned under this AA database. This information is only used when creating a new database and any changes will be ignored after this.",
+				Type:        schema.TypeString,
+				// The block is required when the user provisions a new aa database.
+				// The block is ignored in the UPDATE operation or after IMPORTing the resource.
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if d.Id() == "" {
+						// We don't want to ignore the block if the resource is about to be created.
+						return false
+					}
+					return true
+				},
+				ValidateDiagFunc: validation.ToDiagFunc(
+					validation.StringMatch(regexp.MustCompile("^(resp2|resp3)$"), "must be 'resp2' or 'resp3'")),
+			},
 		},
 	}
 }
@@ -286,6 +303,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 	globalDataPersistence := d.Get("global_data_persistence").(string)
 	globalPassword := d.Get("global_password").(string)
 	globalSourceIp := setToStringSlice(d.Get("global_source_ips").(*schema.Set))
+	respVersion := d.Get("global_resp_version").(string)
 
 	createAlerts := make([]*databases.CreateAlert, 0)
 	alerts := d.Get("global_alert").(*schema.Set)
@@ -346,6 +364,10 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 
 	if v, ok := d.GetOk("port"); ok {
 		createDatabase.PortNumber = redis.Int(v.(int))
+	}
+
+	if respVersion != "" {
+		createDatabase.RespVersion = redis.String(respVersion)
 	}
 
 	// Confirm Subscription Active status before creating database
