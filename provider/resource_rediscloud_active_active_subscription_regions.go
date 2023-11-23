@@ -82,7 +82,13 @@ func resourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 							Required:         true,
 							ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 						},
-
+						"local_resp_version": {
+							Description: "The initial RESP version for all databases provisioned under this region.",
+							Type:        schema.TypeString,
+							Optional:    true,
+							ValidateDiagFunc: validation.ToDiagFunc(
+								validation.StringMatch(regexp.MustCompile("^(resp2|resp3)$"), "must be 'resp2' or 'resp3'")),
+						},
 						"database": {
 							Description: "The database resource",
 							Type:        schema.TypeSet,
@@ -166,9 +172,9 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 	// Of the regions that are in the config, determine which are brand new and should be created, which already exist
 	// but have changed and require recreating (if update not supported), and which have changed and require updates
 	// (updating a region's DBs is supported)
-	regionsToCreate := make([]*regions.Region, 0)
-	regionsToRecreate := make([]*regions.Region, 0)
-	regionsToUpdateDatabases := make([]*regions.Region, 0)
+	regionsToCreate := make([]*RequestedRegion, 0)
+	regionsToRecreate := make([]*RequestedRegion, 0)
+	regionsToUpdateDatabases := make([]*RequestedRegion, 0)
 	for _, r := range desiredRegions {
 		existingRegion, ok := existingRegionMap[*r.Region]
 		if !ok {
@@ -193,7 +199,13 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 	}
 
 	if len(regionsToRecreate) > 0 {
-		err := regionsDelete(ctx, subId, regionsToRecreate, api)
+
+		regionIds := make([]*string, 0)
+		for _, r := range regionsToRecreate {
+			regionIds = append(regionIds, r.Region)
+		}
+
+		err := regionsDelete(ctx, subId, regionIds, api)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -215,7 +227,11 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 			return diag.Errorf("Region has been removed, but delete_regions flag was not set!")
 		}
 
-		err := regionsDelete(ctx, subId, regionsToDelete, api)
+		regionIds := make([]*string, 0)
+		for _, r := range regionsToDelete {
+			regionIds = append(regionIds, r.Region)
+		}
+		err := regionsDelete(ctx, subId, regionIds, api)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -253,7 +269,7 @@ func resourceRedisCloudActiveActiveRegionDelete(ctx context.Context, d *schema.R
 	return resourceRedisCloudActiveActiveRegionRead(ctx, d, meta)
 }
 
-func regionsCreate(ctx context.Context, subId int, regionsToCreate []*regions.Region, api *apiClient) error {
+func regionsCreate(ctx context.Context, subId int, regionsToCreate []*RequestedRegion, api *apiClient) error {
 	// If no new regions were defined return
 	if len(regionsToCreate) == 0 {
 		return nil
@@ -281,6 +297,7 @@ func regionsCreate(ctx context.Context, subId int, regionsToCreate []*regions.Re
 		createRegion := regions.CreateRegion{
 			Region:         currentRegion.Region,
 			DeploymentCIDR: currentRegion.DeploymentCIDR,
+			RespVersion:    currentRegion.RespVersion,
 			Databases:      createDatabases,
 		}
 
@@ -306,7 +323,7 @@ func regionsCreate(ctx context.Context, subId int, regionsToCreate []*regions.Re
 	return nil
 }
 
-func regionsUpdateDatabases(ctx context.Context, subId int, api *apiClient, regionsToUpdateDatabases []*regions.Region, existingRegionMap map[string]*regions.Region) error {
+func regionsUpdateDatabases(ctx context.Context, subId int, api *apiClient, regionsToUpdateDatabases []*RequestedRegion, existingRegionMap map[string]*regions.Region) error {
 	databaseUpdates := make(map[int][]*databases.LocalRegionProperties)
 	for _, desiredRegion := range regionsToUpdateDatabases {
 		// Collect existing databases to a map <dbId, db>
@@ -361,14 +378,14 @@ func regionsUpdateDatabases(ctx context.Context, subId int, api *apiClient, regi
 	return nil
 }
 
-func regionsDelete(ctx context.Context, subId int, regionsToDelete []*regions.Region, api *apiClient) error {
+func regionsDelete(ctx context.Context, subId int, regionsToDelete []*string, api *apiClient) error {
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
 	deleteRegions := regions.DeleteRegions{}
 	for _, region := range regionsToDelete {
 		deleteRegion := regions.DeleteRegion{
-			Region: region.Region,
+			Region: region,
 		}
 		deleteRegions.Regions = append(deleteRegions.Regions, &deleteRegion)
 	}
@@ -397,9 +414,14 @@ func buildResourceDataFromAPIRegions(regionsFromAPI []*regions.Region, regionsFr
 	var result []map[string]interface{}
 
 	recreateRegions := make(map[string]bool)
+
+	// The API doesn't return a respVersion at the region level, so we just read whatever was last written to state.
+	respVersions := make(map[string]string)
+
 	for _, element := range regionsFromConfig.List() {
 		r := element.(map[string]interface{})
 		recreateRegions[r["region"].(string)] = r["recreate_region"].(bool)
+		respVersions[r["region"].(string)] = r["local_resp_version"].(string)
 	}
 
 	for _, region := range regionsFromAPI {
@@ -421,6 +443,7 @@ func buildResourceDataFromAPIRegions(regionsFromAPI []*regions.Region, regionsFr
 			"networking_deployment_cidr": region.DeploymentCIDR,
 			"vpc_id":                     region.VpcId,
 			"database":                   dbs,
+			"local_resp_version":         respVersions[*region.Region],
 		}
 		result = append(result, regionMapString)
 	}
@@ -428,8 +451,8 @@ func buildResourceDataFromAPIRegions(regionsFromAPI []*regions.Region, regionsFr
 	return result
 }
 
-func buildRegionsFromResourceData(rd *schema.Set) map[string]*regions.Region {
-	result := make(map[string]*regions.Region)
+func buildRegionsFromResourceData(rd *schema.Set) map[string]*RequestedRegion {
+	result := make(map[string]*RequestedRegion)
 	for _, r := range rd.List() {
 		regionMap := r.(map[string]interface{})
 
@@ -445,12 +468,16 @@ func buildRegionsFromResourceData(rd *schema.Set) map[string]*regions.Region {
 			dbs = append(dbs, &db)
 		}
 
-		region := regions.Region{
+		region := RequestedRegion{
 			Region:         redis.String(regionMap["region"].(string)),
 			RecreateRegion: redis.Bool(regionMap["recreate_region"].(bool)),
 			DeploymentCIDR: redis.String(regionMap["networking_deployment_cidr"].(string)),
 			VpcId:          redis.String(regionMap["vpc_id"].(string)),
 			Databases:      dbs,
+		}
+
+		if regionMap["local_resp_version"] != "" {
+			region.RespVersion = redis.String(regionMap["local_resp_version"].(string))
 		}
 
 		result[*region.Region] = &region
@@ -459,11 +486,21 @@ func buildRegionsFromResourceData(rd *schema.Set) map[string]*regions.Region {
 	return result
 }
 
-func shouldRecreateRegion(existingRegion *regions.Region, desiredRegion *regions.Region) bool {
+func shouldRecreateRegion(desiredRegion *RequestedRegion, existingRegion *regions.Region) bool {
 	return *existingRegion.DeploymentCIDR != *desiredRegion.DeploymentCIDR
 }
 
-func shouldUpdateRegionDatabases(existingRegion *regions.Region, desiredRegion *regions.Region) bool {
-	return !shouldRecreateRegion(existingRegion,
-		desiredRegion) && !reflect.DeepEqual(existingRegion.Databases, desiredRegion.Databases)
+func shouldUpdateRegionDatabases(desiredRegion *RequestedRegion, existingRegion *regions.Region) bool {
+	return !shouldRecreateRegion(desiredRegion,
+		existingRegion) && !reflect.DeepEqual(desiredRegion.Databases, existingRegion.Databases)
+}
+
+type RequestedRegion struct {
+	RegionId       *int
+	Region         *string
+	RecreateRegion *bool
+	DeploymentCIDR *string
+	VpcId          *string
+	RespVersion    *string
+	Databases      []*regions.Database
 }

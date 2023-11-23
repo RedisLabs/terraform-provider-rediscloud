@@ -29,7 +29,8 @@ resource "rediscloud_active_active_subscription_regions" "regions-resource" {
 	}
 	region {
 	  region = "us-east-2"
-	  networking_deployment_cidr = "10.0.1.0/24" 
+	  networking_deployment_cidr = "10.0.1.0/24"
+    local_resp_version = "resp2"
 	  database {
 		  database_id = rediscloud_active_active_subscription_database.database-resource.db_id
       database_name = rediscloud_active_active_subscription_database.database-resource.name
@@ -55,6 +56,7 @@ The `region` block supports:
 * `vpc_id` - (Computed) Identifier of the VPC to be peered, set by the API
 * `networking_deployment_cidr` - (Required) Deployment CIDR mask. The total number of bits must be 24 (x.x.x.x/24)
 * `recreate_region` - (Optional) Protection flag, needs to be set if a region has to be re-created. A region will need to be re-created in the case of a change on the `networking_deployment_cidr` field. During re-create, the region will be deleted (so the `delete_regions` flag also needs to be set) and then created again. Default: 'false'
+* `local_resp_version` - (Optional) Either 'resp2' or 'resp3'. Resp version for Crdb databases within this region. Must be compatible with Redis version.
 * `database` - (Required) A block defining the write and read operations in the region, per database, documented below
 
 The `database` block supports:

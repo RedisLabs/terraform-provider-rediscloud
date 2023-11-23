@@ -46,6 +46,7 @@ resource "rediscloud_active_active_subscription_database" "database-resource" {
     global_data_persistence = "aof-every-1-second"
     global_password = "some-random-pass-2" 
     global_source_ips = ["192.168.0.0/16"]
+    global_resp_version = "resp2"
     global_alert {
       name = "dataset-size"
       value = 40
@@ -92,6 +93,7 @@ The following arguments are supported:
 * `global_password` - (Optional) Password to access the database of regions that don't override global settings. If left empty, the password will be generated automatically
 * `global_alert` - (Optional) A block defining Redis database alert of regions that don't override global settings, documented below, can be specified multiple times. (either: 'dataset-size', 'datasets-size', 'throughput-higher-than', 'throughput-lower-than', 'latency', 'syncsource-error', 'syncsource-lag' or 'connections-limit')
 * `global_source_ips` - (Optional)  List of source IP addresses or subnet masks of regions that don't override global settings. If specified, Redis clients will be able to connect to this database only from within the specified source IP addresses ranges (example: ['192.168.10.0/32', '192.168.12.0/24'])
+* `global_resp_version` - (Optional) Either 'resp2' or 'resp3'. Resp version for Crdb databases within the AA database. Must be compatible with Redis version.
 * `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999. **Modifying this attribute will force creation of a new resource.**
 * `override_region` - (Optional) Override region specific configuration, documented below
 
