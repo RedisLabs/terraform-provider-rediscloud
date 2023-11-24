@@ -2,6 +2,21 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+## 1.5.0 (24 November 2023)
+
+### Added
+
+- a `resp_version` property on activeactive databases
+- a `resp_version` property on regions
+
+## 1.4.0 (21 November 2023)
+
+### Added
+
+- a `resp_version` property on regular databases
+- an `enable_default_user` property on regular databases
+- a `redis_version` property on both regular and activeactive subscriptions
+
 ## 1.3.3 (10 November 2023)
 
 ### Fixed
