@@ -6,23 +6,23 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
-- a `resp_version` property on activeactive databases
-- a `resp_version` property on regions
+- a `resp_version` property on active-active databases
+- a `resp_version` property on active-active regions
 
 ## 1.4.0 (21 November 2023)
 
 ### Added
 
-- a `resp_version` property on regular databases
-- an `enable_default_user` property on regular databases
-- a `redis_version` property on both regular and activeactive subscriptions
+- a `resp_version` property on single-region databases
+- an `enable_default_user` property on single-region databases
+- a `redis_version` property on both single-region and active-active subscriptions
 
 ## 1.3.3 (10 November 2023)
 
 ### Fixed
 
-- Improved waiting/timeout behaviour including making use of the `status` property on ACL Users.
-- Measuring throughput by `operations-per-second` is not compatible with the `RediSearch` module.
+- Improved waiting/timeout behavior, including making use of the `status` property on ACL Users.
+- Measuring throughput by `operations-per-second` is incompatible with the `RediSearch` module.
 - Slight documentation changes.
 - Alerts can be removed from databases as expected.
 
