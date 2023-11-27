@@ -54,8 +54,6 @@ resource "rediscloud_subscription_database" "database-resource" {
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 20000
     replication = true
-    resp_version = "resp2"
-    enable_default_user = true
   
     modules = [
         {
