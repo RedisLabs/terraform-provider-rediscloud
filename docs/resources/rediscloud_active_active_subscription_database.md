@@ -46,7 +46,6 @@ resource "rediscloud_active_active_subscription_database" "database-resource" {
     global_data_persistence = "aof-every-1-second"
     global_password = "some-random-pass-2" 
     global_source_ips = ["192.168.0.0/16"]
-    global_resp_version = "resp2"
     global_alert {
       name = "dataset-size"
       value = 40
