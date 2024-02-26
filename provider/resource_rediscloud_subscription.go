@@ -648,6 +648,7 @@ func buildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 			break
 		}
 	}
+
 	// if RediSearch is in the modules, throughput may not be operations-per-second
 	if containsSearch && throughputMeasurementBy == "operations-per-second" {
 		errDiag := diag.Diagnostic{
