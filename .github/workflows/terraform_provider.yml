@@ -108,10 +108,10 @@ jobs:
       - run: make testacc
         if: steps.filter.outputs.code-changes == 'true'
         env:
-          REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_QA }}
-          REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_QA }}
-          REDISCLOUD_URL: https://api-k8s-cloudapi.qa.redislabs.com/v1
-          AWS_TEST_CLOUD_ACCOUNT_NAME: "${{ secrets.AWS_TEST_CLOUD_ACCOUNT_NAME }}"
+          REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_STAGING }}
+          REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_STAGING }}
+          REDISCLOUD_URL: ${{ secrets.REDISCLOUD_URL_STAGING }}
+          AWS_TEST_CLOUD_ACCOUNT_NAME: "${{ secrets.AWS_TEST_CLOUD_ACCOUNT_NAME_STAGING }}"
           AWS_PEERING_REGION: ${{ secrets.AWS_PEERING_REGION }}
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           AWS_VPC_CIDR: ${{ secrets.AWS_VPC_CIDR }}
