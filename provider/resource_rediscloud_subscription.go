@@ -58,12 +58,18 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Optional:    true,
 			},
 			"payment_method": {
-				Description:      "Payment method for the requested subscription. If credit card is specified, the payment method Id must be defined.",
+				Description:      "Payment method for the requested subscription. If credit card is specified, the payment method id must be defined. This information is only used when creating a new subscription and any changes will be ignored after this.",
 				Type:             schema.TypeString,
-				ForceNew:         true,
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(credit-card|marketplace)$"), "must be 'credit-card' or 'marketplace'")),
 				Optional:         true,
 				Default:          "credit-card",
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if d.Id() == "" {
+						// We don't want to ignore the block if the resource is about to be created.
+						return false
+					}
+					return true
+				},
 			},
 			"payment_method_id": {
 				Computed:         true,

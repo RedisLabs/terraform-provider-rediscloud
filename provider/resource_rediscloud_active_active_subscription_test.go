@@ -37,6 +37,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscription, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
@@ -86,10 +87,21 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 				),
 			},
 			{
-				// Checks if the creation_plan block is ignored after the IMPORT operation.
+				// Checks if the changes to the payment_method are ignored.
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethod, name),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
+				),
+			},
+			{
+				// Checks if the payment_method and creation_plan block are ignored after the IMPORT operation.
 				ResourceName: resourceName,
 				ImportState:  true,
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					paymentMethod, ok := states[0].Attributes["payment_method"]
+					if ok && paymentMethod != "credit-card" {
+						return fmt.Errorf("Unexpected payment_method block. Should be 'credit-card', instead of  %s", paymentMethod)
+					}
 					creationPlan, ok := states[0].Attributes["creation_plan.#"]
 					if ok && creationPlan != "0" {
 						return fmt.Errorf("Unexpected creation_plan block. Should be 0, instead of  %s", creationPlan)
@@ -253,6 +265,36 @@ const testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan = `
 	cloud_provider = "%s"
    
   }
+`
+
+const testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethod = `
+data "rediscloud_payment_method" "card" {
+	card_type = "Visa"
+}
+
+resource "rediscloud_active_active_subscription" "example" {
+	name = "%s"
+    payment_method = "marketplace"
+	payment_method_id = data.rediscloud_payment_method.card.id
+	cloud_provider = "AWS"
+
+	creation_plan {
+		memory_limit_in_gb = 1
+		quantity = 1
+		region {
+			region = "us-east-1"
+			networking_deployment_cidr = "192.168.0.0/24"
+			write_operations_per_second = 1000
+			read_operations_per_second = 1000
+		}
+		region {
+			region = "us-east-2"
+			networking_deployment_cidr = "10.0.1.0/24"
+			write_operations_per_second = 1000
+			read_operations_per_second = 1000
+		}
+	}
+}
 `
 
 const testAccResourceRedisCloudActiveActiveSubscriptionContractPayment = `

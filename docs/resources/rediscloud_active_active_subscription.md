@@ -10,7 +10,9 @@ description: |-
 Creates an Active-Active Subscription within your Redis Enterprise Cloud Account.
 This resource is responsible for creating and managing subscriptions.
 
-~> **Note:** The creation_plan block allows the API server to create a well-optimised infrastructure for your databases in the cluster.
+> **Note:** The payment_method property is ignored after Subscription creation.
+
+> **Note:** The creation_plan block allows the API server to create a well-optimised infrastructure for your databases in the cluster.
 The attributes inside the block are used by the provider to create initial 
 databases. Those databases will be deleted after provisioning a new 
 subscription, then the databases defined as separate resources will be attached to 
@@ -71,7 +73,7 @@ The creation_plan `region` block supports:
 * `write_operations_per_second` - (Required) Throughput measurement for an active-active subscription
 * `read_operations_per_second` - (Required) Throughput measurement for an active-active subscription
 
-~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `cloud_provider` or `payment_method`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
+> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `cloud_provider` or `payment_method`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
 
 
 ### Timeouts
@@ -90,8 +92,8 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 $ terraform import rediscloud_active_active_subscription.subscription-resource 12345678
 ```
 
-~> **Note:** the creation_plan block will be ignored during imports.
+> **Note:** the payment_method property and creation_plan block will be ignored during imports.
 
-~> **Note:** when importing an existing Subscription, upon providing a `redis_version`, Terraform will always try to
+> **Note:** when importing an existing Subscription, upon providing a `redis_version`, Terraform will always try to
 recreatethe resource. The API doesn't return this value, so we can't detect changes between states.
 
