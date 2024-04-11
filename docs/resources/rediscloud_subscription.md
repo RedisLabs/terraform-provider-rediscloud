@@ -10,7 +10,9 @@ description: |-
 Creates a Flexible Subscription within your Redis Enterprise Cloud Account.
 This resource is responsible for creating and managing subscriptions.
 
-~> **Note:** The creation_plan block allows the API server to create a well-optimised infrastructure for your databases in the cluster.
+> **Note:** The payment_method property is ignored after Subscription creation.
+
+> **Note:** The creation_plan block allows the API server to create a well-optimised infrastructure for your databases in the cluster.
 The attributes inside the block are used by the provider to create initial 
 databases. Those databases will be deleted after provisioning a new 
 subscription, then the databases defined as separate resources will be attached to 
@@ -26,18 +28,18 @@ data "rediscloud_payment_method" "card" {
 
 resource "rediscloud_subscription" "subscription-resource" {
 
-  name = "subscription-name"
-  payment_method = "credit-card"
+  name              = "subscription-name"
+  payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-  redis_version = "latest"
+  memory_storage    = "ram"
+  redis_version     = "latest"
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
     region {
-      region = "eu-west-1"
-      multiple_availability_zones = true
-      networking_deployment_cidr = "10.0.0.0/24"
+      region                       = "eu-west-1"
+      multiple_availability_zones  = true
+      networking_deployment_cidr   = "10.0.0.0/24"
       preferred_availability_zones = ["euw1-az1", "euw1-az2", "euw1-az3"]
     }
   }
@@ -45,12 +47,12 @@ resource "rediscloud_subscription" "subscription-resource" {
   // This block needs to be defined for provisioning a new subscription.
   // This allows creation of a well-optimized hardware specification for databases in the cluster
   creation_plan {
-    memory_limit_in_gb = 15
-    quantity = 1
-    replication= true
-    throughput_measurement_by = "operations-per-second"
+    memory_limit_in_gb           = 15
+    quantity                     = 1
+    replication                  = true
+    throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 20000
-    modules = ["RedisJSON"]
+    modules                      = ["RedisJSON"]
   }
 }
 ```
@@ -73,7 +75,7 @@ The `allowlist` block supports:
 * `security_group_ids` - (Required) Set of security groups that are allowed to access the databases associated with this subscription
 * `cidrs` - (Optional) Set of CIDR ranges that are allowed to access the databases associated with this subscription
 
-~> **Note:** `allowlist` is only available when you run on your own cloud account, and not one that Redis provided (i.e `cloud_account_id` != 1)
+> **Note:** `allowlist` is only available when you run on your own cloud account, and not one that Redis provided (i.e `cloud_account_id` != 1)
 
 The `cloud_provider` block supports:
 
@@ -86,8 +88,8 @@ only with Redis Labs internal cloud account
 The `creation_plan` block supports:
 
 * `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database.
-* `modules` - (Optional) a list of modules that will be used by the databases in this subscription. Not currently compatible with ‘ram-and-flash’ memory storage.
-Example: `modules = ["RedisJSON", RedisBloom"]`
+* `modules` - (Optional) a list of modules that will be used by the databases in this subscription. Not currently compatible with ‘ram-and-flash’ memory storage.  
+Example: `modules = ["RedisJSON", "RediSearch", "RedisTimeSeries", "RedisBloom"]`
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `replication` - (Optional) Databases replication. Default: ‘true’
 * `quantity` - (Required) The planned number of databases in the subscription
@@ -97,9 +99,9 @@ Example: `modules = ["RedisJSON", RedisBloom"]`
 Estimated average size (measured in bytes) of the items stored in the database. The value needs to 
 be the maximum average item size defined in one of your databases.  Default: 1000
 
-~>**Note:** If the number of modules exceeds the `quantity` then additional creation-plan databases will be created with the modules defined in the `modules` block.
+> **Note:** If the number of modules exceeds the `quantity` then additional creation-plan databases will be created with the modules defined in the `modules` block.
 
-~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `memory_storage`, `cloud_provider` or `payment_method`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
+> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `memory_storage`, `cloud_provider` or `payment_method`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
 
 The cloud_provider `region` block supports:
 
@@ -111,7 +113,7 @@ The cloud_provider `region` block supports:
 within the hosting account. **Modifying this attribute will force creation of a new resource.**
 * `preferred_availability_zones` - (Optional) Availability zones deployment preferences (for the selected provider & region). If multiple_availability_zones is set to 'true', select three availability zones from the list. If you don't want to specify preferred availability zones, set this attribute to an empty list ('[]'). **Modifying this attribute will force creation of a new resource.**
 
-~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI. 
+> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI. 
 This difference in behaviour is to guarantee that a plan after an apply does not generate differences. In AWS Redis internal cloud account, please set the zone IDs (for example: `["use-az2", "use-az3", "use-az5"]`).
 
 ### Timeouts
@@ -141,7 +143,7 @@ The `networks` block has these attributes:
 ```
 $ terraform import rediscloud_subscription.subscription-resource 12345678
 ```
-~> **Note:** the creation_plan block will be ignored during imports.
+> **Note:** the payment_method property and creation_plan block will be ignored during imports.
 
-~> **Note:** when importing an existing Subscription, upon providing a `redis_version`, Terraform will always try to
+> **Note:** when importing an existing Subscription, upon providing a `redis_version`, Terraform will always try to
 recreate the resource. The API doesn't return this value, so we can't detect changes between states.
