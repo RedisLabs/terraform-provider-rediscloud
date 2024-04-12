@@ -231,15 +231,21 @@ func dataSourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceDat
 	if err := d.Set("replication", redis.BoolValue(db.Replication)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("throughput_measurement_by", redis.StringValue(db.ThroughputMeasurement.By)); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("throughput_measurement_value", redis.IntValue(db.ThroughputMeasurement.Value)); err != nil {
-		return diag.FromErr(err)
-	}
-	if v := redis.StringValue(db.Security.Password); v != "" {
-		if err := d.Set("password", v); err != nil {
+
+	if db.ThroughputMeasurement != nil {
+		if err := d.Set("throughput_measurement_by", redis.StringValue(db.ThroughputMeasurement.By)); err != nil {
 			return diag.FromErr(err)
+		}
+		if err := d.Set("throughput_measurement_value", redis.IntValue(db.ThroughputMeasurement.Value)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if db.Security != nil {
+		if v := redis.StringValue(db.Security.Password); v != "" {
+			if err := d.Set("password", v); err != nil {
+				return diag.FromErr(err)
+			}
 		}
 	}
 	if err := d.Set("public_endpoint", redis.StringValue(db.PublicEndpoint)); err != nil {
@@ -259,11 +265,16 @@ func dataSourceRedisCloudDatabaseRead(ctx context.Context, d *schema.ResourceDat
 	if err := d.Set("module", flattenModules(db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("hashing_policy", flattenRegexRules(db.Clustering.RegexRules)); err != nil {
-		return diag.FromErr(err)
+
+	if db.Clustering != nil {
+		if err := d.Set("hashing_policy", flattenRegexRules(db.Clustering.RegexRules)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
-	if err := d.Set("enable_default_user", redis.BoolValue(db.Security.EnableDefaultUser)); err != nil {
-		return diag.FromErr(err)
+	if db.Security != nil {
+		if err := d.Set("enable_default_user", redis.BoolValue(db.Security.EnableDefaultUser)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return diags
