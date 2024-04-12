@@ -2,6 +2,10 @@ module github.com/RedisLabs/terraform-provider-rediscloud
 
 go 1.19
 
+replace (
+	github.com/RedisLabs/rediscloud-go-api v0.8.0 => /Users/johnsharpe/GolandProjects/rediscloud-go-api/
+)
+
 require (
 	github.com/RedisLabs/rediscloud-go-api v0.8.0
 	github.com/bflad/tfproviderlint v0.29.0

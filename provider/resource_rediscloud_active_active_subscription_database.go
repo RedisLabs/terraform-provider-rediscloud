@@ -148,6 +148,21 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 					},
 				},
 			},
+			"global_modules": {
+				Description: "Set of modules to enable on the database. This information is only used when creating a new database and any changes will be ignored after this.",
+				Type:        schema.TypeList,
+				Optional:    true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if d.Id() == "" {
+						// We don't want to ignore the block if the resource is about to be created.
+						return false
+					}
+					return true
+				},
+			},
 			"global_source_ips": {
 				Description: "Set of CIDR addresses to allow access to the database",
 				Type:        schema.TypeSet,
@@ -272,7 +287,6 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 			"global_resp_version": {
 				Description: "The initial RESP version for all databases provisioned under this AA database. This information is only used when creating a new database and any changes will be ignored after this.",
 				Type:        schema.TypeString,
-				// The block is required when the user provisions a new aa database.
 				// The block is ignored in the UPDATE operation or after IMPORTing the resource.
 				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
@@ -305,7 +319,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 	globalSourceIp := setToStringSlice(d.Get("global_source_ips").(*schema.Set))
 	respVersion := d.Get("global_resp_version").(string)
 
-	createAlerts := make([]*databases.CreateAlert, 0)
+	createAlerts := make([]*databases.Alert, 0)
 	alerts := d.Get("global_alert").(*schema.Set)
 	for _, alert := range alerts.List() {
 		alertMap := alert.(map[string]interface{})
@@ -313,12 +327,21 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 		alertName := alertMap["name"].(string)
 		alertValue := alertMap["value"].(int)
 
-		createAlert := &databases.CreateAlert{
+		createAlert := &databases.Alert{
 			Name:  redis.String(alertName),
 			Value: redis.Int(alertValue),
 		}
 
 		createAlerts = append(createAlerts, createAlert)
+	}
+
+	createModules := make([]*databases.Module, 0)
+	planModules := interfaceToStringSlice(d.Get("global_modules").([]interface{}))
+	for _, module := range planModules {
+		createModule := &databases.Module{
+			Name: module,
+		}
+		createModules = append(createModules, createModule)
 	}
 
 	// Get regions from /subscriptions/{subscriptionId}/regions, this will use the Regions API
@@ -347,6 +370,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 		UseExternalEndpointForOSSClusterAPI: redis.Bool(useExternalEndpointForOSSClusterAPI),
 		GlobalSourceIP:                      globalSourceIp,
 		GlobalAlerts:                        createAlerts,
+		GlobalModules:                       createModules,
 		LocalThroughputMeasurement:          localThroughputs,
 	}
 
@@ -501,7 +525,6 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 		}
 
 		regionDbConfig["remote_backup"] = flattenBackupPlan(regionDb.Backup, getStateRemoteBackup(d, redis.StringValue(regionDb.Region)), "")
-
 		regionDbConfigs = append(regionDbConfigs, regionDbConfig)
 	}
 
@@ -516,6 +539,9 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 		return diag.FromErr(err)
 	}
 	if err := d.Set("private_endpoint", privateEndpointConfig); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("global_modules", flattenModulesToNames(db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -568,11 +594,11 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 	// Forcibly initialise, so we have a non-nil, zero-length slice
 	// A pointer to a nil-slice is interpreted as empty and omitted from the json payload
 	//goland:noinspection GoPreferNilSlice
-	globalAlerts := []*databases.UpdateAlert{}
+	updateAlerts := []*databases.Alert{}
 	for _, alert := range d.Get("global_alert").(*schema.Set).List() {
 		dbAlert := alert.(map[string]interface{})
 
-		globalAlerts = append(globalAlerts, &databases.UpdateAlert{
+		updateAlerts = append(updateAlerts, &databases.Alert{
 			Name:  redis.String(dbAlert["name"].(string)),
 			Value: redis.Int(dbAlert["value"].(int)),
 		})
@@ -599,8 +625,8 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 
 		if len(overrideAlerts) > 0 {
 			regionProps.Alerts = &overrideAlerts
-		} else if len(globalAlerts) > 0 {
-			regionProps.Alerts = &globalAlerts
+		} else if len(updateAlerts) > 0 {
+			regionProps.Alerts = &updateAlerts
 		}
 		if len(overrideSourceIps) > 0 {
 			regionProps.SourceIP = overrideSourceIps
@@ -634,7 +660,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 		SupportOSSClusterAPI:                redis.Bool(d.Get("support_oss_cluster_api").(bool)),
 		UseExternalEndpointForOSSClusterAPI: redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool)),
 		DataEvictionPolicy:                  redis.String(d.Get("data_eviction").(string)),
-		GlobalAlerts:                        &globalAlerts,
+		GlobalAlerts:                        &updateAlerts,
 		GlobalSourceIP:                      globalSourceIps,
 		Regions:                             regions,
 	}
@@ -710,7 +736,7 @@ func getStateRemoteBackup(d *schema.ResourceData, regionName string) []interface
 	return nil
 }
 
-func getStateAlertsFromDbRegion(dbRegion map[string]interface{}) []*databases.UpdateAlert {
+func getStateAlertsFromDbRegion(dbRegion map[string]interface{}) []*databases.Alert {
 	// Make a list of region-specific alert configurations for use in the regions list below
 	if dbRegion == nil {
 		return nil
@@ -719,10 +745,10 @@ func getStateAlertsFromDbRegion(dbRegion map[string]interface{}) []*databases.Up
 	}
 	// Initialise to non-nil, zero-length slice.
 	//goland:noinspection GoPreferNilSlice
-	overrideAlerts := []*databases.UpdateAlert{}
+	overrideAlerts := []*databases.Alert{}
 	for _, alert := range dbRegion["override_global_alert"].(*schema.Set).List() {
 		dbAlert := alert.(map[string]interface{})
-		overrideAlerts = append(overrideAlerts, &databases.UpdateAlert{
+		overrideAlerts = append(overrideAlerts, &databases.Alert{
 			Name:  redis.String(dbAlert["name"].(string)),
 			Value: redis.Int(dbAlert["value"].(int)),
 		})
@@ -756,4 +782,12 @@ func waitForDatabaseToBeDeleted(ctx context.Context, subId int, dbId int, api *a
 	}
 
 	return nil
+}
+
+func flattenModulesToNames(modules []*databases.Module) []string {
+	var moduleNames = make([]string, 0)
+	for _, module := range modules {
+		moduleNames = append(moduleNames, redis.StringValue(module.Name))
+	}
+	return moduleNames
 }

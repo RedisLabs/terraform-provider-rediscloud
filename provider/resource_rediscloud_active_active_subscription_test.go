@@ -42,6 +42,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.0", "RedisJSON"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.write_operations_per_second", "1000"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.read_operations_per_second", "1000"),
@@ -236,6 +238,7 @@ resource "rediscloud_active_active_subscription" "example" {
 
 	creation_plan {
 		memory_limit_in_gb = 1
+		modules = ["RedisJSON"]
 		quantity = 1
 		region {
 			region = "us-east-1"
