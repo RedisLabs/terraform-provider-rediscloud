@@ -350,7 +350,7 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 		DataPersistence:      redis.String(dataPersistence),
 		DataEvictionPolicy:   redis.String(dataEviction),
 		Replication:          redis.Bool(replication),
-		ThroughputMeasurement: &databases.ThroughputMeasurement{
+		ThroughputMeasurement: &databases.CreateThroughputMeasurement{
 			By:    redis.String(throughputMeasurementBy),
 			Value: redis.Int(throughputMeasurementValue),
 		},
@@ -584,7 +584,7 @@ func resourceRedisCloudSubscriptionDatabaseUpdate(ctx context.Context, d *schema
 		MemoryLimitInGB:      redis.Float64(d.Get("memory_limit_in_gb").(float64)),
 		SupportOSSClusterAPI: redis.Bool(d.Get("support_oss_cluster_api").(bool)),
 		Replication:          redis.Bool(d.Get("replication").(bool)),
-		ThroughputMeasurement: &databases.ThroughputMeasurement{
+		ThroughputMeasurement: &databases.UpdateThroughputMeasurement{
 			By:    redis.String(d.Get("throughput_measurement_by").(string)),
 			Value: redis.Int(d.Get("throughput_measurement_value").(int)),
 		},
