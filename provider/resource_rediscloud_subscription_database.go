@@ -312,21 +312,21 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 	throughputMeasurementValue := d.Get("throughput_measurement_value").(int)
 	averageItemSizeInBytes := d.Get("average_item_size_in_bytes").(int)
 
-	createModules := make([]*databases.CreateModule, 0)
+	createModules := make([]*databases.Module, 0)
 	modules := d.Get("modules").(*schema.Set)
 	for _, module := range modules.List() {
 		moduleMap := module.(map[string]interface{})
 
 		modName := moduleMap["name"].(string)
 
-		createModule := &databases.CreateModule{
+		createModule := &databases.Module{
 			Name: redis.String(modName),
 		}
 
 		createModules = append(createModules, createModule)
 	}
 
-	createAlerts := make([]*databases.CreateAlert, 0)
+	createAlerts := make([]*databases.Alert, 0)
 	alerts := d.Get("alert").(*schema.Set)
 	for _, alert := range alerts.List() {
 		alertMap := alert.(map[string]interface{})
@@ -334,7 +334,7 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 		alertName := alertMap["name"].(string)
 		alertValue := alertMap["value"].(int)
 
-		createAlert := &databases.CreateAlert{
+		createAlert := &databases.Alert{
 			Name:  redis.String(alertName),
 			Value: redis.Int(alertValue),
 		}
@@ -568,12 +568,12 @@ func resourceRedisCloudSubscriptionDatabaseUpdate(ctx context.Context, d *schema
 	// If the recommended approach is taken and there are 0 alerts, a nil-slice value is sent to the UpdateDatabase
 	// constructor. We instead want a non-nil (but zero length) slice to be passed forward.
 	//goland:noinspection GoPreferNilSlice
-	alerts := []*databases.UpdateAlert{}
+	alerts := []*databases.Alert{}
 
 	for _, alert := range d.Get("alert").(*schema.Set).List() {
 		dbAlert := alert.(map[string]interface{})
 
-		alerts = append(alerts, &databases.UpdateAlert{
+		alerts = append(alerts, &databases.Alert{
 			Name:  redis.String(dbAlert["name"].(string)),
 			Value: redis.Int(dbAlert["value"].(int)),
 		})
