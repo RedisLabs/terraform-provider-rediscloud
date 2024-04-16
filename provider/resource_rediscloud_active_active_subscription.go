@@ -110,6 +110,14 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 							Required:     true,
 							ValidateFunc: validation.IntAtLeast(1),
 						},
+						"modules": {
+							Description: "Modules that will be used by the databases in this subscription.",
+							Type:        schema.TypeList,
+							Optional:    true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
 						"region": {
 							Description: "Cloud networking details, per region (multiple regions for Active-Active cluster)",
 							Type:        schema.TypeSet,
@@ -451,15 +459,25 @@ func buildSubscriptionCreatePlanAADatabases(planMap map[string]interface{}) []*s
 			ReadOperationsPerSecond:  redis.Int(region["read_operations_per_second"].(int)),
 		})
 	}
+
+	createModules := make([]*subscriptions.CreateModules, 0)
+	planModules := interfaceToStringSlice(planMap["modules"].([]interface{}))
+	for _, module := range planModules {
+		createModule := &subscriptions.CreateModules{
+			Name: module,
+		}
+		createModules = append(createModules, createModule)
+	}
+
 	// create the remaining DBs with all other modules
-	createDatabases = append(createDatabases, createAADatabase(dbName, &idx, localThroughputs, numDatabases, memoryLimitInGB)...)
+	createDatabases = append(createDatabases, createAADatabase(dbName, &idx, localThroughputs, numDatabases, memoryLimitInGB, createModules)...)
 
 	return createDatabases
 }
 
 // createDatabase returns a CreateDatabase struct with the given parameters
-func createAADatabase(dbName string, idx *int, localThroughputs []*subscriptions.CreateLocalThroughput, numDatabases int, memoryLimitInGB float64) []*subscriptions.CreateDatabase {
-	var databases []*subscriptions.CreateDatabase
+func createAADatabase(dbName string, idx *int, localThroughputs []*subscriptions.CreateLocalThroughput, numDatabases int, memoryLimitInGB float64, modules []*subscriptions.CreateModules) []*subscriptions.CreateDatabase {
+	var dbs []*subscriptions.CreateDatabase
 	for i := 0; i < numDatabases; i++ {
 		createDatabase := subscriptions.CreateDatabase{
 			Name:                       redis.String(dbName + strconv.Itoa(*idx)),
@@ -467,9 +485,10 @@ func createAADatabase(dbName string, idx *int, localThroughputs []*subscriptions
 			MemoryLimitInGB:            redis.Float64(memoryLimitInGB),
 			LocalThroughputMeasurement: localThroughputs,
 			Quantity:                   redis.Int(1),
+			Modules:                    modules,
 		}
 		*idx++
-		databases = append(databases, &createDatabase)
+		dbs = append(dbs, &createDatabase)
 	}
-	return databases
+	return dbs
 }

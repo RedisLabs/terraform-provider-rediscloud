@@ -45,6 +45,8 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					resource.TestCheckResourceAttr(resourceName, "global_alert.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "global_alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(resourceName, "global_alert.0.value", "40"),
+					resource.TestCheckResourceAttr(resourceName, "global_modules.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "global_modules.0", "RedisJSON"),
 					resource.TestCheckResourceAttr(resourceName, "global_source_ips.#", "2"),
 
 					resource.TestCheckResourceAttr(resourceName, "override_region.#", "2"),
@@ -97,7 +99,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					},
 				),
 			},
-			// Test database is updated successfully, including updates to both global and local alerts
+			// Test database is updated successfully, including updates to both global and local alerts and clearing modules
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdate, subscriptionName, name),
 				Check: resource.ComposeTestCheckFunc(
@@ -110,6 +112,10 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					resource.TestCheckResourceAttr(resourceName, "global_alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(resourceName, "global_alert.0.value", "60"),
 
+					// Changes are ignored after creation
+					resource.TestCheckResourceAttr(resourceName, "global_modules.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "global_modules.0", "RedisJSON"),
+
 					resource.TestCheckResourceAttr(resourceName, "override_region.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.name", "us-east-1"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_data_persistence", "none"),
@@ -120,7 +126,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_source_ips.#", "0"),
 				),
 			},
-			// Test database is updated, including deletion of global and local alerts
+			// Test database is updated, including deletion of global and local alerts and replacing modules
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdateNoAlerts, subscriptionName, name),
 				Check: resource.ComposeTestCheckFunc(
@@ -130,6 +136,8 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					resource.TestCheckResourceAttr(resourceName, "global_data_persistence", "aof-every-1-second"),
 					resource.TestCheckResourceAttr(resourceName, "global_password", "updated-password"),
 					resource.TestCheckResourceAttr(resourceName, "global_alert.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "global_modules.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "global_modules.0", "RedisJSON"),
 
 					resource.TestCheckResourceAttr(resourceName, "override_region.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.name", "us-east-1"),
@@ -254,6 +262,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
 		name = "dataset-size"
 		value = 40
 	}
+	global_modules = ["RedisJSON"]
 	override_region {
 		name = "us-east-1"
 		override_global_data_persistence = "aof-every-write"
@@ -287,6 +296,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
 		name = "dataset-size"
 		value = 60
 	}
+	global_modules = []
 
 	override_region {
 		name = "us-east-1"
@@ -311,6 +321,8 @@ resource "rediscloud_active_active_subscription_database" "example" {
     global_data_persistence = "aof-every-1-second"
     global_password = "updated-password" 
     global_source_ips = ["192.170.0.0/16"]
+
+	global_modules = ["RedisJSON"]
 
 	override_region {
 		name = "us-east-1"

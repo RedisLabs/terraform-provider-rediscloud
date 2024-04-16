@@ -34,6 +34,7 @@ resource "rediscloud_active_active_subscription" "subscription-resource" {
 	creation_plan {
 	  memory_limit_in_gb = 1
 	  quantity = 1
+    modules = ["RedisJSON"]
 	  region {
 		  region = "us-east-1"
 		  networking_deployment_cidr = "192.168.0.0/24"
@@ -65,6 +66,7 @@ The `creation_plan` block supports:
 
 * `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database, including replication and other overhead
 * `quantity` - (Required) The planned number of databases in the subscription.
+* `modules` - (Optional) A list of modules to be enabled on all deployments of this database. Only `RedisJSON` is currently supported.
 
 The creation_plan `region` block supports:
 
@@ -74,7 +76,6 @@ The creation_plan `region` block supports:
 * `read_operations_per_second` - (Required) Throughput measurement for an active-active subscription
 
 > **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `cloud_provider`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
-
 
 ### Timeouts
 

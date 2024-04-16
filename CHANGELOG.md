@@ -2,6 +2,18 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+## 1.6.0 (12 April 2024)
+
+### Fixed
+
+- using the `rediscloud_database` datasource no longer crashes when pointed to an ActiveActive database but offers
+limited data. A specific datasource type will be coming soon.
+
+### Changed
+
+- A subscription's `payment_method` can no longer be updated. It is ignored after resource creation (as with `creation_plan`).
+This means if it has been changed behind the scenes, reapplying the same Terraform configuration should not change anything. 
+
 ## 1.5.0 (24 November 2023)
 
 ### Added
