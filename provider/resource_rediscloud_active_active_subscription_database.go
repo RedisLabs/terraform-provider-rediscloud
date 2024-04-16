@@ -149,7 +149,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 				},
 			},
 			"global_modules": {
-				Description: "Set of modules to enable on the database. This information is only used when creating a new database and any changes will be ignored after this.",
+				Description: "List of modules to enable on the database. This information is only used when creating a new database and any changes will be ignored after this.",
 				Type:        schema.TypeList,
 				Optional:    true,
 				Elem: &schema.Schema{
