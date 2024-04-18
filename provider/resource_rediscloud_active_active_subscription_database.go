@@ -299,6 +299,43 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 				ValidateDiagFunc: validation.ToDiagFunc(
 					validation.StringMatch(regexp.MustCompile("^(resp2|resp3)$"), "must be 'resp2' or 'resp3'")),
 			},
+			"latest_import_status": {
+				Description: "",
+				Computed:    true,
+				Type:        schema.TypeSet,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"response": {
+							Description: "",
+							Computed:    true,
+							Type:        schema.TypeString,
+						},
+						"error": {
+							Computed: true,
+							Type:     schema.TypeSet,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"type": {
+										Description: "",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"description": {
+										Description: "",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"status": {
+										Description: "",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -542,6 +579,20 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 		return diag.FromErr(err)
 	}
 	if err := d.Set("global_modules", flattenModulesToNames(db.Modules)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	var parsedLatestImportStatus []map[string]interface{}
+	latestImportStatus, err := api.client.LatestImport.Get(ctx, subId, dbId)
+	if err != nil {
+		// Forgive errors here, sometimes we just can't get a latest status
+	} else {
+		parsedLatestImportStatus, err = parseLatestImportStatus(latestImportStatus)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+	if err := d.Set("latest_import_status", parsedLatestImportStatus); err != nil {
 		return diag.FromErr(err)
 	}
 

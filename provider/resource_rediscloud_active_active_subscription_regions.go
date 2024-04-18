@@ -116,6 +116,43 @@ func resourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 										Type:        schema.TypeInt,
 										Required:    true,
 									},
+									"latest_backup_status": {
+										Description: "",
+										Computed:    true,
+										Type:        schema.TypeSet,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"response": {
+													Description: "",
+													Computed:    true,
+													Type:        schema.TypeString,
+												},
+												"error": {
+													Computed: true,
+													Type:     schema.TypeSet,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"type": {
+																Description: "",
+																Computed:    true,
+																Type:        schema.TypeString,
+															},
+															"description": {
+																Description: "",
+																Computed:    true,
+																Type:        schema.TypeString,
+															},
+															"status": {
+																Description: "",
+																Computed:    true,
+																Type:        schema.TypeString,
+															},
+														},
+													},
+												},
+											},
+										},
+									},
 								},
 							},
 						},
@@ -257,7 +294,60 @@ func resourceRedisCloudActiveActiveRegionRead(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("region", buildResourceDataFromAPIRegions(existingRegions.Regions, d.Get("region").(*schema.Set))); err != nil {
+	regionsFromAPI := existingRegions.Regions
+	regionsFromConfig := d.Get("region").(*schema.Set)
+
+	var newRegions []map[string]interface{}
+
+	recreateRegions := make(map[string]bool)
+
+	// The API doesn't return a respVersion at the region level, so we just read whatever was last written to state.
+	respVersions := make(map[string]string)
+
+	for _, element := range regionsFromConfig.List() {
+		r := element.(map[string]interface{})
+		recreateRegions[r["region"].(string)] = r["recreate_region"].(bool)
+		respVersions[r["region"].(string)] = r["local_resp_version"].(string)
+	}
+
+	for _, region := range regionsFromAPI {
+		var dbs []interface{}
+		for _, database := range region.Databases {
+
+			var parsedLatestBackupStatus []map[string]interface{}
+			latestBackupStatus, err := api.client.LatestBackup.GetActiveActive(ctx, subId, *database.DatabaseId, *region.Region)
+			if err != nil {
+				// Forgive errors here, sometimes we just can't get a latest status
+			} else {
+				parsedLatestBackupStatus, err = parseLatestBackupStatus(latestBackupStatus)
+				if err != nil {
+					return diag.FromErr(err)
+				}
+			}
+
+			databaseMapString := map[string]interface{}{
+				"database_id":                       database.DatabaseId,
+				"database_name":                     database.DatabaseName,
+				"local_read_operations_per_second":  database.ReadOperationsPerSecond,
+				"local_write_operations_per_second": database.WriteOperationsPerSecond,
+				"latest_backup_status":              parsedLatestBackupStatus,
+			}
+			dbs = append(dbs, databaseMapString)
+		}
+
+		regionMapString := map[string]interface{}{
+			"region_id":                  region.RegionId,
+			"region":                     region.Region,
+			"recreate_region":            recreateRegions[*region.Region],
+			"networking_deployment_cidr": region.DeploymentCIDR,
+			"vpc_id":                     region.VpcId,
+			"database":                   dbs,
+			"local_resp_version":         respVersions[*region.Region],
+		}
+		newRegions = append(newRegions, regionMapString)
+	}
+
+	if err := d.Set("region", newRegions); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -408,47 +498,6 @@ func regionsDelete(ctx context.Context, subId int, regionsToDelete []*string, ap
 	}
 
 	return nil
-}
-
-func buildResourceDataFromAPIRegions(regionsFromAPI []*regions.Region, regionsFromConfig *schema.Set) []map[string]interface{} {
-	var result []map[string]interface{}
-
-	recreateRegions := make(map[string]bool)
-
-	// The API doesn't return a respVersion at the region level, so we just read whatever was last written to state.
-	respVersions := make(map[string]string)
-
-	for _, element := range regionsFromConfig.List() {
-		r := element.(map[string]interface{})
-		recreateRegions[r["region"].(string)] = r["recreate_region"].(bool)
-		respVersions[r["region"].(string)] = r["local_resp_version"].(string)
-	}
-
-	for _, region := range regionsFromAPI {
-		var dbs []interface{}
-		for _, database := range region.Databases {
-			databaseMapString := map[string]interface{}{
-				"database_id":                       database.DatabaseId,
-				"database_name":                     database.DatabaseName,
-				"local_read_operations_per_second":  database.ReadOperationsPerSecond,
-				"local_write_operations_per_second": database.WriteOperationsPerSecond,
-			}
-			dbs = append(dbs, databaseMapString)
-		}
-
-		regionMapString := map[string]interface{}{
-			"region_id":                  region.RegionId,
-			"region":                     region.Region,
-			"recreate_region":            recreateRegions[*region.Region],
-			"networking_deployment_cidr": region.DeploymentCIDR,
-			"vpc_id":                     region.VpcId,
-			"database":                   dbs,
-			"local_resp_version":         respVersions[*region.Region],
-		}
-		result = append(result, regionMapString)
-	}
-
-	return result
 }
 
 func buildRegionsFromResourceData(rd *schema.Set) map[string]*RequestedRegion {
