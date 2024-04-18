@@ -10,9 +10,9 @@ description: |-
 Creates a Flexible Subscription within your Redis Enterprise Cloud Account.
 This resource is responsible for creating and managing subscriptions.
 
-> **Note:** The payment_method property is ignored after Subscription creation.
+~> **Note:** The payment_method property is ignored after Subscription creation.
 
-> **Note:** The creation_plan block allows the API server to create a well-optimised infrastructure for your databases in the cluster.
+~> **Note:** The creation_plan block allows the API server to create a well-optimised infrastructure for your databases in the cluster.
 The attributes inside the block are used by the provider to create initial 
 databases. Those databases will be deleted after provisioning a new 
 subscription, then the databases defined as separate resources will be attached to 
@@ -75,7 +75,7 @@ The `allowlist` block supports:
 * `security_group_ids` - (Required) Set of security groups that are allowed to access the databases associated with this subscription
 * `cidrs` - (Optional) Set of CIDR ranges that are allowed to access the databases associated with this subscription
 
-> **Note:** `allowlist` is only available when you run on your own cloud account, and not one that Redis provided (i.e `cloud_account_id` != 1)
+~> **Note:** `allowlist` is only available when you run on your own cloud account, and not one that Redis provided (i.e `cloud_account_id` != 1)
 
 The `cloud_provider` block supports:
 
@@ -99,9 +99,9 @@ Example: `modules = ["RedisJSON", "RediSearch", "RedisTimeSeries", "RedisBloom"]
 Estimated average size (measured in bytes) of the items stored in the database. The value needs to 
 be the maximum average item size defined in one of your databases.  Default: 1000
 
-> **Note:** If the number of modules exceeds the `quantity` then additional creation-plan databases will be created with the modules defined in the `modules` block.
+~> **Note:** If the number of modules exceeds the `quantity` then additional creation-plan databases will be created with the modules defined in the `modules` block.
 
-> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `memory_storage` or `cloud_provider`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
+~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `memory_storage` or `cloud_provider`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
 
 The cloud_provider `region` block supports:
 
@@ -113,7 +113,7 @@ The cloud_provider `region` block supports:
 within the hosting account. **Modifying this attribute will force creation of a new resource.**
 * `preferred_availability_zones` - (Optional) Availability zones deployment preferences (for the selected provider & region). If multiple_availability_zones is set to 'true', select three availability zones from the list. If you don't want to specify preferred availability zones, set this attribute to an empty list ('[]'). **Modifying this attribute will force creation of a new resource.**
 
-> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI. 
+~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI. 
 This difference in behaviour is to guarantee that a plan after an apply does not generate differences. In AWS Redis internal cloud account, please set the zone IDs (for example: `["use-az2", "use-az3", "use-az5"]`).
 
 ### Timeouts
@@ -143,7 +143,7 @@ The `networks` block has these attributes:
 ```
 $ terraform import rediscloud_subscription.subscription-resource 12345678
 ```
-> **Note:** the payment_method property and creation_plan block will be ignored during imports.
+~> **Note:** the payment_method property and creation_plan block will be ignored during imports.
 
-> **Note:** when importing an existing Subscription, upon providing a `redis_version`, Terraform will always try to
+~> **Note:** when importing an existing Subscription, upon providing a `redis_version`, Terraform will always try to
 recreate the resource. The API doesn't return this value, so we can't detect changes between states.
