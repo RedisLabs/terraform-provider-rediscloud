@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/RedisLabs/rediscloud-go-api/service/latest_backups"
-	"github.com/RedisLabs/rediscloud-go-api/service/latest_imports"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/rediscloud-go-api/service/latest_backups"
+	"github.com/RedisLabs/rediscloud-go-api/service/latest_imports"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -293,13 +293,13 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 				},
 			},
 			"latest_backup_status": {
-				Description: "",
+				Description: "Details about the last backup that took place for this database",
 				Computed:    true,
 				Type:        schema.TypeSet,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"response": {
-							Description: "",
+							Description: "JSON-style details about the last backup",
 							Computed:    true,
 							Type:        schema.TypeString,
 						},
@@ -309,17 +309,17 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"type": {
-										Description: "",
+										Description: "The type of error encountered while looking up the status of the last backup",
 										Computed:    true,
 										Type:        schema.TypeString,
 									},
 									"description": {
-										Description: "",
+										Description: "A description of the error encountered while looking up the status of the last backup",
 										Computed:    true,
 										Type:        schema.TypeString,
 									},
 									"status": {
-										Description: "",
+										Description: "Any particular HTTP status code associated with the erroneous status check",
 										Computed:    true,
 										Type:        schema.TypeString,
 									},
@@ -330,13 +330,13 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 				},
 			},
 			"latest_import_status": {
-				Description: "",
+				Description: "Details about the last import that took place for this database",
 				Computed:    true,
 				Type:        schema.TypeSet,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"response": {
-							Description: "",
+							Description: "JSON-style details about the last import",
 							Computed:    true,
 							Type:        schema.TypeString,
 						},
@@ -346,17 +346,17 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"type": {
-										Description: "",
+										Description: "The type of error encountered while looking up the status of the last import",
 										Computed:    true,
 										Type:        schema.TypeString,
 									},
 									"description": {
-										Description: "",
+										Description: "A description of the error encountered while looking up the status of the last import",
 										Computed:    true,
 										Type:        schema.TypeString,
 									},
 									"status": {
-										Description: "",
+										Description: "Any particular HTTP status code associated with the erroneous status check",
 										Computed:    true,
 										Type:        schema.TypeString,
 									},

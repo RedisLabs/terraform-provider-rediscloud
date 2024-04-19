@@ -300,13 +300,13 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 					validation.StringMatch(regexp.MustCompile("^(resp2|resp3)$"), "must be 'resp2' or 'resp3'")),
 			},
 			"latest_import_status": {
-				Description: "",
+				Description: "Details about the last import that took place for this active-active database",
 				Computed:    true,
 				Type:        schema.TypeSet,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"response": {
-							Description: "",
+							Description: "JSON-style details about the last import",
 							Computed:    true,
 							Type:        schema.TypeString,
 						},
@@ -316,17 +316,17 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"type": {
-										Description: "",
+										Description: "The type of error encountered while looking up the status of the last import",
 										Computed:    true,
 										Type:        schema.TypeString,
 									},
 									"description": {
-										Description: "",
+										Description: "A description of the error encountered while looking up the status of the last import",
 										Computed:    true,
 										Type:        schema.TypeString,
 									},
 									"status": {
-										Description: "",
+										Description: "Any particular HTTP status code associated with the erroneous status check",
 										Computed:    true,
 										Type:        schema.TypeString,
 									},

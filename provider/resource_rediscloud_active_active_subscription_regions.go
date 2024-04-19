@@ -117,13 +117,13 @@ func resourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 										Required:    true,
 									},
 									"latest_backup_status": {
-										Description: "",
+										Description: "Details about the last backup that took place for this database instance",
 										Computed:    true,
 										Type:        schema.TypeSet,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"response": {
-													Description: "",
+													Description: "JSON-style details about the last backup",
 													Computed:    true,
 													Type:        schema.TypeString,
 												},
@@ -133,17 +133,17 @@ func resourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 													Elem: &schema.Resource{
 														Schema: map[string]*schema.Schema{
 															"type": {
-																Description: "",
+																Description: "The type of error encountered while looking up the status of the last backup",
 																Computed:    true,
 																Type:        schema.TypeString,
 															},
 															"description": {
-																Description: "",
+																Description: "A description of the error encountered while looking up the status of the last backup",
 																Computed:    true,
 																Type:        schema.TypeString,
 															},
 															"status": {
-																Description: "",
+																Description: "Any particular HTTP status code associated with the erroneous status check",
 																Computed:    true,
 																Type:        schema.TypeString,
 															},
