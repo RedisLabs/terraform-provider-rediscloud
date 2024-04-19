@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/rediscloud-go-api/service/latest_backups"
+	"github.com/RedisLabs/rediscloud-go-api/service/latest_imports"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -289,6 +292,80 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 					},
 				},
 			},
+			"latest_backup_status": {
+				Description: "Details about the last backup that took place for this database",
+				Computed:    true,
+				Type:        schema.TypeSet,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"response": {
+							Description: "JSON-style details about the last backup",
+							Computed:    true,
+							Type:        schema.TypeString,
+						},
+						"error": {
+							Computed: true,
+							Type:     schema.TypeSet,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"type": {
+										Description: "The type of error encountered while looking up the status of the last backup",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"description": {
+										Description: "A description of the error encountered while looking up the status of the last backup",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"status": {
+										Description: "Any particular HTTP status code associated with the erroneous status check",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"latest_import_status": {
+				Description: "Details about the last import that took place for this database",
+				Computed:    true,
+				Type:        schema.TypeSet,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"response": {
+							Description: "JSON-style details about the last import",
+							Computed:    true,
+							Type:        schema.TypeString,
+						},
+						"error": {
+							Computed: true,
+							Type:     schema.TypeSet,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"type": {
+										Description: "The type of error encountered while looking up the status of the last import",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"description": {
+										Description: "A description of the error encountered while looking up the status of the last import",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"status": {
+										Description: "Any particular HTTP status code associated with the erroneous status check",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -521,6 +598,34 @@ func resourceRedisCloudSubscriptionDatabaseRead(ctx context.Context, d *schema.R
 	}
 
 	if err := d.Set("remote_backup", flattenBackupPlan(db.Backup, d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path").(string))); err != nil {
+		return diag.FromErr(err)
+	}
+
+	var parsedLatestBackupStatus []map[string]interface{}
+	latestBackupStatus, err := api.client.LatestBackup.Get(ctx, subId, dbId)
+	if err != nil {
+		// Forgive errors here, sometimes we just can't get a latest status
+	} else {
+		parsedLatestBackupStatus, err = parseLatestBackupStatus(latestBackupStatus)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+	if err := d.Set("latest_backup_status", parsedLatestBackupStatus); err != nil {
+		return diag.FromErr(err)
+	}
+
+	var parsedLatestImportStatus []map[string]interface{}
+	latestImportStatus, err := api.client.LatestImport.Get(ctx, subId, dbId)
+	if err != nil {
+		// Forgive errors here, sometimes we just can't get a latest status
+	} else {
+		parsedLatestImportStatus, err = parseLatestImportStatus(latestImportStatus)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+	if err := d.Set("latest_import_status", parsedLatestImportStatus); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -787,4 +892,56 @@ func remoteBackupIntervalSetCorrectly(key string) schema.CustomizeDiffFunc {
 		return nil
 	}
 
+}
+
+func parseLatestBackupStatus(latestBackupStatus *latest_backups.LatestBackupStatus) ([]map[string]interface{}, error) {
+	lbs := map[string]interface{}{
+		"response": nil,
+		"error":    nil,
+	}
+
+	if latestBackupStatus.Response.Resource != nil {
+		j, err := json.Marshal(latestBackupStatus.Response.Resource)
+		if err != nil {
+			return nil, err
+		}
+		lbs["response"] = string(j)
+	}
+
+	if latestBackupStatus.Response.Error != nil {
+		err := map[string]interface{}{
+			"type":        redis.StringValue(latestBackupStatus.Response.Error.Type),
+			"description": redis.StringValue(latestBackupStatus.Response.Error.Description),
+			"status":      redis.StringValue(latestBackupStatus.Response.Error.Status),
+		}
+		lbs["error"] = []map[string]interface{}{err}
+	}
+
+	return []map[string]interface{}{lbs}, nil
+}
+
+func parseLatestImportStatus(latestImportStatus *latest_imports.LatestImportStatus) ([]map[string]interface{}, error) {
+	lis := map[string]interface{}{
+		"response": nil,
+		"error":    nil,
+	}
+
+	if latestImportStatus.Response.Resource != nil {
+		j, err := json.Marshal(latestImportStatus.Response.Resource)
+		if err != nil {
+			return nil, err
+		}
+		lis["response"] = string(j)
+	}
+
+	if latestImportStatus.Response.Error != nil {
+		err := map[string]interface{}{
+			"type":        redis.StringValue(latestImportStatus.Response.Error.Type),
+			"description": redis.StringValue(latestImportStatus.Response.Error.Description),
+			"status":      redis.StringValue(latestImportStatus.Response.Error.Status),
+		}
+		lis["error"] = []map[string]interface{}{err}
+	}
+
+	return []map[string]interface{}{lis}, nil
 }
