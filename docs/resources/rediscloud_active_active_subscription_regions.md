@@ -66,6 +66,9 @@ The `database` block supports:
 * `local_write_operations_per_second` - (Required) Local write operations per second for this active-active region
 * `local_read_operations_per_second` - (Required) Local read operations per second for this active-active region
 
+## Attribute Reference
+
+* `latest_backup_status` - An object containing the JSON-formatted response detailing the latest backup status (or an error if the lookup failed).
 
 ### Timeouts
 

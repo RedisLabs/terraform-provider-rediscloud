@@ -134,6 +134,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/l
 * `db_id` - Identifier of the database created
 * `public_endpoint` - A map of which public endpoints can to access the database per region, uses region name as key.
 * `private_endpoint` - A map of which private endpoints can to access the database per region, uses region name as key.
+* `latest_import_status` - An object containing the JSON-formatted response detailing the latest import status (or an error if the lookup failed).
 
 ## Import
 `rediscloud_active_active_subscription_database` can be imported using the ID of the Active-Active subscription and the ID of the database in the format {subscription ID}/{database ID}, e.g.
