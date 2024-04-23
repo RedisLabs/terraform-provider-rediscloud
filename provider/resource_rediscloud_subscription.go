@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
 	"log"
 	"regexp"
 	"strconv"
@@ -315,6 +316,69 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				ValidateDiagFunc: validation.ToDiagFunc(
 					validation.StringMatch(regexp.MustCompile("^(default|latest)$"), "must be 'default' or 'latest'")),
 			},
+			"pricing": {
+				Description: "Pricing details totalled over this Subscription",
+				Type:        schema.TypeList,
+				Computed:    true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"database_name": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"type": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"type_details": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"quantity": {
+							Description: "",
+							Type:        schema.TypeInt,
+							Computed:    true,
+							Optional:    true,
+						},
+						"quantity_measurement": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"price_per_unit": {
+							Description: "",
+							Type:        schema.TypeFloat,
+							Computed:    true,
+							Optional:    true,
+						},
+						"price_currency": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"price_period": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"region": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -462,6 +526,14 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 		if err := d.Set("allowlist", allowlist); err != nil {
 			return diag.FromErr(err)
 		}
+	}
+
+	pricingList, err := api.client.Pricing.List(ctx, subId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
+		return diag.FromErr(err)
 	}
 
 	return diags
@@ -990,4 +1062,25 @@ func readPaymentMethodID(d *schema.ResourceData) (*int, error) {
 		return redis.Int(pmID), nil
 	}
 	return nil, nil
+}
+
+func flattenPricing(pricing []*pricing.Pricing) []map[string]interface{} {
+	var tfs = make([]map[string]interface{}, 0)
+	for _, p := range pricing {
+
+		tf := map[string]interface{}{
+			"database_name":        p.DatabaseName,
+			"type":                 p.Type,
+			"type_details":         p.TypeDetails,
+			"quantity":             p.Quantity,
+			"quantity_measurement": p.QuantityMeasurement,
+			"price_per_unit":       p.PricePerUnit,
+			"price_currency":       p.PriceCurrency,
+			"price_period":         p.PricePeriod,
+			"region":               p.Region,
+		}
+		tfs = append(tfs, tf)
+	}
+
+	return tfs
 }

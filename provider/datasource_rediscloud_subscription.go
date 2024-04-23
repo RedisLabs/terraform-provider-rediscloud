@@ -121,6 +121,69 @@ func dataSourceRedisCloudSubscription() *schema.Resource {
 					},
 				},
 			},
+			"pricing": {
+				Description: "Pricing details totalled over this Subscription",
+				Type:        schema.TypeList,
+				Computed:    true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"database_name": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"type": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"type_details": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"quantity": {
+							Description: "",
+							Type:        schema.TypeInt,
+							Computed:    true,
+							Optional:    true,
+						},
+						"quantity_measurement": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"price_per_unit": {
+							Description: "",
+							Type:        schema.TypeFloat,
+							Computed:    true,
+							Optional:    true,
+						},
+						"price_currency": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"price_period": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"region": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -180,7 +243,16 @@ func dataSourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	d.SetId(strconv.Itoa(redis.IntValue(sub.ID)))
+	subId := redis.IntValue(sub.ID)
+	d.SetId(strconv.Itoa(subId))
+
+	pricingList, err := api.client.Pricing.List(ctx, subId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
+		return diag.FromErr(err)
+	}
 
 	return diags
 }

@@ -179,6 +179,69 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				ValidateDiagFunc: validation.ToDiagFunc(
 					validation.StringMatch(regexp.MustCompile("^(default|latest)$"), "must be 'default' or 'latest'")),
 			},
+			"pricing": {
+				Description: "Pricing details totalled over this Subscription",
+				Type:        schema.TypeList,
+				Computed:    true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"database_name": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"type": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"type_details": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"quantity": {
+							Description: "",
+							Type:        schema.TypeInt,
+							Computed:    true,
+							Optional:    true,
+						},
+						"quantity_measurement": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"price_per_unit": {
+							Description: "",
+							Type:        schema.TypeFloat,
+							Computed:    true,
+							Optional:    true,
+						},
+						"price_currency": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"price_period": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"region": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -312,6 +375,14 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 	}
 	cloudProvider := cloudDetails[0].Provider
 	if err := d.Set("cloud_provider", cloudProvider); err != nil {
+		return diag.FromErr(err)
+	}
+
+	pricingList, err := api.client.Pricing.List(ctx, subId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
 		return diag.FromErr(err)
 	}
 
