@@ -52,6 +52,7 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_acl_rule":              dataSourceRedisCloudAclRule(),
 				"rediscloud_acl_role":              dataSourceRedisCloudAclRole(),
 				"rediscloud_acl_user":              dataSourceRedisCloudAclUser(),
+				"rediscloud_fixed_plan":            dataSourceRedisCloudFixedPlan(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
 				"rediscloud_cloud_account":                       resourceRedisCloudCloudAccount(),
