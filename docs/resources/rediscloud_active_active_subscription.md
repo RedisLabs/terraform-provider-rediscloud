@@ -77,6 +77,21 @@ The creation_plan `region` block supports:
 
 ~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `cloud_provider`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
 
+## Attribute reference
+
+* `pricing` - A list of pricing objects, documented below
+
+The `pricing` object has these attributes:
+
+* `database_name` - The database this pricing entry applies to.
+* `type` - The type of cost e.g. 'Shards'.
+* `typeDetails` - Further detail e.g. 'micro'.
+* `quantity` - Self-explanatory.
+* `quantityMeasurement` - Self-explanatory.
+* `pricePerUnit` - Self-explanatory.
+* `priceCurrency` - Self-explanatory e.g. 'USD'.
+* `pricePeriod` - Self-explanatory e.g. 'hour'.
+
 ### Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:

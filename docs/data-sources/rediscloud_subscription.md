@@ -36,6 +36,7 @@ output "rediscloud_subscription" {
 * `cloud_provider` - A cloud provider object, documented below
 * `number_of_databases` - The number of databases that are linked to this subscription.
 * `status` - Current status of the subscription 
+* `pricing` - A list of pricing objects, documented below
 
 The `cloud_provider` block supports:
 
@@ -57,3 +58,14 @@ The `networks` block has these attributes:
 * `networking_subnet_id` - The subnet that the subscription deploys into
 * `networking_deployment_cidr` - Deployment CIDR mask for the generated
 * `networking_vpc_id` - VPC id for the generated network
+
+The `pricing` object has these attributes:
+
+* `database_name` - The database this pricing entry applies to.
+* `type` - The type of cost e.g. 'Shards'.
+* `typeDetails` - Further detail e.g. 'micro'.
+* `quantity` - Self-explanatory.
+* `quantityMeasurement` - Self-explanatory.
+* `pricePerUnit` - Self-explanatory.
+* `priceCurrency` - Self-explanatory e.g. 'USD'.
+* `pricePeriod` - Self-explanatory e.g. 'hour'.
