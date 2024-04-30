@@ -47,13 +47,13 @@ func dataSourceRedisCloudFixedPlan() *schema.Resource {
 				Optional:    true,
 			},
 			"region": {
-				Description: "",
+				Description: "The region to place databases in, format and availability dependent on cloud_provider",
 				Type:        schema.TypeString,
 				Computed:    true,
 				Optional:    true,
 			},
 			"region_id": {
-				Description: "",
+				Description: "An internal, unique-across-cloud-providers id for database region",
 				Type:        schema.TypeInt,
 				Computed:    true,
 				Optional:    true,
@@ -79,12 +79,12 @@ func dataSourceRedisCloudFixedPlan() *schema.Resource {
 				Computed:    true,
 			},
 			"maximum_throughput": {
-				Description: "",
+				Description: "Self-explanatory",
 				Type:        schema.TypeInt,
 				Computed:    true,
 			},
 			"maximum_bandwidth_in_gb": {
-				Description: "",
+				Description: "Self-explanatory",
 				Type:        schema.TypeInt,
 				Computed:    true,
 			},
@@ -100,36 +100,36 @@ func dataSourceRedisCloudFixedPlan() *schema.Resource {
 				Computed:    true,
 			},
 			"cidr_allow_rules": {
-				Description: "",
+				Description: "Self-explanatory",
 				Type:        schema.TypeInt,
 				Computed:    true,
 			},
 			"support_data_persistence": {
-				Description: "",
+				Description: "Self-explanatory",
 				Type:        schema.TypeBool,
 				Computed:    true,
 				Optional:    true,
 			},
 			"support_instant_and_daily_backups": {
-				Description: "",
+				Description: "Self-explanatory",
 				Type:        schema.TypeBool,
 				Computed:    true,
 				Optional:    true,
 			},
 			"support_replication": {
-				Description: "",
+				Description: "Self-explanatory",
 				Type:        schema.TypeBool,
 				Computed:    true,
 				Optional:    true,
 			},
 			"support_clustering": {
-				Description: "",
+				Description: "Self-explanatory",
 				Type:        schema.TypeBool,
 				Computed:    true,
 				Optional:    true,
 			},
 			"supported_alerts": {
-				Description: "",
+				Description: "List of the type of alerts supported by databases in this plan",
 				Type:        schema.TypeList,
 				Computed:    true,
 				Elem: &schema.Schema{
@@ -137,7 +137,7 @@ func dataSourceRedisCloudFixedPlan() *schema.Resource {
 				},
 			},
 			"customer_support": {
-				Description: "",
+				Description: "Level of customer support available e.g. 'Basic', 'Standard'",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
