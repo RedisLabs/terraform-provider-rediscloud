@@ -1,25 +1,25 @@
 ---
 layout: "rediscloud"
-page_title: "Redis Cloud: rediscloud_fixed_plan"
+page_title: "Redis Cloud: rediscloud_essentials_plan"
 description: |-
-  Fixed Plan data source in the Terraform provider Redis Cloud.
+  Essentials Plan data source in the Terraform provider Redis Cloud.
 ---
 
-# Data Source: rediscloud_fixed_plan
+# Data Source: rediscloud_essentials_plan
 
-The Fixed Plan data source allows access to the templates for Fixed Subscriptions. 
+The Essentials Plan data source allows access to the templates for Essentials Subscriptions. 
 
 ## Example Usage
 
 ```hcl
-data "rediscloud_fixed_plan" "example" {
+data "rediscloud_essentials_plan" "example" {
   name = "Single-Zone_1GB"
   provider = "AWS"
   region = "us-west-1"
 }
 
-output "rediscloud_fixed_plan" {
-  value = data.rediscloud_fixed_plan.example.id
+output "rediscloud_essentials_plan" {
+  value = data.rediscloud_essentials_plan.example.id
 }
 ```
 

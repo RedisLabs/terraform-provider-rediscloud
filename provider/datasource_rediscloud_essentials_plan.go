@@ -10,10 +10,10 @@ import (
 	"strings"
 )
 
-func dataSourceRedisCloudFixedPlan() *schema.Resource {
+func dataSourceRedisCloudEssentialsPlan() *schema.Resource {
 	return &schema.Resource{
-		Description: "",
-		ReadContext: dataSourceRedisCloudFixedPlanRead,
+		Description: "An Essentials subscription plan",
+		ReadContext: dataSourceRedisCloudEssentialsPlanRead,
 
 		Schema: map[string]*schema.Schema{
 			"id": {
@@ -145,7 +145,7 @@ func dataSourceRedisCloudFixedPlan() *schema.Resource {
 	}
 }
 
-func dataSourceRedisCloudFixedPlanRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceRedisCloudEssentialsPlanRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	api := meta.(*apiClient)
 
