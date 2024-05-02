@@ -374,6 +374,7 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 	api := meta.(*apiClient)
 
 	subId := d.Get("subscription_id").(int)
+
 	subscriptionMutex.Lock(subId)
 
 	name := d.Get("name").(string)
@@ -454,6 +455,7 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 
 	dbId, err := api.client.Database.Create(ctx, subId, createDatabase)
 	if err != nil {
+		subscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -462,6 +464,7 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 	// Confirm Subscription Active status
 	err = waitForDatabaseToBeActive(ctx, subId, dbId, api)
 	if err != nil {
+		subscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
