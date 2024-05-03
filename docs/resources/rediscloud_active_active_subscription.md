@@ -91,6 +91,7 @@ The `pricing` object has these attributes:
 * `pricePerUnit` - Self-explanatory.
 * `priceCurrency` - Self-explanatory e.g. 'USD'.
 * `pricePeriod` - Self-explanatory e.g. 'hour'.
+* `region` - Self-explanatory, if the cost is associated with a particular region.
 
 ### Timeouts
 

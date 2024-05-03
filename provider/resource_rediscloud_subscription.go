@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
 	"log"
 	"regexp"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
@@ -323,55 +323,55 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"database_name": {
-							Description: "",
+							Description: "The database this pricing entry applies to",
 							Type:        schema.TypeString,
 							Computed:    true,
 							Optional:    true,
 						},
 						"type": {
-							Description: "",
+							Description: "The type of cost e.g. 'Shards'",
 							Type:        schema.TypeString,
 							Computed:    true,
 							Optional:    true,
 						},
 						"type_details": {
-							Description: "",
+							Description: "Further detail e.g. 'micro'",
 							Type:        schema.TypeString,
 							Computed:    true,
 							Optional:    true,
 						},
 						"quantity": {
-							Description: "",
+							Description: "Self-explanatory",
 							Type:        schema.TypeInt,
 							Computed:    true,
 							Optional:    true,
 						},
 						"quantity_measurement": {
-							Description: "",
+							Description: "Self-explanatory",
 							Type:        schema.TypeString,
 							Computed:    true,
 							Optional:    true,
 						},
 						"price_per_unit": {
-							Description: "",
+							Description: "Self-explanatory",
 							Type:        schema.TypeFloat,
 							Computed:    true,
 							Optional:    true,
 						},
 						"price_currency": {
-							Description: "",
+							Description: "Self-explanatory e.g. 'USD'",
 							Type:        schema.TypeString,
 							Computed:    true,
 							Optional:    true,
 						},
 						"price_period": {
-							Description: "",
+							Description: "Self-explanatory e.g. 'hour'",
 							Type:        schema.TypeString,
 							Computed:    true,
 							Optional:    true,
 						},
 						"region": {
-							Description: "",
+							Description: "Self-explanatory, if the cost is associated with a particular region",
 							Type:        schema.TypeString,
 							Computed:    true,
 							Optional:    true,
