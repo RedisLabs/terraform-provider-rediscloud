@@ -50,6 +50,36 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.write_operations_per_second", "1000"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.read_operations_per_second", "1000"),
 
+					resource.TestCheckResourceAttr(resourceName, "pricing.#", "2"),
+
+					resource.TestCheckResourceAttr(resourceName, "pricing.0.type", "MinimumPrice"),
+					resource.TestCheckResourceAttr(resourceName, "pricing.0.quantity", "1"),
+					resource.TestCheckResourceAttr(resourceName, "pricing.0.quantity_measurement", "subscription"),
+					resource.TestCheckResourceAttrSet(resourceName, "pricing.0.price_per_unit"),
+					resource.TestCheckResourceAttr(resourceName, "pricing.0.price_currency", "USD"),
+					resource.TestCheckResourceAttr(resourceName, "pricing.0.price_period", "hour"),
+
+					resource.TestCheckResourceAttr(resourceName, "pricing.1.type", "MinimumPrice"),
+					resource.TestCheckResourceAttr(resourceName, "pricing.1.quantity", "1"),
+					resource.TestCheckResourceAttr(resourceName, "pricing.1.quantity_measurement", "subscription"),
+					resource.TestCheckResourceAttrSet(resourceName, "pricing.1.price_per_unit"),
+					resource.TestCheckResourceAttr(resourceName, "pricing.1.price_currency", "USD"),
+					resource.TestCheckResourceAttr(resourceName, "pricing.1.price_period", "hour"),
+
+					func(s *terraform.State) error {
+						r := s.RootModule().Resources[resourceName].Primary
+						region1 := r.Attributes["pricing.0.region"]
+						region2 := r.Attributes["pricing.1.region"]
+
+						match := (region1 == "us-east-1" && region2 == "us-east-2") ||
+							(region2 == "us-east-1" && region1 == "us-east-2")
+
+						if !match {
+							return fmt.Errorf("regions within pricing response are incorrect. expected us-east-1 and us-east-2")
+						}
+						return nil
+					},
+
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
 

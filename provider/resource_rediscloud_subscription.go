@@ -12,6 +12,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
@@ -315,6 +316,69 @@ func resourceRedisCloudSubscription() *schema.Resource {
 				ValidateDiagFunc: validation.ToDiagFunc(
 					validation.StringMatch(regexp.MustCompile("^(default|latest)$"), "must be 'default' or 'latest'")),
 			},
+			"pricing": {
+				Description: "Pricing details totalled over this Subscription",
+				Type:        schema.TypeList,
+				Computed:    true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"database_name": {
+							Description: "The database this pricing entry applies to",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"type": {
+							Description: "The type of cost e.g. 'Shards'",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"type_details": {
+							Description: "Further detail e.g. 'micro'",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"quantity": {
+							Description: "Self-explanatory",
+							Type:        schema.TypeInt,
+							Computed:    true,
+							Optional:    true,
+						},
+						"quantity_measurement": {
+							Description: "Self-explanatory",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"price_per_unit": {
+							Description: "Self-explanatory",
+							Type:        schema.TypeFloat,
+							Computed:    true,
+							Optional:    true,
+						},
+						"price_currency": {
+							Description: "Self-explanatory e.g. 'USD'",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"price_period": {
+							Description: "Self-explanatory e.g. 'hour'",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"region": {
+							Description: "Self-explanatory, if the cost is associated with a particular region",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -462,6 +526,14 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 		if err := d.Set("allowlist", allowlist); err != nil {
 			return diag.FromErr(err)
 		}
+	}
+
+	pricingList, err := api.client.Pricing.List(ctx, subId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
+		return diag.FromErr(err)
 	}
 
 	return diags
@@ -990,4 +1062,25 @@ func readPaymentMethodID(d *schema.ResourceData) (*int, error) {
 		return redis.Int(pmID), nil
 	}
 	return nil, nil
+}
+
+func flattenPricing(pricing []*pricing.Pricing) []map[string]interface{} {
+	var tfs = make([]map[string]interface{}, 0)
+	for _, p := range pricing {
+
+		tf := map[string]interface{}{
+			"database_name":        p.DatabaseName,
+			"type":                 p.Type,
+			"type_details":         p.TypeDetails,
+			"quantity":             p.Quantity,
+			"quantity_measurement": p.QuantityMeasurement,
+			"price_per_unit":       p.PricePerUnit,
+			"price_currency":       p.PriceCurrency,
+			"price_period":         p.PricePeriod,
+			"region":               p.Region,
+		}
+		tfs = append(tfs, tf)
+	}
+
+	return tfs
 }

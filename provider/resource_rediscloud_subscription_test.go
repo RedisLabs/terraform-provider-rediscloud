@@ -57,6 +57,9 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.throughput_measurement_by", "operations-per-second"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.throughput_measurement_value", "10000"),
+
+					resource.TestCheckResourceAttr(resourceName, "pricing.#", "0"),
+
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
 

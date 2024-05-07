@@ -121,6 +121,69 @@ func dataSourceRedisCloudSubscription() *schema.Resource {
 					},
 				},
 			},
+			"pricing": {
+				Description: "Pricing details totalled over this Subscription",
+				Type:        schema.TypeList,
+				Computed:    true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"database_name": {
+							Description: "The database this pricing entry applies to",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"type": {
+							Description: "The type of cost e.g. 'Shards'",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"type_details": {
+							Description: "Further detail e.g. 'micro'",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"quantity": {
+							Description: "Self-explanatory",
+							Type:        schema.TypeInt,
+							Computed:    true,
+							Optional:    true,
+						},
+						"quantity_measurement": {
+							Description: "Self-explanatory",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"price_per_unit": {
+							Description: "Self-explanatory",
+							Type:        schema.TypeFloat,
+							Computed:    true,
+							Optional:    true,
+						},
+						"price_currency": {
+							Description: "Self-explanatory e.g. 'USD'",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"price_period": {
+							Description: "Self-explanatory e.g. 'hour'",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+						"region": {
+							Description: "Self-explanatory, if the cost is associated with a particular region",
+							Type:        schema.TypeString,
+							Computed:    true,
+							Optional:    true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -180,7 +243,16 @@ func dataSourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
-	d.SetId(strconv.Itoa(redis.IntValue(sub.ID)))
+	subId := redis.IntValue(sub.ID)
+	d.SetId(strconv.Itoa(subId))
+
+	pricingList, err := api.client.Pricing.List(ctx, subId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
+		return diag.FromErr(err)
+	}
 
 	return diags
 }
