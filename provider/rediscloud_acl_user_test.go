@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"os"
+	"regexp"
 	"strconv"
 	"testing"
 )
@@ -18,27 +19,31 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	exampleSubscriptionName := prefix + "-subscription"
 	exampleDatabasePassword := prefix + "aA.1"
-	exampleRoleName := prefix + "-role"
 
-	testName := prefix + "-test-user"
-	testPassword := prefix + "aA.1"
+	exampleRoleName := prefix + "-role"
+	exampleRoleNameUpdated := exampleRoleName + "-updated"
+
+	testUserName := prefix + "-test-user"
+	testUserNameUpdated := testUserName + "-updated"
+	testUserPassword := prefix + "aA.1"
+	testUserPasswordUpdated := testUserPassword + "-updated"
 
 	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRole, exampleRoleName) +
-		fmt.Sprintf(testUser, testName, testPassword)
+		fmt.Sprintf(testUser, testUserName, testUserPassword)
 
 	// The User will be updated because the Role's name will have changed
 	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
-		fmt.Sprintf(referencableRole, exampleRoleName+"-updated") +
-		fmt.Sprintf(testUser, testName, testPassword)
+		fmt.Sprintf(referencableRole, exampleRoleNameUpdated) +
+		fmt.Sprintf(testUser, testUserName, testUserPassword)
 
 	testNewNameTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
-		fmt.Sprintf(referencableRole, exampleRoleName+"-updated") +
-		fmt.Sprintf(testUser, testName+"-updated", testPassword)
+		fmt.Sprintf(referencableRole, exampleRoleNameUpdated) +
+		fmt.Sprintf(testUser, testUserNameUpdated, testUserPassword)
 
 	testNewPasswordTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
-		fmt.Sprintf(referencableRole, exampleRoleName+"-updated") +
-		fmt.Sprintf(testUser, testName+"-updated", testPassword+"-updated")
+		fmt.Sprintf(referencableRole, exampleRoleNameUpdated) +
+		fmt.Sprintf(testUser, testUserNameUpdated, testUserPasswordUpdated)
 
 	identifier := ""
 
@@ -51,7 +56,8 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 			{
 				Config: testCreateTerraform,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "name", testName),
+					// Test resource
+					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "name", testUserName),
 					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "role", exampleRoleName),
 
 					// Take a snapshot of the ID
@@ -76,7 +82,7 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 							return err
 						}
 
-						if redis.StringValue(user.Name) != testName {
+						if redis.StringValue(user.Name) != testUserName {
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(user.Name))
 						}
 						if redis.StringValue(user.Role) != exampleRoleName {
@@ -85,14 +91,21 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 
 						return nil
 					},
+
+					// Test datasource
+					resource.TestMatchResourceAttr(
+						"data.rediscloud_acl_user.test", "id", regexp.MustCompile("^\\d*$")),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_user.test", "name", testUserName),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_user.test", "role", exampleRoleName),
 				),
 			},
-			// Test user is updated successfully, id should not have changed
+			// Test user update, id should not have changed
 			{
 				Config: testUpdateTerraform,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "name", testName),
-					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "role", exampleRoleName+"-updated"),
+					// Test resource
+					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "name", testUserName),
+					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "role", exampleRoleNameUpdated),
 
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources["rediscloud_acl_user.test"]
@@ -101,6 +114,12 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 						}
 						return nil
 					},
+
+					// Test datasource
+					resource.TestMatchResourceAttr(
+						"data.rediscloud_acl_user.test", "id", regexp.MustCompile("^\\d*$")),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_user.test", "name", testUserName),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_user.test", "role", exampleRoleNameUpdated),
 				),
 			},
 			// Test user is updated successfully. A name change should forcibly generate a new entity with a new id
@@ -133,7 +152,7 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 			},
 			// Test that the user is imported successfully
 			{
-				Config:                  fmt.Sprintf(testUser, testName+"-updated", testPassword+"-updated"),
+				Config:                  fmt.Sprintf(testUser, testUserNameUpdated, testUserPasswordUpdated),
 				ResourceName:            "rediscloud_acl_user.test",
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -161,6 +180,10 @@ resource "rediscloud_acl_user" "test" {
 	name = "%s"
 	role = rediscloud_acl_role.example.name
 	password = "%s"
+}
+
+data "rediscloud_acl_user" "test" {
+	name = rediscloud_acl_user.test.name
 }
 `
 

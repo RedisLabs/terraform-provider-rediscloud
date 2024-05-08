@@ -7,18 +7,46 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"regexp"
 	"strconv"
 	"testing"
 )
 
-func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
+func TestAccRedisCloudAclRule_DataSourceForDefaultRule(t *testing.T) {
+	// This rule already exists
+	testName := "Read-Write"
+	testRule := "+@all -@dangerous ~*"
+	getRuleTerraform := fmt.Sprintf(getDefaultAclRuleDataSource, testName)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      nil, // test doesn't create a resource, so don't need to check anything
+		Steps: []resource.TestStep{
+			{
+				Config: getRuleTerraform,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestMatchResourceAttr(
+						"data.rediscloud_acl_rule.test", "id", regexp.MustCompile("^\\d*$")),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "name", testName),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "rule", testRule),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRedisCloudAclRule_CRUDI(t *testing.T) {
 
 	prefix := acctest.RandomWithPrefix(testResourcePrefix)
 	testName := prefix + "-test-rule"
 	testRule := "+@all"
 
+	testNameUpdated := testName + "_updated_name"
+	testRuleUpdated := testRule + " -@dangerous ~*"
+
 	testCreateTerraform := fmt.Sprintf(testRedisRule, testName, testRule)
-	testUpdateTerraform := fmt.Sprintf(testRedisRule, testName+"_updated_name", testRule+" -@dangerous ~*")
+	testUpdateTerraform := fmt.Sprintf(testRedisRule, testNameUpdated, testRuleUpdated)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -29,6 +57,7 @@ func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 			{
 				Config: testCreateTerraform,
 				Check: resource.ComposeTestCheckFunc(
+					// Test the resource
 					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "name", testName),
 					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "rule", testRule),
 
@@ -56,19 +85,31 @@ func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 						}
 						return nil
 					},
+
+					// Test the datasource
+					resource.TestMatchResourceAttr(
+						"data.rediscloud_acl_rule.test", "id", regexp.MustCompile("^\\d*$")),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "name", testName),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "rule", testRule),
 				),
 			},
 			// Test rule update
 			{
 				Config: testUpdateTerraform,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "name", testName+"_updated_name"),
-					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "rule", testRule+" -@dangerous ~*"),
+					// Test the resource
+					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "name", testNameUpdated),
+					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "rule", testRuleUpdated),
+					// Test the datasource
+					resource.TestMatchResourceAttr(
+						"data.rediscloud_acl_rule.test", "id", regexp.MustCompile("^\\d*$")),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "name", testNameUpdated),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "rule", testRuleUpdated),
 				),
 			},
 			// Test that that rule is imported successfully
 			{
-				Config:            fmt.Sprintf(testRedisRule, testName+"_updated_name", testRule+" -@dangerous ~*"),
+				Config:            fmt.Sprintf(testRedisRule, testNameUpdated, testRuleUpdated),
 				ResourceName:      "rediscloud_acl_rule.test",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -78,11 +119,21 @@ func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 
 }
 
+const getDefaultAclRuleDataSource = `
+data "rediscloud_acl_rule" "test" {
+	name = "%s"
+}
+`
+
 const testRedisRule = `
 resource "rediscloud_acl_rule" "test" {
     name = "%s"
     rule = "%s"
-} 
+}
+
+data "rediscloud_acl_rule" "test" {
+	name = rediscloud_acl_rule.test.name
+}
 `
 
 func testAccCheckAclRuleDestroy(s *terraform.State) error {
