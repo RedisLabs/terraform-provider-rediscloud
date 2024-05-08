@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_essentials_plan"
 description: |-
-  Essentials Plan data source in the Terraform provider Redis Cloud.
+  Essentials Plan data source in the Redis Cloud Terraform provider.
 ---
 
 # Data Source: rediscloud_essentials_plan
