@@ -137,11 +137,12 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEm
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
 					resource.TestCheckResourceAttrSet(subscriptionName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
-					resource.TestCheckResourceAttr(subscriptionName, "database.#", "1"),
-					resource.TestMatchResourceAttr(databaseName, "database.0.db_id", regexp.MustCompile("^[1-9][0-9]*$")),
-					resource.TestCheckResourceAttrSet(databaseName, "database.0.password"),
-					resource.TestCheckResourceAttr(databaseName, "database.0.name", "tf-database"),
-					resource.TestCheckResourceAttr(databaseName, "database.0.memory_limit_in_gb", "1"),
+
+					resource.TestMatchResourceAttr(databaseName, "db_id", regexp.MustCompile("^[1-9][0-9]*$")),
+					resource.TestCheckResourceAttrSet(databaseName, "password"),
+					resource.TestCheckResourceAttr(databaseName, "name", "tf-database"),
+					resource.TestCheckResourceAttr(databaseName, "memory_limit_in_gb", "1"),
+
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[subscriptionName]
 
@@ -362,7 +363,6 @@ data "rediscloud_cloud_account" "account" {
 }
 
 resource "rediscloud_flexible_subscription" "example" {
-
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"

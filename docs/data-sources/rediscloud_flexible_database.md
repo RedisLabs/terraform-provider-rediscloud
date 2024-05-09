@@ -7,11 +7,13 @@ description: |-
 
 # Data Source: rediscloud_flexible_database
 
-The Flexible Database data source allows access to the details of an existing database within your Redis Enterprise Cloud account.
+The Flexible Database data source allows access to the details of an existing database within your Redis Enterprise
+Cloud account.
 
 ## Example Usage
 
-The following example shows how to locate a single database within a Subscription.  This example assumes the subscription only contains a single database.
+The following example shows how to locate a single database within a Subscription. This example assumes the subscription
+only contains a single database.
 
 ```hcl-terraform
 data "rediscloud_flexible_database" "example" {
@@ -19,15 +21,15 @@ data "rediscloud_flexible_database" "example" {
 }
 ```
 
-The following example shows how to use the name to locate a single database within a subscription that has multiple databases.
+The following example shows how to use the name to locate a single database within a subscription that has multiple
+databases.
 
 ```hcl-terraform
 data "rediscloud_flexible_database" "example" {
   subscription_id = "1234"
-  name = "first-database"
+  name            = "first-database"
 }
 ```
-
 
 ## Argument Reference
 
@@ -43,8 +45,8 @@ data "rediscloud_flexible_database" "example" {
 * `memory_limit_in_gb` - The maximum memory usage for the database.
 * `support_oss_cluster_api` - Supports the Redis open-source (OSS) Cluster API.
 * `resp_version` - Either `resp2` or `resp3`. Database's RESP version.
-* `replica_of` - The set of Redis database URIs, in the format `redis://user:password@host:port`, that this
-  database will be a replica of.
+* `replica_of` - The set of Redis database URIs, in the format `redis://user:password@host:port`, that this database
+  will be a replica of.
 * `alert` - Set of alerts to enable on the database, documented below.
 * `data_persistence` - The rate of database data persistence (in persistent storage).
 * `data_eviction` - The data items eviction policy.
@@ -52,9 +54,9 @@ data "rediscloud_flexible_database" "example" {
 * `replication` - Database replication.
 * `throughput_measurement_by` - The throughput measurement method.
 * `throughput_measurement_value` - The throughput value.
-* `hashing_policy` - The list of regular expression rules the database is sharded by. See
-  [the documentation on clustering](https://docs.redislabs.com/latest/rc/concepts/clustering/) for more information on the
-  hashing policy.
+* `hashing_policy` - The list of regular expression rules the database is sharded by.
+  See [the documentation on clustering](https://docs.redislabs.com/latest/rc/concepts/clustering/) for more information
+  on the hashing policy.
 * `public_endpoint` - Public endpoint to access the database
 * `private_endpoint` - Private endpoint to access the database
 * `enable_tls` - Enable TLS for database, default is `false`

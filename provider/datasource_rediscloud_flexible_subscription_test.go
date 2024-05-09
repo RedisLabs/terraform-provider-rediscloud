@@ -77,16 +77,19 @@ const testAccDatasourceRedisCloudFlexibleSubscription = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
+
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
-  provider_type = "AWS"
+  provider_type = "AWS" 
   name = "%s"
 }
+
 resource "rediscloud_flexible_subscription" "example" {
   name = "%s"
   payment_method = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
+
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
@@ -96,6 +99,7 @@ resource "rediscloud_flexible_subscription" "example" {
       preferred_availability_zones = ["eu-west-1a"]
     }
   }
+
   creation_plan {
     memory_limit_in_gb           = 1
     quantity                     = 1
@@ -106,6 +110,7 @@ resource "rediscloud_flexible_subscription" "example" {
     modules = []
   }
 }
+
 resource "rediscloud_flexible_database" "example" {
     subscription_id              = rediscloud_flexible_subscription.example.id
 	name                         = "tf-database"
@@ -124,13 +129,16 @@ data "rediscloud_flexible_subscription" "example" {
 `
 
 const testAccDatasourceRedisCloudAADatabaseWithFlexibleDataSource = `
+>>>>>>> ff1da41 (Renamed/deprecated flexible datasources and resources (subscriptions and databases))
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
 }
+
 resource "rediscloud_active_active_subscription" "example" {
 	name = "%s"
 	payment_method_id = data.rediscloud_payment_method.card.id
 	cloud_provider = "AWS"
+
 	creation_plan {
 		memory_limit_in_gb = 1
 		quantity = 1
@@ -148,16 +156,17 @@ resource "rediscloud_active_active_subscription" "example" {
 		}
 	}
 }
+
 resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 3
-    support_oss_cluster_api = false
+    support_oss_cluster_api = false 
     external_endpoint_for_oss_cluster_api = false
 	enable_tls = false
-
+    
     global_data_persistence = "none"
-    global_password = "%s"
+    global_password = "%s" 
     global_source_ips = ["192.168.0.0/16", "192.170.0.0/16"]
     global_alert {
 		name = "dataset-size"
@@ -177,6 +186,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
 		name = "us-east-2"
 	}
 }
+
 data "rediscloud_flexible_database" "example" {
   subscription_id = rediscloud_active_active_subscription.example.id
   name = rediscloud_active_active_subscription_database.example.name

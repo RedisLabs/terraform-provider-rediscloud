@@ -21,6 +21,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
 	password := acctest.RandString(20)
 	resourceName := "rediscloud_active_active_subscription_database.example"
+	datasourceName := "data.rediscloud_active_active_database.example"
 	subscriptionResourceName := "rediscloud_active_active_subscription.example"
 
 	var subId int
@@ -34,6 +35,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabase, subscriptionName, name, password),
 				Check: resource.ComposeTestCheckFunc(
+					// Test resource
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "3"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "false"),
@@ -97,12 +99,27 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 
 						return nil
 					},
+
+					// Test datasource
+					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
+					resource.TestCheckResourceAttrSet(datasourceName, "db_id"),
+					resource.TestCheckResourceAttr(datasourceName, "name", name),
+					resource.TestCheckResourceAttr(datasourceName, "memory_limit_in_gb", "3"),
+					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(datasourceName, "enable_tls", "false"),
+					resource.TestCheckResourceAttr(datasourceName, "data_eviction", "volatile-lru"),
+					resource.TestCheckResourceAttr(datasourceName, "global_modules.#", "1"),
+					resource.TestCheckResourceAttr(datasourceName, "global_modules.0", "RedisJSON"),
+					resource.TestCheckResourceAttrSet(datasourceName, "public_endpoint"),
+					resource.TestCheckResourceAttrSet(datasourceName, "private_endpoint"),
 				),
 			},
 			// Test database is updated successfully, including updates to both global and local alerts and clearing modules
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdate, subscriptionName, name),
 				Check: resource.ComposeTestCheckFunc(
+					// Test resource
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
@@ -124,6 +141,11 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.value", "41"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_source_ips.#", "0"),
+
+					// Test datasource
+					resource.TestCheckResourceAttr(datasourceName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "true"),
 				),
 			},
 			// Test database is updated, including deletion of global and local alerts and replacing modules
@@ -215,35 +237,6 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_timeUtcRequiresVa
 	})
 }
 
-const activeActiveSubscriptionBoilerplate = `
-	data "rediscloud_payment_method" "card" {
-		card_type = "Visa"
-	}
-
-	resource "rediscloud_active_active_subscription" "example" {
-		name = "%s"
-		payment_method_id = data.rediscloud_payment_method.card.id
-		cloud_provider = "AWS"
-
-		creation_plan {
-			memory_limit_in_gb = 1
-			quantity = 1
-			region {
-				region = "us-east-1"
-				networking_deployment_cidr = "192.168.0.0/24"
-				write_operations_per_second = 1000
-				read_operations_per_second = 1000
-			}
-			region {
-				region = "us-east-2"
-				networking_deployment_cidr = "10.0.1.0/24"
-				write_operations_per_second = 1000
-				read_operations_per_second = 1000
-			}
-		}
-	}
-`
-
 // Create and Read tests
 // TF config for provisioning a new database
 const testAccResourceRedisCloudActiveActiveSubscriptionDatabase = activeActiveSubscriptionBoilerplate + `
@@ -277,7 +270,12 @@ resource "rediscloud_active_active_subscription_database" "example" {
 		name = "us-east-2"
 	}
 
-} 
+}
+
+data "rediscloud_active_active_database" "example" {
+	subscription_id = rediscloud_active_active_subscription.example.id
+	name = rediscloud_active_active_subscription_database.example.name
+}
 `
 
 // TF config for updating a database
@@ -307,6 +305,11 @@ resource "rediscloud_active_active_subscription_database" "example" {
 			value = 41
 		}
 	}
+}
+
+data "rediscloud_active_active_database" "example" {
+	subscription_id = rediscloud_active_active_subscription.example.id
+	name = rediscloud_active_active_subscription_database.example.name
 }
 `
 

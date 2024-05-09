@@ -17,7 +17,7 @@ import (
 
 func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 	return &schema.Resource{
-		Description:   "Creates a Subscription and database resources within your Redis Enterprise Cloud Account.",
+		Description:   "Creates a Subscription within your Redis Enterprise Cloud Account.",
 		CreateContext: resourceRedisCloudActiveActiveSubscriptionCreate,
 		ReadContext:   resourceRedisCloudActiveActiveSubscriptionRead,
 		UpdateContext: resourceRedisCloudActiveActiveSubscriptionUpdate,
