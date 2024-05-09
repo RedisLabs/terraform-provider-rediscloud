@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_acl_user"
 description: |-
-  ACL User data source in the Terraform provider Redis Cloud.
+  ACL User data source in the Redis Cloud Terraform provider.
 ---
 
 # Data Source: rediscloud_acl_user

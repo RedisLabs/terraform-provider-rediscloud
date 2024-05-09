@@ -22,6 +22,7 @@ func TestAccCreateReadUpdateImportDeleteAclRole_Flexible(t *testing.T) {
 	exampleRuleName := prefix + "-rule"
 
 	testRoleName := prefix + "-test-role"
+	testRoleNameUpdated := testRoleName + "-updated"
 
 	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRule, exampleRuleName) +
@@ -29,7 +30,7 @@ func TestAccCreateReadUpdateImportDeleteAclRole_Flexible(t *testing.T) {
 
 	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRule, exampleRuleName) +
-		fmt.Sprintf(testRole, testRoleName+"-updated")
+		fmt.Sprintf(testRole, testRoleNameUpdated)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
@@ -41,6 +42,7 @@ func TestAccCreateReadUpdateImportDeleteAclRole_Flexible(t *testing.T) {
 			{
 				Config: testCreateTerraform,
 				Check: resource.ComposeTestCheckFunc(
+					// Test the resource
 					resource.TestCheckResourceAttr("rediscloud_acl_role.test", "name", testRoleName),
 					resource.TestCheckResourceAttr("rediscloud_acl_role.test", "rule.#", "1"),
 					resource.TestCheckResourceAttr("rediscloud_acl_role.test", "rule.0.name", exampleRuleName),
@@ -70,24 +72,47 @@ func TestAccCreateReadUpdateImportDeleteAclRole_Flexible(t *testing.T) {
 
 						return nil
 					},
+
+					// Test the datasource
+					resource.TestMatchResourceAttr(
+						"data.rediscloud_acl_role.test", "id", regexp.MustCompile("^\\d*$")),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "name", testRoleName),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rule.#", "1"),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rule.0.name", exampleRuleName),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rule.0.database.#", "1"),
+					resource.TestMatchResourceAttr("data.rediscloud_acl_role.test", "rule.0.database.0.subscription", regexp.MustCompile("^\\d*$")),
+					resource.TestMatchResourceAttr("data.rediscloud_acl_role.test", "rule.0.database.0.database", regexp.MustCompile("^\\d*$")),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rule.0.database.0.regions.#", "0"),
 				),
 			},
-			// Test role is updated successfully
+			// Test role update
 			{
 				Config: testUpdateTerraform,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("rediscloud_acl_role.test", "name", testRoleName+"-updated"),
+					// Test the resource
+					resource.TestCheckResourceAttr("rediscloud_acl_role.test", "name", testRoleNameUpdated),
 					resource.TestCheckResourceAttr("rediscloud_acl_role.test", "rule.#", "1"),
 					resource.TestCheckResourceAttr("rediscloud_acl_role.test", "rule.0.name", exampleRuleName),
 					resource.TestCheckResourceAttr("rediscloud_acl_role.test", "rule.0.database.#", "1"),
 					resource.TestMatchResourceAttr("rediscloud_acl_role.test", "rule.0.database.0.subscription", regexp.MustCompile("^\\d*$")),
 					resource.TestMatchResourceAttr("rediscloud_acl_role.test", "rule.0.database.0.database", regexp.MustCompile("^\\d*$")),
 					resource.TestCheckResourceAttr("rediscloud_acl_role.test", "rule.0.database.0.regions.#", "0"),
+
+					// Test the datasource
+					resource.TestMatchResourceAttr(
+						"data.rediscloud_acl_role.test", "id", regexp.MustCompile("^\\d*$")),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "name", testRoleNameUpdated),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rule.#", "1"),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rule.0.name", exampleRuleName),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rule.0.database.#", "1"),
+					resource.TestMatchResourceAttr("data.rediscloud_acl_role.test", "rule.0.database.0.subscription", regexp.MustCompile("^\\d*$")),
+					resource.TestMatchResourceAttr("data.rediscloud_acl_role.test", "rule.0.database.0.database", regexp.MustCompile("^\\d*$")),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_role.test", "rule.0.database.0.regions.#", "0"),
 				),
 			},
 			// Test that the role is imported successfully
 			{
-				Config:            fmt.Sprintf(testRole, testRoleName+"_updated"),
+				Config:            fmt.Sprintf(testRole, testRoleNameUpdated),
 				ResourceName:      "rediscloud_acl_role.test",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -113,5 +138,9 @@ resource "rediscloud_acl_role" "test" {
 			database = rediscloud_subscription_database.example.db_id
 		}
 	}
+}
+
+data "rediscloud_acl_role" "test" {
+	name = rediscloud_acl_role.test.name
 }
 `

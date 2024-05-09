@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_cloud_account"
 description: |-
-  Cloud Account data source in the Terraform provider Redis Cloud.
+  Cloud Account data source in the Redis Cloud Terraform provider.
 ---
 
 # Data Source: rediscloud_cloud_account
