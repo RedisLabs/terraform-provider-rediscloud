@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_database_modules"
 description: |-
-  Database Modules data source in the Terraform provider Redis Cloud.
+  Database Modules data source in the Redis Cloud Terraform provider.
 ---
 
 

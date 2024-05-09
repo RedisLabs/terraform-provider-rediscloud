@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_acl_role"
 description: |-
-  ACL Role data source in the Terraform provider Redis Cloud.
+  ACL Role data source in the Redis Cloud Terraform provider.
 ---
 
 # Data Source: rediscloud_acl_role

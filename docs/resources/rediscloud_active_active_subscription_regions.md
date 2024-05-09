@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_active_active_subscription_regions"
 description: |-
-  Regions resource in the Terraform provider Redis Cloud.
+  Regions resource in the Redis Cloud Terraform provider.
 ---
 
 # Resource: rediscloud_active_active_subscription_regions

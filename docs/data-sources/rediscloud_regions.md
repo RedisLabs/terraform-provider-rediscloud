@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_regions"
 description: |-
-  Regions data source in the Terraform provider Redis Cloud.
+  Regions data source in the Redis Cloud Terraform provider.
 ---
 
 # Data Source: rediscloud_regions
