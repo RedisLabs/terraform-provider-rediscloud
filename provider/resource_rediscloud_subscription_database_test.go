@@ -459,7 +459,7 @@ resource "rediscloud_subscription_database" "example" {
 
 const testAccResourceRedisCloudSubscriptionDatabaseRespVersions = flexibleSubscriptionBoilerplate + `
 resource "rediscloud_subscription_database" "example" {
-    subscription_id = rediscloud_subscription.example.id
+    subscription_id = rediscloud_flexible_subscription.example.id
     name = "example"
     memory_limit_in_gb = 1
     data_persistence = "none"

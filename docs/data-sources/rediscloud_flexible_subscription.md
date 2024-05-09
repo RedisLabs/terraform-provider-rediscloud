@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_flexible_subscription"
 description: |-
-  Flexible Subscription data source in the Terraform provider Redis Cloud.
+  Flexible Subscription data source in the Redis Cloud Terraform provider.
 ---
 
 # Data Source: rediscloud_flexible_subscription

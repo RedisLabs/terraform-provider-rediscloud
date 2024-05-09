@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_flexible_subscription"
 description: |-
-  Flexible Subscription resource in the Terraform provider Redis Cloud.
+  Flexible Subscription resource in the Redis Cloud Terraform provider.
 ---
 
 # Resource: rediscloud_flexible_subscription
@@ -25,7 +25,7 @@ subscriptions, the block will be ignored if you make any further changes or try 
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
-resource "rediscloud_subscription" "subscription-resource" {
+resource "rediscloud_flexible_subscription" "subscription-resource" {
   name              = "subscription-name"
   payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
@@ -137,7 +137,7 @@ The `networks` block has these attributes:
 `rediscloud_subscription` can be imported using the ID of the subscription, e.g.
 
 ```
-$ terraform import rediscloud_subscription.subscription-resource 12345678
+$ terraform import rediscloud_flexible_subscription.subscription-resource 12345678
 ```
 ~> **Note:** the payment_method property and creation_plan block will be ignored during imports.
 

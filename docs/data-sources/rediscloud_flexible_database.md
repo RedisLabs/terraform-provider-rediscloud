@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_flexible_database"
 description: |-
-  Database data source in the Terraform provider Redis Cloud.
+  Database data source in the Redis Cloud Terraform provider.
 ---
 
 # Data Source: rediscloud_flexible_database
@@ -62,5 +62,5 @@ data "rediscloud_flexible_database" "example" {
 
 The `alert` block supports:
 
-* `name` The alert name
-* `value` The alert value
+* `name` - The alert name
+* `value` - The alert value
