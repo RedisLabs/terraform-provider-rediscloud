@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"time"
@@ -11,20 +12,21 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceRedisCloudSubscription() *schema.Resource {
+func resourceRedisCloudFlexibleSubscription() *schema.Resource {
 	return &schema.Resource{
-		DeprecationMessage: "Please use `rediscloud_flexible_subscription` instead",
-		Description:        "Creates a Subscription and database resources within your Redis Enterprise Cloud Account.",
-		CreateContext:      resourceRedisCloudSubscriptionCreate,
-		ReadContext:        resourceRedisCloudSubscriptionRead,
-		UpdateContext:      resourceRedisCloudSubscriptionUpdate,
-		DeleteContext:      resourceRedisCloudSubscriptionDelete,
+		Description:   "Creates a Flexible Subscription within your Redis Enterprise Cloud Account.",
+		CreateContext: resourceRedisCloudFlexibleCreate,
+		ReadContext:   resourceRedisCloudFlexibleRead,
+		UpdateContext: resourceRedisCloudFlexibleUpdate,
+		DeleteContext: resourceRedisCloudFlexibleDelete,
 		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
 			_, cPlanExists := diff.GetOk("creation_plan")
 			if cPlanExists {
@@ -381,7 +383,7 @@ func resourceRedisCloudSubscription() *schema.Resource {
 	}
 }
 
-func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudFlexibleCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	// Create CloudProviders
@@ -470,7 +472,7 @@ func resourceRedisCloudSubscriptionCreate(ctx context.Context, d *schema.Resourc
 	return append(diags, resourceRedisCloudSubscriptionUpdate(ctx, d, meta)...)
 }
 
-func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudFlexibleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	var diags diag.Diagnostics
@@ -537,7 +539,7 @@ func resourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceD
 	return diags
 }
 
-func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudFlexibleUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	subId, err := strconv.Atoi(d.Id())
@@ -591,7 +593,7 @@ func resourceRedisCloudSubscriptionUpdate(ctx context.Context, d *schema.Resourc
 	return resourceRedisCloudSubscriptionRead(ctx, d, meta)
 }
 
-func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudFlexibleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*apiClient)
 
@@ -630,4 +632,455 @@ func resourceRedisCloudSubscriptionDelete(ctx context.Context, d *schema.Resourc
 	}
 
 	return diags
+}
+
+func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCloudProvider, error) {
+	createCloudProviders := make([]*subscriptions.CreateCloudProvider, 0)
+
+	for _, provider := range providers.([]interface{}) {
+		providerMap := provider.(map[string]interface{})
+
+		providerStr := providerMap["provider"].(string)
+		cloudAccountID, err := strconv.Atoi(providerMap["cloud_account_id"].(string))
+		if err != nil {
+			return nil, err
+		}
+
+		createRegions := make([]*subscriptions.CreateRegion, 0)
+		if regions := providerMap["region"].(*schema.Set).List(); len(regions) != 0 {
+
+			for _, region := range regions {
+				regionMap := region.(map[string]interface{})
+
+				regionStr := regionMap["region"].(string)
+				multipleAvailabilityZones := regionMap["multiple_availability_zones"].(bool)
+				preferredAZs := regionMap["preferred_availability_zones"].([]interface{})
+
+				createRegion := subscriptions.CreateRegion{
+					Region:                     redis.String(regionStr),
+					MultipleAvailabilityZones:  redis.Bool(multipleAvailabilityZones),
+					PreferredAvailabilityZones: interfaceToStringSlice(preferredAZs),
+				}
+
+				if v, ok := regionMap["networking_deployment_cidr"]; ok && v != "" {
+					createRegion.Networking = &subscriptions.CreateNetworking{
+						DeploymentCIDR: redis.String(v.(string)),
+					}
+				}
+
+				if v, ok := regionMap["networking_vpc_id"]; ok && v != "" {
+					if createRegion.Networking == nil {
+						createRegion.Networking = &subscriptions.CreateNetworking{}
+					}
+					createRegion.Networking.VPCId = redis.String(v.(string))
+				}
+
+				createRegions = append(createRegions, &createRegion)
+			}
+		}
+
+		createCloudProvider := &subscriptions.CreateCloudProvider{
+			Provider:       redis.String(providerStr),
+			CloudAccountID: redis.Int(cloudAccountID),
+			Regions:        createRegions,
+		}
+
+		createCloudProviders = append(createCloudProviders, createCloudProvider)
+	}
+
+	return createCloudProviders, nil
+}
+
+func buildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[string]interface{}) ([]*subscriptions.CreateDatabase, diag.Diagnostics) {
+
+	createDatabases := make([]*subscriptions.CreateDatabase, 0)
+
+	dbName := "creation-plan-db-"
+	idx := 1
+	memoryLimitInGB := planMap["memory_limit_in_gb"].(float64)
+	throughputMeasurementBy := planMap["throughput_measurement_by"].(string)
+	throughputMeasurementValue := planMap["throughput_measurement_value"].(int)
+	averageItemSizeInBytes := planMap["average_item_size_in_bytes"].(int)
+	numDatabases := planMap["quantity"].(int)
+	supportOSSClusterAPI := planMap["support_oss_cluster_api"].(bool)
+	replication := planMap["replication"].(bool)
+	planModules := interfaceToStringSlice(planMap["modules"].([]interface{}))
+
+	var diags diag.Diagnostics
+	if memoryStorage == databases.MemoryStorageRam && averageItemSizeInBytes != 0 {
+		// TODO This should be changed to an error when releasing 2.0 of the provider
+		diags = diag.Diagnostics{
+			diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  "`average_item_size_in_bytes` not applicable for `ram` memory storage ",
+				Detail:   "`average_item_size_in_bytes` is only applicable when `memory_storage` is `ram-and-flash`. This will be an error in a future release of the provider",
+			},
+		}
+	}
+
+	// Check if one of the modules is RedisSearch
+	containsSearch := false
+	for _, module := range planModules {
+		if *module == "RediSearch" {
+			containsSearch = true
+			break
+		}
+	}
+	// if RediSearch is in the modules, throughput may not be operations-per-second
+	if containsSearch && throughputMeasurementBy == "operations-per-second" {
+		errDiag := diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "subscription could not be created: throughput may not be measured by `operations-per-second` while the `RediSearch` module is active",
+			Detail:   "throughput may not be measured by `operations-per-second` while the `RediSearch` module is active. use an alternative measurement like `number-of-shards`",
+		}
+		// Short-circuit here, this is an unrecoverable situation
+		return nil, append(diags, errDiag)
+	}
+
+	// Check if one of the modules is RedisGraph
+	containsGraph := false
+	for _, module := range planModules {
+		if *module == "RedisGraph" {
+			containsGraph = true
+			break
+		}
+	}
+
+	if !containsGraph || len(planModules) <= 1 {
+		var modules []*subscriptions.CreateModules
+		for _, v := range planModules {
+			modules = append(modules, &subscriptions.CreateModules{Name: v})
+		}
+		createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules, throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases)...)
+	} else {
+		// make RedisGraph module the first module, then append the rest of the modules
+		var modules []*subscriptions.CreateModules
+		modules = append(modules, &subscriptions.CreateModules{Name: redis.String("RedisGraph")})
+		for _, v := range planModules {
+			if *v != "RedisGraph" {
+				modules = append(modules, &subscriptions.CreateModules{Name: v})
+			}
+		}
+		// create a DB with the RedisGraph module
+		createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[:1], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1)...)
+		if numDatabases == 1 {
+			// create one extra DB with all other modules
+			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1)...)
+		} else if numDatabases > 1 {
+			// create the remaining DBs with all other modules
+			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases-1)...)
+		}
+	}
+	return createDatabases, diags
+}
+
+// createDatabase returns a CreateDatabase struct with the given parameters
+func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModules, throughputMeasurementBy string, throughputMeasurementValue int, memoryLimitInGB float64, averageItemSizeInBytes int, supportOSSClusterAPI bool, replication bool, numDatabases int) []*subscriptions.CreateDatabase {
+	createThroughput := &subscriptions.CreateThroughput{
+		By:    redis.String(throughputMeasurementBy),
+		Value: redis.Int(throughputMeasurementValue),
+	}
+	if len(modules) > 0 {
+		// if RedisGraph is in the modules, set throughput to operations-per-second and convert the value
+		if *modules[0].Name == "RedisGraph" {
+			if *createThroughput.By == "number-of-shards" {
+				createThroughput.By = redis.String("operations-per-second")
+				if replication {
+					createThroughput.Value = redis.Int(*createThroughput.Value * 500)
+				} else {
+					createThroughput.Value = redis.Int(*createThroughput.Value * 250)
+				}
+			}
+		}
+	}
+	var dbs []*subscriptions.CreateDatabase
+	for i := 0; i < numDatabases; i++ {
+		createDatabase := subscriptions.CreateDatabase{
+			Name:                  redis.String(dbName + strconv.Itoa(*idx)),
+			Protocol:              redis.String("redis"),
+			MemoryLimitInGB:       redis.Float64(memoryLimitInGB),
+			SupportOSSClusterAPI:  redis.Bool(supportOSSClusterAPI),
+			Replication:           redis.Bool(replication),
+			ThroughputMeasurement: createThroughput,
+			Quantity:              redis.Int(1),
+			Modules:               modules,
+		}
+		if averageItemSizeInBytes > 0 {
+			createDatabase.AverageItemSizeInBytes = redis.Int(averageItemSizeInBytes)
+		}
+		*idx++
+		dbs = append(dbs, &createDatabase)
+	}
+	return dbs
+}
+
+func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) error {
+	wait := &retry.StateChangeConf{
+		Delay:   10 * time.Second,
+		Pending: []string{subscriptions.SubscriptionStatusPending},
+		Target:  []string{subscriptions.SubscriptionStatusActive},
+		Timeout: safetyTimeout,
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for subscription %d to be active", id)
+
+			subscription, err := api.client.Subscription.Get(ctx, id)
+			if err != nil {
+				return nil, "", err
+			}
+
+			return redis.StringValue(subscription.Status), redis.StringValue(subscription.Status), nil
+		},
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient) error {
+	wait := &retry.StateChangeConf{
+		Delay:   10 * time.Second,
+		Pending: []string{subscriptions.SubscriptionStatusDeleting},
+		Target:  []string{"deleted"},
+		Timeout: safetyTimeout,
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for subscription %d to be deleted", id)
+
+			subscription, err := api.client.Subscription.Get(ctx, id)
+			if err != nil {
+				if _, ok := err.(*subscriptions.NotFound); ok {
+					return "deleted", "deleted", nil
+				}
+				return nil, "", err
+			}
+
+			return redis.StringValue(subscription.Status), redis.StringValue(subscription.Status), nil
+		},
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClient) error {
+	wait := &retry.StateChangeConf{
+		Delay: 10 * time.Second,
+		Pending: []string{
+			databases.StatusDraft,
+			databases.StatusPending,
+			databases.StatusActiveChangePending,
+			databases.StatusRCPActiveChangeDraft,
+			databases.StatusActiveChangeDraft,
+			databases.StatusRCPDraft,
+			databases.StatusRCPChangePending,
+			databases.StatusProxyPolicyChangePending,
+			databases.StatusProxyPolicyChangeDraft,
+		},
+		Target:  []string{databases.StatusActive},
+		Timeout: safetyTimeout,
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for database %d to be active", id)
+
+			database, err := api.client.Database.Get(ctx, subId, id)
+			if err != nil {
+				return nil, "", err
+			}
+
+			return redis.StringValue(database.Status), redis.StringValue(database.Status), nil
+		},
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func flattenSubscriptionAllowlist(ctx context.Context, subId int, api *apiClient) ([]map[string]interface{}, error) {
+	allowlist, err := api.client.Subscription.GetCIDRAllowlist(ctx, subId)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isNil(allowlist.Errors) {
+		return nil, fmt.Errorf("unable to read allowlist for subscription %d: %v", subId, allowlist.Errors)
+	}
+
+	var cidrs []string
+	for _, cidr := range allowlist.CIDRIPs {
+		cidrs = append(cidrs, redis.StringValue(cidr))
+	}
+	var sgs []string
+	for _, sg := range allowlist.SecurityGroupIDs {
+		sgs = append(sgs, redis.StringValue(sg))
+	}
+
+	tfs := map[string]interface{}{}
+
+	if len(cidrs) != 0 {
+		tfs["cidrs"] = cidrs
+	}
+	if len(sgs) != 0 {
+		tfs["security_group_ids"] = sgs
+	}
+	if len(tfs) == 0 {
+		return nil, nil
+	}
+
+	return []map[string]interface{}{tfs}, nil
+}
+
+func isNil(i interface{}) bool {
+	if i == nil {
+		return true
+	}
+
+	if l, ok := i.([]interface{}); ok {
+		if len(l) == 0 {
+			return true
+		}
+	}
+
+	if m, ok := i.(map[string]interface{}); ok {
+		if len(m) == 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
+func flattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource bool) []map[string]interface{} {
+	var cdl []map[string]interface{}
+
+	for _, currentCloudDetail := range cloudDetails {
+
+		var regions []interface{}
+		for _, currentRegion := range currentCloudDetail.Regions {
+
+			regionMapString := map[string]interface{}{
+				"region":                       currentRegion.Region,
+				"multiple_availability_zones":  currentRegion.MultipleAvailabilityZones,
+				"preferred_availability_zones": currentRegion.PreferredAvailabilityZones,
+				"networks":                     flattenNetworks(currentRegion.Networking),
+			}
+
+			if isResource {
+				regionMapString["networking_deployment_cidr"] = currentRegion.Networking[0].DeploymentCIDR
+
+				if redis.BoolValue(currentRegion.MultipleAvailabilityZones) {
+					regionMapString["networking_deployment_cidr"] = ""
+				}
+			}
+
+			regions = append(regions, regionMapString)
+		}
+
+		cdlMapString := map[string]interface{}{
+			"provider":         currentCloudDetail.Provider,
+			"cloud_account_id": strconv.Itoa(redis.IntValue(currentCloudDetail.CloudAccountID)),
+			"region":           regions,
+		}
+		cdl = append(cdl, cdlMapString)
+	}
+
+	return cdl
+}
+
+func flattenNetworks(networks []*subscriptions.Networking) []map[string]interface{} {
+	var cdl []map[string]interface{}
+
+	for _, currentNetwork := range networks {
+
+		networkMapString := map[string]interface{}{
+			"networking_deployment_cidr": currentNetwork.DeploymentCIDR,
+			"networking_vpc_id":          currentNetwork.VPCId,
+			"networking_subnet_id":       currentNetwork.SubnetID,
+		}
+
+		cdl = append(cdl, networkMapString)
+	}
+
+	return cdl
+}
+
+func flattenAlerts(alerts []*databases.Alert) []map[string]interface{} {
+	var tfs = make([]map[string]interface{}, 0)
+
+	for _, alert := range alerts {
+		tf := map[string]interface{}{
+			"name":  redis.StringValue(alert.Name),
+			"value": redis.IntValue(alert.Value),
+		}
+		tfs = append(tfs, tf)
+	}
+
+	return tfs
+}
+
+func flattenModules(modules []*databases.Module) []map[string]interface{} {
+
+	var tfs = make([]map[string]interface{}, 0)
+	for _, module := range modules {
+
+		tf := map[string]interface{}{
+			"name": redis.StringValue(module.Name),
+		}
+		tfs = append(tfs, tf)
+	}
+
+	return tfs
+}
+
+func flattenRegexRules(rules []*databases.RegexRule) []string {
+	ret := make([]string, len(rules))
+	for _, rule := range rules {
+		ret[rule.Ordinal] = rule.Pattern
+	}
+
+	if len(ret) == 2 && ret[0] == ".*\\{(?<tag>.*)\\}.*" && ret[1] == "(?<tag>.*)" {
+		// This is the default regex rules - https://docs.redislabs.com/latest/rc/concepts/clustering/#custom-hashing-policy
+		return []string{}
+	}
+
+	return ret
+}
+
+func readPaymentMethodID(d *schema.ResourceData) (*int, error) {
+	pmID := d.Get("payment_method_id").(string)
+	if pmID != "" {
+		pmID, err := strconv.Atoi(pmID)
+		if err != nil {
+			return nil, err
+		}
+		return redis.Int(pmID), nil
+	}
+	return nil, nil
+}
+
+func flattenPricing(pricing []*pricing.Pricing) []map[string]interface{} {
+	var tfs = make([]map[string]interface{}, 0)
+	for _, p := range pricing {
+
+		tf := map[string]interface{}{
+			"database_name":        p.DatabaseName,
+			"type":                 p.Type,
+			"type_details":         p.TypeDetails,
+			"quantity":             p.Quantity,
+			"quantity_measurement": p.QuantityMeasurement,
+			"price_per_unit":       p.PricePerUnit,
+			"price_currency":       p.PriceCurrency,
+			"price_period":         p.PricePeriod,
+			"region":               p.Region,
+		}
+		tfs = append(tfs, tf)
+	}
+
+	return tfs
 }

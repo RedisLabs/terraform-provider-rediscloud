@@ -9,20 +9,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccDataSourceRedisCloudDatabase_basic(t *testing.T) {
+func TestAccDataSourceRedisCloudFlexibleDatabase_basic(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
-	dataSourceName := "data.rediscloud_database.example"
+	dataSourceName := "data.rediscloud_flexible_database.example"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccDatasourceRedisCloudDatabase, testCloudAccountName, name, password),
+				Config: fmt.Sprintf(testAccDatasourceRedisCloudFlexibleDatabase, testCloudAccountName, name, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceName, "name", "tf-database"),
 					resource.TestCheckResourceAttr(dataSourceName, "protocol", "redis"),
@@ -45,47 +45,19 @@ func TestAccDataSourceRedisCloudDatabase_basic(t *testing.T) {
 	})
 }
 
-func TestAccDataSourceRedisCloudDatabase_filterAADatabases(t *testing.T) {
-	name := acctest.RandomWithPrefix(testResourcePrefix)
-	password := acctest.RandString(20)
-
-	dataSourceName := "data.rediscloud_database.example"
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: fmt.Sprintf(testAccDatasourceRedisCloudAADatabase, name+"-subscription", name+"-database", password),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(dataSourceName, "name", name+"-database"),
-					resource.TestCheckResourceAttr(dataSourceName, "protocol", "redis"),
-					resource.TestCheckResourceAttr(dataSourceName, "support_oss_cluster_api", "false"),
-					resource.TestCheckResourceAttr(dataSourceName, "data_eviction", "volatile-lru"),
-				),
-			},
-		},
-	})
-}
-
-const testAccDatasourceRedisCloudDatabase = `
+const testAccDatasourceRedisCloudFlexibleDatabase = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
-
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
   provider_type = "AWS" 
   name = "%s"
 }
-
-resource "rediscloud_subscription" "example" {
-
+resource "rediscloud_flexible_subscription" "example" {
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
-
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
@@ -95,7 +67,6 @@ resource "rediscloud_subscription" "example" {
       preferred_availability_zones = ["eu-west-1a"]
     }
   }
-
   creation_plan {
     memory_limit_in_gb = 1
     quantity = 1
@@ -106,9 +77,8 @@ resource "rediscloud_subscription" "example" {
 	modules = ["RedisJSON", "RedisBloom"]
   }
 }
-
-resource "rediscloud_subscription_database" "example" {
-    subscription_id              = rediscloud_subscription.example.id
+resource "rediscloud_flexible_database" "example" {
+    subscription_id              = rediscloud_flexible_subscription.example.id
     name                         = "tf-database"
     protocol                     = "redis"
     memory_limit_in_gb           = 1
@@ -120,9 +90,8 @@ resource "rediscloud_subscription_database" "example" {
 	replication				     = false
     enable_default_user 		 = true
 }
-
-data "rediscloud_database" "example" {
-  subscription_id = rediscloud_subscription.example.id
-  name = rediscloud_subscription_database.example.name
+data "rediscloud_flexible_database" "example" {
+  subscription_id = rediscloud_flexible_subscription.example.id
+  name = rediscloud_flexible_database.example.name
 }
 `

@@ -78,7 +78,7 @@ jobs:
             }
           }
           EOT
-          echo 'resource "rediscloud_subscription" "example" {}' > example.tf
+          echo 'resource "rediscloud_flexible_subscription" "example" {}' > example.tf
           terraform init -plugin-dir terraform-plugin-dir
       - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
         name: terraform providers schema

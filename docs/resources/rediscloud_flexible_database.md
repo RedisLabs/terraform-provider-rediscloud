@@ -1,13 +1,11 @@
 ---
 layout: "rediscloud"
-page_title: "Redis Cloud: rediscloud_subscription_database"
+page_title: "Redis Cloud: rediscloud_flexible_database"
 description: |-
-  Database resource in the Redis Cloud Terraform provider
+  Database resource in the Terraform provider Redis Cloud.
 ---
 
-# Resource: rediscloud_subscription_database
-
-!> **WARNING:** This resource is deprecated and will be removed in the next major version. Switch to `rediscloud_flexible_database` or `rediscloud_active_active_database` (incoming)
+# Resource: rediscloud_flexible_database
 
 Creates a Database within a specified Flexible Subscription in your Redis Enterprise Cloud Account.
 
@@ -17,14 +15,11 @@ Creates a Database within a specified Flexible Subscription in your Redis Enterp
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
-
-resource "rediscloud_subscription" "subscription-resource" {
-
+resource "rediscloud_flexible_subscription" "subscription-resource" {
   name = "subscription-name"
   payment_method = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
-
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
     region {
@@ -34,7 +29,6 @@ resource "rediscloud_subscription" "subscription-resource" {
       preferred_availability_zones = ["euw1-az1", "euw1-az2", "euw1-az3"]
     }
   }
-
   // This block needs to be defined for provisioning a new subscription.
   // This allows creation of a well-optimized hardware specification for databases in the cluster
   creation_plan {
@@ -46,10 +40,9 @@ resource "rediscloud_subscription" "subscription-resource" {
     modules = ["RedisJSON"]
   }
 }
-
 // The primary database to provision
-resource "rediscloud_subscription_database" "database-resource" {
-    subscription_id = rediscloud_subscription.subscription-resource.id
+resource "rediscloud_flexible_database" "database-resource" {
+    subscription_id = rediscloud_flexible_subscription.subscription-resource.id
     name = "database-name"
     memory_limit_in_gb = 15
     data_persistence = "aof-every-write"
@@ -67,8 +60,6 @@ resource "rediscloud_subscription_database" "database-resource" {
       name = "dataset-size"
       value = 40
     }
-    depends_on = [rediscloud_subscription.subscription-resource]
-
 }
 ```
 
@@ -106,11 +97,11 @@ The following arguments are supported:
 * `enable_tls` - (Optional) Use TLS for authentication. Default: ‘false’
 * `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999. **Modifying this attribute will force creation of a new resource.**
 * `remote_backup` (Optional) Specifies the backup options for the database, documented below
-* `enable_default_user` (Optional) When `true` enables connecting to the database with the default user. Default `true`. 
+* `enable_default_user` (Optional) When `true` enables connecting to the database with the default user. Default `true`.
 
 The `alert` block supports:
 
-* `name` (Required) - Alert name. (either: 'dataset-size', 'datasets-size', 'throughput-higher-than', 'throughput-lower-than', 'latency', 'syncsource-error', 'syncsource-lag' or 'connections-limit') 
+* `name` (Required) - Alert name. (either: 'dataset-size', 'datasets-size', 'throughput-higher-than', 'throughput-lower-than', 'latency', 'syncsource-error', 'syncsource-lag' or 'connections-limit')
 * `value` (Required) - Alert value
 
 The `modules` list supports:
@@ -118,7 +109,7 @@ The `modules` list supports:
 * `name` (Required) - Name of the Redis database module to enable. **Modifying this attribute will force creation of a new resource.**
 
   Example:
-  
+
   ```hcl
     modules = [
         {
@@ -154,9 +145,8 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/l
 * `latest_import_status` - An object containing the JSON-formatted response detailing the latest import status (or an error if the lookup failed).
 
 ## Import
-`rediscloud_subscription_database` can be imported using the ID of the subscription and the ID of the database in the format {subscription ID}/{database ID}, e.g.
+`rediscloud_flexible_database` can be imported using the ID of the subscription and the ID of the database in the format {subscription ID}/{database ID}, e.g.
 
 ```
-$ terraform import rediscloud_subscription_database.database-resource 123456/12345678
+$ terraform import rediscloud_flexible_database.database-resource 123456/12345678
 ```
-

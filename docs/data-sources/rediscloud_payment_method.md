@@ -20,7 +20,7 @@ data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_flexible_subscription" "example" {
 
   name = "My Test Subscription"
   payment_method_id = data.rediscloud_payment_method.card.id

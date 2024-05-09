@@ -28,20 +28,20 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 	testUserPassword := prefix + "aA.1"
 	testUserPasswordUpdated := testUserPassword + "-updated"
 
-	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudFlexibleDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRole, exampleRoleName) +
 		fmt.Sprintf(testUser, testUserName, testUserPassword)
 
 	// The User will be updated because the Role's name will have changed
-	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudFlexibleDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRole, exampleRoleNameUpdated) +
 		fmt.Sprintf(testUser, testUserName, testUserPassword)
 
-	testNewNameTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testNewNameTerraform := fmt.Sprintf(testAccResourceRedisCloudFlexibleDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRole, exampleRoleNameUpdated) +
 		fmt.Sprintf(testUser, testUserNameUpdated, testUserPassword)
 
-	testNewPasswordTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testNewPasswordTerraform := fmt.Sprintf(testAccResourceRedisCloudFlexibleDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRole, exampleRoleNameUpdated) +
 		fmt.Sprintf(testUser, testUserNameUpdated, testUserPasswordUpdated)
 
@@ -168,8 +168,8 @@ resource "rediscloud_acl_role" "example" {
 	rule {
 		name = "Read-Only"
 		database {
-			subscription = rediscloud_subscription.example.id
-			database = rediscloud_subscription_database.example.db_id
+			subscription = rediscloud_flexible_subscription.example.id
+			database = rediscloud_flexible_database.example.db_id
 		}
 	}
 }
