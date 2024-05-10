@@ -134,7 +134,7 @@ The `networks` block has these attributes:
 
 ## Import
 
-`rediscloud_subscription` can be imported using the ID of the subscription, e.g.
+`rediscloud_flexible_subscription` can be imported using the ID of the subscription, e.g.
 
 ```
 $ terraform import rediscloud_flexible_subscription.subscription-resource 12345678

@@ -66,7 +66,7 @@ func TestAccDataSourceRedisCloudFlexibleSubscription_ignoresAA(t *testing.T) {
 		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(testAccDatasourceRedisCloudAADatabase, name+"-subscription", name+"-database", password),
+				Config:      fmt.Sprintf(testAccDatasourceRedisCloudAADatabaseWithFlexibleDataSource, name+"-subscription", name+"-database", password),
 				ExpectError: regexp.MustCompile("Your query returned no results. Please change your search criteria and try again."),
 			},
 		},
@@ -123,7 +123,7 @@ data "rediscloud_flexible_subscription" "example" {
 }
 `
 
-const testAccDatasourceRedisCloudAADatabase = `
+const testAccDatasourceRedisCloudAADatabaseWithFlexibleDataSource = `
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
 }

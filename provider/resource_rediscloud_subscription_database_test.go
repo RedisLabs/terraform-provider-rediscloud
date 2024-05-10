@@ -20,7 +20,7 @@ func TestAccResourceRedisCloudSubscriptionDatabase_CRUDI(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	resourceName := "rediscloud_subscription_database.example"
-	subscriptionResourceName := "rediscloud_subscription.example"
+	subscriptionResourceName := "rediscloud_flexible_subscription.example"
 	replicaResourceName := "rediscloud_subscription_database.example_replica"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -260,7 +260,7 @@ data "rediscloud_cloud_account" "account" {
   provider_type            = "AWS"
   name                     = "%s"
 }
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_flexible_subscription" "example" {
   name              = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage    = "ram"
@@ -293,7 +293,7 @@ resource "rediscloud_subscription" "example" {
 // TF config for provisioning a new database
 const testAccResourceRedisCloudSubscriptionDatabase = flexibleSubscriptionBoilerplate + `
 resource "rediscloud_subscription_database" "example" {
-    subscription_id = rediscloud_subscription.example.id
+    subscription_id = rediscloud_flexible_subscription.example.id
     name = "example"
     protocol = "redis"
     memory_limit_in_gb = 3
@@ -325,7 +325,7 @@ resource "rediscloud_subscription_database" "example" {
 
 const testAccResourceRedisCloudSubscriptionDatabaseOptionalAttributes = flexibleSubscriptionBoilerplate + `
 resource "rediscloud_subscription_database" "example" {
-    subscription_id = rediscloud_subscription.example.id
+    subscription_id = rediscloud_flexible_subscription.example.id
     name = "example-no-protocol"
     memory_limit_in_gb = 1
     data_persistence = "none"
@@ -337,7 +337,7 @@ resource "rediscloud_subscription_database" "example" {
 
 const testAccResourceRedisCloudSubscriptionDatabaseInvalidTimeUtc = flexibleSubscriptionBoilerplate + `
 resource "rediscloud_subscription_database" "example" {
-    subscription_id = rediscloud_subscription.example.id
+    subscription_id = rediscloud_flexible_subscription.example.id
     name = "example-no-protocol"
     memory_limit_in_gb = 1
     data_persistence = "none"
@@ -355,7 +355,7 @@ resource "rediscloud_subscription_database" "example" {
 // TF config for provisioning a database where the password is not specified
 const testAccResourceRedisCloudSubscriptionDatabaseNoPassword = flexibleSubscriptionBoilerplate + `
 resource "rediscloud_subscription_database" "no_password_database" {
-    subscription_id = rediscloud_subscription.example.id
+    subscription_id = rediscloud_flexible_subscription.example.id
     name = "example-no-password"
     protocol = "redis"
     memory_limit_in_gb = 1
@@ -368,7 +368,7 @@ resource "rediscloud_subscription_database" "no_password_database" {
 // TF config for provisioning a database which is a replica of an existing database
 const testAccResourceRedisCloudSubscriptionDatabaseReplica = `
 resource "rediscloud_subscription_database" "example_replica" {
-  subscription_id = rediscloud_subscription.example.id
+  subscription_id = rediscloud_flexible_subscription.example.id
   name = "example-replica"
   protocol = "redis"
   memory_limit_in_gb = 1
@@ -381,7 +381,7 @@ resource "rediscloud_subscription_database" "example_replica" {
 // TF config for updating a database
 const testAccResourceRedisCloudSubscriptionDatabaseUpdate = flexibleSubscriptionBoilerplate + `
 resource "rediscloud_subscription_database" "example" {
-    subscription_id = rediscloud_subscription.example.id
+    subscription_id = rediscloud_flexible_subscription.example.id
     name = "example-updated"
     protocol = "redis"
     memory_limit_in_gb = 1
@@ -411,7 +411,7 @@ resource "rediscloud_subscription_database" "example" {
 
 const testAccResourceRedisCloudSubscriptionDatabaseUpdateDestroyAlerts = flexibleSubscriptionBoilerplate + `
 resource "rediscloud_subscription_database" "example" {
-    subscription_id = rediscloud_subscription.example.id
+    subscription_id = rediscloud_flexible_subscription.example.id
     name = "example-updated"
     protocol = "redis"
     memory_limit_in_gb = 1
@@ -435,7 +435,7 @@ resource "rediscloud_subscription_database" "example" {
 
 const testAccResourceRedisCloudSubscriptionDatabaseMultiModules = multiModulesSubscriptionBoilerplate + `
 resource "rediscloud_subscription_database" "example" {
-    subscription_id              = rediscloud_subscription.example.id
+    subscription_id              = rediscloud_flexible_subscription.example.id
     name                         = "%s"
     protocol                     = "redis"
     memory_limit_in_gb           = 1
