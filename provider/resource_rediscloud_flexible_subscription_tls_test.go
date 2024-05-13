@@ -382,7 +382,6 @@ resource "rediscloud_flexible_subscription" "example" {
     }
   }
 }
-
 resource "rediscloud_flexible_database" "example" {
   subscription_id = rediscloud_flexible_subscription.example.id
   name = "tf-database"

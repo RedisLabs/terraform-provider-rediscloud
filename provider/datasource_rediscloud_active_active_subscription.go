@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -19,26 +18,22 @@ func dataSourceRedisCloudActiveActiveSubscription() *schema.Resource {
 			"name": {
 				Description: "A meaningful name to identify the subscription",
 				Type:        schema.TypeString,
-				Computed:    true,
-				Optional:    true,
+				Required:    true,
 			},
 			"payment_method": {
 				Description: "Payment method for the requested subscription. If credit card is specified, the payment method id must be defined. This information is only used when creating a new subscription and any changes will be ignored after this.",
 				Type:        schema.TypeString,
 				Computed:    true,
-				Optional:    true,
 			},
 			"payment_method_id": {
 				Description: "A valid payment method pre-defined in the current account",
 				Type:        schema.TypeString,
 				Computed:    true,
-				Optional:    true,
 			},
 			"cloud_provider": {
 				Description: "A cloud provider string either GCP or AWS",
 				Type:        schema.TypeString,
 				Computed:    true,
-				Optional:    true,
 			},
 			"pricing": {
 				Description: "Pricing details totalled over this Subscription",
@@ -149,10 +144,21 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 
 	cloudDetails := sub.CloudDetails
 	if len(cloudDetails) == 0 {
-		return diag.FromErr(fmt.Errorf("cloud details is empty. Subscription status: %s", redis.StringValue(sub.Status)))
+		// Clearing the value - a subscription with 0 databases will have no CloudDetail blocks
+		if err := d.Set("cloud_provider", nil); err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		cloudProvider := cloudDetails[0].Provider
+		if err := d.Set("cloud_provider", cloudProvider); err != nil {
+			return diag.FromErr(err)
+		}
 	}
-	cloudProvider := cloudDetails[0].Provider
-	if err := d.Set("cloud_provider", cloudProvider); err != nil {
+
+	if err := d.Set("number_of_databases", redis.IntValue(sub.NumberOfDatabases)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("status", redis.StringValue(sub.Status)); err != nil {
 		return diag.FromErr(err)
 	}
 

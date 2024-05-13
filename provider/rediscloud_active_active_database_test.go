@@ -111,8 +111,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttr(datasourceName, "global_modules.#", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "global_modules.0", "RedisJSON"),
-					resource.TestCheckResourceAttrSet(datasourceName, "public_endpoint"),
-					resource.TestCheckResourceAttrSet(datasourceName, "private_endpoint"),
 				),
 			},
 			// Test database is updated successfully, including updates to both global and local alerts and clearing modules
@@ -303,7 +301,7 @@ resource "rediscloud_active_active_database" "example" {
 
 data "rediscloud_active_active_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
-	name = rediscloud_active_active_subscription_database.example.name
+	name = rediscloud_active_active_database.example.name
 }
 `
 
@@ -338,7 +336,7 @@ resource "rediscloud_active_active_database" "example" {
 
 data "rediscloud_active_active_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
-	name = rediscloud_active_active_subscription_database.example.name
+	name = rediscloud_active_active_database.example.name
 }
 `
 

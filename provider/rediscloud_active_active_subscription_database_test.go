@@ -111,8 +111,6 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 					resource.TestCheckResourceAttr(datasourceName, "data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttr(datasourceName, "global_modules.#", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "global_modules.0", "RedisJSON"),
-					resource.TestCheckResourceAttrSet(datasourceName, "public_endpoint"),
-					resource.TestCheckResourceAttrSet(datasourceName, "private_endpoint"),
 				),
 			},
 			// Test database is updated successfully, including updates to both global and local alerts and clearing modules

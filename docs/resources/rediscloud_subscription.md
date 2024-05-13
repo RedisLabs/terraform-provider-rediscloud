@@ -29,12 +29,13 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_subscription" "subscription-resource" {
+
   name              = "subscription-name"
   payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage    = "ram"
   redis_version     = "latest"
-  
+
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
     region {

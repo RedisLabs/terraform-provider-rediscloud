@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_active_active_database"
 description: |-
-  Database resource for Active-Active Subscriptions in the Terraform provider Redis Cloud.
+  Database resource for Active-Active Subscriptions in the Redis Cloud Terraform provider.
 ---
 
 # Resource: rediscloud_active_active_database
