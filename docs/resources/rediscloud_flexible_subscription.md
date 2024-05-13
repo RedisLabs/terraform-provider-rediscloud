@@ -162,6 +162,19 @@ The `networks` block has these attributes:
 * `networking_subnet_id` - The subnet that the subscription deploys into
 * `networking_deployment_cidr` - Deployment CIDR mask for the generated
 * `networking_vpc_id` - VPC id for the generated network
+* `pricing` - A list of pricing objects, documented below
+
+The `pricing` object has these attributes:
+
+* `database_name` - The database this pricing entry applies to.
+* `type` - The type of cost e.g. 'Shards'.
+* `typeDetails` - Further detail e.g. 'micro'.
+* `quantity` - Self-explanatory.
+* `quantityMeasurement` - Self-explanatory.
+* `pricePerUnit` - Self-explanatory.
+* `priceCurrency` - Self-explanatory e.g. 'USD'.
+* `pricePeriod` - Self-explanatory e.g. 'hour'.
+* `region` - Self-explanatory, if the cost is associated with a particular region.
 
 ## Import
 
