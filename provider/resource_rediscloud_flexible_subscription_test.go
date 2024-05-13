@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"regexp"
@@ -17,11 +18,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var contractFlag = flag.Bool("contract", false,
+	"Add this flag '-contract' to run tests for contract associated accounts")
+
+var marketplaceFlag = flag.Bool("marketplace", false,
+	"Add this flag '-marketplace' to run tests for marketplace associated accounts")
+
 // Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the subscription resource.
-func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
+func TestAccResourceRedisCloudFlexibleSubscription_CRUDI(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	resourceName := "rediscloud_subscription.example"
+	resourceName := "rediscloud_flexible_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	var subId int
@@ -29,10 +36,10 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscription, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudFlexibleSubscription, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
@@ -77,7 +84,7 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 			},
 			{
 				// Checks if the changes in the creation plan are ignored.
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionNoCreationPlan, testCloudAccountName, name, "ram"),
+				Config: fmt.Sprintf(testAccResourceRedisCloudFlexibleSubscriptionNoCreationPlan, testCloudAccountName, name, "ram"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "0"),
@@ -91,7 +98,7 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 			},
 			{
 				// Checks if the changes to the payment_method are ignored.
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionChangedPaymentMethod, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudFlexibleSubscriptionChangedPaymentMethod, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 				),
@@ -114,7 +121,7 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 			},
 			{
 				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
-				Config:       fmt.Sprintf(testAccResourceRedisCloudSubscriptionNoCreationPlan, testCloudAccountName, name, "ram-and-flash"),
+				Config:       fmt.Sprintf(testAccResourceRedisCloudFlexibleSubscriptionNoCreationPlan, testCloudAccountName, name, "ram-and-flash"),
 				ResourceName: resourceName,
 				ExpectError:  regexp.MustCompile(`Error: the "creation_plan" block is required`),
 			},
@@ -122,18 +129,18 @@ func TestAccResourceRedisCloudSubscription_CRUDI(t *testing.T) {
 	})
 }
 
-func TestAccResourceRedisCloudSubscription_preferredAZsModulesOptional(t *testing.T) {
+func TestAccResourceRedisCloudFlexibleSubscription_preferredAZsModulesOptional(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	resourceName := "rediscloud_subscription.example"
+	resourceName := "rediscloud_flexible_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionPreferredAZsModulesOptional, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudFlexibleSubscriptionPreferredAZsModulesOptional, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
@@ -143,7 +150,7 @@ func TestAccResourceRedisCloudSubscription_preferredAZsModulesOptional(t *testin
 	})
 }
 
-func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testing.T) {
+func TestAccResourceRedisCloudFlexibleSubscription_createUpdateContractPayment(t *testing.T) {
 
 	if !*contractFlag {
 		t.Skip("The '-contract' parameter wasn't provided in the test command.")
@@ -151,16 +158,16 @@ func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testin
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	updatedName := fmt.Sprintf("%v-updatedName", name)
-	resourceName := "rediscloud_subscription.example"
+	resourceName := "rediscloud_flexible_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionContractPayment, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudFlexibleSubscriptionContractPayment, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -170,7 +177,7 @@ func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testin
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionContractPayment, testCloudAccountName, updatedName),
+				Config: fmt.Sprintf(testAccResourceRedisCloudFlexibleSubscriptionContractPayment, testCloudAccountName, updatedName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
@@ -180,7 +187,7 @@ func TestAccResourceRedisCloudSubscription_createUpdateContractPayment(t *testin
 	})
 }
 
-func TestAccResourceRedisCloudSubscription_createUpdateMarketplacePayment(t *testing.T) {
+func TestAccResourceRedisCloudFlexibleSubscription_createUpdateMarketplacePayment(t *testing.T) {
 
 	if !*marketplaceFlag {
 		t.Skip("The '-marketplace' parameter wasn't provided in the test command.")
@@ -188,16 +195,16 @@ func TestAccResourceRedisCloudSubscription_createUpdateMarketplacePayment(t *tes
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	updatedName := fmt.Sprintf("%v-updatedName", name)
-	resourceName := "rediscloud_subscription.example"
+	resourceName := "rediscloud_flexible_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudFlexibleSubscriptionMarketplacePayment, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -206,7 +213,7 @@ func TestAccResourceRedisCloudSubscription_createUpdateMarketplacePayment(t *tes
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, testCloudAccountName, updatedName),
+				Config: fmt.Sprintf(testAccResourceRedisCloudFlexibleSubscriptionMarketplacePayment, testCloudAccountName, updatedName),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
 				),
@@ -215,24 +222,24 @@ func TestAccResourceRedisCloudSubscription_createUpdateMarketplacePayment(t *tes
 	})
 }
 
-func TestAccResourceRedisCloudSubscription_SearchModuleIncompatibleWithOperationsPerSecond(t *testing.T) {
+func TestAccResourceRedisCloudFlexibleSubscription_SearchModuleIncompatibleWithOperationsPerSecond(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionWithSearch, testCloudAccountName, name),
+				Config:      fmt.Sprintf(testAccResourceRedisCloudFlexibleSubscriptionWithSearch, testCloudAccountName, name),
 				ExpectError: regexp.MustCompile("subscription could not be created: throughput may not be measured by `operations-per-second` while the `RediSearch` module is active"),
 			},
 		},
 	})
 }
 
-func TestAccResourceRedisCloudSubscription_RedisVersion(t *testing.T) {
+func TestAccResourceRedisCloudFlexibleSubscription_RedisVersion(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -241,25 +248,25 @@ func TestAccResourceRedisCloudSubscription_RedisVersion(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionWithRedisVersion, testCloudAccountName, name, ""),
+				Config: fmt.Sprintf(testAccResourceRedisCloudFlexibleSubscriptionWithRedisVersion, testCloudAccountName, name, ""),
 				Check: resource.ComposeTestCheckFunc(
 					// Take a snapshot of the ID
 					func(s *terraform.State) error {
-						r := s.RootModule().Resources["rediscloud_subscription.test"]
+						r := s.RootModule().Resources["rediscloud_flexible_subscription.test"]
 						identifier = r.Primary.ID
 						return nil
 					},
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionWithRedisVersion, testCloudAccountName, name, "redis_version = \"latest\""),
+				Config: fmt.Sprintf(testAccResourceRedisCloudFlexibleSubscriptionWithRedisVersion, testCloudAccountName, name, "redis_version = \"latest\""),
 				Check: resource.ComposeTestCheckFunc(
 					// Take a snapshot of the ID
 					func(s *terraform.State) error {
-						r := s.RootModule().Resources["rediscloud_subscription.test"]
+						r := s.RootModule().Resources["rediscloud_flexible_subscription.test"]
 						if r.Primary.ID == identifier {
 							return fmt.Errorf("entity should have a different identifier, but was still %s", identifier)
 						}
@@ -268,8 +275,8 @@ func TestAccResourceRedisCloudSubscription_RedisVersion(t *testing.T) {
 				),
 			},
 			{
-				Config:                  fmt.Sprintf(testAccResourceRedisCloudSubscriptionWithRedisVersion, testCloudAccountName, name, ""),
-				ResourceName:            "rediscloud_subscription.test",
+				Config:                  fmt.Sprintf(testAccResourceRedisCloudFlexibleSubscriptionWithRedisVersion, testCloudAccountName, name, ""),
+				ResourceName:            "rediscloud_flexible_subscription.test",
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"creation_plan", "redis_version"},
@@ -279,7 +286,7 @@ func TestAccResourceRedisCloudSubscription_RedisVersion(t *testing.T) {
 }
 
 // Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is one.
-func TestModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
+func TestFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 	numDatabases := 1
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,
@@ -314,7 +321,7 @@ func TestModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 }
 
 // Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is greater than one.
-func TestModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
+func TestFlexSubModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 	numDatabases := 5
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -348,7 +355,7 @@ func TestModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 }
 
 // Checks that modules are allocated correctly into each creation-plan db if the only module is "RedisGraph".
-func TestModulesAllocationWhenOnlyGraphModule(t *testing.T) {
+func TestFlexSubModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 	numDatabases := 5
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -370,7 +377,7 @@ func TestModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 }
 
 // Checks that modules are allocated correctly into the creation-plan dbs if "RedisGraph" is not included
-func TestModulesAllocationWhenNoGraph(t *testing.T) {
+func TestFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
 	numDatabases := 5
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -395,7 +402,7 @@ func TestModulesAllocationWhenNoGraph(t *testing.T) {
 	}
 }
 
-func TestNoModulesInCreatePlanDatabases(t *testing.T) {
+func TestFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
 		"memory_limit_in_gb":           float64(1),
@@ -415,7 +422,7 @@ func TestNoModulesInCreatePlanDatabases(t *testing.T) {
 	}
 }
 
-func TestNoAverageItemSizeInBytes(t *testing.T) {
+func TestFlexSubNoAverageItemSizeInBytes(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0, // 0 is the value that is returned when the field is not present
 		"memory_limit_in_gb":           float64(1),
@@ -434,7 +441,7 @@ func TestNoAverageItemSizeInBytes(t *testing.T) {
 	}
 }
 
-func TestRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
+func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
 		"memory_limit_in_gb":           float64(1),
@@ -452,7 +459,7 @@ func TestRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 	assert.Equal(t, 2, *createDb.ThroughputMeasurement.Value)
 }
 
-func TestRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
+func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
 		"memory_limit_in_gb":           float64(1),
@@ -470,7 +477,7 @@ func TestRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 	assert.Equal(t, 2, *createDb.ThroughputMeasurement.Value)
 }
 
-func TestRediSearchIncompatibleWithOperationsPerSec(t *testing.T) {
+func TestFlexSubRediSearchIncompatibleWithOperationsPerSec(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
 		"memory_limit_in_gb":           float64(1),
@@ -488,7 +495,7 @@ func TestRediSearchIncompatibleWithOperationsPerSec(t *testing.T) {
 	assert.Equal(t, diag.Error, diags[0].Severity)
 }
 
-func TestRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
+func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
 		"memory_limit_in_gb":           float64(1),
@@ -506,7 +513,7 @@ func TestRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 	assert.Equal(t, 2*250, *createDb.ThroughputMeasurement.Value)
 }
 
-func TestRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
+func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,
 		"memory_limit_in_gb":           float64(1),
@@ -525,11 +532,11 @@ func TestRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 	assert.Equal(t, 2*500, *createDb.ThroughputMeasurement.Value)
 }
 
-func testAccCheckSubscriptionDestroy(s *terraform.State) error {
+func testAccCheckFlexibleSubscriptionDestroy(s *terraform.State) error {
 	client := testProvider.Meta().(*apiClient)
 
 	for _, r := range s.RootModule().Resources {
-		if r.Type != "rediscloud_subscription" {
+		if r.Type != "rediscloud_flexible_subscription" {
 			continue
 		}
 
@@ -554,7 +561,7 @@ func testAccCheckSubscriptionDestroy(s *terraform.State) error {
 }
 
 // TF config for provisioning a new subscription.
-const testAccResourceRedisCloudSubscription = `
+const testAccResourceRedisCloudFlexibleSubscription = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
@@ -565,7 +572,7 @@ data "rediscloud_cloud_account" "account" {
   name = "%s"
 }
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_flexible_subscription" "example" {
 
   name = "%s"
   payment_method = "credit-card"
@@ -599,7 +606,7 @@ resource "rediscloud_subscription" "example" {
 }
 `
 
-const testAccResourceRedisCloudSubscriptionWithSearch = `
+const testAccResourceRedisCloudFlexibleSubscriptionWithSearch = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
@@ -610,7 +617,7 @@ data "rediscloud_cloud_account" "account" {
   name = "%s"
 }
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_flexible_subscription" "example" {
 
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
@@ -643,7 +650,7 @@ resource "rediscloud_subscription" "example" {
 }
 `
 
-const testAccResourceRedisCloudSubscriptionWithRedisVersion = `
+const testAccResourceRedisCloudFlexibleSubscriptionWithRedisVersion = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
@@ -654,7 +661,7 @@ data "rediscloud_cloud_account" "account" {
   name = "%s"
 }
 
-resource "rediscloud_subscription" "test" {
+resource "rediscloud_flexible_subscription" "test" {
 
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
@@ -689,7 +696,7 @@ resource "rediscloud_subscription" "test" {
 }
 `
 
-const testAccResourceRedisCloudSubscriptionPreferredAZsModulesOptional = `
+const testAccResourceRedisCloudFlexibleSubscriptionPreferredAZsModulesOptional = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
@@ -700,7 +707,7 @@ data "rediscloud_cloud_account" "account" {
   name = "%s"
 }
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_flexible_subscription" "example" {
 
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
@@ -732,7 +739,7 @@ resource "rediscloud_subscription" "example" {
 `
 
 // TF config for provisioning a subscription without the creation_plan block.
-const testAccResourceRedisCloudSubscriptionNoCreationPlan = `
+const testAccResourceRedisCloudFlexibleSubscriptionNoCreationPlan = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
@@ -743,7 +750,7 @@ data "rediscloud_cloud_account" "account" {
   name = "%s"
 }
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_flexible_subscription" "example" {
 
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
@@ -766,14 +773,14 @@ resource "rediscloud_subscription" "example" {
 }
 `
 
-const testAccResourceRedisCloudSubscriptionChangedPaymentMethod = `
+const testAccResourceRedisCloudFlexibleSubscriptionChangedPaymentMethod = `
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
   provider_type = "AWS" 
   name = "%s"
 }
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_flexible_subscription" "example" {
 
   name = "%s"
   payment_method = "marketplace"
@@ -806,7 +813,7 @@ resource "rediscloud_subscription" "example" {
 }
 `
 
-const testAccResourceRedisCloudSubscriptionContractPayment = `
+const testAccResourceRedisCloudFlexibleSubscriptionContractPayment = `
 
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
@@ -814,7 +821,7 @@ data "rediscloud_cloud_account" "account" {
   name = "%s"
 }
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_flexible_subscription" "example" {
 
   name = "%s"
   memory_storage = "ram"
@@ -846,7 +853,7 @@ resource "rediscloud_subscription" "example" {
 }
 `
 
-const testAccResourceRedisCloudSubscriptionMarketplacePayment = `
+const testAccResourceRedisCloudFlexibleSubscriptionMarketplacePayment = `
 
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
@@ -854,7 +861,7 @@ data "rediscloud_cloud_account" "account" {
   name = "%s"
 }
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_flexible_subscription" "example" {
 
   name = "%s"
   memory_storage = "ram"

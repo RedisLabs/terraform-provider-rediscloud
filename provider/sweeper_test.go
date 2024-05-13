@@ -46,9 +46,9 @@ func sharedClientForRegion(region string) (*rediscloudApi.Client, error) {
 }
 
 func init() {
-	resource.AddTestSweepers("rediscloud_subscription", &resource.Sweeper{
-		Name: "rediscloud_subscription",
-		F:    testSweepSubscriptions,
+	resource.AddTestSweepers("rediscloud_flexible_subscription", &resource.Sweeper{
+		Name: "rediscloud_flexible_subscription",
+		F:    testSweepFlexibleSubscriptions,
 	})
 	resource.AddTestSweepers("rediscloud_active_active_subscription", &resource.Sweeper{
 		Name: "rediscloud_active_active_subscription",
@@ -56,7 +56,7 @@ func init() {
 	})
 	resource.AddTestSweepers("rediscloud_cloud_account", &resource.Sweeper{
 		Name:         "rediscloud_cloud_account",
-		Dependencies: []string{"rediscloud_subscription", "rediscloud_active_active_subscription"}, // in case a subscription depends on an account
+		Dependencies: []string{"rediscloud_flexible_subscription", "rediscloud_active_active_subscription"}, // in case a subscription depends on an account
 		F:            testSweepCloudAccounts,
 	})
 	resource.AddTestSweepers("rediscloud_acl", &resource.Sweeper{
@@ -94,7 +94,7 @@ func testSweepCloudAccounts(region string) error {
 	return nil
 }
 
-func testSweepSubscriptions(region string) error {
+func testSweepFlexibleSubscriptions(region string) error {
 	client, err := sharedClientForRegion(region)
 	if err != nil {
 		return err

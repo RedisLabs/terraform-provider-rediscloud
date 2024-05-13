@@ -2,23 +2,28 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/rediscloud-go-api/service/latest_backups"
+	"github.com/RedisLabs/rediscloud-go-api/service/latest_imports"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
+func resourceRedisCloudFlexibleDatabase() *schema.Resource {
 	return &schema.Resource{
-		DeprecationMessage: "Please use `rediscloud_flexible_database` instead",
-		Description:        "Creates database resource within a subscription in your Redis Enterprise Cloud Account.",
-		CreateContext:      resourceRedisCloudSubscriptionDatabaseCreate,
-		ReadContext:        resourceRedisCloudSubscriptionDatabaseRead,
-		UpdateContext:      resourceRedisCloudSubscriptionDatabaseUpdate,
-		DeleteContext:      resourceRedisCloudSubscriptionDatabaseDelete,
+		Description:   "Creates database resource within a flexible subscription in your Redis Enterprise Cloud Account.",
+		CreateContext: resourceRedisCloudFlexibleDatabaseCreate,
+		ReadContext:   resourceRedisCloudFlexibleDatabaseRead,
+		UpdateContext: resourceRedisCloudFlexibleDatabaseUpdate,
+		DeleteContext: resourceRedisCloudFlexibleDatabaseDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
@@ -48,7 +53,7 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
-				Description: "Identifier of the subscription",
+				Description: "Identifier of the flexible subscription",
 				Type:        schema.TypeInt,
 				Required:    true,
 				ForceNew:    true,
@@ -365,7 +370,7 @@ func resourceRedisCloudSubscriptionDatabase() *schema.Resource {
 	}
 }
 
-func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudFlexibleDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	subId := d.Get("subscription_id").(int)
@@ -471,7 +476,7 @@ func resourceRedisCloudSubscriptionDatabaseCreate(ctx context.Context, d *schema
 	return resourceRedisCloudSubscriptionDatabaseUpdate(ctx, d, meta)
 }
 
-func resourceRedisCloudSubscriptionDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudFlexibleDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	var diags diag.Diagnostics
@@ -630,7 +635,7 @@ func resourceRedisCloudSubscriptionDatabaseRead(ctx context.Context, d *schema.R
 	return diags
 }
 
-func resourceRedisCloudSubscriptionDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudFlexibleDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*apiClient)
 
@@ -656,7 +661,7 @@ func resourceRedisCloudSubscriptionDatabaseDelete(ctx context.Context, d *schema
 	return diags
 }
 
-func resourceRedisCloudSubscriptionDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudFlexibleDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	_, dbId, err := toDatabaseId(d.Id())
@@ -762,4 +767,184 @@ func resourceRedisCloudSubscriptionDatabaseUpdate(ctx context.Context, d *schema
 	}
 
 	return resourceRedisCloudSubscriptionDatabaseRead(ctx, d, meta)
+}
+
+func buildBackupPlan(data interface{}, periodicBackupPath interface{}) *databases.DatabaseBackupConfig {
+	var d map[string]interface{}
+
+	switch v := data.(type) {
+	case []interface{}:
+		if len(v) != 1 {
+			if periodicBackupPath == nil {
+				return &databases.DatabaseBackupConfig{Active: redis.Bool(false)}
+			} else {
+				return nil
+			}
+		}
+		d = v[0].(map[string]interface{})
+	default:
+		d = v.(map[string]interface{})
+	}
+
+	config := databases.DatabaseBackupConfig{
+		Active:      redis.Bool(true),
+		Interval:    redis.String(d["interval"].(string)),
+		StorageType: redis.String(d["storage_type"].(string)),
+		StoragePath: redis.String(d["storage_path"].(string)),
+	}
+
+	if v := d["time_utc"].(string); v != "" {
+		config.TimeUTC = redis.String(v)
+	}
+
+	return &config
+}
+
+func flattenBackupPlan(backup *databases.Backup, existing []interface{}, periodicBackupPath string) []map[string]interface{} {
+	if backup == nil || !redis.BoolValue(backup.Enabled) || periodicBackupPath != "" {
+		return nil
+	}
+
+	storageType := ""
+	if len(existing) == 1 {
+		d := existing[0].(map[string]interface{})
+		storageType = d["storage_type"].(string)
+	}
+
+	return []map[string]interface{}{
+		{
+			"interval":     redis.StringValue(backup.Interval),
+			"time_utc":     redis.StringValue(backup.TimeUTC),
+			"storage_type": storageType,
+			"storage_path": redis.StringValue(backup.Destination),
+		},
+	}
+}
+
+func toDatabaseId(id string) (int, int, error) {
+	parts := strings.Split(id, "/")
+
+	if len(parts) > 2 {
+		return 0, 0, fmt.Errorf("invalid id: %s", id)
+	}
+
+	if len(parts) == 1 {
+		dbId, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return 0, 0, err
+		}
+		return 0, dbId, nil
+	}
+
+	subId, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	dbId, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return subId, dbId, nil
+}
+
+func skipDiffIfIntervalIs12And12HourTimeDiff(k, oldValue, newValue string, d *schema.ResourceData) bool {
+	// If interval is set to every 12 hours and the `time_utc` is in the afternoon,
+	// then the API will return the _morning_ time when queried.
+	// `interval` is assumed to be an attribute within the same block as the attribute being diffed.
+
+	parts := strings.Split(k, ".")
+	parts[len(parts)-1] = "interval"
+
+	var interval = d.Get(strings.Join(parts, "."))
+
+	if interval != databases.BackupIntervalEvery12Hours {
+		return false
+	}
+
+	oldTime, err := time.Parse("15:04", oldValue)
+	if err != nil {
+		return false
+	}
+	newTime, err := time.Parse("15:04", newValue)
+	if err != nil {
+		return false
+	}
+
+	return oldTime.Minute() == newTime.Minute() && oldTime.Add(12*time.Hour).Hour() == newTime.Hour()
+}
+
+func remoteBackupIntervalSetCorrectly(key string) schema.CustomizeDiffFunc {
+	// Validate multiple attributes - https://github.com/hashicorp/terraform-plugin-sdk/issues/233
+
+	return func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
+		if v, ok := diff.GetOk(key); ok {
+			backups := v.([]interface{})
+			if len(backups) == 1 {
+				v := backups[0].(map[string]interface{})
+
+				interval := v["interval"].(string)
+				timeUtc := v["time_utc"].(string)
+
+				if interval != databases.BackupIntervalEvery12Hours && interval != databases.BackupIntervalEvery24Hours && timeUtc != "" {
+					return fmt.Errorf("unexpected value at %s.0.time_utc - time_utc can only be set when interval is either %s or %s", key, databases.BackupIntervalEvery24Hours, databases.BackupIntervalEvery12Hours)
+				}
+			}
+		}
+		return nil
+	}
+
+}
+
+func parseLatestBackupStatus(latestBackupStatus *latest_backups.LatestBackupStatus) ([]map[string]interface{}, error) {
+	lbs := map[string]interface{}{
+		"response": nil,
+		"error":    nil,
+	}
+
+	if latestBackupStatus.Response.Resource != nil {
+		j, err := json.Marshal(latestBackupStatus.Response.Resource)
+		if err != nil {
+			return nil, err
+		}
+		lbs["response"] = string(j)
+	}
+
+	if latestBackupStatus.Response.Error != nil {
+		err := map[string]interface{}{
+			"type":        redis.StringValue(latestBackupStatus.Response.Error.Type),
+			"description": redis.StringValue(latestBackupStatus.Response.Error.Description),
+			"status":      redis.StringValue(latestBackupStatus.Response.Error.Status),
+		}
+		lbs["error"] = []map[string]interface{}{err}
+	}
+
+	return []map[string]interface{}{lbs}, nil
+}
+
+func parseLatestImportStatus(latestImportStatus *latest_imports.LatestImportStatus) ([]map[string]interface{}, error) {
+	lis := map[string]interface{}{
+		"response": nil,
+		"error":    nil,
+	}
+
+	if latestImportStatus.Response.Resource != nil {
+		j, err := json.Marshal(latestImportStatus.Response.Resource)
+		if err != nil {
+			return nil, err
+		}
+		lis["response"] = string(j)
+	}
+
+	if latestImportStatus.Response.Error != nil {
+		err := map[string]interface{}{
+			"type":        redis.StringValue(latestImportStatus.Response.Error.Type),
+			"description": redis.StringValue(latestImportStatus.Response.Error.Description),
+			"status":      redis.StringValue(latestImportStatus.Response.Error.Status),
+		}
+		lis["error"] = []map[string]interface{}{err}
+	}
+
+	return []map[string]interface{}{lis}, nil
 }

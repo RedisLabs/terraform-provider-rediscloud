@@ -143,7 +143,7 @@ data "rediscloud_cloud_account" "account" {
   name = "%s"
 }
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_flexible_subscription" "example" {
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
@@ -169,7 +169,7 @@ resource "rediscloud_subscription" "example" {
 }
 
 resource "rediscloud_subscription_peering" "test" {
-  subscription_id = rediscloud_subscription.example.id
+  subscription_id = rediscloud_flexible_subscription.example.id
   provider_name = "AWS"
   region = "%s"
   aws_account_id = "%s"
@@ -183,7 +183,7 @@ data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_flexible_subscription" "example" {
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
@@ -210,7 +210,7 @@ resource "rediscloud_subscription" "example" {
 }
 
 resource "rediscloud_subscription_peering" "test" {
-  subscription_id = rediscloud_subscription.example.id
+  subscription_id = rediscloud_flexible_subscription.example.id
   provider_name = "GCP"
   gcp_project_id = "%s"
   gcp_network_name = "%s"

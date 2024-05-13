@@ -22,7 +22,7 @@ provider "rediscloud" {
 }
 
 # Example resource configuration
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_flexible_subscription" "example" {
   # ...
 }
 ```

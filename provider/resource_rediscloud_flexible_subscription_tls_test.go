@@ -35,7 +35,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
-	resourceName := "rediscloud_subscription.example"
+	resourceName := "rediscloud_flexible_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	clientSslCertificate := os.Getenv("SSL_CERTIFICATE")
@@ -119,7 +119,8 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEm
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
-	resourceName := "rediscloud_subscription.example"
+	subscriptionName := "rediscloud_flexible_subscription.example"
+	databaseName := "rediscloud_flexible_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	var subId int
@@ -132,17 +133,17 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEm
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndWithoutCert, testCloudAccountName, name, 1, password),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", name),
-					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
-					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
-					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
-					resource.TestCheckResourceAttr(resourceName, "database.#", "1"),
-					resource.TestMatchResourceAttr(resourceName, "database.0.db_id", regexp.MustCompile("^[1-9][0-9]*$")),
-					resource.TestCheckResourceAttrSet(resourceName, "database.0.password"),
-					resource.TestCheckResourceAttr(resourceName, "database.0.name", "tf-database"),
-					resource.TestCheckResourceAttr(resourceName, "database.0.memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(subscriptionName, "name", name),
+					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
+					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
+					resource.TestCheckResourceAttrSet(subscriptionName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
+					resource.TestCheckResourceAttr(subscriptionName, "database.#", "1"),
+					resource.TestMatchResourceAttr(databaseName, "database.0.db_id", regexp.MustCompile("^[1-9][0-9]*$")),
+					resource.TestCheckResourceAttrSet(databaseName, "database.0.password"),
+					resource.TestCheckResourceAttr(databaseName, "database.0.name", "tf-database"),
+					resource.TestCheckResourceAttr(databaseName, "database.0.memory_limit_in_gb", "1"),
 					func(s *terraform.State) error {
-						r := s.RootModule().Resources[resourceName]
+						r := s.RootModule().Resources[subscriptionName]
 
 						var err error
 						subId, err = strconv.Atoi(r.Primary.ID)
@@ -182,7 +183,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEm
 				),
 			},
 			{
-				ResourceName:      resourceName,
+				ResourceName:      subscriptionName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -261,7 +262,7 @@ data "rediscloud_cloud_account" "account" {
   name = "%s"
 }
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_flexible_subscription" "example" {
 
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
@@ -281,21 +282,22 @@ resource "rediscloud_subscription" "example" {
       preferred_availability_zones = ["eu-west-1a"]
     }
   }
+}
 
-  database {
-    name = "tf-database"
-    protocol = "redis"
-    memory_limit_in_gb = %d
-    support_oss_cluster_api = true
-    data_persistence = "none"
-    replication = false
-    throughput_measurement_by = "operations-per-second"
-    password = "%s"
-    throughput_measurement_value = 10000
-    source_ips = ["10.0.0.0/8"]
-	enable_tls = true
-	client_ssl_certificate = "%s"
-  }
+resource "rediscloud_flexible_database" "example" {
+  subscription_id = rediscloud_flexible_subscription.example.id
+  name = "tf-database"
+  protocol = "redis"
+  memory_limit_in_gb = %d
+  support_oss_cluster_api = true
+  data_persistence = "none"
+  replication = false
+  throughput_measurement_by = "operations-per-second"
+  password = "%s"
+  throughput_measurement_value = 10000
+  source_ips = ["10.0.0.0/8"]
+  enable_tls = true
+  client_ssl_certificate = "%s"
 }
 `
 
@@ -310,7 +312,7 @@ data "rediscloud_cloud_account" "account" {
   name = "%s"
 }
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_flexible_subscription" "example" {
 
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
@@ -330,20 +332,21 @@ resource "rediscloud_subscription" "example" {
       preferred_availability_zones = ["eu-west-1a"]
     }
   }
+}
 
-  database {
-    name = "tf-database"
-    protocol = "redis"
-    memory_limit_in_gb = %d
-    support_oss_cluster_api = true
-    data_persistence = "none"
-    replication = false
-    throughput_measurement_by = "operations-per-second"
-    password = "%s"
-    throughput_measurement_value = 10000
-    source_ips = ["10.0.0.0/8"]
-	enable_tls = true
-  }
+resource "rediscloud_flexible_database" "example" {
+  subscription_id = rediscloud_flexible_subscription.example.id
+  name = "tf-database"
+  protocol = "redis"
+  memory_limit_in_gb = %d
+  support_oss_cluster_api = true
+  data_persistence = "none"
+  replication = false
+  throughput_measurement_by = "operations-per-second"
+  password = "%s"
+  throughput_measurement_value = 10000
+  source_ips = ["10.0.0.0/8"]
+  enable_tls = true
 }
 `
 
@@ -358,7 +361,7 @@ data "rediscloud_cloud_account" "account" {
   name = "%s"
 }
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_flexible_subscription" "example" {
 
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
@@ -378,19 +381,20 @@ resource "rediscloud_subscription" "example" {
       preferred_availability_zones = ["eu-west-1a"]
     }
   }
+}
 
-  database {
-    name = "tf-database"
-    protocol = "redis"
-    memory_limit_in_gb = %d
-    support_oss_cluster_api = true
-    data_persistence = "none"
-    replication = false
-    throughput_measurement_by = "operations-per-second"
-    password = "%s"
-    throughput_measurement_value = 10000
-    source_ips = ["10.0.0.0/8"]
-	client_ssl_certificate = "%s"
-  }
+resource "rediscloud_flexible_database" "example" {
+  subscription_id = rediscloud_flexible_subscription.example.id
+  name = "tf-database"
+  protocol = "redis"
+  memory_limit_in_gb = %d
+  support_oss_cluster_api = true
+  data_persistence = "none"
+  replication = false
+  throughput_measurement_by = "operations-per-second"
+  password = "%s"
+  throughput_measurement_value = 10000
+  source_ips = ["10.0.0.0/8"]
+  client_ssl_certificate = "%s"
 }
 `
