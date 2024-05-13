@@ -48,6 +48,7 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_payment_method":             dataSourceRedisCloudPaymentMethod(),
 				"rediscloud_regions":                    dataSourceRedisCloudRegions(),
 				"rediscloud_essentials_plan":            dataSourceRedisCloudEssentialsPlan(),
+				"rediscloud_essentials_subscription":    dataSourceRedisCloudEssentialsSubscription(),
 				"rediscloud_flexible_subscription":      dataSourceRedisCloudFlexibleSubscription(),
 				"rediscloud_flexible_database":          dataSourceRedisCloudFlexibleDatabase(),
 				"rediscloud_subscription":               dataSourceRedisCloudSubscription(), // Deprecated
@@ -60,6 +61,7 @@ func New(version string) func() *schema.Provider {
 			},
 			ResourcesMap: map[string]*schema.Resource{
 				"rediscloud_cloud_account":                       resourceRedisCloudCloudAccount(),
+				"rediscloud_essentials_subscription":             resourceRedisCloudEssentialsSubscription(),
 				"rediscloud_flexible_subscription":               resourceRedisCloudFlexibleSubscription(),
 				"rediscloud_flexible_database":                   resourceRedisCloudFlexibleDatabase(),
 				"rediscloud_subscription":                        resourceRedisCloudSubscription(),         // Deprecated
