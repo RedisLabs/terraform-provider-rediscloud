@@ -34,11 +34,14 @@ data "rediscloud_flexible_database" "example" {
 ## Argument Reference
 
 * `subscription_id` - (Required) ID of the subscription that the database belongs to
+* `db_id` - (Optional) The id of the database to filter returned databases
 * `name` - (Optional) The name of the database to filter returned databases
 * `protocol` - (Optional) The protocol of the database to filter returned databases
 * `region` - (Optional) The region of the database to filter returned databases
 
 ## Attributes Reference
+
+`id` is set to the ID of the found subscription and database in the following format: `{subscription_id}/{db_id}`
 
 * `name` - The name of the database
 * `protocol` - The protocol of the database.
@@ -61,6 +64,8 @@ data "rediscloud_flexible_database" "example" {
 * `private_endpoint` - Private endpoint to access the database
 * `enable_tls` - Enable TLS for database, default is `false`
 * `enable_default_user` - When `true` enables connecting to the database with the default user. Default `true`.
+* `latest_backup_status` - An object containing the JSON-formatted response detailing the latest backup status (or an error if the lookup failed).
+* `latest_import_status` - An object containing the JSON-formatted response detailing the latest import status (or an error if the lookup failed).
 
 The `alert` block supports:
 
