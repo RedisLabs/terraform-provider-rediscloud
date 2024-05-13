@@ -24,11 +24,11 @@ func TestAccCreateReadUpdateImportDeleteAclRole_Flexible(t *testing.T) {
 	testRoleName := prefix + "-test-role"
 	testRoleNameUpdated := testRoleName + "-updated"
 
-	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudFlexibleDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRule, exampleRuleName) +
 		fmt.Sprintf(testRole, testRoleName)
 
-	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudSubscriptionDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudFlexibleDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRule, exampleRuleName) +
 		fmt.Sprintf(testRole, testRoleNameUpdated)
 
@@ -134,8 +134,8 @@ resource "rediscloud_acl_role" "test" {
 	rule {
 		name = rediscloud_acl_rule.example.name
 		database {
-			subscription = rediscloud_subscription.example.id
-			database = rediscloud_subscription_database.example.db_id
+			subscription = rediscloud_flexible_subscription.example.id
+			database = rediscloud_flexible_database.example.db_id
 		}
 	}
 }

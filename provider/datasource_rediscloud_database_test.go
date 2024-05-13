@@ -131,12 +131,10 @@ const testAccDatasourceRedisCloudAADatabase = `
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
 }
-
 resource "rediscloud_active_active_subscription" "example" {
 	name = "%s"
 	payment_method_id = data.rediscloud_payment_method.card.id
 	cloud_provider = "AWS"
-
 	creation_plan {
 		memory_limit_in_gb = 1
 		quantity = 1
@@ -154,17 +152,16 @@ resource "rediscloud_active_active_subscription" "example" {
 		}
 	}
 }
-
 resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 3
-    support_oss_cluster_api = false 
+    support_oss_cluster_api = false
     external_endpoint_for_oss_cluster_api = false
 	enable_tls = false
-    
+
     global_data_persistence = "none"
-    global_password = "%s" 
+    global_password = "%s"
     global_source_ips = ["192.168.0.0/16", "192.170.0.0/16"]
     global_alert {
 		name = "dataset-size"
@@ -184,7 +181,6 @@ resource "rediscloud_active_active_subscription_database" "example" {
 		name = "us-east-2"
 	}
 }
-
 data "rediscloud_database" "example" {
   subscription_id = rediscloud_active_active_subscription.example.id
   name = rediscloud_active_active_subscription_database.example.name

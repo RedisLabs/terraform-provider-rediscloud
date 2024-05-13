@@ -9,11 +9,10 @@ import (
 	"strconv"
 )
 
-func dataSourceRedisCloudSubscription() *schema.Resource {
+func dataSourceRedisCloudFlexibleSubscription() *schema.Resource {
 	return &schema.Resource{
-		DeprecationMessage: "Please use `rediscloud_flexible_subscription` or `rediscloud_active_active_subscription` instead",
-		Description:        "The Subscription data source allows access to the details of an existing subscription within your Redis Enterprise Cloud account.",
-		ReadContext:        dataSourceRedisCloudSubscriptionRead,
+		Description: "The Flexible Subscription data source allows access to the details of an existing flexible subscription within your Redis Enterprise Cloud account.",
+		ReadContext: dataSourceRedisCloudFlexibleSubscriptionRead,
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -189,7 +188,7 @@ func dataSourceRedisCloudSubscription() *schema.Resource {
 	}
 }
 
-func dataSourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceRedisCloudFlexibleSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	api := meta.(*apiClient)
 
@@ -199,6 +198,11 @@ func dataSourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.Resourc
 	}
 
 	var filters []func(method *subscriptions.Subscription) bool
+
+	// Filter to flexible subscriptions only (active-active subs) come from the same endpoint
+	filters = append(filters, func(sub *subscriptions.Subscription) bool {
+		return redis.StringValue(sub.DeploymentType) != "active-active"
+	})
 
 	if name, ok := d.GetOk("name"); ok {
 		filters = append(filters, func(sub *subscriptions.Subscription) bool {
@@ -245,7 +249,6 @@ func dataSourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.Resourc
 	}
 
 	subId := redis.IntValue(sub.ID)
-	d.SetId(strconv.Itoa(subId))
 
 	pricingList, err := api.client.Pricing.List(ctx, subId)
 	if err != nil {
@@ -255,5 +258,27 @@ func dataSourceRedisCloudSubscriptionRead(ctx context.Context, d *schema.Resourc
 		return diag.FromErr(err)
 	}
 
+	d.SetId(strconv.Itoa(subId))
+
 	return diags
+}
+
+func filterSubscriptions(subs []*subscriptions.Subscription, filters []func(sub *subscriptions.Subscription) bool) []*subscriptions.Subscription {
+	var filteredSubs []*subscriptions.Subscription
+	for _, sub := range subs {
+		if filterSub(sub, filters) {
+			filteredSubs = append(filteredSubs, sub)
+		}
+	}
+
+	return filteredSubs
+}
+
+func filterSub(method *subscriptions.Subscription, filters []func(method *subscriptions.Subscription) bool) bool {
+	for _, f := range filters {
+		if !f(method) {
+			return false
+		}
+	}
+	return true
 }
