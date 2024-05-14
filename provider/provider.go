@@ -63,8 +63,9 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_subscription":                        resourceRedisCloudSubscription(),         // Deprecated
 				"rediscloud_subscription_database":               resourceRedisCloudSubscriptionDatabase(), // Deprecated
 				"rediscloud_subscription_peering":                resourceRedisCloudSubscriptionPeering(),
-				"rediscloud_active_active_subscription_database": resourceRedisCloudActiveActiveSubscriptionDatabase(),
+				"rediscloud_active_active_subscription_database": resourceRedisCloudActiveActiveSubscriptionDatabase(), // Deprecated
 				"rediscloud_active_active_subscription":          resourceRedisCloudActiveActiveSubscription(),
+				"rediscloud_active_active_database":              resourceRedisCloudActiveActiveDatabase(),
 				"rediscloud_active_active_subscription_regions":  resourceRedisCloudActiveActiveSubscriptionRegions(),
 				"rediscloud_active_active_subscription_peering":  resourceRedisCloudActiveActiveSubscriptionPeering(),
 				"rediscloud_acl_rule":                            resourceRedisCloudAclRule(),

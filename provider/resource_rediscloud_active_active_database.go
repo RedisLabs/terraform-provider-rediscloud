@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -9,18 +10,18 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
+func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 	return &schema.Resource{
-		DeprecationMessage: "Please use `rediscloud_active_active_database` instead",
-		Description:        "Creates database resource within an active-active subscription in your Redis Enterprise Cloud Account.",
-		CreateContext:      resourceRedisCloudActiveActiveSubscriptionDatabaseCreate,
-		ReadContext:        resourceRedisCloudActiveActiveSubscriptionDatabaseRead,
-		UpdateContext:      resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate,
-		DeleteContext:      resourceRedisCloudActiveActiveSubscriptionDatabaseDelete,
+		Description:   "Creates database resource within an active-active subscription in your Redis Enterprise Cloud Account.",
+		CreateContext: resourceRedisCloudActiveActiveDatabaseCreate,
+		ReadContext:   resourceRedisCloudActiveActiveDatabaseRead,
+		UpdateContext: resourceRedisCloudActiveActiveDatabaseUpdate,
+		DeleteContext: resourceRedisCloudActiveActiveDatabaseDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
@@ -339,7 +340,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 	}
 }
 
-func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	subId := d.Get("subscription_id").(int)
@@ -460,10 +461,10 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseCreate(ctx context.Contex
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
 	subscriptionMutex.Unlock(subId)
-	return resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx, d, meta)
+	return resourceRedisCloudActiveActiveDatabaseUpdate(ctx, d, meta)
 }
 
-func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	var diags diag.Diagnostics
@@ -598,7 +599,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 	return diags
 }
 
-func resourceRedisCloudActiveActiveSubscriptionDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudActiveActiveDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*apiClient)
 
@@ -629,7 +630,7 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseDelete(ctx context.Contex
 	return diags
 }
 
-func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	_, dbId, err := toDatabaseId(d.Id())
@@ -763,5 +764,81 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseUpdate(ctx context.Contex
 		return diag.FromErr(err)
 	}
 
-	return resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx, d, meta)
+	return resourceRedisCloudActiveActiveDatabaseRead(ctx, d, meta)
+}
+
+func getStateOverrideRegion(d *schema.ResourceData, regionName string) map[string]interface{} {
+	for _, region := range d.Get("override_region").(*schema.Set).List() {
+		dbRegion := region.(map[string]interface{})
+		if dbRegion["name"].(string) == regionName {
+			return dbRegion
+		}
+	}
+	return nil
+}
+
+func getStateRemoteBackup(d *schema.ResourceData, regionName string) []interface{} {
+	for _, region := range d.Get("override_region").(*schema.Set).List() {
+		dbRegion := region.(map[string]interface{})
+		if dbRegion["name"].(string) == regionName {
+			return dbRegion["remote_backup"].([]interface{})
+		}
+	}
+	return nil
+}
+
+func getStateAlertsFromDbRegion(dbRegion map[string]interface{}) []*databases.Alert {
+	// Make a list of region-specific alert configurations for use in the regions list below
+	if dbRegion == nil {
+		return nil
+	} else if dbRegion["override_global_alert"] == nil {
+		return nil
+	}
+	// Initialise to non-nil, zero-length slice.
+	//goland:noinspection GoPreferNilSlice
+	overrideAlerts := []*databases.Alert{}
+	for _, alert := range dbRegion["override_global_alert"].(*schema.Set).List() {
+		dbAlert := alert.(map[string]interface{})
+		overrideAlerts = append(overrideAlerts, &databases.Alert{
+			Name:  redis.String(dbAlert["name"].(string)),
+			Value: redis.Int(dbAlert["value"].(int)),
+		})
+	}
+	return overrideAlerts
+}
+
+func waitForDatabaseToBeDeleted(ctx context.Context, subId int, dbId int, api *apiClient) error {
+	wait := &retry.StateChangeConf{
+		Delay:   10 * time.Second,
+		Pending: []string{"pending"},
+		Target:  []string{"deleted"},
+		Timeout: 10 * time.Minute,
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for database %d to be deleted", dbId)
+
+			_, err = api.client.Database.Get(ctx, subId, dbId)
+			if err != nil {
+				if _, ok := err.(*databases.NotFound); ok {
+					return "deleted", "deleted", nil
+				}
+				return nil, "", err
+			}
+
+			return "pending", "pending", nil
+		},
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func flattenModulesToNames(modules []*databases.Module) []string {
+	var moduleNames = make([]string, 0)
+	for _, module := range modules {
+		moduleNames = append(moduleNames, redis.StringValue(module.Name))
+	}
+	return moduleNames
 }

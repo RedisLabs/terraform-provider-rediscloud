@@ -1,13 +1,11 @@
 ---
 layout: "rediscloud"
-page_title: "Redis Cloud: rediscloud_active_active_subscription_database"
+page_title: "Redis Cloud: rediscloud_active_active_database"
 description: |-
   Database resource for Active-Active Subscriptions in the Redis Cloud Terraform provider.
 ---
 
-# Resource: rediscloud_active_active_subscription_database
-
-!> **WARNING:** This resource is deprecated and will be removed in the next major version. Switch to `rediscloud_active_active_database`
+# Resource: rediscloud_active_active_database
 
 Creates a Database within a specified Active-Active Subscription in your Redis Enterprise Cloud Account.
 
@@ -41,7 +39,7 @@ resource "rediscloud_active_active_subscription" "subscription-resource" {
   }
 }
 
-resource "rediscloud_active_active_subscription_database" "database-resource" {
+resource "rediscloud_active_active_database" "database-resource" {
     subscription_id = rediscloud_active_active_subscription.subscription-resource.id
     name = "database-name"
     memory_limit_in_gb = 1
@@ -72,11 +70,11 @@ resource "rediscloud_active_active_subscription_database" "database-resource" {
 }
 
 output "us-east-1-public-endpoints" {
-  value = rediscloud_active_active_subscription_database.database-resource.public_endpoint.us-east-1
+  value = rediscloud_active_active_database.database-resource.public_endpoint.us-east-1
 }
 
 output "us-east-2-private-endpoints" {
-  value = rediscloud_active_active_subscription_database.database-resource.private_endpoint.us-east-1
+  value = rediscloud_active_active_database.database-resource.private_endpoint.us-east-1
 }
 ```
 
@@ -100,7 +98,6 @@ The following arguments are supported:
 * `global_resp_version` - (Optional) Either 'resp2' or 'resp3'. Resp version for Crdb databases within the AA database. Must be compatible with Redis version.
 * `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999. **Modifying this attribute will force creation of a new resource.**
 * `override_region` - (Optional) Override region specific configuration, documented below
-
 
 The `override_region` block supports:
 
@@ -139,10 +136,10 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/l
 * `latest_import_status` - An object containing the JSON-formatted response detailing the latest import status (or an error if the lookup failed).
 
 ## Import
-`rediscloud_active_active_subscription_database` can be imported using the ID of the Active-Active subscription and the ID of the database in the format {subscription ID}/{database ID}, e.g.
+`rediscloud_active_active_database` can be imported using the ID of the Active-Active subscription and the ID of the database in the format {subscription ID}/{database ID}, e.g.
 
 ```
-$ terraform import rediscloud_active_active_subscription_database.database-resource 123456/12345678
+$ terraform import rediscloud_active_active_database.database-resource 123456/12345678
 ```
 
 Note: Due to constraints in the Redis Cloud API, the import process will not import global attributes or override region attributes. If you wish to use these attributes in your Terraform configuration, you will need to manually add them to your Terraform configuration and run `terraform apply` to update the database.

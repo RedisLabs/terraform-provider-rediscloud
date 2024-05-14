@@ -15,12 +15,12 @@ import (
 )
 
 // Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the database resource.
-func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.T) {
+func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
 	password := acctest.RandString(20)
-	resourceName := "rediscloud_active_active_subscription_database.example"
+	resourceName := "rediscloud_active_active_database.example"
 	subscriptionResourceName := "rediscloud_active_active_subscription.example"
 
 	var subId int
@@ -32,7 +32,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 		Steps: []resource.TestStep{
 			// Test database creation
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabase, subscriptionName, name, password),
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabase, subscriptionName, name, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "3"),
@@ -101,7 +101,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 			},
 			// Test database is updated successfully, including updates to both global and local alerts and clearing modules
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdate, subscriptionName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseUpdate, subscriptionName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
@@ -128,7 +128,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 			},
 			// Test database is updated, including deletion of global and local alerts and replacing modules
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdateNoAlerts, subscriptionName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlerts, subscriptionName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
@@ -149,8 +149,8 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 			},
 			// Test that that database is imported successfully
 			{
-				Config:            fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseImport, subscriptionName, name),
-				ResourceName:      "rediscloud_active_active_subscription_database.example",
+				Config:            fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseImport, subscriptionName, name),
+				ResourceName:      "rediscloud_active_active_database.example",
 				ImportState:       true,
 				ImportStateVerify: true,
 				// global and override attributes not supported as part of import
@@ -174,12 +174,12 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_CRUDI(t *testing.
 	})
 }
 
-func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_optionalAttributes(t *testing.T) {
+func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing.T) {
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
 	password := acctest.RandString(20)
-	resourceName := "rediscloud_active_active_subscription_database.example"
+	resourceName := "rediscloud_active_active_database.example"
 	portNumber := 10101
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -188,7 +188,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_optionalAttribute
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseOptionalAttributes, subscriptionName, name, password, portNumber),
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseOptionalAttributes, subscriptionName, name, password, portNumber),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "port", strconv.Itoa(portNumber)),
 				),
@@ -197,7 +197,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_optionalAttribute
 	})
 }
 
-func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_timeUtcRequiresValidInterval(t *testing.T) {
+func TestAccResourceRedisCloudActiveActiveDatabase_timeUtcRequiresValidInterval(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	password := acctest.RandString(20)
@@ -208,7 +208,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_timeUtcRequiresVa
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseInvalidTimeUtc, testCloudAccountName, name, password),
+				Config:      fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseInvalidTimeUtc, testCloudAccountName, name, password),
 				ExpectError: regexp.MustCompile("unexpected value at override_region\\.\\d*\\.remote_backup\\.0\\.time_utc - time_utc can only be set when interval is either every-24-hours or every-12-hours"),
 			},
 		},
@@ -246,8 +246,8 @@ const activeActiveSubscriptionBoilerplate = `
 
 // Create and Read tests
 // TF config for provisioning a new database
-const testAccResourceRedisCloudActiveActiveSubscriptionDatabase = activeActiveSubscriptionBoilerplate + `
-resource "rediscloud_active_active_subscription_database" "example" {
+const testAccResourceRedisCloudActiveActiveDatabase = activeActiveSubscriptionBoilerplate + `
+resource "rediscloud_active_active_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 3
@@ -281,8 +281,8 @@ resource "rediscloud_active_active_subscription_database" "example" {
 `
 
 // TF config for updating a database
-const testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdate = activeActiveSubscriptionBoilerplate + `
-resource "rediscloud_active_active_subscription_database" "example" {
+const testAccResourceRedisCloudActiveActiveDatabaseUpdate = activeActiveSubscriptionBoilerplate + `
+resource "rediscloud_active_active_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 1
@@ -310,8 +310,8 @@ resource "rediscloud_active_active_subscription_database" "example" {
 }
 `
 
-const testAccResourceRedisCloudActiveActiveSubscriptionDatabaseUpdateNoAlerts = activeActiveSubscriptionBoilerplate + `
-resource "rediscloud_active_active_subscription_database" "example" {
+const testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlerts = activeActiveSubscriptionBoilerplate + `
+resource "rediscloud_active_active_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 1
@@ -333,15 +333,15 @@ resource "rediscloud_active_active_subscription_database" "example" {
 `
 
 // TF config for updating a database
-const testAccResourceRedisCloudActiveActiveSubscriptionDatabaseImport = activeActiveSubscriptionBoilerplate + `
-resource "rediscloud_active_active_subscription_database" "example" {
+const testAccResourceRedisCloudActiveActiveDatabaseImport = activeActiveSubscriptionBoilerplate + `
+resource "rediscloud_active_active_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 1
 }
 `
 
-const testAccResourceRedisCloudActiveActiveSubscriptionDatabaseOptionalAttributes = `
+const testAccResourceRedisCloudActiveActiveDatabaseOptionalAttributes = `
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
 }
@@ -370,7 +370,7 @@ resource "rediscloud_active_active_subscription" "example" {
 	}
 }
 
-resource "rediscloud_active_active_subscription_database" "example" {
+resource "rediscloud_active_active_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
 	name = "%s"
 	memory_limit_in_gb = 3
@@ -403,8 +403,8 @@ resource "rediscloud_active_active_subscription_database" "example" {
 } 
 `
 
-const testAccResourceRedisCloudActiveActiveSubscriptionDatabaseInvalidTimeUtc = activeActiveSubscriptionBoilerplate + `
-resource "rediscloud_active_active_subscription_database" "example" {
+const testAccResourceRedisCloudActiveActiveDatabaseInvalidTimeUtc = activeActiveSubscriptionBoilerplate + `
+resource "rediscloud_active_active_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
 	name = "%s"
 	memory_limit_in_gb = 3
