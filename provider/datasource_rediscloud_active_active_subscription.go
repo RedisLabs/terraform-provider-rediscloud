@@ -30,6 +30,16 @@ func dataSourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
+			"number_of_databases": {
+				Description: "The number of databases that are linked to this subscription",
+				Type:        schema.TypeInt,
+				Computed:    true,
+			},
+			"status": {
+				Description: "Current status of the subscription",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"cloud_provider": {
 				Description: "A cloud provider string either GCP or AWS",
 				Type:        schema.TypeString,
@@ -141,6 +151,12 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 	if err := d.Set("payment_method", sub.PaymentMethod); err != nil {
 		return diag.FromErr(err)
 	}
+	if err := d.Set("number_of_databases", redis.IntValue(sub.NumberOfDatabases)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("status", redis.StringValue(sub.Status)); err != nil {
+		return diag.FromErr(err)
+	}
 
 	cloudDetails := sub.CloudDetails
 	if len(cloudDetails) == 0 {
@@ -153,13 +169,6 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 		if err := d.Set("cloud_provider", cloudProvider); err != nil {
 			return diag.FromErr(err)
 		}
-	}
-
-	if err := d.Set("number_of_databases", redis.IntValue(sub.NumberOfDatabases)); err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("status", redis.StringValue(sub.Status)); err != nil {
-		return diag.FromErr(err)
 	}
 
 	subId := redis.IntValue(sub.ID)
