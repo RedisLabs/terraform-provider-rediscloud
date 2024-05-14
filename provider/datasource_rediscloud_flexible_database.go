@@ -7,9 +7,6 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"regexp"
-	"strconv"
 )
 
 func dataSourceRedisCloudFlexibleDatabase() *schema.Resource {
@@ -19,14 +16,13 @@ func dataSourceRedisCloudFlexibleDatabase() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
-				Description:      "ID of the subscription that the database belongs to",
-				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
-				Required:         true,
+				Description: "ID of the subscription that the database belongs to",
+				Type:        schema.TypeInt,
+				Required:    true,
 			},
 			"db_id": {
 				Description: "The id of the database to filter returned databases",
-				Type:        schema.TypeString,
+				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
 			},
@@ -240,10 +236,7 @@ func dataSourceRedisCloudFlexibleDatabaseRead(ctx context.Context, d *schema.Res
 	var diags diag.Diagnostics
 	api := meta.(*apiClient)
 
-	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	subId := d.Get("subscription_id").(int)
 
 	var filters []func(db *databases.Database) bool
 
