@@ -473,7 +473,7 @@ func resourceRedisCloudFlexibleDatabaseCreate(ctx context.Context, d *schema.Res
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password, enableDefaultUser and so on.
 	subscriptionMutex.Unlock(subId)
-	return resourceRedisCloudSubscriptionDatabaseUpdate(ctx, d, meta)
+	return resourceRedisCloudFlexibleDatabaseUpdate(ctx, d, meta)
 }
 
 func resourceRedisCloudFlexibleDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -766,7 +766,7 @@ func resourceRedisCloudFlexibleDatabaseUpdate(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 
-	return resourceRedisCloudSubscriptionDatabaseRead(ctx, d, meta)
+	return resourceRedisCloudFlexibleDatabaseRead(ctx, d, meta)
 }
 
 func buildBackupPlan(data interface{}, periodicBackupPath interface{}) *databases.DatabaseBackupConfig {
