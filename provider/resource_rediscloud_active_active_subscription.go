@@ -304,7 +304,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are listed .
 	// This additional wait ensures that the databases will be listed before calling api.client.Database.List()
-	time.Sleep(10 * time.Second) //lintignore:R018
+	time.Sleep(30 * time.Second) //lintignore:R018
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
@@ -451,7 +451,7 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 	// This additional wait ensures that the databases are deleted before the subscription is deleted.
-	time.Sleep(10 * time.Second) //lintignore:R018
+	time.Sleep(30 * time.Second) //lintignore:R018
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
