@@ -1,7 +1,7 @@
 package provider
 
 import (
-	rediscloud_api "github.com/RedisLabs/rediscloud-go-api"
+	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 	"os"
 	"testing"
 
@@ -27,7 +27,7 @@ func TestProvider(t *testing.T) {
 }
 
 func testAccPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, RedisCloudUrlEnvVar, rediscloud_api.AccessKeyEnvVar, rediscloud_api.SecretKeyEnvVar)
+	requireEnvironmentVariables(t, RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
 }
 
 func testAccAwsPreExistingCloudAccountPreCheck(t *testing.T) {

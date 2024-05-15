@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
-	rediscloud_api "github.com/RedisLabs/rediscloud-go-api"
+	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 )
 
 const RedisCloudUrlEnvVar = "REDISCLOUD_URL"
@@ -31,12 +31,12 @@ func New(version string) func() *schema.Provider {
 				},
 				"api_key": {
 					Type:        schema.TypeString,
-					Description: fmt.Sprintf("This is the Redis Cloud API key. It must be provided but can also be set by the `%s` environment variable.", rediscloud_api.AccessKeyEnvVar),
+					Description: fmt.Sprintf("This is the Redis Cloud API key. It must be provided but can also be set by the `%s` environment variable.", rediscloudApi.AccessKeyEnvVar),
 					Optional:    true,
 				},
 				"secret_key": {
 					Type:        schema.TypeString,
-					Description: fmt.Sprintf("This is the Redis Cloud API secret key. It must be provided but can also be set by the `%s` environment variable.", rediscloud_api.SecretKeyEnvVar),
+					Description: fmt.Sprintf("This is the Redis Cloud API secret key. It must be provided but can also be set by the `%s` environment variable.", rediscloudApi.SecretKeyEnvVar),
 					Optional:    true,
 				},
 			},
@@ -83,33 +83,33 @@ func New(version string) func() *schema.Provider {
 var subscriptionMutex = newPerIdLock()
 
 type apiClient struct {
-	client *rediscloud_api.Client
+	client *rediscloudApi.Client
 }
 
 func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	return func(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		var config []rediscloud_api.Option
-		config = append(config, rediscloud_api.AdditionalUserAgent(p.UserAgent("terraform-provider-rediscloud", version)))
+		var config []rediscloudApi.Option
+		config = append(config, rediscloudApi.AdditionalUserAgent(p.UserAgent("terraform-provider-rediscloud", version)))
 
 		url := d.Get("url").(string)
 		apiKey := d.Get("api_key").(string)
 		secretKey := d.Get("secret_key").(string)
 
 		if url != "" {
-			config = append(config, rediscloud_api.BaseURL(url))
+			config = append(config, rediscloudApi.BaseURL(url))
 		}
 
 		if apiKey != "" && secretKey != "" {
-			config = append(config, rediscloud_api.Auth(apiKey, secretKey))
+			config = append(config, rediscloudApi.Auth(apiKey, secretKey))
 		}
 
 		if logging.IsDebugOrHigher() {
-			config = append(config, rediscloud_api.LogRequests(true))
+			config = append(config, rediscloudApi.LogRequests(true))
 		}
 
-		config = append(config, rediscloud_api.Logger(&debugLogger{}))
+		config = append(config, rediscloudApi.Logger(&debugLogger{}))
 
-		client, err := rediscloud_api.NewClient(config...)
+		client, err := rediscloudApi.NewClient(config...)
 		if err != nil {
 			return nil, diag.FromErr(err)
 		}
