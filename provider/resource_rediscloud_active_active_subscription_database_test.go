@@ -205,7 +205,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionDatabase_timeUtcRequiresVa
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionDatabaseInvalidTimeUtc, testCloudAccountName, name, password),
