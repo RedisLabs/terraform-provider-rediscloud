@@ -148,7 +148,7 @@ resource "rediscloud_active_active_subscription" "example" {
 		}
 	}
 }
-resource "rediscloud_active_active_subscription_database" "example" {
+resource "rediscloud_active_active_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 3
@@ -179,6 +179,6 @@ resource "rediscloud_active_active_subscription_database" "example" {
 }
 data "rediscloud_flexible_database" "example" {
   subscription_id = rediscloud_active_active_subscription.example.id
-  name = rediscloud_active_active_subscription_database.example.name
+  name = rediscloud_active_active_database.example.name
 }
 `
