@@ -395,7 +395,8 @@ func waitForActiveActivePeeringToBeInitiated(ctx context.Context, subId, id int,
 			subscriptions.VPCPeeringStatusInactive,
 			subscriptions.VPCPeeringStatusPendingAcceptance,
 		},
-		Timeout: 10 * time.Minute,
+		Timeout:      10 * time.Minute,
+		PollInterval: 30 * time.Second,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for vpc peering %d to be initiated. Status: %s", id, state)

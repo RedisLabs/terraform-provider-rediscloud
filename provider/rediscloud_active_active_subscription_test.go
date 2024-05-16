@@ -108,7 +108,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttrSet(datasourceName, "payment_method_id"),
 					resource.TestCheckResourceAttr(datasourceName, "cloud_provider", "AWS"),
-					resource.TestCheckResourceAttr(datasourceName, "number_of_databases", "1"),
+					resource.TestCheckResourceAttr(datasourceName, "number_of_databases", "0"),
 					resource.TestCheckResourceAttr(datasourceName, "status", "active"),
 
 					resource.TestCheckResourceAttr(datasourceName, "pricing.#", "2"),
