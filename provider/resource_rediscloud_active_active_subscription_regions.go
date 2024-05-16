@@ -404,7 +404,7 @@ func regionsCreate(ctx context.Context, subId int, regionsToCreate []*RequestedR
 
 		// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 		// This additional wait ensures that the databases are deleted before the subscription is deleted.
-		time.Sleep(10 * time.Second) //lintignore:R018
+		time.Sleep(30 * time.Second) //lintignore:R018
 		if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 			return err
 		}
@@ -458,7 +458,7 @@ func regionsUpdateDatabases(ctx context.Context, subId int, api *apiClient, regi
 
 			// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 			// This additional wait ensures that the databases are deleted before the subscription is deleted.
-			time.Sleep(10 * time.Second) //lintignore:R018
+			time.Sleep(30 * time.Second) //lintignore:R018
 			if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 				return err
 			}
@@ -492,7 +492,7 @@ func regionsDelete(ctx context.Context, subId int, regionsToDelete []*string, ap
 
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 	// This additional wait ensures that the databases are deleted before the subscription is deleted.
-	time.Sleep(10 * time.Second) //lintignore:R018
+	time.Sleep(30 * time.Second) //lintignore:R018
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return err
 	}

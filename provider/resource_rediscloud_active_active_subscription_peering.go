@@ -386,7 +386,7 @@ func findActiveActiveVpcPeering(id int, regions []*subscriptions.ActiveActiveVpc
 
 func waitForActiveActivePeeringToBeInitiated(ctx context.Context, subId, id int, api *apiClient) error {
 	wait := &retry.StateChangeConf{
-		Delay: 10 * time.Second,
+		Delay: 30 * time.Second,
 		Pending: []string{
 			subscriptions.VPCPeeringStatusInitiatingRequest,
 		},
