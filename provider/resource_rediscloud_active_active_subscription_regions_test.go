@@ -85,16 +85,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 				),
 			},
 			{
-				// Checks region deleted correctly
-				Config: fmt.Sprintf(testAccResourceRedisCloudDeleteActiveActiveRegion, subName, dbName, dbPass),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "region.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "region.0.region", "us-east-1"),
-					resource.TestCheckResourceAttr(resourceName, "region.1.region", "us-east-2"),
-				),
-			},
-			{
-				// Checks region re-created correctly
+				// Checks regions deleted (eu-west-2 and us-east-2) and created (eu-west-1) correctly
 				Config: fmt.Sprintf(testAccResourceRedisCloudRemoveAndCreateSameTimeActiveActiveRegion, subName, dbName, dbPass),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "region.#", "2"),
@@ -287,39 +278,6 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 		}
 	  }
  }
- 
-`
-
-// TF config for deleting a region
-const testAccResourceRedisCloudDeleteActiveActiveRegion = testAARegionsBoilerplate + `
-
-resource "rediscloud_active_active_subscription_regions" "example" {
-	subscription_id = rediscloud_active_active_subscription.example.id
-	delete_regions = true
-	region {
-	  region = "us-east-1"
-	  networking_deployment_cidr = "10.0.0.0/24"
-	  recreate_region = false
-	  database {
-		database_id = rediscloud_active_active_database.example.db_id
-		database_name = rediscloud_active_active_database.example.name
-		local_write_operations_per_second = 1000
-		local_read_operations_per_second = 1000
-	  }
-	}
-	region {
-	  region = "us-east-2"
-	  networking_deployment_cidr = "10.1.0.0/24"
-	  recreate_region = false
-	  database {
-		database_id = rediscloud_active_active_database.example.db_id
-		database_name = rediscloud_active_active_database.example.name
-		local_write_operations_per_second = 1000
-		local_read_operations_per_second = 1000
-	  }
-	}
- }
- 
 `
 
 // TF config for deleting a region

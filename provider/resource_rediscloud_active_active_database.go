@@ -809,10 +809,11 @@ func getStateAlertsFromDbRegion(dbRegion map[string]interface{}) []*databases.Al
 
 func waitForDatabaseToBeDeleted(ctx context.Context, subId int, dbId int, api *apiClient) error {
 	wait := &retry.StateChangeConf{
-		Delay:   10 * time.Second,
-		Pending: []string{"pending"},
-		Target:  []string{"deleted"},
-		Timeout: 10 * time.Minute,
+		Delay:        30 * time.Second,
+		Pending:      []string{"pending"},
+		Target:       []string{"deleted"},
+		Timeout:      10 * time.Minute,
+		PollInterval: 30 * time.Second,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for database %d to be deleted", dbId)

@@ -41,20 +41,22 @@ func New(version string) func() *schema.Provider {
 				},
 			},
 			DataSourcesMap: map[string]*schema.Resource{
-				"rediscloud_cloud_account":         dataSourceRedisCloudCloudAccount(),
-				"rediscloud_data_persistence":      dataSourceRedisCloudDataPersistence(),
-				"rediscloud_database":              dataSourceRedisCloudDatabase(), // Deprecated
-				"rediscloud_database_modules":      dataSourceRedisCloudDatabaseModules(),
-				"rediscloud_payment_method":        dataSourceRedisCloudPaymentMethod(),
-				"rediscloud_regions":               dataSourceRedisCloudRegions(),
-				"rediscloud_flexible_subscription": dataSourceRedisCloudFlexibleSubscription(),
-				"rediscloud_flexible_database":     dataSourceRedisCloudFlexibleDatabase(),
-				"rediscloud_subscription":          dataSourceRedisCloudSubscription(), // Deprecated
-				"rediscloud_subscription_peerings": dataSourceRedisCloudSubscriptionPeerings(),
-				"rediscloud_acl_rule":              dataSourceRedisCloudAclRule(),
-				"rediscloud_acl_role":              dataSourceRedisCloudAclRole(),
-				"rediscloud_acl_user":              dataSourceRedisCloudAclUser(),
-				"rediscloud_essentials_plan":       dataSourceRedisCloudEssentialsPlan(),
+				"rediscloud_cloud_account":              dataSourceRedisCloudCloudAccount(),
+				"rediscloud_data_persistence":           dataSourceRedisCloudDataPersistence(),
+				"rediscloud_database":                   dataSourceRedisCloudDatabase(), // Deprecated
+				"rediscloud_database_modules":           dataSourceRedisCloudDatabaseModules(),
+				"rediscloud_payment_method":             dataSourceRedisCloudPaymentMethod(),
+				"rediscloud_regions":                    dataSourceRedisCloudRegions(),
+				"rediscloud_essentials_plan":            dataSourceRedisCloudEssentialsPlan(),
+				"rediscloud_flexible_subscription":      dataSourceRedisCloudFlexibleSubscription(),
+				"rediscloud_flexible_database":          dataSourceRedisCloudFlexibleDatabase(),
+				"rediscloud_subscription":               dataSourceRedisCloudSubscription(), // Deprecated
+				"rediscloud_subscription_peerings":      dataSourceRedisCloudSubscriptionPeerings(),
+				"rediscloud_active_active_subscription": dataSourceRedisCloudActiveActiveSubscription(),
+				"rediscloud_active_active_database":     dataSourceRedisCloudActiveActiveDatabase(),
+				"rediscloud_acl_rule":                   dataSourceRedisCloudAclRule(),
+				"rediscloud_acl_role":                   dataSourceRedisCloudAclRole(),
+				"rediscloud_acl_user":                   dataSourceRedisCloudAclUser(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
 				"rediscloud_cloud_account":                       resourceRedisCloudCloudAccount(),

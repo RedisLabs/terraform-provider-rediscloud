@@ -21,6 +21,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
 	password := acctest.RandString(20)
 	resourceName := "rediscloud_active_active_database.example"
+	datasourceName := "data.rediscloud_active_active_database.example"
 	subscriptionResourceName := "rediscloud_active_active_subscription.example"
 
 	var subId int
@@ -34,6 +35,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabase, subscriptionName, name, password),
 				Check: resource.ComposeTestCheckFunc(
+					// Test resource
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "3"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "false"),
@@ -97,12 +99,25 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
 						return nil
 					},
+
+					// Test datasource
+					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
+					resource.TestCheckResourceAttrSet(datasourceName, "db_id"),
+					resource.TestCheckResourceAttr(datasourceName, "name", name),
+					resource.TestCheckResourceAttr(datasourceName, "memory_limit_in_gb", "3"),
+					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(datasourceName, "enable_tls", "false"),
+					resource.TestCheckResourceAttr(datasourceName, "data_eviction", "volatile-lru"),
+					resource.TestCheckResourceAttr(datasourceName, "global_modules.#", "1"),
+					resource.TestCheckResourceAttr(datasourceName, "global_modules.0", "RedisJSON"),
 				),
 			},
 			// Test database is updated successfully, including updates to both global and local alerts and clearing modules
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseUpdate, subscriptionName, name),
 				Check: resource.ComposeTestCheckFunc(
+					// Test resource
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
@@ -124,6 +139,11 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.value", "41"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_source_ips.#", "0"),
+
+					// Test datasource
+					resource.TestCheckResourceAttr(datasourceName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "true"),
 				),
 			},
 			// Test database is updated, including deletion of global and local alerts and replacing modules
@@ -277,7 +297,12 @@ resource "rediscloud_active_active_database" "example" {
 		name = "us-east-2"
 	}
 
-} 
+}
+
+data "rediscloud_active_active_database" "example" {
+	subscription_id = rediscloud_active_active_subscription.example.id
+	name = rediscloud_active_active_database.example.name
+}
 `
 
 // TF config for updating a database
@@ -307,6 +332,11 @@ resource "rediscloud_active_active_database" "example" {
 			value = 41
 		}
 	}
+}
+
+data "rediscloud_active_active_database" "example" {
+	subscription_id = rediscloud_active_active_subscription.example.id
+	name = rediscloud_active_active_database.example.name
 }
 `
 
