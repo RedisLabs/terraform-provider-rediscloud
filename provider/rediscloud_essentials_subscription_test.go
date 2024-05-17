@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func TestAccResourceRedisCloudFreeEssentialsSubscription_CRUDI(t *testing.T) {
+func TestAccResourceRedisCloudEssentialsSubscription_FreeCRUDI(t *testing.T) {
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
@@ -74,7 +74,7 @@ func TestAccResourceRedisCloudFreeEssentialsSubscription_CRUDI(t *testing.T) {
 	})
 }
 
-func TestAccResourceRedisCloudPaidEssentialsSubscription_CRUDI(t *testing.T) {
+func TestAccResourceRedisCloudEssentialsSubscription_PaidCRUDI(t *testing.T) {
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
