@@ -25,6 +25,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	resourceName := "rediscloud_active_active_subscription.example"
+	datasourceName := "data.rediscloud_active_active_subscription.example"
 
 	var subId int
 
@@ -36,6 +37,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscription, name),
 				Check: resource.ComposeTestCheckFunc(
+					// Test the resource
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
@@ -100,6 +102,30 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 						}
 						return nil
 					},
+
+					// Test the datasource
+					resource.TestCheckResourceAttr(datasourceName, "name", name),
+					resource.TestCheckResourceAttr(datasourceName, "payment_method", "credit-card"),
+					resource.TestCheckResourceAttrSet(datasourceName, "payment_method_id"),
+					resource.TestCheckResourceAttr(datasourceName, "cloud_provider", "AWS"),
+					resource.TestCheckResourceAttr(datasourceName, "number_of_databases", "0"),
+					resource.TestCheckResourceAttr(datasourceName, "status", "active"),
+
+					resource.TestCheckResourceAttr(datasourceName, "pricing.#", "2"),
+
+					resource.TestCheckResourceAttr(datasourceName, "pricing.0.type", "MinimumPrice"),
+					resource.TestCheckResourceAttr(datasourceName, "pricing.0.quantity", "1"),
+					resource.TestCheckResourceAttr(datasourceName, "pricing.0.quantity_measurement", "subscription"),
+					resource.TestCheckResourceAttrSet(datasourceName, "pricing.0.price_per_unit"),
+					resource.TestCheckResourceAttr(datasourceName, "pricing.0.price_currency", "USD"),
+					resource.TestCheckResourceAttr(datasourceName, "pricing.0.price_period", "hour"),
+
+					resource.TestCheckResourceAttr(datasourceName, "pricing.1.type", "MinimumPrice"),
+					resource.TestCheckResourceAttr(datasourceName, "pricing.1.quantity", "1"),
+					resource.TestCheckResourceAttr(datasourceName, "pricing.1.quantity_measurement", "subscription"),
+					resource.TestCheckResourceAttrSet(datasourceName, "pricing.1.price_per_unit"),
+					resource.TestCheckResourceAttr(datasourceName, "pricing.1.price_currency", "USD"),
+					resource.TestCheckResourceAttr(datasourceName, "pricing.1.price_period", "hour"),
 				),
 			},
 			{
@@ -285,6 +311,10 @@ resource "rediscloud_active_active_subscription" "example" {
 			read_operations_per_second = 1000
 		}
 	}
+}
+
+data "rediscloud_active_active_subscription" "example" {
+	name = rediscloud_active_active_subscription.example.name
 }
 `
 

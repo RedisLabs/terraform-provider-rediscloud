@@ -807,10 +807,11 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 
 func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) error {
 	wait := &retry.StateChangeConf{
-		Delay:   10 * time.Second,
-		Pending: []string{subscriptions.SubscriptionStatusPending},
-		Target:  []string{subscriptions.SubscriptionStatusActive},
-		Timeout: safetyTimeout,
+		Delay:        30 * time.Second,
+		Pending:      []string{subscriptions.SubscriptionStatusPending},
+		Target:       []string{subscriptions.SubscriptionStatusActive},
+		Timeout:      safetyTimeout,
+		PollInterval: 30 * time.Second,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for subscription %d to be active", id)
@@ -832,10 +833,11 @@ func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) 
 
 func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient) error {
 	wait := &retry.StateChangeConf{
-		Delay:   10 * time.Second,
-		Pending: []string{subscriptions.SubscriptionStatusDeleting},
-		Target:  []string{"deleted"},
-		Timeout: safetyTimeout,
+		Delay:        30 * time.Second,
+		Pending:      []string{subscriptions.SubscriptionStatusDeleting},
+		Target:       []string{"deleted"},
+		Timeout:      safetyTimeout,
+		PollInterval: 30 * time.Second,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for subscription %d to be deleted", id)
@@ -860,7 +862,7 @@ func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient)
 
 func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClient) error {
 	wait := &retry.StateChangeConf{
-		Delay: 10 * time.Second,
+		Delay: 30 * time.Second,
 		Pending: []string{
 			databases.StatusDraft,
 			databases.StatusPending,
@@ -872,8 +874,9 @@ func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClien
 			databases.StatusProxyPolicyChangePending,
 			databases.StatusProxyPolicyChangeDraft,
 		},
-		Target:  []string{databases.StatusActive},
-		Timeout: safetyTimeout,
+		Target:       []string{databases.StatusActive},
+		Timeout:      safetyTimeout,
+		PollInterval: 30 * time.Second,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for database %d to be active", id)
