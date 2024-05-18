@@ -14,7 +14,8 @@ func TestAccDataSourceRedisCloudFlexibleDatabase_basic(t *testing.T) {
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
-	dataSourceName := "data.rediscloud_flexible_database.example"
+	dataSourceById := "data.rediscloud_flexible_database.example-by-id"
+	dataSourceByName := "data.rediscloud_flexible_database.example-by-name"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
@@ -24,21 +25,37 @@ func TestAccDataSourceRedisCloudFlexibleDatabase_basic(t *testing.T) {
 			{
 				Config: fmt.Sprintf(testAccDatasourceRedisCloudFlexibleDatabase, testCloudAccountName, name, password),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(dataSourceName, "name", "tf-database"),
-					resource.TestCheckResourceAttr(dataSourceName, "protocol", "redis"),
-					resource.TestCheckResourceAttr(dataSourceName, "region", "eu-west-1"),
-					resource.TestCheckResourceAttr(dataSourceName, "memory_limit_in_gb", "1"),
-					resource.TestCheckResourceAttr(dataSourceName, "support_oss_cluster_api", "true"),
-					resource.TestCheckResourceAttr(dataSourceName, "resp_version", "resp2"),
-					resource.TestCheckResourceAttr(dataSourceName, "data_persistence", "none"),
-					resource.TestCheckResourceAttr(dataSourceName, "data_eviction", "volatile-lru"),
-					resource.TestCheckResourceAttr(dataSourceName, "replication", "false"),
-					resource.TestCheckResourceAttr(dataSourceName, "throughput_measurement_by", "operations-per-second"),
-					resource.TestCheckResourceAttr(dataSourceName, "throughput_measurement_value", "1000"),
-					resource.TestCheckResourceAttr(dataSourceName, "password", password),
-					resource.TestCheckResourceAttrSet(dataSourceName, "public_endpoint"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "private_endpoint"),
-					resource.TestCheckResourceAttr(dataSourceName, "enable_default_user", "true"),
+					resource.TestCheckResourceAttr(dataSourceById, "name", "tf-database"),
+					resource.TestCheckResourceAttr(dataSourceById, "protocol", "redis"),
+					resource.TestCheckResourceAttr(dataSourceById, "region", "eu-west-1"),
+					resource.TestCheckResourceAttr(dataSourceById, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(dataSourceById, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(dataSourceById, "resp_version", "resp2"),
+					resource.TestCheckResourceAttr(dataSourceById, "data_persistence", "none"),
+					resource.TestCheckResourceAttr(dataSourceById, "data_eviction", "volatile-lru"),
+					resource.TestCheckResourceAttr(dataSourceById, "replication", "false"),
+					resource.TestCheckResourceAttr(dataSourceById, "throughput_measurement_by", "operations-per-second"),
+					resource.TestCheckResourceAttr(dataSourceById, "throughput_measurement_value", "1000"),
+					resource.TestCheckResourceAttr(dataSourceById, "password", password),
+					resource.TestCheckResourceAttrSet(dataSourceById, "public_endpoint"),
+					resource.TestCheckResourceAttrSet(dataSourceById, "private_endpoint"),
+					resource.TestCheckResourceAttr(dataSourceById, "enable_default_user", "true"),
+
+					resource.TestCheckResourceAttr(dataSourceByName, "name", "tf-database"),
+					resource.TestCheckResourceAttr(dataSourceByName, "protocol", "redis"),
+					resource.TestCheckResourceAttr(dataSourceByName, "region", "eu-west-1"),
+					resource.TestCheckResourceAttr(dataSourceByName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(dataSourceByName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(dataSourceByName, "resp_version", "resp2"),
+					resource.TestCheckResourceAttr(dataSourceByName, "data_persistence", "none"),
+					resource.TestCheckResourceAttr(dataSourceByName, "data_eviction", "volatile-lru"),
+					resource.TestCheckResourceAttr(dataSourceByName, "replication", "false"),
+					resource.TestCheckResourceAttr(dataSourceByName, "throughput_measurement_by", "operations-per-second"),
+					resource.TestCheckResourceAttr(dataSourceByName, "throughput_measurement_value", "1000"),
+					resource.TestCheckResourceAttr(dataSourceByName, "password", password),
+					resource.TestCheckResourceAttrSet(dataSourceByName, "public_endpoint"),
+					resource.TestCheckResourceAttrSet(dataSourceByName, "private_endpoint"),
+					resource.TestCheckResourceAttr(dataSourceByName, "enable_default_user", "true"),
 				),
 			},
 		},
@@ -74,7 +91,6 @@ resource "rediscloud_flexible_subscription" "example" {
     support_oss_cluster_api=true
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 1000
-	modules = ["RedisJSON", "RedisBloom"]
   }
 }
 resource "rediscloud_flexible_database" "example" {
@@ -90,7 +106,13 @@ resource "rediscloud_flexible_database" "example" {
 	replication				     = false
     enable_default_user 		 = true
 }
-data "rediscloud_flexible_database" "example" {
+
+data "rediscloud_flexible_database" "example-by-id" {
+  subscription_id = rediscloud_flexible_subscription.example.id
+  db_id = rediscloud_flexible_database.example.db_id
+}
+
+data "rediscloud_flexible_database" "example-by-name" {
   subscription_id = rediscloud_flexible_subscription.example.id
   name = rediscloud_flexible_database.example.name
 }
