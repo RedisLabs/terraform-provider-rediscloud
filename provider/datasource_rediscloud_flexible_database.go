@@ -24,6 +24,12 @@ func dataSourceRedisCloudFlexibleDatabase() *schema.Resource {
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 				Required:         true,
 			},
+			"db_id": {
+				Description: "The id of the database to filter returned databases",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
 			"name": {
 				Description: "The name of the database to filter returned databases",
 				Type:        schema.TypeString,
@@ -172,6 +178,11 @@ func dataSourceRedisCloudFlexibleDatabaseRead(ctx context.Context, d *schema.Res
 		return !redis.BoolValue(db.ActiveActiveRedis)
 	})
 
+	if v, ok := d.GetOk("db_id"); ok {
+		filters = append(filters, func(db *databases.Database) bool {
+			return redis.IntValue(db.ID) == v.(int)
+		})
+	}
 	if v, ok := d.GetOk("name"); ok {
 		filters = append(filters, func(db *databases.Database) bool {
 			return redis.StringValue(db.Name) == v.(string)
@@ -208,8 +219,12 @@ func dataSourceRedisCloudFlexibleDatabaseRead(ctx context.Context, d *schema.Res
 		return diag.FromErr(list.Err())
 	}
 
-	d.SetId(fmt.Sprintf("%d/%d", subId, redis.IntValue(db.ID)))
+	dbId := redis.IntValue(db.ID)
+	d.SetId(fmt.Sprintf("%d/%d", subId, dbId))
 
+	if err := d.Set("db_id", dbId); err != nil {
+		return diag.FromErr(err)
+	}
 	if err := d.Set("name", redis.StringValue(db.Name)); err != nil {
 		return diag.FromErr(err)
 	}
