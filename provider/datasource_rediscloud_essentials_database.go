@@ -48,7 +48,7 @@ func dataSourceRedisCloudEssentialsDatabase() *schema.Resource {
 				Computed:    true,
 			},
 			"redis_version_compliance": {
-				Description: "",
+				Description: "The compliance level (redis version) of this database",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
@@ -73,7 +73,7 @@ func dataSourceRedisCloudEssentialsDatabase() *schema.Resource {
 				Computed:    true,
 			},
 			"activated_on": {
-				Description: "",
+				Description: "When this database was activated",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
