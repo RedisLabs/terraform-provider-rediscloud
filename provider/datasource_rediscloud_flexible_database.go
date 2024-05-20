@@ -294,7 +294,6 @@ func dataSourceRedisCloudFlexibleDatabaseRead(ctx context.Context, d *schema.Res
 		return diag.FromErr(list.Err())
 	}
 
-	dbId := redis.IntValue(db.ID)
 	d.SetId(fmt.Sprintf("%d/%d", subId, dbId))
 
 	if err := d.Set("db_id", dbId); err != nil {
