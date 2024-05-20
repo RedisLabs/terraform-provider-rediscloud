@@ -37,11 +37,11 @@ data "rediscloud_essentials_database" "example" {
 
 ## Attribute Reference
 
-* `protocol` - The protocol of the database. Either `redis`, `memcached` or `stack`
-* `cloud_provider` - The Cloud Provider hosting this database
-* `region` - The region within the Cloud Provider where this database is hosted
+* `protocol` - The protocol of the database. Either `redis`, `memcached` or `stack`.
+* `cloud_provider` - The Cloud Provider hosting this database.
+* `region` - The region within the Cloud Provider where this database is hosted.
 * `redis_version_compliance` - The compliance level (redis version) of this database.
-* `resp_version` - Either `resp2` or `resp3`. Database's RESP version
+* `resp_version` - Either `resp2` or `resp3`. Database's RESP version.
 * `data_persistence` - The rate of database data persistence (in persistent storage).
 * `data_eviction` - The data items eviction policy.
 * `replication` - Database replication.
@@ -63,7 +63,7 @@ The `replica` block supports:
 
 * `sync_source` - The sources to replicate, documented below.
 
-The `sync_source` block supports:]
+The `sync_source` block supports:
 
 * `endpoint` - A Redis URI (sample format: 'redis://user:password@host:port)'. If the URI provided is Redis Cloud instance, only host and port should be provided (using the format: ['redis://endpoint1:6379', 'redis://endpoint2:6380'] ).
 * `encryption` - Defines if encryption should be used to connect to the sync source.
@@ -71,9 +71,9 @@ The `sync_source` block supports:]
 
 The `alert` block supports:
 
-* `name` - The alert name
-* `value` - The alert value
+* `name` - The alert name.
+* `value` - The alert value.
 
-Each `modules` entry provides the following attributes
+Each `modules` entry provides the following attributes:
 
 * `name` - The identifier assigned by the database module.

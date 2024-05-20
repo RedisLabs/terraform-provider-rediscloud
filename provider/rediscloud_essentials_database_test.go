@@ -40,18 +40,10 @@ func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "replication", "false"),
 					resource.TestCheckResourceAttrSet(resourceName, "public_endpoint"),
 					resource.TestCheckResourceAttr(resourceName, "private_endpoint", ""),
-
-					// Can't get this to work
 					resource.TestCheckResourceAttr(resourceName, "source_ips.#", "0"),
-					// resource.TestCheckResourceAttr(resourceName, "source_ips.0", "192.168.12.0/24"),
-
 					resource.TestCheckResourceAttr(resourceName, "alert.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "alert.0.name", "throughput-higher-than"),
 					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "80"),
-
-					// Even though the user has specified this as an empty list, the API does its own thing here.
-					// resource.TestCheckResourceAttr(resourceName, "modules.#", "0"),
-
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(resourceName, "password", "j43589rhe39f"),
 
@@ -74,8 +66,6 @@ func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "alert.#", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "alert.0.name", "throughput-higher-than"),
 					resource.TestCheckResourceAttr(datasourceName, "alert.0.value", "80"),
-					// Even though the user has specified this as an empty list, the API does its own thing here.
-					// resource.TestCheckResourceAttr(datasourceName, "modules.#", "0"),
 					resource.TestCheckResourceAttr(datasourceName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(datasourceName, "password", ""),
 				),
@@ -99,18 +89,10 @@ func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "public_endpoint"),
 					resource.TestCheckResourceAttrSet(resourceName, "public_endpoint"),
 					resource.TestCheckResourceAttr(resourceName, "private_endpoint", ""),
-
-					// Can't get this to work
 					resource.TestCheckResourceAttr(resourceName, "source_ips.#", "0"),
-					// resource.TestCheckResourceAttr(resourceName, "source_ips.0", "192.168.12.0/24"),
-
 					resource.TestCheckResourceAttr(resourceName, "alert.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "alert.0.name", "throughput-higher-than"),
 					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "80"),
-
-					// Even though the user has specified this as an empty list, the API does its own thing here.
-					// resource.TestCheckResourceAttr(resourceName, "modules.#", "0"),
-
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(resourceName, "password", "j43589rhe39f"),
 
@@ -133,8 +115,6 @@ func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "alert.#", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "alert.0.name", "throughput-higher-than"),
 					resource.TestCheckResourceAttr(datasourceName, "alert.0.value", "80"),
-					// Even though the user has specified this as an empty list, the API does its own thing here.
-					// resource.TestCheckResourceAttr(datasourceName, "modules.#", "0"),
 					resource.TestCheckResourceAttr(datasourceName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(datasourceName, "password", ""),
 				),
