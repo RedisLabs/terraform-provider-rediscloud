@@ -59,6 +59,8 @@ data "rediscloud_flexible_database" "example" {
 * `private_endpoint` - Private endpoint to access the database
 * `enable_tls` - Enable TLS for database, default is `false`
 * `enable_default_user` - When `true` enables connecting to the database with the default user. Default `true`.
+* `latest_backup_status` - An object containing the JSON-formatted response detailing the latest backup status (or an error if the lookup failed).
+* `latest_import_status` - An object containing the JSON-formatted response detailing the latest import status (or an error if the lookup failed).
 
 The `alert` block supports:
 
