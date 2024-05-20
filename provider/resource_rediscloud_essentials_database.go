@@ -143,7 +143,7 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 			},
 			"replica": {
 				Description: "Details of database replication",
-				Type:        schema.TypeSet,
+				Type:        schema.TypeList,
 				MinItems:    1,
 				MaxItems:    1,
 				Optional:    true,
