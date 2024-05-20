@@ -231,7 +231,7 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 						"name": {
 							Description: "Name of the module to enable",
 							Type:        schema.TypeString,
-							Computed:    true,
+							Required:    true,
 						},
 					},
 				},
@@ -354,9 +354,9 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 		createDatabaseRequest.SourceIPs = sourceIps
 	}
 
-	replica := d.Get("replica").(*schema.Set)
-	if replica.Len() == 1 {
-		firstReplica := replica.List()[0].(map[string]interface{})
+	replicaRaw := d.Get("replica").([]interface{})
+	if len(replicaRaw) == 1 {
+		firstReplica := replicaRaw[0].(map[string]interface{})
 		syncSources := make([]*fixedDatabases.SyncSource, 0)
 
 		for _, sSourceRaw := range firstReplica["sync_source"].(*schema.Set).List() {
@@ -625,9 +625,9 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 		updateDatabaseRequest.SourceIPs = sourceIps
 	}
 
-	replica := d.Get("replica").(*schema.Set)
-	if replica.Len() == 1 {
-		firstReplica := replica.List()[0].(map[string]interface{})
+	replicaRaw := d.Get("replica").([]interface{})
+	if len(replicaRaw) == 1 {
+		firstReplica := replicaRaw[0].(map[string]interface{})
 		syncSources := make([]*fixedDatabases.SyncSource, 0)
 
 		for _, sSourceRaw := range firstReplica["sync_source"].(*schema.Set).List() {
