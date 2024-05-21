@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_flexible_database"
 description: |-
-  Database resource in the Terraform provider Redis Cloud.
+  Database resource in the Redis Cloud Terraform provider.
 ---
 
 # Resource: rediscloud_flexible_database
