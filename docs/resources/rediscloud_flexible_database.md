@@ -141,8 +141,32 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/l
 * `db_id` - Identifier of the database created
 * `public_endpoint` - Public endpoint to access the database
 * `private_endpoint` - Private endpoint to access the database
-* `latest_backup_status` - An object containing the JSON-formatted response detailing the latest backup status (or an error if the lookup failed).
-* `latest_import_status` - An object containing the JSON-formatted response detailing the latest import status (or an error if the lookup failed).
+* `latest_backup_status` - A latest_backup_status object, documented below.
+* `latest_import_status` - A latest_import_status object, documented below.
+
+The `latest_backup_status` and `latest_import_status` blocks contain:
+
+* `error` - An error block, in case this lookup failed, documented below.
+* `response` - A detail block, documented below.
+
+The `error` block in both `latest_backup_status` and `latest_import_status` contains:
+
+* `type` - The type of error encountered while looking up the status of the last backup/import.
+* `description` - A description of the error encountered while looking up the status of the last backup/import.
+* `status` - Any particular HTTP status code associated with the erroneous status check.
+
+The `response` block `latest_backup_status` contains:
+
+* `status` - The status of the last backup operation.
+* `last_backup_time` - When the last backup operation occurred.
+* `failure_reason` - If a failure, why the backup operation failed.
+
+The `response` block `latest_import_status` contains:
+
+* `status` - The status of the last import operation.
+* `last_import_time` - When the last import operation occurred.
+* `failure_reason` - If a failure, why the import operation failed.
+* `failure_reason_params` - Parameters of the failure, if appropriate, in the form of a list of objects each with a `key` entry and a `value` entry.
 
 ## Import
 `rediscloud_flexible_database` can be imported using the ID of the subscription and the ID of the database in the format {subscription ID}/{database ID}, e.g.

@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,8 +9,6 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	"github.com/RedisLabs/rediscloud-go-api/service/latest_backups"
-	"github.com/RedisLabs/rediscloud-go-api/service/latest_imports"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -299,9 +296,27 @@ func resourceRedisCloudFlexibleDatabase() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"response": {
-							Description: "JSON-style details about the last backup",
-							Computed:    true,
-							Type:        schema.TypeString,
+							Computed: true,
+							Type:     schema.TypeSet,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"status": {
+										Description: "The status of the last backup operation",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"last_backup_time": {
+										Description: "When the last backup operation occurred",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"failure_reason": {
+										Description: "If a failure, why the backup operation failed",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+								},
+							},
 						},
 						"error": {
 							Computed: true,
@@ -330,15 +345,52 @@ func resourceRedisCloudFlexibleDatabase() *schema.Resource {
 				},
 			},
 			"latest_import_status": {
-				Description: "Details about the last import that took place for this database",
+				Description: "Details about the last import that took place for this active-active database",
 				Computed:    true,
 				Type:        schema.TypeSet,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"response": {
-							Description: "JSON-style details about the last import",
-							Computed:    true,
-							Type:        schema.TypeString,
+							Computed: true,
+							Type:     schema.TypeSet,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"status": {
+										Description: "The status of the last import operation",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"last_import_time": {
+										Description: "When the last import operation occurred",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"failure_reason": {
+										Description: "If a failure, why the import operation failed",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"failure_reason_params": {
+										Description: "Parameters of the failure, if appropriate",
+										Computed:    true,
+										Type:        schema.TypeList,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"key": {
+													Description: "",
+													Computed:    true,
+													Type:        schema.TypeString,
+												},
+												"value": {
+													Description: "",
+													Computed:    true,
+													Type:        schema.TypeString,
+												},
+											},
+										},
+									},
+								},
+							},
 						},
 						"error": {
 							Computed: true,
@@ -895,56 +947,4 @@ func remoteBackupIntervalSetCorrectly(key string) schema.CustomizeDiffFunc {
 		return nil
 	}
 
-}
-
-func parseLatestBackupStatus(latestBackupStatus *latest_backups.LatestBackupStatus) ([]map[string]interface{}, error) {
-	lbs := map[string]interface{}{
-		"response": nil,
-		"error":    nil,
-	}
-
-	if latestBackupStatus.Response.Resource != nil {
-		j, err := json.Marshal(latestBackupStatus.Response.Resource)
-		if err != nil {
-			return nil, err
-		}
-		lbs["response"] = string(j)
-	}
-
-	if latestBackupStatus.Response.Error != nil {
-		err := map[string]interface{}{
-			"type":        redis.StringValue(latestBackupStatus.Response.Error.Type),
-			"description": redis.StringValue(latestBackupStatus.Response.Error.Description),
-			"status":      redis.StringValue(latestBackupStatus.Response.Error.Status),
-		}
-		lbs["error"] = []map[string]interface{}{err}
-	}
-
-	return []map[string]interface{}{lbs}, nil
-}
-
-func parseLatestImportStatus(latestImportStatus *latest_imports.LatestImportStatus) ([]map[string]interface{}, error) {
-	lis := map[string]interface{}{
-		"response": nil,
-		"error":    nil,
-	}
-
-	if latestImportStatus.Response.Resource != nil {
-		j, err := json.Marshal(latestImportStatus.Response.Resource)
-		if err != nil {
-			return nil, err
-		}
-		lis["response"] = string(j)
-	}
-
-	if latestImportStatus.Response.Error != nil {
-		err := map[string]interface{}{
-			"type":        redis.StringValue(latestImportStatus.Response.Error.Type),
-			"description": redis.StringValue(latestImportStatus.Response.Error.Description),
-			"status":      redis.StringValue(latestImportStatus.Response.Error.Status),
-		}
-		lis["error"] = []map[string]interface{}{err}
-	}
-
-	return []map[string]interface{}{lis}, nil
 }
