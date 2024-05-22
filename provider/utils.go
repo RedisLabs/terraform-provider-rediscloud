@@ -3,6 +3,8 @@ package provider
 import (
 	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/rediscloud-go-api/service/latest_backups"
+	"github.com/RedisLabs/rediscloud-go-api/service/latest_imports"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -90,4 +92,76 @@ func isTime() schema.SchemaValidateDiagFunc {
 
 		return diags
 	}
+}
+
+func parseLatestBackupStatus(latestBackupStatus *latest_backups.LatestBackupStatus) ([]map[string]interface{}, error) {
+	lbs := map[string]interface{}{
+		"response": nil,
+		"error":    nil,
+	}
+
+	if latestBackupStatus.Response.Resource != nil {
+		res := map[string]interface{}{
+			"status":           redis.StringValue(latestBackupStatus.Response.Resource.Status),
+			"last_backup_time": nil,
+			"failure_reason":   redis.StringValue(latestBackupStatus.Response.Resource.FailureReason),
+		}
+		if latestBackupStatus.Response.Resource.LastBackupTime != nil {
+			res["last_backup_time"] = latestBackupStatus.Response.Resource.LastBackupTime.String()
+		}
+		lbs["response"] = []map[string]interface{}{res}
+	}
+
+	if latestBackupStatus.Response.Error != nil {
+		err := map[string]interface{}{
+			"type":        redis.StringValue(latestBackupStatus.Response.Error.Type),
+			"description": redis.StringValue(latestBackupStatus.Response.Error.Description),
+			"status":      redis.StringValue(latestBackupStatus.Response.Error.Status),
+		}
+		lbs["error"] = []map[string]interface{}{err}
+	}
+
+	return []map[string]interface{}{lbs}, nil
+}
+
+func parseLatestImportStatus(latestImportStatus *latest_imports.LatestImportStatus) ([]map[string]interface{}, error) {
+	lis := map[string]interface{}{
+		"response": nil,
+		"error":    nil,
+	}
+
+	if latestImportStatus.Response.Resource != nil {
+		res := map[string]interface{}{
+			"status":                redis.StringValue(latestImportStatus.Response.Resource.Status),
+			"last_import_time":      nil,
+			"failure_reason":        redis.StringValue(latestImportStatus.Response.Resource.FailureReason),
+			"failure_reason_params": parseFailureReasonParams(latestImportStatus.Response.Resource.FailureReasonParams),
+		}
+		if latestImportStatus.Response.Resource.LastImportTime != nil {
+			res["last_import_time"] = latestImportStatus.Response.Resource.LastImportTime.String()
+		}
+		lis["response"] = []map[string]interface{}{res}
+	}
+
+	if latestImportStatus.Response.Error != nil {
+		err := map[string]interface{}{
+			"type":        redis.StringValue(latestImportStatus.Response.Error.Type),
+			"description": redis.StringValue(latestImportStatus.Response.Error.Description),
+			"status":      redis.StringValue(latestImportStatus.Response.Error.Status),
+		}
+		lis["error"] = []map[string]interface{}{err}
+	}
+
+	return []map[string]interface{}{lis}, nil
+}
+
+func parseFailureReasonParams(params []*latest_imports.FailureReasonParam) []map[string]interface{} {
+	writableParams := make([]map[string]interface{}, 0)
+	for _, param := range params {
+		writableParams = append(writableParams, map[string]interface{}{
+			"key":   redis.StringValue(param.Key),
+			"value": redis.StringValue(param.Value),
+		})
+	}
+	return writableParams
 }

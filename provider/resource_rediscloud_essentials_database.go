@@ -243,9 +243,27 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"response": {
-							Description: "JSON-style details about the last backup",
-							Computed:    true,
-							Type:        schema.TypeString,
+							Computed: true,
+							Type:     schema.TypeSet,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"status": {
+										Description: "",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"last_backup_time": {
+										Description: "",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"failure_reason": {
+										Description: "",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+								},
+							},
 						},
 						"error": {
 							Computed: true,
@@ -274,15 +292,52 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				},
 			},
 			"latest_import_status": {
-				Description: "Details about the last import that took place for this database",
+				Description: "Details about the last import that took place for this active-active database",
 				Computed:    true,
 				Type:        schema.TypeSet,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"response": {
-							Description: "JSON-style details about the last import",
-							Computed:    true,
-							Type:        schema.TypeString,
+							Computed: true,
+							Type:     schema.TypeSet,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"status": {
+										Description: "",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"last_import_time": {
+										Description: "",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"failure_reason": {
+										Description: "",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"failure_reason_params": {
+										Description: "",
+										Computed:    true,
+										Type:        schema.TypeList,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"key": {
+													Description: "",
+													Computed:    true,
+													Type:        schema.TypeString,
+												},
+												"value": {
+													Description: "",
+													Computed:    true,
+													Type:        schema.TypeString,
+												},
+											},
+										},
+									},
+								},
+							},
 						},
 						"error": {
 							Computed: true,
