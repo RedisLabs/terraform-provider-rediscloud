@@ -195,9 +195,27 @@ func dataSourceRedisCloudEssentialsDatabase() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"response": {
-							Description: "JSON-style details about the last backup",
-							Computed:    true,
-							Type:        schema.TypeString,
+							Computed: true,
+							Type:     schema.TypeSet,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"status": {
+										Description: "The status of the last backup operation",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"last_backup_time": {
+										Description: "When the last backup operation occurred",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"failure_reason": {
+										Description: "If a failure, why the backup operation failed",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+								},
+							},
 						},
 						"error": {
 							Computed: true,
@@ -226,15 +244,52 @@ func dataSourceRedisCloudEssentialsDatabase() *schema.Resource {
 				},
 			},
 			"latest_import_status": {
-				Description: "Details about the last import that took place for this database",
+				Description: "Details about the last import that took place for this active-active database",
 				Computed:    true,
 				Type:        schema.TypeSet,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"response": {
-							Description: "JSON-style details about the last import",
-							Computed:    true,
-							Type:        schema.TypeString,
+							Computed: true,
+							Type:     schema.TypeSet,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"status": {
+										Description: "The status of the last import operation",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"last_import_time": {
+										Description: "When the last import operation occurred",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"failure_reason": {
+										Description: "If a failure, why the import operation failed",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"failure_reason_params": {
+										Description: "Parameters of the failure, if appropriate",
+										Computed:    true,
+										Type:        schema.TypeList,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"key": {
+													Description: "",
+													Computed:    true,
+													Type:        schema.TypeString,
+												},
+												"value": {
+													Description: "",
+													Computed:    true,
+													Type:        schema.TypeString,
+												},
+											},
+										},
+									},
+								},
+							},
 						},
 						"error": {
 							Computed: true,
