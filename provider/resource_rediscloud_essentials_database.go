@@ -248,17 +248,17 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"status": {
-										Description: "",
+										Description: "The status of the last backup operation",
 										Computed:    true,
 										Type:        schema.TypeString,
 									},
 									"last_backup_time": {
-										Description: "",
+										Description: "When the last backup operation occurred",
 										Computed:    true,
 										Type:        schema.TypeString,
 									},
 									"failure_reason": {
-										Description: "",
+										Description: "If a failure, why the backup operation failed",
 										Computed:    true,
 										Type:        schema.TypeString,
 									},
@@ -303,22 +303,22 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"status": {
-										Description: "",
+										Description: "The status of the last import operation",
 										Computed:    true,
 										Type:        schema.TypeString,
 									},
 									"last_import_time": {
-										Description: "",
+										Description: "When the last import operation occurred",
 										Computed:    true,
 										Type:        schema.TypeString,
 									},
 									"failure_reason": {
-										Description: "",
+										Description: "If a failure, why the import operation failed",
 										Computed:    true,
 										Type:        schema.TypeString,
 									},
 									"failure_reason_params": {
-										Description: "",
+										Description: "Parameters of the failure, if appropriate",
 										Computed:    true,
 										Type:        schema.TypeList,
 										Elem: &schema.Resource{

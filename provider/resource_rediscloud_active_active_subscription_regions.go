@@ -128,17 +128,17 @@ func resourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 													Elem: &schema.Resource{
 														Schema: map[string]*schema.Schema{
 															"status": {
-																Description: "",
+																Description: "The status of the last backup operation",
 																Computed:    true,
 																Type:        schema.TypeString,
 															},
 															"last_backup_time": {
-																Description: "",
+																Description: "When the last backup operation occurred",
 																Computed:    true,
 																Type:        schema.TypeString,
 															},
 															"failure_reason": {
-																Description: "",
+																Description: "If a failure, why the backup operation failed",
 																Computed:    true,
 																Type:        schema.TypeString,
 															},
