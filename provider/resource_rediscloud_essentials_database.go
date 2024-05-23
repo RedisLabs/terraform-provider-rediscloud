@@ -423,19 +423,11 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 	subscriptionMutex.Lock(subId)
 
 	createDatabaseRequest := fixedDatabases.CreateFixedDatabase{
-		Name: redis.String(d.Get("name").(string)),
-		// Protocol
-		// RespVersion
+		Name:               redis.String(d.Get("name").(string)),
 		DataPersistence:    redis.String(d.Get("data_persistence").(string)),
 		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
 		Replication:        redis.Bool(d.Get("replication").(bool)),
 		PeriodicBackupPath: redis.String(d.Get("periodic_backup_path").(string)),
-		// SourceIPs
-		// Replica
-		// ClientTlsCertificates
-		// Password
-		// Alerts
-		// Modules
 	}
 
 	protocol := d.Get("protocol").(string)
@@ -751,18 +743,12 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 	defer subscriptionMutex.Unlock(subId)
 
 	updateDatabaseRequest := fixedDatabases.UpdateFixedDatabase{
-		Name: redis.String(d.Get("name").(string)),
-		// RespVersion
+		Name:               redis.String(d.Get("name").(string)),
 		DataPersistence:    redis.String(d.Get("data_persistence").(string)),
 		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
 		Replication:        redis.Bool(d.Get("replication").(bool)),
 		PeriodicBackupPath: redis.String(d.Get("periodic_backup_path").(string)),
-		// SourceIPs
-		// Replica
-		// ClientTlsCertificates
-		// Password
-		// Alerts
-		EnableDefaultUser: redis.Bool(d.Get("enable_default_user").(bool)),
+		EnableDefaultUser:  redis.Bool(d.Get("enable_default_user").(bool)),
 	}
 
 	respVersion := d.Get("resp_version").(string)
