@@ -15,10 +15,17 @@ func dataSourceRedisCloudEssentialsSubscription() *schema.Resource {
 		Description: "Watches an Essentials Subscription within your Redis Enterprise Cloud Account.",
 		ReadContext: dataSourceRedisCloudEssentialsSubscriptionRead,
 		Schema: map[string]*schema.Schema{
+			"id": {
+				Description: "The subscription's id",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Computed:    true,
+			},
 			"name": {
 				Description: "A meaningful name to identify the subscription",
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
+				Computed:    true,
 			},
 			"status": {
 				Description: "The status of this subscription",
@@ -55,6 +62,12 @@ func dataSourceRedisCloudEssentialsSubscriptionRead(ctx context.Context, d *sche
 
 	var filters []func(method *fixedSubscriptions.FixedSubscription) bool
 
+	if id, ok := d.GetOk("id"); ok {
+		filters = append(filters, func(sub *fixedSubscriptions.FixedSubscription) bool {
+			return redis.IntValue(sub.ID) == id
+		})
+	}
+
 	if name, ok := d.GetOk("name"); ok {
 		filters = append(filters, func(sub *fixedSubscriptions.FixedSubscription) bool {
 			return redis.StringValue(sub.Name) == name
@@ -74,6 +87,9 @@ func dataSourceRedisCloudEssentialsSubscriptionRead(ctx context.Context, d *sche
 	sub := subs[0]
 
 	d.SetId(strconv.Itoa(redis.IntValue(sub.ID)))
+	if err := d.Set("id", redis.IntValue(sub.ID)); err != nil {
+		return diag.FromErr(err)
+	}
 	if err := d.Set("name", redis.StringValue(sub.Name)); err != nil {
 		return diag.FromErr(err)
 	}
