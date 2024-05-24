@@ -903,7 +903,7 @@ func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api
 	return nil
 }
 
-func writeReplica(replica fixedDatabases.ReplicaOf) map[string]interface{} {
+func writeReplica(replica fixedDatabases.ReplicaOf) []map[string]interface{} {
 	tf := map[string]interface{}{}
 	syncSources := make([]map[string]interface{}, 0)
 
@@ -916,5 +916,5 @@ func writeReplica(replica fixedDatabases.ReplicaOf) map[string]interface{} {
 	}
 
 	tf["sync_source"] = syncSources
-	return tf
+	return []map[string]interface{}{tf}
 }
