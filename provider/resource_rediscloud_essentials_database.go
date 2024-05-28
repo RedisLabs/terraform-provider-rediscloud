@@ -365,6 +365,52 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 					},
 				},
 			},
+			"enable_payg_features": {
+				Description: "Enable features for PAYG databases",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+			},
+			"memory_limit_in_gb": {
+				Description: "Maximum memory usage for this specific database",
+				Type:        schema.TypeFloat,
+				Optional:    true,
+			},
+			"support_oss_cluster_api": {
+				Description: "Support Redis open-source (OSS) Cluster API",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+			},
+			"external_endpoint_for_oss_cluster_api": {
+				Description: "Should use the external endpoint for open-source (OSS) Cluster API",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+			},
+			"enable_database_clustering": {
+				Description: "Distributes database data to different cloud instances",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+			},
+			"regex_rules": {
+				Description: "Shard regex rules. Relevant only for a sharded database. Supported only for 'Pay-As-You-Go' subscriptions",
+				Type:        schema.TypeList,
+				Optional:    true,
+				Computed:    true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+					// Can't check that these are valid regex rules as the service wants something like `(?<tag>.*)`
+					// which isn't a valid Go regex
+				},
+			},
+			"enable_tls": {
+				Description: "Use TLS for authentication",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+			},
 		},
 	}
 }
@@ -377,19 +423,11 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 	subscriptionMutex.Lock(subId)
 
 	createDatabaseRequest := fixedDatabases.CreateFixedDatabase{
-		Name: redis.String(d.Get("name").(string)),
-		// Protocol
-		// RespVersion
+		Name:               redis.String(d.Get("name").(string)),
 		DataPersistence:    redis.String(d.Get("data_persistence").(string)),
 		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
 		Replication:        redis.Bool(d.Get("replication").(bool)),
 		PeriodicBackupPath: redis.String(d.Get("periodic_backup_path").(string)),
-		// SourceIPs
-		// Replica
-		// ClientTlsCertificates
-		// Password
-		// Alerts
-		// Modules
 	}
 
 	protocol := d.Get("protocol").(string)
@@ -476,6 +514,15 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 		createModules = append(createModules, createModule)
 	}
 	createDatabaseRequest.Modules = &createModules
+
+	if d.Get("enable_payg_features").(bool) {
+		createDatabaseRequest.MemoryLimitInGB = redis.Float64(d.Get("memory_limit_in_gb").(float64))
+		createDatabaseRequest.SupportOSSClusterAPI = redis.Bool(d.Get("support_oss_cluster_api").(bool))
+		createDatabaseRequest.UseExternalEndpointForOSSClusterAPI = redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool))
+		createDatabaseRequest.EnableDatabaseClustering = redis.Bool(d.Get("enable_database_clustering").(bool))
+		createDatabaseRequest.RegexRules = interfaceToStringSlice(d.Get("regex_rules").([]interface{}))
+		createDatabaseRequest.EnableTls = redis.Bool(d.Get("enable_tls").(bool))
+	}
 
 	databaseId, err := api.client.FixedDatabases.Create(ctx, subId, createDatabaseRequest)
 	if err != nil {
@@ -570,13 +617,19 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 
-	var sourceIPs []string
-	if !(len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0") {
-		// The API handles an empty list as ["0.0.0.0/0"] but need to be careful to match the input to avoid Terraform detecting drift
-		sourceIPs = redis.StringSliceValue(db.Security.SourceIPs...)
-	}
-	if err := d.Set("source_ips", sourceIPs); err != nil {
-		return diag.FromErr(err)
+	if db.Security == nil {
+		if err := d.Set("source_ips", []string{}); err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		var sourceIPs []string
+		if !(len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0") {
+			// The API handles an empty list as ["0.0.0.0/0"] but need to be careful to match the input to avoid Terraform detecting drift
+			sourceIPs = redis.StringSliceValue(db.Security.SourceIPs...)
+		}
+		if err := d.Set("source_ips", sourceIPs); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if db.Replica != nil {
@@ -637,6 +690,43 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 
+	// PAYG features
+	if err := d.Set("memory_limit_in_gb", redis.Float64Value(db.MemoryLimitInGb)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("support_oss_cluster_api", redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("external_endpoint_for_oss_cluster_api", redis.BoolValue(db.UseExternalEndpointForOSSClusterAPI)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if db.Clustering == nil {
+		if err := d.Set("enable_database_clustering", false); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("regex_rules", []interface{}{}); err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		if err := d.Set("enable_database_clustering", redis.BoolValue(db.Clustering.Enabled)); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("regex_rules", flattenRegexRules(db.Clustering.RegexRules)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if db.Security == nil {
+		if err := d.Set("enable_tls", false); err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		if err := d.Set("enable_tls", redis.BoolValue(db.Security.EnableTls)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	return diags
 }
 
@@ -653,19 +743,12 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 	defer subscriptionMutex.Unlock(subId)
 
 	updateDatabaseRequest := fixedDatabases.UpdateFixedDatabase{
-		Name: redis.String(d.Get("name").(string)),
-		// RespVersion
+		Name:               redis.String(d.Get("name").(string)),
 		DataPersistence:    redis.String(d.Get("data_persistence").(string)),
 		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
 		Replication:        redis.Bool(d.Get("replication").(bool)),
 		PeriodicBackupPath: redis.String(d.Get("periodic_backup_path").(string)),
-		// SourceIPs
-		// Replica
-		// ClientTlsCertificates
-		// Password
-		// Alerts
-		// Modules
-		EnableDefaultUser: redis.Bool(d.Get("enable_default_user").(bool)),
+		EnableDefaultUser:  redis.Bool(d.Get("enable_default_user").(bool)),
 	}
 
 	respVersion := d.Get("resp_version").(string)
@@ -732,6 +815,15 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 		createAlerts = append(createAlerts, createAlert)
 	}
 	updateDatabaseRequest.Alerts = &createAlerts
+
+	if d.Get("enable_payg_features").(bool) {
+		updateDatabaseRequest.MemoryLimitInGB = redis.Float64(d.Get("memory_limit_in_gb").(float64))
+		updateDatabaseRequest.SupportOSSClusterAPI = redis.Bool(d.Get("support_oss_cluster_api").(bool))
+		updateDatabaseRequest.UseExternalEndpointForOSSClusterAPI = redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool))
+		updateDatabaseRequest.EnableDatabaseClustering = redis.Bool(d.Get("enable_database_clustering").(bool))
+		updateDatabaseRequest.RegexRules = interfaceToStringSlice(d.Get("regex_rules").([]interface{}))
+		updateDatabaseRequest.EnableTls = redis.Bool(d.Get("enable_tls").(bool))
+	}
 
 	err = api.client.FixedDatabases.Update(ctx, subId, databaseId, updateDatabaseRequest)
 	if err != nil {
@@ -811,7 +903,7 @@ func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api
 	return nil
 }
 
-func writeReplica(replica fixedDatabases.ReplicaOf) map[string]interface{} {
+func writeReplica(replica fixedDatabases.ReplicaOf) []map[string]interface{} {
 	tf := map[string]interface{}{}
 	syncSources := make([]map[string]interface{}, 0)
 
@@ -824,5 +916,5 @@ func writeReplica(replica fixedDatabases.ReplicaOf) map[string]interface{} {
 	}
 
 	tf["sync_source"] = syncSources
-	return tf
+	return []map[string]interface{}{tf}
 }

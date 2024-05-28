@@ -24,11 +24,10 @@ output "rediscloud_essentials_subscription" {
 
 ## Argument Reference
 
-* `name` - (Required) A convenient name for the plan.
+* `id` - (Optional) The subscription's id
+* `name` - (Optional) A convenient name for the plan.
 
 ## Attributes Reference
-
-`id` is set to the ID of the found subscription.
 
 * `status` - The current status of the subscription
 * `plan_id` - The plan to which this subscription belongs

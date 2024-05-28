@@ -47,6 +47,14 @@ func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(resourceName, "password", "j43589rhe39f"),
 
+					resource.TestCheckResourceAttr(resourceName, "enable_payg_features", "false"),
+					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "0"),
+					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(resourceName, "enable_database_clustering", "false"),
+					resource.TestCheckResourceAttr(resourceName, "regex_rules.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "enable_tls", "false"),
+
 					// Test the datasource
 					resource.TestMatchResourceAttr(datasourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
 					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
@@ -68,6 +76,13 @@ func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "alert.0.value", "80"),
 					resource.TestCheckResourceAttr(datasourceName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(datasourceName, "password", ""),
+
+					resource.TestCheckResourceAttr(datasourceName, "memory_limit_in_gb", "0"),
+					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(datasourceName, "enable_database_clustering", "false"),
+					resource.TestCheckResourceAttr(datasourceName, "regex_rules.#", "0"),
+					resource.TestCheckResourceAttr(datasourceName, "enable_tls", "false"),
 				),
 			},
 			{
@@ -96,6 +111,14 @@ func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(resourceName, "password", "j43589rhe39f"),
 
+					resource.TestCheckResourceAttr(resourceName, "enable_payg_features", "false"),
+					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "0"),
+					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(resourceName, "enable_database_clustering", "false"),
+					resource.TestCheckResourceAttr(resourceName, "regex_rules.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "enable_tls", "false"),
+
 					// Test the datasource
 					resource.TestMatchResourceAttr(datasourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
 					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
@@ -117,6 +140,13 @@ func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "alert.0.value", "80"),
 					resource.TestCheckResourceAttr(datasourceName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(datasourceName, "password", ""),
+
+					resource.TestCheckResourceAttr(datasourceName, "memory_limit_in_gb", "0"),
+					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(datasourceName, "enable_database_clustering", "false"),
+					resource.TestCheckResourceAttr(datasourceName, "regex_rules.#", "0"),
+					resource.TestCheckResourceAttr(datasourceName, "enable_tls", "false"),
 				),
 			},
 			{
@@ -124,7 +154,7 @@ func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password"},
+				ImportStateVerifyIgnore: []string{"password", "enable_payg_features"},
 			},
 		},
 	})
