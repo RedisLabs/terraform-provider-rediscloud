@@ -317,6 +317,42 @@ func dataSourceRedisCloudEssentialsDatabase() *schema.Resource {
 					},
 				},
 			},
+
+			"memory_limit_in_gb": {
+				Description: "Maximum memory usage for this specific database",
+				Type:        schema.TypeFloat,
+				Computed:    true,
+			},
+			"support_oss_cluster_api": {
+				Description: "Support Redis open-source (OSS) Cluster API",
+				Type:        schema.TypeBool,
+				Computed:    true,
+			},
+			"external_endpoint_for_oss_cluster_api": {
+				Description: "Should use the external endpoint for open-source (OSS) Cluster API",
+				Type:        schema.TypeBool,
+				Computed:    true,
+			},
+			"enable_database_clustering": {
+				Description: "Distributes database data to different cloud instances",
+				Type:        schema.TypeBool,
+				Computed:    true,
+			},
+			"regex_rules": {
+				Description: "Shard regex rules. Relevant only for a sharded database",
+				Type:        schema.TypeList,
+				Computed:    true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+					// Can't check that these are valid regex rules as the service wants something like `(?<tag>.*)`
+					// which isn't a valid Go regex
+				},
+			},
+			"enable_tls": {
+				Description: "Use TLS for authentication",
+				Type:        schema.TypeBool,
+				Computed:    true,
+			},
 		},
 	}
 }
@@ -476,6 +512,43 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 	}
 	if err := d.Set("latest_import_status", parsedLatestImportStatus); err != nil {
 		return diag.FromErr(err)
+	}
+
+	// PAYG features
+	if err := d.Set("memory_limit_in_gb", redis.Float64Value(db.MemoryLimitInGb)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("support_oss_cluster_api", redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("external_endpoint_for_oss_cluster_api", redis.BoolValue(db.UseExternalEndpointForOSSClusterAPI)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if db.Clustering == nil {
+		if err := d.Set("enable_database_clustering", false); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("regex_rules", []interface{}{}); err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		if err := d.Set("enable_database_clustering", redis.BoolValue(db.Clustering.Enabled)); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("regex_rules", flattenRegexRules(db.Clustering.RegexRules)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if db.Security == nil {
+		if err := d.Set("enable_tls", false); err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		if err := d.Set("enable_tls", redis.BoolValue(db.Security.EnableTls)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return diags

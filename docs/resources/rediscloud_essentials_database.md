@@ -60,6 +60,13 @@ The following arguments are supported:
 * `enable_default_user` - (Optional) When `true` enables connecting to the database with the default user. Default `true`.
 * `alert` - (Optional) A block defining Redis database alert, documented below, can be specified multiple times.
 * `modules` - (Optional) A list of modules objects, documented below. **Modifying this attribute will force creation of a new resource.**
+* `enable_payg_features` - (Optional) Whether to enable features restricted to Pay-As-You-Go databases. Newly created databases should omit this property. Default `false`.
+* `memory_limit_in_gb` - (Optional) **Only used with Pay-As-You-Go databases.** Maximum memory usage for this specific database.
+* `support_oss_cluster_api` - (Optional) **Only used with Pay-As-You-Go databases.** Support Redis open-source (OSS) Cluster API. Default `false`.
+* `external_endpoint_for_oss_cluster_api` - (Optional) **Only used with Pay-As-You-Go databases.** Should use the external endpoint for open-source (OSS) Cluster API. Default `false`.
+* `enable_database_clustering` - (Optional) **Only used with Pay-As-You-Go databases.** Distributes database data to different cloud instances. Default `false`.
+* `regex_rules` - (Optional) **Only used with Pay-As-You-Go databases.** Shard regex rules. Relevant only for a sharded database.
+* `enable_tls` - (Optional) **Only used with Pay-As-You-Go databases.** Use TLS for authentication. Default `false`.
 
 The `replica` block supports:
 
