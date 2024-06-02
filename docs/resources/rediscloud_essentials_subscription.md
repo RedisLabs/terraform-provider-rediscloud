@@ -16,15 +16,15 @@ data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
 
-data "rediscloud_essentials_plan" "example" {
+data "rediscloud_essentials_plan" "plan" {
   name = "Single-Zone_1GB"
-  provider = "AWS"
+  cloud_provider = "AWS"
   region = "us-west-1"
 }
 
 resource "rediscloud_essentials_subscription" "subscription-resource" {
   name              = "subscription-name"
-  plan_id = data.rediscloud_essentials_plan.id
+  plan_id = data.rediscloud_essentials_plan.plan.id
   payment_method_id = data.rediscloud_payment_method.card.id
 }
 ```
