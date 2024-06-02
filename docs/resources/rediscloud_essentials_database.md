@@ -17,7 +17,7 @@ data "rediscloud_payment_method" "card" {
 }
 
 data "rediscloud_essentials_plan" "plan" {
-  name = "250MB"
+  name = "Multi-Zone_5GB"
   cloud_provider = "AWS"
   region = "eu-west-1"
 }
