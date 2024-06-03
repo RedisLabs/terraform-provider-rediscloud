@@ -78,7 +78,7 @@ The following arguments are supported:
 
 * `subscription_id` - (Required) The ID of the subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
 * `name` - (Required) A meaningful name to identify the database
-* `throughput_measurement_by` - (Required) Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)
+* `throughput_measurement_by` - (Required) Throughput measurement method that will be used by your databases. Either ‘number-of-shards’ or ‘operations-per-second'. **'number-of-shards' is deprecated and only supported for legacy deployments.**
 * `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
 * `memory_limit_in_gb` - (Required) Maximum memory usage for this specific database
 * `protocol` - (Optional) The protocol that will be used to access the database, (either ‘redis’ or ‘memcached’) Default: ‘redis’. **Modifying this attribute will force creation of a new resource.**
