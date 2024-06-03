@@ -47,7 +47,6 @@ The following arguments are supported:
 
 * `subscription_id` - (Required) The ID of the subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
 * `name` - (Required) A meaningful name to identify the database.
-* `protocol` - (Optional) The protocol that will be used to access the database (either ‘redis’, 'memcached’ or 'stack'). **Modifying this attribute will force creation of a new resource.**
 * `resp_version` - (Optional) RESP version must be compatible with the Redis version.
 * `data_persistence` - (Optional) Rate of database data persistence (in persistent storage). Either: 'none', 'aof-every-1-second', 'aof-every-write', 'snapshot-every-1-hour', 'snapshot-every-6-hours' or 'snapshot-every-12-hours'. Default: 'none'.
 * `data_eviction` - (Optional) Data items eviction method. Either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru'.
@@ -62,6 +61,7 @@ The following arguments are supported:
 * `modules` - (Optional) A list of modules objects, documented below. **Modifying this attribute will force creation of a new resource.**
 * `enable_payg_features` - (Optional) Whether to enable features restricted to Pay-As-You-Go legacy databases. It is not supported for new databases. Default `false`.
 * `memory_limit_in_gb` - (Optional) **Only used with Pay-As-You-Go databases.** Maximum memory usage for the database.
+* `protocol` - (Optional) The protocol that will be used to access the database. Either ‘redis’, 'memcached’ or 'stack'). Default: 'stack'. **Only used with Pay-As-You-Go databases.**
 * `support_oss_cluster_api` - (Optional) **Only used with Pay-As-You-Go databases.** Support Redis open-source (OSS) Cluster API. Default `false`.
 * `external_endpoint_for_oss_cluster_api` - (Optional) **Only used with Pay-As-You-Go databases.** Should use the external endpoint for open-source (OSS) Cluster API. Default `false`.
 * `enable_database_clustering` - (Optional) **Only used with Pay-As-You-Go databases.** Distributes database data to different cloud instances. Default `false`.
