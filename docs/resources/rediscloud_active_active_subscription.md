@@ -84,7 +84,6 @@ The creation_plan `region` block supports:
 
 The `pricing` object has these attributes:
 
-* `database_name` - The database this pricing entry applies to.
 * `type` - The type of cost. E.g. 'Shards'.
 * `typeDetails` - Further detail E.g. 'micro'.
 * `quantity` - Self-explanatory.
