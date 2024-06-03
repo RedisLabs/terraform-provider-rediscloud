@@ -61,7 +61,7 @@ The following arguments are supported:
 * `modules` - (Optional) A list of modules objects, documented below. **Modifying this attribute will force creation of a new resource.**
 * `enable_payg_features` - (Optional) Whether to enable features restricted to Pay-As-You-Go legacy databases. It is not supported for new databases. Default `false`.
 * `memory_limit_in_gb` - (Optional) **Only used with Pay-As-You-Go databases.** Maximum memory usage for the database.
-* `protocol` - (Optional) The protocol that will be used to access the database. Either ‘redis’, 'memcached’ or 'stack'). Default: 'stack'. **Only used with Pay-As-You-Go databases.**
+* `protocol` - (Optional) **Only used with Pay-As-You-Go databases.** The protocol that will be used to access the database. Either ‘redis’, 'memcached’ or 'stack'). 
 * `support_oss_cluster_api` - (Optional) **Only used with Pay-As-You-Go databases.** Support Redis open-source (OSS) Cluster API. Default `false`.
 * `external_endpoint_for_oss_cluster_api` - (Optional) **Only used with Pay-As-You-Go databases.** Should use the external endpoint for open-source (OSS) Cluster API. Default `false`.
 * `enable_database_clustering` - (Optional) **Only used with Pay-As-You-Go databases.** Distributes database data to different cloud instances. Default `false`.
