@@ -13,41 +13,41 @@ This resource is responsible for creating and managing subscriptions.
 ~> **Note:** The payment_method property is ignored after Subscription creation.
 
 ~> **Note:** The creation_plan block allows the API server to create a well-optimised infrastructure for your databases in the cluster.
-The attributes inside the block are used by the provider to create initial 
-databases. Those databases will be deleted after provisioning a new 
-subscription, then the databases defined as separate resources will be attached to 
-the subscription. The creation_plan block can ONLY be used for provisioning new 
-subscriptions, the block will be ignored if you make any further changes or try importing the resource (e.g. `terraform import` ...).  
+The attributes inside the block are used by the provider to create initial
+databases. Those databases will be deleted after provisioning a new
+subscription, then the databases defined as separate resources will be attached to
+the subscription. The creation_plan block can ONLY be used for provisioning new
+subscriptions, the block will be ignored if you make any further changes or try importing the resource (e.g. `terraform import` ...).
 
 ## Example Usage
 
 ```hcl
 data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
+  card_type = "Visa"
 }
-  
+
 resource "rediscloud_active_active_subscription" "subscription-resource" {
-	name = "subscription-name"
-	payment_method_id = data.rediscloud_payment_method.card.id
-	cloud_provider = "AWS"
-   
-	creation_plan {
-	  memory_limit_in_gb = 1
-	  quantity = 1
+  name = "subscription-name"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  cloud_provider = "AWS"
+
+  creation_plan {
+    memory_limit_in_gb = 1
+    quantity = 1
     modules = ["RedisJSON"]
-	  region {
-		  region = "us-east-1"
-		  networking_deployment_cidr = "192.168.0.0/24"
-		  write_operations_per_second = 1000
-		  read_operations_per_second = 1000
-	  }
-	  region {
-		  region = "us-east-2"
-		  networking_deployment_cidr = "10.0.1.0/24"
-		  write_operations_per_second = 1000
-		  read_operations_per_second = 1000
-	  }
-	}
+    region {
+      region = "us-east-1"
+      networking_deployment_cidr = "192.168.0.0/24"
+      write_operations_per_second = 1000
+      read_operations_per_second = 1000
+    }
+    region {
+      region = "us-east-2"
+      networking_deployment_cidr = "10.0.1.0/24"
+      write_operations_per_second = 1000
+      read_operations_per_second = 1000
+    }
+  }
 }
 ```
 
@@ -57,20 +57,21 @@ The following arguments are supported:
 
 * `name` - (Required) A meaningful name to identify the subscription
 * `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'. **(Changes to) this attribute are ignored after creation.**
-* `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types 
+* `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types
 * `cloud_provider` - (Optional) The cloud provider to use with the subscription, (either `AWS` or `GCP`). Default: ‘AWS’. **Modifying this attribute will force creation of a new resource.**
 * `redis_version` - (Optional) Either 'default' or 'latest'. If specified, the Redis Version defines the cluster version. Default: 'default'. **Modifying this attribute will force creation of a new resource.**
-* `creation_plan` - (Required) A creation plan object, documented below
+* `creation_plan` - (Required) A creation plan object, documented below. Ignored after creation.
 
 The `creation_plan` block supports:
 
 * `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database, including replication and other overhead
 * `quantity` - (Required) The planned number of databases in the subscription.
-* `modules` - (Optional) A list of modules to be enabled on all deployments of this database. Only `RedisJSON` is currently supported.
+* `modules` - (Optional) A list of modules to be enabled on all deployments of this database. Either: `RedisJSON` or 'RediSearch'.
+* `region` - (Required) Deployment region block, documented below
 
 The creation_plan `region` block supports:
 
-* `region` - (Required) Deployment region as defined by cloud provider
+* `region` - (Required) Deployment region as defined by the cloud provider
 * `networking_deployment_cidr` - (Required) Deployment CIDR mask. The total number of bits must be 24 (x.x.x.x/24)
 * `write_operations_per_second` - (Required) Throughput measurement for an active-active subscription
 * `read_operations_per_second` - (Required) Throughput measurement for an active-active subscription
@@ -83,15 +84,14 @@ The creation_plan `region` block supports:
 
 The `pricing` object has these attributes:
 
-* `database_name` - The database this pricing entry applies to.
-* `type` - The type of cost e.g. 'Shards'.
-* `typeDetails` - Further detail e.g. 'micro'.
+* `type` - The type of cost. E.g. 'Shards'.
+* `typeDetails` - Further detail E.g. 'micro'.
 * `quantity` - Self-explanatory.
 * `quantityMeasurement` - Self-explanatory.
-* `pricePerUnit` - Self-explanatory.
-* `priceCurrency` - Self-explanatory e.g. 'USD'.
-* `pricePeriod` - Self-explanatory e.g. 'hour'.
-* `region` - Self-explanatory, if the cost is associated with a particular region.
+* `pricePerUnit` - Price per Unit.
+* `priceCurrency` - The price currency
+* `pricePeriod` - Price period. E.g. 'hour'.
+* `region` - Specify if the cost is associated with a particular region.
 
 ### Timeouts
 
@@ -113,4 +113,3 @@ $ terraform import rediscloud_active_active_subscription.subscription-resource 1
 
 ~> **Note:** when importing an existing Subscription, upon providing a `redis_version`, Terraform will always try to
 recreate the resource. The API doesn't return this value, so we can't detect changes between states.
-
