@@ -121,3 +121,10 @@ The `response` block `latest_import_status` contains:
 * `last_import_time` - When the last import operation occurred.
 * `failure_reason` - If a failure, why the import operation failed.
 * `failure_reason_params` - Parameters of the failure, if appropriate, in the form of a list of objects each with a `key` entry and a `value` entry.
+
+## Import
+`rediscloud_essentials_database` can be imported using the ID of the subscription and the ID of the database in the format {subscription ID}/{database ID}, e.g.
+
+```
+$ terraform import rediscloud_essentials_database.database-resource 123456/12345678
+```
