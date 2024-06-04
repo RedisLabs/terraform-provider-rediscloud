@@ -9,6 +9,8 @@ description: |-
 
 Creates an Essentials Subscription within your Redis Enterprise Cloud Account.
 
+~> **Note:** It's recommended to create a Database (`rediscloud_essentials_database`) when you create a Subscription.
+
 ## Example Usage
 
 ```hcl
