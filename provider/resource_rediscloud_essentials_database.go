@@ -96,8 +96,7 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 			"data_persistence": {
 				Description: "Rate of database data persistence (in persistent storage).",
 				Type:        schema.TypeString,
-				Optional:    true,
-				Default:     "none",
+				Required:    true,
 			},
 			"data_eviction": {
 				Description: "The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru')",
@@ -108,8 +107,7 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 			"replication": {
 				Description: "Database's replication",
 				Type:        schema.TypeBool,
-				Optional:    true,
-				Computed:    true,
+				Required:    true,
 			},
 			"activated_on": {
 				Description: "When this database was activated",

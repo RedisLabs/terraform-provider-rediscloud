@@ -17,25 +17,28 @@ data "rediscloud_payment_method" "card" {
 }
 
 data "rediscloud_essentials_plan" "plan" {
-  name = "Multi-Zone_5GB"
+  name           = "Multi-Zone_5GB"
   cloud_provider = "AWS"
-  region = "eu-west-1"
+  region         = "eu-west-1"
 }
 
 resource "rediscloud_essentials_subscription" "subscription-resource" {
-  name = "subscription-name"
-  plan_id = data.rediscloud_essentials_plan.plan.id
+  name              = "subscription-name"
+  plan_id           = data.rediscloud_essentials_plan.plan.id
   payment_method_id = data.rediscloud_payment_method.card.id
 }
 
 resource "rediscloud_essentials_database" "database-resource" {
-  subscription_id = rediscloud_essentials_subscription.subscription-resource.id
-  name = "database-name"
+  subscription_id     = rediscloud_essentials_subscription.subscription-resource.id
+  name                = "database-name"
   enable_default_user = true
-  password = "my_password"
+  password            = "my_password"
+
+  data_persistence = "none"
+  replication      = false
 
   alert {
-    name = "throughput-higher-than"
+    name  = "throughput-higher-than"
     value = 80
   }
 }
@@ -48,9 +51,9 @@ The following arguments are supported:
 * `subscription_id` - (Required) The ID of the subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
 * `name` - (Required) A meaningful name to identify the database.
 * `resp_version` - (Optional) RESP version must be compatible with the Redis version.
-* `data_persistence` - (Optional) Rate of database data persistence (in persistent storage). Either: 'none', 'aof-every-1-second', 'aof-every-write', 'snapshot-every-1-hour', 'snapshot-every-6-hours' or 'snapshot-every-12-hours'. Default: 'none'.
+* `data_persistence` - (Required) Rate of database data persistence (in persistent storage). Either: 'none', 'aof-every-1-second', 'aof-every-write', 'snapshot-every-1-hour', 'snapshot-every-6-hours' or 'snapshot-every-12-hours'.
 * `data_eviction` - (Optional) Data items eviction method. Either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru'.
-* `replication` - (Optional) Databases replication. Either: 'true' or 'false'. Default: 'false'.
+* `replication` - (Required) Databases replication. Either: 'true' or 'false'.
 * `periodic_backup_path` - (Optional) If specified, automatic backups will be every 24 hours and immediate backups to this path will be allowed upon request.
 * `source_ips` - (Optional) List of source IP addresses or subnet masks. If specified, Redis clients will be able to connect to this database only from within the specified source IP address ranges. Example value: ['192.168.10.0/32', '192.168.12.0/24'].
 * `replica` - (Optional) If specified, this database will be a replica of the specified Redis databases provided, documented below.
