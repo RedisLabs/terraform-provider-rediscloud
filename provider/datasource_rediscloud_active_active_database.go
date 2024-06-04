@@ -81,6 +81,65 @@ func dataSourceRedisCloudActiveActiveDatabase() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"latest_backup_statuses": {
+				Description: "Details about the last backups that took place across each region for this active-active database",
+				Computed:    true,
+				Type:        schema.TypeList,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"region": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"response": {
+							Type:     schema.TypeSet,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"status": {
+										Description: "The status of the last backup operation",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"last_backup_time": {
+										Description: "When the last backup operation occurred",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"failure_reason": {
+										Description: "If a failure, why the backup operation failed",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+								},
+							},
+						},
+						"error": {
+							Computed: true,
+							Type:     schema.TypeSet,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"type": {
+										Description: "The type of error encountered while looking up the status of the last backup",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"description": {
+										Description: "A description of the error encountered while looking up the status of the last backup",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+									"status": {
+										Description: "Any particular HTTP status code associated with the erroneous status check",
+										Computed:    true,
+										Type:        schema.TypeString,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"latest_import_status": {
 				Description: "Details about the last import that took place for this active-active database",
 				Computed:    true,
@@ -245,6 +304,26 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	}
 	if err := d.Set("private_endpoint", privateEndpointConfig); err != nil {
+		return diag.FromErr(err)
+	}
+
+	var parsedLatestBackupStatuses []map[string]interface{}
+	for _, regionDb := range db.CrdbDatabases {
+		region := redis.StringValue(regionDb.Region)
+		latestBackupStatus, err := api.client.LatestBackup.GetActiveActive(ctx, subId, dbId, region)
+		if err != nil {
+			// Forgive errors here, sometimes we just can't get a latest status
+		} else {
+			parsedLatestBackupStatus, err := parseLatestBackupStatus(latestBackupStatus)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			soloParsedLatestBackupStatus := parsedLatestBackupStatus[0]
+			soloParsedLatestBackupStatus["region"] = region
+			parsedLatestBackupStatuses = append(parsedLatestBackupStatuses, parsedLatestBackupStatus[0])
+		}
+	}
+	if err := d.Set("latest_backup_statuses", parsedLatestBackupStatuses); err != nil {
 		return diag.FromErr(err)
 	}
 
