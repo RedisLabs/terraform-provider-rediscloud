@@ -49,18 +49,25 @@ data "rediscloud_active_active_database" "example" {
 * `global_modules` - A list of modules to be enabled on all deployments of this database.
 * `public_endpoint` - Public endpoint to access the database.
 * `private_endpoint` - Private endpoint to access the database.
-* `latest_import_status` - A latest_import_status object, documented below.
+* `latest_backup_statuses` A list of latest_backup_status objects, documented below.
+* `latest_import_status` - A latest_import_status object, documented below.`
 
-The `latest_import_status` block contains:
+The `latest_backup_status` object and `latest_import_status` block contains:
 
 * `error` - An error block, in case this lookup failed, documented below.
 * `response` - A detail block, documented below.
 
-The `error` block in `latest_import_status` contains:
+The `error` block in `latest_backup_status` and `latest_import_status` contains:
 
 * `type` - The type of error encountered while looking up the status of the last import.
 * `description` - A description of the error encountered while looking up the status of the last import.
 * `status` - Any particular HTTP status code associated with the erroneous status check.
+
+The `response` block `latest_backup_status` contains:
+
+* `status` - The status of the last backup operation.
+* `last_backup_time` - When the last backup operation occurred.
+* `failure_reason` - If a failure, why the backup operation failed.
 
 The `response` block `latest_import_status` contains:
 

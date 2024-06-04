@@ -133,18 +133,25 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/l
 * `db_id` - Identifier of the database created
 * `public_endpoint` - A map of which public endpoints can to access the database per region, uses region name as key.
 * `private_endpoint` - A map of which private endpoints can to access the database per region, uses region name as key.
+* `override_region.latest_backup_status` - On each override_region block, the latest_backup_status is reported, an object documented below.
 * `latest_import_status` - A latest_import_status object, documented below.
 
-The `latest_import_status` block contains:
+The `latest_backup_status` object and `latest_import_status` block contains:
 
 * `error` - An error block, in case this lookup failed, documented below.
 * `response` - A detail block, documented below.
 
-The `error` block in `latest_import_status` contains:
+The `error` block in `latest_backup_status` and `latest_import_status` contains:
 
 * `type` - The type of error encountered while looking up the status of the last import.
 * `description` - A description of the error encountered while looking up the status of the last import.
 * `status` - Any particular HTTP status code associated with the erroneous status check.
+
+The `response` block `latest_backup_status` contains:
+
+* `status` - The status of the last backup operation.
+* `last_backup_time` - When the last backup operation occurred.
+* `failure_reason` - If a failure, why the backup operation failed.
 
 The `response` block `latest_import_status` contains:
 
