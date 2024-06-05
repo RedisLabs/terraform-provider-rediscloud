@@ -17,12 +17,12 @@ For GCP, the opposite peering request should be submitted.
 The following example shows how a subscription can be peered with a AWS VPC using the rediscloud and google providers.
 
 ```hcl
-resource "rediscloud_flexible_subscription" "example" {
+resource "rediscloud_subscription" "example" {
   // ...
 }
 
 resource "rediscloud_subscription_peering" "example" {
-   subscription_id = rediscloud_flexible_subscription.example.id
+   subscription_id = rediscloud_subscription.example.id
    region = "eu-west-1"
    aws_account_id = "123456789012"
    vpc_id = "vpc-01234567890"
@@ -41,7 +41,7 @@ The following example shows how a subscription can be peered with a GCP project 
 The example HCL locates the network details and creates/accepts the vpc peering connection through the Google provider.   
 
 ```hcl
-resource "rediscloud_flexible_subscription" "example" {
+resource "rediscloud_subscription" "example" {
   // ...
 }
 
@@ -51,7 +51,7 @@ data "google_compute_network" "network" {
 }
 
 resource "rediscloud_subscription_peering" "example-peering" {
-  subscription_id = rediscloud_flexible_subscription.example.id
+  subscription_id = rediscloud_subscription.example.id
   provider_name = "GCP"
   gcp_project_id = data.google_compute_network.network.project
   gcp_network_name = data.google_compute_network.network.name

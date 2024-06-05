@@ -22,8 +22,8 @@ resource "rediscloud_acl_role" "role-resource" {
   rule {
     name = rediscloud_acl_rule.rule-resource.name
     database {
-      subscription = rediscloud_flexible_subscription.subscription-resource.id
-      database     = rediscloud_flexible_database.database-resource.db_id
+      subscription = rediscloud_subscription.subscription-resource.id
+      database     = rediscloud_subscription_database.database-resource.db_id
     }
   }
 }

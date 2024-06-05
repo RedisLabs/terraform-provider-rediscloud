@@ -7,7 +7,9 @@ description: |-
 
 # Data Source: rediscloud_essentials_subscription
 
-The Essentials Subscription data source allows access to the details of an existing Subscription within your Redis Enterprise Cloud account. 
+This data source allows access to the details of an existing subscription within your Redis Enterprise Cloud account.
+
+-> **Note:** This is referring to Essentials Subscriptions only. See also `rediscloud_subscription` (Pro) and `rediscloud_active_active_subscription`. 
 
 ## Example Usage
 

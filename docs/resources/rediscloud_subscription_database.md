@@ -7,9 +7,9 @@ description: |-
 
 # Resource: rediscloud_subscription_database
 
-!> **WARNING:** This resource is deprecated and will be removed in the next major version. Switch to `rediscloud_flexible_database` or `rediscloud_active_active_database` (incoming)
+This resource allows you to manage a database within your Redis Enterprise Cloud account.
 
-Creates a Database within a specified Flexible Subscription in your Redis Enterprise Cloud Account.
+-> **Note:** This is for databases within Pro Subscriptions only. See also `rediscloud_active_active_subscription_database` and `rediscloud_essentials_database`.
 
 ## Example Usage
 
@@ -67,8 +67,6 @@ resource "rediscloud_subscription_database" "database-resource" {
       name = "dataset-size"
       value = 40
     }
-    depends_on = [rediscloud_subscription.subscription-resource]
-
 }
 ```
 

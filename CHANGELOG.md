@@ -3,24 +3,19 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-## 1.7.0 (29th April 2024)
+## 1.7.0 (11th June 2024)
 
-### Changed
+### Fixed
 
-- Deprecated datasources: `rediscloud_subscription`, `rediscloud_database`
-- Deprecated
-  resources: `rediscloud_subscription`, `rediscloud_subscription_database`, `rediscloud_active_active_subscription_database`
+- Datasources `rediscloud_subscription` and `rediscloud_databases` are for Pro Subscriptions only
 
 ### Added
 
-- To replace the deprecated datasources: `rediscloud_flexible_subscription`, `rediscloud_flexible_database`
-- To replace the deprecated
-  resources: `rediscloud_flexible_subscription`, `rediscloud_flexible_database`, `rediscloud_active_active_database`
-- Datasources for Active Active features: `rediscloud_active_active_subscription`, `rediscloud_active_active_database`
+- Datasources for Active-Active features: `rediscloud_active_active_subscription`, `rediscloud_active_active_subscription_database`
 - Datasources for Essentials
   features: `rediscloud_essentials_plan`, `rediscloud_essentials_subscription`, `rediscloud_essentials_database`
 - Resources for Essentials features: `rediscloud_essentials_subscription`, `rediscloud_essentials_database`
-- `modules`/`global_modules` can be specified on Active Active Subscription/Database resources, enabling `RedisJSON`
+- `modules`/`global_modules` can be specified on Active-Active Subscription/Database resources, enabling `RedisJSON`
 - All Subscription resources include the `pricing` attribute
 - All Database resources include `latest_backup_status` and `latest_import_status` attributes as appropriate
 

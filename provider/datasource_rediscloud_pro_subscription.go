@@ -9,10 +9,10 @@ import (
 	"strconv"
 )
 
-func dataSourceRedisCloudFlexibleSubscription() *schema.Resource {
+func dataSourceRedisCloudProSubscription() *schema.Resource {
 	return &schema.Resource{
-		Description: "The Flexible Subscription data source allows access to the details of an existing flexible subscription within your Redis Enterprise Cloud account.",
-		ReadContext: dataSourceRedisCloudFlexibleSubscriptionRead,
+		Description: "The Pro Subscription data source allows access to the details of an existing pro subscription within your Redis Enterprise Cloud account.",
+		ReadContext: dataSourceRedisCloudProSubscriptionRead,
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -179,7 +179,7 @@ func dataSourceRedisCloudFlexibleSubscription() *schema.Resource {
 	}
 }
 
-func dataSourceRedisCloudFlexibleSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	api := meta.(*apiClient)
 
@@ -190,7 +190,7 @@ func dataSourceRedisCloudFlexibleSubscriptionRead(ctx context.Context, d *schema
 
 	var filters []func(method *subscriptions.Subscription) bool
 
-	// Filter to flexible subscriptions only (active-active subs) come from the same endpoint
+	// Filter to pro subscriptions only (active-active subs) come from the same endpoint
 	filters = append(filters, func(sub *subscriptions.Subscription) bool {
 		return redis.StringValue(sub.DeploymentType) != "active-active"
 	})

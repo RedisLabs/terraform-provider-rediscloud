@@ -10,26 +10,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccDataSourceRedisCloudFlexibleSubscription_basic(t *testing.T) {
+func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 	name := acctest.RandomWithPrefix("tf-test")
 
-	resourceName := "rediscloud_flexible_subscription.example"
-	dataSourceName := "data.rediscloud_flexible_subscription.example"
+	resourceName := "rediscloud_subscription.example"
+	dataSourceName := "data.rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccDatasourceRedisCloudFlexibleSubscription, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccDatasourceRedisCloudProSubscription, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "name", regexp.MustCompile(name)),
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccDatasourceRedisCloudFlexibleSubscriptionDataSource, name) + fmt.Sprintf(testAccDatasourceRedisCloudFlexibleSubscription, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccDatasourceRedisCloudProSubscriptionDataSource, name) + fmt.Sprintf(testAccDatasourceRedisCloudProSubscription, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(dataSourceName, "name", regexp.MustCompile(name)),
 					resource.TestCheckResourceAttr(dataSourceName, "payment_method", "credit-card"),
@@ -56,24 +56,24 @@ func TestAccDataSourceRedisCloudFlexibleSubscription_basic(t *testing.T) {
 	})
 }
 
-func TestAccDataSourceRedisCloudFlexibleSubscription_ignoresAA(t *testing.T) {
+func TestAccDataSourceRedisCloudProSubscription_ignoresAA(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(testAccDatasourceRedisCloudAADatabaseWithFlexibleDataSource, name+"-subscription", name+"-database", password),
+				Config:      fmt.Sprintf(testAccDatasourceRedisCloudAADatabaseWithProDataSource, name+"-subscription", name+"-database", password),
 				ExpectError: regexp.MustCompile("Your query returned no results. Please change your search criteria and try again."),
 			},
 		},
 	})
 }
 
-const testAccDatasourceRedisCloudFlexibleSubscription = `
+const testAccDatasourceRedisCloudProSubscription = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
@@ -82,7 +82,7 @@ data "rediscloud_cloud_account" "account" {
   provider_type = "AWS"
   name = "%s"
 }
-resource "rediscloud_flexible_subscription" "example" {
+resource "rediscloud_subscription" "example" {
   name = "%s"
   payment_method = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
@@ -106,8 +106,8 @@ resource "rediscloud_flexible_subscription" "example" {
     modules = []
   }
 }
-resource "rediscloud_flexible_database" "example" {
-    subscription_id              = rediscloud_flexible_subscription.example.id
+resource "rediscloud_subscription_database" "example" {
+    subscription_id              = rediscloud_subscription.example.id
 	name                         = "tf-database"
     protocol                     = "redis"
     memory_limit_in_gb           = 1
@@ -117,13 +117,13 @@ resource "rediscloud_flexible_database" "example" {
 }
 `
 
-const testAccDatasourceRedisCloudFlexibleSubscriptionDataSource = `
-data "rediscloud_flexible_subscription" "example" {
+const testAccDatasourceRedisCloudProSubscriptionDataSource = `
+data "rediscloud_subscription" "example" {
   name = "%s"
 }
 `
 
-const testAccDatasourceRedisCloudAADatabaseWithFlexibleDataSource = `
+const testAccDatasourceRedisCloudAADatabaseWithProDataSource = `
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
 }
@@ -148,7 +148,7 @@ resource "rediscloud_active_active_subscription" "example" {
 		}
 	}
 }
-resource "rediscloud_active_active_database" "example" {
+resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 3
@@ -177,8 +177,8 @@ resource "rediscloud_active_active_database" "example" {
 		name = "us-east-2"
 	}
 }
-data "rediscloud_flexible_database" "example" {
+data "rediscloud_database" "example" {
   subscription_id = rediscloud_active_active_subscription.example.id
-  name = rediscloud_active_active_database.example.name
+  name = rediscloud_active_active_subscription_database.example.name
 }
 `
