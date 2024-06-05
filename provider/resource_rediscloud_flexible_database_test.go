@@ -19,9 +19,9 @@ func TestAccResourceRedisCloudFlexibleDatabase_CRUDI(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
-	resourceName := "rediscloud_flexible_database.example"
-	subscriptionResourceName := "rediscloud_flexible_subscription.example"
-	replicaResourceName := "rediscloud_flexible_database.example_replica"
+	resourceName := "rediscloud_database.example"
+	subscriptionResourceName := "rediscloud_subscription.example"
+	replicaResourceName := "rediscloud_database.example_replica"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	var subId int
@@ -133,7 +133,7 @@ func TestAccResourceRedisCloudFlexibleDatabase_CRUDI(t *testing.T) {
 				Config: fmt.Sprintf(testAccResourceRedisCloudFlexibleDatabaseNoPassword, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					func(s *terraform.State) error {
-						is := s.RootModule().Resources["rediscloud_flexible_database.no_password_database"].Primary
+						is := s.RootModule().Resources["rediscloud_database.no_password_database"].Primary
 						if len(is.Attributes["password"]) != 32 {
 							return fmt.Errorf("password should be set to a random 32-character string")
 						}
@@ -143,7 +143,7 @@ func TestAccResourceRedisCloudFlexibleDatabase_CRUDI(t *testing.T) {
 			},
 			// Test that that database is imported successfully
 			{
-				ResourceName:      "rediscloud_flexible_database.no_password_database",
+				ResourceName:      "rediscloud_database.no_password_database",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
@@ -154,7 +154,7 @@ func TestAccResourceRedisCloudFlexibleDatabase_CRUDI(t *testing.T) {
 func TestAccResourceRedisCloudFlexibleDatabase_optionalAttributes(t *testing.T) {
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	resourceName := "rediscloud_flexible_database.example"
+	resourceName := "rediscloud_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	portNumber := 10101
 
@@ -195,7 +195,7 @@ func TestAccResourceRedisCloudFlexibleDatabase_timeUtcRequiresValidInterval(t *t
 func TestAccResourceRedisCloudFlexibleDatabase_MultiModules(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	dbName := "db-multi-modules"
-	resourceName := "rediscloud_flexible_database.example"
+	resourceName := "rediscloud_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -224,7 +224,7 @@ func TestAccResourceRedisCloudFlexibleDatabase_MultiModules(t *testing.T) {
 func TestAccResourceRedisCloudFlexibleDatabase_respversion(t *testing.T) {
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	resourceName := "rediscloud_flexible_database.example"
+	resourceName := "rediscloud_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	portNumber := 10101
 
@@ -262,7 +262,7 @@ data "rediscloud_cloud_account" "account" {
   name = "%s"
 }
 
-resource "rediscloud_flexible_subscription" "example" {
+resource "rediscloud_subscription" "example" {
 
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
@@ -304,7 +304,7 @@ data "rediscloud_cloud_account" "account" {
   provider_type            = "AWS"
   name                     = "%s"
 }
-resource "rediscloud_flexible_subscription" "example" {
+resource "rediscloud_subscription" "example" {
   name              = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage    = "ram"
@@ -336,8 +336,8 @@ resource "rediscloud_flexible_subscription" "example" {
 // Create and Read tests
 // TF config for provisioning a new database
 const testAccResourceRedisCloudFlexibleDatabase = flexibleSubscriptionBoilerplate + `
-resource "rediscloud_flexible_database" "example" {
-    subscription_id = rediscloud_flexible_subscription.example.id
+resource "rediscloud_database" "example" {
+    subscription_id = rediscloud_subscription.example.id
     name = "example"
     protocol = "redis"
     memory_limit_in_gb = 3
@@ -368,8 +368,8 @@ resource "rediscloud_flexible_database" "example" {
 `
 
 const testAccResourceRedisCloudFlexibleDatabaseOptionalAttributes = flexibleSubscriptionBoilerplate + `
-resource "rediscloud_flexible_database" "example" {
-    subscription_id = rediscloud_flexible_subscription.example.id
+resource "rediscloud_database" "example" {
+    subscription_id = rediscloud_subscription.example.id
     name = "example-no-protocol"
     memory_limit_in_gb = 1
     data_persistence = "none"
@@ -380,8 +380,8 @@ resource "rediscloud_flexible_database" "example" {
 `
 
 const testAccResourceRedisCloudFlexibleDatabaseInvalidTimeUtc = flexibleSubscriptionBoilerplate + `
-resource "rediscloud_flexible_database" "example" {
-    subscription_id = rediscloud_flexible_subscription.example.id
+resource "rediscloud_database" "example" {
+    subscription_id = rediscloud_subscription.example.id
     name = "example-no-protocol"
     memory_limit_in_gb = 1
     data_persistence = "none"
@@ -398,8 +398,8 @@ resource "rediscloud_flexible_database" "example" {
 
 // TF config for provisioning a database where the password is not specified
 const testAccResourceRedisCloudFlexibleDatabaseNoPassword = flexibleSubscriptionBoilerplate + `
-resource "rediscloud_flexible_database" "no_password_database" {
-    subscription_id = rediscloud_flexible_subscription.example.id
+resource "rediscloud_database" "no_password_database" {
+    subscription_id = rediscloud_subscription.example.id
     name = "example-no-password"
     protocol = "redis"
     memory_limit_in_gb = 1
@@ -411,21 +411,21 @@ resource "rediscloud_flexible_database" "no_password_database" {
 
 // TF config for provisioning a database which is a replica of an existing database
 const testAccResourceRedisCloudFlexibleDatabaseReplica = `
-resource "rediscloud_flexible_database" "example_replica" {
-  subscription_id = rediscloud_flexible_subscription.example.id
+resource "rediscloud_database" "example_replica" {
+  subscription_id = rediscloud_subscription.example.id
   name = "example-replica"
   protocol = "redis"
   memory_limit_in_gb = 1
   throughput_measurement_by = "operations-per-second"
   throughput_measurement_value = 1000
-  replica_of = [format("redis://%s", rediscloud_flexible_database.example.public_endpoint)]
+  replica_of = [format("redis://%s", rediscloud_database.example.public_endpoint)]
 } 
 `
 
 // TF config for updating a database
 const testAccResourceRedisCloudFlexibleDatabaseUpdate = flexibleSubscriptionBoilerplate + `
-resource "rediscloud_flexible_database" "example" {
-    subscription_id = rediscloud_flexible_subscription.example.id
+resource "rediscloud_database" "example" {
+    subscription_id = rediscloud_subscription.example.id
     name = "example-updated"
     protocol = "redis"
     memory_limit_in_gb = 1
@@ -454,8 +454,8 @@ resource "rediscloud_flexible_database" "example" {
 `
 
 const testAccResourceRedisCloudFlexibleDatabaseUpdateDestroyAlerts = flexibleSubscriptionBoilerplate + `
-resource "rediscloud_flexible_database" "example" {
-    subscription_id = rediscloud_flexible_subscription.example.id
+resource "rediscloud_database" "example" {
+    subscription_id = rediscloud_subscription.example.id
     name = "example-updated"
     protocol = "redis"
     memory_limit_in_gb = 1
@@ -478,8 +478,8 @@ resource "rediscloud_flexible_database" "example" {
 `
 
 const testAccResourceRedisCloudFlexibleDatabaseMultiModules = multiModulesFlexibleSubscriptionBoilerplate + `
-resource "rediscloud_flexible_database" "example" {
-    subscription_id              = rediscloud_flexible_subscription.example.id
+resource "rediscloud_database" "example" {
+    subscription_id              = rediscloud_subscription.example.id
     name                         = "%s"
     protocol                     = "redis"
     memory_limit_in_gb           = 1
@@ -502,8 +502,8 @@ resource "rediscloud_flexible_database" "example" {
 `
 
 const testAccResourceRedisCloudFlexibleDatabaseRespVersions = flexibleSubscriptionBoilerplate + `
-resource "rediscloud_flexible_database" "example" {
-    subscription_id = rediscloud_flexible_subscription.example.id
+resource "rediscloud_database" "example" {
+    subscription_id = rediscloud_subscription.example.id
     name = "example"
     memory_limit_in_gb = 1
     data_persistence = "none"

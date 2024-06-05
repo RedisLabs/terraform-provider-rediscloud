@@ -418,7 +418,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
-	return resourceRedisCloudSubscriptionRead(ctx, d, meta)
+	return resourceRedisCloudActiveActiveSubscriptionRead(ctx, d, meta)
 }
 
 func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {

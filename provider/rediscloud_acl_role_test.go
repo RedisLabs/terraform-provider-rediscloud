@@ -134,8 +134,8 @@ resource "rediscloud_acl_role" "test" {
 	rule {
 		name = rediscloud_acl_rule.example.name
 		database {
-			subscription = rediscloud_flexible_subscription.example.id
-			database = rediscloud_flexible_database.example.db_id
+			subscription = rediscloud_subscription.example.id
+			database = rediscloud_database.example.db_id
 		}
 	}
 }

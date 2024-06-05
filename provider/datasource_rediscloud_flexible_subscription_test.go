@@ -13,8 +13,8 @@ import (
 func TestAccDataSourceRedisCloudFlexibleSubscription_basic(t *testing.T) {
 	name := acctest.RandomWithPrefix("tf-test")
 
-	resourceName := "rediscloud_flexible_subscription.example"
-	dataSourceName := "data.rediscloud_flexible_subscription.example"
+	resourceName := "rediscloud_subscription.example"
+	dataSourceName := "data.rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -82,7 +82,7 @@ data "rediscloud_cloud_account" "account" {
   provider_type = "AWS"
   name = "%s"
 }
-resource "rediscloud_flexible_subscription" "example" {
+resource "rediscloud_subscription" "example" {
   name = "%s"
   payment_method = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
@@ -106,8 +106,8 @@ resource "rediscloud_flexible_subscription" "example" {
     modules = []
   }
 }
-resource "rediscloud_flexible_database" "example" {
-    subscription_id              = rediscloud_flexible_subscription.example.id
+resource "rediscloud_database" "example" {
+    subscription_id              = rediscloud_subscription.example.id
 	name                         = "tf-database"
     protocol                     = "redis"
     memory_limit_in_gb           = 1
@@ -118,7 +118,7 @@ resource "rediscloud_flexible_database" "example" {
 `
 
 const testAccDatasourceRedisCloudFlexibleSubscriptionDataSource = `
-data "rediscloud_flexible_subscription" "example" {
+data "rediscloud_subscription" "example" {
   name = "%s"
 }
 `
@@ -148,7 +148,7 @@ resource "rediscloud_active_active_subscription" "example" {
 		}
 	}
 }
-resource "rediscloud_active_active_database" "example" {
+resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 3
@@ -177,8 +177,8 @@ resource "rediscloud_active_active_database" "example" {
 		name = "us-east-2"
 	}
 }
-data "rediscloud_flexible_database" "example" {
+data "rediscloud_database" "example" {
   subscription_id = rediscloud_active_active_subscription.example.id
-  name = rediscloud_active_active_database.example.name
+  name = rediscloud_active_active_subscription_database.example.name
 }
 `

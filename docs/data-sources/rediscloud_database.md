@@ -7,9 +7,9 @@ description: |-
 
 # Data Source: rediscloud_database
 
-!> **WARNING:** This resource is deprecated and will be removed in the next major version. Switch to `rediscloud_flexible_database` or `rediscloud_active_active_database` (incoming)
+This data source allows access to the details of an existing database within your Redis Enterprise Cloud account.
 
-The Database data source allows access to the details of an existing database within your Redis Enterprise Cloud account.
+-> **Note:** This is for databases within Pro Subscriptions only. See also `rediscloud_active_active_subscription_database` and `rediscloud_essentials_database`.
 
 ## Example Usage
 
@@ -21,7 +21,7 @@ data "rediscloud_database" "example" {
 }
 ```
 
-The following example shows how to use the name to locate a single database within a subscription that has multiple databases. 
+The following example shows how to use the name to locate a single database within a subscription that has multiple databases.
 
 ```hcl-terraform
 data "rediscloud_database" "example" {
@@ -46,7 +46,7 @@ data "rediscloud_database" "example" {
 * `support_oss_cluster_api` - Supports the Redis open-source (OSS) Cluster API.
 * `resp_version` - Either `resp2` or `resp3`. Database's RESP version.
 * `replica_of` - The set of Redis database URIs, in the format `redis://user:password@host:port`, that this
-database will be a replica of.
+  database will be a replica of.
 * `alert` - Set of alerts to enable on the database, documented below.
 * `data_persistence` - The rate of database data persistence (in persistent storage).
 * `data_eviction` - The data items eviction policy.
@@ -55,14 +55,40 @@ database will be a replica of.
 * `throughput_measurement_by` - The throughput measurement method.
 * `throughput_measurement_value` - The throughput value.
 * `hashing_policy` - The list of regular expression rules the database is sharded by. See
-[the documentation on clustering](https://docs.redislabs.com/latest/rc/concepts/clustering/) for more information on the
-hashing policy.
+  [the documentation on clustering](https://docs.redislabs.com/latest/rc/concepts/clustering/) for more information on the
+  hashing policy.
 * `public_endpoint` - Public endpoint to access the database
 * `private_endpoint` - Private endpoint to access the database
 * `enable_tls` - Enable TLS for database, default is `false`
 * `enable_default_user` - When `true` enables connecting to the database with the default user. Default `true`.
+* `latest_backup_status` - A latest_backup_status object, documented below.
+* `latest_import_status` - A latest_import_status object, documented below.
 
 The `alert` block supports:
 
-* `name` The alert name
-* `value` The alert value
+* `name` - The alert name
+* `value` - The alert value
+
+The `latest_backup_status` and `latest_import_status` blocks contain:
+
+* `error` - An error block, in case this lookup failed, documented below.
+* `response` - A detail block, documented below.
+
+The `error` block in both `latest_backup_status` and `latest_import_status` contains:
+
+* `type` - The type of error encountered while looking up the status of the last backup/import.
+* `description` - A description of the error encountered while looking up the status of the last backup/import.
+* `status` - Any particular HTTP status code associated with the erroneous status check.
+
+The `response` block `latest_backup_status` contains:
+
+* `status` - The status of the last backup operation.
+* `last_backup_time` - When the last backup operation occurred.
+* `failure_reason` - If a failure, why the backup operation failed.
+
+The `response` block `latest_import_status` contains:
+
+* `status` - The status of the last import operation.
+* `last_import_time` - When the last import operation occurred.
+* `failure_reason` - If a failure, why the import operation failed.
+* `failure_reason_params` - Parameters of the failure, if appropriate, in the form of a list of objects each with a `key` entry and a `value` entry.

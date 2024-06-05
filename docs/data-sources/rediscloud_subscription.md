@@ -2,24 +2,23 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_subscription"
 description: |-
-  Subscription data source in the Redis Cloud Terraform provider.
+  Flexible Subscription data source in the Redis Cloud Terraform provider.
 ---
 
 # Data Source: rediscloud_subscription
 
-!> **WARNING:** This resource is deprecated and will be removed in the next major version. Switch to `rediscloud_flexible_subscription` or `rediscloud_active_active_subscription` (incoming)
+This data source allows access to the details of an existing Subscription within your Redis Enterprise Cloud account.
 
-The Subscription data source allows access to the details of an existing subscription within your Redis Enterprise Cloud account.
+-> **Note:** This is referring to Pro Subscriptions only. See also `rediscloud_active_active_subscription` and `rediscloud_essentials_subscription`.
 
 ## Example Usage
 
-The following example shows how to use the name attribute to locate a subscription within your Redis Enterprise Cloud account.
+The following example shows how to use the name attribute to locate a flexible subscription within your Redis Enterprise Cloud account.
 
 ```hcl
 data "rediscloud_subscription" "example" {
   name = "My Example Subscription"
 }
-
 output "rediscloud_subscription" {
   value = data.rediscloud_subscription.example.id
 }
@@ -38,7 +37,6 @@ output "rediscloud_subscription" {
 * `cloud_provider` - A cloud provider object, documented below
 * `number_of_databases` - The number of databases that are linked to this subscription.
 * `status` - Current status of the subscription 
-* `pricing` - A list of pricing objects, documented below
 
 The `cloud_provider` block supports:
 
@@ -60,15 +58,3 @@ The `networks` block has these attributes:
 * `networking_subnet_id` - The subnet that the subscription deploys into
 * `networking_deployment_cidr` - Deployment CIDR mask for the generated
 * `networking_vpc_id` - VPC id for the generated network
-
-The `pricing` object has these attributes:
-
-* `database_name` - The database this pricing entry applies to.
-* `type` - The type of cost e.g. 'Shards'.
-* `typeDetails` - Further detail e.g. 'micro'.
-* `quantity` - Self-explanatory.
-* `quantityMeasurement` - Self-explanatory.
-* `pricePerUnit` - Self-explanatory.
-* `priceCurrency` - Self-explanatory e.g. 'USD'.
-* `pricePeriod` - Self-explanatory e.g. 'hour'.
-* `region` - Self-explanatory, if the cost is associated with a particular region.

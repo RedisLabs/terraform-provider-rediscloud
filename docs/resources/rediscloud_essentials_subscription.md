@@ -7,9 +7,11 @@ description: |-
 
 # Resource: rediscloud_essentials_subscription
 
-Creates an Essentials Subscription within your Redis Enterprise Cloud Account.
+This resource allows you to manage a subscription within your Redis Enterprise Cloud account.
 
-~> **Note:** It's recommended to create a Database (`rediscloud_essentials_database`) when you create a Subscription.
+-> **Note:** This is for Essential Subscriptions only. See also `rediscloud_subscription` (Pro) and `rediscloud_active_active_subscription`.
+
+-> **Note:** It's recommended to create a Database (`rediscloud_essentials_database`) when you create a Subscription.
 
 ## Example Usage
 

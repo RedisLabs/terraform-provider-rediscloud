@@ -15,7 +15,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 - To replace the deprecated datasources: `rediscloud_flexible_subscription`, `rediscloud_flexible_database`
 - To replace the deprecated
-  resources: `rediscloud_flexible_subscription`, `rediscloud_flexible_database`, `rediscloud_active_active_database`
+  resources: `rediscloud_subscription`, `rediscloud_flexible_database`, `rediscloud_active_active_subscription_database`
 - Datasources for Active Active features: `rediscloud_active_active_subscription`, `rediscloud_active_active_database`
 - Datasources for Essentials
   features: `rediscloud_essentials_plan`, `rediscloud_essentials_subscription`, `rediscloud_essentials_database`

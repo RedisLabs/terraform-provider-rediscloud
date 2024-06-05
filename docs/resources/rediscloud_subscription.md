@@ -7,10 +7,9 @@ description: |-
 
 # Resource: rediscloud_subscription
 
-!> **WARNING:** This resource is deprecated and will be removed in the next major version. Switch to `rediscloud_flexible_subscription` or `rediscloud_active_active_subscription` (incoming)
+This resource allows you to manage a subscription within your Redis Enterprise Cloud account.
 
-Creates a Flexible Subscription within your Redis Enterprise Cloud Account.
-This resource is responsible for creating and managing subscriptions.
+-> **Note:** This is for Pro Subscriptions only. See also `rediscloud_active_active_subscription` and `rediscloud_essentials_subscription`.
 
 ~> **Note:** The payment_method property is ignored after Subscription creation.
 

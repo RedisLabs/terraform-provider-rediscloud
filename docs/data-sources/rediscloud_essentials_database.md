@@ -7,8 +7,9 @@ description: |-
 
 # Resource: rediscloud_essentials_database
 
-The Essentials Database data source allows access to the details of an existing database within your Redis Enterprise
-Cloud account.
+This data source allows access to the details of an existing database within your Redis Enterprise Cloud account.
+
+-> **Note:** This is for databases within Essentials Subscriptions only. See also `rediscloud_database` (Pro) and `rediscloud_active_active_subscription_database`.
 
 ## Example Usage
 

@@ -23,10 +23,10 @@ import (
 func resourceRedisCloudFlexibleSubscription() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates a Flexible Subscription within your Redis Enterprise Cloud Account.",
-		CreateContext: resourceRedisCloudFlexibleCreate,
-		ReadContext:   resourceRedisCloudFlexibleRead,
-		UpdateContext: resourceRedisCloudFlexibleUpdate,
-		DeleteContext: resourceRedisCloudFlexibleDelete,
+		CreateContext: resourceRedisCloudFlexibleSubscriptionCreate,
+		ReadContext:   resourceRedisCloudFlexibleSubscriptionRead,
+		UpdateContext: resourceRedisCloudFlexibleSubscriptionUpdate,
+		DeleteContext: resourceRedisCloudFlexibleSubscriptionDelete,
 		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
 			_, cPlanExists := diff.GetOk("creation_plan")
 			if cPlanExists {
@@ -374,7 +374,7 @@ func resourceRedisCloudFlexibleSubscription() *schema.Resource {
 	}
 }
 
-func resourceRedisCloudFlexibleCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudFlexibleSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	// Create CloudProviders
@@ -460,10 +460,10 @@ func resourceRedisCloudFlexibleCreate(ctx context.Context, d *schema.ResourceDat
 
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
-	return append(diags, resourceRedisCloudSubscriptionUpdate(ctx, d, meta)...)
+	return append(diags, resourceRedisCloudFlexibleSubscriptionUpdate(ctx, d, meta)...)
 }
 
-func resourceRedisCloudFlexibleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudFlexibleSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	var diags diag.Diagnostics
@@ -530,7 +530,7 @@ func resourceRedisCloudFlexibleRead(ctx context.Context, d *schema.ResourceData,
 	return diags
 }
 
-func resourceRedisCloudFlexibleUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudFlexibleSubscriptionUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	subId, err := strconv.Atoi(d.Id())
@@ -581,10 +581,10 @@ func resourceRedisCloudFlexibleUpdate(ctx context.Context, d *schema.ResourceDat
 		return diag.FromErr(err)
 	}
 
-	return resourceRedisCloudSubscriptionRead(ctx, d, meta)
+	return resourceRedisCloudFlexibleSubscriptionRead(ctx, d, meta)
 }
 
-func resourceRedisCloudFlexibleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudFlexibleSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*apiClient)
 
