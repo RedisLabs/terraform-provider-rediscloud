@@ -920,5 +920,6 @@ func writeReplica(replica fixedDatabases.ReplicaOf) []map[string]interface{} {
 }
 
 func suppressIfPaygDisabled(k, oldValue, newValue string, d *schema.ResourceData) bool {
+	// If payg is disabled, suppress diff checks on payg attributes
 	return !d.Get("enable_payg_features").(bool)
 }
