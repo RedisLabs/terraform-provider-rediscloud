@@ -1,14 +1,15 @@
 ---
 layout: "rediscloud"
-page_title: "Redis Cloud: rediscloud_active_active_database"
+page_title: "Redis Cloud: rediscloud_active_active_subscription_database"
 description: |-
   Database data source for Active-Active Subscriptions in the Redis Cloud Terraform provider.
 ---
 
-# Resource: rediscloud_active_active_database
+# Resource: rediscloud_active_active_subscription_database
 
-The Active Active Database data source allows access to the details of an existing database within your Redis Enterprise
-Cloud account.
+This data source allows access to the details of an existing database within your Redis Enterprise Cloud account.
+
+-> **Note:** This is for databases within Active-Active Subscriptions only. See also `rediscloud_database` (Pro) and `rediscloud_essentials_database`.
 
 ## Example Usage
 
@@ -16,7 +17,7 @@ The following example shows how to locate a single database within an AA Subscri
 only contains a single database.
 
 ```hcl-terraform
-data "rediscloud_active_active_database" "example" {
+data "rediscloud_active_active_subscription_database" "example" {
   subscription_id = "1234"
 }
 ```
@@ -25,7 +26,7 @@ The following example shows how to use the name to locate a single database with
 databases.
 
 ```hcl-terraform
-data "rediscloud_active_active_database" "example" {
+data "rediscloud_active_active_subscription_database" "example" {
   subscription_id = "1234"
   name            = "first-database"
 }

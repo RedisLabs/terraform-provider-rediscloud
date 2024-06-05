@@ -7,12 +7,13 @@ description: |-
 
 # Resource: rediscloud_active_active_subscription
 
-The Active Active Subscription data source allows access to the details of an existing flexible subscription within your
-Redis Enterprise Cloud account.
+This data source allows access to the details of an existing subscription within your Redis Enterprise Cloud account.
+
+-> **Note:** This is referring to Active-Active Subscriptions only. See also `rediscloud_subscription` (Pro) and `rediscloud_essentials_subscription`.
 
 ## Example Usage
 
-The following example shows how to use the name attribute to locate a flexible subscription within your Redis Enterprise
+The following example shows how to use the name attribute to locate a subscription within your Redis Enterprise
 Cloud account.
 
 ```hcl

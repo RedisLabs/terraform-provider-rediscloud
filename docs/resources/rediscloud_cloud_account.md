@@ -25,7 +25,7 @@ resource "rediscloud_cloud_account" "example" {
   sign_in_login_url = "https://1234567890.signin.aws.amazon.com/console"
 }
 
-resource "rediscloud_flexible_subscription" "example" {
+resource "rediscloud_subscription" "example" {
   name                          = "My Example Subscription"
   payment_method_id             = data.rediscloud_payment_method.card.id
   memory_storage                = "ram"

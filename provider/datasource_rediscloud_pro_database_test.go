@@ -9,21 +9,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccDataSourceRedisCloudFlexibleDatabase_basic(t *testing.T) {
+func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
-	dataSourceById := "data.rediscloud_flexible_database.example-by-id"
-	dataSourceByName := "data.rediscloud_flexible_database.example-by-name"
+	dataSourceById := "data.rediscloud_database.example-by-id"
+	dataSourceByName := "data.rediscloud_database.example-by-name"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccDatasourceRedisCloudFlexibleDatabase, testCloudAccountName, name, password),
+				Config: fmt.Sprintf(testAccDatasourceRedisCloudProDatabase, testCloudAccountName, name, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceById, "name", "tf-database"),
 					resource.TestCheckResourceAttr(dataSourceById, "protocol", "redis"),
@@ -62,7 +62,7 @@ func TestAccDataSourceRedisCloudFlexibleDatabase_basic(t *testing.T) {
 	})
 }
 
-const testAccDatasourceRedisCloudFlexibleDatabase = `
+const testAccDatasourceRedisCloudProDatabase = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
@@ -71,7 +71,7 @@ data "rediscloud_cloud_account" "account" {
   provider_type = "AWS" 
   name = "%s"
 }
-resource "rediscloud_flexible_subscription" "example" {
+resource "rediscloud_subscription" "example" {
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage = "ram"
@@ -93,8 +93,8 @@ resource "rediscloud_flexible_subscription" "example" {
     throughput_measurement_value = 1000
   }
 }
-resource "rediscloud_flexible_database" "example" {
-    subscription_id              = rediscloud_flexible_subscription.example.id
+resource "rediscloud_subscription_database" "example" {
+    subscription_id              = rediscloud_subscription.example.id
     name                         = "tf-database"
     protocol                     = "redis"
     memory_limit_in_gb           = 1
@@ -107,13 +107,13 @@ resource "rediscloud_flexible_database" "example" {
     enable_default_user 		 = true
 }
 
-data "rediscloud_flexible_database" "example-by-id" {
-  subscription_id = rediscloud_flexible_subscription.example.id
-  db_id = rediscloud_flexible_database.example.db_id
+data "rediscloud_database" "example-by-id" {
+  subscription_id = rediscloud_subscription.example.id
+  db_id = rediscloud_subscription_database.example.db_id
 }
 
-data "rediscloud_flexible_database" "example-by-name" {
-  subscription_id = rediscloud_flexible_subscription.example.id
-  name = rediscloud_flexible_database.example.name
+data "rediscloud_database" "example-by-name" {
+  subscription_id = rediscloud_subscription.example.id
+  name = rediscloud_subscription_database.example.name
 }
 `

@@ -133,7 +133,7 @@ resource "rediscloud_active_active_subscription" "example" {
 	}
 }
 
-resource "rediscloud_active_active_database" "example" {
+resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 3
@@ -163,8 +163,8 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 	  recreate_region = false
 	  local_resp_version = "resp2"
 	  database {
-		database_id = rediscloud_active_active_database.example.db_id
-		database_name = rediscloud_active_active_database.example.name
+		database_id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
 	  }
@@ -174,8 +174,8 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 	  networking_deployment_cidr = "10.1.0.0/24"
 	  recreate_region = false
 	  database {
-		database_id = rediscloud_active_active_database.example.db_id
-		database_name = rediscloud_active_active_database.example.name
+		database_id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
 	  }
@@ -185,8 +185,8 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 		networking_deployment_cidr = "10.2.0.0/24" 
 		recreate_region = false
 		database {
-		  database_id = rediscloud_active_active_database.example.db_id
-		  database_name = rediscloud_active_active_database.example.name
+		  database_id = rediscloud_active_active_subscription_database.example.db_id
+		  database_name = rediscloud_active_active_subscription_database.example.name
 		  local_write_operations_per_second = 1500
 		  local_read_operations_per_second = 1500
 		}
@@ -206,8 +206,8 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 	  networking_deployment_cidr = "10.0.0.0/24"
 	  recreate_region = false
 	  database {
-		database_id = rediscloud_active_active_database.example.db_id
-		database_name = rediscloud_active_active_database.example.name
+		database_id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
 	  }
@@ -217,8 +217,8 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 	  networking_deployment_cidr = "10.1.0.0/24"
 	  recreate_region = false
 	  database {
-		database_id = rediscloud_active_active_database.example.db_id
-		database_name = rediscloud_active_active_database.example.name
+		database_id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
 	  }
@@ -228,8 +228,8 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 		networking_deployment_cidr = "10.3.0.0/24" 
 		recreate_region = true
 		database {
-		  database_id = rediscloud_active_active_database.example.db_id
-		  database_name = rediscloud_active_active_database.example.name
+		  database_id = rediscloud_active_active_subscription_database.example.db_id
+		  database_name = rediscloud_active_active_subscription_database.example.name
 		  local_write_operations_per_second = 1500
 		  local_read_operations_per_second = 1500
 		}
@@ -249,8 +249,8 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 	  networking_deployment_cidr = "10.0.0.0/24"
 	  recreate_region = false
 	  database {
-		database_id = rediscloud_active_active_database.example.db_id
-		database_name = rediscloud_active_active_database.example.name
+		database_id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
 	  }
@@ -260,8 +260,8 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 	  networking_deployment_cidr = "10.1.0.0/24"
 	  recreate_region = false
 	  database {
-		database_id = rediscloud_active_active_database.example.db_id
-		database_name = rediscloud_active_active_database.example.name
+		database_id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
 	  }
@@ -271,8 +271,8 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 		networking_deployment_cidr = "10.3.0.0/24" 
 		recreate_region = false
 		database {
-		  database_id = rediscloud_active_active_database.example.db_id
-		  database_name = rediscloud_active_active_database.example.name
+		  database_id = rediscloud_active_active_subscription_database.example.db_id
+		  database_name = rediscloud_active_active_subscription_database.example.name
 		  local_write_operations_per_second = 1000
 		  local_read_operations_per_second = 1000
 		}
@@ -291,8 +291,8 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 	  networking_deployment_cidr = "10.0.0.0/24"
 	  recreate_region = false
 	  database {
-		database_id = rediscloud_active_active_database.example.db_id
-		database_name = rediscloud_active_active_database.example.name
+		database_id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
 	  }
@@ -302,8 +302,8 @@ resource "rediscloud_active_active_subscription_regions" "example" {
 	  networking_deployment_cidr = "10.2.0.0/24"
 	  recreate_region = false
 	  database {
-		database_id = rediscloud_active_active_database.example.db_id
-		database_name = rediscloud_active_active_database.example.name
+		database_id = rediscloud_active_active_subscription_database.example.db_id
+		database_name = rediscloud_active_active_subscription_database.example.name
 		local_write_operations_per_second = 1000
 		local_read_operations_per_second = 1000
 	  }

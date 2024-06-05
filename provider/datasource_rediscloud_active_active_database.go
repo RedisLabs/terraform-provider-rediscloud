@@ -226,7 +226,7 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 
 	var filters []func(db *databases.ActiveActiveDatabase) bool
 
-	// Filter to active-active databases only (flexible dbs come from the same endpoint)
+	// Filter to active-active databases only (pro dbs come from the same endpoint)
 	filters = append(filters, func(db *databases.ActiveActiveDatabase) bool {
 		return redis.BoolValue(db.ActiveActiveRedis)
 	})

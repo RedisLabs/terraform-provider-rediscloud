@@ -14,13 +14,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceRedisCloudFlexibleDatabase() *schema.Resource {
+func resourceRedisCloudProDatabase() *schema.Resource {
 	return &schema.Resource{
-		Description:   "Creates database resource within a flexible subscription in your Redis Enterprise Cloud Account.",
-		CreateContext: resourceRedisCloudFlexibleDatabaseCreate,
-		ReadContext:   resourceRedisCloudFlexibleDatabaseRead,
-		UpdateContext: resourceRedisCloudFlexibleDatabaseUpdate,
-		DeleteContext: resourceRedisCloudFlexibleDatabaseDelete,
+		Description:   "Creates database resource within a pro subscription in your Redis Enterprise Cloud Account.",
+		CreateContext: resourceRedisCloudProDatabaseCreate,
+		ReadContext:   resourceRedisCloudProDatabaseRead,
+		UpdateContext: resourceRedisCloudProDatabaseUpdate,
+		DeleteContext: resourceRedisCloudProDatabaseDelete,
 
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
@@ -50,7 +50,7 @@ func resourceRedisCloudFlexibleDatabase() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
-				Description: "Identifier of the flexible subscription",
+				Description: "Identifier of the pro subscription",
 				Type:        schema.TypeInt,
 				Required:    true,
 				ForceNew:    true,
@@ -422,7 +422,7 @@ func resourceRedisCloudFlexibleDatabase() *schema.Resource {
 	}
 }
 
-func resourceRedisCloudFlexibleDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	subId := d.Get("subscription_id").(int)
@@ -525,10 +525,10 @@ func resourceRedisCloudFlexibleDatabaseCreate(ctx context.Context, d *schema.Res
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password, enableDefaultUser and so on.
 	subscriptionMutex.Unlock(subId)
-	return resourceRedisCloudFlexibleDatabaseUpdate(ctx, d, meta)
+	return resourceRedisCloudProDatabaseUpdate(ctx, d, meta)
 }
 
-func resourceRedisCloudFlexibleDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	var diags diag.Diagnostics
@@ -687,7 +687,7 @@ func resourceRedisCloudFlexibleDatabaseRead(ctx context.Context, d *schema.Resou
 	return diags
 }
 
-func resourceRedisCloudFlexibleDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*apiClient)
 
@@ -713,7 +713,7 @@ func resourceRedisCloudFlexibleDatabaseDelete(ctx context.Context, d *schema.Res
 	return diags
 }
 
-func resourceRedisCloudFlexibleDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
 	_, dbId, err := toDatabaseId(d.Id())
@@ -818,7 +818,7 @@ func resourceRedisCloudFlexibleDatabaseUpdate(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 
-	return resourceRedisCloudFlexibleDatabaseRead(ctx, d, meta)
+	return resourceRedisCloudProDatabaseRead(ctx, d, meta)
 }
 
 func buildBackupPlan(data interface{}, periodicBackupPath interface{}) *databases.DatabaseBackupConfig {

@@ -7,9 +7,9 @@ description: |-
 
 # Resource: rediscloud_active_active_subscription_database
 
-!> **WARNING:** This resource is deprecated and will be removed in the next major version. Switch to `rediscloud_active_active_database`
+This resource allows you to manage a database within your Redis Enterprise Cloud account.
 
-Creates a Database within a specified Active-Active Subscription in your Redis Enterprise Cloud Account.
+-> **Note:** This is for databases within Active-Active Subscriptions only. See also `rediscloud_subscription_database` (Pro) and `rediscloud_essentials_database`.
 
 ## Example Usage
 
@@ -76,7 +76,7 @@ output "us-east-1-public-endpoints" {
 }
 
 output "us-east-2-private-endpoints" {
-  value = rediscloud_active_active_subscription_database.database-resource.private_endpoint.us-east-1
+  value = rediscloud_active_active_subscription_database.database-resource.private_endpoint.us-east-2
 }
 ```
 

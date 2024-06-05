@@ -35,7 +35,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
-	resourceName := "rediscloud_flexible_subscription.example"
+	resourceName := "rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	clientSslCertificate := os.Getenv("SSL_CERTIFICATE")
@@ -49,7 +49,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 			testAccTLSValidCertificatePreCheck(t)
 		},
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, testCloudAccountName, name, 1, password, clientSslCertificate),
@@ -119,8 +119,8 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEm
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
-	subscriptionName := "rediscloud_flexible_subscription.example"
-	databaseName := "rediscloud_flexible_database.example"
+	subscriptionName := "rediscloud_subscription.example"
+	databaseName := "rediscloud_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	var subId int
@@ -128,7 +128,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEm
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndWithoutCert, testCloudAccountName, name, 1, password),
@@ -211,7 +211,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndIn
 			testAccTLSInvalidCertificatePreCheck(t)
 		},
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, testCloudAccountName, name, 1, password, invalidClientSslCertificate),
@@ -241,7 +241,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseAndDisabledTlsAndIn
 			testAccTLSInvalidCertificatePreCheck(t)
 		},
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithoutEnableTlsAndWithCert, testCloudAccountName, name, 1, password, invalidClientSslCertificate),
@@ -262,7 +262,7 @@ data "rediscloud_cloud_account" "account" {
   name = "%s"
 }
 
-resource "rediscloud_flexible_subscription" "example" {
+resource "rediscloud_subscription" "example" {
 
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
@@ -284,8 +284,8 @@ resource "rediscloud_flexible_subscription" "example" {
   }
 }
 
-resource "rediscloud_flexible_database" "example" {
-  subscription_id = rediscloud_flexible_subscription.example.id
+resource "rediscloud_subscription_database" "example" {
+  subscription_id = rediscloud_subscription.example.id
   name = "tf-database"
   protocol = "redis"
   memory_limit_in_gb = %d
@@ -312,7 +312,7 @@ data "rediscloud_cloud_account" "account" {
   name = "%s"
 }
 
-resource "rediscloud_flexible_subscription" "example" {
+resource "rediscloud_subscription" "example" {
 
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
@@ -334,8 +334,8 @@ resource "rediscloud_flexible_subscription" "example" {
   }
 }
 
-resource "rediscloud_flexible_database" "example" {
-  subscription_id = rediscloud_flexible_subscription.example.id
+resource "rediscloud_subscription_database" "example" {
+  subscription_id = rediscloud_subscription.example.id
   name = "tf-database"
   protocol = "redis"
   memory_limit_in_gb = %d
@@ -361,7 +361,7 @@ data "rediscloud_cloud_account" "account" {
   name = "%s"
 }
 
-resource "rediscloud_flexible_subscription" "example" {
+resource "rediscloud_subscription" "example" {
 
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
@@ -383,8 +383,8 @@ resource "rediscloud_flexible_subscription" "example" {
   }
 }
 
-resource "rediscloud_flexible_database" "example" {
-  subscription_id = rediscloud_flexible_subscription.example.id
+resource "rediscloud_subscription_database" "example" {
+  subscription_id = rediscloud_subscription.example.id
   name = "tf-database"
   protocol = "redis"
   memory_limit_in_gb = %d

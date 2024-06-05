@@ -20,8 +20,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
 	password := acctest.RandString(20)
-	resourceName := "rediscloud_active_active_database.example"
-	datasourceName := "data.rediscloud_active_active_database.example"
+	resourceName := "rediscloud_active_active_subscription_database.example"
+	datasourceName := "data.rediscloud_active_active_subscription_database.example"
 	subscriptionResourceName := "rediscloud_active_active_subscription.example"
 
 	var subId int
@@ -170,7 +170,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			// Test that that database is imported successfully
 			{
 				Config:            fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseImport, subscriptionName, name),
-				ResourceName:      "rediscloud_active_active_database.example",
+				ResourceName:      "rediscloud_active_active_subscription_database.example",
 				ImportState:       true,
 				ImportStateVerify: true,
 				// global and override attributes not supported as part of import
@@ -206,7 +206,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
 	password := acctest.RandString(20)
-	resourceName := "rediscloud_active_active_database.example"
+	resourceName := "rediscloud_active_active_subscription_database.example"
 	portNumber := 10101
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -274,7 +274,7 @@ const activeActiveSubscriptionBoilerplate = `
 // Create and Read tests
 // TF config for provisioning a new database
 const testAccResourceRedisCloudActiveActiveDatabase = activeActiveSubscriptionBoilerplate + `
-resource "rediscloud_active_active_database" "example" {
+resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 3
@@ -306,15 +306,15 @@ resource "rediscloud_active_active_database" "example" {
 
 }
 
-data "rediscloud_active_active_database" "example" {
+data "rediscloud_active_active_subscription_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
-	name = rediscloud_active_active_database.example.name
+	name = rediscloud_active_active_subscription_database.example.name
 }
 `
 
 // TF config for updating a database
 const testAccResourceRedisCloudActiveActiveDatabaseUpdate = activeActiveSubscriptionBoilerplate + `
-resource "rediscloud_active_active_database" "example" {
+resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 1
@@ -341,14 +341,14 @@ resource "rediscloud_active_active_database" "example" {
 	}
 }
 
-data "rediscloud_active_active_database" "example" {
+data "rediscloud_active_active_subscription_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
-	name = rediscloud_active_active_database.example.name
+	name = rediscloud_active_active_subscription_database.example.name
 }
 `
 
 const testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlerts = activeActiveSubscriptionBoilerplate + `
-resource "rediscloud_active_active_database" "example" {
+resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 1
@@ -371,7 +371,7 @@ resource "rediscloud_active_active_database" "example" {
 
 // TF config for updating a database
 const testAccResourceRedisCloudActiveActiveDatabaseImport = activeActiveSubscriptionBoilerplate + `
-resource "rediscloud_active_active_database" "example" {
+resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     memory_limit_in_gb = 1
@@ -407,7 +407,7 @@ resource "rediscloud_active_active_subscription" "example" {
 	}
 }
 
-resource "rediscloud_active_active_database" "example" {
+resource "rediscloud_active_active_subscription_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
 	name = "%s"
 	memory_limit_in_gb = 3
@@ -441,7 +441,7 @@ resource "rediscloud_active_active_database" "example" {
 `
 
 const testAccResourceRedisCloudActiveActiveDatabaseInvalidTimeUtc = activeActiveSubscriptionBoilerplate + `
-resource "rediscloud_active_active_database" "example" {
+resource "rediscloud_active_active_subscription_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
 	name = "%s"
 	memory_limit_in_gb = 3
