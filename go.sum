@@ -13,8 +13,8 @@ github.com/avast/retry-go/v4 v4.6.0 h1:K9xNA+KeB8HHc2aWFuLb25Offp+0iVRXEvFx8IinR
 github.com/avast/retry-go/v4 v4.6.0/go.mod h1:gvWlPhBVsvBbLkVGDg/KwvBv0bEkCOLRRSHKIr2PyOE=
 github.com/bflad/gopaniccheck v0.1.0 h1:tJftp+bv42ouERmUMWLoUn/5bi/iQZjHPznM00cP/bU=
 github.com/bflad/gopaniccheck v0.1.0/go.mod h1:ZCj2vSr7EqVeDaqVsWN4n2MwdROx1YL+LFo47TSWtsA=
-github.com/bflad/tfproviderlint v0.29.0 h1:zxKYAAM6IZ4ace1a3LX+uzMRIMP8L+iOtEc+FP2Yoow=
-github.com/bflad/tfproviderlint v0.29.0/go.mod h1:ErKVd+GRA2tXKr8T7zC0EDSrtALJL25wj0ZJ/v/klqQ=
+github.com/bflad/tfproviderlint v0.30.0 h1:XBbTGPS4ZagSt4Qtnus3Vgh5yOeHNLZhnjcTcsSJ7ZM=
+github.com/bflad/tfproviderlint v0.30.0/go.mod h1:eBZHT0r7HKPGw1uZEyGMzcR1/d+GAXq9KzQfw0I7wtY=
 github.com/bwesterb/go-ristretto v1.2.0/go.mod h1:fUIoIZaG73pV5biE2Blr2xEzDoMj7NFEuV9ekS419A0=
 github.com/cloudflare/circl v1.1.0/go.mod h1:prBCrKB9DV4poKZY1l9zBXg2QJY7mvgRvtMxxK7fi4I=
 github.com/cloudflare/circl v1.3.7 h1:qlCDlTPz2n9fu58M0Nh1J/JzcFpfgkFHHX3O35r5vcU=
