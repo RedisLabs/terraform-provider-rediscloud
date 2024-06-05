@@ -89,7 +89,7 @@ The `creation_plan` block supports:
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `replication` - (Optional) Databases replication. Default: ‘true’
 * `quantity` - (Required) The planned number of databases in the subscription
-* `throughput_measurement_by` - (Required) Throughput measurement method that will be used by your databases, (either ‘number-of-shards’ or ‘operations-per-second’)
+* `throughput_measurement_by` - (Required) Throughput measurement method that will be used by your databases. Either ‘number-of-shards’ or ‘operations-per-second'. **'number-of-shards' is deprecated and only supported for legacy deployments.**
 * `throughput_measurement_value` - (Required) Throughput value that will be used by your databases (as applies to selected measurement method). The value needs to be the maximum throughput measurement value defined in one of your databases
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters
   Estimated average size (measured in bytes) of the items stored in the database. The value needs to
@@ -105,7 +105,7 @@ The cloud_provider `region` block supports:
 * `multiple_availability_zones` - (Optional) Support deployment on multiple availability zones within the selected region. Default: ‘false’. **Modifying this attribute will force creation of a new resource.**
 * `networking_deployment_cidr` - (Required) Deployment CIDR mask. The total number of bits must be 24 (x.x.x.x/24). **Modifying this attribute will force creation of a new resource.**
 * `networking_vpc_id` - (Optional) Either an existing VPC Id (already exists in the specific region) or create a new VPC
-  (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4986384ad’) and existing
+  (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4986384ad’) and exist
   within the hosting account. **Modifying this attribute will force creation of a new resource.**
 * `preferred_availability_zones` - (Optional) Availability zones deployment preferences (for the selected provider & region). If multiple_availability_zones is set to 'true', select three availability zones from the list. If you don't want to specify preferred availability zones, set this attribute to an empty list ('[]'). **Modifying this attribute will force creation of a new resource.**
 
@@ -131,6 +131,16 @@ The `networks` block has these attributes:
 * `networking_subnet_id` - The subnet that the subscription deploys into
 * `networking_deployment_cidr` - Deployment CIDR mask for the generated
 * `networking_vpc_id` - VPC id for the generated network
+
+The `pricing` object has these attributes:
+
+* `type` - The type of cost. E.g. 'Shards'.
+* `typeDetails` - Further detail E.g. 'micro'.
+* `quantity` - Self-explanatory.
+* `quantityMeasurement` - Self-explanatory.
+* `pricePerUnit` - Price per Unit.
+* `priceCurrency` - The price currency
+* `pricePeriod` - Price period. E.g. 'hour'.
 
 ## Import
 

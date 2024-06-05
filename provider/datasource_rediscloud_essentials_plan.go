@@ -56,7 +56,6 @@ func dataSourceRedisCloudEssentialsPlan() *schema.Resource {
 				Description: "An internal, unique-across-cloud-providers id for database region",
 				Type:        schema.TypeInt,
 				Computed:    true,
-				Optional:    true,
 			},
 			"price": {
 				Description: "The plan's cost",
@@ -114,7 +113,6 @@ func dataSourceRedisCloudEssentialsPlan() *schema.Resource {
 				Description: "Self-explanatory",
 				Type:        schema.TypeBool,
 				Computed:    true,
-				Optional:    true,
 			},
 			"support_replication": {
 				Description: "Self-explanatory",
@@ -126,7 +124,6 @@ func dataSourceRedisCloudEssentialsPlan() *schema.Resource {
 				Description: "Self-explanatory",
 				Type:        schema.TypeBool,
 				Computed:    true,
-				Optional:    true,
 			},
 			"supported_alerts": {
 				Description: "List of the type of alerts supported by databases in this plan",
@@ -199,12 +196,6 @@ func dataSourceRedisCloudEssentialsPlanRead(ctx context.Context, d *schema.Resou
 		})
 	}
 
-	if v, ok := d.GetOk("region_id"); ok {
-		filters = append(filters, func(plan *plans.GetPlanResponse) bool {
-			return redis.IntValue(plan.RegionID) == v.(int)
-		})
-	}
-
 	if v, ok := d.GetOk("availability"); ok {
 		filters = append(filters, func(plan *plans.GetPlanResponse) bool {
 			return redis.StringValue(plan.Availability) == v.(string)
@@ -217,21 +208,9 @@ func dataSourceRedisCloudEssentialsPlanRead(ctx context.Context, d *schema.Resou
 		})
 	}
 
-	if v, ok := d.GetOk("support_instant_and_daily_backups"); ok {
-		filters = append(filters, func(plan *plans.GetPlanResponse) bool {
-			return redis.BoolValue(plan.SupportInstantAndDailyBackups) == v.(bool)
-		})
-	}
-
 	if v, ok := d.GetOk("support_replication"); ok {
 		filters = append(filters, func(plan *plans.GetPlanResponse) bool {
 			return redis.BoolValue(plan.SupportReplication) == v.(bool)
-		})
-	}
-
-	if v, ok := d.GetOk("support_clustering"); ok {
-		filters = append(filters, func(plan *plans.GetPlanResponse) bool {
-			return redis.BoolValue(plan.SupportClustering) == v.(bool)
 		})
 	}
 
