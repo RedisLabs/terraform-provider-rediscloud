@@ -7,58 +7,56 @@ description: |-
 
 # Data Source: rediscloud_essentials_plan
 
-The Essentials Plan data source allows access to the templates for Essentials Subscriptions. 
+The Essentials Plan data source allows access to the templates for Essentials Subscriptions.
+To retrieve all available plans, use [Redis Cloud API](https://api.redislabs.com/v1/swagger-ui/index.html#/Subscriptions%20-%20Fixed/getAllFixedSubscriptionsPlans).
 
 ## Example Usage
 
 ```hcl
-data "rediscloud_essentials_plan" "example" {
+data "rediscloud_essentials_plan" "plan" {
   name = "Single-Zone_1GB"
-  provider = "AWS"
+  cloud_provider = "AWS"
   region = "us-west-1"
 }
 
 output "rediscloud_essentials_plan" {
-  value = data.rediscloud_essentials_plan.example.id
+  value = data.rediscloud_essentials_plan.plan.id
 }
 ```
 
 ## Argument Reference
 
-* `id` - (Optional) The Plan's unique identifier. If you know it, this is all you need.
-* `name` - (Optional) A convenient name for the plan. Not guaranteed to be unique, especially across provider/region.
+* `id` - (Optional) The Plan's unique identifier. If known, there is no need to specify other parameters.
+* `name` - (Optional) The plan's name. Not guaranteed to be unique across providers/regions.
 * `size` - (Optional) The capacity of databases created in this plan.
-* `size_measurement_unit` - (Optional) The units of 'size', usually 'MB' or 'GB'.
-* `cloud_provider` - (Optional) The cloud provider: 'AWS', 'GCP' or 'Azure' (case sensitive).
-* `region` - (Optional) The region to place databases in, format and availability dependent on cloud_provider.
-* `region_id` - (Optional) An internal, unique-across-cloud-providers id for region.
-* `availability` - (Optional) 'No replication', 'Single-zone' or 'Multi-zone'.
-* `support_data_persistence` - (Optional) Whether or not databases created under Subscriptions from this Plan will support Data Persistence.
-* `support_instant_and_daily_backups` - (Optional) ... will support backups.
-* `support_replication` - (Optional) ... will support replication.
-* `support_clustering` - (Optional) ... will support clustering
+* `size_measurement_unit` - (Optional) The units of 'size'. Either 'MB' or 'GB'.
+* `cloud_provider` - (Optional) The cloud provider. Either: 'AWS', 'GCP' or 'Azure'.
+* `region` - (Optional) The region in which to place the database. The format and availability are dependent on 'cloud_provider'.
+* `availability` - (Optional) Either 'No replication', 'Single-zone' or 'Multi-zone'.
+* `support_data_persistence` - (Optional) The plan persistence support. If 'true', you define the persistence rate on the database level.
+* `support_replication` - (Optional) Databases replication support. Either 'true' or 'false'.
 
 ## Attribute reference
 
-* `id` - The Plan's unique identifier. You likely only want this value.
-* `name` - A convenient name for the plan.
+* `id` - The Plan's unique identifier. If known, there is no need to specify other parameters.
+* `name` - The plan's name. Not guaranteed to be unique across providers/regions.
 * `size` - The capacity of databases created in this plan.
-* `size_measurement_unit` - The units of 'size', usually 'MB' or 'GB'.
-* `cloud_provider` - The cloud provider: 'AWS', 'GCP' or 'Azure'.
-* `region` - The region databases are placed in, format and availability dependent on cloud_provider.
-* `region_id` - An internal, unique-across-cloud-providers id for region.
+* `size_measurement_unit` - The units of 'size'. Either 'MB' or 'GB'.
+* `cloud_provider` - The cloud provider. Either: 'AWS', 'GCP' or 'Azure'.
+* `region` - The region in which to place the database. The format and availability are dependent on 'cloud_provider'.
+* `region_id` - An internal, unique region id.
 * `price` - The plan's cost.
-* `price_currency` - Self-explanatory.
-* `price_period` - Self-explanatory, usually 'Month'.
-* `maximum_databases` - Self-explanatory.
-* `maximum_throughput` - Self-explanatory.
-* `maximum_bandwidth_in_gb` - Self-explanatory.
-* `availability` - 'No replication', 'Single-zone' or 'Multi-zone'.
-* `connections` - Self-explanatory.
+* `price_currency` - Price currency.
+* `price_period` - Price period. Usually 'month'.
+* `maximum_databases` - The maximum amount of databases the plan supports.
+* `maximum_throughput` - The maximum throughput the plan supports.
+* `maximum_bandwidth_in_gb` - The maximum network bandwidth the plan supports.
+* `availability` - Either 'No replication', 'Single-zone' or 'Multi-zone'.
+* `connections` - The maximum allowed connections of the plan.
 * `cidr_allow_rules` - Self-explanatory.
-* `support_data_persistence` - Whether or not databases created under Subscriptions from this Plan will support Data Persistence.
-* `support_instant_and_daily_backups` - ... will support backups.
-* `support_replication` - ... will support replication.
-* `support_clustering` - ... will support clustering.
-* `supported_alerts` - a list of the alerts supported by databases created under Subscriptions from this Plan.
-* `customer_support` - Level of customer support available e.g. 'Basic', 'Standard'.
+* `support_data_persistence`— The plan persistence support. If 'true', you define the persistence rate on the database level.
+* `support_instant_and_daily_backups` - If 'true', daily and instant backups are supported.
+* `support_replication` - (Optional) Databases replication support. Either 'true' or 'false'.
+* `support_clustering` - Databases clustering support. Either 'true' or 'false'.
+* `supported_alerts` - A list of the alerts supported by databases created under Subscriptions from this Plan.
+* `customer_support` - The level of customer support available. E.g., 'Basic', 'Standard'.

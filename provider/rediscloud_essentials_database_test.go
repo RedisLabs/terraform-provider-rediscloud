@@ -180,6 +180,9 @@ resource "rediscloud_essentials_database" "example" {
 	enable_default_user = true
 	password = "j43589rhe39f"
 
+	data_persistence = "none"
+	replication = false
+
 	alert {
 		name = "throughput-higher-than"
 		value = 80

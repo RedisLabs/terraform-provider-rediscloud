@@ -257,6 +257,61 @@ func resourceRedisCloudActiveActiveSubscriptionDatabase() *schema.Resource {
 								},
 							},
 						},
+						"latest_backup_status": {
+							Description: "Details about the last backups that took place across all regions for this active-active database",
+							Computed:    true,
+							Type:        schema.TypeSet,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"response": {
+										Computed: true,
+										Type:     schema.TypeSet,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"status": {
+													Description: "The status of the last backup operation",
+													Computed:    true,
+													Type:        schema.TypeString,
+												},
+												"last_backup_time": {
+													Description: "When the last backup operation occurred",
+													Computed:    true,
+													Type:        schema.TypeString,
+												},
+												"failure_reason": {
+													Description: "If a failure, why the backup operation failed",
+													Computed:    true,
+													Type:        schema.TypeString,
+												},
+											},
+										},
+									},
+									"error": {
+										Computed: true,
+										Type:     schema.TypeSet,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"type": {
+													Description: "The type of error encountered while looking up the status of the last backup",
+													Computed:    true,
+													Type:        schema.TypeString,
+												},
+												"description": {
+													Description: "A description of the error encountered while looking up the status of the last backup",
+													Computed:    true,
+													Type:        schema.TypeString,
+												},
+												"status": {
+													Description: "Any particular HTTP status code associated with the erroneous status check",
+													Computed:    true,
+													Type:        schema.TypeString,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -556,35 +611,36 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 	publicEndpointConfig := make(map[string]interface{})
 	privateEndpointConfig := make(map[string]interface{})
 	for _, regionDb := range db.CrdbDatabases {
+		region := redis.StringValue(regionDb.Region)
 		// Set the endpoints for the region
-		publicEndpointConfig[redis.StringValue(regionDb.Region)] = redis.StringValue(regionDb.PublicEndpoint)
-		privateEndpointConfig[redis.StringValue(regionDb.Region)] = redis.StringValue(regionDb.PrivateEndpoint)
+		publicEndpointConfig[region] = redis.StringValue(regionDb.PublicEndpoint)
+		privateEndpointConfig[region] = redis.StringValue(regionDb.PrivateEndpoint)
 		// Check if the region is in the state as an override
-		stateOverrideRegion := getStateOverrideRegion(d, redis.StringValue(regionDb.Region))
+		stateOverrideRegion := getStateOverrideRegion(d, region)
 		if stateOverrideRegion == nil {
 			continue
 		}
 		regionDbConfig := map[string]interface{}{
-			"name": redis.StringValue(regionDb.Region),
+			"name": region,
 		}
 		var sourceIPs []string
 		if !(len(regionDb.Security.SourceIPs) == 1 && redis.StringValue(regionDb.Security.SourceIPs[0]) == "0.0.0.0/0") {
 			// The API handles an empty list as ["0.0.0.0/0"] but need to be careful to match the input to avoid Terraform detecting drift
 			sourceIPs = redis.StringSliceValue(regionDb.Security.SourceIPs...)
 		}
-		if stateSourceIPs := getStateOverrideRegion(d, redis.StringValue(regionDb.Region))["override_global_source_ips"]; stateSourceIPs != nil {
+		if stateSourceIPs := getStateOverrideRegion(d, region)["override_global_source_ips"]; stateSourceIPs != nil {
 			if len(stateSourceIPs.(*schema.Set).List()) > 0 {
 				regionDbConfig["override_global_source_ips"] = sourceIPs
 			}
 		}
 
-		if stateDataPersistence := getStateOverrideRegion(d, redis.StringValue(regionDb.Region))["override_global_data_persistence"]; stateDataPersistence != nil {
+		if stateDataPersistence := getStateOverrideRegion(d, region)["override_global_data_persistence"]; stateDataPersistence != nil {
 			if stateDataPersistence.(string) != "" {
 				regionDbConfig["override_global_data_persistence"] = regionDb.DataPersistence
 			}
 		}
 
-		if stateOverridePassword := getStateOverrideRegion(d, redis.StringValue(regionDb.Region))["override_global_password"]; stateOverridePassword != "" {
+		if stateOverridePassword := getStateOverrideRegion(d, region)["override_global_password"]; stateOverridePassword != "" {
 			if *regionDb.Security.Password == d.Get("global_password").(string) {
 				regionDbConfig["override_global_password"] = ""
 			} else {
@@ -592,12 +648,24 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 			}
 		}
 
-		stateOverrideAlerts := getStateAlertsFromDbRegion(getStateOverrideRegion(d, redis.StringValue(regionDb.Region)))
+		stateOverrideAlerts := getStateAlertsFromDbRegion(getStateOverrideRegion(d, region))
 		if len(stateOverrideAlerts) > 0 {
 			regionDbConfig["override_global_alert"] = flattenAlerts(regionDb.Alerts)
 		}
 
-		regionDbConfig["remote_backup"] = flattenBackupPlan(regionDb.Backup, getStateRemoteBackup(d, redis.StringValue(regionDb.Region)), "")
+		regionDbConfig["remote_backup"] = flattenBackupPlan(regionDb.Backup, getStateRemoteBackup(d, region), "")
+
+		latestBackupStatus, err := api.client.LatestBackup.GetActiveActive(ctx, subId, dbId, region)
+		if err != nil {
+			// Forgive errors here, sometimes we just can't get a latest status
+		} else {
+			parsedLatestBackupStatus, err := parseLatestBackupStatus(latestBackupStatus)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			regionDbConfig["latest_backup_status"] = parsedLatestBackupStatus
+		}
+
 		regionDbConfigs = append(regionDbConfigs, regionDbConfig)
 	}
 
@@ -615,6 +683,24 @@ func resourceRedisCloudActiveActiveSubscriptionDatabaseRead(ctx context.Context,
 		return diag.FromErr(err)
 	}
 	if err := d.Set("global_modules", flattenModulesToNames(db.Modules)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	var parsedLatestBackupStatuses [][]map[string]interface{}
+	for _, regionDb := range db.CrdbDatabases {
+		region := redis.StringValue(regionDb.Region)
+		latestBackupStatus, err := api.client.LatestBackup.GetActiveActive(ctx, subId, dbId, region)
+		if err != nil {
+			// Forgive errors here, sometimes we just can't get a latest status
+		} else {
+			parsedLatestBackupStatus, err := parseLatestBackupStatus(latestBackupStatus)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+			parsedLatestBackupStatuses = append(parsedLatestBackupStatuses, parsedLatestBackupStatus)
+		}
+	}
+	if err := d.Set("latest_backup_statuses", parsedLatestBackupStatuses); err != nil {
 		return diag.FromErr(err)
 	}
 
