@@ -370,27 +370,28 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				Default:     false,
 			},
 			"memory_limit_in_gb": {
-				Description: "Maximum memory usage for this specific database",
-				Type:        schema.TypeFloat,
-				Optional:    true,
+				Description:      "Maximum memory usage for this specific database",
+				Type:             schema.TypeFloat,
+				Optional:         true,
+				DiffSuppressFunc: suppressIfPaygDisabled,
 			},
 			"support_oss_cluster_api": {
-				Description: "Support Redis open-source (OSS) Cluster API",
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     false,
+				Description:      "Support Redis open-source (OSS) Cluster API",
+				Type:             schema.TypeBool,
+				Optional:         true,
+				DiffSuppressFunc: suppressIfPaygDisabled,
 			},
 			"external_endpoint_for_oss_cluster_api": {
-				Description: "Should use the external endpoint for open-source (OSS) Cluster API",
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     false,
+				Description:      "Should use the external endpoint for open-source (OSS) Cluster API",
+				Type:             schema.TypeBool,
+				Optional:         true,
+				DiffSuppressFunc: suppressIfPaygDisabled,
 			},
 			"enable_database_clustering": {
-				Description: "Distributes database data to different cloud instances",
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     false,
+				Description:      "Distributes database data to different cloud instances",
+				Type:             schema.TypeBool,
+				Optional:         true,
+				DiffSuppressFunc: suppressIfPaygDisabled,
 			},
 			"regex_rules": {
 				Description: "Shard regex rules. Relevant only for a sharded database. Supported only for 'Pay-As-You-Go' subscriptions",
@@ -402,12 +403,13 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 					// Can't check that these are valid regex rules as the service wants something like `(?<tag>.*)`
 					// which isn't a valid Go regex
 				},
+				DiffSuppressFunc: suppressIfPaygDisabled,
 			},
 			"enable_tls": {
-				Description: "Use TLS for authentication",
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     false,
+				Description:      "Use TLS for authentication",
+				Type:             schema.TypeBool,
+				Optional:         true,
+				DiffSuppressFunc: suppressIfPaygDisabled,
 			},
 		},
 	}
@@ -915,4 +917,8 @@ func writeReplica(replica fixedDatabases.ReplicaOf) []map[string]interface{} {
 
 	tf["sync_source"] = syncSources
 	return []map[string]interface{}{tf}
+}
+
+func suppressIfPaygDisabled(k, oldValue, newValue string, d *schema.ResourceData) bool {
+	return !d.Get("enable_payg_features").(bool)
 }
