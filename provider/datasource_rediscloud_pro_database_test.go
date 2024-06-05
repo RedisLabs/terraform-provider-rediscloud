@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccDataSourceRedisCloudFlexibleDatabase_basic(t *testing.T) {
+func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -20,10 +20,10 @@ func TestAccDataSourceRedisCloudFlexibleDatabase_basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccDatasourceRedisCloudFlexibleDatabase, testCloudAccountName, name, password),
+				Config: fmt.Sprintf(testAccDatasourceRedisCloudProDatabase, testCloudAccountName, name, password),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceById, "name", "tf-database"),
 					resource.TestCheckResourceAttr(dataSourceById, "protocol", "redis"),
@@ -62,7 +62,7 @@ func TestAccDataSourceRedisCloudFlexibleDatabase_basic(t *testing.T) {
 	})
 }
 
-const testAccDatasourceRedisCloudFlexibleDatabase = `
+const testAccDatasourceRedisCloudProDatabase = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
@@ -93,7 +93,7 @@ resource "rediscloud_subscription" "example" {
     throughput_measurement_value = 1000
   }
 }
-resource "rediscloud_database" "example" {
+resource "rediscloud_subscription_database" "example" {
     subscription_id              = rediscloud_subscription.example.id
     name                         = "tf-database"
     protocol                     = "redis"
@@ -109,11 +109,11 @@ resource "rediscloud_database" "example" {
 
 data "rediscloud_database" "example-by-id" {
   subscription_id = rediscloud_subscription.example.id
-  db_id = rediscloud_database.example.db_id
+  db_id = rediscloud_subscription_database.example.db_id
 }
 
 data "rediscloud_database" "example-by-name" {
   subscription_id = rediscloud_subscription.example.id
-  name = rediscloud_database.example.name
+  name = rediscloud_subscription_database.example.name
 }
 `

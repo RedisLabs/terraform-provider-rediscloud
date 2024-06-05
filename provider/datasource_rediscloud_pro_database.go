@@ -12,10 +12,10 @@ import (
 	"strconv"
 )
 
-func dataSourceRedisCloudFlexibleDatabase() *schema.Resource {
+func dataSourceRedisCloudProDatabase() *schema.Resource {
 	return &schema.Resource{
-		Description: "The Flexible Database data source allows access to the details of an existing database within your Redis Enterprise Cloud account.",
-		ReadContext: dataSourceRedisCloudFlexibleDatabaseRead,
+		Description: "The Pro Database data source allows access to the details of an existing database within your Redis Enterprise Cloud account.",
+		ReadContext: dataSourceRedisCloudProDatabaseRead,
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
@@ -291,7 +291,7 @@ func dataSourceRedisCloudFlexibleDatabase() *schema.Resource {
 	}
 }
 
-func dataSourceRedisCloudFlexibleDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	api := meta.(*apiClient)
 
@@ -302,7 +302,7 @@ func dataSourceRedisCloudFlexibleDatabaseRead(ctx context.Context, d *schema.Res
 
 	var filters []func(db *databases.Database) bool
 
-	// Filter to flexible databases only (active-active dbs come from the same endpoint)
+	// Filter to pro databases only (active-active dbs come from the same endpoint)
 	filters = append(filters, func(db *databases.Database) bool {
 		return !redis.BoolValue(db.ActiveActiveRedis)
 	})
@@ -329,7 +329,7 @@ func dataSourceRedisCloudFlexibleDatabaseRead(ctx context.Context, d *schema.Res
 	}
 
 	list := api.client.Database.List(ctx, subId)
-	dbs, err := filterFlexibleDatabases(list, filters)
+	dbs, err := filterProDatabases(list, filters)
 	if err != nil {
 		return diag.FromErr(list.Err())
 	}
@@ -458,10 +458,10 @@ func dataSourceRedisCloudFlexibleDatabaseRead(ctx context.Context, d *schema.Res
 	return diags
 }
 
-func filterFlexibleDatabases(list *databases.ListDatabase, filters []func(db *databases.Database) bool) ([]*databases.Database, error) {
+func filterProDatabases(list *databases.ListDatabase, filters []func(db *databases.Database) bool) ([]*databases.Database, error) {
 	var filtered []*databases.Database
 	for list.Next() {
-		if filterFlexibleDatabase(list.Value(), filters) {
+		if filterProDatabase(list.Value(), filters) {
 			filtered = append(filtered, list.Value())
 		}
 	}
@@ -472,7 +472,7 @@ func filterFlexibleDatabases(list *databases.ListDatabase, filters []func(db *da
 	return filtered, nil
 }
 
-func filterFlexibleDatabase(db *databases.Database, filters []func(db *databases.Database) bool) bool {
+func filterProDatabase(db *databases.Database, filters []func(db *databases.Database) bool) bool {
 	for _, filter := range filters {
 		if !filter(db) {
 			return false

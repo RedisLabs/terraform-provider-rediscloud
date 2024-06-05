@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-func TestAccCreateReadUpdateImportDeleteAclRole_Flexible(t *testing.T) {
+func TestAccCreateReadUpdateImportDeleteAclRole_Pro(t *testing.T) {
 
 	prefix := acctest.RandomWithPrefix(testResourcePrefix)
 	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -24,11 +24,11 @@ func TestAccCreateReadUpdateImportDeleteAclRole_Flexible(t *testing.T) {
 	testRoleName := prefix + "-test-role"
 	testRoleNameUpdated := testRoleName + "-updated"
 
-	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudFlexibleDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRule, exampleRuleName) +
 		fmt.Sprintf(testRole, testRoleName)
 
-	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudFlexibleDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRule, exampleRuleName) +
 		fmt.Sprintf(testRole, testRoleNameUpdated)
 
@@ -135,7 +135,7 @@ resource "rediscloud_acl_role" "test" {
 		name = rediscloud_acl_rule.example.name
 		database {
 			subscription = rediscloud_subscription.example.id
-			database = rediscloud_database.example.db_id
+			database = rediscloud_subscription_database.example.db_id
 		}
 	}
 }

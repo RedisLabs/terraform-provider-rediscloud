@@ -49,7 +49,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 			testAccTLSValidCertificatePreCheck(t)
 		},
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, testCloudAccountName, name, 1, password, clientSslCertificate),
@@ -120,7 +120,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEm
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	subscriptionName := "rediscloud_subscription.example"
-	databaseName := "rediscloud_database.example"
+	databaseName := "rediscloud_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	var subId int
@@ -128,7 +128,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEm
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndWithoutCert, testCloudAccountName, name, 1, password),
@@ -211,7 +211,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndIn
 			testAccTLSInvalidCertificatePreCheck(t)
 		},
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, testCloudAccountName, name, 1, password, invalidClientSslCertificate),
@@ -241,7 +241,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseAndDisabledTlsAndIn
 			testAccTLSInvalidCertificatePreCheck(t)
 		},
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithoutEnableTlsAndWithCert, testCloudAccountName, name, 1, password, invalidClientSslCertificate),
@@ -284,7 +284,7 @@ resource "rediscloud_subscription" "example" {
   }
 }
 
-resource "rediscloud_database" "example" {
+resource "rediscloud_subscription_database" "example" {
   subscription_id = rediscloud_subscription.example.id
   name = "tf-database"
   protocol = "redis"
@@ -334,7 +334,7 @@ resource "rediscloud_subscription" "example" {
   }
 }
 
-resource "rediscloud_database" "example" {
+resource "rediscloud_subscription_database" "example" {
   subscription_id = rediscloud_subscription.example.id
   name = "tf-database"
   protocol = "redis"
@@ -383,7 +383,7 @@ resource "rediscloud_subscription" "example" {
   }
 }
 
-resource "rediscloud_database" "example" {
+resource "rediscloud_subscription_database" "example" {
   subscription_id = rediscloud_subscription.example.id
   name = "tf-database"
   protocol = "redis"

@@ -13,7 +13,7 @@ This data source allows access to the details of an existing subscription within
 
 ## Example Usage
 
-The following example shows how to use the name attribute to locate a flexible subscription within your Redis Enterprise
+The following example shows how to use the name attribute to locate a subscription within your Redis Enterprise
 Cloud account.
 
 ```hcl

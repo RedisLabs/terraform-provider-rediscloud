@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccDataSourceRedisCloudFlexibleSubscription_basic(t *testing.T) {
+func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 	name := acctest.RandomWithPrefix("tf-test")
 
 	resourceName := "rediscloud_subscription.example"
@@ -20,16 +20,16 @@ func TestAccDataSourceRedisCloudFlexibleSubscription_basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccDatasourceRedisCloudFlexibleSubscription, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccDatasourceRedisCloudProSubscription, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "name", regexp.MustCompile(name)),
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccDatasourceRedisCloudFlexibleSubscriptionDataSource, name) + fmt.Sprintf(testAccDatasourceRedisCloudFlexibleSubscription, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccDatasourceRedisCloudProSubscriptionDataSource, name) + fmt.Sprintf(testAccDatasourceRedisCloudProSubscription, testCloudAccountName, name),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestMatchResourceAttr(dataSourceName, "name", regexp.MustCompile(name)),
 					resource.TestCheckResourceAttr(dataSourceName, "payment_method", "credit-card"),
@@ -56,24 +56,24 @@ func TestAccDataSourceRedisCloudFlexibleSubscription_basic(t *testing.T) {
 	})
 }
 
-func TestAccDataSourceRedisCloudFlexibleSubscription_ignoresAA(t *testing.T) {
+func TestAccDataSourceRedisCloudProSubscription_ignoresAA(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckFlexibleSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(testAccDatasourceRedisCloudAADatabaseWithFlexibleDataSource, name+"-subscription", name+"-database", password),
+				Config:      fmt.Sprintf(testAccDatasourceRedisCloudAADatabaseWithProDataSource, name+"-subscription", name+"-database", password),
 				ExpectError: regexp.MustCompile("Your query returned no results. Please change your search criteria and try again."),
 			},
 		},
 	})
 }
 
-const testAccDatasourceRedisCloudFlexibleSubscription = `
+const testAccDatasourceRedisCloudProSubscription = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
@@ -106,7 +106,7 @@ resource "rediscloud_subscription" "example" {
     modules = []
   }
 }
-resource "rediscloud_database" "example" {
+resource "rediscloud_subscription_database" "example" {
     subscription_id              = rediscloud_subscription.example.id
 	name                         = "tf-database"
     protocol                     = "redis"
@@ -117,13 +117,13 @@ resource "rediscloud_database" "example" {
 }
 `
 
-const testAccDatasourceRedisCloudFlexibleSubscriptionDataSource = `
+const testAccDatasourceRedisCloudProSubscriptionDataSource = `
 data "rediscloud_subscription" "example" {
   name = "%s"
 }
 `
 
-const testAccDatasourceRedisCloudAADatabaseWithFlexibleDataSource = `
+const testAccDatasourceRedisCloudAADatabaseWithProDataSource = `
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
 }

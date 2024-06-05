@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_subscription"
 description: |-
-  Flexible Subscription data source in the Redis Cloud Terraform provider.
+  Pro Subscription data source in the Redis Cloud Terraform provider.
 ---
 
 # Data Source: rediscloud_subscription
@@ -13,7 +13,7 @@ This data source allows access to the details of an existing Subscription within
 
 ## Example Usage
 
-The following example shows how to use the name attribute to locate a flexible subscription within your Redis Enterprise Cloud account.
+The following example shows how to use the name attribute to locate a subscription within your Redis Enterprise Cloud account.
 
 ```hcl
 data "rediscloud_subscription" "example" {
