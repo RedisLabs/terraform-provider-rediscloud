@@ -296,7 +296,7 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 				},
 			},
 			"redis_version": {
-				Description: "Version of Redis to create, either 'default' or 'latest'. Defaults to 'default'",
+				Description: "Version of Redis to create",
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
@@ -313,8 +313,6 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 
 					return true
 				},
-				ValidateDiagFunc: validation.ToDiagFunc(
-					validation.StringMatch(regexp.MustCompile("^(default|latest)$"), "must be 'default' or 'latest'")),
 			},
 			"pricing": {
 				Description: "Pricing details totalled over this Subscription",
