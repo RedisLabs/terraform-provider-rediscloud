@@ -275,7 +275,6 @@ func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 				),
 			},
 			{
-				Config:                  fmt.Sprintf(testAccResourceRedisCloudProSubscriptionWithRedisVersion, testCloudAccountName, name, ""),
 				ResourceName:            "rediscloud_subscription.test",
 				ImportState:             true,
 				ImportStateVerify:       true,

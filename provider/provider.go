@@ -41,31 +41,40 @@ func New(version string) func() *schema.Provider {
 				},
 			},
 			DataSourcesMap: map[string]*schema.Resource{
-				"rediscloud_cloud_account":                       dataSourceRedisCloudCloudAccount(),
-				"rediscloud_data_persistence":                    dataSourceRedisCloudDataPersistence(),
-				"rediscloud_subscription":                        dataSourceRedisCloudProSubscription(),
-				"rediscloud_database":                            dataSourceRedisCloudProDatabase(),
-				"rediscloud_database_modules":                    dataSourceRedisCloudDatabaseModules(),
-				"rediscloud_payment_method":                      dataSourceRedisCloudPaymentMethod(),
-				"rediscloud_regions":                             dataSourceRedisCloudRegions(),
-				"rediscloud_essentials_plan":                     dataSourceRedisCloudEssentialsPlan(),
-				"rediscloud_essentials_subscription":             dataSourceRedisCloudEssentialsSubscription(),
-				"rediscloud_essentials_database":                 dataSourceRedisCloudEssentialsDatabase(),
-				"rediscloud_subscription_peerings":               dataSourceRedisCloudSubscriptionPeerings(),
-				"rediscloud_active_active_subscription":          dataSourceRedisCloudActiveActiveSubscription(),
+				"rediscloud_cloud_account":    dataSourceRedisCloudCloudAccount(),
+				"rediscloud_data_persistence": dataSourceRedisCloudDataPersistence(),
+				// Note the difference in public data-source name and the file/method name.
+				// This is to help the developer relate their changes to what they would see happening in the Redis Console.
+				// <default> == flexible == pro
+				"rediscloud_subscription":               dataSourceRedisCloudProSubscription(),
+				"rediscloud_database":                   dataSourceRedisCloudProDatabase(),
+				"rediscloud_database_modules":           dataSourceRedisCloudDatabaseModules(),
+				"rediscloud_payment_method":             dataSourceRedisCloudPaymentMethod(),
+				"rediscloud_regions":                    dataSourceRedisCloudRegions(),
+				"rediscloud_essentials_plan":            dataSourceRedisCloudEssentialsPlan(),
+				"rediscloud_essentials_subscription":    dataSourceRedisCloudEssentialsSubscription(),
+				"rediscloud_essentials_database":        dataSourceRedisCloudEssentialsDatabase(),
+				"rediscloud_subscription_peerings":      dataSourceRedisCloudSubscriptionPeerings(),
+				"rediscloud_active_active_subscription": dataSourceRedisCloudActiveActiveSubscription(),
+				// Note the difference in public data-source name and the file/method name.
+				// active_active_subscription_database == active_active_database
 				"rediscloud_active_active_subscription_database": dataSourceRedisCloudActiveActiveDatabase(),
 				"rediscloud_acl_rule":                            dataSourceRedisCloudAclRule(),
 				"rediscloud_acl_role":                            dataSourceRedisCloudAclRole(),
 				"rediscloud_acl_user":                            dataSourceRedisCloudAclUser(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
-				"rediscloud_cloud_account":                       resourceRedisCloudCloudAccount(),
-				"rediscloud_essentials_subscription":             resourceRedisCloudEssentialsSubscription(),
-				"rediscloud_essentials_database":                 resourceRedisCloudEssentialsDatabase(),
-				"rediscloud_subscription":                        resourceRedisCloudProSubscription(),
-				"rediscloud_subscription_database":               resourceRedisCloudProDatabase(),
-				"rediscloud_subscription_peering":                resourceRedisCloudSubscriptionPeering(),
-				"rediscloud_active_active_subscription":          resourceRedisCloudActiveActiveSubscription(),
+				"rediscloud_cloud_account":           resourceRedisCloudCloudAccount(),
+				"rediscloud_essentials_subscription": resourceRedisCloudEssentialsSubscription(),
+				"rediscloud_essentials_database":     resourceRedisCloudEssentialsDatabase(),
+				// Note the difference in public resource name and the file/method name.
+				// <default> == flexible == pro
+				"rediscloud_subscription":               resourceRedisCloudProSubscription(),
+				"rediscloud_subscription_database":      resourceRedisCloudProDatabase(),
+				"rediscloud_subscription_peering":       resourceRedisCloudSubscriptionPeering(),
+				"rediscloud_active_active_subscription": resourceRedisCloudActiveActiveSubscription(),
+				// Note the difference in public resource name and the file/method name.
+				// active_active_subscription_database == active_active_database
 				"rediscloud_active_active_subscription_database": resourceRedisCloudActiveActiveDatabase(),
 				"rediscloud_active_active_subscription_regions":  resourceRedisCloudActiveActiveSubscriptionRegions(),
 				"rediscloud_active_active_subscription_peering":  resourceRedisCloudActiveActiveSubscriptionPeering(),
