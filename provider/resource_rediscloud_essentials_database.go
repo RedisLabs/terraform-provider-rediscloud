@@ -65,7 +65,7 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringLenBetween(0, 40)),
 			},
 			"protocol": {
-				Description:      "The protocol that will be used to access the database, (either ‘redis’, 'memcached’ or 'stack')",
+				Description:      "The protocol that will be used to access the database, (either 'redis', 'memcached' or 'stack')",
 				Type:             schema.TypeString,
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(fixedDatabases.ProtocolValues(), false)),
 				Optional:         true,
