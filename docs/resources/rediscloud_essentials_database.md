@@ -7,7 +7,7 @@ description: |-
 
 # Resource: rediscloud_essentials_database
 
-This resource allows you to manage a database within your Redis Enterprise Cloud account.
+This resource allows you to manage an Essentials database within your Redis Enterprise Cloud account.
 
 -> **Note:** This is for databases within Essential Subscriptions only. See also `rediscloud_subscription_database` (Pro) and `rediscloud_active_active_subscription_database`.
 
