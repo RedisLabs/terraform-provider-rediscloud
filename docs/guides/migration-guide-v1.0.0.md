@@ -1,6 +1,5 @@
 ---
 page_title: "Migrating to version v1.X.X"
-subcategory: "Guides"
 ---
 
 # Migrating to version v1.X.X

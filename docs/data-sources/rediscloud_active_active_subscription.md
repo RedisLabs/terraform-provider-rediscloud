@@ -1,10 +1,3 @@
----
-layout: "rediscloud"
-page_title: "Redis Cloud: rediscloud_active_active_subscription"
-description: |-
-  Active Active Subscription data source in the Redis Cloud Terraform provider.
----
-
 # Resource: rediscloud_active_active_subscription
 
 This data source allows access to the details of an existing subscription within your Redis Enterprise Cloud account.

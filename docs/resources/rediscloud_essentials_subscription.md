@@ -7,7 +7,7 @@ description: |-
 
 # Resource: rediscloud_essentials_subscription
 
-This resource allows you to manage a subscription within your Redis Enterprise Cloud account.
+This resource allows you to manage an Essentials subscription within your Redis Enterprise Cloud account.
 
 -> **Note:** This is for Essential Subscriptions only. See also `rediscloud_subscription` (Pro) and `rediscloud_active_active_subscription`.
 
