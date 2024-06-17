@@ -7,17 +7,17 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ### Fixed
 
-- Datasources `rediscloud_subscription` and `rediscloud_databases` are for Pro Subscriptions only
+- Datasources `rediscloud_subscription` and `rediscloud_databases` are for Pro plans only
 
 ### Added
 
-- Datasources for Active-Active features: `rediscloud_active_active_subscription`, `rediscloud_active_active_subscription_database`
-- Datasources for Essentials
-  features: `rediscloud_essentials_plan`, `rediscloud_essentials_subscription`, `rediscloud_essentials_database`
-- Resources for Essentials features: `rediscloud_essentials_subscription`, `rediscloud_essentials_database`
+- Resources for Essentials plans: `rediscloud_essentials_subscription`, `rediscloud_essentials_database`
+- Datasources for Active-Active deployments: `rediscloud_active_active_subscription`, `rediscloud_active_active_subscription_database`
+- Datasources for Essentials plans: `rediscloud_essentials_plan`, `rediscloud_essentials_subscription`, `rediscloud_essentials_database`
 - `modules`/`global_modules` can be specified on Active-Active Subscription/Database resources, enabling `RedisJSON`
 - All Subscription resources include the `pricing` attribute
 - All Database resources include `latest_backup_status` and `latest_import_status` attributes as appropriate
+- The `redis_version` attribute for `rediscloud_subscription` now supports numeric versions as input
 
 ## 1.6.0 (12 April 2024)
 
