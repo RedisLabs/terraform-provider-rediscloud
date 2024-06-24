@@ -240,8 +240,10 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 				),
 			},
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudProDatabaseRespVersions, testCloudAccountName, name, portNumber, "resp3"),
-				ExpectError: regexp.MustCompile("Selected RESP version is not supported for this database version\\.*"),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseRespVersions, testCloudAccountName, name, portNumber, "resp3"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
+				),
 			},
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudProDatabaseRespVersions, testCloudAccountName, name, portNumber, "best_resp_100"),
