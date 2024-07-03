@@ -203,10 +203,9 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
-							Description:      "Alert name",
-							Type:             schema.TypeString,
-							Required:         true,
-							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.AlertNameValues(), false)),
+							Description: "Alert name",
+							Type:        schema.TypeString,
+							Required:    true,
 						},
 						"value": {
 							Description: "Alert value",
