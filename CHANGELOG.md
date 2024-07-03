@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 1.7.1 (24th June 2024)
+
+### Removed
+
+- Provider validation on Alert names in Essentials Databases
+
+### Changed
+
+- Documentation improvements
+
 ## 1.7.0 (11th June 2024)
 
 ### Fixed

@@ -33,7 +33,7 @@ resource "rediscloud_subscription" "subscription-resource" {
   payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage    = "ram"
-  redis_version     = "latest"
+  redis_version     = "7.2"
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type

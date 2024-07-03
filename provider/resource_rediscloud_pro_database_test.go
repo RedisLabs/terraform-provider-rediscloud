@@ -40,7 +40,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "3"),
 					resource.TestCheckResourceAttr(resourceName, "replication", "false"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "false"),
-					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp2"),
+					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
 					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_by", "operations-per-second"),
 					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_value", "1000"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
@@ -103,7 +103,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "replication", "true"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
-					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp2"),
+					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
 					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_by", "operations-per-second"),
 					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_value", "2000"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "aof-every-write"),
@@ -240,8 +240,10 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 				),
 			},
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudProDatabaseRespVersions, testCloudAccountName, name, portNumber, "resp3"),
-				ExpectError: regexp.MustCompile("Selected RESP version is not supported for this database version\\.*"),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseRespVersions, testCloudAccountName, name, portNumber, "resp3"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
+				),
 			},
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudProDatabaseRespVersions, testCloudAccountName, name, portNumber, "best_resp_100"),
