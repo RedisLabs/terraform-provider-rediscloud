@@ -782,17 +782,14 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	clientTLSCertificates := interfaceToStringSlice(d.Get("client_tls_certificates").([]interface{}))
 	enableTLS := d.Get("enable_tls").(bool)
 	if enableTLS {
-		// TLS only: enable_tls=true, client_ssl_certificate="".
 		update.EnableTls = redis.Bool(enableTLS)
-
 		if clientSSLCertificate != "" {
-			// mTLS: enableTls=true, non-empty client_tls_certificates.
 			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
 
-			// TODO If the user has enabled TLS and provided an SSL certificate, we might want to scrub any TLS certificates
-			// update.ClientTLSCertificates = &[]*string{}
+			// If the user has enableTls=true and provided an SSL certificate, we want to scrub any TLS certificates
+			update.ClientTLSCertificates = &[]*string{}
 		} else if len(clientTLSCertificates) > 0 {
-			// mTLS: enableTls=true, non-empty client_ssl_certificate.
+			// mTLS: enableTls=true, non-empty client_tls_certificates.
 			update.ClientTLSCertificates = &clientTLSCertificates
 		}
 	} else {
