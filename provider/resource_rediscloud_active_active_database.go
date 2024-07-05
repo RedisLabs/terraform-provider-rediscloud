@@ -110,6 +110,15 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 			},
+			"client_tls_certificates": {
+				Description: "TLS certificates to authenticate user connections",
+				Type:        schema.TypeList,
+				Optional:    true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				ConflictsWith: []string{"client_ssl_certificate"},
+			},
 			"data_eviction": {
 				Description: "Data eviction items policy",
 				Type:        schema.TypeString,
@@ -836,18 +845,25 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 	//The cert validation is done by the API (HTTP 400 is returned if it's invalid).
 	clientSSLCertificate := d.Get("client_ssl_certificate").(string)
+	clientTLSCertificates := interfaceToStringSlice(d.Get("client_tls_certificates").([]interface{}))
 	enableTLS := d.Get("enable_tls").(bool)
 	if enableTLS {
-		//TLS only: enable_tls=true, client_ssl_certificate="".
 		update.EnableTls = redis.Bool(enableTLS)
-		//mTLS: enableTls=true, non-empty client_ssl_certificate.
 		if clientSSLCertificate != "" {
 			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+
+			// If the user has enableTls=true and provided an SSL certificate, we want to scrub any TLS certificates
+			update.ClientTLSCertificates = &[]*string{}
+		} else if len(clientTLSCertificates) > 0 {
+			// mTLS: enableTls=true, non-empty client_tls_certificates.
+			update.ClientTLSCertificates = &clientTLSCertificates
 		}
 	} else {
 		// mTLS (backward compatibility): enable_tls=false, non-empty client_ssl_certificate.
 		if clientSSLCertificate != "" {
 			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
+		} else if len(clientTLSCertificates) > 0 {
+			return diag.Errorf("TLS certificates may not be provided while enable_tls is false")
 		} else {
 			// Default: enable_tls=false, client_ssl_certificate=""
 			update.EnableTls = redis.Bool(enableTLS)
