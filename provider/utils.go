@@ -29,7 +29,12 @@ func setToStringSlice(set *schema.Set) []*string {
 func interfaceToStringSlice(list []interface{}) []*string {
 	var ret []*string
 	for _, i := range list {
-		ret = append(ret, redis.String(i.(string)))
+		if i == nil {
+			// The user probably entered "" (string's zero-value) but gets read in as nil (interface{}'s zero-value)
+			ret = append(ret, redis.String(""))
+		} else {
+			ret = append(ret, redis.String(i.(string)))
+		}
 	}
 	return ret
 }
