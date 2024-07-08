@@ -6,6 +6,7 @@ github.com/ProtonMail/go-crypto v1.1.0-alpha.2 h1:bkyFVUP+ROOARdgCiJzNQo2V2kiB97
 github.com/ProtonMail/go-crypto v1.1.0-alpha.2/go.mod h1:rA3QumHc/FZ8pAHreoekgiAbzpNsfQAosU5td4SnOrE=
 github.com/RedisLabs/rediscloud-go-api v0.16.0 h1:vZgsXDHdPk6dyuR5syEWjc7L3v1ceQ1AmljBx2yqqZc=
 github.com/RedisLabs/rediscloud-go-api v0.16.0/go.mod h1:CMntQxo1/0plOP874rtju+vlT7SIlEwiBZbD/SRgJ7g=
+github.com/RedisLabs/rediscloud-go-api v0.16.1-0.20240708082244-8a5814f0b94e/go.mod h1:CMntQxo1/0plOP874rtju+vlT7SIlEwiBZbD/SRgJ7g=
 github.com/agext/levenshtein v1.2.2 h1:0S/Yg6LYmFJ5stwQeRp6EeOcCbj7xiqQSdNelsXvaqE=
 github.com/agext/levenshtein v1.2.2/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki2W0IB5558=
 github.com/apparentlymart/go-textseg/v12 v12.0.0/go.mod h1:S/4uRK2UtaQttw1GenVJEynmyUenKwP++x/+DdGV/Ec=
