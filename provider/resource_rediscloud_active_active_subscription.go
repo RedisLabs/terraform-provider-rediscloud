@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/RedisLabs/rediscloud-go-api/service/maintenance"
 	"regexp"
 	"strconv"
 	"time"
@@ -177,6 +178,53 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 					return true
 				},
 			},
+			"maintenance_windows": {
+				Description: "",
+				Type:        schema.TypeList,
+				Optional:    true,
+				Computed:    true,
+				MaxItems:    1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"mode": {
+							Description:      "",
+							Type:             schema.TypeString,
+							Required:         true,
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice([]string{"automatic", "manual"}, false)),
+						},
+						"window": {
+							Description: "",
+							Type:        schema.TypeList,
+							Optional:    true, // if mode==automatic, no windows
+							MinItems:    1,    // if mode==manual, need at least 1 window
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"start_hour": {
+										Description: "",
+										Type:        schema.TypeInt,
+										Required:    true,
+									},
+									"duration_in_hours": {
+										Description: "",
+										Type:        schema.TypeInt,
+										Required:    true,
+									},
+									"days": {
+										Description: "",
+										Type:        schema.TypeList,
+										Required:    true,
+										MinItems:    1,
+										MaxItems:    7,
+										Elem: &schema.Schema{
+											Type: schema.TypeString,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"pricing": {
 				Description: "Pricing details totalled over this Subscription",
 				Type:        schema.TypeList,
@@ -322,6 +370,29 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
+	if m, ok := d.GetOk("maintenance_windows"); ok {
+		mMap := m.([]interface{})[0].(map[string]interface{})
+
+		windows := make([]*maintenance.Window, 0)
+		for _, w := range mMap["window"].([]interface{}) {
+			wMap := w.(map[string]interface{})
+			windows = append(windows, &maintenance.Window{
+				StartHour:       redis.Int(wMap["start_hour"].(int)),
+				DurationInHours: redis.Int(wMap["duration_in_hours"].(int)),
+				Days:            interfaceToStringSlice(wMap["days"].([]interface{})),
+			})
+		}
+
+		updateMaintenanceRequest := maintenance.Maintenance{
+			Mode:    redis.String(mMap["mode"].(string)),
+			Windows: windows,
+		}
+		err = api.client.Maintenance.Update(ctx, subId, updateMaintenanceRequest)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	return resourceRedisCloudActiveActiveSubscriptionRead(ctx, d, meta)
 }
 
@@ -364,6 +435,14 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 	}
 	cloudProvider := cloudDetails[0].Provider
 	if err := d.Set("cloud_provider", cloudProvider); err != nil {
+		return diag.FromErr(err)
+	}
+
+	m, err := api.client.Maintenance.Get(ctx, subId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("maintenance_windows", flattenMaintenance(m)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -414,6 +493,36 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
+	}
+
+	if d.HasChange("maintenance_windows") {
+		var updateMaintenanceRequest maintenance.Maintenance
+		if m, ok := d.GetOk("maintenance_windows"); ok {
+			mMap := m.([]interface{})[0].(map[string]interface{})
+
+			windows := make([]*maintenance.Window, 0)
+			for _, w := range mMap["window"].([]interface{}) {
+				wMap := w.(map[string]interface{})
+				windows = append(windows, &maintenance.Window{
+					StartHour:       redis.Int(wMap["start_hour"].(int)),
+					DurationInHours: redis.Int(wMap["duration_in_hours"].(int)),
+					Days:            interfaceToStringSlice(wMap["days"].([]interface{})),
+				})
+			}
+
+			updateMaintenanceRequest = maintenance.Maintenance{
+				Mode:    redis.String(mMap["mode"].(string)),
+				Windows: windows,
+			}
+		} else {
+			updateMaintenanceRequest = maintenance.Maintenance{
+				Mode: redis.String("automatic"),
+			}
+		}
+		err = api.client.Maintenance.Update(ctx, subId, updateMaintenanceRequest)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return resourceRedisCloudActiveActiveSubscriptionRead(ctx, d, meta)

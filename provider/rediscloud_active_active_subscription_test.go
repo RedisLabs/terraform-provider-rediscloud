@@ -52,6 +52,22 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.write_operations_per_second", "1000"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.read_operations_per_second", "1000"),
 
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "2"),
+
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.start_hour", "22"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.duration_in_hours", "8"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.days.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.days.0", "Monday"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.days.1", "Thursday"),
+
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.1.start_hour", "12"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.1.duration_in_hours", "6"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.1.days.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.1.days.0", "Friday"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.1.days.1", "Saturday"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.1.days.2", "Sunday"),
+
 					resource.TestCheckResourceAttr(resourceName, "pricing.#", "2"),
 
 					resource.TestCheckResourceAttr(resourceName, "pricing.0.type", "MinimumPrice"),
@@ -111,6 +127,22 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "number_of_databases", "0"),
 					resource.TestCheckResourceAttr(datasourceName, "status", "active"),
 
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.mode", "manual"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.#", "2"),
+
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.start_hour", "22"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.duration_in_hours", "8"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.days.#", "2"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.days.0", "Monday"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.days.1", "Thursday"),
+
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.start_hour", "12"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.duration_in_hours", "6"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.#", "3"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.0", "Friday"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.1", "Saturday"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.2", "Sunday"),
+
 					resource.TestCheckResourceAttr(datasourceName, "pricing.#", "2"),
 
 					resource.TestCheckResourceAttr(datasourceName, "pricing.0.type", "MinimumPrice"),
@@ -144,6 +176,13 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.read_operations_per_second", "1000"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.write_operations_per_second", "1000"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.read_operations_per_second", "1000"),
+
+					// maintenance windows spec is omitted so should default back to automatic
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
+
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.mode", "automatic"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.#", "0"),
 				),
 			},
 			{
@@ -311,6 +350,20 @@ resource "rediscloud_active_active_subscription" "example" {
 			read_operations_per_second = 1000
 		}
 	}
+
+	maintenance_windows {
+		mode = "manual"
+		window {
+				start_hour = 22
+				duration_in_hours = 8
+				days = ["Monday", "Thursday"]
+		}
+		window {
+				start_hour = 12
+				duration_in_hours = 6
+				days = ["Friday", "Saturday", "Sunday"]
+		}
+	}
 }
 
 data "rediscloud_active_active_subscription" "example" {
@@ -320,16 +373,23 @@ data "rediscloud_active_active_subscription" "example" {
 
 const testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan = `
   
-  data "rediscloud_payment_method" "card" {
+data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
-  }
-  
-  resource "rediscloud_active_active_subscription" "example" {
+}
+
+resource "rediscloud_active_active_subscription" "example" {
 	name = "%s"
 	payment_method_id = data.rediscloud_payment_method.card.id
 	cloud_provider = "%s"
-   
-  }
+
+	maintenance_windows {
+		mode = "automatic"
+	}
+}
+
+data "rediscloud_active_active_subscription" "example" {
+	name = rediscloud_active_active_subscription.example.name
+}
 `
 
 const testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethod = `
