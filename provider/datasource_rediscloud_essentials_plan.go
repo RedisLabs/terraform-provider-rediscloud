@@ -40,6 +40,12 @@ func dataSourceRedisCloudEssentialsPlan() *schema.Resource {
 				Computed:    true,
 				Optional:    true,
 			},
+			"subscription_id": {
+				Description: "ID of the subscription that the database belongs to",
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Optional:    true,
+			},
 			"cloud_provider": {
 				Description: "The cloud provider: 'AWS', 'GCP' or 'Azure'",
 				Type:        schema.TypeString,
@@ -296,7 +302,7 @@ func getResourceList(ctx context.Context, d *schema.ResourceData, api *apiClient
 	var list []*plans.GetPlanResponse
 	var err error
 
-	if id, ok := d.GetOk("id"); ok {
+	if id, ok := d.GetOk("subscription_id"); ok {
 		list, err = api.client.FixedPlanSubscriptions.List(ctx, id.(int))
 	} else if provider, ok := d.GetOk("cloud_provider"); ok {
 		list, err = api.client.FixedPlans.ListWithProvider(ctx, strings.ToUpper(provider.(string)))
