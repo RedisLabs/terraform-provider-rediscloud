@@ -170,3 +170,31 @@ func parseFailureReasonParams(params []*latest_imports.FailureReasonParam) []map
 	}
 	return writableParams
 }
+
+func applyCertificateHints(tlsAuthEnabled bool, d *schema.ResourceData) error {
+	sslCertificate := d.Get("client_ssl_certificate").(string)
+	tlsCertificates := interfaceToStringSlice(d.Get("client_tls_certificates").([]interface{}))
+	if tlsAuthEnabled {
+		if sslCertificate == "" && len(tlsCertificates) == 0 {
+			// The resource does have SSL/TLS auth enabled, but it was not certified by this template.
+			if err := d.Set("client_tls_certificates", []interface{}{"Unknown certificate"}); err != nil {
+				return err
+			}
+		}
+	} else {
+		if sslCertificate != "" {
+			// The resource does not have SSL/TLS auth enabled, but this template provides an SSL certificate
+			if err := d.Set("client_ssl_certificate", ""); err != nil {
+				return err
+			}
+		}
+		if len(tlsCertificates) >= 0 {
+			// The resource does not have SSL/TLS auth enabled, but this template provides TLS certificates.
+			if err := d.Set("client_tls_certificates", []interface{}{}); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}

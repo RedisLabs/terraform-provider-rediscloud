@@ -696,6 +696,11 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
+	tlsAuthEnabled := *db.CrdbDatabases[0].Security.TLSClientAuthentication
+	if err := applyCertificateHints(tlsAuthEnabled, d); err != nil {
+		return diag.FromErr(err)
+	}
+
 	var parsedLatestImportStatus []map[string]interface{}
 	latestImportStatus, err := api.client.LatestImport.Get(ctx, subId, dbId)
 	if err != nil {
@@ -854,10 +859,8 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 			// If the user has enableTls=true and provided an SSL certificate, we want to scrub any TLS certificates
 			update.ClientTLSCertificates = &[]*string{}
-		} else if len(clientTLSCertificates) > 0 {
-			// mTLS: enableTls=true, non-empty client_tls_certificates.
-			update.ClientTLSCertificates = &clientTLSCertificates
 		}
+		update.ClientTLSCertificates = &clientTLSCertificates
 	} else {
 		// mTLS (backward compatibility): enable_tls=false, non-empty client_ssl_certificate.
 		if clientSSLCertificate != "" {
