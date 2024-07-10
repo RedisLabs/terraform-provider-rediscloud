@@ -20,9 +20,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
 	password := acctest.RandString(20)
-	resourceName := "rediscloud_active_active_subscription_database.example"
-	datasourceName := "data.rediscloud_active_active_subscription_database.example"
-	subscriptionResourceName := "rediscloud_active_active_subscription.example"
+	const resourceName = "rediscloud_active_active_subscription_database.example"
+	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
+	const subscriptionResourceName = "rediscloud_active_active_subscription.example"
 
 	var subId int
 
@@ -206,7 +206,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
 	password := acctest.RandString(20)
-	resourceName := "rediscloud_active_active_subscription_database.example"
+	const resourceName = "rediscloud_active_active_subscription_database.example"
 	portNumber := 10101
 
 	resource.ParallelTest(t, resource.TestCase{

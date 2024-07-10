@@ -43,7 +43,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 		vpcId,
 		cidrRange,
 	)
-	resourceName := "rediscloud_active_active_subscription_peering.test"
+	const resourceName = "rediscloud_active_active_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPeeringPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
@@ -79,7 +79,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_gcp(t *testing.T) 
 		os.Getenv("GCP_VPC_PROJECT"),
 		os.Getenv("GCP_VPC_ID"),
 	)
-	resourceName := "rediscloud_active_active_subscription_peering.test"
+	const resourceName = "rediscloud_active_active_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },

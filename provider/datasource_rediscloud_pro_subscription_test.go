@@ -13,8 +13,8 @@ import (
 func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 	name := acctest.RandomWithPrefix("tf-test")
 
-	resourceName := "rediscloud_subscription.example"
-	dataSourceName := "data.rediscloud_subscription.example"
+	const resourceName = "rediscloud_subscription.example"
+	const dataSourceName = "data.rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{

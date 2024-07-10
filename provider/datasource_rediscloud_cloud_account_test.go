@@ -12,6 +12,8 @@ import (
 func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
 	name := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
+	const testCloudAccount = "data.rediscloud_cloud_account.test"
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
@@ -20,11 +22,10 @@ func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
 			{
 				Config: fmt.Sprintf(testAccDatasourceRedisCloudCloudAccountDataSource, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestMatchResourceAttr(
-						"data.rediscloud_cloud_account.test", "id", regexp.MustCompile("^\\d*$")),
-					resource.TestCheckResourceAttr("data.rediscloud_cloud_account.test", "provider_type", "AWS"),
-					resource.TestCheckResourceAttr("data.rediscloud_cloud_account.test", "name", name),
-					resource.TestCheckResourceAttrSet("data.rediscloud_cloud_account.test", "access_key_id"),
+					resource.TestMatchResourceAttr(testCloudAccount, "id", regexp.MustCompile("^\\d*$")),
+					resource.TestCheckResourceAttr(testCloudAccount, "provider_type", "AWS"),
+					resource.TestCheckResourceAttr(testCloudAccount, "name", name),
+					resource.TestCheckResourceAttrSet(testCloudAccount, "access_key_id"),
 				),
 			},
 		},

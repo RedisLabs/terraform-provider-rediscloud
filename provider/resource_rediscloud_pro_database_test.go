@@ -19,9 +19,9 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
-	resourceName := "rediscloud_subscription_database.example"
-	subscriptionResourceName := "rediscloud_subscription.example"
-	replicaResourceName := "rediscloud_subscription_database.example_replica"
+	const resourceName = "rediscloud_subscription_database.example"
+	const subscriptionResourceName = "rediscloud_subscription.example"
+	const replicaResourceName = "rediscloud_subscription_database.example_replica"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	var subId int
@@ -154,7 +154,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	resourceName := "rediscloud_subscription_database.example"
+	const resourceName = "rediscloud_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	portNumber := 10101
 
@@ -195,7 +195,7 @@ func TestAccResourceRedisCloudProDatabase_timeUtcRequiresValidInterval(t *testin
 func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	dbName := "db-multi-modules"
-	resourceName := "rediscloud_subscription_database.example"
+	const resourceName = "rediscloud_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -224,7 +224,7 @@ func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	resourceName := "rediscloud_subscription_database.example"
+	const resourceName = "rediscloud_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	portNumber := 10101
 

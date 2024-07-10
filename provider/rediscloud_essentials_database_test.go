@@ -14,8 +14,8 @@ func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
 	databaseName := subscriptionName + "-db"
 	databaseNameUpdated := databaseName + "-updated"
 
-	resourceName := "rediscloud_essentials_database.example"
-	datasourceName := "data.rediscloud_essentials_database.example"
+	const resourceName = "rediscloud_essentials_database.example"
+	const datasourceName = "data.rediscloud_essentials_database.example"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },

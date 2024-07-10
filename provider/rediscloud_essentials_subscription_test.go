@@ -16,8 +16,8 @@ func TestAccResourceRedisCloudEssentialsSubscription_FreeCRUDI(t *testing.T) {
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
 
-	resourceName := "rediscloud_essentials_subscription.example"
-	datasourceName := "data.rediscloud_essentials_subscription.example"
+	const resourceName = "rediscloud_essentials_subscription.example"
+	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -79,8 +79,8 @@ func TestAccResourceRedisCloudEssentialsSubscription_PaidCRUDI(t *testing.T) {
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
 
-	resourceName := "rediscloud_essentials_subscription.example"
-	datasourceName := "data.rediscloud_essentials_subscription.example"
+	const resourceName = "rediscloud_essentials_subscription.example"
+	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },

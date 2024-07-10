@@ -28,7 +28,7 @@ var marketplaceFlag = flag.Bool("marketplace", false,
 func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	resourceName := "rediscloud_subscription.example"
+	const resourceName = "rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	var subId int
@@ -131,7 +131,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	resourceName := "rediscloud_subscription.example"
+	const resourceName = "rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -158,7 +158,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	updatedName := fmt.Sprintf("%v-updatedName", name)
-	resourceName := "rediscloud_subscription.example"
+	const resourceName = "rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -195,7 +195,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	updatedName := fmt.Sprintf("%v-updatedName", name)
-	resourceName := "rediscloud_subscription.example"
+	const resourceName = "rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{

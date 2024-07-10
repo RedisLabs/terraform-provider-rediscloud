@@ -24,8 +24,8 @@ var activeActiveMarketplaceFlag = flag.Bool("activeActiveMarketplace", false,
 func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	resourceName := "rediscloud_active_active_subscription.example"
-	datasourceName := "data.rediscloud_active_active_subscription.example"
+	const resourceName = "rediscloud_active_active_subscription.example"
+	const datasourceName = "data.rediscloud_active_active_subscription.example"
 
 	var subId int
 
@@ -226,7 +226,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	updatedName := fmt.Sprintf("%v-updatedName", name)
-	resourceName := "rediscloud_active_active_subscription.example"
+	const resourceName = "rediscloud_active_active_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
@@ -264,7 +264,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	updatedName := fmt.Sprintf("%v-updatedName", name)
-	resourceName := "rediscloud_active_active_subscription.example"
+	const resourceName = "rediscloud_active_active_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
