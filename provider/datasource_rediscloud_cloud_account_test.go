@@ -19,7 +19,7 @@ func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccDatasourceRedisCloudCloudAccountDataSource, name),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(
 						"data.rediscloud_cloud_account.test", "id", regexp.MustCompile("^\\d*$")),
 					resource.TestCheckResourceAttr("data.rediscloud_cloud_account.test", "provider_type", "AWS"),

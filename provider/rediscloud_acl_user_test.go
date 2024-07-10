@@ -55,7 +55,7 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 			// Test user creation
 			{
 				Config: testCreateTerraform,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test resource
 					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "name", testUserName),
 					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "role", exampleRoleName),
@@ -102,7 +102,7 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 			// Test user update, id should not have changed
 			{
 				Config: testUpdateTerraform,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test resource
 					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "name", testUserName),
 					resource.TestCheckResourceAttr("rediscloud_acl_user.test", "role", exampleRoleNameUpdated),
@@ -126,7 +126,7 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 			// Take a snapshot of this new id
 			{
 				Config: testNewNameTerraform,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources["rediscloud_acl_user.test"]
 						if r.Primary.ID == identifier {
@@ -140,7 +140,7 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 			// Test user is updated successfully. A password change should forcibly generate a new entity with a new id
 			{
 				Config: testNewPasswordTerraform,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources["rediscloud_acl_user.test"]
 						if r.Primary.ID == identifier {

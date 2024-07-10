@@ -34,7 +34,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 			// Test database and replica database creation
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabase, testCloudAccountName, name, password) + testAccResourceRedisCloudProDatabaseReplica,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "3"),
@@ -97,7 +97,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 			// Test database is updated successfully
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseUpdate, testCloudAccountName, name),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example-updated"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
 					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
@@ -124,14 +124,14 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 			// Test that alerts are deleted
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseUpdateDestroyAlerts, testCloudAccountName, name),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "alert.#", "0"),
 				),
 			},
 			// Test that a 32-character password is generated when no password is provided
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseNoPassword, testCloudAccountName, name),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					func(s *terraform.State) error {
 						is := s.RootModule().Resources["rediscloud_subscription_database.no_password_database"].Primary
 						if len(is.Attributes["password"]) != 32 {
@@ -165,7 +165,7 @@ func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseOptionalAttributes, testCloudAccountName, name, portNumber),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
 					resource.TestCheckResourceAttr(resourceName, "port", strconv.Itoa(portNumber)),
 				),
@@ -205,7 +205,7 @@ func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseMultiModules, testCloudAccountName, name, dbName),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", dbName),
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
@@ -235,13 +235,13 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseRespVersions, testCloudAccountName, name, portNumber, "resp2"),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp2"),
 				),
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseRespVersions, testCloudAccountName, name, portNumber, "resp3"),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
 				),
 			},

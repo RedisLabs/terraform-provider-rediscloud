@@ -25,7 +25,7 @@ func TestAccRedisCloudAclRule_DataSourceForDefaultRule(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: getRuleTerraform,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(
 						"data.rediscloud_acl_rule.test", "id", regexp.MustCompile("^\\d*$")),
 					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "name", testName),
@@ -57,7 +57,7 @@ func TestAccRedisCloudAclRule_CRUDI(t *testing.T) {
 			// Test rule creation
 			{
 				Config: testCreateTerraform,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "name", testName),
 					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "rule", testRule),
@@ -96,7 +96,7 @@ func TestAccRedisCloudAclRule_CRUDI(t *testing.T) {
 			},
 			{
 				Config: testUpdateRuleTerraform,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "name", testName),
 					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "rule", testRuleUpdated),
@@ -109,7 +109,7 @@ func TestAccRedisCloudAclRule_CRUDI(t *testing.T) {
 			},
 			{
 				Config: testUpdateNameTerraform,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "name", testNameUpdated),
 					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "rule", testRuleUpdated),

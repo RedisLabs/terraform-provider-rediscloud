@@ -14,7 +14,7 @@ func TestAccDataSourceRedisCloudDataPersistence_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudDataPersistence,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_data_persistence.foo", "data_persistence.*", map[string]string{
 						"name": "snapshot-every-12-hours",
 					}),

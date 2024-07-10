@@ -38,7 +38,7 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: tf,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(
 						resourceName, "id", regexp.MustCompile("^\\d*$")),
 					resource.TestCheckResourceAttr(

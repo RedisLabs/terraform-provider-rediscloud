@@ -40,7 +40,7 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: tf,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchTypeSetElemNestedAttrs(dataSourceName, "peerings.*", map[string]*regexp.Regexp{
 						"provider_name":  regexp.MustCompile("AWS"),
 						"aws_account_id": regexp.MustCompile(awsAccountId),

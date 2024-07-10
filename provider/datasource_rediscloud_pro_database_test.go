@@ -24,7 +24,7 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccDatasourceRedisCloudProDatabase, testCloudAccountName, name, password),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceById, "name", "tf-database"),
 					resource.TestCheckResourceAttr(dataSourceById, "protocol", "redis"),
 					resource.TestCheckResourceAttr(dataSourceById, "region", "eu-west-1"),

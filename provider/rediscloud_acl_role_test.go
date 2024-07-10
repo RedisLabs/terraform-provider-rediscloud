@@ -41,7 +41,7 @@ func TestAccCreateReadUpdateImportDeleteAclRole_Pro(t *testing.T) {
 			// Test role creation including association with database
 			{
 				Config: testCreateTerraform,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttr("rediscloud_acl_role.test", "name", testRoleName),
 					resource.TestCheckResourceAttr("rediscloud_acl_role.test", "rule.#", "1"),
@@ -88,7 +88,7 @@ func TestAccCreateReadUpdateImportDeleteAclRole_Pro(t *testing.T) {
 			// Test role update
 			{
 				Config: testUpdateTerraform,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttr("rediscloud_acl_role.test", "name", testRoleNameUpdated),
 					resource.TestCheckResourceAttr("rediscloud_acl_role.test", "rule.#", "1"),
