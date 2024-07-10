@@ -41,9 +41,8 @@ func dataSourceRedisCloudEssentialsPlan() *schema.Resource {
 				Optional:    true,
 			},
 			"subscription_id": {
-				Description: "ID of the subscription that the database belongs to",
+				Description: "Filter plans by what is available for a given subscription",
 				Type:        schema.TypeInt,
-				Computed:    true,
 				Optional:    true,
 			},
 			"cloud_provider": {
