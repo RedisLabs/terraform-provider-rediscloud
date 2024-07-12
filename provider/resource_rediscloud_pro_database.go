@@ -661,6 +661,11 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
+	tlsAuthEnabled := *db.Security.TLSClientAuthentication
+	if err := applyCertificateHints(tlsAuthEnabled, d); err != nil {
+		return diag.FromErr(err)
+	}
+
 	if err := d.Set("remote_backup", flattenBackupPlan(db.Backup, d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path").(string))); err != nil {
 		return diag.FromErr(err)
 	}
@@ -788,10 +793,8 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 
 			// If the user has enableTls=true and provided an SSL certificate, we want to scrub any TLS certificates
 			update.ClientTLSCertificates = &[]*string{}
-		} else if len(clientTLSCertificates) > 0 {
-			// mTLS: enableTls=true, non-empty client_tls_certificates.
-			update.ClientTLSCertificates = &clientTLSCertificates
 		}
+		update.ClientTLSCertificates = &clientTLSCertificates
 	} else {
 		// mTLS (backward compatibility): enable_tls=false, non-empty client_ssl_certificate.
 		if clientSSLCertificate != "" {
