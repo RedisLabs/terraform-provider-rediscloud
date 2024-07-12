@@ -16,6 +16,10 @@ on:
 env:
   TERRAFORM_VERSION: "1.2.6"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   go_build:
     name: go build
