@@ -84,11 +84,39 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 					},
 				),
 			},
+			// Ensure that SSL users can upgrade to TLS
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndTlsCert, testCloudAccountName, name, 1, password, sslCertificate),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(subscriptionName, "name", name),
+					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
+					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
+					resource.TestCheckResourceAttrSet(subscriptionName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
+					resource.TestMatchResourceAttr(databaseName, "db_id", regexp.MustCompile("^[1-9][0-9]*$")),
+					resource.TestCheckResourceAttrSet(databaseName, "password"),
+					resource.TestCheckResourceAttr(databaseName, "name", "tf-database"),
+					resource.TestCheckResourceAttr(databaseName, "memory_limit_in_gb", "1"),
+				),
+			},
+			// And that mTLS can be switched off altogether
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndNoCert, testCloudAccountName, name, 1, password),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(subscriptionName, "name", name),
+					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
+					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
+					resource.TestCheckResourceAttrSet(subscriptionName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
+					resource.TestMatchResourceAttr(databaseName, "db_id", regexp.MustCompile("^[1-9][0-9]*$")),
+					resource.TestCheckResourceAttrSet(databaseName, "password"),
+					resource.TestCheckResourceAttr(databaseName, "name", "tf-database"),
+					resource.TestCheckResourceAttr(databaseName, "memory_limit_in_gb", "1"),
+				),
+			},
 			{
 				ResourceName:            databaseName,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"client_ssl_certificate"},
+				ImportStateVerifyIgnore: []string{"client_ssl_certificate", "client_tls_certificates"},
 			},
 		},
 	})
@@ -493,5 +521,23 @@ resource "rediscloud_subscription_database" "example" {
   source_ips = ["10.0.0.0/8"]
   enable_tls = true
   client_tls_certificates = ["%s"]
+}
+`
+
+const testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndNoCert = subscriptionBoilerplate + `
+
+resource "rediscloud_subscription_database" "example" {
+  subscription_id = rediscloud_subscription.example.id
+  name = "tf-database"
+  protocol = "redis"
+  memory_limit_in_gb = %d
+  support_oss_cluster_api = true
+  data_persistence = "none"
+  replication = false
+  throughput_measurement_by = "operations-per-second"
+  password = "%s"
+  throughput_measurement_value = 10000
+  source_ips = ["10.0.0.0/8"]
+  enable_tls = true
 }
 `
