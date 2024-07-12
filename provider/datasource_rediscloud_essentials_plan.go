@@ -40,6 +40,11 @@ func dataSourceRedisCloudEssentialsPlan() *schema.Resource {
 				Computed:    true,
 				Optional:    true,
 			},
+			"subscription_id": {
+				Description: "Filter plans by what is available for a given subscription",
+				Type:        schema.TypeInt,
+				Optional:    true,
+			},
 			"cloud_provider": {
 				Description: "The cloud provider: 'AWS', 'GCP' or 'Azure'",
 				Type:        schema.TypeString,
@@ -144,15 +149,10 @@ func dataSourceRedisCloudEssentialsPlan() *schema.Resource {
 
 func dataSourceRedisCloudEssentialsPlanRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
+
 	api := meta.(*apiClient)
 
-	var list []*plans.GetPlanResponse
-	var err error
-	if provider, ok := d.GetOk("cloud_provider"); ok {
-		list, err = api.client.FixedPlans.ListWithProvider(ctx, strings.ToUpper(provider.(string)))
-	} else {
-		list, err = api.client.FixedPlans.List(ctx)
-	}
+	list, err := getResourceList(ctx, d, api)
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -295,6 +295,21 @@ func dataSourceRedisCloudEssentialsPlanRead(ctx context.Context, d *schema.Resou
 	}
 
 	return diags
+}
+
+func getResourceList(ctx context.Context, d *schema.ResourceData, api *apiClient) ([]*plans.GetPlanResponse, error) {
+	var list []*plans.GetPlanResponse
+	var err error
+
+	if id, ok := d.GetOk("subscription_id"); ok {
+		list, err = api.client.FixedPlanSubscriptions.List(ctx, id.(int))
+	} else if provider, ok := d.GetOk("cloud_provider"); ok {
+		list, err = api.client.FixedPlans.ListWithProvider(ctx, strings.ToUpper(provider.(string)))
+	} else {
+		list, err = api.client.FixedPlans.List(ctx)
+	}
+
+	return list, err
 }
 
 func filterPlans(allPlans []*plans.GetPlanResponse, filters []func(plan *plans.GetPlanResponse) bool) []*plans.GetPlanResponse {
