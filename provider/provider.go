@@ -59,6 +59,7 @@ func New(version string) func() *schema.Provider {
 				// Note the difference in public data-source name and the file/method name.
 				// active_active_subscription_database == active_active_database
 				"rediscloud_active_active_subscription_database": dataSourceRedisCloudActiveActiveDatabase(),
+				"rediscloud_transit_gateway_attachment":          dataSourceTransitGatewayAttachment(),
 				"rediscloud_acl_rule":                            dataSourceRedisCloudAclRule(),
 				"rediscloud_acl_role":                            dataSourceRedisCloudAclRole(),
 				"rediscloud_acl_user":                            dataSourceRedisCloudAclUser(),
