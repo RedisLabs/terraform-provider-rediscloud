@@ -59,7 +59,8 @@ func New(version string) func() *schema.Provider {
 				// Note the difference in public data-source name and the file/method name.
 				// active_active_subscription_database == active_active_database
 				"rediscloud_active_active_subscription_database": dataSourceRedisCloudActiveActiveDatabase(),
-				"rediscloud_transit_gateway_attachment":          dataSourceTransitGatewayAttachment(),
+				"rediscloud_transit_gateway":                     dataSourceTransitGateway(),
+				"rediscloud_active_active_transit_gateway":       dataSourceActiveActiveTransitGateway(),
 				"rediscloud_acl_rule":                            dataSourceRedisCloudAclRule(),
 				"rediscloud_acl_role":                            dataSourceRedisCloudAclRole(),
 				"rediscloud_acl_user":                            dataSourceRedisCloudAclUser(),
@@ -76,12 +77,14 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_active_active_subscription": resourceRedisCloudActiveActiveSubscription(),
 				// Note the difference in public resource name and the file/method name.
 				// active_active_subscription_database == active_active_database
-				"rediscloud_active_active_subscription_database": resourceRedisCloudActiveActiveDatabase(),
-				"rediscloud_active_active_subscription_regions":  resourceRedisCloudActiveActiveSubscriptionRegions(),
-				"rediscloud_active_active_subscription_peering":  resourceRedisCloudActiveActiveSubscriptionPeering(),
-				"rediscloud_acl_rule":                            resourceRedisCloudAclRule(),
-				"rediscloud_acl_role":                            resourceRedisCloudAclRole(),
-				"rediscloud_acl_user":                            resourceRedisCloudAclUser(),
+				"rediscloud_active_active_subscription_database":      resourceRedisCloudActiveActiveDatabase(),
+				"rediscloud_active_active_subscription_regions":       resourceRedisCloudActiveActiveSubscriptionRegions(),
+				"rediscloud_active_active_subscription_peering":       resourceRedisCloudActiveActiveSubscriptionPeering(),
+				"rediscloud_transit_gateway_attachment":               resourceRedisCloudTransitGatewayAttachment(),
+				"rediscloud_active_active_transit_gateway_attachment": resourceRedisCloudActiveActiveTransitGatewayAttachment(),
+				"rediscloud_acl_rule":                                 resourceRedisCloudAclRule(),
+				"rediscloud_acl_role":                                 resourceRedisCloudAclRole(),
+				"rediscloud_acl_user":                                 resourceRedisCloudAclUser(),
 			},
 		}
 
