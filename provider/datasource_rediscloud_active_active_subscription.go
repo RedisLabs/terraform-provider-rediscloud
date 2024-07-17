@@ -45,6 +45,47 @@ func dataSourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
+			"maintenance_windows": {
+				Description: "",
+				Type:        schema.TypeList,
+				Computed:    true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"mode": {
+							Description: "",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"window": {
+							Description: "",
+							Type:        schema.TypeList,
+							Computed:    true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"start_hour": {
+										Description: "",
+										Type:        schema.TypeInt,
+										Computed:    true,
+									},
+									"duration_in_hours": {
+										Description: "",
+										Type:        schema.TypeInt,
+										Computed:    true,
+									},
+									"days": {
+										Description: "",
+										Type:        schema.TypeList,
+										Computed:    true,
+										Elem: &schema.Schema{
+											Type: schema.TypeString,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"pricing": {
 				Description: "Pricing details totalled over this Subscription",
 				Type:        schema.TypeList,
@@ -172,6 +213,14 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 	}
 
 	subId := redis.IntValue(sub.ID)
+
+	m, err := api.client.Maintenance.Get(ctx, subId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("maintenance_windows", flattenMaintenance(m)); err != nil {
+		return diag.FromErr(err)
+	}
 
 	pricingList, err := api.client.Pricing.List(ctx, subId)
 	if err != nil {
