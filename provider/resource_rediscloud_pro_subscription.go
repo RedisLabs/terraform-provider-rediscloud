@@ -12,6 +12,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/rediscloud-go-api/service/maintenance"
 	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -314,6 +315,54 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 					return true
 				},
 			},
+			"maintenance_windows": {
+				Description: "",
+				Type:        schema.TypeList,
+				Optional:    true,
+				Computed:    true,
+				MinItems:    1,
+				MaxItems:    1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"mode": {
+							Description:      "",
+							Type:             schema.TypeString,
+							Required:         true,
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice([]string{"automatic", "manual"}, false)),
+						},
+						"window": {
+							Description: "",
+							Type:        schema.TypeList,
+							Optional:    true, // if mode==automatic, no windows
+							MinItems:    1,    // if mode==manual, need at least 1 window
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"start_hour": {
+										Description: "",
+										Type:        schema.TypeInt,
+										Required:    true,
+									},
+									"duration_in_hours": {
+										Description: "",
+										Type:        schema.TypeInt,
+										Required:    true,
+									},
+									"days": {
+										Description: "",
+										Type:        schema.TypeList,
+										Required:    true,
+										MinItems:    1,
+										MaxItems:    7,
+										Elem: &schema.Schema{
+											Type: schema.TypeString,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"pricing": {
 				Description: "Pricing details totalled over this Subscription",
 				Type:        schema.TypeList,
@@ -517,6 +566,14 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 		}
 	}
 
+	m, err := api.client.Maintenance.Get(ctx, subId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("maintenance_windows", flattenMaintenance(m)); err != nil {
+		return diag.FromErr(err)
+	}
+
 	pricingList, err := api.client.Pricing.List(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
@@ -577,6 +634,36 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
+	}
+
+	if d.HasChange("maintenance_windows") {
+		var updateMaintenanceRequest maintenance.Maintenance
+		if m, ok := d.GetOk("maintenance_windows"); ok {
+			mMap := m.([]interface{})[0].(map[string]interface{})
+
+			windows := make([]*maintenance.Window, 0)
+			for _, w := range mMap["window"].([]interface{}) {
+				wMap := w.(map[string]interface{})
+				windows = append(windows, &maintenance.Window{
+					StartHour:       redis.Int(wMap["start_hour"].(int)),
+					DurationInHours: redis.Int(wMap["duration_in_hours"].(int)),
+					Days:            interfaceToStringSlice(wMap["days"].([]interface{})),
+				})
+			}
+
+			updateMaintenanceRequest = maintenance.Maintenance{
+				Mode:    redis.String(mMap["mode"].(string)),
+				Windows: windows,
+			}
+		} else {
+			updateMaintenanceRequest = maintenance.Maintenance{
+				Mode: redis.String("automatic"),
+			}
+		}
+		err = api.client.Maintenance.Update(ctx, subId, updateMaintenanceRequest)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return resourceRedisCloudProSubscriptionRead(ctx, d, meta)
@@ -1075,4 +1162,23 @@ func flattenPricing(pricing []*pricing.Pricing) []map[string]interface{} {
 	}
 
 	return tfs
+}
+
+func flattenMaintenance(m *maintenance.Maintenance) []map[string]interface{} {
+	var windows []map[string]interface{}
+	for _, w := range m.Windows {
+		tfw := map[string]interface{}{
+			"start_hour":        w.StartHour,
+			"duration_in_hours": w.DurationInHours,
+			"days":              w.Days,
+		}
+		windows = append(windows, tfw)
+	}
+
+	tf := map[string]interface{}{
+		"mode":   m.Mode,
+		"window": windows,
+	}
+
+	return []map[string]interface{}{tf}
 }

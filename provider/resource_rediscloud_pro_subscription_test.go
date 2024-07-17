@@ -284,6 +284,156 @@ func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 	})
 }
 
+func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
+	name := acctest.RandomWithPrefix(testResourcePrefix) + "-mw"
+	resourceName := "rediscloud_subscription.example"
+	datasourceName := "data.rediscloud_subscription.example"
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	const defaultMW = ""
+	const autoMw = `maintenance_windows {
+		mode = "automatic"
+	}`
+	const manualMw = `maintenance_windows {
+		mode = "manual"
+		window {
+				start_hour = 22
+				duration_in_hours = 8
+				days = ["Monday", "Thursday"]
+		}
+	}`
+	const errorManualMw = `maintenance_windows {
+		mode = "manual"
+		# Should have windows
+	}`
+	const errorAutoMw = `maintenance_windows {
+		mode = "automatic"
+		# Should not have windows
+		window {
+				start_hour = 22
+				duration_in_hours = 8
+				days = ["Monday", "Thursday"]
+		}
+	}`
+	const multipleManualMw = `maintenance_windows {
+		mode = "manual"
+		window {
+				start_hour = 22
+				duration_in_hours = 8
+				days = ["Monday", "Thursday"]
+		}
+		window {
+				start_hour = 12
+				duration_in_hours = 6
+				days = ["Friday", "Saturday", "Sunday"]
+		}
+	}`
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, defaultMW),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
+
+					resource.TestCheckResourceAttr(datasourceName, "name", name),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.mode", "automatic"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.#", "0"),
+				),
+			},
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, autoMw),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
+
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.mode", "automatic"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.#", "0"),
+				),
+			},
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, manualMw),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.start_hour", "22"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.duration_in_hours", "8"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.days.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.days.0", "Monday"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.days.1", "Thursday"),
+
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.mode", "manual"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.#", "1"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.start_hour", "22"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.duration_in_hours", "8"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.days.#", "2"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.days.0", "Monday"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.days.1", "Thursday"),
+				),
+			},
+			{
+				Config:      fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, errorManualMw),
+				ExpectError: regexp.MustCompile("Must provide at least one maintenance window with manual maintenance mode"),
+			},
+			{
+				Config:      fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, errorAutoMw),
+				ExpectError: regexp.MustCompile("Automatic mode cannot be set with a manual maintenance window"),
+			},
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, multipleManualMw),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "2"),
+
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.start_hour", "22"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.duration_in_hours", "8"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.days.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.days.0", "Monday"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.days.1", "Thursday"),
+
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.1.start_hour", "12"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.1.duration_in_hours", "6"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.1.days.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.1.days.0", "Friday"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.1.days.1", "Saturday"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.1.days.2", "Sunday"),
+
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.mode", "manual"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.#", "2"),
+
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.start_hour", "22"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.duration_in_hours", "8"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.days.#", "2"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.days.0", "Monday"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.days.1", "Thursday"),
+
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.start_hour", "12"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.duration_in_hours", "6"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.#", "3"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.0", "Friday"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.1", "Saturday"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.2", "Sunday"),
+				),
+			},
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, autoMw),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
+
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.mode", "automatic"),
+					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.#", "0"),
+				),
+			},
+		},
+	})
+}
+
 // Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is one.
 func TestFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 	numDatabases := 1
@@ -890,5 +1040,51 @@ resource "rediscloud_subscription" "example" {
     throughput_measurement_value = 10000
     modules = []
   }
+}
+`
+
+const testAccResourceRedisCloudProSubscriptionMaintenanceWindows = `
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS" 
+  name = "%s"
+}
+
+resource "rediscloud_subscription" "example" {
+
+  name = "%s"
+  payment_method = "credit-card"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  memory_storage = "ram"
+
+  cloud_provider {
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region = "eu-west-1"
+      networking_deployment_cidr = "10.0.24.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+
+  creation_plan {
+    memory_limit_in_gb = 1
+    quantity = 1
+    replication=false
+    support_oss_cluster_api=false
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 10000
+    modules = ["RedisJSON", "RedisBloom"]
+  }
+
+  %s
+}
+
+data "rediscloud_subscription" "example" {
+	name = rediscloud_subscription.example.name
 }
 `
