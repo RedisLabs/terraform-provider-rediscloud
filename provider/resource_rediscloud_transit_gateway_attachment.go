@@ -165,6 +165,9 @@ func resourceRedisCloudTransitGatewayAttachmentUpdate(ctx context.Context, d *sc
 	}
 
 	cidrs := interfaceToStringSlice(d.Get("cidrs").([]interface{}))
+	if len(cidrs) == 0 {
+		cidrs = make([]*string, 0)
+	}
 
 	err = api.client.TransitGatewayAttachments.Update(ctx, subId, tgwId, cidrs)
 	if err != nil {
@@ -195,7 +198,7 @@ func resourceRedisCloudTransitGatewayAttachmentDelete(ctx context.Context, d *sc
 }
 
 func flattenCidrs(cidrs []*attachments.Cidr) []string {
-	cidrStrings := make([]string, len(cidrs))
+	cidrStrings := make([]string, 0)
 	for _, cidr := range cidrs {
 		cidrStrings = append(cidrStrings, redis.StringValue(cidr.CidrAddress))
 	}
