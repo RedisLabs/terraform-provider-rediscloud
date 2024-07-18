@@ -19,7 +19,7 @@ func TestAccResourceRedisCloudTransitGatewayAttachment_Pro(t *testing.T) {
 	datasourceName := "data.rediscloud_transit_gateway.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingTgwCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -51,8 +51,6 @@ func TestAccResourceRedisCloudTransitGatewayAttachment_Pro(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "attachment_status", "pending-acceptance"),
 					resource.TestCheckResourceAttr(resourceName, "aws_account_id", "620187402834"),
 					resource.TestCheckResourceAttr(resourceName, "cidrs.#", "0"),
-
-					// At this point the datasource will not have refreshed
 				),
 			},
 			{

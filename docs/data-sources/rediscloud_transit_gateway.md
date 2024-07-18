@@ -25,7 +25,8 @@ output "rediscloud_transit_gateway" {
 ## Argument Reference
 
 * `subscription_id` - (Required) The id of a Pro/Flexible subscription
-* `tgw_id` - (Optional) The id of the Transit Gateway relative to the associated subscription
+* `tgw_id` - (Optional) The id of the Transit Gateway relative to the associated subscription. You would likely
+reference this value when creating a `rediscloud_transit_gateway_attachment`.
 * `aws_tgw_id` - (Optional) The id of the Transit Gateway as known to AWS
 
 ## Attribute Reference

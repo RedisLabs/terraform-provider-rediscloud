@@ -27,7 +27,8 @@ output "rediscloud_transit_gateway" {
 
 * `subscription_id` - (Required) The id of an Active Active subscription
 * `region_id` - (Required) The id of the AWS region
-* `tgw_id` - (Optional) The id of the Transit Gateway relative to the associated subscription
+* `tgw_id` - (Optional) The id of the Transit Gateway relative to the associated subscription. You would likely
+  reference this value when creating a `rediscloud_active_active_transit_gateway_attachment`.
 * `aws_tgw_id` - (Optional) The id of the Transit Gateway as known to AWS
 
 ## Attribute Reference

@@ -42,6 +42,10 @@ func testAccAwsPeeringPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "AWS_PEERING_REGION", "AWS_ACCOUNT_ID", "AWS_VPC_ID", "AWS_VPC_CIDR")
 }
 
+func testAccAwsPreExistingTgwCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "AWS_TEST_TGW_ID")
+}
+
 func requireEnvironmentVariables(t *testing.T, names ...string) {
 	for _, name := range names {
 		if _, ok := os.LookupEnv(name); !ok {
