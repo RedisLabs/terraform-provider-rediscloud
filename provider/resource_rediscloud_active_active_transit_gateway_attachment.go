@@ -12,7 +12,7 @@ import (
 
 func resourceRedisCloudActiveActiveTransitGatewayAttachment() *schema.Resource {
 	return &schema.Resource{
-		Description:   "",
+		Description:   "Manages a Transit Gateway Attachment to an Active Active Subscription in your Redis Enterprise Cloud Account.",
 		CreateContext: resourceRedisCloudActiveActiveTransitGatewayAttachmentCreate,
 		ReadContext:   resourceRedisCloudActiveActiveTransitGatewayAttachmentRead,
 		UpdateContext: resourceRedisCloudActiveActiveTransitGatewayAttachmentUpdate,
@@ -31,47 +31,47 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachment() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
-				Description: "",
+				Description: "The id of the Pro/Flexible subscription to attach",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
 			"region_id": {
-				Description: "",
+				Description: "The id of the AWS region",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
 			"tgw_id": {
-				Description: "",
+				Description: "The id of the Transit Gateway to attach to",
 				Type:        schema.TypeInt,
 				Required:    true,
 			},
 			"aws_tgw_uid": {
-				Description: "",
+				Description: "The id of the Transit Gateway as known to AWS",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"attachment_uid": {
-				Description: "",
+				Description: "A unique identifier for the Subscription/Transit Gateway attachment, if established",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"status": {
-				Description: "",
+				Description: "The status of the Transit Gateway",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"attachment_status": {
-				Description: "",
+				Description: "The status of the Subscription/Transit Gateway attachment, if established",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"aws_account_id": {
-				Description: "",
+				Description: "The Transit Gateway's AWS account id",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"cidrs": {
-				Description: "",
+				Description: "A list of consumer Cidr blocks.",
 				Type:        schema.TypeList,
 				Optional:    true,
 				Computed:    true,

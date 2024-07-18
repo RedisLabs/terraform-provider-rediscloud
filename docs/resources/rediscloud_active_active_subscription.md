@@ -61,6 +61,7 @@ The following arguments are supported:
 * `cloud_provider` - (Optional) The cloud provider to use with the subscription, (either `AWS` or `GCP`). Default: ‘AWS’. **Modifying this attribute will force creation of a new resource.**
 * `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default. **Modifying this attribute will force creation of a new resource.**
 * `creation_plan` - (Required) A creation plan object, documented below. Ignored after creation.
+* `maintenance_windows` - (Optional) The subscription's maintenance window specification, documented below.
 
 The `creation_plan` block supports:
 
@@ -75,6 +76,17 @@ The creation_plan `region` block supports:
 * `networking_deployment_cidr` - (Required) Deployment CIDR mask. The total number of bits must be 24 (x.x.x.x/24)
 * `write_operations_per_second` - (Required) Throughput measurement for an active-active subscription
 * `read_operations_per_second` - (Required) Throughput measurement for an active-active subscription
+
+The `maintenance_windows` object has these attributes:
+
+* `mode` - Either `automatic` (Redis specified) or `manual` (User specified)
+* `window` - A list of windows (if manual mode)
+
+The `window` object has these attributes:
+
+* `start_hour` - What hour in the day (0-23) the window opens
+* `duration_in_hours` - How long the window is open
+* `days` - A list of weekdays on which the window is open ('Monday', 'Tuesday' etc)
 
 ~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `cloud_provider`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
 

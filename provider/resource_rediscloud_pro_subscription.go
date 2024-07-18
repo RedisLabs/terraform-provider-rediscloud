@@ -316,7 +316,7 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 				},
 			},
 			"maintenance_windows": {
-				Description: "",
+				Description: "Specify the subscription's maintenance windows",
 				Type:        schema.TypeList,
 				Optional:    true,
 				Computed:    true,
@@ -325,30 +325,30 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"mode": {
-							Description:      "",
+							Description:      "Either automatic (Redis specified) or manual (User specified)",
 							Type:             schema.TypeString,
 							Required:         true,
 							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice([]string{"automatic", "manual"}, false)),
 						},
 						"window": {
-							Description: "",
+							Description: "A list of maintenance windows for manual-mode",
 							Type:        schema.TypeList,
 							Optional:    true, // if mode==automatic, no windows
 							MinItems:    1,    // if mode==manual, need at least 1 window
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"start_hour": {
-										Description: "",
+										Description: "What hour in the day (0-23) may maintenance start",
 										Type:        schema.TypeInt,
 										Required:    true,
 									},
 									"duration_in_hours": {
-										Description: "",
+										Description: "How long maintenance may take",
 										Type:        schema.TypeInt,
 										Required:    true,
 									},
 									"days": {
-										Description: "",
+										Description: "A list of days on which the window is open ('Monday', 'Tuesday' etc)",
 										Type:        schema.TypeList,
 										Required:    true,
 										MinItems:    1,

@@ -11,49 +11,49 @@ import (
 
 func dataSourceTransitGateway() *schema.Resource {
 	return &schema.Resource{
-		Description: "",
+		Description: "The Transit Gateway data source allows access to an available Transit Gateway within your Redis Enterprise Cloud Account.",
 		ReadContext: dataSourceTransitGatewayRead,
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
-				Description: "",
+				Description: "The id of a Pro/Flexible subscription",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
 			"tgw_id": {
-				Description: "",
+				Description: "The id of the Transit Gateway relative to the associated subscription",
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Computed:    true,
 			},
 			"aws_tgw_uid": {
-				Description: "",
+				Description: "The id of the Transit Gateway as known to AWS",
 				Type:        schema.TypeString,
 				Optional:    true,
 				Computed:    true,
 			},
 			"attachment_uid": {
-				Description: "",
+				Description: "A unique identifier for the Subscription/Transit Gateway attachment, if any",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"status": {
-				Description: "",
+				Description: "The status of the Transit Gateway",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"attachment_status": {
-				Description: "",
+				Description: "The status of the Subscription/Transit Gateway attachment, if any",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"aws_account_id": {
-				Description: "",
+				Description: "The Transit Gateway's AWS account id",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"cidrs": {
-				Description: "",
+				Description: "A list of consumer Cidr blocks, if an attachment exists",
 				Type:        schema.TypeList,
 				Computed:    true,
 				Elem: &schema.Schema{

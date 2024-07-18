@@ -12,7 +12,7 @@ import (
 
 func resourceRedisCloudTransitGatewayAttachment() *schema.Resource {
 	return &schema.Resource{
-		Description:   "",
+		Description:   "Manages a Transit Gateway Attachment to a Pro/Flexible Subscription in your Redis Enterprise Cloud Account.",
 		CreateContext: resourceRedisCloudTransitGatewayAttachmentCreate,
 		ReadContext:   resourceRedisCloudTransitGatewayAttachmentRead,
 		UpdateContext: resourceRedisCloudTransitGatewayAttachmentUpdate,
@@ -31,42 +31,42 @@ func resourceRedisCloudTransitGatewayAttachment() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
-				Description: "",
+				Description: "The id of the Pro/Flexible subscription to attach",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
 			"tgw_id": {
-				Description: "",
+				Description: "The id of the Transit Gateway to attach to",
 				Type:        schema.TypeInt,
 				Required:    true,
 			},
 			"aws_tgw_uid": {
-				Description: "",
+				Description: "The id of the Transit Gateway as known to AWS",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"attachment_uid": {
-				Description: "",
+				Description: "A unique identifier for the Subscription/Transit Gateway attachment, if established",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"status": {
-				Description: "",
+				Description: "The status of the Transit Gateway",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"attachment_status": {
-				Description: "",
+				Description: "The status of the Subscription/Transit Gateway attachment, if established",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"aws_account_id": {
-				Description: "",
+				Description: "The Transit Gateway's AWS account id",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"cidrs": {
-				Description: "",
+				Description: "A list of consumer Cidr blocks.",
 				Type:        schema.TypeList,
 				Optional:    true,
 				Computed:    true,
