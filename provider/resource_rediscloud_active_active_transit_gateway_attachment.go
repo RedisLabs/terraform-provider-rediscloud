@@ -176,6 +176,9 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentUpdate(ctx context.Co
 	}
 
 	cidrs := interfaceToStringSlice(d.Get("cidrs").([]interface{}))
+	if len(cidrs) == 0 {
+		cidrs = make([]*string, 0)
+	}
 
 	err = api.client.TransitGatewayAttachments.UpdateActiveActive(ctx, subId, tgwId, regionId, cidrs)
 	if err != nil {
