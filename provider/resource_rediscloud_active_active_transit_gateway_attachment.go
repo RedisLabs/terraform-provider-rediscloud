@@ -193,11 +193,11 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentDelete(ctx context.Co
 	api := meta.(*apiClient)
 
 	subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
-	regionId, err := strconv.Atoi(d.Get("region_id").(string))
-	tgwId := d.Get("tgw_id").(int)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	regionId := d.Get("region_id").(int)
+	tgwId := d.Get("tgw_id").(int)
 
 	err = api.client.TransitGatewayAttachments.DeleteActiveActive(ctx, subscriptionId, regionId, tgwId)
 	if err != nil {

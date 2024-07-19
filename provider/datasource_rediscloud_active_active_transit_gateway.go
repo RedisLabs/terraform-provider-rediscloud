@@ -77,10 +77,7 @@ func dataSourceActiveActiveTransitGatewayRead(ctx context.Context, d *schema.Res
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	regionId, err := strconv.Atoi(d.Get("region_id").(string))
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	regionId := d.Get("region_id").(int)
 	tgwTask, err := api.client.TransitGatewayAttachments.GetActiveActive(ctx, subId, regionId)
 	if err != nil {
 		return diag.FromErr(err)

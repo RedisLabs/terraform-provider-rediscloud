@@ -72,6 +72,9 @@ func TestAccResourceRedisCloudTransitGatewayAttachment_ActiveActive(t *testing.T
 	testTgwId := os.Getenv("AWS_TEST_TGW_ID")
 	baseName := acctest.RandomWithPrefix(testResourcePrefix) + "-aa-tgwa"
 
+	subName := baseName + "-sub"
+	dbName := baseName + "-db"
+
 	resourceName := "rediscloud_active_active_transit_gateway_attachment.test"
 	datasourceName := "data.rediscloud_active_active_transit_gateway.test"
 
@@ -81,7 +84,7 @@ func TestAccResourceRedisCloudTransitGatewayAttachment_ActiveActive(t *testing.T
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudTransitGatewayActiveActive, testCloudAccountName, baseName, testTgwId),
+				Config: fmt.Sprintf(testAccResourceRedisCloudTransitGatewayActiveActive, testCloudAccountName, subName, dbName, testTgwId),
 				Check: resource.ComposeTestCheckFunc(
 					// Test the datasource before attachment
 					resource.TestCheckResourceAttrSet(datasourceName, "id"),
@@ -94,11 +97,11 @@ func TestAccResourceRedisCloudTransitGatewayAttachment_ActiveActive(t *testing.T
 				),
 			},
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudTransitGatewayAttachmentActiveActiveWithCidrs, testCloudAccountName, baseName, testTgwId),
+				Config:      fmt.Sprintf(testAccResourceRedisCloudTransitGatewayAttachmentActiveActiveWithCidrs, testCloudAccountName, subName, dbName, testTgwId),
 				ExpectError: regexp.MustCompile("Attachment cannot be created with Cidrs provided, it must be accepted first\\. This resource may then be updated with Cidrs\\."),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudTransitGatewayAttachmentActiveActive, testCloudAccountName, baseName, testTgwId),
+				Config: fmt.Sprintf(testAccResourceRedisCloudTransitGatewayAttachmentActiveActive, testCloudAccountName, subName, dbName, testTgwId),
 				Check: resource.ComposeTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -111,7 +114,7 @@ func TestAccResourceRedisCloudTransitGatewayAttachment_ActiveActive(t *testing.T
 				),
 			},
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudTransitGatewayAttachmentActiveActiveWithCidrs, testCloudAccountName, baseName, testTgwId),
+				Config:      fmt.Sprintf(testAccResourceRedisCloudTransitGatewayAttachmentActiveActiveWithCidrs, testCloudAccountName, subName, dbName, testTgwId),
 				ExpectError: regexp.MustCompile("Transit Gateway attachment is not active"),
 			},
 		},
@@ -286,14 +289,12 @@ data "rediscloud_payment_method" "card" {
 
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
-  provider_type = "AWS" 
+  provider_type = "AWS"
   name = "%s"
 }
 
 resource "rediscloud_active_active_subscription" "example" {
-
   name = "%s"
-  payment_method = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider = "AWS"
 
@@ -302,23 +303,57 @@ resource "rediscloud_active_active_subscription" "example" {
     quantity = 1
     region {
       region = "us-east-1"
-      networking_deployment_cidr = "192.168.0.0/24"
+      networking_deployment_cidr = "10.0.18.0/24"
       write_operations_per_second = 1000
       read_operations_per_second = 1000
     }
     region {
       region = "us-east-2"
-      networking_deployment_cidr = "10.0.1.0/24"
+      networking_deployment_cidr = "10.0.19.0/24"
       write_operations_per_second = 1000
       read_operations_per_second = 1000
     }
   }
 }
 
+resource "rediscloud_active_active_subscription_database" "example" {
+  subscription_id = rediscloud_active_active_subscription.example.id
+  name = "%s"
+  memory_limit_in_gb = 1
+  support_oss_cluster_api = false
+  external_endpoint_for_oss_cluster_api = false
+}
+
+resource "rediscloud_active_active_subscription_regions" "example" {
+  subscription_id = rediscloud_active_active_subscription.example.id
+  delete_regions = false
+  region {
+    region = "us-east-1"
+    networking_deployment_cidr = "10.0.18.0/24"
+    recreate_region = false
+    database {
+      database_id = rediscloud_active_active_subscription_database.example.db_id
+      database_name = rediscloud_active_active_subscription_database.example.name
+      local_write_operations_per_second = 1000
+      local_read_operations_per_second = 1000
+    }
+  }
+  region {
+    region = "us-east-2"
+    networking_deployment_cidr = "10.0.19.0/24"
+    recreate_region = false
+    database {
+      database_id = rediscloud_active_active_subscription_database.example.db_id
+      database_name = rediscloud_active_active_subscription_database.example.name
+      local_write_operations_per_second = 1000
+      local_read_operations_per_second = 1000
+    }
+  }
+}
+
 data "rediscloud_active_active_transit_gateway" "test" {
 	subscription_id = rediscloud_active_active_subscription.example.id
-	# us-east-1, not entirely sure how the user would get this ID
-	region_id = 1
+	region_id = tolist(rediscloud_active_active_subscription_regions.example.region)[0].region == "us-east-1" ? tolist(rediscloud_active_active_subscription_regions.example.region)[0].region_id : tolist(rediscloud_active_active_subscription_regions.example.region)[1].region_id
 	aws_tgw_uid = "%s"
 }
 `
@@ -330,14 +365,12 @@ data "rediscloud_payment_method" "card" {
 
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
-  provider_type = "AWS" 
+  provider_type = "AWS"
   name = "%s"
 }
 
 resource "rediscloud_active_active_subscription" "example" {
-
   name = "%s"
-  payment_method = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider = "AWS"
 
@@ -346,30 +379,63 @@ resource "rediscloud_active_active_subscription" "example" {
     quantity = 1
     region {
       region = "us-east-1"
-      networking_deployment_cidr = "192.168.0.0/24"
+      networking_deployment_cidr = "10.0.18.0/24"
       write_operations_per_second = 1000
       read_operations_per_second = 1000
     }
     region {
       region = "us-east-2"
-      networking_deployment_cidr = "10.0.1.0/24"
+      networking_deployment_cidr = "10.0.19.0/24"
       write_operations_per_second = 1000
       read_operations_per_second = 1000
     }
   }
 }
 
+resource "rediscloud_active_active_subscription_database" "example" {
+  subscription_id = rediscloud_active_active_subscription.example.id
+  name = "%s"
+  memory_limit_in_gb = 1
+  support_oss_cluster_api = false
+  external_endpoint_for_oss_cluster_api = false
+}
+
+resource "rediscloud_active_active_subscription_regions" "example" {
+  subscription_id = rediscloud_active_active_subscription.example.id
+  delete_regions = false
+  region {
+    region = "us-east-1"
+    networking_deployment_cidr = "10.0.18.0/24"
+    recreate_region = false
+    database {
+      database_id = rediscloud_active_active_subscription_database.example.db_id
+      database_name = rediscloud_active_active_subscription_database.example.name
+      local_write_operations_per_second = 1000
+      local_read_operations_per_second = 1000
+    }
+  }
+  region {
+    region = "us-east-2"
+    networking_deployment_cidr = "10.0.19.0/24"
+    recreate_region = false
+    database {
+      database_id = rediscloud_active_active_subscription_database.example.db_id
+      database_name = rediscloud_active_active_subscription_database.example.name
+      local_write_operations_per_second = 1000
+      local_read_operations_per_second = 1000
+    }
+  }
+}
+
 data "rediscloud_active_active_transit_gateway" "test" {
 	subscription_id = rediscloud_active_active_subscription.example.id
-	# us-east-1, not entirely sure how the user would get this ID
-	region_id = 1
+	region_id = tolist(rediscloud_active_active_subscription_regions.example.region)[0].region == "us-east-1" ? tolist(rediscloud_active_active_subscription_regions.example.region)[0].region_id : tolist(rediscloud_active_active_subscription_regions.example.region)[1].region_id
 	aws_tgw_uid = "%s"
 }
 
 resource "rediscloud_active_active_transit_gateway_attachment" "test" {
 	subscription_id = rediscloud_active_active_subscription.example.id
-	# us-east-1, not entirely sure how the user would get this ID
-	region_id = 1
+	region_id = tolist(rediscloud_active_active_subscription_regions.example.region)[0].region == "us-east-1" ? tolist(rediscloud_active_active_subscription_regions.example.region)[0].region_id : tolist(rediscloud_active_active_subscription_regions.example.region)[1].region_id
 	tgw_id = data.rediscloud_active_active_transit_gateway.test.tgw_id
 }
 `
@@ -381,14 +447,12 @@ data "rediscloud_payment_method" "card" {
 
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
-  provider_type = "AWS" 
+  provider_type = "AWS"
   name = "%s"
 }
 
 resource "rediscloud_active_active_subscription" "example" {
-
   name = "%s"
-  payment_method = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider = "AWS"
 
@@ -397,30 +461,63 @@ resource "rediscloud_active_active_subscription" "example" {
     quantity = 1
     region {
       region = "us-east-1"
-      networking_deployment_cidr = "192.168.0.0/24"
+      networking_deployment_cidr = "10.0.18.0/24"
       write_operations_per_second = 1000
       read_operations_per_second = 1000
     }
     region {
       region = "us-east-2"
-      networking_deployment_cidr = "10.0.1.0/24"
+      networking_deployment_cidr = "10.0.19.0/24"
       write_operations_per_second = 1000
       read_operations_per_second = 1000
     }
   }
 }
 
+resource "rediscloud_active_active_subscription_database" "example" {
+  subscription_id = rediscloud_active_active_subscription.example.id
+  name = "%s"
+  memory_limit_in_gb = 1
+  support_oss_cluster_api = false
+  external_endpoint_for_oss_cluster_api = false
+}
+
+resource "rediscloud_active_active_subscription_regions" "example" {
+  subscription_id = rediscloud_active_active_subscription.example.id
+  delete_regions = false
+  region {
+    region = "us-east-1"
+    networking_deployment_cidr = "10.0.18.0/24"
+    recreate_region = false
+    database {
+      database_id = rediscloud_active_active_subscription_database.example.db_id
+      database_name = rediscloud_active_active_subscription_database.example.name
+      local_write_operations_per_second = 1000
+      local_read_operations_per_second = 1000
+    }
+  }
+  region {
+    region = "us-east-2"
+    networking_deployment_cidr = "10.0.19.0/24"
+    recreate_region = false
+    database {
+      database_id = rediscloud_active_active_subscription_database.example.db_id
+      database_name = rediscloud_active_active_subscription_database.example.name
+      local_write_operations_per_second = 1000
+      local_read_operations_per_second = 1000
+    }
+  }
+}
+
 data "rediscloud_active_active_transit_gateway" "test" {
 	subscription_id = rediscloud_subscription.example.id
-	# us-east-1, not entirely sure how the user would get this ID
-	region_id = 1
+	region_id = tolist(rediscloud_active_active_subscription_regions.example.region)[0].region == "us-east-1" ? tolist(rediscloud_active_active_subscription_regions.example.region)[0].region_id : tolist(rediscloud_active_active_subscription_regions.example.region)[1].region_id
 	aws_tgw_uid = "%s"
 }
 
 resource "rediscloud_active_active_transit_gateway_attachment" "test" {
 	subscription_id = rediscloud_subscription.example.id
-	# us-east-1, not entirely sure how the user would get this ID
-	region_id = 1
+	region_id = tolist(rediscloud_active_active_subscription_regions.example.region)[0].region == "us-east-1" ? tolist(rediscloud_active_active_subscription_regions.example.region)[0].region_id : tolist(rediscloud_active_active_subscription_regions.example.region)[1].region_id
 	tgw_id = data.rediscloud_active_active_transit_gateway.test.tgw_id
 	cidrs = ["10.10.20.0/24"]
 }
