@@ -64,7 +64,7 @@ func TestAccResourceRedisCloudTransitGatewayAttachment_Pro(t *testing.T) {
 func TestAccResourceRedisCloudTransitGatewayAttachment_ActiveActive(t *testing.T) {
 
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-	testTgwId := os.Getenv("AWS_TEST_TGW_ID")
+	testTgwId := os.Getenv("AWS_TEST_AA_TGW_ID")
 	baseName := acctest.RandomWithPrefix(testResourcePrefix) + "-aa-tgwa"
 
 	subName := baseName + "-sub"
