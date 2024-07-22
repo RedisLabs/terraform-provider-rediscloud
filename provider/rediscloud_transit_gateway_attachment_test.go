@@ -63,11 +63,6 @@ func TestAccResourceRedisCloudTransitGatewayAttachment_Pro(t *testing.T) {
 
 func TestAccResourceRedisCloudTransitGatewayAttachment_ActiveActive(t *testing.T) {
 
-	// TODO Remove this and try the tests as soon as a TG becomes available.
-	// TODO Might need to add a new env variable if the TG ID is different
-	// TODO Might also need to change the region in the configurations if it doesn't land in us-east-1
-	t.Skip("Skipping this test until a Transit Gateway becomes available to AA subscriptions in the us-east-1 region")
-
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	testTgwId := os.Getenv("AWS_TEST_TGW_ID")
 	baseName := acctest.RandomWithPrefix(testResourcePrefix) + "-aa-tgwa"
