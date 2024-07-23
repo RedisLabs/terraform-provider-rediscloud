@@ -43,7 +43,7 @@ func testAccAwsPeeringPreCheck(t *testing.T) {
 }
 
 func testAccAwsPreExistingTgwCheck(t *testing.T) {
-	requireEnvironmentVariables(t, "AWS_TEST_TGW_ID", "AWS_TEST_AA_TGW_ID")
+	requireEnvironmentVariables(t, "AWS_TEST_TGW_ID")
 }
 
 func requireEnvironmentVariables(t *testing.T, names ...string) {
