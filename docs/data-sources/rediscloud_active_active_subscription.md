@@ -40,8 +40,19 @@ output "rediscloud_active_active_subscription" {
 * `cloud_provider` - The cloud provider used with the subscription, (either `AWS` or `GCP`).
 * `number_of_databases` - The number of databases that are linked to this subscription.
 * `status` - Current status of the subscription
-
+* `maintenance_windows` - Details about the subscription's maintenance window specification, documented below
 * `pricing` - A list of pricing objects, documented below
+
+The `maintenance_windows` object has these attributes:
+
+* `mode` - Either `automatic` (Redis specified) or `manual` (User specified)
+* `window` - A list of windows (if manual mode)
+
+The `window` object has these attributes:
+
+* `start_hour` - What hour in the day (0-23) the window opens
+* `duration_in_hours` - How long the window is open
+* `days` - A list of weekdays on which the window is open ('Monday', 'Tuesday' etc)
 
 The `pricing` object has these attributes:
 
