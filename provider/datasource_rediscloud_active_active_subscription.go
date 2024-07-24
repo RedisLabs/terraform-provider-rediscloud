@@ -46,34 +46,34 @@ func dataSourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Computed:    true,
 			},
 			"maintenance_windows": {
-				Description: "",
+				Description: "Details about the subscription's maintenance window specification",
 				Type:        schema.TypeList,
 				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"mode": {
-							Description: "",
+							Description: "Either automatic (Redis specified) or manual (User specified)",
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
 						"window": {
-							Description: "",
+							Description: "A list of maintenance windows for manual-mode",
 							Type:        schema.TypeList,
 							Computed:    true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"start_hour": {
-										Description: "",
+										Description: "What hour in the day (0-23) the window opens",
 										Type:        schema.TypeInt,
 										Computed:    true,
 									},
 									"duration_in_hours": {
-										Description: "",
+										Description: "How long the window is open",
 										Type:        schema.TypeInt,
 										Computed:    true,
 									},
 									"days": {
-										Description: "",
+										Description: "A list of weekdays on which the window is open ('Monday', 'Tuesday' etc)",
 										Type:        schema.TypeList,
 										Computed:    true,
 										Elem: &schema.Schema{

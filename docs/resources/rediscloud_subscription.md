@@ -55,6 +55,15 @@ resource "rediscloud_subscription" "subscription-resource" {
     throughput_measurement_value = 20000
     modules                      = ["RedisJSON"]
   }
+  
+  maintenance_windows {
+    mode = "manual"
+    window {
+      start_hour = 22
+      duration_in_hours = 8
+      days = ["Tuesday", "Friday"]
+    }
+  }
 }
 ```
 
@@ -69,7 +78,8 @@ The following arguments are supported:
 * `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default. **Modifying this attribute will force creation of a new resource.**
 * `allowlist` - (Optional) An allowlist object, documented below
 * `cloud_provider` - (Required) A cloud provider object, documented below. **Modifying this attribute will force creation of a new resource.**
-* `creation_plan` - (Required) A creation plan object, documented below
+* `creation_plan` - (Required) A creation plan object, documented below.
+* `maintenance_windows` - (Optional) The subscription's maintenance window specification, documented below.
 
 The `allowlist` block supports:
 
@@ -116,6 +126,17 @@ The cloud_provider `region` block supports:
 
 ~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI.
 This difference in behaviour is to guarantee that a plan after an apply does not generate differences. In AWS Redis internal cloud account, please set the zone IDs (for example: `["use-az2", "use-az3", "use-az5"]`).
+
+The `maintenance_windows` object has these attributes:
+
+* `mode` - Either `automatic` (Redis specified) or `manual` (User specified)
+* `window` - A list of windows (if manual mode)
+
+The `window` object has these attributes:
+
+* `start_hour` - What hour in the day (0-23) the window opens
+* `duration_in_hours` - How long the window is open
+* `days` - A list of weekdays on which the window is open ('Monday', 'Tuesday' etc)
 
 ### Timeouts
 
