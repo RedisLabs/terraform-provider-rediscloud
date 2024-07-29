@@ -46,7 +46,8 @@ func TestAccRedisCloudAclRule_CRUDI(t *testing.T) {
 	testRuleUpdated := testRule + " -@dangerous ~*"
 
 	testCreateTerraform := fmt.Sprintf(testRedisRule, testName, testRule)
-	testUpdateTerraform := fmt.Sprintf(testRedisRule, testNameUpdated, testRuleUpdated)
+	testUpdateRuleTerraform := fmt.Sprintf(testRedisRule, testName, testRuleUpdated)
+	testUpdateNameTerraform := fmt.Sprintf(testRedisRule, testNameUpdated, testRuleUpdated)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -95,7 +96,21 @@ func TestAccRedisCloudAclRule_CRUDI(t *testing.T) {
 			},
 			// Test rule update
 			{
-				Config: testUpdateTerraform,
+				Config: testUpdateRuleTerraform,
+				Check: resource.ComposeTestCheckFunc(
+					// Test the resource
+					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "name", testName),
+					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "rule", testRuleUpdated),
+					// Test the datasource
+					resource.TestMatchResourceAttr(
+						"data.rediscloud_acl_rule.test", "id", regexp.MustCompile("^\\d*$")),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "name", testName),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "rule", testRuleUpdated),
+				),
+			},
+			// Test rule only update
+			{
+				Config: testUpdateNameTerraform,
 				Check: resource.ComposeTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "name", testNameUpdated),
@@ -105,6 +120,20 @@ func TestAccRedisCloudAclRule_CRUDI(t *testing.T) {
 						"data.rediscloud_acl_rule.test", "id", regexp.MustCompile("^\\d*$")),
 					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "name", testNameUpdated),
 					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "rule", testRuleUpdated),
+				),
+			},
+			// Test full update
+			{
+				Config: testCreateTerraform,
+				Check: resource.ComposeTestCheckFunc(
+					// Test the resource
+					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "name", testName),
+					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "rule", testRule),
+					// Test the datasource
+					resource.TestMatchResourceAttr(
+						"data.rediscloud_acl_rule.test", "id", regexp.MustCompile("^\\d*$")),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "name", testName),
+					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "rule", testRule),
 				),
 			},
 			// Test that that rule is imported successfully

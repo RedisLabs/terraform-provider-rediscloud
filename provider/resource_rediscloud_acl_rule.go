@@ -110,16 +110,28 @@ func resourceRedisCloudAclRuleUpdate(ctx context.Context, d *schema.ResourceData
 	}
 
 	if d.HasChanges("name", "rule") {
-		updateRedisRuleRequest := redis_rules.CreateRedisRuleRequest{}
+		if !d.HasChange("name") {
+			updateRedisRuleRequest := redis_rules.UpdateRedisRuleRequest{}
 
-		name := d.Get("name").(string)
-		updateRedisRuleRequest.Name = &name
-		rule := d.Get("rule").(string)
-		updateRedisRuleRequest.RedisRule = &rule
+			rule := d.Get("rule").(string)
+			updateRedisRuleRequest.RedisRule = &rule
 
-		err = api.client.RedisRules.Update(ctx, id, updateRedisRuleRequest)
-		if err != nil {
-			return diag.FromErr(err)
+			err = api.client.RedisRules.UpdateRule(ctx, id, updateRedisRuleRequest)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+		} else {
+			updateRedisRuleRequest := redis_rules.CreateRedisRuleRequest{}
+
+			name := d.Get("name").(string)
+			updateRedisRuleRequest.Name = &name
+			rule := d.Get("rule").(string)
+			updateRedisRuleRequest.RedisRule = &rule
+
+			err = api.client.RedisRules.Update(ctx, id, updateRedisRuleRequest)
+			if err != nil {
+				return diag.FromErr(err)
+			}
 		}
 
 		err = waitForAclRuleToBeActive(ctx, id, api)
