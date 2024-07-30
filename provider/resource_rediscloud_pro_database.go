@@ -514,6 +514,11 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		createDatabase.RespVersion = redis.String(respVersion)
 	}
 
+	// Confirm sub is ready to accept a db request
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return diag.FromErr(err)
+	}
+
 	dbId, err := api.client.Database.Create(ctx, subId, createDatabase)
 	if err != nil {
 		subscriptionMutex.Unlock(subId)
@@ -522,14 +527,15 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 
 	d.SetId(buildResourceId(subId, dbId))
 
-	// Confirm Subscription Active status
-	err = waitForDatabaseToBeActive(ctx, subId, dbId, api)
-	if err != nil {
+	// Confirm db + sub active status
+	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		subscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
-
-	// Locate Databases to confirm Active status
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		subscriptionMutex.Unlock(subId)
+		return diag.FromErr(err)
+	}
 
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password, enableDefaultUser and so on.
@@ -716,14 +722,22 @@ func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.Resource
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
+	// Confirm sub + db are ready to accept a db request
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return diag.FromErr(err)
+	}
 	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
-	dbErr := api.client.Database.Delete(ctx, subId, dbId)
-	if dbErr != nil {
-		diag.FromErr(dbErr)
+	if err := api.client.Database.Delete(ctx, subId, dbId); err != nil {
+		return diag.FromErr(err)
 	}
+
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return diag.FromErr(err)
+	}
+
 	return diags
 }
 
@@ -737,7 +751,6 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 
 	subId := d.Get("subscription_id").(int)
 	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
 
 	// If the recommended approach is taken and there are 0 alerts, a nil-slice value is sent to the UpdateDatabase
 	// constructor. We instead want a non-nil (but zero length) slice to be passed forward.
@@ -800,6 +813,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		if clientSSLCertificate != "" {
 			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
 		} else if len(clientTLSCertificates) > 0 {
+			subscriptionMutex.Unlock(subId)
 			return diag.Errorf("TLS certificates may not be provided while enable_tls is false")
 		} else {
 			// Default: enable_tls=false, client_ssl_certificate=""
@@ -824,19 +838,32 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		update.RespVersion = redis.String(respVersion)
 	}
 
-	err = api.client.Database.Update(ctx, subId, dbId, update)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-		return diag.FromErr(err)
-	}
-
+	// Confirm sub + db are ready to accept a db request
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		subscriptionMutex.Unlock(subId)
+		return diag.FromErr(err)
+	}
+	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		subscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
+	if err := api.client.Database.Update(ctx, subId, dbId, update); err != nil {
+		subscriptionMutex.Unlock(subId)
+		return diag.FromErr(err)
+	}
+
+	// Confirm db + sub active status
+	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		subscriptionMutex.Unlock(subId)
+		return diag.FromErr(err)
+	}
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		subscriptionMutex.Unlock(subId)
+		return diag.FromErr(err)
+	}
+
+	subscriptionMutex.Unlock(subId)
 	return resourceRedisCloudProDatabaseRead(ctx, d, meta)
 }
 
