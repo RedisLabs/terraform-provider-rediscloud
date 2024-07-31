@@ -73,7 +73,7 @@ The following arguments are supported:
 
 * `name` - (Required) A meaningful name to identify the subscription
 * `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'. **(Changes to) this attribute are ignored after creation.**
-* `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types
+* `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. Only __Required__ when `payment_method` is `credit-card`.
 * `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of ‘ram-and-flash’. Default: ‘ram’. **Modifying this attribute will force creation of a new resource.**
 * `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default. **Modifying this attribute will force creation of a new resource.**
 * `allowlist` - (Optional) An allowlist object, documented below

@@ -643,12 +643,7 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 
 	// Client TLS Certificates are not returned
 
-	password := d.Get("password").(string)
-	if redis.StringValue(db.Protocol) == "redis" {
-		// Only db with the "redis" protocol returns the password.
-		password = redis.StringValue(db.Security.Password)
-	}
-	if err := d.Set("password", password); err != nil {
+	if err := d.Set("password", redis.StringValue(db.Security.Password)); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("enable_default_user", redis.Bool(*db.Security.EnableDefaultUser)); err != nil {
@@ -918,7 +913,7 @@ func writeReplica(replica fixedDatabases.ReplicaOf) []map[string]interface{} {
 	return []map[string]interface{}{tf}
 }
 
-func suppressIfPaygDisabled(k, oldValue, newValue string, d *schema.ResourceData) bool {
+func suppressIfPaygDisabled(_, _, _ string, d *schema.ResourceData) bool {
 	// If payg is disabled, suppress diff checks on payg attributes
 	return !d.Get("enable_payg_features").(bool)
 }
