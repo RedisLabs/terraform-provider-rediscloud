@@ -468,12 +468,7 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 
 	// Client TLS Certificates are not returned
 
-	password := d.Get("password").(string)
-	if redis.StringValue(db.Protocol) == "redis" {
-		// Only db with the "redis" protocol returns the password.
-		password = redis.StringValue(db.Security.Password)
-	}
-	if err := d.Set("password", password); err != nil {
+	if err := d.Set("password", redis.StringValue(db.Security.Password)); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("enable_default_user", redis.Bool(*db.Security.EnableDefaultUser)); err != nil {
