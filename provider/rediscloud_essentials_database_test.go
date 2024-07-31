@@ -75,7 +75,7 @@ func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "alert.0.name", "throughput-higher-than"),
 					resource.TestCheckResourceAttr(datasourceName, "alert.0.value", "80"),
 					resource.TestCheckResourceAttr(datasourceName, "enable_default_user", "true"),
-					resource.TestCheckResourceAttr(datasourceName, "password", ""),
+					resource.TestCheckResourceAttr(datasourceName, "password", "j43589rhe39f"),
 
 					resource.TestCheckResourceAttr(datasourceName, "memory_limit_in_gb", "0"),
 					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "false"),
@@ -139,7 +139,7 @@ func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "alert.0.name", "throughput-higher-than"),
 					resource.TestCheckResourceAttr(datasourceName, "alert.0.value", "80"),
 					resource.TestCheckResourceAttr(datasourceName, "enable_default_user", "true"),
-					resource.TestCheckResourceAttr(datasourceName, "password", ""),
+					resource.TestCheckResourceAttr(datasourceName, "password", "j43589rhe39f"),
 
 					resource.TestCheckResourceAttr(datasourceName, "memory_limit_in_gb", "0"),
 					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "false"),

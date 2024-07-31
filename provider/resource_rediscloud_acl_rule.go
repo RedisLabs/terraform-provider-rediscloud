@@ -112,8 +112,11 @@ func resourceRedisCloudAclRuleUpdate(ctx context.Context, d *schema.ResourceData
 	if d.HasChanges("name", "rule") {
 		updateRedisRuleRequest := redis_rules.CreateRedisRuleRequest{}
 
-		name := d.Get("name").(string)
-		updateRedisRuleRequest.Name = &name
+		if d.HasChange("name") {
+			name := d.Get("name").(string)
+			updateRedisRuleRequest.Name = &name
+		}
+
 		rule := d.Get("rule").(string)
 		updateRedisRuleRequest.RedisRule = &rule
 
