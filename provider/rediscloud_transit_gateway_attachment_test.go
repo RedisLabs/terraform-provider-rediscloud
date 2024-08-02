@@ -16,8 +16,8 @@ func TestAccResourceRedisCloudTransitGatewayAttachment_Pro(t *testing.T) {
 	testTgwId := os.Getenv("AWS_TEST_TGW_ID")
 	baseName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-tgwa"
 
-	resourceName := "rediscloud_transit_gateway_attachment.test"
-	datasourceName := "data.rediscloud_transit_gateway.test"
+	const resourceName = "rediscloud_transit_gateway_attachment.test"
+	const datasourceName = "data.rediscloud_transit_gateway.test"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingTgwCheck(t) },
@@ -26,7 +26,7 @@ func TestAccResourceRedisCloudTransitGatewayAttachment_Pro(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudTransitGatewayPro, testCloudAccountName, baseName, testTgwId),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the datasource before attachment
 					resource.TestCheckResourceAttrSet(datasourceName, "id"),
 					resource.TestCheckResourceAttr(datasourceName, "aws_tgw_uid", testTgwId),
@@ -43,7 +43,7 @@ func TestAccResourceRedisCloudTransitGatewayAttachment_Pro(t *testing.T) {
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudTransitGatewayAttachmentPro, testCloudAccountName, baseName, testTgwId),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "aws_tgw_uid", testTgwId),

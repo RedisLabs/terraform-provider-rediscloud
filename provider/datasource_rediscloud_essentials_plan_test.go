@@ -98,7 +98,7 @@ func TestAccDataSourceRedisCloudEssentialsPlan_subscriptionId(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccResourceRedisCloudPaidEssentialsSubscriptionDataSource,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(examplePlan, "id", "34858"),
 					resource.TestCheckResourceAttr(examplePlan, "name", "250MB"),
 					resource.TestCheckResourceAttrSet(examplePlan, "subscription_id"),

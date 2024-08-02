@@ -22,8 +22,8 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
-	subscriptionName := "rediscloud_subscription.example"
-	databaseName := "rediscloud_subscription_database.example"
+	const subscriptionName = "rediscloud_subscription.example"
+	const databaseName = "rediscloud_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	var subId int
@@ -87,7 +87,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 			// Ensure that SSL users can upgrade to TLS
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndTlsCert, testCloudAccountName, name, 1, password, sslCertificate),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(subscriptionName, "name", name),
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
@@ -101,7 +101,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 			// And that mTLS can be switched off altogether
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndNoCert, testCloudAccountName, name, 1, password),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(subscriptionName, "name", name),
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
@@ -127,8 +127,8 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEm
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
-	subscriptionName := "rediscloud_subscription.example"
-	databaseName := "rediscloud_subscription_database.example"
+	const subscriptionName = "rediscloud_subscription.example"
+	const databaseName = "rediscloud_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	var subId int
@@ -295,8 +295,8 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndTl
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
-	subscriptionName := "rediscloud_subscription.example"
-	databaseName := "rediscloud_subscription_database.example"
+	const subscriptionName = "rediscloud_subscription.example"
+	const databaseName = "rediscloud_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	var subId int

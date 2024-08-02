@@ -16,7 +16,7 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	// Chose a CIDR range for the subscription that's unlikely to overlap with any VPC CIDR
-	subCidrRange := "10.0.0.0/24"
+	const subCidrRange = "10.0.0.0/24"
 
 	awsAccountId := os.Getenv("AWS_ACCOUNT_ID")
 	awsVPCId := os.Getenv("AWS_VPC_ID")
@@ -31,7 +31,7 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 		awsVPCId,
 		awsVPCCidr,
 	)
-	dataSourceName := "data.rediscloud_subscription_peerings.example"
+	const dataSourceName = "data.rediscloud_subscription_peerings.example"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPeeringPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },

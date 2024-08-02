@@ -14,8 +14,8 @@ import (
 
 func TestAccRedisCloudAclRule_DataSourceForDefaultRule(t *testing.T) {
 	// This rule already exists
-	testName := "Read-Write"
-	testRule := "+@all -@dangerous ~*"
+	const testName = "Read-Write"
+	const testRule = "+@all -@dangerous ~*"
 	getRuleTerraform := fmt.Sprintf(getDefaultAclRuleDataSource, testName)
 
 	const AclRuleTest = "data.rediscloud_acl_rule.test"
@@ -41,10 +41,10 @@ func TestAccRedisCloudAclRule_CRUDI(t *testing.T) {
 
 	prefix := acctest.RandomWithPrefix(testResourcePrefix)
 	testName := prefix + "-test-rule"
-	testRule := "+@all"
+	const testRule = "+@all"
 
 	testNameUpdated := testName + "_updated_name"
-	testRuleUpdated := testRule + " -@dangerous ~*"
+	const testRuleUpdated = testRule + " -@dangerous ~*"
 
 	testCreateTerraform := fmt.Sprintf(testRedisRule, testName, testRule)
 	testUpdateRuleTerraform := fmt.Sprintf(testRedisRule, testName, testRuleUpdated)
@@ -127,7 +127,7 @@ func TestAccRedisCloudAclRule_CRUDI(t *testing.T) {
 			// Test full update
 			{
 				Config: testCreateTerraform,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "name", testName),
 					resource.TestCheckResourceAttr("rediscloud_acl_rule.test", "rule", testRule),

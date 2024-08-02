@@ -336,7 +336,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, defaultMW),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
@@ -348,7 +348,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, autoMw),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
 
@@ -358,7 +358,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, manualMw),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.start_hour", "22"),
@@ -386,7 +386,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, multipleManualMw),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "2"),
 
@@ -422,7 +422,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, autoMw),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
 
