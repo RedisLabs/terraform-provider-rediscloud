@@ -24,8 +24,8 @@ var activeActiveMarketplaceFlag = flag.Bool("activeActiveMarketplace", false,
 func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	resourceName := "rediscloud_active_active_subscription.example"
-	datasourceName := "data.rediscloud_active_active_subscription.example"
+	const resourceName = "rediscloud_active_active_subscription.example"
+	const datasourceName = "data.rediscloud_active_active_subscription.example"
 
 	var subId int
 
@@ -36,7 +36,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscription, name),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
@@ -163,7 +163,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 			{
 				// Checks if the changes in the creation plan are ignored.
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan, name, "AWS"),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
@@ -188,7 +188,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 			{
 				// Checks if the changes to the payment_method are ignored.
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethod, name),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 				),
 			},
@@ -226,7 +226,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	updatedName := fmt.Sprintf("%v-updatedName", name)
-	resourceName := "rediscloud_active_active_subscription.example"
+	const resourceName = "rediscloud_active_active_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
@@ -235,7 +235,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionContractPayment, name),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.#", "2"),
@@ -247,7 +247,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionContractPayment, updatedName),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
 				),
@@ -264,7 +264,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	updatedName := fmt.Sprintf("%v-updatedName", name)
-	resourceName := "rediscloud_active_active_subscription.example"
+	const resourceName = "rediscloud_active_active_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
@@ -273,7 +273,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionMarketplacePayment, name),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
@@ -286,7 +286,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionMarketplacePayment, updatedName),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
 				),
 			},

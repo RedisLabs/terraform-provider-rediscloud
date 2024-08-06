@@ -14,8 +14,8 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
-	dataSourceById := "data.rediscloud_database.example-by-id"
-	dataSourceByName := "data.rediscloud_database.example-by-name"
+	const dataSourceById = "data.rediscloud_database.example-by-id"
+	const dataSourceByName = "data.rediscloud_database.example-by-name"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
@@ -24,7 +24,7 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccDatasourceRedisCloudProDatabase, testCloudAccountName, name, password),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceById, "name", "tf-database"),
 					resource.TestCheckResourceAttr(dataSourceById, "protocol", "redis"),
 					resource.TestCheckResourceAttr(dataSourceById, "region", "eu-west-1"),

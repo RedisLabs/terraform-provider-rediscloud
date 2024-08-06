@@ -28,7 +28,7 @@ var marketplaceFlag = flag.Bool("marketplace", false,
 func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	resourceName := "rediscloud_subscription.example"
+	const resourceName = "rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	var subId int
@@ -40,7 +40,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscription, testCloudAccountName, name),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -85,7 +85,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 			{
 				// Checks if the changes in the creation plan are ignored.
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, testCloudAccountName, name, "ram"),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "0"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
@@ -99,7 +99,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 			{
 				// Checks if the changes to the payment_method are ignored.
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionChangedPaymentMethod, testCloudAccountName, name),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 				),
 			},
@@ -131,7 +131,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-	resourceName := "rediscloud_subscription.example"
+	const resourceName = "rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -141,7 +141,7 @@ func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *tes
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPreferredAZsModulesOptional, testCloudAccountName, name),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
 				),
@@ -158,7 +158,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	updatedName := fmt.Sprintf("%v-updatedName", name)
-	resourceName := "rediscloud_subscription.example"
+	const resourceName = "rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -168,7 +168,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionContractPayment, testCloudAccountName, name),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
@@ -178,7 +178,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionContractPayment, testCloudAccountName, updatedName),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
 				),
@@ -195,7 +195,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	updatedName := fmt.Sprintf("%v-updatedName", name)
-	resourceName := "rediscloud_subscription.example"
+	const resourceName = "rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -205,7 +205,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, testCloudAccountName, name),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
@@ -214,7 +214,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, testCloudAccountName, updatedName),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
 				),
 			},
@@ -252,7 +252,7 @@ func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionWithRedisVersion, testCloudAccountName, name, ""),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Take a snapshot of the ID
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources["rediscloud_subscription.test"]
@@ -263,7 +263,7 @@ func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionWithRedisVersion, testCloudAccountName, name, "redis_version = \"latest\""),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Take a snapshot of the ID
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources["rediscloud_subscription.test"]
@@ -336,7 +336,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, defaultMW),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
@@ -348,7 +348,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, autoMw),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
 
@@ -358,7 +358,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, manualMw),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.0.start_hour", "22"),
@@ -386,7 +386,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, multipleManualMw),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "2"),
 
@@ -422,7 +422,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, autoMw),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
 

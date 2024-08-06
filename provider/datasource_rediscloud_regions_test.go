@@ -14,7 +14,7 @@ func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudRegions,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_regions.foo", "regions.*", map[string]string{
 						"name": "europe-west1",
 					}),
@@ -47,7 +47,7 @@ func TestAccDataSourceRedisCloudRegions_AWS(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudRegionsAWS,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_regions.foo", "regions.*", map[string]string{
 						"name": "eu-west-1",
 					}),
@@ -71,7 +71,7 @@ func TestAccDataSourceRedisCloudRegions_GCP(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudRegionsGCP,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_regions.foo", "regions.*", map[string]string{
 						"name": "europe-west1",
 					}),
