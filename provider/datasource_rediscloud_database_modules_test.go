@@ -14,7 +14,7 @@ func TestAccDataSourceRedisCloudDatabaseModules_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudDatabaseModules,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_database_modules.foo", "modules.*", map[string]string{
 						"name": "RedisBloom",
 					}),

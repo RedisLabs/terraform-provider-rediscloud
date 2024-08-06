@@ -16,8 +16,8 @@ func TestAccResourceRedisCloudEssentialsSubscription_FreeCRUDI(t *testing.T) {
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
 
-	resourceName := "rediscloud_essentials_subscription.example"
-	datasourceName := "data.rediscloud_essentials_subscription.example"
+	const resourceName = "rediscloud_essentials_subscription.example"
+	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -26,7 +26,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_FreeCRUDI(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudFreeEssentialsSubscription, subscriptionName),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "name", subscriptionName),
@@ -46,7 +46,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_FreeCRUDI(t *testing.T) {
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudFreeEssentialsSubscription, subscriptionNameUpdated),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "name", subscriptionNameUpdated),
@@ -79,8 +79,8 @@ func TestAccResourceRedisCloudEssentialsSubscription_PaidCRUDI(t *testing.T) {
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
 
-	resourceName := "rediscloud_essentials_subscription.example"
-	datasourceName := "data.rediscloud_essentials_subscription.example"
+	const resourceName = "rediscloud_essentials_subscription.example"
+	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -89,7 +89,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_PaidCRUDI(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudPaidEssentialsSubscription, subscriptionName),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "name", subscriptionName),
@@ -109,7 +109,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_PaidCRUDI(t *testing.T) {
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudPaidEssentialsSubscription, subscriptionNameUpdated),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttr(resourceName, "name", subscriptionNameUpdated),

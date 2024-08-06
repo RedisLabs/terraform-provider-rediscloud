@@ -13,8 +13,8 @@ import (
 func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 	name := acctest.RandomWithPrefix("tf-test")
 
-	resourceName := "rediscloud_subscription.example"
-	dataSourceName := "data.rediscloud_subscription.example"
+	const resourceName = "rediscloud_subscription.example"
+	const dataSourceName = "data.rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -24,13 +24,13 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccDatasourceRedisCloudProSubscription, testCloudAccountName, name),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "name", regexp.MustCompile(name)),
 				),
 			},
 			{
 				Config: fmt.Sprintf(testAccDatasourceRedisCloudProSubscriptionDataSource, name) + fmt.Sprintf(testAccDatasourceRedisCloudProSubscription, testCloudAccountName, name),
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(dataSourceName, "name", regexp.MustCompile(name)),
 					resource.TestCheckResourceAttr(dataSourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "payment_method_id"),

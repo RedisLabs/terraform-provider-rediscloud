@@ -29,7 +29,7 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 		name,
 		os.Getenv("AWS_SIGNIN_URL"),
 	)
-	resourceName := "rediscloud_cloud_account.test"
+	const resourceName = "rediscloud_cloud_account.test"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsCloudAccountPreCheck(t) },
@@ -38,7 +38,7 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: tf,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(
 						resourceName, "id", regexp.MustCompile("^\\d*$")),
 					resource.TestCheckResourceAttr(
