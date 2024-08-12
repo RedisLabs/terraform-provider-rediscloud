@@ -3,15 +3,29 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-# 1.7.1 (24th June 2024)
+# 1.8.0 (12th August 2024)
+
+### Added
+
+- Maintenance Windows properties on Pro and ActiveActive Subscriptions
+- Transit Gateway Datasources and TGw Attachment Resources for Pro and ActiveActive subscriptions
+- TLS certificates for Pro and ActiveActive Databases
+- An optional Subscription id argument in the Essentials Plan Datasource
 
 ### Removed
 
 - Provider validation on Alert names in Essentials Databases
 
+### Fixed
+
+- Updating ACL Rules
+- Fixed parallelism when creating over 2 Databases under one Subscription
+
 ### Changed
 
 - Documentation improvements
+- Provider now reacts to externally changed SSL/TLS credentials and notifies the user via `plan`
+- Fixed a bug related to providing empty strings in a list
 
 ## 1.7.0 (11th June 2024)
 
