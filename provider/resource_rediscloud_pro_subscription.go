@@ -892,7 +892,6 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 
 func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) error {
 	wait := &retry.StateChangeConf{
-		Delay:        30 * time.Second,
 		Pending:      []string{subscriptions.SubscriptionStatusPending},
 		Target:       []string{subscriptions.SubscriptionStatusActive},
 		Timeout:      safetyTimeout,
@@ -918,7 +917,6 @@ func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) 
 
 func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient) error {
 	wait := &retry.StateChangeConf{
-		Delay:        30 * time.Second,
 		Pending:      []string{subscriptions.SubscriptionStatusDeleting},
 		Target:       []string{"deleted"},
 		Timeout:      safetyTimeout,
@@ -947,7 +945,6 @@ func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient)
 
 func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClient) error {
 	wait := &retry.StateChangeConf{
-		Delay: 30 * time.Second,
 		Pending: []string{
 			databases.StatusDraft,
 			databases.StatusPending,
