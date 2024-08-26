@@ -13,7 +13,7 @@ Use the navigation to the left to read about the available provider resources an
 
 ## Configure Redis Enterprise Cloud Programmatic Access
 
-In order to setup authentication with the Redis Enterprise Cloud provider a programmatic API key must be generated for Redis Enterprise Cloud.   The [Redis Enterprise Cloud documentation](https://docs.redislabs.com/latest/rc/api/how-to/enable-your-account-to-use-api/) contains the most up-to-date instructions for creating and managing your key(s) and IP access.
+In order to setup authentication with the Redis Enterprise Cloud provider a programmatic API key must be generated for Redis Enterprise Cloud.   The [Redis Enterprise Cloud documentation](https://redis.io/docs/latest/integrate/terraform-provider-for-redis-cloud/) contains the most up-to-date instructions for creating and managing your key(s) and IP access.
 
 ## Example Usage
 
