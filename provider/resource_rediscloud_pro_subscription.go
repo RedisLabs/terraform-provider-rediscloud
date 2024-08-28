@@ -794,25 +794,6 @@ func buildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 		}
 	}
 
-	// Check if one of the modules is RedisSearch
-	containsSearch := false
-	for _, module := range planModules {
-		if *module == "RediSearch" {
-			containsSearch = true
-			break
-		}
-	}
-	// if RediSearch is in the modules, throughput may not be operations-per-second
-	if containsSearch && throughputMeasurementBy == "operations-per-second" {
-		errDiag := diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "subscription could not be created: throughput may not be measured by `operations-per-second` while the `RediSearch` module is active",
-			Detail:   "throughput may not be measured by `operations-per-second` while the `RediSearch` module is active. use an alternative measurement like `number-of-shards`",
-		}
-		// Short-circuit here, this is an unrecoverable situation
-		return nil, append(diags, errDiag)
-	}
-
 	// Check if one of the modules is RedisGraph
 	containsGraph := false
 	for _, module := range planModules {
@@ -895,6 +876,7 @@ func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) 
 		Pending:      []string{subscriptions.SubscriptionStatusPending},
 		Target:       []string{subscriptions.SubscriptionStatusActive},
 		Timeout:      safetyTimeout,
+		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 
 		Refresh: func() (result interface{}, state string, err error) {
@@ -920,6 +902,7 @@ func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient)
 		Pending:      []string{subscriptions.SubscriptionStatusDeleting},
 		Target:       []string{"deleted"},
 		Timeout:      safetyTimeout,
+		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 
 		Refresh: func() (result interface{}, state string, err error) {
@@ -958,6 +941,7 @@ func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClien
 		},
 		Target:       []string{databases.StatusActive},
 		Timeout:      safetyTimeout,
+		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 
 		Refresh: func() (result interface{}, state string, err error) {
