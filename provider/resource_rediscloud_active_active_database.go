@@ -84,9 +84,18 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringLenBetween(0, 40)),
 			},
 			"memory_limit_in_gb": {
-				Description: "Maximum memory usage for this specific database",
-				Type:        schema.TypeFloat,
-				Required:    true,
+				Description:  "(Deprecated) Maximum memory usage for this specific database",
+				Type:         schema.TypeFloat,
+				Optional:     true,
+				Computed:     true,
+				ExactlyOneOf: []string{"memory_limit_in_gb", "dataset_size_in_gb"},
+			},
+			"dataset_size_in_gb": {
+				Description:  "Maximum amount of data in the dataset for this specific database in GB",
+				Type:         schema.TypeFloat,
+				Optional:     true,
+				Computed:     true,
+				ExactlyOneOf: []string{"memory_limit_in_gb", "dataset_size_in_gb"},
 			},
 			"support_oss_cluster_api": {
 				Description: "Support Redis open-source (OSS) Cluster API",
@@ -457,7 +466,6 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 	subscriptionMutex.Lock(subId)
 
 	name := d.Get("name").(string)
-	memoryLimitInGB := d.Get("memory_limit_in_gb").(float64)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
 	useExternalEndpointForOSSClusterAPI := d.Get("external_endpoint_for_oss_cluster_api").(bool)
 	dataEviction := d.Get("data_eviction").(string)
@@ -512,7 +520,6 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 	createDatabase := databases.CreateActiveActiveDatabase{
 		DryRun:                              redis.Bool(false),
 		Name:                                redis.String(name),
-		MemoryLimitInGB:                     redis.Float64(memoryLimitInGB),
 		SupportOSSClusterAPI:                redis.Bool(supportOSSClusterAPI),
 		UseExternalEndpointForOSSClusterAPI: redis.Bool(useExternalEndpointForOSSClusterAPI),
 		GlobalSourceIP:                      globalSourceIp,
@@ -531,6 +538,14 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 
 	if globalPassword != "" {
 		createDatabase.GlobalPassword = redis.String(globalPassword)
+	}
+
+	if v, ok := d.GetOk("dataset_size_in_gb"); ok {
+		createDatabase.DatasetSizeInGB = redis.Float64(v.(float64))
+	}
+
+	if v, ok := d.GetOk("memory_limit_in_gb"); ok {
+		createDatabase.MemoryLimitInGB = redis.Float64(v.(float64))
 	}
 
 	if v, ok := d.GetOk("port"); ok {
@@ -619,6 +634,10 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	}
 
 	if err := d.Set("memory_limit_in_gb", redis.Float64(*db.CrdbDatabases[0].MemoryLimitInGB)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("dataset_size_in_gb", redis.Float64(*db.CrdbDatabases[0].DatasetSizeInGB)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -839,13 +858,21 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 	// Populate the database update request with the required fields
 	update := databases.UpdateActiveActiveDatabase{
-		MemoryLimitInGB:                     redis.Float64(d.Get("memory_limit_in_gb").(float64)),
 		SupportOSSClusterAPI:                redis.Bool(d.Get("support_oss_cluster_api").(bool)),
 		UseExternalEndpointForOSSClusterAPI: redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool)),
 		DataEvictionPolicy:                  redis.String(d.Get("data_eviction").(string)),
 		GlobalAlerts:                        &updateAlerts,
 		GlobalSourceIP:                      globalSourceIps,
 		Regions:                             regions,
+	}
+
+	// One of the following fields must be set in the request, validation is handled in the schema (ExactlyOneOf)
+	if v, ok := d.GetOk("memory_limit_in_gb"); ok {
+		update.MemoryLimitInGB = redis.Float64(v.(float64))
+	}
+
+	if v, ok := d.GetOk("dataset_size_in_gb"); ok {
+		update.DatasetSizeInGB = redis.Float64(v.(float64))
 	}
 
 	// The below fields are optional and will only be sent in the request if they are present in the Terraform configuration

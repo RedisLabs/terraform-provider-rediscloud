@@ -48,7 +48,7 @@ resource "rediscloud_subscription" "subscription-resource" {
   // This block needs to be defined for provisioning a new subscription.
   // This allows creation of a well-optimized hardware specification for databases in the cluster
   creation_plan {
-    memory_limit_in_gb           = 15
+    dataset_size_in_gb           = 15
     quantity                     = 1
     replication                  = true
     throughput_measurement_by    = "operations-per-second"
@@ -98,7 +98,8 @@ The `cloud_provider` block supports:
 
 The `creation_plan` block supports:
 
-* `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database.
+* `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database. You can not set both dataset_size_in_gb and memory_limit_in_gb. **Deprecated: Use `dataset_size_in_gb` instead**
+* `dataset_size_in_gb` - (Required) The maximum amount of data in the dataset for this specific database is in GB. You can not set both dataset_size_in_gb and memory_limit_in_gb.
 * `modules` - (Optional) a list of modules that will be used by the databases in this subscription. Not currently compatible with ‘ram-and-flash’ memory storage.  
   Example: `modules = ["RedisJSON", "RediSearch", "RedisTimeSeries", "RedisBloom"]`
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’

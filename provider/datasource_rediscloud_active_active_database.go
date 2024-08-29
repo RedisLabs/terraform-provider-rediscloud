@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -33,7 +34,12 @@ func dataSourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Optional:    true,
 			},
 			"memory_limit_in_gb": {
-				Description: "Maximum memory usage for this specific database",
+				Description: "(Deprecated) Maximum memory usage for this specific database",
+				Type:        schema.TypeFloat,
+				Computed:    true,
+			},
+			"dataset_size_in_gb": {
+				Description: "Maximum amount of data in the dataset for this specific database in GB",
 				Type:        schema.TypeFloat,
 				Computed:    true,
 			},
@@ -282,6 +288,9 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	}
 	if err := d.Set("memory_limit_in_gb", redis.Float64(*db.CrdbDatabases[0].MemoryLimitInGB)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("dataset_size_in_gb", redis.Float64(*db.CrdbDatabases[0].DatasetSizeInGB)); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("support_oss_cluster_api", redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {

@@ -77,9 +77,18 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 				Default:          "redis",
 			},
 			"memory_limit_in_gb": {
-				Description: "Maximum memory usage for this specific database",
-				Type:        schema.TypeFloat,
-				Required:    true,
+				Description:  "(Deprecated) Maximum memory usage for this specific database",
+				Type:         schema.TypeFloat,
+				Optional:     true,
+				Computed:     true,
+				ExactlyOneOf: []string{"memory_limit_in_gb", "dataset_size_in_gb"},
+			},
+			"dataset_size_in_gb": {
+				Description:  "Maximum amount of data in the dataset for this specific database in GB",
+				Type:         schema.TypeFloat,
+				Optional:     true,
+				Computed:     true,
+				ExactlyOneOf: []string{"memory_limit_in_gb", "dataset_size_in_gb"},
 			},
 			"support_oss_cluster_api": {
 				Description: "Support Redis open-source (OSS) Cluster API",
@@ -451,7 +460,6 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 
 	name := d.Get("name").(string)
 	protocol := d.Get("protocol").(string)
-	memoryLimitInGB := d.Get("memory_limit_in_gb").(float64)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
 	respVersion := d.Get("resp_version").(string)
 	dataPersistence := d.Get("data_persistence").(string)
@@ -495,7 +503,6 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	createDatabase := databases.CreateDatabase{
 		Name:                 redis.String(name),
 		Protocol:             redis.String(protocol),
-		MemoryLimitInGB:      redis.Float64(memoryLimitInGB),
 		SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
 		DataPersistence:      redis.String(dataPersistence),
 		DataEvictionPolicy:   redis.String(dataEviction),
@@ -515,6 +522,14 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 
 	if averageItemSizeInBytes > 0 {
 		createDatabase.AverageItemSizeInBytes = &averageItemSizeInBytes
+	}
+
+	if v, ok := d.GetOk("dataset_size_in_gb"); ok {
+		createDatabase.DatasetSizeInGB = redis.Float64(v.(float64))
+	}
+
+	if v, ok := d.GetOk("memory_limit_in_gb"); ok {
+		createDatabase.MemoryLimitInGB = redis.Float64(v.(float64))
 	}
 
 	if v, ok := d.GetOk("port"); ok {
@@ -591,6 +606,10 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	}
 
 	if err := d.Set("memory_limit_in_gb", redis.Float64Value(db.MemoryLimitInGB)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("dataset_size_in_gb", redis.Float64Value(db.DatasetSizeInGB)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -783,7 +802,6 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 
 	update := databases.UpdateDatabase{
 		Name:                 redis.String(d.Get("name").(string)),
-		MemoryLimitInGB:      redis.Float64(d.Get("memory_limit_in_gb").(float64)),
 		SupportOSSClusterAPI: redis.Bool(d.Get("support_oss_cluster_api").(bool)),
 		Replication:          redis.Bool(d.Get("replication").(bool)),
 		ThroughputMeasurement: &databases.UpdateThroughputMeasurement{
@@ -797,6 +815,17 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		RemoteBackup:       buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
 		EnableDefaultUser:  redis.Bool(d.Get("enable_default_user").(bool)),
 	}
+
+	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)
+	if v, ok := d.GetOk("memory_limit_in_gb"); ok {
+		update.MemoryLimitInGB = redis.Float64(v.(float64))
+	}
+
+	if v, ok := d.GetOk("dataset_size_in_gb"); ok {
+		update.DatasetSizeInGB = redis.Float64(v.(float64))
+	}
+
+	// The below fields are optional and will only be sent in the request if they are present in the Terraform configuration
 	if len(setToStringSlice(d.Get("source_ips").(*schema.Set))) == 0 {
 		update.SourceIP = []*string{redis.String("0.0.0.0/0")}
 	}

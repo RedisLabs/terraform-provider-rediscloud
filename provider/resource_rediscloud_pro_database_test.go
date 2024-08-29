@@ -37,7 +37,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
-					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "3"),
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "3"),
 					resource.TestCheckResourceAttr(resourceName, "replication", "false"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
@@ -63,7 +63,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 					// Replica tests
 					resource.TestCheckResourceAttr(replicaResourceName, "name", "example-replica"),
 					// should be the value specified in the replica config, rather than the primary database
-					resource.TestCheckResourceAttr(replicaResourceName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(replicaResourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(replicaResourceName, "replica_of.#", "1"),
 
 					// Test databases exist
@@ -104,7 +104,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example-updated"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
-					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "replication", "true"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
@@ -290,7 +290,7 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 1000
     quantity = 1
@@ -328,7 +328,7 @@ resource "rediscloud_subscription" "example" {
     }
   }
   creation_plan {
-    memory_limit_in_gb           = 1
+    dataset_size_in_gb           = 1
     quantity                     = 1
     replication                  = false
     support_oss_cluster_api      = false
@@ -346,7 +346,7 @@ resource "rediscloud_subscription_database" "example" {
     subscription_id = rediscloud_subscription.example.id
     name = "example"
     protocol = "redis"
-    memory_limit_in_gb = 3
+    dataset_size_in_gb = 3
     data_persistence = "none"
     data_eviction = "allkeys-random"
     throughput_measurement_by = "operations-per-second"
@@ -382,7 +382,7 @@ const testAccResourceRedisCloudProDatabaseOptionalAttributes = proSubscriptionBo
 resource "rediscloud_subscription_database" "example" {
     subscription_id = rediscloud_subscription.example.id
     name = "example-no-protocol"
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     data_persistence = "none"
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 1000
@@ -394,7 +394,7 @@ const testAccResourceRedisCloudProDatabaseInvalidTimeUtc = proSubscriptionBoiler
 resource "rediscloud_subscription_database" "example" {
     subscription_id = rediscloud_subscription.example.id
     name = "example-no-protocol"
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     data_persistence = "none"
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 1000
@@ -413,7 +413,7 @@ resource "rediscloud_subscription_database" "no_password_database" {
     subscription_id = rediscloud_subscription.example.id
     name = "example-no-password"
     protocol = "redis"
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     data_persistence = "none"
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 1000   
@@ -426,7 +426,7 @@ resource "rediscloud_subscription_database" "example_replica" {
   subscription_id = rediscloud_subscription.example.id
   name = "example-replica"
   protocol = "redis"
-  memory_limit_in_gb = 1
+  dataset_size_in_gb = 1
   throughput_measurement_by = "operations-per-second"
   throughput_measurement_value = 1000
   replica_of = [format("redis://%s", rediscloud_subscription_database.example.public_endpoint)]
@@ -439,7 +439,7 @@ resource "rediscloud_subscription_database" "example" {
     subscription_id = rediscloud_subscription.example.id
     name = "example-updated"
     protocol = "redis"
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     data_persistence = "aof-every-write"
 	data_eviction = "volatile-lru"
     throughput_measurement_by = "operations-per-second"
@@ -469,7 +469,7 @@ resource "rediscloud_subscription_database" "example" {
     subscription_id = rediscloud_subscription.example.id
     name = "example-updated"
     protocol = "redis"
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     data_persistence = "aof-every-write"
 	data_eviction = "volatile-lru"
     throughput_measurement_by = "operations-per-second"
@@ -493,7 +493,7 @@ resource "rediscloud_subscription_database" "example" {
     subscription_id              = rediscloud_subscription.example.id
     name                         = "%s"
     protocol                     = "redis"
-    memory_limit_in_gb           = 1
+    dataset_size_in_gb           = 1
     data_persistence             = "none"
     throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 1000
@@ -516,7 +516,7 @@ const testAccResourceRedisCloudProDatabaseRespVersions = proSubscriptionBoilerpl
 resource "rediscloud_subscription_database" "example" {
     subscription_id = rediscloud_subscription.example.id
     name = "example"
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     data_persistence = "none"
 	throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 1000
