@@ -56,6 +56,10 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
+
+					resource.TestCheckResourceAttr(resourceName, "tags.market", "EMEA"),
+					resource.TestCheckResourceAttr(resourceName, "tags.material", "cardboard"),
+
 					// Replica tests
 					resource.TestCheckResourceAttr(replicaResourceName, "name", "example-replica"),
 					// should be the value specified in the replica config, rather than the primary database
@@ -366,6 +370,11 @@ resource "rediscloud_subscription_database" "example" {
           name = "RedisBloom"
         }
     ]
+
+	tags = {
+		"market" = "EMEA"
+		"material" = "cardboard"
+	}
 } 
 `
 

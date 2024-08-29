@@ -69,6 +69,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "override_region.1.override_global_alert.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.1.override_source_ips.#", "0"),
 
+					resource.TestCheckResourceAttr(resourceName, "tags.deployment_family", "blue"),
+					resource.TestCheckResourceAttr(resourceName, "tags.priority", "2"),
+
 					// Test databases exist
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[subscriptionResourceName]
@@ -111,6 +114,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttr(datasourceName, "global_modules.#", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "global_modules.0", "RedisJSON"),
+
+					resource.TestCheckResourceAttr(datasourceName, "tags.deployment_family", "blue"),
+					resource.TestCheckResourceAttr(datasourceName, "tags.priority", "2"),
 				),
 			},
 			// Test database is updated successfully, including updates to both global and local alerts and clearing modules
@@ -302,6 +308,11 @@ resource "rediscloud_active_active_subscription_database" "example" {
 	}
 	override_region {
 		name = "us-east-2"
+	}
+
+	tags = {
+		"deployment_family" = "blue"
+		"priority" = "2"
 	}
 
 }

@@ -437,6 +437,15 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 					},
 				},
 			},
+			"tags": {
+				Description: "Tags for database management",
+				Type:        schema.TypeMap,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Optional:         true,
+				ValidateDiagFunc: validateTagsfunc,
+			},
 		},
 	}
 }
@@ -715,6 +724,10 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
+	if err := readTags(ctx, api, subId, dbId, d); err != nil {
+		return diag.FromErr(err)
+	}
+
 	return diags
 }
 
@@ -885,6 +898,11 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 	}
 
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return diag.FromErr(err)
+	}
+
+	// The Tags API is synchronous so we shouldn't have to wait for anything
+	if err := writeTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
 
