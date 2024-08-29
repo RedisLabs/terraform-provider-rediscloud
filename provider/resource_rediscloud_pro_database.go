@@ -1017,7 +1017,7 @@ func remoteBackupIntervalSetCorrectly(key string) schema.CustomizeDiffFunc {
 
 func readTags(ctx context.Context, api *apiClient, subId int, databaseId int, d *schema.ResourceData) error {
 	tags := make(map[string]string)
-	tagResponse, err := api.client.Tags.GetFixed(ctx, subId, databaseId)
+	tagResponse, err := api.client.Tags.Get(ctx, subId, databaseId)
 	if err != nil {
 		return err
 	}
@@ -1038,7 +1038,7 @@ func writeTags(ctx context.Context, api *apiClient, subId int, databaseId int, d
 			Value: redis.String(v.(string)),
 		})
 	}
-	return api.client.Tags.PutFixed(ctx, subId, databaseId, redisTags.AllTags{Tags: &tags})
+	return api.client.Tags.Put(ctx, subId, databaseId, redisTags.AllTags{Tags: &tags})
 }
 
 func validateTagsfunc(tagsRaw interface{}, _ cty.Path) diag.Diagnostics {
