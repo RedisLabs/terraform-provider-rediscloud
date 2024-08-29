@@ -3,13 +3,14 @@ package provider
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strconv"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"regexp"
-	"strconv"
 )
 
 func dataSourceRedisCloudProDatabase() *schema.Resource {
@@ -50,6 +51,11 @@ func dataSourceRedisCloudProDatabase() *schema.Resource {
 			},
 			"memory_limit_in_gb": {
 				Description: "The maximum memory usage for the database",
+				Type:        schema.TypeFloat,
+				Computed:    true,
+			},
+			"dataset_size_in_gb": {
+				Description: "Maximum amount of data in the dataset for this specific database in GB",
 				Type:        schema.TypeFloat,
 				Computed:    true,
 			},
@@ -364,6 +370,9 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 	if err := d.Set("memory_limit_in_gb", redis.Float64Value(db.MemoryLimitInGB)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("dataset_size_in_gb", redis.Float64Value(db.MemoryLimitInGB)); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("support_oss_cluster_api", redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {

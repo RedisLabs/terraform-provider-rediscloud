@@ -37,7 +37,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test resource
 					resource.TestCheckResourceAttr(resourceName, "name", name),
-					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "3"),
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "3"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(resourceName, "global_data_persistence", "none"),
 					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "false"),
@@ -104,7 +104,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "db_id"),
 					resource.TestCheckResourceAttr(datasourceName, "name", name),
-					resource.TestCheckResourceAttr(datasourceName, "memory_limit_in_gb", "3"),
+					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "3"),
 					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(datasourceName, "enable_tls", "false"),
@@ -118,7 +118,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseUpdate, subscriptionName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test resource
-					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(resourceName, "global_data_persistence", "aof-every-1-second"),
@@ -141,7 +141,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_source_ips.#", "0"),
 
 					// Test datasource
-					resource.TestCheckResourceAttr(datasourceName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "true"),
 				),
@@ -150,7 +150,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlerts, subscriptionName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(resourceName, "global_data_persistence", "aof-every-1-second"),
@@ -253,7 +253,7 @@ const activeActiveSubscriptionBoilerplate = `
 		cloud_provider = "AWS"
 
 		creation_plan {
-			memory_limit_in_gb = 1
+			dataset_size_in_gb = 1
 			quantity = 1
 			region {
 				region = "us-east-1"
@@ -277,7 +277,7 @@ const testAccResourceRedisCloudActiveActiveDatabase = activeActiveSubscriptionBo
 resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
-    memory_limit_in_gb = 3
+    dataset_size_in_gb = 3
     support_oss_cluster_api = false 
     external_endpoint_for_oss_cluster_api = false
 	enable_tls = false
@@ -317,7 +317,7 @@ const testAccResourceRedisCloudActiveActiveDatabaseUpdate = activeActiveSubscrip
 resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     support_oss_cluster_api = true 
     external_endpoint_for_oss_cluster_api = true
     
@@ -351,7 +351,7 @@ const testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlerts = activeActive
 resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     support_oss_cluster_api = true 
     external_endpoint_for_oss_cluster_api = true
     
@@ -374,7 +374,7 @@ const testAccResourceRedisCloudActiveActiveDatabaseImport = activeActiveSubscrip
 resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
 }
 `
 
@@ -390,7 +390,7 @@ resource "rediscloud_active_active_subscription" "example" {
 	redis_version = "latest"
 
 	creation_plan {
-		memory_limit_in_gb = 1
+		dataset_size_in_gb = 1
 		quantity = 1
 		region {
 			region = "us-east-1"
@@ -410,7 +410,7 @@ resource "rediscloud_active_active_subscription" "example" {
 resource "rediscloud_active_active_subscription_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
 	name = "%s"
-	memory_limit_in_gb = 3
+	dataset_size_in_gb = 3
 	support_oss_cluster_api = false 
 	external_endpoint_for_oss_cluster_api = false
 	enable_tls = false
@@ -444,7 +444,7 @@ const testAccResourceRedisCloudActiveActiveDatabaseInvalidTimeUtc = activeActive
 resource "rediscloud_active_active_subscription_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
 	name = "%s"
-	memory_limit_in_gb = 3
+	dataset_size_in_gb = 3
 	support_oss_cluster_api = false 
 	external_endpoint_for_oss_cluster_api = false
 	enable_tls = false
