@@ -60,8 +60,7 @@ data "rediscloud_essentials_database" "example" {
 * `latest_backup_status` - A latest_backup_status object, documented below.
 * `latest_import_status` - A latest_import_status object, documented below.
 * `tags` - A string/string map of all Tags associated with this database.
-* `memory_limit_in_gb` - **Only relevant with Pay-As-You-Go databases.** (Deprecated) Maximum memory usage for this specific database. **Deprecated in favor of `dataset_size_in_gb`**
-* `dataset_size_in_gb` - **Only relevant with Pay-As-You-Go databases.** The maximum amount of data in the dataset for this specific database is in GB.
+* `memory_limit_in_gb` - **Only relevant with Pay-As-You-Go databases.** Maximum memory usage for this specific database.
 * `support_oss_cluster_api` - **Only relevant with Pay-As-You-Go databases.** Support Redis open-source (OSS) Cluster API.
 * `external_endpoint_for_oss_cluster_api` - **Only relevant with Pay-As-You-Go databases.** Should use the external endpoint for open-source (OSS) Cluster API.
 * `enable_database_clustering` - **Only relevant with Pay-As-You-Go databases.** Distributes database data to different cloud instances.

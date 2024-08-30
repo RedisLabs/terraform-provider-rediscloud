@@ -380,7 +380,7 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 	if err := d.Set("memory_limit_in_gb", redis.Float64Value(db.MemoryLimitInGB)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("dataset_size_in_gb", redis.Float64Value(db.MemoryLimitInGB)); err != nil {
+	if err := d.Set("dataset_size_in_gb", redis.Float64Value(db.DatasetSizeInGB)); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("support_oss_cluster_api", redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {
