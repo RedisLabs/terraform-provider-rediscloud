@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	fixedDatabases "github.com/RedisLabs/rediscloud-go-api/service/fixed/databases"
+	"github.com/RedisLabs/rediscloud-go-api/service/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"log"
@@ -410,6 +411,15 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				Optional:         true,
 				DiffSuppressFunc: suppressIfPaygDisabled,
 			},
+			"tags": {
+				Description: "Tags for database management",
+				Type:        schema.TypeMap,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Optional:         true,
+				ValidateDiagFunc: validateTagsfunc,
+			},
 		},
 	}
 }
@@ -540,6 +550,7 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases (enableDefaultUser)
+	// Others are omitted here _because_ the update will take care of them, such as tags
 	subscriptionMutex.Unlock(subId)
 	return resourceRedisCloudEssentialsDatabaseUpdate(ctx, d, meta)
 }
@@ -721,6 +732,10 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 		}
 	}
 
+	if err := readFixedTags(ctx, api, subId, databaseId, d); err != nil {
+		return diag.FromErr(err)
+	}
+
 	return diags
 }
 
@@ -832,6 +847,11 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
+	// The Tags API is synchronous so we shouldn't need to do any more waiting
+	if err := writeFixedTags(ctx, api, subId, databaseId, d); err != nil {
+		return diag.FromErr(err)
+	}
+
 	return resourceRedisCloudEssentialsDatabaseRead(ctx, d, meta)
 }
 
@@ -916,4 +936,30 @@ func writeReplica(replica fixedDatabases.ReplicaOf) []map[string]interface{} {
 func suppressIfPaygDisabled(_, _, _ string, d *schema.ResourceData) bool {
 	// If payg is disabled, suppress diff checks on payg attributes
 	return !d.Get("enable_payg_features").(bool)
+}
+
+func readFixedTags(ctx context.Context, api *apiClient, subId int, databaseId int, d *schema.ResourceData) error {
+	t := make(map[string]string)
+	tagResponse, err := api.client.Tags.GetFixed(ctx, subId, databaseId)
+	if err != nil {
+		return err
+	}
+	if tagResponse.Tags != nil {
+		for _, tag := range *tagResponse.Tags {
+			t[redis.StringValue(tag.Key)] = redis.StringValue(tag.Value)
+		}
+	}
+	return d.Set("tags", t)
+}
+
+func writeFixedTags(ctx context.Context, api *apiClient, subId int, databaseId int, d *schema.ResourceData) error {
+	t := make([]*tags.Tag, 0)
+	tState := d.Get("tags").(map[string]interface{})
+	for k, v := range tState {
+		t = append(t, &tags.Tag{
+			Key:   redis.String(k),
+			Value: redis.String(v.(string)),
+		})
+	}
+	return api.client.Tags.PutFixed(ctx, subId, databaseId, tags.AllTags{Tags: &t})
 }

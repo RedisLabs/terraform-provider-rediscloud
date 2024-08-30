@@ -55,6 +55,10 @@ func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "regex_rules.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "enable_tls", "false"),
 
+					resource.TestCheckResourceAttr(resourceName, "tags.environment", "production"),
+					resource.TestCheckResourceAttr(resourceName, "tags.cost_center", "0700"),
+					resource.TestCheckResourceAttr(resourceName, "tags.department", "finance"),
+
 					// Test the datasource
 					resource.TestMatchResourceAttr(datasourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
 					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
@@ -83,7 +87,15 @@ func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "enable_database_clustering", "false"),
 					resource.TestCheckResourceAttr(datasourceName, "regex_rules.#", "0"),
 					resource.TestCheckResourceAttr(datasourceName, "enable_tls", "false"),
+
+					resource.TestCheckResourceAttr(datasourceName, "tags.environment", "production"),
+					resource.TestCheckResourceAttr(datasourceName, "tags.cost_center", "0700"),
+					resource.TestCheckResourceAttr(datasourceName, "tags.department", "finance"),
 				),
+			},
+			{
+				Config:      fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseBasicWithUpperCaseTagKey, subscriptionName, databaseName),
+				ExpectError: regexp.MustCompile("tag keys and values must be lower case, invalid entries: UpperCaseKey"),
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseBasic, subscriptionName, databaseNameUpdated),
@@ -186,6 +198,53 @@ resource "rediscloud_essentials_database" "example" {
 	alert {
 		name = "throughput-higher-than"
 		value = 80
+	}
+
+	tags = {
+		"environment" = "production"
+		"cost_center" = "0700"
+		"department" = "finance"
+	}
+}
+data "rediscloud_essentials_database" "example" {
+	subscription_id = rediscloud_essentials_subscription.example.id
+	name = rediscloud_essentials_database.example.name
+}
+`
+
+const testAccResourceRedisCloudEssentialsDatabaseBasicWithUpperCaseTagKey = `
+data "rediscloud_payment_method" "card" {
+	card_type = "Visa"
+}
+data "rediscloud_essentials_plan" "example" {
+	name = "250MB"
+	cloud_provider = "AWS"
+	region = "eu-west-1"
+}
+resource "rediscloud_essentials_subscription" "example" {
+	name = "%s"
+	plan_id = data.rediscloud_essentials_plan.example.id
+	payment_method_id = data.rediscloud_payment_method.card.id
+}
+resource "rediscloud_essentials_database" "example" {
+	subscription_id = rediscloud_essentials_subscription.example.id
+	name = "%s"
+	enable_default_user = true
+	password = "j43589rhe39f"
+
+	data_persistence = "none"
+	replication = false
+
+	alert {
+		name = "throughput-higher-than"
+		value = 80
+	}
+
+	tags = {
+		"UpperCaseKey" = "invalid"
+		"environment" = "production"
+		"cost_center" = "0700"
+		"department" = "finance"
 	}
 }
 data "rediscloud_essentials_database" "example" {

@@ -353,6 +353,14 @@ func dataSourceRedisCloudEssentialsDatabase() *schema.Resource {
 				Type:        schema.TypeBool,
 				Computed:    true,
 			},
+			"tags": {
+				Description: "Tags for database management",
+				Type:        schema.TypeMap,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Computed: true,
+			},
 		},
 	}
 }
@@ -544,6 +552,10 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 		if err := d.Set("enable_tls", redis.BoolValue(db.Security.EnableTls)); err != nil {
 			return diag.FromErr(err)
 		}
+	}
+
+	if err := readFixedTags(ctx, api, subId, databaseId, d); err != nil {
+		return diag.FromErr(err)
 	}
 
 	return diags

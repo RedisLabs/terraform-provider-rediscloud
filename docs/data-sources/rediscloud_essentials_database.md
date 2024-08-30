@@ -59,6 +59,7 @@ data "rediscloud_essentials_database" "example" {
 * `modules` A list of database modules, documented below.
 * `latest_backup_status` - A latest_backup_status object, documented below.
 * `latest_import_status` - A latest_import_status object, documented below.
+* `tags` - A string/string map of all Tags associated with this database.
 * `memory_limit_in_gb` - **Only relevant with Pay-As-You-Go databases.** Maximum memory usage for this specific database.
 * `support_oss_cluster_api` - **Only relevant with Pay-As-You-Go databases.** Support Redis open-source (OSS) Cluster API.
 * `external_endpoint_for_oss_cluster_api` - **Only relevant with Pay-As-You-Go databases.** Should use the external endpoint for open-source (OSS) Cluster API.
