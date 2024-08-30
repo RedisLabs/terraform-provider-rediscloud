@@ -664,10 +664,10 @@ func createAADatabase(dbName string, idx *int, localThroughputs []*subscriptions
 			Quantity:                   redis.Int(1),
 			Modules:                    modules,
 		}
-		if datasetSizeInGB != 0 {
+		if datasetSizeInGB > 0 {
 			createDatabase.DatasetSizeInGB = redis.Float64(datasetSizeInGB)
 		}
-		if memoryLimitInGB != 0 {
+		if memoryLimitInGB > 0 {
 			createDatabase.MemoryLimitInGB = redis.Float64(memoryLimitInGB)
 		}
 		*idx++
