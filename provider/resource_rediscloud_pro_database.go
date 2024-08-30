@@ -1043,15 +1043,19 @@ func writeTags(ctx context.Context, api *apiClient, subId int, databaseId int, d
 
 func validateTagsfunc(tagsRaw interface{}, _ cty.Path) diag.Diagnostics {
 	tags := tagsRaw.(map[string]interface{})
-	invalidKeys := make([]string, 0)
-	for k := range tags {
+	invalid := make([]string, 0)
+	for k, v := range tags {
 		if k != strings.ToLower(k) {
-			invalidKeys = append(invalidKeys, k)
+			invalid = append(invalid, k)
+		}
+		vStr := v.(string)
+		if vStr != strings.ToLower(vStr) {
+			invalid = append(invalid, vStr)
 		}
 	}
 
-	if len(invalidKeys) > 0 {
-		return diag.Errorf("tag keys must be lower case, invalid keys: %s", strings.Join(invalidKeys, ", "))
+	if len(invalid) > 0 {
+		return diag.Errorf("tag keys and values must be lower case, invalid entries: %s", strings.Join(invalid, ", "))
 	}
 	return nil
 }

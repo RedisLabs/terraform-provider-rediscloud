@@ -57,7 +57,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
 
-					resource.TestCheckResourceAttr(resourceName, "tags.market", "EMEA"),
+					resource.TestCheckResourceAttr(resourceName, "tags.market", "emea"),
 					resource.TestCheckResourceAttr(resourceName, "tags.material", "cardboard"),
 
 					// Replica tests
@@ -372,7 +372,7 @@ resource "rediscloud_subscription_database" "example" {
     ]
 
 	tags = {
-		"market" = "EMEA"
+		"market" = "emea"
 		"material" = "cardboard"
 	}
 } 

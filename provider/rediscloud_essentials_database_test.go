@@ -95,7 +95,7 @@ func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
 			},
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseBasicWithUpperCaseTagKey, subscriptionName, databaseName),
-				ExpectError: regexp.MustCompile("tag keys must be lower case, invalid keys: UpperCaseKey"),
+				ExpectError: regexp.MustCompile("tag keys and values must be lower case, invalid entries: UpperCaseKey"),
 			},
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseBasic, subscriptionName, databaseNameUpdated),
