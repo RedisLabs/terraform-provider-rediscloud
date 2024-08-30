@@ -214,6 +214,14 @@ func dataSourceRedisCloudActiveActiveDatabase() *schema.Resource {
 					},
 				},
 			},
+			"tags": {
+				Description: "Tags for database management",
+				Type:        schema.TypeMap,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Computed: true,
+			},
 		},
 	}
 }
@@ -338,6 +346,10 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 		}
 	}
 	if err := d.Set("latest_import_status", parsedLatestImportStatus); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := readTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
 
