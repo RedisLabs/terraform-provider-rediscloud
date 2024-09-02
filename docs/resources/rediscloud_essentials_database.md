@@ -43,6 +43,11 @@ resource "rediscloud_essentials_database" "database-resource" {
     name  = "throughput-higher-than"
     value = 80
   }
+  
+  tags = {
+    "env" = "dev"
+    "priority" = "2"
+  }
 }
 ```
 
@@ -64,6 +69,7 @@ The following arguments are supported:
 * `password` - (Optional) Password to access the database. If not specified, a random 32 character long alphanumeric password will be automatically generated.
 * `enable_default_user` - (Optional) When `true` enables connecting to the database with the default user. Default `true`.
 * `alert` - (Optional) A block defining Redis database alert. Can be specified multiple times. Documented below.
+* `tags` - (Optional) A string/string map of tags to associate with this database. Note that all keys and values must be lowercase.
 * `modules` - (Optional) A list of modules objects, documented below. **Modifying this attribute will force creation of a new resource.**
 * `enable_payg_features` - (Optional) Whether to enable features restricted to Pay-As-You-Go legacy databases. It is not supported for new databases. Default `false`.
 * `memory_limit_in_gb` - (Optional) **Only used with Pay-As-You-Go databases.** Maximum memory usage for the database.

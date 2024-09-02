@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	redisTags "github.com/RedisLabs/rediscloud-go-api/service/tags"
+	"github.com/hashicorp/go-cty/cty"
 	"strconv"
 	"strings"
 	"time"
@@ -436,6 +438,15 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 					},
 				},
 			},
+			"tags": {
+				Description: "Tags for database management",
+				Type:        schema.TypeMap,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+				Optional:         true,
+				ValidateDiagFunc: validateTagsfunc,
+			},
 		},
 	}
 }
@@ -723,6 +734,10 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
+	if err := readTags(ctx, api, subId, dbId, d); err != nil {
+		return diag.FromErr(err)
+	}
+
 	return diags
 }
 
@@ -892,6 +907,11 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
+	// The Tags API is synchronous so we shouldn't have to wait for anything
+	if err := writeTags(ctx, api, subId, dbId, d); err != nil {
+		return diag.FromErr(err)
+	}
+
 	subscriptionMutex.Unlock(subId)
 	return resourceRedisCloudProDatabaseRead(ctx, d, meta)
 }
@@ -1022,4 +1042,49 @@ func remoteBackupIntervalSetCorrectly(key string) schema.CustomizeDiffFunc {
 		return nil
 	}
 
+}
+
+func readTags(ctx context.Context, api *apiClient, subId int, databaseId int, d *schema.ResourceData) error {
+	tags := make(map[string]string)
+	tagResponse, err := api.client.Tags.Get(ctx, subId, databaseId)
+	if err != nil {
+		return err
+	}
+	if tagResponse.Tags != nil {
+		for _, t := range *tagResponse.Tags {
+			tags[redis.StringValue(t.Key)] = redis.StringValue(t.Value)
+		}
+	}
+	return d.Set("tags", tags)
+}
+
+func writeTags(ctx context.Context, api *apiClient, subId int, databaseId int, d *schema.ResourceData) error {
+	tags := make([]*redisTags.Tag, 0)
+	tState := d.Get("tags").(map[string]interface{})
+	for k, v := range tState {
+		tags = append(tags, &redisTags.Tag{
+			Key:   redis.String(k),
+			Value: redis.String(v.(string)),
+		})
+	}
+	return api.client.Tags.Put(ctx, subId, databaseId, redisTags.AllTags{Tags: &tags})
+}
+
+func validateTagsfunc(tagsRaw interface{}, _ cty.Path) diag.Diagnostics {
+	tags := tagsRaw.(map[string]interface{})
+	invalid := make([]string, 0)
+	for k, v := range tags {
+		if k != strings.ToLower(k) {
+			invalid = append(invalid, k)
+		}
+		vStr := v.(string)
+		if vStr != strings.ToLower(vStr) {
+			invalid = append(invalid, vStr)
+		}
+	}
+
+	if len(invalid) > 0 {
+		return diag.Errorf("tag keys and values must be lower case, invalid entries: %s", strings.Join(invalid, ", "))
+	}
+	return nil
 }

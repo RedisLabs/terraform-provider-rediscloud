@@ -53,6 +53,7 @@ data "rediscloud_active_active_subscription_database" "example" {
 * `private_endpoint` - Private endpoint to access the database.
 * `latest_backup_statuses` A list of latest_backup_status objects, documented below.
 * `latest_import_status` - A latest_import_status object, documented below.`
+* `tags` - A string/string map of all Tags associated with this database.
 
 The `latest_backup_status` object and `latest_import_status` block contains:
 

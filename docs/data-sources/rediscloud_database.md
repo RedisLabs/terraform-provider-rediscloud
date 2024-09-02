@@ -64,6 +64,7 @@ data "rediscloud_database" "example" {
 * `enable_default_user` - When `true` enables connecting to the database with the default user. Default `true`.
 * `latest_backup_status` - A latest_backup_status object, documented below.
 * `latest_import_status` - A latest_import_status object, documented below.
+* `tags` - A string/string map of all Tags associated with this database.
 
 The `alert` block supports:
 

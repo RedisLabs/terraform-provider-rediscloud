@@ -69,6 +69,11 @@ resource "rediscloud_active_active_subscription_database" "database-resource" {
         value = 60
       }
    }
+  
+    tags = {
+      "environment" = "production"
+      "cost_center" = "0700"
+    }
 }
 
 output "us-east-1-public-endpoints" {
@@ -102,7 +107,7 @@ The following arguments are supported:
 * `global_resp_version` - (Optional) Either 'resp2' or 'resp3'. Resp version for Crdb databases within the AA database. Must be compatible with Redis version.
 * `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999. **Modifying this attribute will force creation of a new resource.**
 * `override_region` - (Optional) Override region specific configuration, documented below
-
+* `tags` - (Optional) A string/string map of tags to associate with this database. Note that all keys and values must be lowercase.
 
 The `override_region` block supports:
 
