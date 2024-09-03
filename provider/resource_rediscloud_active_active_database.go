@@ -633,16 +633,23 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("memory_limit_in_gb", redis.Float64(*db.CrdbDatabases[0].MemoryLimitInGB)); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("dataset_size_in_gb", redis.Float64(*db.CrdbDatabases[0].DatasetSizeInGB)); err != nil {
-		return diag.FromErr(err)
-	}
-
 	if err := d.Set("enable_tls", redis.BoolValue(db.CrdbDatabases[0].Security.EnableTls)); err != nil {
 		return diag.FromErr(err)
+	}
+
+	// To prevent both fields being included in API requests, only one of these two fields should be set in the state
+	// Only add `dataset_size_in_gb` to the state if `memory_limit_in_gb` is not already in the state
+	if _, inState := d.GetOk("memory_limit_in_gb"); !inState {
+		if err := d.Set("dataset_size_in_gb", redis.Float64(*db.CrdbDatabases[0].DatasetSizeInGB)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	// Likewise, only add `memory_limit_in_gb` to the state if `dataset_size_in_gb` is not already in the state
+	if _, inState := d.GetOk("dataset_size_in_gb"); !inState {
+		if err := d.Set("memory_limit_in_gb", redis.Float64(*db.CrdbDatabases[0].MemoryLimitInGB)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	var regionDbConfigs []map[string]interface{}
@@ -867,12 +874,12 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 	}
 
 	// One of the following fields must be set in the request, validation is handled in the schema (ExactlyOneOf)
-	if v, ok := d.GetOk("memory_limit_in_gb"); ok {
-		update.MemoryLimitInGB = redis.Float64(v.(float64))
-	}
-
 	if v, ok := d.GetOk("dataset_size_in_gb"); ok {
 		update.DatasetSizeInGB = redis.Float64(v.(float64))
+	}
+
+	if v, ok := d.GetOk("memory_limit_in_gb"); ok {
+		update.MemoryLimitInGB = redis.Float64(v.(float64))
 	}
 
 	// The below fields are optional and will only be sent in the request if they are present in the Terraform configuration

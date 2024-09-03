@@ -3,11 +3,12 @@ package provider
 import (
 	"context"
 	"fmt"
-	redisTags "github.com/RedisLabs/rediscloud-go-api/service/tags"
-	"github.com/hashicorp/go-cty/cty"
 	"strconv"
 	"strings"
 	"time"
+
+	redisTags "github.com/RedisLabs/rediscloud-go-api/service/tags"
+	"github.com/hashicorp/go-cty/cty"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -605,14 +606,6 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("memory_limit_in_gb", redis.Float64Value(db.MemoryLimitInGB)); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("dataset_size_in_gb", redis.Float64Value(db.DatasetSizeInGB)); err != nil {
-		return diag.FromErr(err)
-	}
-
 	if err := d.Set("support_oss_cluster_api", redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {
 		return diag.FromErr(err)
 	}
@@ -664,6 +657,21 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	if err := d.Set("external_endpoint_for_oss_cluster_api",
 		d.Get("external_endpoint_for_oss_cluster_api").(bool)); err != nil {
 		return diag.FromErr(err)
+	}
+
+	// To prevent both fields being included in API requests, only one of these two fields should be set in the state
+	// Only add `dataset_size_in_gb` to the state if `memory_limit_in_gb` is not already in the state
+	if _, inState := d.GetOk("memory_limit_in_gb"); !inState {
+		if err := d.Set("dataset_size_in_gb", redis.Float64Value(db.DatasetSizeInGB)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	// Likewise, only add `memory_limit_in_gb` to the state if `dataset_size_in_gb` is not already in the state
+	if _, inState := d.GetOk("dataset_size_in_gb"); !inState {
+		if err := d.Set("memory_limit_in_gb", redis.Float64Value(db.MemoryLimitInGB)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	password := d.Get("password").(string)
@@ -817,12 +825,12 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)
-	if v, ok := d.GetOk("memory_limit_in_gb"); ok {
-		update.MemoryLimitInGB = redis.Float64(v.(float64))
-	}
-
 	if v, ok := d.GetOk("dataset_size_in_gb"); ok {
 		update.DatasetSizeInGB = redis.Float64(v.(float64))
+	} else {
+		if v, ok := d.GetOk("memory_limit_in_gb"); ok {
+			update.MemoryLimitInGB = redis.Float64(v.(float64))
+		}
 	}
 
 	// The below fields are optional and will only be sent in the request if they are present in the Terraform configuration
