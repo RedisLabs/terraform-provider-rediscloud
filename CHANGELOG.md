@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 1.8.1 (3rd Sept 2024)
+
+### Removed
+
+- Validation preventing measurement of throughput by ops/sec with the Redisearch module present
+
+### Fixed
+
+- Slight performance improvement
+
 # 1.8.0 (12th August 2024)
 
 ### Added
@@ -36,8 +46,10 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 ### Added
 
 - Resources for Essentials plans: `rediscloud_essentials_subscription`, `rediscloud_essentials_database`
-- Datasources for Active-Active deployments: `rediscloud_active_active_subscription`, `rediscloud_active_active_subscription_database`
-- Datasources for Essentials plans: `rediscloud_essentials_plan`, `rediscloud_essentials_subscription`, `rediscloud_essentials_database`
+- Datasources for Active-Active
+  deployments: `rediscloud_active_active_subscription`, `rediscloud_active_active_subscription_database`
+- Datasources for Essentials
+  plans: `rediscloud_essentials_plan`, `rediscloud_essentials_subscription`, `rediscloud_essentials_database`
 - `modules`/`global_modules` can be specified on Active-Active Subscription/Database resources, enabling `RedisJSON`
 - All Subscription resources include the `pricing` attribute
 - All Database resources include `latest_backup_status` and `latest_import_status` attributes as appropriate
