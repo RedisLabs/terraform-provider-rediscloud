@@ -43,6 +43,7 @@ data "rediscloud_active_active_subscription_database" "example" {
 `id` is set to the ID of the found subscription and database in the following format: `{subscription_id}/{db_id}`
 
 * `memory_limit_in_gb` - The maximum memory usage for the database.
+* `dataset_size_in_gb` - Maximum amount of data in the dataset for this specific database in GB.
 * `support_oss_cluster_api` - Supports the Redis open-source (OSS) Cluster API.
 * `external_endpoint_for_oss_cluster_api` - Use the external endpoint for open-source (OSS) Cluster API.
 * `enable_tls` - Enable TLS for database.

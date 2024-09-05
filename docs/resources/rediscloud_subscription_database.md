@@ -38,7 +38,7 @@ resource "rediscloud_subscription" "subscription-resource" {
   // This block needs to be defined for provisioning a new subscription.
   // This allows creation of a well-optimized hardware specification for databases in the cluster
   creation_plan {
-    memory_limit_in_gb = 15
+    dataset_size_in_gb = 15
     quantity = 1
     replication=true
     throughput_measurement_by = "operations-per-second"
@@ -51,7 +51,7 @@ resource "rediscloud_subscription" "subscription-resource" {
 resource "rediscloud_subscription_database" "database-resource" {
     subscription_id = rediscloud_subscription.subscription-resource.id
     name = "database-name"
-    memory_limit_in_gb = 15
+    dataset_size_in_gb = 15
     data_persistence = "aof-every-write"
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 20000
@@ -82,7 +82,8 @@ The following arguments are supported:
 * `name` - (Required) A meaningful name to identify the database
 * `throughput_measurement_by` - (Required) Throughput measurement method that will be used by your databases. Either `number-of-shards` or `operations-per-second`. **`number-of-shards` is deprecated and only supported for legacy deployments.**
 * `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
-* `memory_limit_in_gb` - (Required) Maximum memory usage for this specific database
+* `memory_limit_in_gb` - (Optional -  **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favor of `dataset_size_in_gb` - not possible to import databases with this attribute set**
+* `dataset_size_in_gb` - (Optional - **Required if `memory_limit_in_gb` is unset**) The maximum amount of data in the dataset for this specific database is in GB
 * `protocol` - (Optional) The protocol that will be used to access the database, (either ‘redis’ or ‘memcached’) Default: ‘redis’. **Modifying this attribute will force creation of a new resource.**
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `resp_version` - (Optional) Either `resp2` or `resp3`. Database's RESP version. Must be compatible with the Redis version.
@@ -188,3 +189,4 @@ The `response` block `latest_import_status` contains:
 $ terraform import rediscloud_subscription_database.database-resource 123456/12345678
 ```
 
+Note: Due to constraints in the Redis Cloud API, the `memory_limit_in_gb` cannot be set during imports as it is deprecated. If you need to set the `memory_limit_in_gb` attribute, you will need to create a new database resource. It is recommended to use the `dataset_size_in_gb` attribute instead.

@@ -46,7 +46,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 					resource.TestMatchResourceAttr(databaseName, "db_id", regexp.MustCompile("^[1-9][0-9]*$")),
 					resource.TestCheckResourceAttrSet(databaseName, "password"),
 					resource.TestCheckResourceAttr(databaseName, "name", "tf-database"),
-					resource.TestCheckResourceAttr(databaseName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(databaseName, "dataset_size_in_gb", "1"),
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[subscriptionName]
 
@@ -95,7 +95,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 					resource.TestMatchResourceAttr(databaseName, "db_id", regexp.MustCompile("^[1-9][0-9]*$")),
 					resource.TestCheckResourceAttrSet(databaseName, "password"),
 					resource.TestCheckResourceAttr(databaseName, "name", "tf-database"),
-					resource.TestCheckResourceAttr(databaseName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(databaseName, "dataset_size_in_gb", "1"),
 				),
 			},
 			// And that mTLS can be switched off altogether
@@ -109,7 +109,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 					resource.TestMatchResourceAttr(databaseName, "db_id", regexp.MustCompile("^[1-9][0-9]*$")),
 					resource.TestCheckResourceAttrSet(databaseName, "password"),
 					resource.TestCheckResourceAttr(databaseName, "name", "tf-database"),
-					resource.TestCheckResourceAttr(databaseName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(databaseName, "dataset_size_in_gb", "1"),
 				),
 			},
 			{
@@ -148,7 +148,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEm
 					resource.TestMatchResourceAttr(databaseName, "db_id", regexp.MustCompile("^[1-9][0-9]*$")),
 					resource.TestCheckResourceAttrSet(databaseName, "password"),
 					resource.TestCheckResourceAttr(databaseName, "name", "tf-database"),
-					resource.TestCheckResourceAttr(databaseName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(databaseName, "dataset_size_in_gb", "1"),
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[subscriptionName]
 
@@ -319,7 +319,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndTl
 					resource.TestMatchResourceAttr(databaseName, "db_id", regexp.MustCompile("^[1-9][0-9]*$")),
 					resource.TestCheckResourceAttrSet(databaseName, "password"),
 					resource.TestCheckResourceAttr(databaseName, "name", "tf-database"),
-					resource.TestCheckResourceAttr(databaseName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(databaseName, "dataset_size_in_gb", "1"),
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[subscriptionName]
 
@@ -400,7 +400,7 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 1000
     quantity = 1
@@ -417,7 +417,7 @@ resource "rediscloud_subscription_database" "example" {
   subscription_id = rediscloud_subscription.example.id
   name = "tf-database"
   protocol = "redis"
-  memory_limit_in_gb = %d
+  dataset_size_in_gb = %d
   support_oss_cluster_api = true
   data_persistence = "none"
   replication = false
@@ -436,7 +436,7 @@ resource "rediscloud_subscription_database" "example" {
   subscription_id = rediscloud_subscription.example.id
   name = "tf-database"
   protocol = "redis"
-  memory_limit_in_gb = %d
+  dataset_size_in_gb = %d
   support_oss_cluster_api = true
   data_persistence = "none"
   replication = false
@@ -454,7 +454,7 @@ resource "rediscloud_subscription_database" "example" {
   subscription_id = rediscloud_subscription.example.id
   name = "tf-database"
   protocol = "redis"
-  memory_limit_in_gb = %d
+  dataset_size_in_gb = %d
   support_oss_cluster_api = true
   data_persistence = "none"
   replication = false
@@ -472,7 +472,7 @@ resource "rediscloud_subscription_database" "example" {
   subscription_id = rediscloud_subscription.example.id
   name = "tf-database"
   protocol = "redis"
-  memory_limit_in_gb = %d
+  dataset_size_in_gb = %d
   support_oss_cluster_api = true
   data_persistence = "none"
   replication = false
@@ -491,7 +491,7 @@ resource "rediscloud_subscription_database" "example" {
   subscription_id = rediscloud_subscription.example.id
   name = "tf-database"
   protocol = "redis"
-  memory_limit_in_gb = %d
+  dataset_size_in_gb = %d
   support_oss_cluster_api = true
   data_persistence = "none"
   replication = false
@@ -511,7 +511,7 @@ resource "rediscloud_subscription_database" "example" {
   subscription_id = rediscloud_subscription.example.id
   name = "tf-database"
   protocol = "redis"
-  memory_limit_in_gb = %d
+  dataset_size_in_gb = %d
   support_oss_cluster_api = true
   data_persistence = "none"
   replication = false
@@ -530,7 +530,7 @@ resource "rediscloud_subscription_database" "example" {
   subscription_id = rediscloud_subscription.example.id
   name = "tf-database"
   protocol = "redis"
-  memory_limit_in_gb = %d
+  dataset_size_in_gb = %d
   support_oss_cluster_api = true
   data_persistence = "none"
   replication = false
