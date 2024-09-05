@@ -90,7 +90,8 @@ output "us-east-2-private-endpoints" {
 The following arguments are supported:
 * `subscription_id`: (Required) The ID of the Active-Active subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
 * `name` - (Required) A meaningful name to identify the database. **Modifying this attribute will force creation of a new resource.**
-* `memory_limit_in_gb` - (Required) Maximum memory usage for this specific database, including replication and other overhead
+* `memory_limit_in_gb` - (Optional -  **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favor of `dataset_size_in_gb` - not possible to import databases with this attribute set**
+* `dataset_size_in_gb` - (Optional - **Required if `memory_limit_in_gb` is unset**) The maximum amount of data in the dataset for this specific database is in GB
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `external_endpoint_for_oss_cluster_api` - (Optional) Should use the external endpoint for open-source (OSS) Cluster API.
   Can only be enabled if OSS Cluster API support is enabled. Default: 'false'
@@ -177,4 +178,6 @@ $ terraform import rediscloud_active_active_subscription_database.database-resou
 ```
 
 Note: Due to constraints in the Redis Cloud API, the import process will not import global attributes or override region attributes. If you wish to use these attributes in your Terraform configuration, you will need to manually add them to your Terraform configuration and run `terraform apply` to update the database.
+
+Additionally, the `memory_limit_in_gb` cannot be set during imports as it is deprecated. If you need to set the `memory_limit_in_gb` attribute, you will need to create a new database resource. It is recommended to use the `dataset_size_in_gb` attribute instead.
 

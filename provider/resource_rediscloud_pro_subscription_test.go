@@ -48,7 +48,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "0"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.0", "RedisJSON"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.1", "RedisBloom"),
@@ -88,7 +88,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "0"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.replication", "false"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "false"),
@@ -422,7 +422,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 	numDatabases := 1
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,
-		"memory_limit_in_gb":           float64(1),
+		"dataset_size_in_gb":           float64(1),
 		"modules":                      []interface{}{"RedisJSON", "RedisGraph", "RedisBloom"},
 		"quantity":                     numDatabases,
 		"replication":                  false,
@@ -457,7 +457,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 	numDatabases := 5
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
-		"memory_limit_in_gb":           float64(1),
+		"dataset_size_in_gb":           float64(1),
 		"modules":                      []interface{}{"RedisJSON", "RedisGraph", "RedisBloom"},
 		"quantity":                     numDatabases,
 		"replication":                  false,
@@ -491,7 +491,7 @@ func TestFlexSubModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 	numDatabases := 5
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
-		"memory_limit_in_gb":           float64(1),
+		"dataset_size_in_gb":           float64(1),
 		"modules":                      []interface{}{"RedisGraph"},
 		"quantity":                     numDatabases,
 		"replication":                  false,
@@ -513,7 +513,7 @@ func TestFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
 	numDatabases := 5
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
-		"memory_limit_in_gb":           float64(1),
+		"dataset_size_in_gb":           float64(1),
 		"modules":                      []interface{}{"RedisJSON", "RediSearch", "RedisBloom"},
 		"quantity":                     numDatabases,
 		"replication":                  false,
@@ -537,7 +537,7 @@ func TestFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
 func TestFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
-		"memory_limit_in_gb":           float64(1),
+		"dataset_size_in_gb":           float64(1),
 		"modules":                      []interface{}{},
 		"quantity":                     2,
 		"replication":                  false,
@@ -557,7 +557,7 @@ func TestFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
 func TestFlexSubNoAverageItemSizeInBytes(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0, // 0 is the value that is returned when the field is not present
-		"memory_limit_in_gb":           float64(1),
+		"dataset_size_in_gb":           float64(1),
 		"modules":                      []interface{}{},
 		"quantity":                     2,
 		"replication":                  false,
@@ -576,7 +576,7 @@ func TestFlexSubNoAverageItemSizeInBytes(t *testing.T) {
 func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
-		"memory_limit_in_gb":           float64(1),
+		"dataset_size_in_gb":           float64(1),
 		"modules":                      []interface{}{"RediSearch"},
 		"quantity":                     2,
 		"replication":                  false,
@@ -594,7 +594,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing
 func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
-		"memory_limit_in_gb":           float64(1),
+		"dataset_size_in_gb":           float64(1),
 		"modules":                      []interface{}{"RediSearch"},
 		"quantity":                     2,
 		"replication":                  true,
@@ -612,7 +612,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.
 func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
-		"memory_limit_in_gb":           float64(1),
+		"dataset_size_in_gb":           float64(1),
 		"modules":                      []interface{}{"RedisGraph"},
 		"quantity":                     2,
 		"replication":                  false,
@@ -630,7 +630,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing
 func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,
-		"memory_limit_in_gb":           float64(1),
+		"dataset_size_in_gb":           float64(1),
 		"modules":                      []interface{}{"RedisGraph"},
 		"quantity":                     2,
 		"replication":                  true,
@@ -709,7 +709,7 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     quantity = 1
     replication=false
     support_oss_cluster_api=false
@@ -755,7 +755,7 @@ resource "rediscloud_subscription" "test" {
   }
 
   creation_plan {
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     quantity = 1
     replication=false
     support_oss_cluster_api=false
@@ -798,7 +798,7 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     quantity = 1
     replication=false
     support_oss_cluster_api=false
@@ -872,7 +872,7 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     quantity = 1
     replication=false
     support_oss_cluster_api=false
@@ -912,7 +912,7 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    memory_limit_in_gb = 2
+    dataset_size_in_gb = 2
     quantity = 1
     replication=false
     support_oss_cluster_api=false
@@ -953,7 +953,7 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    memory_limit_in_gb = 2
+    dataset_size_in_gb = 2
     quantity = 1
     replication=false
     support_oss_cluster_api=false
@@ -993,7 +993,7 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     quantity = 1
     replication=false
     support_oss_cluster_api=false
