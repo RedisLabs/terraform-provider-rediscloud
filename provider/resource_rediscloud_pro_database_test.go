@@ -147,9 +147,10 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 			},
 			// Test that that database is imported successfully
 			{
-				ResourceName:      "rediscloud_subscription_database.no_password_database",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "rediscloud_subscription_database.no_password_database",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dataset_size_in_gb"},
 			},
 		},
 	})
@@ -217,9 +218,10 @@ func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dataset_size_in_gb"},
 			},
 		},
 	})

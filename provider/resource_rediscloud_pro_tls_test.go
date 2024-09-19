@@ -116,7 +116,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 				ResourceName:            databaseName,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"client_ssl_certificate", "client_tls_certificates"},
+				ImportStateVerifyIgnore: []string{"client_ssl_certificate", "client_tls_certificates", "dataset_size_in_gb"},
 			},
 		},
 	})
@@ -361,7 +361,7 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndTl
 				ResourceName:            databaseName,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"client_tls_certificates"},
+				ImportStateVerifyIgnore: []string{"client_tls_certificates", "dataset_size_in_gb"},
 			},
 		},
 	})
