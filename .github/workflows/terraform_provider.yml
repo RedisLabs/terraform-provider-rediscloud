@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
-      - uses: actions/cache@v3.3.2
+      - uses: actions/cache@v4.1.0
         continue-on-error: true
         id: cache-terraform-plugin-dir
         timeout-minutes: 2
@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
-      - uses: actions/cache@v3.3.2
+      - uses: actions/cache@v4.1.0
         continue-on-error: true
         id: cache-terraform-providers-schema
         timeout-minutes: 2
@@ -58,7 +58,7 @@ jobs:
           path: terraform-providers-schema
           key: ${{ runner.os }}-terraform-providers-schema-${{ hashFiles('go.sum') }}-${{ hashFiles('provider/**') }}
       - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
-        uses: actions/cache@v3.3.2
+        uses: actions/cache@v4.1.0
         timeout-minutes: 2
         with:
           path: terraform-plugin-dir
