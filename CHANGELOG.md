@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 1.9.0 (9th Oct 2024)
+
+### Added
+
+- Tags as key/value pairs on Pro and ActiveActive databases
+- The facility for users to upgrade from memorySizeInGb to datasetSizeInGb
+(please note that changing back may have unexpected results and is not supported)
+
 # 1.8.1 (3rd Sept 2024)
 
 ### Removed
