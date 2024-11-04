@@ -24,7 +24,7 @@ resource "rediscloud_active_active_subscription" "subscription-resource" {
   cloud_provider = "AWS"
 
   creation_plan {
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     quantity = 1
     region {
       region = "us-east-1"
@@ -44,7 +44,7 @@ resource "rediscloud_active_active_subscription" "subscription-resource" {
 resource "rediscloud_active_active_subscription_database" "database-resource" {
     subscription_id = rediscloud_active_active_subscription.subscription-resource.id
     name = "database-name"
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     global_data_persistence = "aof-every-1-second"
     global_password = "some-random-pass-2" 
     global_source_ips = ["192.168.0.0/16"]
