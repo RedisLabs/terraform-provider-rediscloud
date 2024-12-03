@@ -51,11 +51,17 @@ data "rediscloud_active_active_subscription_database" "example" {
 * `global_modules` - A list of modules to be enabled on all deployments of this database.
 * `public_endpoint` - Public endpoint to access the database.
 * `private_endpoint` - Private endpoint to access the database.
-* `latest_backup_statuses` A list of latest_backup_status objects, documented below.
-* `latest_import_status` - A latest_import_status object, documented below.`
+* `latest_backup_statuses` A list of `latest_backup_status` objects, documented below.
+* `latest_import_status` - A `latest_import_status` object, documented below.`
 * `tags` - A string/string map of all Tags associated with this database.
 
-The `latest_backup_status` object and `latest_import_status` block contains:
+The `latest_backup_status` block contains:
+
+* `region` - The region within the Cloud Provider where this database is hosted.
+* `error` - An error block, in case this lookup failed, documented below.
+* `response` - A detail block, documented below.
+
+The `latest_import_status` block contains:
 
 * `error` - An error block, in case this lookup failed, documented below.
 * `response` - A detail block, documented below.
