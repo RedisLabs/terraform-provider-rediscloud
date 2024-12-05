@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.0.0 (Unreleased)
+
+### Changed
+
+- Upgraded the provider to use `v0.21.0` of the [rediscloud-go-api](https://github.com/RedisLabs/rediscloud-go-api) which handles API rate limits gracefully.
+
+### Removed
+
+- `latest_backup_status` and `latest_import_status` from `rediscloud_active_active_subscription_database`,
+  `rediscloud_active_active_subscription_regions`, `rediscloud_subscription_database` and `rediscloud_essentials_database`.
+  Users should use the equivalent data sources instead.
+
 # 1.9.0 (9th Oct 2024)
 
 ### Added
