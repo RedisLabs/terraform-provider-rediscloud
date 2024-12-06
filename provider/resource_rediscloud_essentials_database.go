@@ -2,13 +2,14 @@ package provider
 
 import (
 	"context"
+	"log"
+	"time"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	fixedDatabases "github.com/RedisLabs/rediscloud-go-api/service/fixed/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"log"
-	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -230,135 +231,6 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 							Description: "Name of the module to enable",
 							Type:        schema.TypeString,
 							Required:    true,
-						},
-					},
-				},
-			},
-			"latest_backup_status": {
-				Description: "Details about the last backup that took place for this database",
-				Computed:    true,
-				Type:        schema.TypeSet,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"response": {
-							Computed: true,
-							Type:     schema.TypeSet,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"status": {
-										Description: "The status of the last backup operation",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-									"last_backup_time": {
-										Description: "When the last backup operation occurred",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-									"failure_reason": {
-										Description: "If a failure, why the backup operation failed",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-								},
-							},
-						},
-						"error": {
-							Computed: true,
-							Type:     schema.TypeSet,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"type": {
-										Description: "The type of error encountered while looking up the status of the last backup",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-									"description": {
-										Description: "A description of the error encountered while looking up the status of the last backup",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-									"status": {
-										Description: "Any particular HTTP status code associated with the erroneous status check",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			"latest_import_status": {
-				Description: "Details about the last import that took place for this active-active database",
-				Computed:    true,
-				Type:        schema.TypeSet,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"response": {
-							Computed: true,
-							Type:     schema.TypeSet,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"status": {
-										Description: "The status of the last import operation",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-									"last_import_time": {
-										Description: "When the last import operation occurred",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-									"failure_reason": {
-										Description: "If a failure, why the import operation failed",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-									"failure_reason_params": {
-										Description: "Parameters of the failure, if appropriate",
-										Computed:    true,
-										Type:        schema.TypeList,
-										Elem: &schema.Resource{
-											Schema: map[string]*schema.Schema{
-												"key": {
-													Description: "",
-													Computed:    true,
-													Type:        schema.TypeString,
-												},
-												"value": {
-													Description: "",
-													Computed:    true,
-													Type:        schema.TypeString,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-						"error": {
-							Computed: true,
-							Type:     schema.TypeSet,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"type": {
-										Description: "The type of error encountered while looking up the status of the last import",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-									"description": {
-										Description: "A description of the error encountered while looking up the status of the last import",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-									"status": {
-										Description: "Any particular HTTP status code associated with the erroneous status check",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-								},
-							},
 						},
 					},
 				},
@@ -664,34 +536,6 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 	if err := d.Set("modules", flattenModules(*db.Modules)); err != nil {
-		return diag.FromErr(err)
-	}
-
-	var parsedLatestBackupStatus []map[string]interface{}
-	latestBackupStatus, err := api.client.LatestBackup.GetFixed(ctx, subId, databaseId)
-	if err != nil {
-		// Forgive errors here, sometimes we just can't get a latest status
-	} else {
-		parsedLatestBackupStatus, err = parseLatestBackupStatus(latestBackupStatus)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-	}
-	if err := d.Set("latest_backup_status", parsedLatestBackupStatus); err != nil {
-		return diag.FromErr(err)
-	}
-
-	var parsedLatestImportStatus []map[string]interface{}
-	latestImportStatus, err := api.client.LatestImport.GetFixed(ctx, subId, databaseId)
-	if err != nil {
-		// Forgive errors here, sometimes we just can't get a latest status
-	} else {
-		parsedLatestImportStatus, err = parseLatestImportStatus(latestImportStatus)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-	}
-	if err := d.Set("latest_import_status", parsedLatestImportStatus); err != nil {
 		return diag.FromErr(err)
 	}
 

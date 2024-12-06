@@ -116,61 +116,6 @@ func resourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 										Type:        schema.TypeInt,
 										Required:    true,
 									},
-									"latest_backup_status": {
-										Description: "Details about the last backup that took place for this database",
-										Computed:    true,
-										Type:        schema.TypeSet,
-										Elem: &schema.Resource{
-											Schema: map[string]*schema.Schema{
-												"response": {
-													Computed: true,
-													Type:     schema.TypeSet,
-													Elem: &schema.Resource{
-														Schema: map[string]*schema.Schema{
-															"status": {
-																Description: "The status of the last backup operation",
-																Computed:    true,
-																Type:        schema.TypeString,
-															},
-															"last_backup_time": {
-																Description: "When the last backup operation occurred",
-																Computed:    true,
-																Type:        schema.TypeString,
-															},
-															"failure_reason": {
-																Description: "If a failure, why the backup operation failed",
-																Computed:    true,
-																Type:        schema.TypeString,
-															},
-														},
-													},
-												},
-												"error": {
-													Computed: true,
-													Type:     schema.TypeSet,
-													Elem: &schema.Resource{
-														Schema: map[string]*schema.Schema{
-															"type": {
-																Description: "The type of error encountered while looking up the status of the last backup",
-																Computed:    true,
-																Type:        schema.TypeString,
-															},
-															"description": {
-																Description: "A description of the error encountered while looking up the status of the last backup",
-																Computed:    true,
-																Type:        schema.TypeString,
-															},
-															"status": {
-																Description: "Any particular HTTP status code associated with the erroneous status check",
-																Computed:    true,
-																Type:        schema.TypeString,
-															},
-														},
-													},
-												},
-											},
-										},
-									},
 								},
 							},
 						},
@@ -332,23 +277,11 @@ func resourceRedisCloudActiveActiveRegionRead(ctx context.Context, d *schema.Res
 		var dbs []interface{}
 		for _, database := range region.Databases {
 
-			var parsedLatestBackupStatus []map[string]interface{}
-			latestBackupStatus, err := api.client.LatestBackup.GetActiveActive(ctx, subId, *database.DatabaseId, *region.Region)
-			if err != nil {
-				// Forgive errors here, sometimes we just can't get a latest status
-			} else {
-				parsedLatestBackupStatus, err = parseLatestBackupStatus(latestBackupStatus)
-				if err != nil {
-					return diag.FromErr(err)
-				}
-			}
-
 			databaseMapString := map[string]interface{}{
 				"database_id":                       database.DatabaseId,
 				"database_name":                     database.DatabaseName,
 				"local_read_operations_per_second":  database.ReadOperationsPerSecond,
 				"local_write_operations_per_second": database.WriteOperationsPerSecond,
-				"latest_backup_status":              parsedLatestBackupStatus,
 			}
 			dbs = append(dbs, databaseMapString)
 		}
