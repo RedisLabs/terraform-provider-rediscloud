@@ -276,61 +276,6 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 								},
 							},
 						},
-						"latest_backup_status": {
-							Description: "Details about the last backups that took place across all regions for this active-active database",
-							Computed:    true,
-							Type:        schema.TypeSet,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"response": {
-										Computed: true,
-										Type:     schema.TypeSet,
-										Elem: &schema.Resource{
-											Schema: map[string]*schema.Schema{
-												"status": {
-													Description: "The status of the last backup operation",
-													Computed:    true,
-													Type:        schema.TypeString,
-												},
-												"last_backup_time": {
-													Description: "When the last backup operation occurred",
-													Computed:    true,
-													Type:        schema.TypeString,
-												},
-												"failure_reason": {
-													Description: "If a failure, why the backup operation failed",
-													Computed:    true,
-													Type:        schema.TypeString,
-												},
-											},
-										},
-									},
-									"error": {
-										Computed: true,
-										Type:     schema.TypeSet,
-										Elem: &schema.Resource{
-											Schema: map[string]*schema.Schema{
-												"type": {
-													Description: "The type of error encountered while looking up the status of the last backup",
-													Computed:    true,
-													Type:        schema.TypeString,
-												},
-												"description": {
-													Description: "A description of the error encountered while looking up the status of the last backup",
-													Computed:    true,
-													Type:        schema.TypeString,
-												},
-												"status": {
-													Description: "Any particular HTTP status code associated with the erroneous status check",
-													Computed:    true,
-													Type:        schema.TypeString,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
 					},
 				},
 			},
@@ -371,80 +316,6 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				},
 				ValidateDiagFunc: validation.ToDiagFunc(
 					validation.StringMatch(regexp.MustCompile("^(resp2|resp3)$"), "must be 'resp2' or 'resp3'")),
-			},
-			"latest_import_status": {
-				Description: "Details about the last import that took place for this active-active database",
-				Computed:    true,
-				Type:        schema.TypeSet,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"response": {
-							Computed: true,
-							Type:     schema.TypeSet,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"status": {
-										Description: "The status of the last import operation",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-									"last_import_time": {
-										Description: "When the last import operation occurred",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-									"failure_reason": {
-										Description: "If a failure, why the import operation failed",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-									"failure_reason_params": {
-										Description: "Parameters of the failure, if appropriate",
-										Computed:    true,
-										Type:        schema.TypeList,
-										Elem: &schema.Resource{
-											Schema: map[string]*schema.Schema{
-												"key": {
-													Description: "",
-													Computed:    true,
-													Type:        schema.TypeString,
-												},
-												"value": {
-													Description: "",
-													Computed:    true,
-													Type:        schema.TypeString,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-						"error": {
-							Computed: true,
-							Type:     schema.TypeSet,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"type": {
-										Description: "The type of error encountered while looking up the status of the last import",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-									"description": {
-										Description: "A description of the error encountered while looking up the status of the last import",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-									"status": {
-										Description: "Any particular HTTP status code associated with the erroneous status check",
-										Computed:    true,
-										Type:        schema.TypeString,
-									},
-								},
-							},
-						},
-					},
-				},
 			},
 			"tags": {
 				Description: "Tags for database management",
@@ -700,17 +571,6 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 
 		regionDbConfig["remote_backup"] = flattenBackupPlan(regionDb.Backup, getStateRemoteBackup(d, region), "")
 
-		latestBackupStatus, err := api.client.LatestBackup.GetActiveActive(ctx, subId, dbId, region)
-		if err != nil {
-			// Forgive errors here, sometimes we just can't get a latest status
-		} else {
-			parsedLatestBackupStatus, err := parseLatestBackupStatus(latestBackupStatus)
-			if err != nil {
-				return diag.FromErr(err)
-			}
-			regionDbConfig["latest_backup_status"] = parsedLatestBackupStatus
-		}
-
 		regionDbConfigs = append(regionDbConfigs, regionDbConfig)
 	}
 
@@ -733,20 +593,6 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 
 	tlsAuthEnabled := *db.CrdbDatabases[0].Security.TLSClientAuthentication
 	if err := applyCertificateHints(tlsAuthEnabled, d); err != nil {
-		return diag.FromErr(err)
-	}
-
-	var parsedLatestImportStatus []map[string]interface{}
-	latestImportStatus, err := api.client.LatestImport.Get(ctx, subId, dbId)
-	if err != nil {
-		// Forgive errors here, sometimes we just can't get a latest status
-	} else {
-		parsedLatestImportStatus, err = parseLatestImportStatus(latestImportStatus)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-	}
-	if err := d.Set("latest_import_status", parsedLatestImportStatus); err != nil {
 		return diag.FromErr(err)
 	}
 
