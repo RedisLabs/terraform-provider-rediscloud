@@ -66,27 +66,6 @@ The `database` block supports:
 * `local_write_operations_per_second` - (Required) Local write operations per second for this active-active region
 * `local_read_operations_per_second` - (Required) Local read operations per second for this active-active region
 
-## Attribute Reference
-
-* `latest_backup_status` - A latest_backup_status object, documented below.
-
-The `latest_backup_status` block contains:
-
-* `error` - An error block, in case this lookup failed, documented below.
-* `response` - A detail block, documented below.
-
-The `error` block in both `latest_backup_status` contains:
-
-* `type` - The type of error encountered while looking up the status of the last import.
-* `description` - A description of the error encountered while looking up the status of the last import.
-* `status` - Any particular HTTP status code associated with the erroneous status check.
-
-The `response` block `latest_backup_status` contains:
-
-* `status` - The status of the last backup operation.
-* `last_backup_time` - When the last backup operation occurred.
-* `failure_reason` - If a failure, why the backup operation failed.
-
 ### Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:
