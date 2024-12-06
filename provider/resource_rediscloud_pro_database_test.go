@@ -147,9 +147,10 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 			},
 			// Test that that database is imported successfully
 			{
-				ResourceName:      "rediscloud_subscription_database.no_password_database",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "rediscloud_subscription_database.no_password_database",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dataset_size_in_gb"},
 			},
 		},
 	})
@@ -217,9 +218,10 @@ func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dataset_size_in_gb"},
 			},
 		},
 	})
@@ -252,6 +254,193 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudProDatabaseRespVersions, testCloudAccountName, name, portNumber, "best_resp_100"),
 				ExpectError: regexp.MustCompile("Bad Request: JSON parameter contains unsupported fields / values. JSON parse error: Cannot deserialize value of type `mappings.RespVersion` from String \"best_resp_100\": not one of the values accepted for Enum class: \\[resp2, resp3]"),
+			},
+		},
+	})
+}
+
+func TestAccResourceRedisCloudProDatabase_datasetSizeWithReplication(t *testing.T) {
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	subName := name + "-subscription"
+	dbName := name + "-database"
+	const resourceName = "rediscloud_subscription_database.example"
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			// Test database creation with dataset_size_in_gb
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseDatasetMemory, testCloudAccountName, subName, dbName, "dataset_size_in_gb = 2", true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "2"),
+					resource.TestCheckNoResourceAttr(resourceName, "memory_limit_in_gb"),
+				),
+			},
+			// Test dataset_size_in_gb updates
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseDatasetMemory, testCloudAccountName, subName, dbName, "dataset_size_in_gb = 1", true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "1"),
+					resource.TestCheckNoResourceAttr(resourceName, "memory_limit_in_gb"),
+				),
+			},
+			// Test switch to memory_limit_in_gb
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseDatasetMemory, testCloudAccountName, subName, dbName, "memory_limit_in_gb = 1", true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "0"),
+					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
+				),
+			},
+			// Test memory_limit_in_gb updates
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseDatasetMemory, testCloudAccountName, subName, dbName, "memory_limit_in_gb = 2", true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "0"),
+					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "2"),
+				),
+			},
+			// Test switch back to dataset_size_in_gb
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseDatasetMemory, testCloudAccountName, subName, dbName, "dataset_size_in_gb = 1", true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "0"),
+				),
+			},
+			// Test that that database is imported successfully
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dataset_size_in_gb", "memory_limit_in_gb"},
+			},
+		},
+	})
+}
+
+func TestAccResourceRedisCloudProDatabase_datasetSizeWithoutReplication(t *testing.T) {
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	subName := name + "-subscription"
+	dbName := name + "-database"
+	const resourceName = "rediscloud_subscription_database.example"
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			// Test database creation with dataset_size_in_gb
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseDatasetMemory, testCloudAccountName, subName, dbName, "dataset_size_in_gb = 2", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "2"),
+					resource.TestCheckNoResourceAttr(resourceName, "memory_limit_in_gb"),
+				),
+			},
+			// Test dataset_size_in_gb updates
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseDatasetMemory, testCloudAccountName, subName, dbName, "dataset_size_in_gb = 1", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "1"),
+					resource.TestCheckNoResourceAttr(resourceName, "memory_limit_in_gb"),
+				),
+			},
+			// Test switch to memory_limit_in_gb
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseDatasetMemory, testCloudAccountName, subName, dbName, "memory_limit_in_gb = 1", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "0"),
+					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
+				),
+			},
+			// Test memory_limit_in_gb updates
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseDatasetMemory, testCloudAccountName, subName, dbName, "memory_limit_in_gb = 2", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "0"),
+					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "2"),
+				),
+			}, // Test switch back to dataset_size_in_gb
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseDatasetMemory, testCloudAccountName, subName, dbName, "dataset_size_in_gb = 1", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "0"),
+				),
+			},
+			// Test that that database is imported successfully
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dataset_size_in_gb", "memory_limit_in_gb"},
+			},
+		},
+	})
+}
+
+func TestAccResourceRedisCloudProDatabase_datasetSizeStartAsMemoryLimit(t *testing.T) {
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	subName := name + "-subscription"
+	dbName := name + "-database"
+	const resourceName = "rediscloud_subscription_database.example"
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			// Test database creation with memory_limit_in_gb
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseDatasetMemory, testCloudAccountName, subName, dbName, "memory_limit_in_gb = 2", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName, "dataset_size_in_gb"),
+					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "2"),
+				),
+			},
+			// Test memory_limit_in_gb updates
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseDatasetMemory, testCloudAccountName, subName, dbName, "memory_limit_in_gb = 1", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName, "dataset_size_in_gb"),
+					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
+				),
+			},
+			// Test switch to dataset_size_in_gb
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseDatasetMemory, testCloudAccountName, subName, dbName, "dataset_size_in_gb = 1", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "0"),
+				),
+			},
+			// Test dataset_size_in_gb updates
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseDatasetMemory, testCloudAccountName, subName, dbName, "dataset_size_in_gb = 2", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "2"),
+					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "0"),
+				),
+			}, // Test switch back to memory_limit_in_gb
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseDatasetMemory, testCloudAccountName, subName, dbName, "memory_limit_in_gb = 1", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "memory_limit_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "0"),
+				),
+			},
+			// Test that that database is imported successfully
+			{
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dataset_size_in_gb", "memory_limit_in_gb"},
 			},
 		},
 	})
@@ -523,4 +712,19 @@ resource "rediscloud_subscription_database" "example" {
     port = %d
 	resp_version = "%s"
 }
+`
+
+const testAccResourceRedisCloudProDatabaseDatasetMemory = proSubscriptionBoilerplate + `
+
+resource "rediscloud_subscription_database" "example" {
+    subscription_id = rediscloud_subscription.example.id
+    name = "%s"
+	# This is the dataset_size_in_gb/memory_limit_in_gb line
+    %s
+    data_persistence = "none"
+    data_eviction = "noeviction"
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 1000
+	replication = %t
+} 
 `
