@@ -32,7 +32,7 @@ resource "rediscloud_active_active_subscription" "subscription-resource" {
   cloud_provider = "AWS"
 
   creation_plan {
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     quantity = 1
     modules = ["RedisJSON"]
     region {
