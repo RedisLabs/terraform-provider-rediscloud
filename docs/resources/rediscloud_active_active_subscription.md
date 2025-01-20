@@ -32,7 +32,7 @@ resource "rediscloud_active_active_subscription" "subscription-resource" {
   cloud_provider = "AWS"
 
   creation_plan {
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     quantity = 1
     modules = ["RedisJSON"]
     region {
@@ -65,7 +65,8 @@ The following arguments are supported:
 
 The `creation_plan` block supports:
 
-* `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database, including replication and other overhead
+* `memory_limit_in_gb` - (Optional -  **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favor of `dataset_size_in_gb` - not possible to import databases with this attribute set**
+* `dataset_size_in_gb` - (Optional - **Required if `memory_limit_in_gb` is unset**) The maximum amount of data in the dataset for this specific database is in GB
 * `quantity` - (Required) The planned number of databases in the subscription.
 * `modules` - (Optional) A list of modules to be enabled on all deployments of this database. Either: `RedisJSON` or `RediSearch`.
 * `region` - (Required) Deployment region block, documented below
@@ -85,7 +86,7 @@ The `maintenance_windows` object has these attributes:
 The `window` object has these attributes:
 
 * `start_hour` - What hour in the day (0-23) the window opens
-* `duration_in_hours` - How long the window is open
+* `duration_in_hours` - How long the window is open (4-24 hours)
 * `days` - A list of weekdays on which the window is open ('Monday', 'Tuesday' etc)
 
 ~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `cloud_provider`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
