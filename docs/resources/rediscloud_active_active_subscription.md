@@ -86,7 +86,7 @@ The `maintenance_windows` object has these attributes:
 The `window` object has these attributes:
 
 * `start_hour` - What hour in the day (0-23) the window opens
-* `duration_in_hours` - How long the window is open
+* `duration_in_hours` - How long the window is open (4-24 hours)
 * `days` - A list of weekdays on which the window is open ('Monday', 'Tuesday' etc)
 
 ~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `cloud_provider`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
