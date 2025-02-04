@@ -18,7 +18,7 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter_
 	baseName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-pscea"
 
 	const resourceName = "rediscloud_active_active_private_service_connect_endpoint_accepter.accepter"
-	gcpProjectId := os.Getenv("GCP_VPC_PROJECT")
+	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccGcpProjectPreCheck(t); testAccGcpCredentialsPreCheck(t) },

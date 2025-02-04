@@ -44,11 +44,11 @@ func testAccAwsPeeringPreCheck(t *testing.T) {
 }
 
 func testAccGcpProjectPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, "GCP_VPC_PROJECT")
+	requireEnvironmentVariables(t, "GCP_PROJECT_ID")
 }
 
 func testAccGcpCredentialsPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, "GOOGLE_APPLICATION_CREDENTIALS")
+	requireEnvironmentVariables(t, "GOOGLE_CREDENTIALS")
 }
 
 func testAccAwsPreExistingTgwCheck(t *testing.T) {

@@ -16,7 +16,7 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpoint_CRUDI(t 
 
 	const resourceName = "rediscloud_active_active_private_service_connect_endpoint.psce"
 	const datasourceName = "data.rediscloud_active_active_private_service_connect_endpoints.psce"
-	gcpProjectId := os.Getenv("GCP_VPC_PROJECT")
+	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
 	gcpVPCName := fmt.Sprintf("%s-network", baseName)
 	gcpVPCSubnetName := fmt.Sprintf("%s-subnet", baseName)
 
