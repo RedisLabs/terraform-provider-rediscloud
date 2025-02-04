@@ -126,8 +126,8 @@ jobs:
           AWS_SIGNIN_URL: ${{ secrets.CLOUD_ACCOUNT_URL }}
           GCP_VPC_PROJECT: ${{ secrets.GCP_VPC_PROJECT }}
           GCP_VPC_ID: ${{ secrets.GCP_VPC_ID }}
-          # TODO
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
       - name: Generate code coverage report
         if: steps.filter.outputs.code-changes == 'true' && (success() || failure())
         run: make generate_coverage
