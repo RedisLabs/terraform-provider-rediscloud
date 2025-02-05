@@ -2,14 +2,15 @@ package provider
 
 import (
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/latest_backups"
 	"github.com/RedisLabs/rediscloud-go-api/service/latest_imports"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"sync"
-	"time"
 )
 
 // This timeout is an absolute maximum used in some of the waitForStatus operations concerning creation and updating
