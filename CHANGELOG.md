@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.1.0 (6th Feb 2025)
+
+### Added
+
+- Added resources for provisioning Private Service Connect in GCP on Active-Active and Pro subscriptions.
+`rediscloud_private_service_connect`, `rediscloud_private_service_connect_endpoint`, `rediscloud_private_service_connect_endpoint_accepter`,
+`rediscloud_active_active_private_service_connect`, `rediscloud_active_active_private_service_connect_endpoint` and
+`rediscloud_active_active_private_service_connect_endpoint_accepter` as well as the respective data sources
+`rediscloud_private_service_connect`, `rediscloud_private_service_connect_endpoints`, `rediscloud_active_active_private_service_connect`
+and `rediscloud_active_active_private_service_connect_endpoints`
+
+### Changed
+
+- Upgraded the provider to use `v0.22.0` of the [rediscloud-go-api](https://github.com/RedisLabs/rediscloud-go-api) SDK.
+
 # 2.0.0 (5th Dec 2024)
 
 ### Changed
