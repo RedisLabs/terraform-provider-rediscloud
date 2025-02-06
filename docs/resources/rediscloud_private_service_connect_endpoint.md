@@ -132,6 +132,57 @@ resource "rediscloud_private_service_connect_endpoint_accepter" "accepter" {
 
 ```
 
+## Example Usage with Redis Private Service Connect Module
+
+The example below creates a Private Service Connect Endpoint in a Pro subscription using the [Redis Cloud PSC Terraform module](https://registry.terraform.io/modules/RedisLabs/private-service-connect/rediscloud/latest).
+We recommend using the module as it simplifies the Terraform configuration.
+
+```hcl
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+}
+
+resource "rediscloud_subscription" "subscription" {
+  name              = "subscription-name"
+  payment_method_id = data.rediscloud_payment_method.card.id
+
+  cloud_provider {
+    provider = "GCP"
+    region {
+      region                     = var.gcp_region
+      networking_deployment_cidr = "10.0.1.0/24"
+    }
+  }
+
+  creation_plan {
+    dataset_size_in_gb           = 15
+    quantity                     = 1
+    replication                  = true
+    throughput_measurement_by    = "operations-per-second"
+    throughput_measurement_value = 20000
+  }
+}
+
+module "private_service_connect" {
+  source = "RedisLabs/private-service-connect/rediscloud"
+
+  rediscloud_subscription_type = "pro"
+  rediscloud_subscription_id   = rediscloud_subscription.subscription.id
+
+  gcp_region = var.gcp_region
+
+  endpoints = [
+    {
+      gcp_project_id           = var.gcp_project_id
+      gcp_vpc_name             = var.gcp_vpc_name
+      gcp_vpc_subnetwork_name  = var.gcp_subnet_name
+      gcp_response_policy_name = var.gcp_response_policy_name
+    }
+  ]
+}
+
+```
+
 ## Argument Reference
 
 * `subscription_id` - (Required) The ID of the Pro subscription to attach **Modifying this attribute will force creation of a new resource.**
