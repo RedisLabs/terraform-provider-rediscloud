@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.1.1 (6th Feb 2025)
+
+### Added
+
+- Documentation related to using the [Redis Cloud Private Service Connect Module](https://github.com/RedisLabs/terraform-rediscloud-private-service-connect) 
+to simplify the Terraform configuration. 
+
 # 2.1.0 (6th Feb 2025)
 
 ### Added
