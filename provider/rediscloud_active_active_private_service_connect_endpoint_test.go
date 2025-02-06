@@ -50,8 +50,9 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpoint_CRUDI(t 
 				),
 			},
 			{
-				ResourceName: resourceName,
-				ImportState:  true,
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
