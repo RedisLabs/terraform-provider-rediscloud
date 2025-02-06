@@ -134,7 +134,7 @@ resource "rediscloud_private_service_connect_endpoint_accepter" "accepter" {
 
 ## Example Usage with Redis Private Service Connect Module
 
-The example below creates a Private Service Connect Endpoint in a Pro subscription using a Terraform module.
+The example below creates a Private Service Connect Endpoint in a Pro subscription using the [Redis Cloud PSC Terraform module](https://registry.terraform.io/modules/RedisLabs/private-service-connect/rediscloud/latest).
 We recommend using the module as it simplifies the Terraform configuration.
 
 ```hcl
