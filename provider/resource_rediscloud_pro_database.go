@@ -91,6 +91,12 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 				Computed:     true,
 				ExactlyOneOf: []string{"memory_limit_in_gb", "dataset_size_in_gb"},
 			},
+			"query_performance_factor": {
+				Description: "Query performance factor for this specific database",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+			},
 			"support_oss_cluster_api": {
 				Description: "Support Redis open-source (OSS) Cluster API",
 				Type:        schema.TypeBool,
@@ -341,6 +347,7 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	throughputMeasurementBy := d.Get("throughput_measurement_by").(string)
 	throughputMeasurementValue := d.Get("throughput_measurement_value").(int)
 	averageItemSizeInBytes := d.Get("average_item_size_in_bytes").(int)
+	queryPerformanceFactor := d.Get("query_performance_factor").(string)
 
 	createModules := make([]*databases.Module, 0)
 	modules := d.Get("modules").(*schema.Set)
@@ -383,9 +390,10 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 			By:    redis.String(throughputMeasurementBy),
 			Value: redis.Int(throughputMeasurementValue),
 		},
-		Modules:      createModules,
-		Alerts:       createAlerts,
-		RemoteBackup: buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		Modules:                createModules,
+		Alerts:                 createAlerts,
+		RemoteBackup:           buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		QueryPerformanceFactor: redis.String(queryPerformanceFactor),
 	}
 
 	if password != "" {
@@ -659,12 +667,13 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 			By:    redis.String(d.Get("throughput_measurement_by").(string)),
 			Value: redis.Int(d.Get("throughput_measurement_value").(int)),
 		},
-		DataPersistence:    redis.String(d.Get("data_persistence").(string)),
-		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
-		SourceIP:           setToStringSlice(d.Get("source_ips").(*schema.Set)),
-		Alerts:             &alerts,
-		RemoteBackup:       buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
-		EnableDefaultUser:  redis.Bool(d.Get("enable_default_user").(bool)),
+		DataPersistence:        redis.String(d.Get("data_persistence").(string)),
+		DataEvictionPolicy:     redis.String(d.Get("data_eviction").(string)),
+		SourceIP:               setToStringSlice(d.Get("source_ips").(*schema.Set)),
+		Alerts:                 &alerts,
+		RemoteBackup:           buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		EnableDefaultUser:      redis.Bool(d.Get("enable_default_user").(bool)),
+		QueryPerformanceFactor: redis.String(d.Get("query_performance_factor").(string)),
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)

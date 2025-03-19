@@ -419,6 +419,10 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 		createDatabase.MemoryLimitInGB = redis.Float64(v.(float64))
 	}
 
+	if v, ok := d.GetOk("query_performance_factor"); ok {
+		createDatabase.QueryPerformanceFactor = redis.String(v.(string))
+	}
+
 	if v, ok := d.GetOk("port"); ok {
 		createDatabase.PortNumber = redis.Int(v.(int))
 	}
