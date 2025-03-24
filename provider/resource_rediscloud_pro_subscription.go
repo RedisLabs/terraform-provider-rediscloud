@@ -255,6 +255,11 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 							Optional:      true,
 							ConflictsWith: []string{"creation_plan.0.memory_limit_in_gb"},
 						},
+						"query_performance_factor": {
+							Description: "Query performance factor for this specific database",
+							Type:        schema.TypeString,
+							Optional:    true,
+						},
 						"throughput_measurement_by": {
 							Description:      "Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)",
 							Type:             schema.TypeString,
