@@ -112,11 +112,6 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 							Optional:      true,
 							ConflictsWith: []string{"creation_plan.0.memory_limit_in_gb"},
 						},
-						"query_performance_factor": {
-							Description: "Query performance factor for this specific database",
-							Type:        schema.TypeString,
-							Optional:    true,
-						},
 						"quantity": {
 							Description:  "The planned number of databases",
 							Type:         schema.TypeInt,
@@ -652,16 +647,14 @@ func buildSubscriptionCreatePlanAADatabases(planMap map[string]interface{}) []*s
 		createModules = append(createModules, createModule)
 	}
 
-	queryPerformanceFactor := planMap["queryPerformanceFactor"].(string)
-
 	// create the remaining DBs with all other modules
-	createDatabases = append(createDatabases, createAADatabase(dbName, &idx, localThroughputs, numDatabases, memoryLimitInGB, datasetSizeInGB, createModules, queryPerformanceFactor)...)
+	createDatabases = append(createDatabases, createAADatabase(dbName, &idx, localThroughputs, numDatabases, memoryLimitInGB, datasetSizeInGB, createModules)...)
 
 	return createDatabases
 }
 
 // createDatabase returns a CreateDatabase struct with the given parameters
-func createAADatabase(dbName string, idx *int, localThroughputs []*subscriptions.CreateLocalThroughput, numDatabases int, memoryLimitInGB float64, datasetSizeInGB float64, modules []*subscriptions.CreateModules, queryPerformanceFactor string) []*subscriptions.CreateDatabase {
+func createAADatabase(dbName string, idx *int, localThroughputs []*subscriptions.CreateLocalThroughput, numDatabases int, memoryLimitInGB float64, datasetSizeInGB float64, modules []*subscriptions.CreateModules) []*subscriptions.CreateDatabase {
 	var dbs []*subscriptions.CreateDatabase
 	for i := 0; i < numDatabases; i++ {
 		createDatabase := subscriptions.CreateDatabase{
@@ -670,7 +663,6 @@ func createAADatabase(dbName string, idx *int, localThroughputs []*subscriptions
 			LocalThroughputMeasurement: localThroughputs,
 			Quantity:                   redis.Int(1),
 			Modules:                    modules,
-			QueryPerformanceFactor:     redis.String(queryPerformanceFactor),
 		}
 		if datasetSizeInGB > 0 {
 			createDatabase.DatasetSizeInGB = redis.Float64(datasetSizeInGB)
