@@ -310,7 +310,7 @@ resource "rediscloud_subscription" "example" {
     quantity = 1
     replication=false
     support_oss_cluster_api=false
-    modules = []
+    modules = ["RediSearch"]
   }
 }
 `
