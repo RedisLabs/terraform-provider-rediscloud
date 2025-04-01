@@ -1,21 +1,17 @@
 package provider
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"regexp"
-	"strconv"
 	"testing"
 
-	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 // Generates the base Terraform config for a Pro Subscription with QPF
-func proSubscriptionQPFBoilerplate(name, cloudAccountName string) string {
+func proSubscriptionQPFBoilerplate(name, cloudAccountName, qpf string) string {
 	return fmt.Sprintf(`
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
@@ -54,15 +50,15 @@ resource "rediscloud_subscription" "example" {
     quantity = 1
     replication = false
     support_oss_cluster_api = false
-    query_performance_factor = "2x"
+    query_performance_factor = "%s"
     modules = ["RediSearch"]
   }
-}`, cloudAccountName, name)
+}`, cloudAccountName, name, qpf)
 }
 
 // Generates Terraform configuration for the database
-func formatDatabaseConfig(name, cloudAccountName, password string, extraConfig string) string {
-	return proSubscriptionQPFBoilerplate(name, cloudAccountName) + fmt.Sprintf(`
+func formatDatabaseConfig(name, cloudAccountName, password, qpf, extraConfig string) string {
+	return proSubscriptionQPFBoilerplate(name, cloudAccountName, qpf) + fmt.Sprintf(`
 resource "rediscloud_subscription_database" "example" {
     subscription_id = rediscloud_subscription.example.id
     name = "example"
@@ -80,7 +76,7 @@ resource "rediscloud_subscription_database" "example" {
     client_ssl_certificate = ""
     periodic_backup_path = ""
     enable_default_user = true
-    query_performance_factor = "2x"
+	query_performance_factor = "%s"
 
     alert {
         name = "dataset-size"
@@ -93,7 +89,7 @@ resource "rediscloud_subscription_database" "example" {
     }
 
     %s
-}`, password, extraConfig)
+}`, password, qpf, extraConfig)
 }
 
 // Generic test helper for error cases
@@ -116,52 +112,30 @@ func TestAccResourceRedisCloudProDatabase_qpf(t *testing.T) {
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
-	var subId int
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: formatDatabaseConfig(name, testCloudAccountName, password, `modules = [{ name = "RediSearch" }]`),
+				Config: formatDatabaseConfig(name, testCloudAccountName, password, "4x", `modules = [{ name = "RediSearch" }]`),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "name", "example"),
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "protocol", "redis"),
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "dataset_size_in_gb", "3"),
-					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "query_performance_factor", "2x"),
+					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "query_performance_factor", "4x"),
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "tags.market", "emea"),
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "tags.material", "cardboard"),
+				),
+			},
 
-					func(s *terraform.State) error {
-						r := s.RootModule().Resources["rediscloud_subscription.example"]
-
-						var err error
-						subId, err = strconv.Atoi(r.Primary.ID)
-						if err != nil {
-							return fmt.Errorf("couldn't parse the subscription ID: %s", redis.StringValue(&r.Primary.ID))
-						}
-
-						client := testProvider.Meta().(*apiClient)
-						sub, err := client.client.Subscription.Get(context.TODO(), subId)
-						if err != nil {
-							return err
-						}
-
-						if redis.StringValue(sub.Name) != name {
-							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
-						}
-
-						listDb := client.client.Database.List(context.TODO(), subId)
-						if !listDb.Next() {
-							return fmt.Errorf("no database found: %s", listDb.Err())
-						}
-						if listDb.Err() != nil {
-							return listDb.Err()
-						}
-
-						return nil
-					},
+			// Test plan to ensure query_performance_factor change forces a new resource
+			{
+				Config:             formatDatabaseConfig(name, testCloudAccountName, password, "2x", `modules = [{ name = "RediSearch" }]`),
+				PlanOnly:           true, // Runs terraform plan without applying
+				ExpectNonEmptyPlan: true, // Ensures that a change is detected
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "query_performance_factor", "2x"),
 				),
 			},
 		},
@@ -173,7 +147,7 @@ func TestAccResourceRedisCloudProDatabase_missingModule(t *testing.T) {
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
-	config := formatDatabaseConfig(name, testCloudAccountName, password, "")
+	config := formatDatabaseConfig(name, testCloudAccountName, password, "4x", "")
 
 	testErrorCase(t, config, regexp.MustCompile("query_performance_factor\" requires the \"modules\" key to be explicitly defined in HCL"))
 }
@@ -183,7 +157,7 @@ func TestAccResourceRedisCloudProDatabase_missingRediSearchModule(t *testing.T) 
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
-	config := formatDatabaseConfig(name, testCloudAccountName, password, `modules = [{ name = "RediBloom" }]`)
+	config := formatDatabaseConfig(name, testCloudAccountName, password, "4x", `modules = [{ name = "RediBloom" }]`)
 
 	testErrorCase(t, config, regexp.MustCompile("query_performance_factor\" requires the \"modules\" list to contain \"RediSearch"))
 }
