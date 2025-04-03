@@ -310,7 +310,7 @@ resource "rediscloud_subscription" "example" {
     quantity = 1
     replication=false
     support_oss_cluster_api=false
-    modules = ["RediSearch"]
+    modules = []
   }
 }
 `
@@ -373,7 +373,6 @@ resource "rediscloud_subscription_database" "example" {
     client_ssl_certificate = "" 
     periodic_backup_path = ""
 	enable_default_user = true
-	query_performance_factor = "2x"
 
     alert {
         name = "dataset-size"
@@ -382,7 +381,7 @@ resource "rediscloud_subscription_database" "example" {
 
     modules = [
         {
-          name = "RediSearch"
+          name = "RedisBloom"
         }
     ]
 
