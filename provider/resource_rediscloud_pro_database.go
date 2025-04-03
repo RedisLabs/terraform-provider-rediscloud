@@ -391,10 +391,13 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 			By:    redis.String(throughputMeasurementBy),
 			Value: redis.Int(throughputMeasurementValue),
 		},
-		Modules:                createModules,
-		Alerts:                 createAlerts,
-		RemoteBackup:           buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
-		QueryPerformanceFactor: redis.String(queryPerformanceFactor),
+		Modules:      createModules,
+		Alerts:       createAlerts,
+		RemoteBackup: buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+	}
+
+	if queryPerformanceFactor != "" {
+		createDatabase.QueryPerformanceFactor = redis.String(queryPerformanceFactor)
 	}
 
 	if password != "" {
@@ -597,11 +600,10 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	if err := d.Set("remote_backup", flattenBackupPlan(db.Backup, d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path").(string))); err != nil {
 		return diag.FromErr(err)
 	}
-
-	////query_performance_factor
-	//if err := d.Set("query_performance_factor", redis.String(*db.)); err != nil {
-	//	return diag.FromErr(err)
-	//}
+	
+	if err := d.Set("query_performance_factor", redis.String(*db.QueryPerformanceFactor)); err != nil {
+		return diag.FromErr(err)
+	}
 
 	if err := readTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
@@ -677,13 +679,12 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 			By:    redis.String(d.Get("throughput_measurement_by").(string)),
 			Value: redis.Int(d.Get("throughput_measurement_value").(int)),
 		},
-		DataPersistence:        redis.String(d.Get("data_persistence").(string)),
-		DataEvictionPolicy:     redis.String(d.Get("data_eviction").(string)),
-		SourceIP:               setToStringSlice(d.Get("source_ips").(*schema.Set)),
-		Alerts:                 &alerts,
-		RemoteBackup:           buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
-		EnableDefaultUser:      redis.Bool(d.Get("enable_default_user").(bool)),
-		QueryPerformanceFactor: redis.String(d.Get("query_performance_factor").(string)),
+		DataPersistence:    redis.String(d.Get("data_persistence").(string)),
+		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
+		SourceIP:           setToStringSlice(d.Get("source_ips").(*schema.Set)),
+		Alerts:             &alerts,
+		RemoteBackup:       buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		EnableDefaultUser:  redis.Bool(d.Get("enable_default_user").(bool)),
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)
@@ -698,6 +699,11 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	// The below fields are optional and will only be sent in the request if they are present in the Terraform configuration
 	if len(setToStringSlice(d.Get("source_ips").(*schema.Set))) == 0 {
 		update.SourceIP = []*string{redis.String("0.0.0.0/0")}
+	}
+
+	queryPerformanceFactor := d.Get("query_performance_factor").(string)
+	if queryPerformanceFactor != "" {
+		update.QueryPerformanceFactor = redis.String(queryPerformanceFactor)
 	}
 
 	if d.Get("password").(string) != "" {
