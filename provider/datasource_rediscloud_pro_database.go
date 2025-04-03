@@ -62,7 +62,6 @@ func dataSourceRedisCloudProDatabase() *schema.Resource {
 			"query_performance_factor": {
 				Description: "Query performance factor for this specific database",
 				Type:        schema.TypeString,
-				Optional:    true,
 				Computed:    true,
 			},
 			"support_oss_cluster_api": {
@@ -479,6 +478,10 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 	}
 
 	if err := readTags(ctx, api, subId, dbId, d); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("query_performance_factor", redis.String(*db.QueryPerformanceFactor)); err != nil {
 		return diag.FromErr(err)
 	}
 
