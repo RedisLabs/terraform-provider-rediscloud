@@ -63,7 +63,7 @@ func dataSourceRedisCloudProSubscription() *schema.Resource {
 							Computed:    true,
 						},
 						"region": {
-							Description: "Cloud networking details, per region (single region or multiple regions for Active-Active cluster only)",
+							Description: "Cloud networking details, per region",
 							Type:        schema.TypeSet,
 							Computed:    true,
 							Elem: &schema.Resource{
