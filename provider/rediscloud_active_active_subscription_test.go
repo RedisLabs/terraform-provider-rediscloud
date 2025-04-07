@@ -375,6 +375,10 @@ resource "rediscloud_active_active_subscription" "example" {
 data "rediscloud_active_active_subscription" "example" {
 	name = rediscloud_active_active_subscription.example.name
 }
+
+data "redis_active_active_subscription_regions" "regions" {
+	subscription_id = rediscloud_active_active_subscription.example.id
+}
 `
 
 const testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan = `
