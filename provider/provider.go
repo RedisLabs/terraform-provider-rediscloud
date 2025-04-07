@@ -46,18 +46,20 @@ func New(version string) func() *schema.Provider {
 				// Note the difference in public data-source name and the file/method name.
 				// This is to help the developer relate their changes to what they would see happening in the Redis Console.
 				// <default> == flexible == pro
-				"rediscloud_subscription":                      dataSourceRedisCloudProSubscription(),
-				"rediscloud_database":                          dataSourceRedisCloudProDatabase(),
-				"rediscloud_database_modules":                  dataSourceRedisCloudDatabaseModules(),
-				"rediscloud_payment_method":                    dataSourceRedisCloudPaymentMethod(),
-				"rediscloud_regions":                           dataSourceRedisCloudRegions(),
-				"rediscloud_essentials_plan":                   dataSourceRedisCloudEssentialsPlan(),
-				"rediscloud_essentials_subscription":           dataSourceRedisCloudEssentialsSubscription(),
-				"rediscloud_essentials_database":               dataSourceRedisCloudEssentialsDatabase(),
-				"rediscloud_subscription_peerings":             dataSourceRedisCloudSubscriptionPeerings(),
-				"rediscloud_private_service_connect":           dataSourcePrivateServiceConnect(),
-				"rediscloud_private_service_connect_endpoints": dataSourcePrivateServiceConnectEndpoints(),
-				"rediscloud_active_active_subscription":        dataSourceRedisCloudActiveActiveSubscription(),
+				"rediscloud_subscription":                       dataSourceRedisCloudProSubscription(),
+				"rediscloud_database":                           dataSourceRedisCloudProDatabase(),
+				"rediscloud_database_modules":                   dataSourceRedisCloudDatabaseModules(),
+				"rediscloud_payment_method":                     dataSourceRedisCloudPaymentMethod(),
+				"rediscloud_regions":                            dataSourceRedisCloudRegions(),
+				"rediscloud_essentials_plan":                    dataSourceRedisCloudEssentialsPlan(),
+				"rediscloud_essentials_subscription":            dataSourceRedisCloudEssentialsSubscription(),
+				"rediscloud_essentials_database":                dataSourceRedisCloudEssentialsDatabase(),
+				"rediscloud_subscription_peerings":              dataSourceRedisCloudSubscriptionPeerings(),
+				"rediscloud_private_service_connect":            dataSourcePrivateServiceConnect(),
+				"rediscloud_private_service_connect_endpoints":  dataSourcePrivateServiceConnectEndpoints(),
+				"rediscloud_active_active_subscription":         dataSourceRedisCloudActiveActiveSubscription(),
+				"rediscloud_active_active_subscription_regions": dataSourceRedisCloudActiveActiveSubscriptionRegions(),
+
 				// Note the difference in public data-source name and the file/method name.
 				// active_active_subscription_database == active_active_database
 				"rediscloud_active_active_subscription_database":             dataSourceRedisCloudActiveActiveDatabase(),
