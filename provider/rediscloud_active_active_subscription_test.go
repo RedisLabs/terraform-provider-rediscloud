@@ -27,8 +27,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_active_active_subscription.example"
-	const datasourceName = "data.rediscloud_active_active_subscription.example"
-	const datasourceRegion = "data.rediscloud_active_active_subscription_region.regions"
+	const datasourceSubscriptionName = "data.rediscloud_active_active_subscription.example"
+	const datasourceRegionName = "data.rediscloud_active_active_subscription_region.regions"
 
 	var subId int
 
@@ -122,45 +122,64 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 						return nil
 					},
 
-					// Test the datasource
-					resource.TestCheckResourceAttr(datasourceName, "name", name),
-					resource.TestCheckResourceAttr(datasourceName, "payment_method", "credit-card"),
-					resource.TestCheckResourceAttrSet(datasourceName, "payment_method_id"),
-					resource.TestCheckResourceAttr(datasourceName, "cloud_provider", "AWS"),
-					resource.TestCheckResourceAttr(datasourceName, "number_of_databases", "0"),
-					resource.TestCheckResourceAttr(datasourceName, "status", "active"),
+					// Test the subscription datasource
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "name", name),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "payment_method", "credit-card"),
+					resource.TestCheckResourceAttrSet(datasourceSubscriptionName, "payment_method_id"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "cloud_provider", "AWS"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "number_of_databases", "0"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "status", "active"),
 
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.mode", "manual"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.#", "2"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.mode", "manual"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.#", "2"),
 
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.start_hour", "22"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.duration_in_hours", "8"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.days.#", "2"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.days.0", "Monday"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.days.1", "Thursday"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.0.start_hour", "22"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.0.duration_in_hours", "8"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.0.days.#", "2"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.0.days.0", "Monday"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.0.days.1", "Thursday"),
 
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.start_hour", "12"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.duration_in_hours", "6"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.#", "3"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.0", "Friday"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.1", "Saturday"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.2", "Sunday"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.1.start_hour", "12"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.1.duration_in_hours", "6"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.1.days.#", "3"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.1.days.0", "Friday"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.1.days.1", "Saturday"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.1.days.2", "Sunday"),
 
-					resource.TestCheckResourceAttr(datasourceName, "pricing.#", "2"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.#", "2"),
 
-					resource.TestCheckResourceAttr(datasourceName, "pricing.0.type", "MinimumPrice"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.0.quantity", "1"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.0.quantity_measurement", "subscription"),
-					resource.TestCheckResourceAttrSet(datasourceName, "pricing.0.price_per_unit"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.0.price_currency", "USD"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.0.price_period", "hour"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.0.type", "MinimumPrice"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.0.quantity", "1"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.0.quantity_measurement", "subscription"),
+					resource.TestCheckResourceAttrSet(datasourceSubscriptionName, "pricing.0.price_per_unit"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.0.price_currency", "USD"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.0.price_period", "hour"),
 
-					resource.TestCheckResourceAttr(datasourceName, "pricing.1.type", "MinimumPrice"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.1.quantity", "1"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.1.quantity_measurement", "subscription"),
-					resource.TestCheckResourceAttrSet(datasourceName, "pricing.1.price_per_unit"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.1.price_currency", "USD"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.1.price_period", "hour"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.1.type", "MinimumPrice"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.1.quantity", "1"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.1.quantity_measurement", "subscription"),
+					resource.TestCheckResourceAttrSet(datasourceSubscriptionName, "pricing.1.price_per_unit"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.1.price_currency", "USD"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.1.price_period", "hour"),
+
+					// Test the region datasource
+
+					resource.TestCheckResourceAttr(datasourceRegionName, "subscription_name", name),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.region", ""),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.networking_deployment_cidr", ""),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.vpc_id", ""),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.databases.database_id", ""),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.databases.database_name", ""),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.databases.write_operations_per_second", ""),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.databases.read_operations_per_second", ""),
+
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.region", ""),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.networking_deployment_cidr", ""),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.vpc_id", ""),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.databases.database_id", ""),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.databases.database_name", ""),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.databases.write_operations_per_second", ""),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.databases.read_operations_per_second", ""),
 				),
 			},
 			{
@@ -184,8 +203,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
 
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.mode", "automatic"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.#", "0"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.mode", "automatic"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.#", "0"),
 				),
 			},
 			{
