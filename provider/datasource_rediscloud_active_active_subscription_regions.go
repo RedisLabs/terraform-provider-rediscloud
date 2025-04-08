@@ -3,46 +3,71 @@ package provider
 import (
 	"context"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 	return &schema.Resource{
-		Description: "The Active Active Subscription Regions data source allows access to a list of supported cloud provider regions. These regions can be used with the active active subscription resource.",
+		Description: "Gets a list of regions in the specified Active-Active subscription.",
 		ReadContext: dataSourceRedisCloudActiveActiveRegionsRead,
 
 		Schema: map[string]*schema.Schema{
-			"subscription_id": {
-				Description:      "The name of the cloud provider to filter returned regions, (accepted values are `AWS` or `GCP`).",
-				Optional:         true,
-				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
-			},
-			"provider_name": {
-				Description:      "The name of the cloud provider to filter returned regions, (accepted values are `AWS` or `GCP`).",
-				Optional:         true,
-				Type:             schema.TypeString,
-				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
+			"subscription_name": {
+				Description: "The name of the subscription",
+				Type:        schema.TypeString,
+				Required:    true,
 			},
 			"regions": {
-				Description: "A list of regions from either a single or multiple cloud providers",
+				Description: "A list of regions from an active active subscription",
 				Type:        schema.TypeSet,
 				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"name": {
-							Description: "The identifier assigned by the cloud provider, (for example `eu-west-1` for `AWS`)",
+						"region": {
+							Description: "Deployment region as defined by cloud provider",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"networking_deployment_cidr": {
+							Description: "Deployment CIDR mask",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"vpc_id": {
+							Description: "VPC ID for the region",
 							Computed:    true,
 							Type:        schema.TypeString,
 						},
-						"provider_name": {
-							Description: "The identifier of the owning cloud provider, (either `AWS` or `GCP`)",
+						"databases": {
+							Description: "A list of databases found in the region",
 							Computed:    true,
-							Type:        schema.TypeString,
+							Type:        schema.TypeList,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"database_id": {
+										Description: "A numeric id for the database",
+										Type:        schema.TypeInt,
+										Required:    true,
+									},
+									"database_name": {
+										Description: "A meaningful name to identify the database",
+										Type:        schema.TypeString,
+										Required:    true,
+									},
+									"write_operations_per_second": {
+										Description: "Write operations per second for the database",
+										Type:        schema.TypeInt,
+										Required:    true,
+									},
+									"read_operations_per_second": {
+										Description: "Read operations per second for the database",
+										Type:        schema.TypeInt,
+										Required:    true,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -68,7 +93,8 @@ func dataSourceRedisCloudActiveActiveRegionsRead(ctx context.Context, d *schema.
 		return redis.StringValue(sub.DeploymentType) == "active-active"
 	})
 
-	if name, ok := d.GetOk("name"); ok {
+	// Filter down to requested subscription by name
+	if name, ok := d.GetOk("subscription_name"); ok {
 		filters = append(filters, func(sub *subscriptions.Subscription) bool {
 			return redis.StringValue(sub.Name) == name
 		})
@@ -88,10 +114,19 @@ func dataSourceRedisCloudActiveActiveRegionsRead(ctx context.Context, d *schema.
 
 	regions, err := api.client.Subscription.ListActiveActiveRegions(ctx, *sub.ID)
 
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	if len(regions) == 0 {
 		return diag.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
 
-	return diags
+	// TODO: may have to manipulate regions to be output in a friendly way here
 
+	if err := d.Set("regions", regions); err != nil {
+		return diag.FromErr(err)
+	}
+
+	return diags
 }
