@@ -28,7 +28,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceSubscriptionName = "data.rediscloud_active_active_subscription.example"
-	const datasourceRegionName = "data.rediscloud_active_active_subscription_region.regions"
+	const datasourceRegionName = "data.rediscloud_active_active_subscription_regions.foo"
 
 	var subId int
 
@@ -165,21 +165,12 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					// Test the region datasource
 
 					resource.TestCheckResourceAttr(datasourceRegionName, "subscription_name", name),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.region", ""),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.networking_deployment_cidr", ""),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.vpc_id", ""),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.databases.database_id", ""),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.databases.database_name", ""),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.databases.write_operations_per_second", ""),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.databases.read_operations_per_second", ""),
-
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.region", ""),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.networking_deployment_cidr", ""),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.vpc_id", ""),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.databases.database_id", ""),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.databases.database_name", ""),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.databases.write_operations_per_second", ""),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.databases.read_operations_per_second", ""),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.region", "us-east-1"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.networking_deployment_cidr", "10.0.1.0/24"),
+					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.0.vpc_id"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.region", "us-east-2"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.networking_deployment_cidr", "10.0.1.0/24"),
+					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.1.vpc_id"),
 				),
 			},
 			{
@@ -396,7 +387,7 @@ data "rediscloud_active_active_subscription" "example" {
 	name = rediscloud_active_active_subscription.example.name
 }
 
-data "rediscloud_active_active_subscription_regions" "regions" {
+data "rediscloud_active_active_subscription_regions" "foo" {
 	subscription_name = rediscloud_active_active_subscription.example.name
 }
 `
