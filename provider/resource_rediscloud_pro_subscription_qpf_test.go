@@ -135,7 +135,7 @@ func TestAccResourceRedisCloudProSubscription_invalidQueryPerformanceFactors(t *
 
 	config := formatDatabaseConfig(name, testCloudAccountName, password, "5x", `modules = [{ name = "RediSearch" }]`)
 
-	testSubErrorCase(t, config, regexp.MustCompile(`"creation_plan\.0\.query_performance_factor" must be an even value between 2x and 16x \(inclusive\), got: 5x`))
+	testSubErrorCase(t, config, regexp.MustCompile(`"creation_plan\.0\.query_performance_factor" must be an even value between 2x and 8x \(inclusive\), got: 5x`))
 }
 
 func TestAccResourceRedisCloudProSubscription_invalidQueryPerformanceFactors_outOfRange(t *testing.T) {
@@ -145,5 +145,5 @@ func TestAccResourceRedisCloudProSubscription_invalidQueryPerformanceFactors_out
 
 	config := formatDatabaseConfig(name, testCloudAccountName, password, "30x", `modules = [{ name = "RediSearch" }]`)
 
-	testSubErrorCase(t, config, regexp.MustCompile(`"creation_plan\.0\.query_performance_factor" must be an even value between 2x and 16x \(inclusive\), got: 30x`))
+	testSubErrorCase(t, config, regexp.MustCompile(`"creation_plan\.0\.query_performance_factor" must be an even value between 2x and 8x \(inclusive\), got: 30x`))
 }
