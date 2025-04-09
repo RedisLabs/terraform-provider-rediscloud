@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -21,7 +22,7 @@ func dataSourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 			},
 			"regions": {
 				Description: "A list of regions from an active active subscription",
-				Type:        schema.TypeSet,
+				Type:        schema.TypeList,
 				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -122,11 +123,41 @@ func dataSourceRedisCloudActiveActiveRegionsRead(ctx context.Context, d *schema.
 		return diag.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
 
-	// TODO: may have to manipulate regions to be output in a friendly way here
+	var genericRegions = flattenActiveActiveRegions(regions)
 
-	if err := d.Set("regions", regions); err != nil {
+	id := fmt.Sprintf("%d-regions", *sub.ID)
+	d.SetId(id)
+
+	if err := d.Set("regions", genericRegions); err != nil {
 		return diag.FromErr(err)
 	}
 
 	return diags
+}
+
+// generifies the region/db data so it can be put into the terraform schema
+func flattenActiveActiveRegions(regionList []*subscriptions.ActiveActiveRegion) []map[string]interface{} {
+	var rl []map[string]interface{}
+	for _, currentRegion := range regionList {
+
+		var dbs []map[string]interface{}
+		for _, db := range currentRegion.Databases {
+			dbMap := map[string]interface{}{
+				"database_id":                 db.DatabaseId,
+				"database_name":               db.DatabaseName,
+				"write_operations_per_second": db.WriteOperationsPerSecond,
+				"read_operations_per_second":  db.ReadOperationsPerSecond,
+			}
+			dbs = append(dbs, dbMap)
+		}
+
+		regionMap := map[string]interface{}{
+			"region":                     currentRegion.Region,
+			"networking_deployment_cidr": currentRegion.DeploymentCIDR,
+			"vpc_id":                     currentRegion.VpcId,
+			"databases":                  dbs,
+		}
+		rl = append(rl, regionMap)
+	}
+	return rl
 }
