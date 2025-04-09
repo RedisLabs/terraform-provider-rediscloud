@@ -294,6 +294,18 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 							Type:        schema.TypeString,
 							Optional:    true,
 							Computed:    true,
+							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+								v := val.(string)
+								matched, err := regexp.MatchString(`^(2|4|6|8|10|12|14|16)x$`, v)
+								if err != nil {
+									errs = append(errs, fmt.Errorf("regex match failed: %s", err))
+									return
+								}
+								if !matched {
+									errs = append(errs, fmt.Errorf("%q must be an even value between 2x and 16x (inclusive), got: %s", key, v))
+								}
+								return
+							},
 						},
 						"throughput_measurement_by": {
 							Description:      "Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)",
