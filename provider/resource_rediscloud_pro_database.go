@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -221,6 +222,18 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 				Optional:    true,
 				Computed:    true,
 				ForceNew:    true,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(string)
+					matched, err := regexp.MatchString(`^(2|4|6|8|10|12|14|16)x$`, v)
+					if err != nil {
+						errs = append(errs, fmt.Errorf("regex match failed: %s", err))
+						return
+					}
+					if !matched {
+						errs = append(errs, fmt.Errorf("%q must be an even value between 2x and 16x (inclusive), got: %s", key, v))
+					}
+					return
+				},
 			},
 			"modules": {
 				Description: "Modules to be provisioned in the database",
