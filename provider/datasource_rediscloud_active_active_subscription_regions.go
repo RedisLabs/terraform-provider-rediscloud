@@ -50,22 +50,22 @@ func dataSourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 									"database_id": {
 										Description: "A numeric id for the database",
 										Type:        schema.TypeInt,
-										Required:    true,
+										Computed:    true,
 									},
 									"database_name": {
 										Description: "A meaningful name to identify the database",
 										Type:        schema.TypeString,
-										Required:    true,
+										Computed:    true,
 									},
 									"write_operations_per_second": {
 										Description: "Write operations per second for the database",
 										Type:        schema.TypeInt,
-										Required:    true,
+										Computed:    true,
 									},
 									"read_operations_per_second": {
 										Description: "Read operations per second for the database",
 										Type:        schema.TypeInt,
-										Required:    true,
+										Computed:    true,
 									},
 								},
 							},
