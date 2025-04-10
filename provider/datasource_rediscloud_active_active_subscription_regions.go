@@ -125,7 +125,7 @@ func dataSourceRedisCloudActiveActiveRegionsRead(ctx context.Context, d *schema.
 
 	var genericRegions = flattenActiveActiveRegions(regions)
 
-	id := fmt.Sprintf("%d-regions", *sub.ID)
+	id := fmt.Sprintf("%d-active-active-regions", *sub.ID)
 	d.SetId(id)
 
 	if err := d.Set("regions", genericRegions); err != nil {
