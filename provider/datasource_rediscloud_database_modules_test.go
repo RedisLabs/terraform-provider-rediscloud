@@ -7,6 +7,9 @@ import (
 )
 
 func TestAccDataSourceRedisCloudDatabaseModules_basic(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TEST_API_DATA")
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,

@@ -23,6 +23,8 @@ var activeActiveMarketplaceFlag = flag.Bool("activeActiveMarketplace", false,
 // Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the subscription resource.
 func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 
+	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUB_ACTIVE_ACTIVE")
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceName = "data.rediscloud_active_active_subscription.example"

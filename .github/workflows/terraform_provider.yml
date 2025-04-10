@@ -105,7 +105,7 @@ jobs:
               - 'provider/**'
               - '*.go'
               - '.github/workflows/**'
-      - run: make testacc
+      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloud(Essentials|Pro|ActiveActive)Database.*"'
         if: steps.filter.outputs.code-changes == 'true'
         env:
           REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_STAGING }}

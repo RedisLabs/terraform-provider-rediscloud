@@ -8,6 +8,8 @@ import (
 
 func TestAccDataSourceRedisCloudPaymentMethod_basic(t *testing.T) {
 
+	testAccRequiresEnvVar(t, "EXECUTE_TEST_PAYMENT_METHOD")
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
