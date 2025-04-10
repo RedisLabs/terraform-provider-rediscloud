@@ -166,7 +166,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 
 					resource.TestCheckResourceAttr(datasourceRegionName, "subscription_name", name),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.region", "us-east-1"),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.networking_deployment_cidr", "10.0.1.0/24"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.networking_deployment_cidr", "192.168.0.0/24"),
 					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.0.vpc_id"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.region", "us-east-2"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.networking_deployment_cidr", "10.0.1.0/24"),
