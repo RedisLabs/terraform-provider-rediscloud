@@ -13,6 +13,9 @@ import (
 )
 
 func TestAccRedisCloudAclRule_DataSourceForDefaultRule(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTACC_ACL")
+
 	// This rule already exists
 	const testName = "Read-Write"
 	const testRule = "+@all -@dangerous ~*"
@@ -37,7 +40,9 @@ func TestAccRedisCloudAclRule_DataSourceForDefaultRule(t *testing.T) {
 	})
 }
 
-func TestAccRedisCloudAclRule_CRUDI(t *testing.T) {
+func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TEST_ACL")
 
 	prefix := acctest.RandomWithPrefix(testResourcePrefix)
 	testName := prefix + "-test-rule"

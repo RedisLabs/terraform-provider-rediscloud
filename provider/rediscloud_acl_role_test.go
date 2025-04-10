@@ -13,7 +13,9 @@ import (
 	"testing"
 )
 
-func TestAccCreateReadUpdateImportDeleteAclRole_Pro(t *testing.T) {
+func TestAccResourceRedisCloudAclRole_CRUDI(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TEST_ACL")
 
 	prefix := acctest.RandomWithPrefix(testResourcePrefix)
 	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
