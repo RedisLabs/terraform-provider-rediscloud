@@ -21,7 +21,7 @@ env:
   AWS_VPC_ID: ${{ secrets.AWS_VPC_ID }}
   AWS_TEST_TGW_ID: ${{ secrets.AWS_TEST_TGW_ID_STAGING }}
   TF_ACC: true
-  TF_LOG: debug
+  TF_LOG: info
   AWS_ACCESS_KEY_ID: ${{ secrets.CLOUD_ACCOUNT_KEY }}
   AWS_ACCESS_SECRET_KEY: ${{ secrets.CLOUD_ACCOUNT_SECRET }}
   AWS_CONSOLE_USERNAME: ${{ secrets.CLOUD_ACCOUNT_USERNAME }}
