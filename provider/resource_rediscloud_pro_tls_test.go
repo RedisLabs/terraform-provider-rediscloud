@@ -229,7 +229,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 }
 
 // enable_tls=false, client_ssl_certificate=<invalid>
-func TestAccResourceRedisCloudSubscription_createWithDatabaseAndDisabledTlsAndInvalidCert(t *testing.T) {
+func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseAndDisabledTlsAndInvalidCert(t *testing.T) {
 
 	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
