@@ -27,7 +27,7 @@ var marketplaceFlag = flag.Bool("marketplace", false,
 // Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the subscription resource.
 func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_subscription.example"
@@ -133,7 +133,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_subscription.example"
@@ -157,7 +157,7 @@ func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *tes
 
 func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*contractFlag {
 		t.Skip("The '-contract' parameter wasn't provided in the test command.")
@@ -196,7 +196,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 
 func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*marketplaceFlag {
 		t.Skip("The '-marketplace' parameter wasn't provided in the test command.")
@@ -233,7 +233,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 
 func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -281,7 +281,7 @@ func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 
 func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-mw"
 	resourceName := "rediscloud_subscription.example"

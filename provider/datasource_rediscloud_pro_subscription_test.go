@@ -12,7 +12,7 @@ import (
 
 func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix("tf-test")
 
@@ -61,7 +61,7 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 
 func TestAccDataSourceRedisCloudProSubscription_ignoresAA(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)

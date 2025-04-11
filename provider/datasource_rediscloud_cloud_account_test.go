@@ -11,7 +11,7 @@ import (
 
 func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_CLOUD_ACCOUNT")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 

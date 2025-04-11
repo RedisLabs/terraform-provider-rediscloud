@@ -13,7 +13,7 @@ import (
 
 func TestAccResourceRedisCloudEssentialsSubscription_FreeCRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
@@ -78,7 +78,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_FreeCRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudEssentialsSubscription_PaidCRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"

@@ -18,9 +18,9 @@ var sslCertificate = "-----BEGIN CERTIFICATE-----\\nMIIFYzCCA0ugAwIBAgIUSy/xBxWL
 var invalidSslCertificate = "I am not a valid certificate"
 
 // enable_tls=true, client_ssl_certificate=<valid>
-func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSslCert(t *testing.T) {
+func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndSslCert(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
@@ -125,9 +125,9 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndSs
 }
 
 // enable_tls=true, client_ssl_certificate=""
-func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEmptySslCert(t *testing.T) {
+func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndEmptySslCert(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
@@ -204,9 +204,9 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndEm
 }
 
 // enable_tls=true, client_ssl_certificate=<invalid>
-func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndInvalidSslCert(t *testing.T) {
+func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndInvalidSslCert(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
@@ -254,9 +254,9 @@ func TestAccResourceRedisCloudSubscription_createWithDatabaseAndDisabledTlsAndIn
 }
 
 // enable_tls=false, client_ssl_certificate="", client_tls_certificates=["something"]
-func TestAccResourceRedisCloudSubscription_createWithoutEnableTlsAndTlsCert(t *testing.T) {
+func TestAccResourceRedisCloudSubscriptionTls_createWithoutEnableTlsAndTlsCert(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
@@ -278,9 +278,9 @@ func TestAccResourceRedisCloudSubscription_createWithoutEnableTlsAndTlsCert(t *t
 	})
 }
 
-func TestAccResourceRedisCloudSubscription_createWithSslCertAndTlsCert(t *testing.T) {
+func TestAccResourceRedisCloudSubscriptionTls_createWithSslCertAndTlsCert(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
@@ -303,9 +303,9 @@ func TestAccResourceRedisCloudSubscription_createWithSslCertAndTlsCert(t *testin
 }
 
 // enable_tls=true, client_ssl_certificate="", client_tls_certificates=["something"]
-func TestAccResourceRedisCloudSubscription_createWithDatabaseWithEnabledTlsAndTlsCert(t *testing.T) {
+func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndTlsCert(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
