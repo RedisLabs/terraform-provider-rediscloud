@@ -33,7 +33,7 @@ env:
   GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
 
 concurrency:
-  group: <span class="math-inline">\{\{ github\.workflow \}\}\-</span>{{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

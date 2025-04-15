@@ -21,25 +21,59 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+func containsModule(modules []interface{}, requiredModule string) bool {
+	for _, m := range modules {
+		if mod, ok := m.(string); ok && mod == requiredModule {
+			return true
+		}
+	}
+	return false
+}
+
 func resourceRedisCloudProSubscription() *schema.Resource {
 	return &schema.Resource{
+
+		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+
+			// Ensure the "creation_plan" block exists
+			_, creationPlanExists := diff.GetOk("creation_plan")
+			if !creationPlanExists {
+				if diff.Id() == "" {
+					return fmt.Errorf(`the "creation_plan" block is required`)
+				}
+				return nil
+			}
+
+			// Validate "query_performance_factor" dependency on "modules"
+			creationPlan := diff.Get("creation_plan").([]interface{})
+			if len(creationPlan) > 0 {
+				plan := creationPlan[0].(map[string]interface{})
+
+				qpf, qpfExists := plan["query_performance_factor"].(string)
+
+				// Ensure "modules" key is explicitly defined in HCL
+				_, modulesExists := diff.GetOkExists("creation_plan.0.modules")
+
+				if qpfExists && qpf != "" {
+					if !modulesExists {
+						return fmt.Errorf(`"query_performance_factor" requires the "modules" key to be explicitly defined in HCL`)
+					}
+
+					modules, _ := plan["modules"].([]interface{})
+					if !containsModule(modules, "RediSearch") {
+						return fmt.Errorf(`"query_performance_factor" requires the "modules" list to contain "RediSearch"`)
+					}
+				}
+			}
+
+			return nil
+		},
+
 		Description:   "Creates a Pro Subscription within your Redis Enterprise Cloud Account.",
 		CreateContext: resourceRedisCloudProSubscriptionCreate,
 		ReadContext:   resourceRedisCloudProSubscriptionRead,
 		UpdateContext: resourceRedisCloudProSubscriptionUpdate,
 		DeleteContext: resourceRedisCloudProSubscriptionDelete,
-		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
-			_, cPlanExists := diff.GetOk("creation_plan")
-			if cPlanExists {
-				return nil
-			}
-
-			// The resource hasn't been created yet, but the creation plan is missing.
-			if diff.Id() == "" {
-				return fmt.Errorf(`the "creation_plan" block is required`)
-			}
-			return nil
-		},
 
 		Importer: &schema.ResourceImporter{
 			// Let the READ operation do the heavy lifting for importing values from the API.
@@ -254,6 +288,24 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 							Type:          schema.TypeFloat,
 							Optional:      true,
 							ConflictsWith: []string{"creation_plan.0.memory_limit_in_gb"},
+						},
+						"query_performance_factor": {
+							Description: "Query performance factor for this specific database",
+							Type:        schema.TypeString,
+							Optional:    true,
+							Computed:    true,
+							ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+								v := val.(string)
+								matched, err := regexp.MatchString(`^([2468])x$`, v)
+								if err != nil {
+									errs = append(errs, fmt.Errorf("regex match failed: %s", err))
+									return
+								}
+								if !matched {
+									errs = append(errs, fmt.Errorf("%q must be an even value between 2x and 8x (inclusive), got: %s", key, v))
+								}
+								return
+							},
 						},
 						"throughput_measurement_by": {
 							Description:      "Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)",
@@ -798,6 +850,11 @@ func buildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 		datasetSizeInGB = v.(float64)
 	}
 
+	queryPerformanceFactor := ""
+	if v, ok := planMap["query_performance_factor"]; ok && v != nil {
+		queryPerformanceFactor = v.(string)
+	}
+
 	var diags diag.Diagnostics
 	if memoryStorage == databases.MemoryStorageRam && averageItemSizeInBytes != 0 {
 		// TODO This should be changed to an error when releasing 2.0 of the provider
@@ -824,7 +881,7 @@ func buildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 		for _, v := range planModules {
 			modules = append(modules, &subscriptions.CreateModules{Name: v})
 		}
-		createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules, throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases)...)
+		createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules, throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases, queryPerformanceFactor)...)
 	} else {
 		// make RedisGraph module the first module, then append the rest of the modules
 		var modules []*subscriptions.CreateModules
@@ -835,20 +892,20 @@ func buildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 			}
 		}
 		// create a DB with the RedisGraph module
-		createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[:1], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1)...)
+		createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[:1], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1, queryPerformanceFactor)...)
 		if numDatabases == 1 {
 			// create one extra DB with all other modules
-			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1)...)
+			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1, queryPerformanceFactor)...)
 		} else if numDatabases > 1 {
 			// create the remaining DBs with all other modules
-			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases-1)...)
+			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases-1, queryPerformanceFactor)...)
 		}
 	}
 	return createDatabases, diags
 }
 
 // createDatabase returns a CreateDatabase struct with the given parameters
-func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModules, throughputMeasurementBy string, throughputMeasurementValue int, memoryLimitInGB float64, datasetSizeInGB float64, averageItemSizeInBytes int, supportOSSClusterAPI bool, replication bool, numDatabases int) []*subscriptions.CreateDatabase {
+func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModules, throughputMeasurementBy string, throughputMeasurementValue int, memoryLimitInGB float64, datasetSizeInGB float64, averageItemSizeInBytes int, supportOSSClusterAPI bool, replication bool, numDatabases int, queryPerformanceFactor string) []*subscriptions.CreateDatabase {
 	createThroughput := &subscriptions.CreateThroughput{
 		By:    redis.String(throughputMeasurementBy),
 		Value: redis.Int(throughputMeasurementValue),
@@ -887,6 +944,11 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 		if memoryLimitInGB > 0 {
 			createDatabase.MemoryLimitInGB = redis.Float64(memoryLimitInGB)
 		}
+
+		if queryPerformanceFactor != "" {
+			createDatabase.QueryPerformanceFactor = redis.String(queryPerformanceFactor)
+		}
+
 		*idx++
 		dbs = append(dbs, &createDatabase)
 	}
