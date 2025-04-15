@@ -2,6 +2,7 @@ package provider
 
 import (
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
@@ -25,4 +26,12 @@ func TestIsTime(t *testing.T) {
 			assert.Equal(t, test.errors, actual.HasError(), "%+v", actual)
 		})
 	}
+}
+
+func testAccRequiresEnvVar(t *testing.T, envVarName string) string {
+	envVarValue := os.Getenv(envVarName)
+	if envVarValue == "" || envVarValue == "false" {
+		t.Skipf("Skipping test because %s is not set.", envVarName)
+	}
+	return envVarValue
 }
