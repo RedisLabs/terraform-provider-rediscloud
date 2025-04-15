@@ -17,6 +17,8 @@ import (
 // Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the database resource.
 func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
 	password := acctest.RandString(20)
@@ -201,6 +203,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
@@ -224,6 +229,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing
 }
 
 func TestAccResourceRedisCloudActiveActiveDatabase_timeUtcRequiresValidInterval(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	password := acctest.RandString(20)

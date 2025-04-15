@@ -8,7 +8,9 @@ import (
 	"testing"
 )
 
-func TestAccRedisCloudEssentialsDatabase_BasicCRUDI(t *testing.T) {
+func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	databaseName := subscriptionName + "-db"

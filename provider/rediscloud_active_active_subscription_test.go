@@ -23,6 +23,8 @@ var activeActiveMarketplaceFlag = flag.Bool("activeActiveMarketplace", false,
 // Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the subscription resource.
 func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceName = "data.rediscloud_active_active_subscription.example"
@@ -220,6 +222,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayment(t *testing.T) {
 
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	if !*activeActiveContractFlag {
 		t.Skip("The '-activeActiveContract' parameter wasn't provided in the test command.")
 	}
@@ -257,6 +261,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 }
 
 func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePayment(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*activeActiveMarketplaceFlag {
 		t.Skip("The '-activeActiveMarketplace' parameter wasn't provided in the test command.")

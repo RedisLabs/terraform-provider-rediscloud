@@ -12,6 +12,8 @@ import (
 
 func TestAccResourceRedisCloudTransitGatewayAttachment_Pro(t *testing.T) {
 
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	testTgwId := os.Getenv("AWS_TEST_TGW_ID")
 	baseName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-tgwa"
