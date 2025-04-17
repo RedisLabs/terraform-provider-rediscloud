@@ -2,7 +2,9 @@ package provider
 
 import (
 	"context"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"log"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -49,6 +51,20 @@ func resourceRedisCloudEssentialsSubscription() *schema.Resource {
 				Description: "The identifier of the plan to template the subscription",
 				Type:        schema.TypeInt,
 				Required:    true,
+			},
+			"payment_method": {
+				Description:      "Payment method for the requested subscription. If credit card is specified, the payment method id must be defined. This information is only used when creating a new subscription and any changes will be ignored after this.",
+				Type:             schema.TypeString,
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(credit-card|marketplace)$"), "must be 'credit-card' or 'marketplace'")),
+				Optional:         true,
+				Default:          "credit-card",
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if d.Id() == "" {
+						// We don't want to ignore the block if the resource is about to be created.
+						return false
+					}
+					return true
+				},
 			},
 			"payment_method_id": {
 				Description: "The identifier of the method which will be charged for this subscription. Not required for free plans",
