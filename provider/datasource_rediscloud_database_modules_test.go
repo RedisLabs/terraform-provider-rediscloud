@@ -7,6 +7,9 @@ import (
 )
 
 func TestAccDataSourceRedisCloudDatabaseModules_basic(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
@@ -22,7 +25,10 @@ func TestAccDataSourceRedisCloudDatabaseModules_basic(t *testing.T) {
 						"name": "RediSearch",
 					}),
 					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_database_modules.foo", "modules.*", map[string]string{
-						"name": "RedisGraph",
+						"name": "RedisJSON",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("data.rediscloud_database_modules.foo", "modules.*", map[string]string{
+						"name": "RedisTimeSeries",
 					}),
 				),
 			},

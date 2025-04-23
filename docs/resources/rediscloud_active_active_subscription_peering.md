@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_active_active_subscription_peering"
 description: |-
-  Active-Active subscription VPC peering resource in the Redis Cloud Terraform provider.
+ Active-Active subscription VPC peering resource in the Redis Cloud Terraform provider.
 ---
 
 # Resource: rediscloud_active_active_subscription_peering

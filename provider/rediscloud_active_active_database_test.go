@@ -17,6 +17,8 @@ import (
 // Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the database resource.
 func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
 	password := acctest.RandString(20)
@@ -194,13 +196,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					"override_region.0.override_global_alert.0.value",
 					"override_region.0.override_global_data_persistence",
 					"override_region.0.override_global_password",
-					"override_region.0.latest_backup_status.#",
-					"override_region.0.latest_backup_status.0.%",
-					"override_region.0.latest_backup_status.0.error.#",
-					"override_region.0.latest_backup_status.0.error.0.%",
-					"override_region.0.latest_backup_status.0.error.0.description",
-					"override_region.0.latest_backup_status.0.error.0.status",
-					"override_region.0.latest_backup_status.0.error.0.type",
 				},
 			},
 		},
@@ -208,6 +203,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
@@ -231,6 +229,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing
 }
 
 func TestAccResourceRedisCloudActiveActiveDatabase_timeUtcRequiresValidInterval(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	password := acctest.RandString(20)

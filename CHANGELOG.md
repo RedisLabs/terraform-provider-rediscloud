@@ -3,6 +3,48 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.1.1 (6th Feb 2025)
+
+### Added
+
+- Documentation related to using the [Redis Cloud Private Service Connect Module](https://github.com/RedisLabs/terraform-rediscloud-private-service-connect) 
+to simplify the Terraform configuration. 
+
+# 2.1.0 (6th Feb 2025)
+
+### Added
+
+- Added resources for provisioning Private Service Connect in GCP on Active-Active and Pro subscriptions.
+`rediscloud_private_service_connect`, `rediscloud_private_service_connect_endpoint`, `rediscloud_private_service_connect_endpoint_accepter`,
+`rediscloud_active_active_private_service_connect`, `rediscloud_active_active_private_service_connect_endpoint` and
+`rediscloud_active_active_private_service_connect_endpoint_accepter` as well as the respective data sources
+`rediscloud_private_service_connect`, `rediscloud_private_service_connect_endpoints`, `rediscloud_active_active_private_service_connect`
+and `rediscloud_active_active_private_service_connect_endpoints`
+
+### Changed
+
+- Upgraded the provider to use `v0.22.0` of the [rediscloud-go-api](https://github.com/RedisLabs/rediscloud-go-api) SDK.
+
+# 2.0.0 (5th Dec 2024)
+
+### Changed
+
+- Upgraded the provider to use `v0.21.0` of the [rediscloud-go-api](https://github.com/RedisLabs/rediscloud-go-api) which handles API rate limits gracefully.
+
+### Removed
+
+- `latest_backup_status` and `latest_import_status` from `rediscloud_active_active_subscription_database`,
+  `rediscloud_active_active_subscription_regions`, `rediscloud_subscription_database` and `rediscloud_essentials_database`.
+  Users should use the equivalent data sources instead.
+
+# 1.9.0 (9th Oct 2024)
+
+### Added
+
+- Tags as key/value pairs on Pro and ActiveActive databases
+- The facility for users to upgrade from memorySizeInGb to datasetSizeInGb
+(please note that changing back may have unexpected results and is not supported)
+
 # 1.8.1 (3rd Sept 2024)
 
 ### Removed
