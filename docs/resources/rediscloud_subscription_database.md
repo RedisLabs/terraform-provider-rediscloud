@@ -163,4 +163,12 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/l
 $ terraform import rediscloud_subscription_database.database-resource 123456/12345678
 ```
 
-Note: Due to constraints in the Redis Cloud API, the `memory_limit_in_gb` cannot be set during imports as it is deprecated. If you need to set the `memory_limit_in_gb` attribute, you will need to create a new database resource. It is recommended to use the `dataset_size_in_gb` attribute instead.
+Note: Due to constraints in the Redis Cloud API, the `memory_limit_in_gb` cannot be set during imports as it is deprecated. If you need to set the `memory_limit_in_gb` attribute, you will need to create a new database resource. It is recommended to use the `dataset_size_in_gb` attribute instead since imports are supported.
+
+To update an existing configuration for a database which uses the `memory_limit_in_gb` field to use `dataset_size_in_gb`, you need to remove it from the state and import the resource again. e.g.
+
+```
+$ terraform state rm rediscloud_subscription_database.database-resource
+(Update the configuration to use `dataset_size_in_gb` instead of `memory_limit_in_gb`)
+$ terraform import rediscloud_subscription_database.database-resource 123456/12345678
+```
