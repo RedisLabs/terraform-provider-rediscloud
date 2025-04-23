@@ -11,12 +11,15 @@ import (
 )
 
 func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	// Chose a CIDR range for the subscription that's unlikely to overlap with any VPC CIDR
-	subCidrRange := "10.0.0.0/24"
+	const subCidrRange = "10.0.0.0/24"
 
 	awsAccountId := os.Getenv("AWS_ACCOUNT_ID")
 	awsVPCId := os.Getenv("AWS_VPC_ID")
@@ -31,16 +34,16 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 		awsVPCId,
 		awsVPCCidr,
 	)
-	dataSourceName := "data.rediscloud_subscription_peerings.example"
+	const dataSourceName = "data.rediscloud_subscription_peerings.example"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPeeringPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: tf,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchTypeSetElemNestedAttrs(dataSourceName, "peerings.*", map[string]*regexp.Regexp{
 						"provider_name":  regexp.MustCompile("AWS"),
 						"aws_account_id": regexp.MustCompile(awsAccountId),

@@ -2,20 +2,23 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_subscription"
 description: |-
-  Subscription resource in the Terraform provider Redis Cloud.
+  Subscription resource in the Redis Cloud Terraform provider.
 ---
 
 # Resource: rediscloud_subscription
 
-Creates a Flexible Subscription within your Redis Enterprise Cloud Account.
-This resource is responsible for creating and managing subscriptions.
+This resource allows you to manage a subscription within your Redis Enterprise Cloud account.
+
+-> **Note:** This is for Pro Subscriptions only. See also `rediscloud_active_active_subscription` and `rediscloud_essentials_subscription`.
+
+~> **Note:** The payment_method property is ignored after Subscription creation.
 
 ~> **Note:** The creation_plan block allows the API server to create a well-optimised infrastructure for your databases in the cluster.
-The attributes inside the block are used by the provider to create initial 
-databases. Those databases will be deleted after provisioning a new 
-subscription, then the databases defined as separate resources will be attached to 
-the subscription. The creation_plan block can ONLY be used for provisioning new 
-subscriptions, the block will be ignored if you make any further changes or try importing the resource (e.g. `terraform import` ...).  
+The attributes inside the block are used by the provider to create initial
+databases. Those databases will be deleted after provisioning a new
+subscription, then the databases defined as separate resources will be attached to
+the subscription. The creation_plan block can ONLY be used for provisioning new
+subscriptions, the block will be ignored if you make any further changes or try importing the resource (e.g. `terraform import` ...).
 
 ## Example Usage
 
@@ -26,18 +29,18 @@ data "rediscloud_payment_method" "card" {
 
 resource "rediscloud_subscription" "subscription-resource" {
 
-  name = "subscription-name"
-  payment_method = "credit-card"
+  name              = "subscription-name"
+  payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-  redis_version = "latest"
+  memory_storage    = "ram"
+  redis_version     = "7.2"
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
     region {
-      region = "eu-west-1"
-      multiple_availability_zones = true
-      networking_deployment_cidr = "10.0.0.0/24"
+      region                       = "eu-west-1"
+      multiple_availability_zones  = true
+      networking_deployment_cidr   = "10.0.0.0/24"
       preferred_availability_zones = ["euw1-az1", "euw1-az2", "euw1-az3"]
     }
   }
@@ -45,12 +48,21 @@ resource "rediscloud_subscription" "subscription-resource" {
   // This block needs to be defined for provisioning a new subscription.
   // This allows creation of a well-optimized hardware specification for databases in the cluster
   creation_plan {
-    memory_limit_in_gb = 15
-    quantity = 1
-    replication= true
-    throughput_measurement_by = "operations-per-second"
+    dataset_size_in_gb           = 15
+    quantity                     = 1
+    replication                  = true
+    throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 20000
-    modules = ["RedisJSON"]
+    modules                      = ["RedisJSON"]
+  }
+  
+  maintenance_windows {
+    mode = "manual"
+    window {
+      start_hour = 22
+      duration_in_hours = 8
+      days = ["Tuesday", "Friday"]
+    }
   }
 }
 ```
@@ -60,13 +72,14 @@ resource "rediscloud_subscription" "subscription-resource" {
 The following arguments are supported:
 
 * `name` - (Required) A meaningful name to identify the subscription
-* `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'. **Modifying this attribute will force creation of a new resource.**
-* `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types
+* `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'. **(Changes to) this attribute are ignored after creation.**
+* `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. Only __Required__ when `payment_method` is `credit-card`.
 * `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of ‘ram-and-flash’. Default: ‘ram’. **Modifying this attribute will force creation of a new resource.**
-* `redis_version` - (Optional) Either 'default' or 'latest'. If specified, the Redis Version defines the cluster version. Default: 'default'. **Modifying this attribute will force creation of a new resource.**
-* `allowlist` - (Optional) An allowlist object, documented below 
+* `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default. **Modifying this attribute will force creation of a new resource.**
+* `allowlist` - (Optional) An allowlist object, documented below
 * `cloud_provider` - (Required) A cloud provider object, documented below. **Modifying this attribute will force creation of a new resource.**
-* `creation_plan` - (Required) A creation plan object, documented below
+* `creation_plan` - (Required) A creation plan object, documented below.
+* `maintenance_windows` - (Optional) The subscription's maintenance window specification, documented below.
 
 The `allowlist` block supports:
 
@@ -79,27 +92,28 @@ The `cloud_provider` block supports:
 
 * `provider` - (Optional) The cloud provider to use with the subscription, (either `AWS` or `GCP`). Default: ‘AWS’. **Modifying this attribute will force creation of a new resource.**
 * `cloud_account_id` - (Optional) Cloud account identifier. Default: Redis Labs internal cloud account. **Modifying this attribute will force creation of a new resource.**
-(using Cloud Account ID = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created
-only with Redis Labs internal cloud account
+  (using Cloud Account ID = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created
+  only with Redis Labs internal cloud account
 * `region` - (Required) A region object, documented below. **Modifying this attribute will force creation of a new resource.**
 
 The `creation_plan` block supports:
 
-* `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database.
-* `modules` - (Optional) a list of modules that will be used by the databases in this subscription. Not currently compatible with ‘ram-and-flash’ memory storage.
-Example: `modules = ["RedisJSON", RedisBloom"]`
+* `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database. You can not set both dataset_size_in_gb and memory_limit_in_gb. **Deprecated: Use `dataset_size_in_gb` instead**
+* `dataset_size_in_gb` - (Required) The maximum amount of data in the dataset for this specific database is in GB. You can not set both dataset_size_in_gb and memory_limit_in_gb.
+* `modules` - (Optional) a list of modules that will be used by the databases in this subscription. Not currently compatible with ‘ram-and-flash’ memory storage.  
+  Example: `modules = ["RedisJSON", "RediSearch", "RedisTimeSeries", "RedisBloom"]`
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `replication` - (Optional) Databases replication. Default: ‘true’
 * `quantity` - (Required) The planned number of databases in the subscription
-* `throughput_measurement_by` - (Required) Throughput measurement method that will be used by your databases, (either ‘number-of-shards’ or ‘operations-per-second’)
+* `throughput_measurement_by` - (Required) Throughput measurement method that will be used by your databases. Either `number-of-shards` or `operations-per-second`. **`number-of-shards` is deprecated and only supported for legacy deployments.**
 * `throughput_measurement_value` - (Required) Throughput value that will be used by your databases (as applies to selected measurement method). The value needs to be the maximum throughput measurement value defined in one of your databases
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters
-Estimated average size (measured in bytes) of the items stored in the database. The value needs to 
-be the maximum average item size defined in one of your databases.  Default: 1000
+  Estimated average size (measured in bytes) of the items stored in the database. The value needs to
+  be the maximum average item size defined in one of your databases.  Default: 1000
 
-~>**Note:** If the number of modules exceeds the `quantity` then additional creation-plan databases will be created with the modules defined in the `modules` block.
+~> **Note:** If the number of modules exceeds the `quantity` then additional creation-plan databases will be created with the modules defined in the `modules` block.
 
-~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `memory_storage`, `cloud_provider` or `payment_method`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
+~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `memory_storage` or `cloud_provider`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
 
 The cloud_provider `region` block supports:
 
@@ -107,12 +121,23 @@ The cloud_provider `region` block supports:
 * `multiple_availability_zones` - (Optional) Support deployment on multiple availability zones within the selected region. Default: ‘false’. **Modifying this attribute will force creation of a new resource.**
 * `networking_deployment_cidr` - (Required) Deployment CIDR mask. The total number of bits must be 24 (x.x.x.x/24). **Modifying this attribute will force creation of a new resource.**
 * `networking_vpc_id` - (Optional) Either an existing VPC Id (already exists in the specific region) or create a new VPC
-(if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4986384ad’) and existing
-within the hosting account. **Modifying this attribute will force creation of a new resource.**
+  (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4986384ad’) and exist
+  within the hosting account. **Modifying this attribute will force creation of a new resource.**
 * `preferred_availability_zones` - (Optional) Availability zones deployment preferences (for the selected provider & region). If multiple_availability_zones is set to 'true', select three availability zones from the list. If you don't want to specify preferred availability zones, set this attribute to an empty list ('[]'). **Modifying this attribute will force creation of a new resource.**
 
-~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI. 
+~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI.
 This difference in behaviour is to guarantee that a plan after an apply does not generate differences. In AWS Redis internal cloud account, please set the zone IDs (for example: `["use-az2", "use-az3", "use-az5"]`).
+
+The `maintenance_windows` object has these attributes:
+
+* `mode` - Either `automatic` (Redis specified) or `manual` (User specified)
+* `window` - A list of windows (if manual mode)
+
+The `window` object has these attributes:
+
+* `start_hour` - What hour in the day (0-23) the window opens
+* `duration_in_hours` - How long the window is open (4-24 hours)
+* `days` - A list of weekdays on which the window is open ('Monday', 'Tuesday' etc)
 
 ### Timeouts
 
@@ -134,6 +159,16 @@ The `networks` block has these attributes:
 * `networking_deployment_cidr` - Deployment CIDR mask for the generated
 * `networking_vpc_id` - VPC id for the generated network
 
+The `pricing` object has these attributes:
+
+* `type` - The type of cost. E.g. 'Shards'.
+* `typeDetails` - Further detail E.g. 'micro'.
+* `quantity` - Self-explanatory.
+* `quantityMeasurement` - Self-explanatory.
+* `pricePerUnit` - Price per Unit.
+* `priceCurrency` - The price currency
+* `pricePeriod` - Price period. E.g. 'hour'.
+
 ## Import
 
 `rediscloud_subscription` can be imported using the ID of the subscription, e.g.
@@ -141,7 +176,7 @@ The `networks` block has these attributes:
 ```
 $ terraform import rediscloud_subscription.subscription-resource 12345678
 ```
-~> **Note:** the creation_plan block will be ignored during imports.
+~> **Note:** the payment_method property and creation_plan block will be ignored during imports.
 
 ~> **Note:** when importing an existing Subscription, upon providing a `redis_version`, Terraform will always try to
 recreate the resource. The API doesn't return this value, so we can't detect changes between states.

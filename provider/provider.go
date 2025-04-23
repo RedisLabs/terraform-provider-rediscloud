@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
-	rediscloud_api "github.com/RedisLabs/rediscloud-go-api"
+	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 )
 
 const RedisCloudUrlEnvVar = "REDISCLOUD_URL"
@@ -31,40 +31,70 @@ func New(version string) func() *schema.Provider {
 				},
 				"api_key": {
 					Type:        schema.TypeString,
-					Description: fmt.Sprintf("This is the Redis Cloud API key. It must be provided but can also be set by the `%s` environment variable.", rediscloud_api.AccessKeyEnvVar),
+					Description: fmt.Sprintf("This is the Redis Cloud API key. It must be provided but can also be set by the `%s` environment variable.", rediscloudApi.AccessKeyEnvVar),
 					Optional:    true,
 				},
 				"secret_key": {
 					Type:        schema.TypeString,
-					Description: fmt.Sprintf("This is the Redis Cloud API secret key. It must be provided but can also be set by the `%s` environment variable.", rediscloud_api.SecretKeyEnvVar),
+					Description: fmt.Sprintf("This is the Redis Cloud API secret key. It must be provided but can also be set by the `%s` environment variable.", rediscloudApi.SecretKeyEnvVar),
 					Optional:    true,
 				},
 			},
 			DataSourcesMap: map[string]*schema.Resource{
-				"rediscloud_cloud_account":         dataSourceRedisCloudCloudAccount(),
-				"rediscloud_data_persistence":      dataSourceRedisCloudDataPersistence(),
-				"rediscloud_database":              dataSourceRedisCloudDatabase(),
-				"rediscloud_database_modules":      dataSourceRedisCloudDatabaseModules(),
-				"rediscloud_payment_method":        dataSourceRedisCloudPaymentMethod(),
-				"rediscloud_regions":               dataSourceRedisCloudRegions(),
-				"rediscloud_subscription":          dataSourceRedisCloudSubscription(),
-				"rediscloud_subscription_peerings": dataSourceRedisCloudSubscriptionPeerings(),
-				"rediscloud_acl_rule":              dataSourceRedisCloudAclRule(),
-				"rediscloud_acl_role":              dataSourceRedisCloudAclRole(),
-				"rediscloud_acl_user":              dataSourceRedisCloudAclUser(),
+				"rediscloud_cloud_account":    dataSourceRedisCloudCloudAccount(),
+				"rediscloud_data_persistence": dataSourceRedisCloudDataPersistence(),
+				// Note the difference in public data-source name and the file/method name.
+				// This is to help the developer relate their changes to what they would see happening in the Redis Console.
+				// <default> == flexible == pro
+				"rediscloud_subscription":                      dataSourceRedisCloudProSubscription(),
+				"rediscloud_database":                          dataSourceRedisCloudProDatabase(),
+				"rediscloud_database_modules":                  dataSourceRedisCloudDatabaseModules(),
+				"rediscloud_payment_method":                    dataSourceRedisCloudPaymentMethod(),
+				"rediscloud_regions":                           dataSourceRedisCloudRegions(),
+				"rediscloud_essentials_plan":                   dataSourceRedisCloudEssentialsPlan(),
+				"rediscloud_essentials_subscription":           dataSourceRedisCloudEssentialsSubscription(),
+				"rediscloud_essentials_database":               dataSourceRedisCloudEssentialsDatabase(),
+				"rediscloud_subscription_peerings":             dataSourceRedisCloudSubscriptionPeerings(),
+				"rediscloud_private_service_connect":           dataSourcePrivateServiceConnect(),
+				"rediscloud_private_service_connect_endpoints": dataSourcePrivateServiceConnectEndpoints(),
+				"rediscloud_active_active_subscription":        dataSourceRedisCloudActiveActiveSubscription(),
+				// Note the difference in public data-source name and the file/method name.
+				// active_active_subscription_database == active_active_database
+				"rediscloud_active_active_subscription_database":             dataSourceRedisCloudActiveActiveDatabase(),
+				"rediscloud_active_active_private_service_connect":           dataSourceActiveActivePrivateServiceConnect(),
+				"rediscloud_active_active_private_service_connect_endpoints": dataSourceActiveActivePrivateServiceConnectEndpoints(),
+				"rediscloud_transit_gateway":                                 dataSourceTransitGateway(),
+				"rediscloud_active_active_transit_gateway":                   dataSourceActiveActiveTransitGateway(),
+				"rediscloud_acl_rule":                                        dataSourceRedisCloudAclRule(),
+				"rediscloud_acl_role":                                        dataSourceRedisCloudAclRole(),
+				"rediscloud_acl_user":                                        dataSourceRedisCloudAclUser(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
-				"rediscloud_cloud_account":                       resourceRedisCloudCloudAccount(),
-				"rediscloud_subscription":                        resourceRedisCloudSubscription(),
-				"rediscloud_subscription_database":               resourceRedisCloudSubscriptionDatabase(),
-				"rediscloud_subscription_peering":                resourceRedisCloudSubscriptionPeering(),
-				"rediscloud_active_active_subscription_database": resourceRedisCloudActiveActiveSubscriptionDatabase(),
-				"rediscloud_active_active_subscription":          resourceRedisCloudActiveActiveSubscription(),
-				"rediscloud_active_active_subscription_regions":  resourceRedisCloudActiveActiveSubscriptionRegions(),
-				"rediscloud_active_active_subscription_peering":  resourceRedisCloudActiveActiveSubscriptionPeering(),
-				"rediscloud_acl_rule":                            resourceRedisCloudAclRule(),
-				"rediscloud_acl_role":                            resourceRedisCloudAclRole(),
-				"rediscloud_acl_user":                            resourceRedisCloudAclUser(),
+				"rediscloud_cloud_account":           resourceRedisCloudCloudAccount(),
+				"rediscloud_essentials_subscription": resourceRedisCloudEssentialsSubscription(),
+				"rediscloud_essentials_database":     resourceRedisCloudEssentialsDatabase(),
+				// Note the difference in public resource name and the file/method name.
+				// <default> == flexible == pro
+				"rediscloud_subscription":                              resourceRedisCloudProSubscription(),
+				"rediscloud_subscription_database":                     resourceRedisCloudProDatabase(),
+				"rediscloud_subscription_peering":                      resourceRedisCloudSubscriptionPeering(),
+				"rediscloud_private_service_connect":                   resourceRedisCloudPrivateServiceConnect(),
+				"rediscloud_private_service_connect_endpoint":          resourceRedisCloudPrivateServiceConnectEndpoint(),
+				"rediscloud_private_service_connect_endpoint_accepter": resourceRedisCloudPrivateServiceConnectEndpointAccepter(),
+				"rediscloud_active_active_subscription":                resourceRedisCloudActiveActiveSubscription(),
+				// Note the difference in public resource name and the file/method name.
+				// active_active_subscription_database == active_active_database
+				"rediscloud_active_active_subscription_database":                     resourceRedisCloudActiveActiveDatabase(),
+				"rediscloud_active_active_subscription_regions":                      resourceRedisCloudActiveActiveSubscriptionRegions(),
+				"rediscloud_active_active_subscription_peering":                      resourceRedisCloudActiveActiveSubscriptionPeering(),
+				"rediscloud_active_active_private_service_connect":                   resourceRedisCloudActiveActivePrivateServiceConnect(),
+				"rediscloud_active_active_private_service_connect_endpoint":          resourceRedisCloudActiveActivePrivateServiceConnectEndpoint(),
+				"rediscloud_active_active_private_service_connect_endpoint_accepter": resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter(),
+				"rediscloud_transit_gateway_attachment":                              resourceRedisCloudTransitGatewayAttachment(),
+				"rediscloud_active_active_transit_gateway_attachment":                resourceRedisCloudActiveActiveTransitGatewayAttachment(),
+				"rediscloud_acl_rule":                                                resourceRedisCloudAclRule(),
+				"rediscloud_acl_role":                                                resourceRedisCloudAclRole(),
+				"rediscloud_acl_user":                                                resourceRedisCloudAclUser(),
 			},
 		}
 
@@ -78,33 +108,33 @@ func New(version string) func() *schema.Provider {
 var subscriptionMutex = newPerIdLock()
 
 type apiClient struct {
-	client *rediscloud_api.Client
+	client *rediscloudApi.Client
 }
 
 func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	return func(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		var config []rediscloud_api.Option
-		config = append(config, rediscloud_api.AdditionalUserAgent(p.UserAgent("terraform-provider-rediscloud", version)))
+		var config []rediscloudApi.Option
+		config = append(config, rediscloudApi.AdditionalUserAgent(p.UserAgent("terraform-provider-rediscloud", version)))
 
 		url := d.Get("url").(string)
 		apiKey := d.Get("api_key").(string)
 		secretKey := d.Get("secret_key").(string)
 
 		if url != "" {
-			config = append(config, rediscloud_api.BaseURL(url))
+			config = append(config, rediscloudApi.BaseURL(url))
 		}
 
 		if apiKey != "" && secretKey != "" {
-			config = append(config, rediscloud_api.Auth(apiKey, secretKey))
+			config = append(config, rediscloudApi.Auth(apiKey, secretKey))
 		}
 
 		if logging.IsDebugOrHigher() {
-			config = append(config, rediscloud_api.LogRequests(true))
+			config = append(config, rediscloudApi.LogRequests(true))
 		}
 
-		config = append(config, rediscloud_api.Logger(&debugLogger{}))
+		config = append(config, rediscloudApi.Logger(&debugLogger{}))
 
-		client, err := rediscloud_api.NewClient(config...)
+		client, err := rediscloudApi.NewClient(config...)
 		if err != nil {
 			return nil, diag.FromErr(err)
 		}

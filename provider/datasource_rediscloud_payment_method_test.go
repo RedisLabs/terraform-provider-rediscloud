@@ -8,6 +8,8 @@ import (
 
 func TestAccDataSourceRedisCloudPaymentMethod_basic(t *testing.T) {
 
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
@@ -15,7 +17,7 @@ func TestAccDataSourceRedisCloudPaymentMethod_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudPaymentMethod,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(
 						"data.rediscloud_payment_method.foo", "id", regexp.MustCompile("^\\d*$")),
 					resource.TestMatchResourceAttr(

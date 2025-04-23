@@ -1,9 +1,10 @@
 package provider
 
 import (
-	rediscloud_api "github.com/RedisLabs/rediscloud-go-api"
 	"os"
 	"testing"
+
+	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -27,7 +28,7 @@ func TestProvider(t *testing.T) {
 }
 
 func testAccPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, RedisCloudUrlEnvVar, rediscloud_api.AccessKeyEnvVar, rediscloud_api.SecretKeyEnvVar)
+	requireEnvironmentVariables(t, RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
 }
 
 func testAccAwsPreExistingCloudAccountPreCheck(t *testing.T) {
@@ -40,6 +41,18 @@ func testAccAwsCloudAccountPreCheck(t *testing.T) {
 
 func testAccAwsPeeringPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "AWS_PEERING_REGION", "AWS_ACCOUNT_ID", "AWS_VPC_ID", "AWS_VPC_CIDR")
+}
+
+func testAccGcpProjectPreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "GCP_PROJECT_ID")
+}
+
+func testAccGcpCredentialsPreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "GOOGLE_CREDENTIALS")
+}
+
+func testAccAwsPreExistingTgwCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "AWS_TEST_TGW_ID")
 }
 
 func requireEnvironmentVariables(t *testing.T, names ...string) {

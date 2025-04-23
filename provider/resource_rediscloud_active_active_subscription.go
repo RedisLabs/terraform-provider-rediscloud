@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/rediscloud-go-api/service/maintenance"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -17,7 +18,7 @@ import (
 
 func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 	return &schema.Resource{
-		Description:   "Creates a Subscription and database resources within your Redis Enterprise Cloud Account.",
+		Description:   "Creates an Active-Active Subscription within your Redis Enterprise Cloud Account.",
 		CreateContext: resourceRedisCloudActiveActiveSubscriptionCreate,
 		ReadContext:   resourceRedisCloudActiveActiveSubscriptionRead,
 		UpdateContext: resourceRedisCloudActiveActiveSubscriptionUpdate,
@@ -54,12 +55,18 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Optional:    true,
 			},
 			"payment_method": {
-				Description:      "Payment method for the requested subscription. If credit card is specified, the payment method Id must be defined.",
+				Description:      "Payment method for the requested subscription. If credit card is specified, the payment method id must be defined. This information is only used when creating a new subscription and any changes will be ignored after this.",
 				Type:             schema.TypeString,
-				ForceNew:         true,
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(credit-card|marketplace)$"), "must be 'credit-card' or 'marketplace'")),
 				Optional:         true,
 				Default:          "credit-card",
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if d.Id() == "" {
+						// We don't want to ignore the block if the resource is about to be created.
+						return false
+					}
+					return true
+				},
 			},
 			"payment_method_id": {
 				Computed:         true,
@@ -94,15 +101,30 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"memory_limit_in_gb": {
-							Description: "Maximum memory usage for each database",
-							Type:        schema.TypeFloat,
-							Required:    true,
+							Description:   "(Deprecated) Maximum memory usage for this specific database",
+							Type:          schema.TypeFloat,
+							Optional:      true,
+							ConflictsWith: []string{"creation_plan.0.dataset_size_in_gb"},
+						},
+						"dataset_size_in_gb": {
+							Description:   "Maximum amount of data in the dataset for this specific database in GB",
+							Type:          schema.TypeFloat,
+							Optional:      true,
+							ConflictsWith: []string{"creation_plan.0.memory_limit_in_gb"},
 						},
 						"quantity": {
 							Description:  "The planned number of databases",
 							Type:         schema.TypeInt,
 							Required:     true,
 							ValidateFunc: validation.IntAtLeast(1),
+						},
+						"modules": {
+							Description: "Modules that will be used by the databases in this subscription.",
+							Type:        schema.TypeList,
+							Optional:    true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
 						},
 						"region": {
 							Description: "Cloud networking details, per region (multiple regions for Active-Active cluster)",
@@ -145,7 +167,7 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				},
 			},
 			"redis_version": {
-				Description: "Version of Redis to create, either 'default' or 'latest'. Defaults to 'default'",
+				Description: "Version of Redis to create",
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
@@ -162,8 +184,108 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 
 					return true
 				},
-				ValidateDiagFunc: validation.ToDiagFunc(
-					validation.StringMatch(regexp.MustCompile("^(default|latest)$"), "must be 'default' or 'latest'")),
+			},
+			"maintenance_windows": {
+				Description: "Specify the subscription's maintenance windows",
+				Type:        schema.TypeList,
+				Optional:    true,
+				Computed:    true,
+				MinItems:    1,
+				MaxItems:    1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"mode": {
+							Description:      "Either automatic (Redis specified) or manual (User specified)",
+							Type:             schema.TypeString,
+							Required:         true,
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice([]string{"automatic", "manual"}, false)),
+						},
+						"window": {
+							Description: "A list of maintenance windows for manual-mode",
+							Type:        schema.TypeList,
+							Optional:    true, // if mode==automatic, no windows
+							MinItems:    1,    // if mode==manual, need at least 1 window
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"start_hour": {
+										Description: "What hour in the day (0-23) may maintenance start",
+										Type:        schema.TypeInt,
+										Required:    true,
+									},
+									"duration_in_hours": {
+										Description: "How long maintenance may take",
+										Type:        schema.TypeInt,
+										Required:    true,
+									},
+									"days": {
+										Description: "A list of days on which the window is open ('Monday', 'Tuesday' etc)",
+										Type:        schema.TypeList,
+										Required:    true,
+										MinItems:    1,
+										MaxItems:    7,
+										Elem: &schema.Schema{
+											Type: schema.TypeString,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"pricing": {
+				Description: "Pricing details totalled over this Subscription",
+				Type:        schema.TypeList,
+				Computed:    true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"database_name": {
+							Description: "The database this pricing entry applies to",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"type": {
+							Description: "The type of cost e.g. 'Shards'",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"type_details": {
+							Description: "Further detail e.g. 'micro'",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"quantity": {
+							Description: "Self-explanatory",
+							Type:        schema.TypeInt,
+							Computed:    true,
+						},
+						"quantity_measurement": {
+							Description: "Self-explanatory",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"price_per_unit": {
+							Description: "Self-explanatory",
+							Type:        schema.TypeFloat,
+							Computed:    true,
+						},
+						"price_currency": {
+							Description: "Self-explanatory e.g. 'USD'",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"price_period": {
+							Description: "Self-explanatory e.g. 'hour'",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"region": {
+							Description: "Self-explanatory, if the cost is associated with a particular region",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -227,7 +349,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are listed .
 	// This additional wait ensures that the databases will be listed before calling api.client.Database.List()
-	time.Sleep(10 * time.Second) //lintignore:R018
+	time.Sleep(30 * time.Second) //lintignore:R018
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
@@ -254,6 +376,29 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 	// Check that the subscription is in an active state before calling the read function
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
+	}
+
+	if m, ok := d.GetOk("maintenance_windows"); ok {
+		mMap := m.([]interface{})[0].(map[string]interface{})
+
+		windows := make([]*maintenance.Window, 0)
+		for _, w := range mMap["window"].([]interface{}) {
+			wMap := w.(map[string]interface{})
+			windows = append(windows, &maintenance.Window{
+				StartHour:       redis.Int(wMap["start_hour"].(int)),
+				DurationInHours: redis.Int(wMap["duration_in_hours"].(int)),
+				Days:            interfaceToStringSlice(wMap["days"].([]interface{})),
+			})
+		}
+
+		updateMaintenanceRequest := maintenance.Maintenance{
+			Mode:    redis.String(mMap["mode"].(string)),
+			Windows: windows,
+		}
+		err = api.client.Maintenance.Update(ctx, subId, updateMaintenanceRequest)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return resourceRedisCloudActiveActiveSubscriptionRead(ctx, d, meta)
@@ -301,6 +446,22 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		return diag.FromErr(err)
 	}
 
+	m, err := api.client.Maintenance.Get(ctx, subId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("maintenance_windows", flattenMaintenance(m)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	pricingList, err := api.client.Pricing.List(ctx, subId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
+		return diag.FromErr(err)
+	}
+
 	return diags
 }
 
@@ -342,7 +503,37 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
-	return resourceRedisCloudSubscriptionRead(ctx, d, meta)
+	if d.HasChange("maintenance_windows") {
+		var updateMaintenanceRequest maintenance.Maintenance
+		if m, ok := d.GetOk("maintenance_windows"); ok {
+			mMap := m.([]interface{})[0].(map[string]interface{})
+
+			windows := make([]*maintenance.Window, 0)
+			for _, w := range mMap["window"].([]interface{}) {
+				wMap := w.(map[string]interface{})
+				windows = append(windows, &maintenance.Window{
+					StartHour:       redis.Int(wMap["start_hour"].(int)),
+					DurationInHours: redis.Int(wMap["duration_in_hours"].(int)),
+					Days:            interfaceToStringSlice(wMap["days"].([]interface{})),
+				})
+			}
+
+			updateMaintenanceRequest = maintenance.Maintenance{
+				Mode:    redis.String(mMap["mode"].(string)),
+				Windows: windows,
+			}
+		} else {
+			updateMaintenanceRequest = maintenance.Maintenance{
+				Mode: redis.String("automatic"),
+			}
+		}
+		err = api.client.Maintenance.Update(ctx, subId, updateMaintenanceRequest)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	return resourceRedisCloudActiveActiveSubscriptionRead(ctx, d, meta)
 }
 
 func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -366,7 +557,7 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 	// This additional wait ensures that the databases are deleted before the subscription is deleted.
-	time.Sleep(10 * time.Second) //lintignore:R018
+	time.Sleep(30 * time.Second) //lintignore:R018
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
@@ -435,6 +626,7 @@ func buildSubscriptionCreatePlanAADatabases(planMap map[string]interface{}) []*s
 	idx := 1
 	numDatabases := planMap["quantity"].(int)
 	memoryLimitInGB := planMap["memory_limit_in_gb"].(float64)
+	datasetSizeInGB := planMap["dataset_size_in_gb"].(float64)
 	regions := planMap["region"]
 	var localThroughputs []*subscriptions.CreateLocalThroughput
 	for _, v := range regions.(*schema.Set).List() {
@@ -445,25 +637,41 @@ func buildSubscriptionCreatePlanAADatabases(planMap map[string]interface{}) []*s
 			ReadOperationsPerSecond:  redis.Int(region["read_operations_per_second"].(int)),
 		})
 	}
+
+	createModules := make([]*subscriptions.CreateModules, 0)
+	planModules := interfaceToStringSlice(planMap["modules"].([]interface{}))
+	for _, module := range planModules {
+		createModule := &subscriptions.CreateModules{
+			Name: module,
+		}
+		createModules = append(createModules, createModule)
+	}
+
 	// create the remaining DBs with all other modules
-	createDatabases = append(createDatabases, createAADatabase(dbName, &idx, localThroughputs, numDatabases, memoryLimitInGB)...)
+	createDatabases = append(createDatabases, createAADatabase(dbName, &idx, localThroughputs, numDatabases, memoryLimitInGB, datasetSizeInGB, createModules)...)
 
 	return createDatabases
 }
 
 // createDatabase returns a CreateDatabase struct with the given parameters
-func createAADatabase(dbName string, idx *int, localThroughputs []*subscriptions.CreateLocalThroughput, numDatabases int, memoryLimitInGB float64) []*subscriptions.CreateDatabase {
-	var databases []*subscriptions.CreateDatabase
+func createAADatabase(dbName string, idx *int, localThroughputs []*subscriptions.CreateLocalThroughput, numDatabases int, memoryLimitInGB float64, datasetSizeInGB float64, modules []*subscriptions.CreateModules) []*subscriptions.CreateDatabase {
+	var dbs []*subscriptions.CreateDatabase
 	for i := 0; i < numDatabases; i++ {
 		createDatabase := subscriptions.CreateDatabase{
 			Name:                       redis.String(dbName + strconv.Itoa(*idx)),
 			Protocol:                   redis.String("redis"),
-			MemoryLimitInGB:            redis.Float64(memoryLimitInGB),
 			LocalThroughputMeasurement: localThroughputs,
 			Quantity:                   redis.Int(1),
+			Modules:                    modules,
+		}
+		if datasetSizeInGB > 0 {
+			createDatabase.DatasetSizeInGB = redis.Float64(datasetSizeInGB)
+		}
+		if memoryLimitInGB > 0 {
+			createDatabase.MemoryLimitInGB = redis.Float64(memoryLimitInGB)
 		}
 		*idx++
-		databases = append(databases, &createDatabase)
+		dbs = append(dbs, &createDatabase)
 	}
-	return databases
+	return dbs
 }

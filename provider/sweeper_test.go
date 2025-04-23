@@ -13,6 +13,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	fixedSubscriptions "github.com/RedisLabs/rediscloud-go-api/service/fixed/subscriptions"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
@@ -48,15 +49,19 @@ func sharedClientForRegion(region string) (*rediscloudApi.Client, error) {
 func init() {
 	resource.AddTestSweepers("rediscloud_subscription", &resource.Sweeper{
 		Name: "rediscloud_subscription",
-		F:    testSweepSubscriptions,
+		F:    testSweepProSubscriptions,
 	})
 	resource.AddTestSweepers("rediscloud_active_active_subscription", &resource.Sweeper{
 		Name: "rediscloud_active_active_subscription",
 		F:    testSweepActiveActiveSubscriptions,
 	})
+	resource.AddTestSweepers("rediscloud_essentials_subscription", &resource.Sweeper{
+		Name: "rediscloud_essentials_subscription",
+		F:    testSweepEssentialsSubscriptions,
+	})
 	resource.AddTestSweepers("rediscloud_cloud_account", &resource.Sweeper{
 		Name:         "rediscloud_cloud_account",
-		Dependencies: []string{"rediscloud_subscription", "rediscloud_active_active_subscription"}, // in case a subscription depends on an account
+		Dependencies: []string{"rediscloud_subscription", "rediscloud_active_active_subscription", "rediscloud_essentials_subscription"}, // in case a subscription depends on an account
 		F:            testSweepCloudAccounts,
 	})
 	resource.AddTestSweepers("rediscloud_acl", &resource.Sweeper{
@@ -94,7 +99,7 @@ func testSweepCloudAccounts(region string) error {
 	return nil
 }
 
-func testSweepSubscriptions(region string) error {
+func testSweepProSubscriptions(region string) error {
 	client, err := sharedClientForRegion(region)
 	if err != nil {
 		return err
@@ -177,6 +182,39 @@ func testSweepReadDatabases(client *rediscloudApi.Client, subId int) (bool, []in
 	return true, dbIds, nil
 }
 
+func testSweepReadEssentialsDatabases(client *rediscloudApi.Client, subId int) (bool, []int, error) {
+	var dbIds []int
+	list := client.FixedDatabases.List(context.TODO(), subId)
+
+	for list.Next() {
+		db := list.Value()
+
+		if !redis.TimeValue(db.ActivatedOn).Add(24 * -1 * time.Hour).Before(time.Now()) {
+			// Subscription _probably_ created within the last day, so assume someone might be
+			// currently running the tests
+			return false, nil, nil
+		}
+
+		status := redis.StringValue(db.Status)
+		if status != databases.StatusActive &&
+			status != databases.StatusRCPActiveChangeDraft &&
+			status != databases.StatusActiveChangeDraft &&
+			status != databases.StatusActiveChangePending {
+			// Database not in an active state, so the database can't be deleted
+			log.Printf("Skipping db %d/%d as it is in status %s", subId, redis.IntValue(db.DatabaseId), status)
+			continue
+		}
+
+		dbIds = append(dbIds, redis.IntValue(db.DatabaseId))
+	}
+
+	if list.Err() != nil {
+		return false, nil, list.Err()
+	}
+
+	return true, dbIds, nil
+}
+
 func testSweepActiveActiveSubscriptions(region string) error {
 	client, err := sharedClientForRegion(region)
 	if err != nil {
@@ -219,6 +257,52 @@ func testSweepActiveActiveSubscriptions(region string) error {
 		}
 
 		err = client.Subscription.Delete(context.TODO(), subId)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func testSweepEssentialsSubscriptions(region string) error {
+	client, err := sharedClientForRegion(region)
+	if err != nil {
+		return err
+	}
+
+	list, err := client.FixedSubscriptions.List(context.TODO())
+	if err != nil {
+		return err
+	}
+
+	for _, sub := range list {
+		if redis.StringValue(sub.Status) != fixedSubscriptions.FixedSubscriptionStatusActive {
+			continue
+		}
+
+		if !strings.HasPrefix(redis.StringValue(sub.Name), testResourcePrefix) {
+			continue
+		}
+
+		subId := redis.IntValue(sub.ID)
+		sweepSub, dbIds, err := testSweepReadEssentialsDatabases(client, subId)
+		if err != nil {
+			return err
+		}
+
+		if !sweepSub {
+			continue
+		}
+
+		for _, db := range dbIds {
+			err := client.FixedDatabases.Delete(context.TODO(), subId, db)
+			if err != nil {
+				return err
+			}
+		}
+
+		err = client.FixedSubscriptions.Delete(context.TODO(), subId)
 		if err != nil {
 			return err
 		}

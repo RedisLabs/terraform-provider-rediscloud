@@ -2,12 +2,14 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_active_active_subscription_database"
 description: |-
-  Database resource for Active-Active Subscriptions in the Terraform provider Redis Cloud.
+  Database resource for Active-Active Subscriptions in the Redis Cloud Terraform provider.
 ---
 
 # Resource: rediscloud_active_active_subscription_database
 
-Creates a Database within a specified Active-Active Subscription in your Redis Enterprise Cloud Account.
+This resource allows you to manage a database within your Redis Enterprise Cloud account.
+
+-> **Note:** This is for databases within Active-Active Subscriptions only. See also `rediscloud_subscription_database` (Pro) and `rediscloud_essentials_database`.
 
 ## Example Usage
 
@@ -22,7 +24,7 @@ resource "rediscloud_active_active_subscription" "subscription-resource" {
   cloud_provider = "AWS"
 
   creation_plan {
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     quantity = 1
     region {
       region = "us-east-1"
@@ -42,7 +44,7 @@ resource "rediscloud_active_active_subscription" "subscription-resource" {
 resource "rediscloud_active_active_subscription_database" "database-resource" {
     subscription_id = rediscloud_active_active_subscription.subscription-resource.id
     name = "database-name"
-    memory_limit_in_gb = 1
+    dataset_size_in_gb = 1
     global_data_persistence = "aof-every-1-second"
     global_password = "some-random-pass-2" 
     global_source_ips = ["192.168.0.0/16"]
@@ -50,6 +52,8 @@ resource "rediscloud_active_active_subscription_database" "database-resource" {
       name = "dataset-size"
       value = 40
     }
+
+    global_modules = ["RedisJSON"]
 
     override_region {
       name = "us-east-2"
@@ -65,6 +69,11 @@ resource "rediscloud_active_active_subscription_database" "database-resource" {
         value = 60
       }
    }
+  
+    tags = {
+      "environment" = "production"
+      "cost_center" = "0700"
+    }
 }
 
 output "us-east-1-public-endpoints" {
@@ -72,7 +81,7 @@ output "us-east-1-public-endpoints" {
 }
 
 output "us-east-2-private-endpoints" {
-  value = rediscloud_active_active_subscription_database.database-resource.private_endpoint.us-east-1
+  value = rediscloud_active_active_subscription_database.database-resource.private_endpoint.us-east-2
 }
 ```
 
@@ -81,21 +90,24 @@ output "us-east-2-private-endpoints" {
 The following arguments are supported:
 * `subscription_id`: (Required) The ID of the Active-Active subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
 * `name` - (Required) A meaningful name to identify the database. **Modifying this attribute will force creation of a new resource.**
-* `memory_limit_in_gb` - (Required) Maximum memory usage for this specific database, including replication and other overhead
+* `memory_limit_in_gb` - (Optional -  **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favor of `dataset_size_in_gb` - not possible to import databases with this attribute set**
+* `dataset_size_in_gb` - (Optional - **Required if `memory_limit_in_gb` is unset**) The maximum amount of data in the dataset for this specific database is in GB
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `external_endpoint_for_oss_cluster_api` - (Optional) Should use the external endpoint for open-source (OSS) Cluster API.
   Can only be enabled if OSS Cluster API support is enabled. Default: 'false'
 * `enable_tls` - (Optional) Use TLS for authentication. Default: ‘false’
-* `client_ssl_certificate` - (Optional) SSL certificate to authenticate user connections.
+  `client_ssl_certificate` - (Optional) SSL certificate to authenticate user connections, conflicts with `client_tls_certificates`
+* `client_tls_certificates` - (Optional) A list of TLS certificates to authenticate user connections, conflicts with `client_ssl_certificate`
 * `data_eviction` - (Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru')
 * `global_data_persistence` - (Optional) Global rate of database data persistence (in persistent storage) of regions that dont override global settings. Default: 'none'
 * `global_password` - (Optional) Password to access the database of regions that don't override global settings. If left empty, the password will be generated automatically
 * `global_alert` - (Optional) A block defining Redis database alert of regions that don't override global settings, documented below, can be specified multiple times. (either: 'dataset-size', 'datasets-size', 'throughput-higher-than', 'throughput-lower-than', 'latency', 'syncsource-error', 'syncsource-lag' or 'connections-limit')
-* `global_source_ips` - (Optional)  List of source IP addresses or subnet masks of regions that don't override global settings. If specified, Redis clients will be able to connect to this database only from within the specified source IP addresses ranges (example: ['192.168.10.0/32', '192.168.12.0/24'])
+* `global_modules` - (Optional) A list of modules to be enabled on all deployments of this database. Supported modules: `RedisJSON`, `RediSearch`. Ignored after database creation.
+* `global_source_ips` - (Optional) List of source IP addresses or subnet masks of regions that don't override global settings. If specified, Redis clients will be able to connect to this database only from within the specified source IP addresses ranges (example: ['192.168.10.0/32', '192.168.12.0/24'])
 * `global_resp_version` - (Optional) Either 'resp2' or 'resp3'. Resp version for Crdb databases within the AA database. Must be compatible with Redis version.
 * `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999. **Modifying this attribute will force creation of a new resource.**
 * `override_region` - (Optional) Override region specific configuration, documented below
-
+* `tags` - (Optional) A string/string map of tags to associate with this database. Note that all keys and values must be lowercase.
 
 The `override_region` block supports:
 
@@ -140,4 +152,6 @@ $ terraform import rediscloud_active_active_subscription_database.database-resou
 ```
 
 Note: Due to constraints in the Redis Cloud API, the import process will not import global attributes or override region attributes. If you wish to use these attributes in your Terraform configuration, you will need to manually add them to your Terraform configuration and run `terraform apply` to update the database.
+
+Additionally, the `memory_limit_in_gb` cannot be set during imports as it is deprecated. If you need to set the `memory_limit_in_gb` attribute, you will need to create a new database resource. It is recommended to use the `dataset_size_in_gb` attribute instead.
 

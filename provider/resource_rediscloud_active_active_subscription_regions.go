@@ -257,7 +257,48 @@ func resourceRedisCloudActiveActiveRegionRead(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("region", buildResourceDataFromAPIRegions(existingRegions.Regions, d.Get("region").(*schema.Set))); err != nil {
+	regionsFromAPI := existingRegions.Regions
+	regionsFromConfig := d.Get("region").(*schema.Set)
+
+	var newRegions []map[string]interface{}
+
+	recreateRegions := make(map[string]bool)
+
+	// The API doesn't return a respVersion at the region level, so we just read whatever was last written to state.
+	respVersions := make(map[string]string)
+
+	for _, element := range regionsFromConfig.List() {
+		r := element.(map[string]interface{})
+		recreateRegions[r["region"].(string)] = r["recreate_region"].(bool)
+		respVersions[r["region"].(string)] = r["local_resp_version"].(string)
+	}
+
+	for _, region := range regionsFromAPI {
+		var dbs []interface{}
+		for _, database := range region.Databases {
+
+			databaseMapString := map[string]interface{}{
+				"database_id":                       database.DatabaseId,
+				"database_name":                     database.DatabaseName,
+				"local_read_operations_per_second":  database.ReadOperationsPerSecond,
+				"local_write_operations_per_second": database.WriteOperationsPerSecond,
+			}
+			dbs = append(dbs, databaseMapString)
+		}
+
+		regionMapString := map[string]interface{}{
+			"region_id":                  region.RegionId,
+			"region":                     region.Region,
+			"recreate_region":            recreateRegions[*region.Region],
+			"networking_deployment_cidr": region.DeploymentCIDR,
+			"vpc_id":                     region.VpcId,
+			"database":                   dbs,
+			"local_resp_version":         respVersions[*region.Region],
+		}
+		newRegions = append(newRegions, regionMapString)
+	}
+
+	if err := d.Set("region", newRegions); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -314,7 +355,7 @@ func regionsCreate(ctx context.Context, subId int, regionsToCreate []*RequestedR
 
 		// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 		// This additional wait ensures that the databases are deleted before the subscription is deleted.
-		time.Sleep(10 * time.Second) //lintignore:R018
+		time.Sleep(30 * time.Second) //lintignore:R018
 		if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 			return err
 		}
@@ -368,7 +409,7 @@ func regionsUpdateDatabases(ctx context.Context, subId int, api *apiClient, regi
 
 			// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 			// This additional wait ensures that the databases are deleted before the subscription is deleted.
-			time.Sleep(10 * time.Second) //lintignore:R018
+			time.Sleep(30 * time.Second) //lintignore:R018
 			if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 				return err
 			}
@@ -402,53 +443,12 @@ func regionsDelete(ctx context.Context, subId int, regionsToDelete []*string, ap
 
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 	// This additional wait ensures that the databases are deleted before the subscription is deleted.
-	time.Sleep(10 * time.Second) //lintignore:R018
+	time.Sleep(30 * time.Second) //lintignore:R018
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func buildResourceDataFromAPIRegions(regionsFromAPI []*regions.Region, regionsFromConfig *schema.Set) []map[string]interface{} {
-	var result []map[string]interface{}
-
-	recreateRegions := make(map[string]bool)
-
-	// The API doesn't return a respVersion at the region level, so we just read whatever was last written to state.
-	respVersions := make(map[string]string)
-
-	for _, element := range regionsFromConfig.List() {
-		r := element.(map[string]interface{})
-		recreateRegions[r["region"].(string)] = r["recreate_region"].(bool)
-		respVersions[r["region"].(string)] = r["local_resp_version"].(string)
-	}
-
-	for _, region := range regionsFromAPI {
-		var dbs []interface{}
-		for _, database := range region.Databases {
-			databaseMapString := map[string]interface{}{
-				"database_id":                       database.DatabaseId,
-				"database_name":                     database.DatabaseName,
-				"local_read_operations_per_second":  database.ReadOperationsPerSecond,
-				"local_write_operations_per_second": database.WriteOperationsPerSecond,
-			}
-			dbs = append(dbs, databaseMapString)
-		}
-
-		regionMapString := map[string]interface{}{
-			"region_id":                  region.RegionId,
-			"region":                     region.Region,
-			"recreate_region":            recreateRegions[*region.Region],
-			"networking_deployment_cidr": region.DeploymentCIDR,
-			"vpc_id":                     region.VpcId,
-			"database":                   dbs,
-			"local_resp_version":         respVersions[*region.Region],
-		}
-		result = append(result, regionMapString)
-	}
-
-	return result
 }
 
 func buildRegionsFromResourceData(rd *schema.Set) map[string]*RequestedRegion {

@@ -2,18 +2,21 @@ package provider
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"regexp"
 	"testing"
-
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccDataSourceRedisCloudAclRule_Default(t *testing.T) {
-	// This rule already exists
-	testName := "Read-Write"
-	testRule := "+@all -@dangerous ~*"
-	getRuleTerraform := fmt.Sprintf(getDefaultAclRuleDataSource, testName)
+func TestAccDataSourceRedisCloudAclRule_ForDefaultRule(t *testing.T) {
 
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	// This rule already exists
+	const testName = "Read-Write"
+	const testRule = "+@all -@dangerous ~*"
+	getRuleTerraform := fmt.Sprintf(getDefaultDatasourceAclRuleDataSource, testName)
+
+	const AclRuleTest = "data.rediscloud_acl_rule.test"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
@@ -21,53 +24,19 @@ func TestAccDataSourceRedisCloudAclRule_Default(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: getRuleTerraform,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(
-						"data.rediscloud_acl_rule.test", "id", regexp.MustCompile("^\\d*$")),
-					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "name", testName),
-					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "rule", testRule),
+						AclRuleTest, "id", regexp.MustCompile("^\\d*$")),
+					resource.TestCheckResourceAttr(AclRuleTest, "name", testName),
+					resource.TestCheckResourceAttr(AclRuleTest, "rule", testRule),
 				),
 			},
 		},
 	})
 }
 
-func TestAccDataSourceRedisCloudAclRule_Custom(t *testing.T) {
-	testName := "custom-test-rule"
-	testRule := "+@read ~*"
-	createAndGetRuleTerraform := fmt.Sprintf(createAndGetCustomAclRuleTerraform, testName, testRule)
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckAclRuleDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config: createAndGetRuleTerraform,
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestMatchResourceAttr(
-						"data.rediscloud_acl_rule.test", "id", regexp.MustCompile("^\\d*$")),
-					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "name", testName),
-					resource.TestCheckResourceAttr("data.rediscloud_acl_rule.test", "rule", testRule),
-				),
-			},
-		},
-	})
-}
-
-const getDefaultAclRuleDataSource = `
+const getDefaultDatasourceAclRuleDataSource = `
 data "rediscloud_acl_rule" "test" {
 	name = "%s"
-}
-`
-
-const createAndGetCustomAclRuleTerraform = `
-resource "rediscloud_acl_rule" "test" {
-	name = "%s"
-	rule = "%s"
-}
-
-data "rediscloud_acl_rule" "test" {
-	name = rediscloud_acl_rule.test.name
 }
 `

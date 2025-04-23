@@ -2,7 +2,7 @@
 layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_active_active_subscription_regions"
 description: |-
-  Regions resource in the Terraform provider Redis Cloud.
+  Regions resource in the Redis Cloud Terraform provider.
 ---
 
 # Resource: rediscloud_active_active_subscription_regions
@@ -65,7 +65,6 @@ The `database` block supports:
 * `database_name` - (Required) Database name belonging to the subscription
 * `local_write_operations_per_second` - (Required) Local write operations per second for this active-active region
 * `local_read_operations_per_second` - (Required) Local read operations per second for this active-active region
-
 
 ### Timeouts
 

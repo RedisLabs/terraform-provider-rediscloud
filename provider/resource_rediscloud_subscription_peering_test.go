@@ -13,6 +13,8 @@ import (
 
 func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -47,16 +49,16 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 		vpcId,
 		cidrRange,
 	)
-	resourceName := "rediscloud_subscription_peering.test"
+	const resourceName = "rediscloud_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPeeringPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: tf,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d*/\\d*$")),
 					resource.TestCheckResourceAttrSet(resourceName, "status"),
 					resource.TestCheckResourceAttrSet(resourceName, "provider_name"),
@@ -75,6 +77,8 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 
 func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
 
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudSubscriptionPeeringGCP,
@@ -82,16 +86,16 @@ func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
 		os.Getenv("GCP_VPC_PROJECT"),
 		os.Getenv("GCP_VPC_ID"),
 	)
-	resourceName := "rediscloud_subscription_peering.test"
+	const resourceName = "rediscloud_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckSubscriptionDestroy,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: tf,
-				Check: resource.ComposeTestCheckFunc(
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d*/\\d*$")),
 					resource.TestCheckResourceAttr(resourceName, "provider_name", "GCP"),
 					resource.TestCheckResourceAttrSet(resourceName, "status"),
