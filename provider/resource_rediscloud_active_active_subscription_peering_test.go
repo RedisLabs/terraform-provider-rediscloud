@@ -12,6 +12,8 @@ import (
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) {
 
+	testAccRequiresEnvVar(t, "EXECUTE_TEST_PEERING")
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 
 	cidrRange := os.Getenv("AWS_VPC_CIDR")
@@ -71,6 +73,8 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 }
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_gcp(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TEST_PEERING")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 
