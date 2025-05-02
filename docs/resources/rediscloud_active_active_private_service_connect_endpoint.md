@@ -79,7 +79,7 @@ resource "rediscloud_active_active_subscription_regions" "regions" {
 }
 
 locals {
-  service_attachment_count = 40 # Each rediscloud_active_active_private_service_connect_endpoint will have exactly 40 service attachments
+  service_attachment_count = 1 # Each rediscloud_active_active_private_service_connect_endpoint will have exactly 1 service attachment
   region_id                = one([for r in rediscloud_active_active_subscription_regions.regions.region : r.region_id if r.region == var.gcp_region])
 }
 

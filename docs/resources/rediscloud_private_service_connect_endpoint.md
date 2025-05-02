@@ -43,7 +43,7 @@ resource "rediscloud_subscription" "subscription" {
 }
 
 locals {
-  service_attachment_count = 40 # Each rediscloud_private_service_connect_endpoint will have exactly 40 service attachments
+  service_attachment_count = 1 # Each rediscloud_private_service_connect_endpoint will have exactly 1 service attachment
 }
 
 resource "rediscloud_private_service_connect" "service" {
@@ -195,7 +195,7 @@ module "private_service_connect" {
 ## Attribute Reference
 
 * `private_service_connect_endpoint_id` - The ID of the Private Service Connect Endpoint
-* `service_attachments` - The 40 service attachments that are created for the Private Service Connect endpoint, documented below
+* `service_attachments` - The service attachment that is created for the Private Service Connect endpoint, documented below
 
 The `service_attachments` object has these attributes:
 
