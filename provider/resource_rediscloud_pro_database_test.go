@@ -376,7 +376,7 @@ resource "rediscloud_subscription_database" "example" {
 
     alert {
         name = "dataset-size"
-        value = 40
+        value = 1
     }
 
     modules = [
