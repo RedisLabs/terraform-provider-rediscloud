@@ -1,3 +1,5 @@
+//go:build smoketest
+
 package provider
 
 import (
