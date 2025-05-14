@@ -107,7 +107,7 @@ jobs:
           terraform providers schema -json > terraform-providers-schema/schema.json
 
   go_test_smoke_aa_db:
-    name: go test smoke
+    name: go test smoke aa db
     needs: [go_build]
     runs-on: ubuntu-latest
     steps:
@@ -119,7 +119,7 @@ jobs:
 
 
   go_test_smoke_essentials_db:
-    name: go test smoke
+    name: go test smoke essentials db
     needs: [go_build]
     runs-on: ubuntu-latest
     steps:
@@ -131,7 +131,7 @@ jobs:
 
 
   go_test_smoke_pro_db:
-    name: go test smoke
+    name: go test smoke pro db
     needs: [go_build]
     runs-on: ubuntu-latest
     steps:
@@ -142,8 +142,8 @@ jobs:
       - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloud(ProDatabase_CRUDI)"'
 
 
-  go_test_smoke_others:
-    name: go test smoke
+  go_test_smoke_misc:
+    name: go test smoke misc
     needs: [go_build]
     runs-on: ubuntu-latest
     steps:
