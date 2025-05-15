@@ -142,7 +142,7 @@ func TestAccResourceRedisCloudProDatabase_qpf(t *testing.T) {
 	})
 }
 
-func TestAccResourceRedisCloudProDatabase_missingModule(t *testing.T) {
+func TestAccResourceRedisCloudProDatabase_qpf_missingModule(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -152,7 +152,7 @@ func TestAccResourceRedisCloudProDatabase_missingModule(t *testing.T) {
 	testErrorCase(t, config, regexp.MustCompile("query_performance_factor\" requires the \"modules\" key to be explicitly defined in HCL"))
 }
 
-func TestAccResourceRedisCloudProDatabase_missingRediSearchModule(t *testing.T) {
+func TestAccResourceRedisCloudProDatabase_qpf_missingRediSearchModule(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -162,7 +162,7 @@ func TestAccResourceRedisCloudProDatabase_missingRediSearchModule(t *testing.T) 
 	testErrorCase(t, config, regexp.MustCompile("query_performance_factor\" requires the \"modules\" list to contain \"RediSearch"))
 }
 
-func TestAccResourceRedisCloudProDatabase_invalidQueryPerformanceFactors(t *testing.T) {
+func TestAccResourceRedisCloudProDatabase_qpf_invalidQueryPerformanceFactors(t *testing.T) {
 	name := acctest.RandomWithPrefix("tf-test")
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -172,7 +172,7 @@ func TestAccResourceRedisCloudProDatabase_invalidQueryPerformanceFactors(t *test
 	testSubErrorCase(t, config, regexp.MustCompile(`"creation_plan\.0\.query_performance_factor" must be an even value between 2x and 8x \(inclusive\), got: 5x`))
 }
 
-func TestAccResourceRedisCloudProDatabase_invalidQueryPerformanceFactors_outOfRange(t *testing.T) {
+func TestAccResourceRedisCloudProDatabase_qpf_invalidQueryPerformanceFactors_outOfRange(t *testing.T) {
 	name := acctest.RandomWithPrefix("tf-test")
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
