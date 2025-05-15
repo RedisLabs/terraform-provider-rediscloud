@@ -148,7 +148,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
     global_password = "%s" 
     global_alert {
 		name = "dataset-size"
-		value = 40
+		value = 1
 	}
 } 
 

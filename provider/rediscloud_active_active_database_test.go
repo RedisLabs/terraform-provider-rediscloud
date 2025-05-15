@@ -48,7 +48,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttr(resourceName, "global_alert.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "global_alert.0.name", "dataset-size"),
-					resource.TestCheckResourceAttr(resourceName, "global_alert.0.value", "40"),
+					resource.TestCheckResourceAttr(resourceName, "global_alert.0.value", "1"),
 					resource.TestCheckResourceAttr(resourceName, "global_modules.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "global_modules.0", "RedisJSON"),
 					resource.TestCheckResourceAttr(resourceName, "global_source_ips.#", "2"),
@@ -294,7 +294,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
     global_source_ips = ["192.168.0.0/16", "192.170.0.0/16"]
     global_alert {
 		name = "dataset-size"
-		value = 40
+		value = 1
 	}
 	global_modules = ["RedisJSON"]
 	override_region {
@@ -433,7 +433,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
 	global_source_ips = ["192.168.0.0/16", "192.170.0.0/16"]
 	global_alert {
 		name = "dataset-size"
-		value = 40
+		value = 1
 	}
 	override_region {
 		name = "us-east-1"
@@ -466,7 +466,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
 	global_source_ips = ["192.168.0.0/16", "192.170.0.0/16"]
 	global_alert {
 		name = "dataset-size"
-		value = 40
+		value = 1
 	}
 	override_region {
 		name = "us-east-1"

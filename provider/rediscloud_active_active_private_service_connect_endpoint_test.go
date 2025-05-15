@@ -48,7 +48,7 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpoint_CRUDI(t 
 						}
 						return nil
 					}),
-					resource.TestCheckResourceAttr(datasourceName, "endpoints.0.service_attachments.#", "40"),
+					resource.TestCheckResourceAttr(datasourceName, "endpoints.0.service_attachments.#", "1"),
 				),
 			},
 			{

@@ -70,7 +70,7 @@ resource "rediscloud_subscription" "example" {
 
     alert {
       name  = "dataset-size"
-      value = 40
+      value = 1
     }
   }
 }
@@ -132,7 +132,7 @@ To use the latest schema, you need to modify the `rediscloud_subscription` resou
   
       alert {
         name = "dataset-size"
-        value = 40
+        value = 1
       }
   }
   ```
