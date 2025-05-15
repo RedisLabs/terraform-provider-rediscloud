@@ -54,7 +54,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "password", password),
 					resource.TestCheckResourceAttr(resourceName, "alert.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "alert.0.name", "dataset-size"),
-					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "40"),
+					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "1"),
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
@@ -376,7 +376,7 @@ resource "rediscloud_subscription_database" "example" {
 
     alert {
         name = "dataset-size"
-        value = 40
+        value = 1
     }
 
     modules = [

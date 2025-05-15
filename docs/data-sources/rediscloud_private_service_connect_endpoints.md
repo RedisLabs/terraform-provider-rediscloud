@@ -39,7 +39,7 @@ The `endpoints` object has these attributes:
 * `gcp_vpc_subnet_name` - The GCP Subnet name
 * `endpoint_connection_name` - The endpoint connection name
 * `status` - The endpoint status
-* `service_attachments` - The 40 service attachments that are created for the Private Service Connect endpoint, documented below
+* `service_attachments` - The service attachments that are created for the Private Service Connect endpoint, documented below
 
 The `service_attachments` object has these attributes:
 
