@@ -149,10 +149,9 @@ jobs:
           go-version-file: go.mod
       - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloud(PrivateServiceConnect_CRUDI|AclRule_CRUDI)"'
 
-  # TODO: remove this after release
-  # qpf = query performance factor
-  go_test_smoke_qpf:
-    name: go test smoke qpf
+  # all the aa datasource checks are included in the wider CRUDI test for aa subscriptions
+  go_test_smoke_aa_datasource:
+    name: go test smoke aa datasource
     needs: [ go_build ]
     runs-on: ubuntu-latest
     steps:
@@ -160,7 +159,7 @@ jobs:
       - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
         with:
           go-version-file: go.mod
-      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudProDatabase_qpf.*"'
+      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudActiveActiveSubscription_CRUDI"'
 
   tfproviderlint:
     name: tfproviderlint
