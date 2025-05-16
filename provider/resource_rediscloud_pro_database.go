@@ -613,9 +613,11 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	if err := d.Set("remote_backup", flattenBackupPlan(db.Backup, d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path").(string))); err != nil {
 		return diag.FromErr(err)
 	}
-	
-	if err := d.Set("query_performance_factor", redis.String(*db.QueryPerformanceFactor)); err != nil {
-		return diag.FromErr(err)
+
+	if db.QueryPerformanceFactor != nil {
+		if err := d.Set("query_performance_factor", redis.String(*db.QueryPerformanceFactor)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if err := readTags(ctx, api, subId, dbId, d); err != nil {
