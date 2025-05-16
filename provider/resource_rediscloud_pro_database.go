@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -49,7 +50,7 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 
-		CustomizeDiff: remoteBackupIntervalSetCorrectly("remote_backup"),
+		CustomizeDiff: customizeDiff(),
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
@@ -215,6 +216,25 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 					},
 				},
 			},
+			"query_performance_factor": {
+				Description: "Query performance factor for this specific database",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				ForceNew:    true,
+				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
+					v := val.(string)
+					matched, err := regexp.MatchString(`^([2468])x$`, v)
+					if err != nil {
+						errs = append(errs, fmt.Errorf("regex match failed: %s", err))
+						return
+					}
+					if !matched {
+						errs = append(errs, fmt.Errorf("%q must be an even value between 2x and 8x (inclusive), got: %s", key, v))
+					}
+					return
+				},
+			},
 			"modules": {
 				Description: "Modules to be provisioned in the database",
 				Type:        schema.TypeSet,
@@ -341,6 +361,7 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	throughputMeasurementBy := d.Get("throughput_measurement_by").(string)
 	throughputMeasurementValue := d.Get("throughput_measurement_value").(int)
 	averageItemSizeInBytes := d.Get("average_item_size_in_bytes").(int)
+	queryPerformanceFactor := d.Get("query_performance_factor").(string)
 
 	createModules := make([]*databases.Module, 0)
 	modules := d.Get("modules").(*schema.Set)
@@ -386,6 +407,10 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		Modules:      createModules,
 		Alerts:       createAlerts,
 		RemoteBackup: buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+	}
+
+	if queryPerformanceFactor != "" {
+		createDatabase.QueryPerformanceFactor = redis.String(queryPerformanceFactor)
 	}
 
 	if password != "" {
@@ -513,6 +538,10 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
+	if err := d.Set("query_performance_factor", redis.StringValue(db.QueryPerformanceFactor)); err != nil {
+		return diag.FromErr(err)
+	}
+
 	if err := d.Set("modules", flattenModules(db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
@@ -583,6 +612,12 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 
 	if err := d.Set("remote_backup", flattenBackupPlan(db.Backup, d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path").(string))); err != nil {
 		return diag.FromErr(err)
+	}
+
+	if db.QueryPerformanceFactor != nil {
+		if err := d.Set("query_performance_factor", redis.String(*db.QueryPerformanceFactor)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if err := readTags(ctx, api, subId, dbId, d); err != nil {
@@ -679,6 +714,11 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	// The below fields are optional and will only be sent in the request if they are present in the Terraform configuration
 	if len(setToStringSlice(d.Get("source_ips").(*schema.Set))) == 0 {
 		update.SourceIP = []*string{redis.String("0.0.0.0/0")}
+	}
+
+	queryPerformanceFactor := d.Get("query_performance_factor").(string)
+	if queryPerformanceFactor != "" {
+		update.QueryPerformanceFactor = redis.String(queryPerformanceFactor)
 	}
 
 	if d.Get("password").(string) != "" {
@@ -871,6 +911,61 @@ func skipDiffIfIntervalIs12And12HourTimeDiff(k, oldValue, newValue string, d *sc
 	}
 
 	return oldTime.Minute() == newTime.Minute() && oldTime.Add(12*time.Hour).Hour() == newTime.Hour()
+}
+
+func customizeDiff() schema.CustomizeDiffFunc {
+	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+		if err := validateQueryPerformanceFactor()(ctx, diff, meta); err != nil {
+			return err
+		}
+		if err := remoteBackupIntervalSetCorrectly("remote_backup")(ctx, diff, meta); err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
+func validateQueryPerformanceFactor() schema.CustomizeDiffFunc {
+	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+		// Check if "query_performance_factor" is set
+		qpf, qpfExists := diff.GetOk("query_performance_factor")
+
+		// Ensure "modules" is explicitly defined in the HCL
+		_, modulesExists := diff.GetOkExists("modules")
+
+		if qpfExists && qpf.(string) != "" {
+			if !modulesExists {
+				return fmt.Errorf(`"query_performance_factor" requires the "modules" key to be explicitly defined in HCL`)
+			}
+
+			// Retrieve modules as a slice of interfaces
+			rawModules := diff.Get("modules").(*schema.Set).List()
+
+			// Convert modules to []map[string]interface{}
+			var modules []map[string]interface{}
+			for _, rawModule := range rawModules {
+				if moduleMap, ok := rawModule.(map[string]interface{}); ok {
+					modules = append(modules, moduleMap)
+				}
+			}
+
+			// Check if "RediSearch" exists
+			if !containsDBModule(modules, "RediSearch") {
+				return fmt.Errorf(`"query_performance_factor" requires the "modules" list to contain "RediSearch"`)
+			}
+		}
+		return nil
+	}
+}
+
+// Helper function to check if a module exists
+func containsDBModule(modules []map[string]interface{}, moduleName string) bool {
+	for _, module := range modules {
+		if name, ok := module["name"].(string); ok && name == moduleName {
+			return true
+		}
+	}
+	return false
 }
 
 func remoteBackupIntervalSetCorrectly(key string) schema.CustomizeDiffFunc {
