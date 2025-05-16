@@ -51,9 +51,12 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "0"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.dataset_size_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.query_performance_factor", "4x"),
+
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.0", "RedisJSON"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.1", "RedisBloom"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.2", "RediSearch"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.replication", "false"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "false"),
@@ -756,11 +759,13 @@ resource "rediscloud_subscription" "example" {
   creation_plan {
     dataset_size_in_gb = 1
     quantity = 1
-    replication=false
-    support_oss_cluster_api=false
+    replication = false
+    support_oss_cluster_api = false
+	query_performance_factor = "4x"
+
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 10000
-    modules = ["RedisJSON", "RedisBloom"]
+    modules = ["RedisJSON", "RedisBloom", "RediSearch"]
   }
 }
 `
