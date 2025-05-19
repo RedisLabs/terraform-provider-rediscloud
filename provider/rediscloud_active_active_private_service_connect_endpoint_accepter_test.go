@@ -161,7 +161,7 @@ resource "google_compute_subnetwork" "subnet" {
 }
 
 locals {
-  service_attachment_count = 40
+  service_attachment_count = 1
 }
 
 resource "google_compute_address" "default" {

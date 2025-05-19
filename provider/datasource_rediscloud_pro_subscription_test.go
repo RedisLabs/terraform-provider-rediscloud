@@ -167,7 +167,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
     global_source_ips = ["192.168.0.0/16", "192.170.0.0/16"]
     global_alert {
 		name = "dataset-size"
-		value = 40
+		value = 1
 	}
 	override_region {
 		name = "us-east-1"

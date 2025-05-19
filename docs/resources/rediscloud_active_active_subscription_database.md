@@ -50,7 +50,7 @@ resource "rediscloud_active_active_subscription_database" "database-resource" {
     global_source_ips = ["192.168.0.0/16"]
     global_alert {
       name = "dataset-size"
-      value = 40
+      value = 1
     }
 
     global_modules = ["RedisJSON"]

@@ -65,7 +65,7 @@ resource "rediscloud_subscription_database" "database-resource" {
     
     alert {
       name = "dataset-size"
-      value = 40
+      value = 1
     }
   
     tags = {
