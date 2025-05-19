@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-// Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the database resource.
+// Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the database resource.
 func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
 	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
@@ -24,6 +24,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 	password := acctest.RandString(20)
 	const resourceName = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
+	const datasourceRegionName = "data.rediscloud_active_active_subscription_regions.foo"
 	const subscriptionResourceName = "rediscloud_active_active_subscription.example"
 
 	var subId int
@@ -105,7 +106,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 						return nil
 					},
 
-					// Test datasource
+					// Test subscription datasource
 					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "db_id"),
 					resource.TestCheckResourceAttr(datasourceName, "name", name),
@@ -119,6 +120,15 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
 					resource.TestCheckResourceAttr(datasourceName, "tags.deployment_family", "blue"),
 					resource.TestCheckResourceAttr(datasourceName, "tags.priority", "code-2"),
+
+					// Test the region datasource
+					resource.TestCheckResourceAttr(datasourceRegionName, "subscription_name", name),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.region", "us-east-1"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.networking_deployment_cidr", "192.168.0.0/24"),
+					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.0.vpc_id"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.region", "us-east-2"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.networking_deployment_cidr", "10.0.1.0/24"),
+					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.1.vpc_id"),
 				),
 			},
 			// Test database is updated successfully, including updates to both global and local alerts and clearing modules
@@ -321,6 +331,10 @@ resource "rediscloud_active_active_subscription_database" "example" {
 data "rediscloud_active_active_subscription_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
 	name = rediscloud_active_active_subscription_database.example.name
+}
+
+data "rediscloud_active_active_subscription_regions" "foo" {
+	subscription_name = rediscloud_active_active_subscription.example.name
 }
 `
 
