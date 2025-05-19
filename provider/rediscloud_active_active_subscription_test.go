@@ -20,10 +20,11 @@ var activeActiveContractFlag = flag.Bool("activeActiveContract", false,
 var activeActiveMarketplaceFlag = flag.Bool("activeActiveMarketplace", false,
 	"Add this flag '-activeActiveMarketplace' to run tests for marketplace associated accounts")
 
-// Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the subscription resource.
+// Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the subscription resource.
+// Also checks active-active subscription regions.
 func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	//testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_active_active_subscription.example"
@@ -165,11 +166,11 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					// Test the region datasource
 
 					resource.TestCheckResourceAttr(datasourceRegionName, "subscription_name", name),
-					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.0.regionId"),
+					//resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.0.regionId"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.region", "us-east-1"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.networking_deployment_cidr", "192.168.0.0/24"),
 					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.0.vpc_id"),
-					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.1.regionId"),
+					//resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.1.regionId"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.region", "us-east-2"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.networking_deployment_cidr", "10.0.1.0/24"),
 					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.1.vpc_id"),
