@@ -17,12 +17,10 @@ import (
 // Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the database resource.
 func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
-	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
+	databaseName := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
 	password := acctest.RandString(20)
-	const resourceName = "rediscloud_active_active_subscription_database.example"
+	const databaseResourceName = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
 	const datasourceRegionName = "data.rediscloud_active_active_subscription_regions.foo"
 	const subscriptionResourceName = "rediscloud_active_active_subscription.example"
@@ -36,44 +34,44 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Test database creation
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabase, subscriptionName, name, password),
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabase, subscriptionName, databaseName, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test resource
-					resource.TestCheckResourceAttr(resourceName, "name", name),
-					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "3"),
-					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "false"),
-					resource.TestCheckResourceAttr(resourceName, "global_data_persistence", "none"),
-					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "false"),
-					resource.TestCheckResourceAttr(resourceName, "global_password", password),
-					resource.TestCheckResourceAttr(resourceName, "enable_tls", "false"),
-					resource.TestCheckResourceAttr(resourceName, "data_eviction", "volatile-lru"),
-					resource.TestCheckResourceAttr(resourceName, "global_alert.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "global_alert.0.name", "dataset-size"),
-					resource.TestCheckResourceAttr(resourceName, "global_alert.0.value", "1"),
-					resource.TestCheckResourceAttr(resourceName, "global_modules.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "global_modules.0", "RedisJSON"),
-					resource.TestCheckResourceAttr(resourceName, "global_source_ips.#", "2"),
+					resource.TestCheckResourceAttr(databaseResourceName, "name", databaseName),
+					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "3"),
+					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_data_persistence", "none"),
+					resource.TestCheckResourceAttr(databaseResourceName, "external_endpoint_for_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_password", password),
+					resource.TestCheckResourceAttr(databaseResourceName, "enable_tls", "false"),
+					resource.TestCheckResourceAttr(databaseResourceName, "data_eviction", "volatile-lru"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.name", "dataset-size"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.value", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.0", "RedisJSON"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_source_ips.#", "2"),
 
-					resource.TestCheckResourceAttr(resourceName, "override_region.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.name", "us-east-1"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_data_persistence", "aof-every-write"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_password", "region-specific-password"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "2"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.name", "us-east-1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_data_persistence", "aof-every-write"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_password", "region-specific-password"),
 					// check override region alert block
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.name", "dataset-size"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.value", "42"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_source_ips.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_source_ips.0", "192.175.0.0/16"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.0.name", "dataset-size"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.0.value", "42"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_source_ips.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_source_ips.0", "192.175.0.0/16"),
 
 					// Check that global values are used for the second region where no override is set
-					resource.TestCheckResourceAttr(resourceName, "override_region.1.name", "us-east-2"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.1.override_global_data_persistence", ""),
-					resource.TestCheckResourceAttr(resourceName, "override_region.1.override_global_password", ""),
-					resource.TestCheckResourceAttr(resourceName, "override_region.1.override_global_alert.#", "0"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.1.override_source_ips.#", "0"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.1.name", "us-east-2"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.1.override_global_data_persistence", ""),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.1.override_global_password", ""),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.1.override_global_alert.#", "0"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.1.override_source_ips.#", "0"),
 
-					resource.TestCheckResourceAttr(resourceName, "tags.deployment_family", "blue"),
-					resource.TestCheckResourceAttr(resourceName, "tags.priority", "code-2"),
+					resource.TestCheckResourceAttr(databaseResourceName, "tags.deployment_family", "blue"),
+					resource.TestCheckResourceAttr(databaseResourceName, "tags.priority", "code-2"),
 
 					// Test databases exist
 					func(s *terraform.State) error {
@@ -109,7 +107,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					// Test subscription datasource
 					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "db_id"),
-					resource.TestCheckResourceAttr(datasourceName, "name", name),
+					resource.TestCheckResourceAttr(datasourceName, "name", databaseName),
 					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "3"),
 					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "false"),
@@ -122,41 +120,53 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "tags.priority", "code-2"),
 
 					// Test the region datasource
-					resource.TestCheckResourceAttr(datasourceRegionName, "subscription_name", name),
+					resource.TestCheckResourceAttr(datasourceRegionName, "subscription_name", subscriptionName),
+					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.0.vpc_id"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.region", "us-east-1"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.networking_deployment_cidr", "192.168.0.0/24"),
-					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.0.vpc_id"),
+
+					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.0.databases.0.database_id"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.databases.0.database_name", databaseName),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.databases.0.read_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.databases.0.write_operations_per_second", "1000"),
+
+
+					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.1.vpc_id"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.region", "us-east-2"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.networking_deployment_cidr", "10.0.1.0/24"),
-					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.1.vpc_id"),
+
+					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.1.databases.0.database_id"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.databases.0.database_name", databaseName),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.databases.0.read_operations_per_second", "1000"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.databases.0.write_operations_per_second", "1000"),
 				),
 			},
 			// Test database is updated successfully, including updates to both global and local alerts and clearing modules
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseUpdate, subscriptionName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseUpdate, subscriptionName, databaseName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test resource
-					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "1"),
-					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
-					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
-					resource.TestCheckResourceAttr(resourceName, "global_data_persistence", "aof-every-1-second"),
-					resource.TestCheckResourceAttr(resourceName, "global_password", "updated-password"),
-					resource.TestCheckResourceAttr(resourceName, "global_alert.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "global_alert.0.name", "dataset-size"),
-					resource.TestCheckResourceAttr(resourceName, "global_alert.0.value", "60"),
+					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(databaseResourceName, "external_endpoint_for_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_data_persistence", "aof-every-1-second"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_password", "updated-password"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.name", "dataset-size"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.value", "60"),
 
 					// Changes are ignored after creation
-					resource.TestCheckResourceAttr(resourceName, "global_modules.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "global_modules.0", "RedisJSON"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.0", "RedisJSON"),
 
-					resource.TestCheckResourceAttr(resourceName, "override_region.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.name", "us-east-1"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_data_persistence", "none"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_password", "password-updated"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.name", "dataset-size"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.0.value", "41"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_source_ips.#", "0"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.name", "us-east-1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_data_persistence", "none"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_password", "password-updated"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.0.name", "dataset-size"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.0.value", "41"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_source_ips.#", "0"),
 
 					// Test datasource
 					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "1"),
@@ -166,28 +176,28 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			},
 			// Test database is updated, including deletion of global and local alerts and replacing modules
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlerts, subscriptionName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlerts, subscriptionName, databaseName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "1"),
-					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
-					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "true"),
-					resource.TestCheckResourceAttr(resourceName, "global_data_persistence", "aof-every-1-second"),
-					resource.TestCheckResourceAttr(resourceName, "global_password", "updated-password"),
-					resource.TestCheckResourceAttr(resourceName, "global_alert.#", "0"),
-					resource.TestCheckResourceAttr(resourceName, "global_modules.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "global_modules.0", "RedisJSON"),
+					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(databaseResourceName, "external_endpoint_for_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_data_persistence", "aof-every-1-second"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_password", "updated-password"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.#", "0"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.0", "RedisJSON"),
 
-					resource.TestCheckResourceAttr(resourceName, "override_region.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.name", "us-east-1"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_data_persistence", "none"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_password", "password-updated"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_alert.#", "0"),
-					resource.TestCheckResourceAttr(resourceName, "override_region.0.override_global_source_ips.#", "0"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.name", "us-east-1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_data_persistence", "none"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_password", "password-updated"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.#", "0"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_source_ips.#", "0"),
 				),
 			},
 			// Test that that database is imported successfully
 			{
-				Config:            fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseImport, subscriptionName, name),
+				Config:            fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseImport, subscriptionName, databaseName),
 				ResourceName:      "rediscloud_active_active_subscription_database.example",
 				ImportState:       true,
 				ImportStateVerify: true,
