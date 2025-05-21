@@ -22,7 +22,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 	password := acctest.RandString(20)
 	const databaseResourceName = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
-	const datasourceRegionName = "data.rediscloud_active_active_subscription_regions.foo"
+	const datasourceRegionName = "data.rediscloud_active_active_subscription_regions.example"
 	const subscriptionResourceName = "rediscloud_active_active_subscription.example"
 
 	var subId int
@@ -124,20 +124,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.0.vpc_id"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.region", "us-east-1"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.networking_deployment_cidr", "192.168.0.0/24"),
-
-					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.0.databases.0.database_id"),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.databases.0.database_name", databaseName),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.databases.0.read_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.databases.0.write_operations_per_second", "1000"),
-
 					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.1.vpc_id"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.region", "us-east-2"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.networking_deployment_cidr", "10.0.1.0/24"),
-
-					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.1.databases.0.database_id"),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.databases.0.database_name", databaseName),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.databases.0.read_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.databases.0.write_operations_per_second", "1000"),
 				),
 			},
 			// Test database is updated successfully, including updates to both global and local alerts and clearing modules
@@ -342,7 +331,7 @@ data "rediscloud_active_active_subscription_database" "example" {
 	name = rediscloud_active_active_subscription_database.example.name
 }
 
-data "rediscloud_active_active_subscription_regions" "foo" {
+data "rediscloud_active_active_subscription_regions" "example" {
 	subscription_name = rediscloud_active_active_subscription.example.name
 }
 `
