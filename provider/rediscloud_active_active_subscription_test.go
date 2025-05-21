@@ -29,7 +29,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceSubscriptionName = "data.rediscloud_active_active_subscription.example"
-	const datasourceRegionName = "data.rediscloud_active_active_subscription_regions.foo"
+	const datasourceRegionName = "data.rediscloud_active_active_subscription_regions.example"
 
 	var subId int
 
@@ -426,7 +426,7 @@ data "rediscloud_active_active_subscription" "example" {
 	name = rediscloud_active_active_subscription.example.name
 }
 
-data "rediscloud_active_active_subscription_regions" "foo" {
+data "rediscloud_active_active_subscription_regions" "example" {
 	subscription_name = rediscloud_active_active_subscription.example.name
 }
 `
