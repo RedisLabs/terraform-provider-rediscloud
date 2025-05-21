@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 
+# 2.1.3 (21st May 2025)
+
+### Added
+
+- New datasource `rediscloud_active_active_subscription_regions` added.
+
 # 2.1.2 (19th May 2025)
 
 ### Added
