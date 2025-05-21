@@ -20,6 +20,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 	dbName := acctest.RandomWithPrefix(testResourcePrefix) + "-regions" + "-db"
 	dbPass := acctest.RandString(20)
 	const resourceName = "rediscloud_active_active_subscription_regions.example"
+	const datasourceRegionName = "data.rediscloud_active_active_subscription_regions.example"
 
 	var subId int
 
@@ -38,6 +39,16 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
 					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1500"),
 					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1500"),
+
+					// Test the db regions datasource
+					resource.TestCheckResourceAttr(datasourceRegionName, "subscription_name", subName),
+					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.2.vpc_id"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.region", "us-west-2"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.networking_deployment_cidr", "10.2.0.0/24"),
+					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.2.databases.0.database_id"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.databases.0.database_name", dbName),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.databases.0.read_operations_per_second", "1500"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.databases.0.write_operations_per_second", "1500"),
 
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
@@ -151,6 +162,10 @@ resource "rediscloud_active_active_subscription_database" "example" {
 		value = 1
 	}
 } 
+
+data "rediscloud_active_active_subscription_regions" "example" {
+	subscription_name = rediscloud_active_active_subscription.example.name
+}
 
 `
 
