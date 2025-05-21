@@ -119,7 +119,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "tags.deployment_family", "blue"),
 					resource.TestCheckResourceAttr(datasourceName, "tags.priority", "code-2"),
 
-					// Test the region datasource
+					// Test the db region datasource
 					resource.TestCheckResourceAttr(datasourceRegionName, "subscription_name", subscriptionName),
 					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.0.vpc_id"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.region", "us-east-1"),
@@ -129,7 +129,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.databases.0.database_name", databaseName),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.databases.0.read_operations_per_second", "1000"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.databases.0.write_operations_per_second", "1000"),
-					
+
 					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.1.vpc_id"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.region", "us-east-2"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.networking_deployment_cidr", "10.0.1.0/24"),
@@ -336,7 +336,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
 	}
 
 }
-
+// 
 data "rediscloud_active_active_subscription_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
 	name = rediscloud_active_active_subscription_database.example.name
