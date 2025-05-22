@@ -16,18 +16,18 @@ func dataSourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"subscription_name": {
-				Description: "The name of the subscription",
+				Description: "The name of the Active-Active subscription",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
 			"regions": {
-				Description: "A list of regions from an active active subscription",
+				Description: "A list of regions associated with an Active-Active subscription",
 				Type:        schema.TypeList,
 				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"region": {
-							Description: "Deployment region as defined by cloud provider",
+							Description: "Deployment region as defined by the cloud provider",
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
@@ -53,7 +53,7 @@ func dataSourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 										Computed:    true,
 									},
 									"database_name": {
-										Description: "A meaningful name to identify the database",
+										Description: "The name of the database",
 										Type:        schema.TypeString,
 										Computed:    true,
 									},
