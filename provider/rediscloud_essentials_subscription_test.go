@@ -13,8 +13,7 @@ import (
 
 func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 
-	// TODO: remove comments: temp
-	//testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
@@ -79,8 +78,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *testing.T) {
 
-	// TODO: remove comments: temp
-	//testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
@@ -146,8 +144,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 
 func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t *testing.T) {
 
-	// TODO: remove comments: temp
-	//testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
@@ -213,8 +210,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 
 func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *testing.T) {
 
-	// TODO: remove comments: temp
-	//testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
