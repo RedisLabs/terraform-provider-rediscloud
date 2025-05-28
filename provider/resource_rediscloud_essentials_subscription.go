@@ -84,7 +84,7 @@ func resourceRedisCloudEssentialsSubscriptionCreate(ctx context.Context, d *sche
 	var diags diag.Diagnostics
 	api := meta.(*apiClient)
 
-	createSubscriptionRequest := fixedSubscriptions.FixedSubscription{
+	createSubscriptionRequest := fixedSubscriptions.FixedSubscriptionRequest{
 		Name:   redis.String(d.Get("name").(string)),
 		PlanId: redis.Int(d.Get("plan_id").(int)),
 	}
@@ -140,6 +140,9 @@ func resourceRedisCloudEssentialsSubscriptionRead(ctx context.Context, d *schema
 	if err := d.Set("payment_method_id", redis.IntValue(subscription.PaymentMethodID)); err != nil {
 		return diag.FromErr(err)
 	}
+	if err := d.Set("payment_method", redis.StringValue(subscription.PaymentMethod)); err != nil {
+		return diag.FromErr(err)
+	}
 	if err := d.Set("creation_date", redis.TimeValue(subscription.CreationDate).String()); err != nil {
 		return diag.FromErr(err)
 	}
@@ -165,9 +168,13 @@ func resourceRedisCloudEssentialsSubscriptionUpdate(ctx context.Context, d *sche
 		return diags
 	}
 
-	updateSubscriptionRequest := fixedSubscriptions.FixedSubscription{
+	updateSubscriptionRequest := fixedSubscriptions.FixedSubscriptionRequest{
 		Name:   redis.String(d.Get("name").(string)),
 		PlanId: redis.Int(d.Get("plan_id").(int)),
+	}
+
+	if v, ok := d.GetOk("payment_method"); ok {
+		updateSubscriptionRequest.PaymentMethod = redis.String(v.(string))
 	}
 
 	if v, ok := d.GetOk("payment_method_id"); ok {
