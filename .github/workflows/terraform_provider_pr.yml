@@ -126,7 +126,7 @@ jobs:
       - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudEssentialsSubscription"'
 
   go_test_smoke_essentials_sub:
-    name: go test smoke essentials db
+    name: go test smoke essentials sub
     needs: [go_build]
     runs-on: ubuntu-latest
     steps:
