@@ -210,8 +210,9 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 }
 
 func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *testing.T) {
-
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	// Only the qa environment has access to the marketplace, so this test will normally fail.
+	// Leaving this in the test suite for manual runs
+	testAccRequiresEnvVar(t, "EXECUTE_QA_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
