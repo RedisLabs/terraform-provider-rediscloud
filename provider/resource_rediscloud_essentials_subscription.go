@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"log"
 	"regexp"
@@ -87,6 +88,13 @@ func resourceRedisCloudEssentialsSubscriptionCreate(ctx context.Context, d *sche
 	createSubscriptionRequest := fixedSubscriptions.FixedSubscriptionRequest{
 		Name:   redis.String(d.Get("name").(string)),
 		PlanId: redis.Int(d.Get("plan_id").(int)),
+	}
+
+	// payment_method_id only matters if it is a credit card
+	if d.Get("payment_method").(string) != "credit-card" {
+		if d.Get("payment_method_id") != nil {
+			return diag.FromErr(errors.New("payment methods aside from credit-card cannot have a payment ID"))
+		}
 	}
 
 	if v, ok := d.GetOk("payment_method_id"); ok {
