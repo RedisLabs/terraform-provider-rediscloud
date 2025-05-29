@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"regexp"
 	"strconv"
 	"testing"
 )
@@ -275,6 +276,23 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 	})
 }
 
+func TestAccResourceRedisCloudEssentialsSubscription_Incorrect_PaymentIdForType(t *testing.T) {
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      fmt.Sprintf(testAccResourceRedisCloudPaidIncorrectPaymentTypeEssentialsSubscription, subscriptionName),
+				ExpectError: regexp.MustCompile("payment methods aside from credit-card cannot have a payment ID"),
+			},
+		},
+	})
+}
+
 const testAccResourceRedisCloudFreeEssentialsSubscription = `
 data "rediscloud_essentials_plan" "example" {
 	name = "30MB"
@@ -293,10 +311,6 @@ data "rediscloud_essentials_subscription" "example" {
 `
 
 const testAccResourceRedisCloudPaidMarketplaceEssentialsSubscription = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-}
-
 data "rediscloud_essentials_plan" "example" {
 	name = "250MB"
 	cloud_provider = "AWS"
@@ -307,7 +321,6 @@ resource "rediscloud_essentials_subscription" "example" {
 	name = "%s"
 	plan_id = data.rediscloud_essentials_plan.example.id
 	payment_method = "marketplace"
-	payment_method_id = data.rediscloud_payment_method.card.id
 }
 
 data "rediscloud_essentials_subscription" "example" {
@@ -354,6 +367,25 @@ resource "rediscloud_essentials_subscription" "example" {
 	name = "%s"
 	plan_id = data.rediscloud_essentials_plan.example.id
 	payment_method_id = data.rediscloud_payment_method.card.id
+}
+
+data "rediscloud_essentials_subscription" "example" {
+	name = rediscloud_essentials_subscription.example.name
+}
+`
+
+const testAccResourceRedisCloudPaidIncorrectPaymentTypeEssentialsSubscription = `
+data "rediscloud_essentials_plan" "example" {
+	name = "250MB"
+	cloud_provider = "AWS"
+	region = "us-east-1"
+}
+
+resource "rediscloud_essentials_subscription" "example" {
+	name = "%s"
+	plan_id = data.rediscloud_essentials_plan.example.id
+	payment_method = "marketplace"
+	payment_method_id = 999999999
 }
 
 data "rediscloud_essentials_subscription" "example" {
