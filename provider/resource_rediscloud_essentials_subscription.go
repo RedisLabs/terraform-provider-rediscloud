@@ -91,10 +91,12 @@ func resourceRedisCloudEssentialsSubscriptionCreate(ctx context.Context, d *sche
 	}
 
 	// payment_method_id only matters if it is a credit card
-	if d.Get("payment_method").(string) != "credit-card" {
-		if d.Get("payment_method_id") != nil {
-			return diag.FromErr(errors.New("payment methods aside from credit-card cannot have a payment ID"))
-		}
+	if d.Get("payment_method").(string) != "credit-card" && d.Get("payment_method_id") != 0 {
+		return diag.FromErr(errors.New("payment methods aside from credit-card cannot have a payment ID"))
+	}
+
+	if v, ok := d.GetOk("payment_method"); ok {
+		createSubscriptionRequest.PaymentMethod = redis.String(v.(string))
 	}
 
 	if v, ok := d.GetOk("payment_method_id"); ok {
