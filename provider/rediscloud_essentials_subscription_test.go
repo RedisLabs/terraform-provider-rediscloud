@@ -283,6 +283,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Incorrect_PaymentIdForType(
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{
 			{
