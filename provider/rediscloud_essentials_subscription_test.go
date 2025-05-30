@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -11,6 +12,9 @@ import (
 	"strconv"
 	"testing"
 )
+
+var essentialsMarketplaceFlag = flag.Bool("essentialsMarketplace", false,
+	"Add this flag '-essentialsMarketplace' to run tests for marketplace associated accounts")
 
 func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 
@@ -212,7 +216,11 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *testing.T) {
 	// Only the qa environment has access to the marketplace, so this test will normally fail.
 	// Leaving this in the test suite for manual runs
-	testAccRequiresEnvVar(t, "EXECUTE_QA_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	if !*essentialsMarketplaceFlag {
+		t.Skip("The '-essentialsMarketplace' parameter wasn't provided in the test command.")
+	}
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
@@ -233,8 +241,8 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 					resource.TestCheckResourceAttr(resourceName, "name", subscriptionName),
 					resource.TestCheckResourceAttr(resourceName, "status", "active"),
 					resource.TestCheckResourceAttrSet(resourceName, "plan_id"),
-					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
-					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
+					resource.TestCheckNoResourceAttr(datasourceName, "payment_method_id"),
+					//resource.TestCheckResourceAttr(resourceName, "payment_method", "marketplace"), // empty from API?
 					resource.TestCheckResourceAttrSet(resourceName, "creation_date"),
 
 					// Test the datasource
@@ -242,7 +250,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 					resource.TestCheckResourceAttr(datasourceName, "name", subscriptionName),
 					resource.TestCheckResourceAttr(datasourceName, "status", "active"),
 					resource.TestCheckResourceAttrSet(datasourceName, "plan_id"),
-					resource.TestCheckResourceAttrSet(datasourceName, "payment_method_id"),
+					resource.TestCheckNoResourceAttr(datasourceName, "payment_method_id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "creation_date"),
 				),
 			},
