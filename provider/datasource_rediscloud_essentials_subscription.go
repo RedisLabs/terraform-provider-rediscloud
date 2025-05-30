@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	fixedSubscriptions "github.com/RedisLabs/rediscloud-go-api/service/fixed/subscriptions"
+	fs "github.com/RedisLabs/rediscloud-go-api/service/fixed/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -60,16 +60,16 @@ func dataSourceRedisCloudEssentialsSubscriptionRead(ctx context.Context, d *sche
 		return diag.FromErr(err)
 	}
 
-	var filters []func(method *fixedSubscriptions.FixedSubscription) bool
+	var filters []func(method *fs.FixedSubscriptionResponse) bool
 
 	if id, ok := d.GetOk("id"); ok {
-		filters = append(filters, func(sub *fixedSubscriptions.FixedSubscription) bool {
+		filters = append(filters, func(sub *fs.FixedSubscriptionResponse) bool {
 			return redis.IntValue(sub.ID) == id
 		})
 	}
 
 	if name, ok := d.GetOk("name"); ok {
-		filters = append(filters, func(sub *fixedSubscriptions.FixedSubscription) bool {
+		filters = append(filters, func(sub *fs.FixedSubscriptionResponse) bool {
 			return redis.StringValue(sub.Name) == name
 		})
 	}
@@ -109,8 +109,8 @@ func dataSourceRedisCloudEssentialsSubscriptionRead(ctx context.Context, d *sche
 	return diags
 }
 
-func filterFixedSubscriptions(subs []*fixedSubscriptions.FixedSubscription, filters []func(sub *fixedSubscriptions.FixedSubscription) bool) []*fixedSubscriptions.FixedSubscription {
-	var filteredSubs []*fixedSubscriptions.FixedSubscription
+func filterFixedSubscriptions(subs []*fs.FixedSubscriptionResponse, filters []func(sub *fs.FixedSubscriptionResponse) bool) []*fs.FixedSubscriptionResponse {
+	var filteredSubs []*fs.FixedSubscriptionResponse
 	for _, sub := range subs {
 		if filterFixedSub(sub, filters) {
 			filteredSubs = append(filteredSubs, sub)
@@ -120,7 +120,7 @@ func filterFixedSubscriptions(subs []*fixedSubscriptions.FixedSubscription, filt
 	return filteredSubs
 }
 
-func filterFixedSub(method *fixedSubscriptions.FixedSubscription, filters []func(method *fixedSubscriptions.FixedSubscription) bool) bool {
+func filterFixedSub(method *fs.FixedSubscriptionResponse, filters []func(method *fs.FixedSubscriptionResponse) bool) bool {
 	for _, f := range filters {
 		if !f(method) {
 			return false

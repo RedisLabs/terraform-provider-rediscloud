@@ -33,5 +33,6 @@ output "rediscloud_essentials_subscription" {
 
 * `status` - The current status of the subscription
 * `plan_id` - The plan to which this subscription belongs
+* `payment_method` - Payment method for the requested subscription. If `credit-card` is specified, the payment method id must be defined. This information is only used when creating a new subscription and any changes will be ignored after this.
 * `payment_method_id` - A valid payment method pre-defined in the current account
 * `creation_date` - When the subscription was created
