@@ -58,6 +58,11 @@ func dataSourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Type:        schema.TypeBool,
 				Computed:    true,
 			},
+			"tls_certificate": {
+				Description: "TLS certificate used for authentication.",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"data_eviction": {
 				Description: "Data eviction items policy",
 				Type:        schema.TypeString,
