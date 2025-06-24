@@ -367,7 +367,28 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	}
 
+	if dbTlsCertificate, err := setCertificateData(ctx, api, subId, dbId); err != nil {
+		return diag.FromErr(err)
+	} else if dbTlsCertificate != nil {
+		if err := d.Set("tls_certificate", dbTlsCertificate); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	return diags
+}
+
+func setCertificateData(ctx context.Context, api *apiClient, subId int, dbId int) (*databases.DatabaseCertificate, error) {
+	dbTlsCertificate, err := api.client.Database.GetCertificate(ctx, subId, dbId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if dbTlsCertificate == nil {
+		return nil, fmt.Errorf("no certificate found for database %d", dbId)
+	}
+	return dbTlsCertificate, nil
 }
 
 func filterAADatabases(list *databases.ListActiveActiveDatabase, filters []func(db *databases.ActiveActiveDatabase) bool) ([]*databases.ActiveActiveDatabase, error) {

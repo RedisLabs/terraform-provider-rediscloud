@@ -112,6 +112,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(datasourceName, "enable_tls", "false"),
+					resource.TestCheckResourceAttrSet(datasourceName, "tls_certificate"),
+
 					resource.TestCheckResourceAttr(datasourceName, "data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttr(datasourceName, "global_modules.#", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "global_modules.0", "RedisJSON"),
