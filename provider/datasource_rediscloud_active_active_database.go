@@ -370,7 +370,7 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 	if dbTlsCertificate, err := getCertificateData(ctx, api, subId, dbId); err != nil {
 		return diag.FromErr(err)
 	} else if dbTlsCertificate != nil {
-		if err := d.Set("tls_certificate", dbTlsCertificate); err != nil {
+		if err := d.Set("tls_certificate", dbTlsCertificate.PublicCertificatePEMString); err != nil {
 			return diag.FromErr(err)
 		}
 	}
