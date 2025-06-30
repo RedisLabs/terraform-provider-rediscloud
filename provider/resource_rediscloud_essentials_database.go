@@ -738,6 +738,7 @@ func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api
 			databases.StatusRCPChangePending,
 			databases.StatusProxyPolicyChangePending,
 			databases.StatusProxyPolicyChangeDraft,
+			databases.StatusDynamicEndpointsCreationPending,
 		},
 		Target:       []string{databases.StatusActive},
 		Timeout:      safetyTimeout,
