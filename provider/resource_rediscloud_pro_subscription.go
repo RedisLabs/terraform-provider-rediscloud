@@ -1022,6 +1022,7 @@ func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClien
 			databases.StatusRCPChangePending,
 			databases.StatusProxyPolicyChangePending,
 			databases.StatusProxyPolicyChangeDraft,
+			databases.StatusDynamicEndpointsCreationPending,
 		},
 		Target:       []string{databases.StatusActive},
 		Timeout:      safetyTimeout,
