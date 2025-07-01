@@ -58,6 +58,11 @@ func dataSourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Type:        schema.TypeBool,
 				Computed:    true,
 			},
+			"tls_certificate": {
+				Description: "TLS certificate used for authentication.",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"data_eviction": {
 				Description: "Data eviction items policy",
 				Type:        schema.TypeString,
@@ -362,7 +367,28 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	}
 
+	if dbTlsCertificate, err := getCertificateData(ctx, api, subId, dbId); err != nil {
+		return diag.FromErr(err)
+	} else if dbTlsCertificate != nil {
+		if err := d.Set("tls_certificate", dbTlsCertificate.PublicCertificatePEMString); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	return diags
+}
+
+func getCertificateData(ctx context.Context, api *apiClient, subId int, dbId int) (*databases.DatabaseCertificate, error) {
+	dbTlsCertificate, err := api.client.Database.GetCertificate(ctx, subId, dbId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if dbTlsCertificate == nil {
+		return nil, fmt.Errorf("no certificate found for database %d", dbId)
+	}
+	return dbTlsCertificate, nil
 }
 
 func filterAADatabases(list *databases.ListActiveActiveDatabase, filters []func(db *databases.ActiveActiveDatabase) bool) ([]*databases.ActiveActiveDatabase, error) {
