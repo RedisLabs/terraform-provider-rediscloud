@@ -208,6 +208,7 @@ resource "rediscloud_essentials_database" "example" {
 		"department" = "finance"
 	}
 }
+
 data "rediscloud_essentials_database" "example" {
 	subscription_id = rediscloud_essentials_subscription.example.id
 	name = rediscloud_essentials_database.example.name
@@ -249,6 +250,7 @@ resource "rediscloud_essentials_database" "example" {
 		"department" = "finance"
 	}
 }
+
 data "rediscloud_essentials_database" "example" {
 	subscription_id = rediscloud_essentials_subscription.example.id
 	name = rediscloud_essentials_database.example.name
