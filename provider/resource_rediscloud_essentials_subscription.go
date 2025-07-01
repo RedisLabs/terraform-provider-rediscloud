@@ -2,7 +2,10 @@ package provider
 
 import (
 	"context"
+	"errors"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"log"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -50,6 +53,20 @@ func resourceRedisCloudEssentialsSubscription() *schema.Resource {
 				Type:        schema.TypeInt,
 				Required:    true,
 			},
+			"payment_method": {
+				Description:      "Payment method for the requested subscription. If credit-card is specified, the payment method id must be defined. This information is only used when creating a new subscription and any changes will be ignored after this.",
+				Type:             schema.TypeString,
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(credit-card|marketplace)$"), "must be 'credit-card' or 'marketplace'")),
+				Optional:         true,
+				Default:          "credit-card",
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if d.Id() == "" {
+						// We don't want to ignore the block if the resource is about to be created.
+						return false
+					}
+					return true
+				},
+			},
 			"payment_method_id": {
 				Description: "The identifier of the method which will be charged for this subscription. Not required for free plans",
 				Type:        schema.TypeInt,
@@ -68,9 +85,18 @@ func resourceRedisCloudEssentialsSubscriptionCreate(ctx context.Context, d *sche
 	var diags diag.Diagnostics
 	api := meta.(*apiClient)
 
-	createSubscriptionRequest := fixedSubscriptions.FixedSubscription{
+	createSubscriptionRequest := fixedSubscriptions.FixedSubscriptionRequest{
 		Name:   redis.String(d.Get("name").(string)),
 		PlanId: redis.Int(d.Get("plan_id").(int)),
+	}
+
+	// payment_method_id only matters if it is a credit card
+	if d.Get("payment_method").(string) != "credit-card" && d.Get("payment_method_id") != 0 {
+		return diag.FromErr(errors.New("payment methods aside from credit-card cannot have a payment ID"))
+	}
+
+	if v, ok := d.GetOk("payment_method"); ok {
+		createSubscriptionRequest.PaymentMethod = redis.String(v.(string))
 	}
 
 	if v, ok := d.GetOk("payment_method_id"); ok {
@@ -124,6 +150,9 @@ func resourceRedisCloudEssentialsSubscriptionRead(ctx context.Context, d *schema
 	if err := d.Set("payment_method_id", redis.IntValue(subscription.PaymentMethodID)); err != nil {
 		return diag.FromErr(err)
 	}
+	if err := d.Set("payment_method", redis.StringValue(subscription.PaymentMethod)); err != nil {
+		return diag.FromErr(err)
+	}
 	if err := d.Set("creation_date", redis.TimeValue(subscription.CreationDate).String()); err != nil {
 		return diag.FromErr(err)
 	}
@@ -149,9 +178,13 @@ func resourceRedisCloudEssentialsSubscriptionUpdate(ctx context.Context, d *sche
 		return diags
 	}
 
-	updateSubscriptionRequest := fixedSubscriptions.FixedSubscription{
+	updateSubscriptionRequest := fixedSubscriptions.FixedSubscriptionRequest{
 		Name:   redis.String(d.Get("name").(string)),
 		PlanId: redis.Int(d.Get("plan_id").(int)),
+	}
+
+	if v, ok := d.GetOk("payment_method"); ok {
+		updateSubscriptionRequest.PaymentMethod = redis.String(v.(string))
 	}
 
 	if v, ok := d.GetOk("payment_method_id"); ok {

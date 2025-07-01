@@ -67,7 +67,7 @@ The following arguments are supported:
 * `replica` - (Optional) If specified, this database will be a replica of the specified Redis databases provided, documented below.
 * `client_tls_certificates` - (Optional) A list of TLS/SSL certificates (public keys) with new line characters replaced by \n.
 * `password` - (Optional) Password to access the database. If not specified, a random 32 character long alphanumeric password will be automatically generated.
-* `enable_default_user` - (Optional) When `true` enables connecting to the database with the default user. Default `true`.
+* `enable_default_user` - (Optional) When `true` enables connecting to the database with the default user. Default `true`. If set to `false`, any value for `password` will be ignored.
 * `alert` - (Optional) A block defining Redis database alert. Can be specified multiple times. Documented below.
 * `tags` - (Optional) A string/string map of tags to associate with this database. Note that all keys and values must be lowercase.
 * `modules` - (Optional) A list of modules objects, documented below. **Modifying this attribute will force creation of a new resource.**

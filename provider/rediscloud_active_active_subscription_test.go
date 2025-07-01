@@ -24,7 +24,7 @@ var activeActiveMarketplaceFlag = flag.Bool("activeActiveMarketplace", false,
 // Also checks active-active subscription regions.
 func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 
-	//testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_active_active_subscription.example"
