@@ -652,6 +652,11 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 		updateDatabaseRequest.Password = redis.String(password)
 	}
 
+	// can't update the password and disable the default user at once
+	if !d.Get("enable_default_user").(bool) {
+		updateDatabaseRequest.Password = nil
+	}
+
 	createAlerts := make([]*databases.Alert, 0)
 	alerts := d.Get("alert").(*schema.Set)
 	for _, alert := range alerts.List() {
