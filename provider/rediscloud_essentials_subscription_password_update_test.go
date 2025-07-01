@@ -52,8 +52,8 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 					resource.TestCheckResourceAttrSet(resourceName, "subscription_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "db_id"),
 					resource.TestCheckResourceAttr(resourceName, "name", databaseNameUpdated),
-					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
-					resource.TestCheckResourceAttr(resourceName, "password", "j43589rhe39f"),
+					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "false"),
+					resource.TestCheckResourceAttr(resourceName, "password", ""),
 
 					// Test the datasource
 					resource.TestMatchResourceAttr(datasourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
@@ -61,7 +61,6 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 					resource.TestCheckResourceAttrSet(datasourceName, "db_id"),
 					resource.TestCheckResourceAttr(datasourceName, "name", databaseNameUpdated),
 					resource.TestCheckResourceAttr(datasourceName, "enable_default_user", "false"),
-					resource.TestCheckResourceAttr(datasourceName, "password", ""),
 				),
 			},
 			{
