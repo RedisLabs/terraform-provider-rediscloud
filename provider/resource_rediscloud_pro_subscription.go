@@ -21,6 +21,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+const CMEK_ENABLED_STRING = "cloud-provider-managed-key"
+
 func containsModule(modules []interface{}, requiredModule string) bool {
 	for _, m := range modules {
 		if mod, ok := m.(string); ok && mod == requiredModule {
@@ -537,6 +539,12 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 	redisVersion := d.Get("redis_version").(string)
 	if d.Get("redis_version").(string) != "" {
 		createSubscriptionRequest.RedisVersion = redis.String(redisVersion)
+	}
+
+	cmekEnabled := d.Get("cmek_enabled").(bool)
+
+	if cmekEnabled == true {
+		createSubscriptionRequest.PersistentStorageEncryptionType = redis.String(CMEK_ENABLED_STRING)
 	}
 
 	subId, err := api.client.Subscription.Create(ctx, createSubscriptionRequest)
