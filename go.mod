@@ -3,7 +3,7 @@ module github.com/RedisLabs/terraform-provider-rediscloud
 go 1.22.4
 
 require (
-	github.com/RedisLabs/rediscloud-go-api v0.29.0
+	github.com/RedisLabs/rediscloud-go-api v0.30.0
 	github.com/bflad/tfproviderlint v0.31.0
 	github.com/hashicorp/go-cty v1.5.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.36.1
