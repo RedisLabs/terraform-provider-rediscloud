@@ -108,32 +108,37 @@ import (
 Based on analysis of sm-cloud-api, the following controllers are available for potential terraform resources:
 
 ### Already Implemented
-- ✅ `SubscriptionsController.java` → `rediscloud_subscription`
-- ✅ `DatabasesController.java` → `rediscloud_subscription_database`
+- ✅ `SubscriptionsController.java` → `rediscloud_subscription`, `rediscloud_active_active_subscription`
+- ✅ `DatabasesController.java` → `rediscloud_subscription_database`, `rediscloud_active_active_database`
 - ✅ `ACLController.java` → `rediscloud_acl_user`, `rediscloud_acl_role`, `rediscloud_acl_rule`
 - ✅ `CloudAccountsController.java` → `rediscloud_cloud_account`
 - ✅ `FixedSubscriptionsController.java` → `rediscloud_essentials_subscription`
 - ✅ `FixedDatabasesController.java` → `rediscloud_essentials_database`
+- ✅ `ModuleController.java` → `rediscloud_database_modules` (data source)
+- ✅ `DataPersistenceController.java` → `rediscloud_data_persistence` (data source)
+- ✅ `PlanController.java` → `rediscloud_essentials_plan` (data source)
+- ✅ `SubscriptionsConnectivityController.java` → `rediscloud_private_service_connect`, `rediscloud_transit_gateway_attachment`, `rediscloud_active_active_private_service_connect`, `rediscloud_active_active_transit_gateway_attachment`
+- ✅ `RegionController.java` → `rediscloud_regions` (data source)
+- ✅ `AccountController.java` → `rediscloud_payment_method` (data source)
 
 ### Available for Implementation
 - 🔄 `UsersController.java` → `rediscloud_user` (user management)
 - 🔄 `DedicatedInstancesController.java` → `rediscloud_dedicated_instance`
 - 🔄 `DedicatedSubscriptionsController.java` → `rediscloud_dedicated_subscription`
-- 🔄 `MetricsController.java` → `rediscloud_metrics_config`
-- 🔄 `MonitoringController.java` → `rediscloud_monitoring_config`
-- 🔄 `ModuleController.java` → `rediscloud_module`
-- 🔄 `PlanController.java` → `rediscloud_plan`
-- 🔄 `SearchScalingFactorController.java` → `rediscloud_search_scaling_factor`
-- 🔄 `DataPersistenceController.java` → `rediscloud_data_persistence_config`
-- 🔄 `SubscriptionsConnectivityController.java` → `rediscloud_vpc_peering`, `rediscloud_private_service_connect`
 
 ### Used Internally (Not for Direct Resource Implementation)
 - 🔧 `TasksController.java` - Used internally for asynchronous operation polling and status tracking
+- 🔧 `MetricsController.java` - Internal metrics collection (not user-configurable)
+- 🔧 `MonitoringController.java` - Internal monitoring services (system monitoring)
+- 🔧 `SearchScalingFactorController.java` - Internal search scaling configuration (system optimization)
 
 ### Helper/Utility Controllers
 - `BaseController.java` - Base functionality
 - `ControllerHelper.java` - Helper utilities
 - `DatabaseControllerHelper.java` - Database-specific helpers
+- `ControllerHateoasLinksHelper.java` - HATEOAS link generation utilities
+- `FixedProviderBinder.java` - Fixed subscription provider binding utilities
+- `ProviderBinder.java` - General provider binding utilities
 
 ## Asynchronous Operations and TasksController Usage
 

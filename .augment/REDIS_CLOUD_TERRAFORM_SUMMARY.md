@@ -17,19 +17,21 @@ Terraform Config → terraform-provider-rediscloud → rediscloud-go-api → sm-
 
 ## Controller Classification & Implementation Status
 
-### ✅ Already Implemented (10 controllers)
+### ✅ Already Implemented (12 controllers)
 | Controller | Terraform Resource/Data Source | Go API Service |
 |------------|-------------------|----------------|
-| `SubscriptionsController.java` | `rediscloud_subscription`, `rediscloud_subscription_peering` | `service/subscriptions` |
-| `DatabasesController.java` | `rediscloud_subscription_database` | `service/databases` |
+| `SubscriptionsController.java` | `rediscloud_subscription`, `rediscloud_subscription_peering`, `rediscloud_active_active_subscription` | `service/subscriptions` |
+| `DatabasesController.java` | `rediscloud_subscription_database`, `rediscloud_active_active_database` | `service/databases` |
 | `ACLController.java` | `rediscloud_acl_user`, `rediscloud_acl_role`, `rediscloud_acl_rule` | `service/access_control_lists` |
 | `CloudAccountsController.java` | `rediscloud_cloud_account` | `service/cloud_accounts` |
 | `FixedSubscriptionsController.java` | `rediscloud_essentials_subscription` | `service/fixed_subscriptions` |
 | `FixedDatabasesController.java` | `rediscloud_essentials_database` | `service/fixed_databases` |
 | `ModuleController.java` | `rediscloud_database_modules` (data source) | `service/account` |
 | `DataPersistenceController.java` | `rediscloud_data_persistence` (data source) | `service/account` |
-| `SubscriptionsConnectivityController.java` | `rediscloud_private_service_connect`, `rediscloud_transit_gateway_attachment` | `service/subscriptions` |
+| `SubscriptionsConnectivityController.java` | `rediscloud_private_service_connect`, `rediscloud_transit_gateway_attachment`, `rediscloud_active_active_private_service_connect`, `rediscloud_active_active_transit_gateway_attachment` | `service/subscriptions` |
 | `PlanController.java` | `rediscloud_essentials_plan` (data source) | `service/fixed/plans` |
+| `RegionController.java` | `rediscloud_regions` (data source) | `service/account` |
+| `AccountController.java` | `rediscloud_payment_method` (data source) | `service/account` |
 
 ### 🔄 Available for Implementation (3 controllers)
 | Controller | Potential Resource | Business Value |
@@ -38,28 +40,45 @@ Terraform Config → terraform-provider-rediscloud → rediscloud-go-api → sm-
 | `DedicatedInstancesController.java` | `rediscloud_dedicated_instance` | High-performance dedicated instances |
 | `DedicatedSubscriptionsController.java` | `rediscloud_dedicated_subscription` | Enterprise dedicated subscriptions |
 
-### 🔧 Used Internally - NOT for Direct Implementation (3 controllers)
+### 🔧 Used Internally - NOT for Direct Implementation (4 controllers)
 | Controller | Purpose | Why Not a Resource |
 |------------|---------|-------------------|
 | `TasksController.java` | Asynchronous operation management | Implementation detail, not user-facing |
 | `MetricsController.java` | Internal metrics collection | Monitoring implementation detail, not user-configurable |
 | `MonitoringController.java` | Internal monitoring services | System monitoring, not a user-facing resource |
+| `SearchScalingFactorController.java` | Internal search scaling configuration | System optimization detail, not user-configurable |
 
-### 🛠️ Helper/Utility Controllers (3 controllers)
+### 🛠️ Helper/Utility Controllers (6 controllers)
 - `BaseController.java` - Base functionality
-- `ControllerHelper.java` - Helper utilities  
+- `ControllerHelper.java` - Helper utilities
 - `DatabaseControllerHelper.java` - Database-specific helpers
+- `ControllerHateoasLinksHelper.java` - HATEOAS link generation utilities
+- `FixedProviderBinder.java` - Fixed subscription provider binding utilities
+- `ProviderBinder.java` - General provider binding utilities
 
 ## Critical Findings: Controller Classification Audit
+
+### 🔍 **Audit Methodology**
+This comprehensive audit was conducted by:
+
+1. **Examining terraform-provider-rediscloud codebase**: Analyzed all `resource_rediscloud_*.go` and `datasource_rediscloud_*.go` files
+2. **Cross-referencing with provider.go**: Verified actual resource/data source registrations in the provider
+3. **Checking Terraform Registry**: Validated published resources and data sources at https://registry.terraform.io/providers/RedisLabs/rediscloud/latest/docs
+4. **Analyzing sm-cloud-api controllers**: Examined controller purposes and annotations (e.g., `@Tag(name = Consts.ACCOUNT_TAGS)`)
+5. **Identifying Active-Active variants**: Found additional implementations for Active-Active Redis deployments
+6. **Classifying internal vs user-facing**: Distinguished between user-configurable resources and internal system controllers
 
 ### ❌ Initial Classification Errors
 Several controllers were initially misclassified during the first analysis:
 
-1. **ModuleController**: Initially listed as "Available for Implementation" → **ACTUALLY IMPLEMENTED** as `rediscloud_database_modules` data source
+1. **ModuleController**: Initially listed as "Available for Implementation" → **ACTUALLY IMPLEMENTED** as `rediscloud_database_modules` data source (with `@Tag(name = Consts.ACCOUNT_TAGS)` placing it under Account section)
 2. **DataPersistenceController**: Initially listed as "Available for Implementation" → **ACTUALLY IMPLEMENTED** as `rediscloud_data_persistence` data source
 3. **PlanController**: Initially listed as "Available for Implementation" → **ACTUALLY IMPLEMENTED** as `rediscloud_essentials_plan` data source
-4. **SubscriptionsConnectivityController**: Initially listed as "Available for Implementation" → **ACTUALLY IMPLEMENTED** as VPC peering and private service connect resources
+4. **SubscriptionsConnectivityController**: Initially listed as "Available for Implementation" → **ACTUALLY IMPLEMENTED** as VPC peering and private service connect resources (including Active-Active variants)
 5. **MetricsController & MonitoringController**: Initially listed as "Available for Implementation" → **ACTUALLY INTERNAL-ONLY** (similar to TasksController)
+6. **RegionController**: Overlooked in initial analysis → **ACTUALLY IMPLEMENTED** as `rediscloud_regions` data source
+7. **AccountController**: Overlooked in initial analysis → **ACTUALLY IMPLEMENTED** as `rediscloud_payment_method` data source
+8. **SearchScalingFactorController**: Initially listed as "Available for Implementation" → **ACTUALLY INTERNAL-ONLY** (system optimization, not user-configurable)
 
 ### ✅ Corrected Classification Process
 The audit revealed that **data sources were overlooked** in the initial analysis, leading to significant misclassification. The corrected process now:
@@ -71,9 +90,11 @@ The audit revealed that **data sources were overlooked** in the initial analysis
 
 ### 📊 Impact of Corrections
 - **Originally**: 9 controllers "Available for Implementation"
-- **After Audit**: Only 3 controllers actually available for implementation
+- **After Comprehensive Audit**: Only 3 controllers actually available for implementation
 - **Accuracy Improvement**: 67% reduction in misclassified controllers
 - **Development Effort**: Reduced from ~54 hours to ~18 hours of actual remaining work
+- **Additional Implementations Found**: 2 additional controllers (RegionController, AccountController) were already implemented but overlooked
+- **Internal-Only Reclassifications**: 4 controllers correctly identified as internal-only (TasksController, MetricsController, MonitoringController, SearchScalingFactorController)
 
 ## Asynchronous Operation Patterns
 
@@ -146,15 +167,18 @@ err = waitForTaskToComplete(ctx, taskId, api) // Would poll TasksController
 3. `DedicatedSubscriptionsController` → Enterprise dedicated subscriptions
 
 ### ✅ Previously Misclassified (Now Correctly Identified as Implemented)
-- ~~`ModuleController`~~ → Already implemented as `rediscloud_database_modules` data source
+- ~~`ModuleController`~~ → Already implemented as `rediscloud_database_modules` data source (Account section with `@Tag(name = Consts.ACCOUNT_TAGS)`)
 - ~~`DataPersistenceController`~~ → Already implemented as `rediscloud_data_persistence` data source
 - ~~`PlanController`~~ → Already implemented as `rediscloud_essentials_plan` data source
-- ~~`SubscriptionsConnectivityController`~~ → Already implemented as VPC peering and private service connect resources
+- ~~`SubscriptionsConnectivityController`~~ → Already implemented as VPC peering and private service connect resources (including Active-Active variants)
+- ~~`RegionController`~~ → Already implemented as `rediscloud_regions` data source (overlooked in initial analysis)
+- ~~`AccountController`~~ → Already implemented as `rediscloud_payment_method` data source (overlooked in initial analysis)
 
 ### 🔧 Correctly Identified as Internal-Only
 - `TasksController` → Async operation management (implementation detail)
 - `MetricsController` → Internal metrics collection (not user-configurable)
 - `MonitoringController` → Internal monitoring services (system monitoring)
+- `SearchScalingFactorController` → Internal search scaling configuration (system optimization, not user-configurable)
 
 ## Success Metrics for Future Implementation
 
@@ -175,10 +199,11 @@ err = waitForTaskToComplete(ctx, taskId, api) // Would poll TasksController
 ## Audit Summary & Key Takeaways
 
 ### 🔍 **Classification Audit Results**
-- **10 controllers already implemented** (including data sources previously overlooked)
+- **12 controllers already implemented** (including data sources and Active-Active variants previously overlooked)
 - **Only 3 controllers actually available** for new implementation
-- **3 controllers correctly identified as internal-only** (TasksController, MetricsController, MonitoringController)
+- **4 controllers correctly identified as internal-only** (TasksController, MetricsController, MonitoringController, SearchScalingFactorController)
 - **67% reduction in misclassified controllers** after thorough audit
+- **Additional implementations discovered**: RegionController and AccountController were already implemented but missed in initial analysis
 
 ### 🎯 **Remaining Implementation Opportunities**
 1. **UsersController** → `rediscloud_user` (highest priority - user management)
