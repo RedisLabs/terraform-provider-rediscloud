@@ -33,20 +33,20 @@ Terraform Config → terraform-provider-rediscloud → rediscloud-go-api → sm-
 | `RegionController.java` | `rediscloud_regions` (data source) | `service/account` |
 | `AccountController.java` | `rediscloud_payment_method` (data source) | `service/account` |
 
-### 🔄 Available for Implementation (3 controllers)
+### 🔄 Available for Implementation (4 controllers)
 | Controller | Potential Resource | Business Value |
 |------------|-------------------|----------------|
 | `UsersController.java` | `rediscloud_user` | User management and access control |
 | `DedicatedInstancesController.java` | `rediscloud_dedicated_instance` | High-performance dedicated instances |
 | `DedicatedSubscriptionsController.java` | `rediscloud_dedicated_subscription` | Enterprise dedicated subscriptions |
+| `SearchScalingFactorController.java` | `rediscloud_search_scaling_factor` | Search performance optimization |
 
-### 🔧 Used Internally - NOT for Direct Implementation (4 controllers)
+### 🔧 Used Internally - NOT for Direct Implementation (3 controllers)
 | Controller | Purpose | Why Not a Resource |
 |------------|---------|-------------------|
 | `TasksController.java` | Asynchronous operation management | Implementation detail, not user-facing |
 | `MetricsController.java` | Internal metrics collection | Monitoring implementation detail, not user-configurable |
 | `MonitoringController.java` | Internal monitoring services | System monitoring, not a user-facing resource |
-| `SearchScalingFactorController.java` | Internal search scaling configuration | System optimization detail, not user-configurable |
 
 ### 🛠️ Helper/Utility Controllers (6 controllers)
 - `BaseController.java` - Base functionality
@@ -78,7 +78,6 @@ Several controllers were initially misclassified during the first analysis:
 5. **MetricsController & MonitoringController**: Initially listed as "Available for Implementation" → **ACTUALLY INTERNAL-ONLY** (similar to TasksController)
 6. **RegionController**: Overlooked in initial analysis → **ACTUALLY IMPLEMENTED** as `rediscloud_regions` data source
 7. **AccountController**: Overlooked in initial analysis → **ACTUALLY IMPLEMENTED** as `rediscloud_payment_method` data source
-8. **SearchScalingFactorController**: Initially listed as "Available for Implementation" → **ACTUALLY INTERNAL-ONLY** (system optimization, not user-configurable)
 
 ### ✅ Corrected Classification Process
 The audit revealed that **data sources were overlooked** in the initial analysis, leading to significant misclassification. The corrected process now:
@@ -90,11 +89,11 @@ The audit revealed that **data sources were overlooked** in the initial analysis
 
 ### 📊 Impact of Corrections
 - **Originally**: 9 controllers "Available for Implementation"
-- **After Comprehensive Audit**: Only 3 controllers actually available for implementation
-- **Accuracy Improvement**: 67% reduction in misclassified controllers
-- **Development Effort**: Reduced from ~54 hours to ~18 hours of actual remaining work
+- **After Comprehensive Audit**: 4 controllers actually available for implementation
+- **Accuracy Improvement**: 56% reduction in misclassified controllers
+- **Development Effort**: Reduced from ~54 hours to ~24 hours of actual remaining work
 - **Additional Implementations Found**: 2 additional controllers (RegionController, AccountController) were already implemented but overlooked
-- **Internal-Only Reclassifications**: 4 controllers correctly identified as internal-only (TasksController, MetricsController, MonitoringController, SearchScalingFactorController)
+- **Internal-Only Reclassifications**: 3 controllers correctly identified as internal-only (TasksController, MetricsController, MonitoringController)
 
 ## Asynchronous Operation Patterns
 
@@ -148,8 +147,8 @@ err = waitForTaskToComplete(ctx, taskId, api) // Would poll TasksController
 
 ### Current State
 - **Manual Implementation**: 4-6 hours per resource
-- **Pending Controllers**: 3 controllers ready for implementation
-- **Total Manual Effort**: ~18 hours of development work
+- **Pending Controllers**: 4 controllers ready for implementation
+- **Total Manual Effort**: ~24 hours of development work
 
 ### AI-Assisted Potential
 - **Pattern Recognition**: 80% of code follows established patterns
@@ -165,6 +164,7 @@ err = waitForTaskToComplete(ctx, taskId, api) // Would poll TasksController
 ### Medium Priority (Enterprise Features)
 2. `DedicatedInstancesController` → High-performance instances
 3. `DedicatedSubscriptionsController` → Enterprise dedicated subscriptions
+4. `SearchScalingFactorController` → Search performance optimization
 
 ### ✅ Previously Misclassified (Now Correctly Identified as Implemented)
 - ~~`ModuleController`~~ → Already implemented as `rediscloud_database_modules` data source (Account section with `@Tag(name = Consts.ACCOUNT_TAGS)`)
@@ -178,7 +178,6 @@ err = waitForTaskToComplete(ctx, taskId, api) // Would poll TasksController
 - `TasksController` → Async operation management (implementation detail)
 - `MetricsController` → Internal metrics collection (not user-configurable)
 - `MonitoringController` → Internal monitoring services (system monitoring)
-- `SearchScalingFactorController` → Internal search scaling configuration (system optimization, not user-configurable)
 
 ## Success Metrics for Future Implementation
 
@@ -200,15 +199,16 @@ err = waitForTaskToComplete(ctx, taskId, api) // Would poll TasksController
 
 ### 🔍 **Classification Audit Results**
 - **12 controllers already implemented** (including data sources and Active-Active variants previously overlooked)
-- **Only 3 controllers actually available** for new implementation
-- **4 controllers correctly identified as internal-only** (TasksController, MetricsController, MonitoringController, SearchScalingFactorController)
-- **67% reduction in misclassified controllers** after thorough audit
+- **4 controllers actually available** for new implementation
+- **3 controllers correctly identified as internal-only** (TasksController, MetricsController, MonitoringController)
+- **56% reduction in misclassified controllers** after thorough audit
 - **Additional implementations discovered**: RegionController and AccountController were already implemented but missed in initial analysis
 
 ### 🎯 **Remaining Implementation Opportunities**
 1. **UsersController** → `rediscloud_user` (highest priority - user management)
 2. **DedicatedInstancesController** → `rediscloud_dedicated_instance` (enterprise feature)
 3. **DedicatedSubscriptionsController** → `rediscloud_dedicated_subscription` (enterprise feature)
+4. **SearchScalingFactorController** → `rediscloud_search_scaling_factor` (search performance optimization)
 
 ### 📚 **Lessons Learned**
 - **Data sources matter**: Initial analysis focused too heavily on resources, missing implemented data sources

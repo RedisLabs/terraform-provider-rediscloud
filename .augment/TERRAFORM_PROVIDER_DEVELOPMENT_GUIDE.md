@@ -125,12 +125,12 @@ Based on analysis of sm-cloud-api, the following controllers are available for p
 - 🔄 `UsersController.java` → `rediscloud_user` (user management)
 - 🔄 `DedicatedInstancesController.java` → `rediscloud_dedicated_instance`
 - 🔄 `DedicatedSubscriptionsController.java` → `rediscloud_dedicated_subscription`
+- 🔄 `SearchScalingFactorController.java` → `rediscloud_search_scaling_factor` (search performance optimization)
 
 ### Used Internally (Not for Direct Resource Implementation)
 - 🔧 `TasksController.java` - Used internally for asynchronous operation polling and status tracking
 - 🔧 `MetricsController.java` - Internal metrics collection (not user-configurable)
 - 🔧 `MonitoringController.java` - Internal monitoring services (system monitoring)
-- 🔧 `SearchScalingFactorController.java` - Internal search scaling configuration (system optimization)
 
 ### Helper/Utility Controllers
 - `BaseController.java` - Base functionality
