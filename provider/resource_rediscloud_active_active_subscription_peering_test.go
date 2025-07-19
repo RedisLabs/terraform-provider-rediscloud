@@ -2,15 +2,16 @@ package provider
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"os"
 	"regexp"
 	"testing"
-
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TEST_PEERING")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 
@@ -71,6 +72,8 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 }
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_gcp(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TEST_PEERING")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 

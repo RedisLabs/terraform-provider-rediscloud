@@ -11,6 +11,9 @@ import (
 )
 
 func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	name := acctest.RandomWithPrefix("tf-test")
 
 	const resourceName = "rediscloud_subscription.example"
@@ -57,6 +60,9 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 }
 
 func TestAccDataSourceRedisCloudProSubscription_ignoresAA(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 
@@ -161,7 +167,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
     global_source_ips = ["192.168.0.0/16", "192.170.0.0/16"]
     global_alert {
 		name = "dataset-size"
-		value = 40
+		value = 1
 	}
 	override_region {
 		name = "us-east-1"

@@ -12,6 +12,8 @@ import (
 
 func TestAccResourceRedisCloudPrivateServiceConnectEndpoint_CRUDI(t *testing.T) {
 
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	baseName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-psce"
 
 	const resourceName = "rediscloud_private_service_connect_endpoint.psce"
@@ -46,7 +48,7 @@ func TestAccResourceRedisCloudPrivateServiceConnectEndpoint_CRUDI(t *testing.T) 
 						}
 						return nil
 					}),
-					resource.TestCheckResourceAttr(datasourceName, "endpoints.0.service_attachments.#", "40"),
+					resource.TestCheckResourceAttr(datasourceName, "endpoints.0.service_attachments.#", "1"),
 				),
 			},
 			{

@@ -10,6 +10,9 @@ import (
 )
 
 func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -40,6 +43,7 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet(dataSourceById, "public_endpoint"),
 					resource.TestCheckResourceAttrSet(dataSourceById, "private_endpoint"),
 					resource.TestCheckResourceAttr(dataSourceById, "enable_default_user", "true"),
+					resource.TestCheckResourceAttr(dataSourceById, "query_performance_factor", "2x"),
 
 					resource.TestCheckResourceAttr(dataSourceByName, "name", "tf-database"),
 					resource.TestCheckResourceAttr(dataSourceByName, "protocol", "redis"),
@@ -56,6 +60,7 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet(dataSourceByName, "public_endpoint"),
 					resource.TestCheckResourceAttrSet(dataSourceByName, "private_endpoint"),
 					resource.TestCheckResourceAttr(dataSourceByName, "enable_default_user", "true"),
+					resource.TestCheckResourceAttr(dataSourceByName, "query_performance_factor", "2x"),
 				),
 			},
 		},
@@ -91,6 +96,8 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api=true
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 1000
+	query_performance_factor	 = "2x"
+	modules = ["RediSearch"]
   }
 }
 resource "rediscloud_subscription_database" "example" {
@@ -105,6 +112,12 @@ resource "rediscloud_subscription_database" "example" {
 	support_oss_cluster_api	     = true
 	replication				     = false
     enable_default_user 		 = true
+	query_performance_factor	 = "2x"
+	modules = [
+		{
+			name: "RediSearch"
+		}
+	]
 }
 
 data "rediscloud_database" "example-by-id" {

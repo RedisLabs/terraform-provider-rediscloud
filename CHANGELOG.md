@@ -3,12 +3,45 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+
+# 2.1.5 (1st July 2025)
+
+### Added
+
+Feature: Support Marketplace as a payment method for Essentials subscription
+Feature: Add TLS certificate to databases’ data sources
+
+### Fixed:
+
+Unexpected state `dynamic-endpoints-creation-pending'
+Can not disable default user on essentials db
+
+# 2.1.4 (22nd May 2025)
+
+### Added
+
+- Documentation for `rediscloud_active_active_subscription_regions` added.
+- Schema documentation amended to match documentation above.
+
+# 2.1.3 (21st May 2025)
+
+### Added
+
+- New datasource `rediscloud_active_active_subscription_regions` added.
+
+# 2.1.2 (19th May 2025)
+
+### Added
+
+- Query Performance Factor now implemented for resources `rediscloud_subscription` and `rediscloud_subscription_database`
+- Reducing the number of attachments for Private Service Connect from 40 down to 1, in tests and documentation
+
 # 2.1.1 (6th Feb 2025)
 
 ### Added
 
-- Documentation related to using the [Redis Cloud Private Service Connect Module](https://github.com/RedisLabs/terraform-rediscloud-private-service-connect) 
-to simplify the Terraform configuration. 
+- Documentation related to using the [Redis Cloud Private Service Connect Module](https://github.com/RedisLabs/terraform-rediscloud-private-service-connect)
+  to simplify the Terraform configuration.
 
 # 2.1.0 (6th Feb 2025)
 

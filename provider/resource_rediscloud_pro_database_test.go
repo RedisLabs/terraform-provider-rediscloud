@@ -17,6 +17,8 @@ import (
 // Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the database resource.
 func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
 	const resourceName = "rediscloud_subscription_database.example"
@@ -52,7 +54,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "password", password),
 					resource.TestCheckResourceAttr(resourceName, "alert.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "alert.0.name", "dataset-size"),
-					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "40"),
+					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "1"),
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
@@ -156,6 +158,9 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_subscription_database.example"
@@ -179,6 +184,9 @@ func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudProDatabase_timeUtcRequiresValidInterval(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -197,6 +205,9 @@ func TestAccResourceRedisCloudProDatabase_timeUtcRequiresValidInterval(t *testin
 
 // Tests the multi-modules feature in a database resource.
 func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	dbName := "db-multi-modules"
 	const resourceName = "rediscloud_subscription_database.example"
@@ -226,6 +237,9 @@ func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_subscription_database.example"
@@ -362,7 +376,7 @@ resource "rediscloud_subscription_database" "example" {
 
     alert {
         name = "dataset-size"
-        value = 40
+        value = 1
     }
 
     modules = [

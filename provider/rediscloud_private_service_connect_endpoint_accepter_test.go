@@ -15,6 +15,8 @@ import (
 
 func TestAccResourceRedisCloudPrivateServiceConnectEndpointAccepter_Create(t *testing.T) {
 
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+
 	baseName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-pscea"
 
 	const resourceName = "rediscloud_private_service_connect_endpoint_accepter.accepter"
@@ -120,7 +122,7 @@ resource "google_compute_subnetwork" "subnet" {
 }
 
 locals {
-  service_attachment_count = 40
+  service_attachment_count = 1
 }
 
 resource "google_compute_address" "default" {

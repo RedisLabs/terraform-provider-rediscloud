@@ -20,12 +20,16 @@ var activeActiveContractFlag = flag.Bool("activeActiveContract", false,
 var activeActiveMarketplaceFlag = flag.Bool("activeActiveMarketplace", false,
 	"Add this flag '-activeActiveMarketplace' to run tests for marketplace associated accounts")
 
-// Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the subscription resource.
+// Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the subscription resource.
+// Also checks active-active subscription regions.
 func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_active_active_subscription.example"
-	const datasourceName = "data.rediscloud_active_active_subscription.example"
+	const datasourceSubscriptionName = "data.rediscloud_active_active_subscription.example"
+	const datasourceRegionName = "data.rediscloud_active_active_subscription_regions.example"
 
 	var subId int
 
@@ -35,7 +39,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscription, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscription, name, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -119,45 +123,57 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 						return nil
 					},
 
-					// Test the datasource
-					resource.TestCheckResourceAttr(datasourceName, "name", name),
-					resource.TestCheckResourceAttr(datasourceName, "payment_method", "credit-card"),
-					resource.TestCheckResourceAttrSet(datasourceName, "payment_method_id"),
-					resource.TestCheckResourceAttr(datasourceName, "cloud_provider", "AWS"),
-					resource.TestCheckResourceAttr(datasourceName, "number_of_databases", "0"),
-					resource.TestCheckResourceAttr(datasourceName, "status", "active"),
+					// Test the subscription datasource
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "name", name),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "payment_method", "credit-card"),
+					resource.TestCheckResourceAttrSet(datasourceSubscriptionName, "payment_method_id"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "cloud_provider", "AWS"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "number_of_databases", "0"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "status", "active"),
 
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.mode", "manual"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.#", "2"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.mode", "manual"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.#", "2"),
 
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.start_hour", "22"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.duration_in_hours", "8"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.days.#", "2"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.days.0", "Monday"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.0.days.1", "Thursday"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.0.start_hour", "22"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.0.duration_in_hours", "8"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.0.days.#", "2"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.0.days.0", "Monday"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.0.days.1", "Thursday"),
 
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.start_hour", "12"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.duration_in_hours", "6"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.#", "3"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.0", "Friday"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.1", "Saturday"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.1.days.2", "Sunday"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.1.start_hour", "12"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.1.duration_in_hours", "6"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.1.days.#", "3"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.1.days.0", "Friday"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.1.days.1", "Saturday"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.1.days.2", "Sunday"),
 
-					resource.TestCheckResourceAttr(datasourceName, "pricing.#", "2"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.#", "2"),
 
-					resource.TestCheckResourceAttr(datasourceName, "pricing.0.type", "MinimumPrice"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.0.quantity", "1"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.0.quantity_measurement", "subscription"),
-					resource.TestCheckResourceAttrSet(datasourceName, "pricing.0.price_per_unit"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.0.price_currency", "USD"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.0.price_period", "hour"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.0.type", "MinimumPrice"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.0.quantity", "1"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.0.quantity_measurement", "subscription"),
+					resource.TestCheckResourceAttrSet(datasourceSubscriptionName, "pricing.0.price_per_unit"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.0.price_currency", "USD"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.0.price_period", "hour"),
 
-					resource.TestCheckResourceAttr(datasourceName, "pricing.1.type", "MinimumPrice"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.1.quantity", "1"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.1.quantity_measurement", "subscription"),
-					resource.TestCheckResourceAttrSet(datasourceName, "pricing.1.price_per_unit"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.1.price_currency", "USD"),
-					resource.TestCheckResourceAttr(datasourceName, "pricing.1.price_period", "hour"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.1.type", "MinimumPrice"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.1.quantity", "1"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.1.quantity_measurement", "subscription"),
+					resource.TestCheckResourceAttrSet(datasourceSubscriptionName, "pricing.1.price_per_unit"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.1.price_currency", "USD"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "pricing.1.price_period", "hour"),
+
+					// Test the region datasource
+
+					resource.TestCheckResourceAttr(datasourceRegionName, "subscription_name", name),
+					//resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.0.regionId"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.region", "us-east-1"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.networking_deployment_cidr", "192.168.0.0/24"),
+					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.0.vpc_id"),
+					//resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.1.regionId"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.region", "us-east-2"),
+					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.networking_deployment_cidr", "10.0.1.0/24"),
+					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.1.vpc_id"),
 				),
 			},
 			{
@@ -181,8 +197,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
 
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.mode", "automatic"),
-					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.window.#", "0"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.mode", "automatic"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.#", "0"),
 				),
 			},
 			{
@@ -219,6 +235,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayment(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*activeActiveContractFlag {
 		t.Skip("The '-activeActiveContract' parameter wasn't provided in the test command.")
@@ -257,6 +275,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 }
 
 func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePayment(t *testing.T) {
+
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*activeActiveMarketplaceFlag {
 		t.Skip("The '-activeActiveMarketplace' parameter wasn't provided in the test command.")
@@ -329,45 +349,85 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_active_active_subscription" "example" {
-	name = "%s"
-	payment_method_id = data.rediscloud_payment_method.card.id
-	cloud_provider = "AWS"
+  name = "%s"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  cloud_provider = "AWS"
 
-	creation_plan {
-		memory_limit_in_gb = 1
-		modules = ["RedisJSON"]
-		quantity = 1
-		region {
-			region = "us-east-1"
-			networking_deployment_cidr = "192.168.0.0/24"
-			write_operations_per_second = 1000
-			read_operations_per_second = 1000
-		}
-		region {
-			region = "us-east-2"
-			networking_deployment_cidr = "10.0.1.0/24"
-			write_operations_per_second = 1000
-			read_operations_per_second = 1000
-		}
-	}
+  creation_plan {
+    memory_limit_in_gb = 1
+    modules = ["RedisJSON"]
+    quantity = 1
+    region {
+      region = "us-east-1"
+      networking_deployment_cidr = "192.168.0.0/24"
+      write_operations_per_second = 1000
+      read_operations_per_second = 1000
+    }
+    region {
+      region = "us-east-2"
+      networking_deployment_cidr = "10.0.1.0/24"
+      write_operations_per_second = 1000
+      read_operations_per_second = 1000
+    }
+  }
 
-	maintenance_windows {
-		mode = "manual"
-		window {
-				start_hour = 22
-				duration_in_hours = 8
-				days = ["Monday", "Thursday"]
-		}
-		window {
-				start_hour = 12
-				duration_in_hours = 6
-				days = ["Friday", "Saturday", "Sunday"]
-		}
-	}
+  maintenance_windows {
+    mode = "manual"
+    window {
+      start_hour = 22
+      duration_in_hours = 8
+      days = ["Monday", "Thursday"]
+    }
+    window {
+      start_hour = 12
+      duration_in_hours = 6
+      days = ["Friday", "Saturday", "Sunday"]
+    }
+  }
 }
+
+resource "rediscloud_active_active_subscription_database" "example" {
+  subscription_id = rediscloud_active_active_subscription.example.id
+  name = "%s"
+  dataset_size_in_gb = 1
+  global_data_persistence = "aof-every-1-second"
+  global_password = "some-random-pass-2"
+  global_source_ips = ["192.168.0.0/16"]
+  global_alert {
+    name = "dataset-size"
+    value = 40
+  }
+
+  global_modules = ["RedisJSON"]
+
+  override_region {
+    name = "us-east-2"
+    override_global_source_ips = ["192.10.0.0/16"]
+  }
+
+  override_region {
+    name = "us-east-1"
+    override_global_data_persistence = "none"
+    override_global_password = "region-specific-password"
+    override_global_alert {
+      name = "dataset-size"
+      value = 60
+    }
+  }
+
+  tags = {
+    "environment" = "production"
+    "cost_center" = "0700"
+  }
+}
+
 
 data "rediscloud_active_active_subscription" "example" {
 	name = rediscloud_active_active_subscription.example.name
+}
+
+data "rediscloud_active_active_subscription_regions" "example" {
+	subscription_name = rediscloud_active_active_subscription.example.name
 }
 `
 

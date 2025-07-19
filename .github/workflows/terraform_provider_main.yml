@@ -1,0 +1,191 @@
+name: Terraform Provider Checks - main branch
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+env:
+  TERRAFORM_VERSION: "1.2.6"
+  REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_STAGING }}
+  REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_STAGING }}
+  REDISCLOUD_URL: ${{ secrets.REDISCLOUD_URL_STAGING }}
+  AWS_TEST_CLOUD_ACCOUNT_NAME: "${{ secrets.AWS_TEST_CLOUD_ACCOUNT_NAME_STAGING }}"
+  AWS_PEERING_REGION: ${{ secrets.AWS_PEERING_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  AWS_VPC_CIDR: ${{ secrets.AWS_VPC_CIDR }}
+  AWS_VPC_ID: ${{ secrets.AWS_VPC_ID }}
+  AWS_TEST_TGW_ID: ${{ secrets.AWS_TEST_TGW_ID_STAGING }}
+  TF_ACC: true
+  TF_LOG: info
+  AWS_ACCESS_KEY_ID: ${{ secrets.CLOUD_ACCOUNT_KEY }}
+  AWS_ACCESS_SECRET_KEY: ${{ secrets.CLOUD_ACCOUNT_SECRET }}
+  AWS_CONSOLE_USERNAME: ${{ secrets.CLOUD_ACCOUNT_USERNAME }}
+  AWS_CONSOLE_PASSWORD: ${{ secrets.CLOUD_ACCOUNT_PASS }}
+  AWS_SIGNIN_URL: ${{ secrets.CLOUD_ACCOUNT_URL }}
+  GCP_VPC_PROJECT: ${{ secrets.GCP_VPC_PROJECT }}
+  GCP_VPC_ID: ${{ secrets.GCP_VPC_ID }}
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+concurrency:
+  group: <span class="math-inline">\{\{ github\.workflow \}\}\-</span>{{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go_build:
+    name: go build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        continue-on-error: true
+        id: cache-terraform-plugin-dir
+        timeout-minutes: 2
+        with:
+          path: terraform-plugin-dir
+          key: ${{ runner.os }}-terraform-plugin-dir-${{ hashFiles('go.sum') }}-${{ hashFiles('provider/**') }}
+      - if: steps.cache-terraform-plugin-dir.outputs.cache-hit != 'true' || steps.cache-terraform-plugin-dir.outcome == 'failure'
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version-file: go.mod
+      - if: steps.cache-terraform-plugin-dir.outputs.cache-hit != 'true' || steps.cache-terraform-plugin-dir.outcome == 'failure'
+        name: go mod download
+        run: go mod download
+      - if: steps.cache-terraform-plugin-dir.outputs.cache-hit != 'true' || steps.cache-terraform-plugin-dir.outcome == 'failure'
+        name: go build
+        run: go build -o terraform-plugin-dir/registry.terraform.io/RedisLabs/rediscloud/99.99.99/$(go env GOOS)_$(go env GOARCH)/terraform-provider-rediscloud .
+
+  terraform_providers_schema:
+    name: terraform providers schema
+    needs: [go_build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        continue-on-error: true
+        id: cache-terraform-providers-schema
+        timeout-minutes: 2
+        with:
+          path: terraform-providers-schema
+          key: ${{ runner.os }}-terraform-providers-schema-${{ hashFiles('go.sum') }}-${{ hashFiles('provider/**') }}
+      - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        timeout-minutes: 2
+        with:
+          path: terraform-plugin-dir
+          key: ${{ runner.os }}-terraform-plugin-dir-${{ hashFiles('go.sum') }}-${{ hashFiles('provider/**') }}
+      - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+      - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
+        name: terraform init
+        run: |
+          # We need a file to initialize the provider
+          cat <<EOT >> providers.tf
+          terraform {
+            required_providers {
+              rediscloud = {
+                source  = "RedisLabs/rediscloud"
+                version = "99.99.99"
+              }
+            }
+          }
+          EOT
+          echo 'resource "rediscloud_subscription" "example" {}' > example.tf
+          terraform init -plugin-dir terraform-plugin-dir
+      - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
+        name: terraform providers schema
+        run: |
+          mkdir terraform-providers-schema
+          terraform providers schema -json > terraform-providers-schema/schema.json
+
+  go_test_databases:
+    name: go test Databases
+    needs: [go_build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version-file: go.mod
+      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Database_.*"'
+
+  go_test_subscriptions:
+    name: go test Subscriptions
+    needs: [go_test_databases]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version-file: go.mod
+      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Subscription_.*"'
+
+  go_test_subscriptions_tls:
+    name: go test Subscriptions TLS
+    needs: [go_test_subscriptions]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version-file: go.mod
+      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAcc(DataSource|Resource)RedisCloudSubscriptionTls_.*"'
+
+  go_test_essentials_plan:
+    name: go test Essentials Plan
+    needs: [go_test_subscriptions_tls]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version-file: go.mod
+      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAcc(DataSource|Resource)RedisCloudEssentialsPlan_.*"'
+
+  go_test_persistence_modules_regions_acl:
+    name: go test Other
+    needs: [go_test_essentials_plan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version-file: go.mod
+      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAcc(DataSource|Resource)RedisCloud(DataPersistence|DatabaseModules|Regions|Acl).*"'
+
+  go_test_cloud_account:
+    name: go test Cloud Account
+    needs: [go_test_persistence_modules_regions_acl]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version-file: go.mod
+      - run: EXECUTE_TESTS=true make testacc TESTARGS='-test.short -run="TestAcc(DataSource|Resource)RedisCloud(CloudAccount).*"'
+
+  go_test_transit_payment:
+    name: go test Transit Gateway & Payment
+    needs: [go_test_cloud_account]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version-file: go.mod
+      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAcc(DataSource|Resource)RedisCloud(TransitGatewayAttachment|PaymentMethod).*"'
+
+  tfproviderlint:
+    name: tfproviderlint
+    needs: [go_build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version-file: go.mod
+      - run: make tfproviderlint
