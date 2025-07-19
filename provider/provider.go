@@ -73,6 +73,7 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_cloud_account":           resourceRedisCloudCloudAccount(),
 				"rediscloud_essentials_subscription": resourceRedisCloudEssentialsSubscription(),
 				"rediscloud_essentials_database":     resourceRedisCloudEssentialsDatabase(),
+				"rediscloud_dedicated_subscription":  resourceRedisCloudDedicatedSubscription(),
 				// Note the difference in public resource name and the file/method name.
 				// <default> == flexible == pro
 				"rediscloud_subscription":                              resourceRedisCloudProSubscription(),
