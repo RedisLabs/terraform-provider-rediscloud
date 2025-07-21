@@ -545,6 +545,10 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 
 	if cmekEnabled == true {
 		createSubscriptionRequest.PersistentStorageEncryptionType = redis.String(CMEK_ENABLED_STRING)
+
+		// because of CMEK flow requires a sub to be in a non-active state first.
+		// when it first creates the subscription, no creation plan is required
+		createSubscriptionRequest.Databases = nil
 	}
 
 	subId, err := api.client.Subscription.Create(ctx, createSubscriptionRequest)
