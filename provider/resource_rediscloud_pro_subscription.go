@@ -616,8 +616,6 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 		createSubscriptionRequest.PersistentStorageEncryptionType = redis.String(CMK_ENABLED_STRING)
 	}
 
-	log.Printf("createSubscriptionRequest: %v", createSubscriptionRequest)
-
 	subId, err := api.client.Subscription.Create(ctx, createSubscriptionRequest)
 	if err != nil {
 		return append(diags, diag.FromErr(err)...)
@@ -625,7 +623,7 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 
 	d.SetId(strconv.Itoa(subId))
 
-	// If we are in a CMK flow then we need to verify a specific state.
+	// If in a CMK flow, verify the pending state
 	if isCmk == true {
 		err = waitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api)
 		if err != nil {
@@ -641,7 +639,7 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 		return append(diags, diag.FromErr(err)...)
 	}
 
-	// There is a timing issue where the subscription is marked as active before the creation-plan databases are listed .
+	// There is a timing issue where the subscription is marked as active before the creation-plan databases are listed.
 	// This additional wait ensures that the databases will be listed before calling api.client.Database.List()
 	time.Sleep(30 * time.Second) //lintignore:R018
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
@@ -779,8 +777,6 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 		if diags != nil {
 			return diags
 		}
-
-		return resourceRedisCloudProSubscriptionRead(ctx, d, meta)
 	}
 
 	if d.HasChange("allowlist") {
@@ -880,6 +876,10 @@ func resourceRedisCloudProSubscriptionUpdateCmk(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return diag.FromErr(err)
+	}
+
 	return nil
 }
 
@@ -913,11 +913,12 @@ func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.Reso
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
-	if cmkEnabled, ok := d.GetOk("customer_managed_key_enabled"); ok && cmkEnabled.(bool) == true {
-		if err := waitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api); err != nil {
-			return diag.FromErr(err)
-		}
-	} else {
+	subscription, err := api.client.Subscription.Get(ctx, subId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if *subscription.Status != subscriptions.SubscriptionStatusEncryptionKeyPending {
 		// Wait for the subscription to be active before deleting it.
 		if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 			return diag.FromErr(err)
@@ -1185,7 +1186,7 @@ func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) 
 func waitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, api *apiClient) error {
 	wait := &retry.StateChangeConf{
 		Pending:      []string{subscriptions.SubscriptionStatusPending},
-		Target:       []string{subscriptions.SubscriptionStatusEncryptionKeyPending},
+		Target:       []string{subscriptions.SubscriptionStatusEncryptionKeyPending, subscriptions.SubscriptionStatusActive},
 		Timeout:      safetyTimeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
