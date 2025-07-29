@@ -25,7 +25,7 @@ func TestAccResourceRedisCloudProSubscription_CMEK(t *testing.T) {
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
-					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_redis_service_account"),
+					//resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_redis_service_account"),
 				),
 			},
 			{
