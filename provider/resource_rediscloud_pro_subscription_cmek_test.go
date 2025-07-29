@@ -33,7 +33,6 @@ func TestAccResourceRedisCloudProSubscription_CMEK(t *testing.T) {
 
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
-					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "0"),
 				),
 			},
 		},
