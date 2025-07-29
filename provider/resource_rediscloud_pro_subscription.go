@@ -69,10 +69,10 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 				}
 			}
 
-			err := cloudRegionsForceNewDiff(ctx, diff, meta)
-			if err != nil {
-				return err
-			}
+			//err := cloudRegionsForceNewDiff(ctx, diff, meta)
+			//if err != nil {
+			//	return err
+			//}
 
 			return nil
 		},
@@ -663,7 +663,7 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 
-	cmkEnabled := d.Get("customer_managed_key_enabled")
+	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
 
 	subscription, err := api.client.Subscription.Get(ctx, subId)
 	if err != nil {
@@ -730,12 +730,10 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 	}
 
 	if cmkEnabled == true {
-		if err := d.Set("customer_managed_key_redis_service_account", redis.StringValue(subscription.CustomerManagedKeyAccessDetails.RedisServiceAccount)); err != nil {
+		if err := d.Set("customer_managed_key_redis_service_account", subscription.CustomerManagedKeyAccessDetails.RedisServiceAccount); err != nil {
 			return diag.FromErr(err)
 		}
 	}
-
-	log.Printf("[DEBUG] Current state after read:\n%s", getResourceStateString(d))
 
 	return diags
 }
