@@ -22,7 +22,7 @@ func TestAccResourceRedisCloudProSubscription_CMEK(t *testing.T) {
 		ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{
 			{
-				Config:             fmt.Sprintf(testAccResourceRedisCloudProSubscriptionCmekEnabledCreate, name),
+				Config:             fmt.Sprintf(step1Config, name),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -30,7 +30,7 @@ func TestAccResourceRedisCloudProSubscription_CMEK(t *testing.T) {
 				),
 			},
 			{
-				Config:             fmt.Sprintf(testAccResourceRedisCloudProSubscriptionCmekEnabledUpdate, name, gcpCmkResourceName),
+				Config:             fmt.Sprintf(step2Config, name, gcpCmkResourceName),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -40,7 +40,7 @@ func TestAccResourceRedisCloudProSubscription_CMEK(t *testing.T) {
 	})
 }
 
-const testAccResourceRedisCloudProSubscriptionCmekEnabledCreate = `
+const step1Config = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
@@ -69,9 +69,13 @@ resource "rediscloud_subscription" "example" {
     throughput_measurement_value = 10000
   }
 }
+
+output "rediscloud_service_account" {
+  value = rediscloud_subscription.example.customer_managed_key_redis_service_account
+}
 `
 
-const testAccResourceRedisCloudProSubscriptionCmekEnabledUpdate = `
+const step2Config = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }

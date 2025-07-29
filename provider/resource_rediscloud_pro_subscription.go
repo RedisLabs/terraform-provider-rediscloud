@@ -631,7 +631,7 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 		if err != nil {
 			return append(diags, diag.FromErr(err)...)
 		}
-		return diags
+		return resourceRedisCloudProSubscriptionRead(ctx, d, meta)
 	}
 
 	// Confirm Subscription Active status
