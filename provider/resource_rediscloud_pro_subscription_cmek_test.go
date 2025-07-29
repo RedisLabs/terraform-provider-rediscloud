@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"os"
 	"testing"
 )
 
@@ -14,9 +14,7 @@ func TestAccResourceRedisCloudProSubscription_CMEK(t *testing.T) {
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_subscription.example"
-	//gcpProjectId := os.Getenv("GCP_PROJECT_ID")
-	//gcpCmkId := os.Getenv("GCP_CMEK_ID")
-	const gcpCmkResourceName = "projects/macro-outpost-467311-v1/locations/global/keyRings/redis-test/cryptoKeys/redis-test-cmk/cryptoKeyVersions/"
+	gcpCmkResourceName := os.Getenv("GCP_CMK_RESOURCE_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
@@ -33,21 +31,10 @@ func TestAccResourceRedisCloudProSubscription_CMEK(t *testing.T) {
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionCmekEnabledUpdate, name, gcpCmkResourceName),
 
-				Check: func(s *terraform.State) error {
-					// Get the resource
-					rs, ok := s.RootModule().Resources[resourceName]
-					if !ok {
-						return fmt.Errorf("resource not found in state")
-					}
-
-					// Log all attributes
-					t.Logf("Resource Attributes:")
-					for k, v := range rs.Primary.Attributes {
-						t.Logf("%s = %s", k, v)
-					}
-
-					return nil
-				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "0"),
+				),
 			},
 		},
 	})
@@ -115,7 +102,6 @@ resource "rediscloud_subscription" "example" {
 
   customer_managed_key {
     resource_name = "%s"
-    region        = "europe-west2"
   }
 }
 `
