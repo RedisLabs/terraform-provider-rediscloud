@@ -69,10 +69,10 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 				}
 			}
 
-			//err := cloudRegionsForceNewDiff(ctx, diff, meta)
-			//if err != nil {
-			//	return err
-			//}
+			err := cloudRegionsForceNewDiff(ctx, diff, meta)
+			if err != nil {
+				return err
+			}
 
 			return nil
 		},
@@ -186,7 +186,7 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 							Description: "Cloud networking details, per region (single region or multiple regions for Active-Active cluster only)",
 							Type:        schema.TypeSet,
 							Required:    true,
-							ForceNew:    false, // custom force new logic
+							ForceNew:    false, // custom force new logic enforced elsewhere
 							MinItems:    1,
 							Set: func(v interface{}) int {
 								var buf bytes.Buffer
@@ -205,12 +205,10 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 										Description: "Deployment region as defined by cloud provider",
 										Type:        schema.TypeString,
 										Required:    true,
-										ForceNew:    true,
 									},
 									"multiple_availability_zones": {
 										Description: "Support deployment on multiple availability zones within the selected region",
 										Type:        schema.TypeBool,
-										ForceNew:    true,
 										Optional:    true,
 										Default:     false,
 									},
@@ -218,25 +216,22 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 										Description: "List of availability zones used",
 										Type:        schema.TypeList,
 										Optional:    true,
-										ForceNew:    true,
 										Computed:    true,
 										Elem: &schema.Schema{
 											Type: schema.TypeString,
 										},
 									},
 									"networking_deployment_cidr": {
-										Description: "Deployment CIDR mask",
-										Type:        schema.TypeString,
-										//ForceNew:         true,
+										Description:      "Deployment CIDR mask",
+										Type:             schema.TypeString,
 										Required:         true,
 										ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 									},
 									"networking_vpc_id": {
 										Description: "Either an existing VPC Id (already exists in the specific region) or create a new VPC (if no VPC is specified)",
 										Type:        schema.TypeString,
-										//ForceNew:    true,
-										Optional: true,
-										Default:  "",
+										Optional:    true,
+										Default:     "",
 									},
 									"networks": {
 										Description: "List of networks used",
@@ -520,30 +515,55 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 	}
 }
 
-// customised force new logic for CMK
-// region changes is not available whilst the subscription is in a pending state
+// cloudRegionsForceNewDiff determines if changes to cloud region should force
+// creation of a new resource based on whether it's a CMK pending state.
 func cloudRegionsForceNewDiff(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-	// Add custom force new logic for region changes based on CMK
-	// Get the current subscription status
-	api := meta.(*apiClient)
-	subId, err := strconv.Atoi(diff.Id())
+	if diff.Id() == "" {
+		return handleNewResourceRegionChange(diff)
+	}
+	return handleExistingResourceRegionChange(ctx, diff, meta)
+}
+
+func handleNewResourceRegionChange(diff *schema.ResourceDiff) error {
+	oldRegion, newRegion := diff.GetChange("cloud_provider.0.region")
+	if shouldForceNewRegion(oldRegion, newRegion) {
+		diff.ForceNew("cloud_provider.0.region")
+	}
+	return nil
+}
+
+func handleExistingResourceRegionChange(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+	subscription, err := getSubscription(ctx, diff, meta)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get subscription: %w", err)
 	}
 
-	subscription, err := api.client.Subscription.Get(ctx, subId)
-	if err != nil {
-		return err
-	}
-
-	// Only check for force new if the subscription is not in CMK pending state
+	// Only check for force new if not in an encryption key pending state
 	if redis.StringValue(subscription.Status) != subscriptions.SubscriptionStatusEncryptionKeyPending {
-		o, n := diff.GetChange("cloud_provider.0.region")
-		if o != nil && n != nil && !reflect.DeepEqual(o, n) {
+		oldRegion, newRegion := diff.GetChange("cloud_provider.0.region")
+		oldSet := oldRegion.(*schema.Set)
+		newSet := newRegion.(*schema.Set)
+
+		// Check if any differences between old and new region sets
+		if !oldSet.Equal(newSet) {
+			// Force new for the entire region configuration
 			diff.ForceNew("cloud_provider.0.region")
 		}
 	}
 	return nil
+}
+
+func shouldForceNewRegion(oldRegion, newRegion interface{}) bool {
+	return oldRegion != nil && newRegion != nil && !reflect.DeepEqual(oldRegion, newRegion)
+}
+
+func getSubscription(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) (*subscriptions.Subscription, error) {
+	api := meta.(*apiClient)
+	subscriptionID, err := strconv.Atoi(diff.Id())
+	if err != nil {
+		return nil, fmt.Errorf("invalid subscription ID: %w", err)
+	}
+	return api.client.Subscription.Get(ctx, subscriptionID)
 }
 
 func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
