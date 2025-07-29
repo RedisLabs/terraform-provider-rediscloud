@@ -495,7 +495,6 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 				Description: "CMK resources used to encrypt the databases in this subscription. Ignored if `customer_managed_key_enabled` set to false. Supply after the database has been put into database pending state. See documentation for CMK flow.",
 				Type:        schema.TypeList,
 				Optional:    true,
-				Default:     nil,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"resource_name": {
@@ -749,12 +748,11 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 		}
 	}
 
-	if cmkEnabled == true {
+	if subscription.CustomerManagedKeyAccessDetails != nil && subscription.CustomerManagedKeyAccessDetails.RedisServiceAccount != nil {
 		if err := d.Set("customer_managed_key_redis_service_account", subscription.CustomerManagedKeyAccessDetails.RedisServiceAccount); err != nil {
 			return diag.FromErr(err)
 		}
 	}
-
 	return diags
 }
 
@@ -859,16 +857,18 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 }
 
 func resourceRedisCloudProSubscriptionUpdateCmk(ctx context.Context, d *schema.ResourceData, api *apiClient, subId int) diag.Diagnostics {
-	cmkResourcesRaw, ok := d.Get("customer_managed_key").([]interface{})
-	if !ok {
-		return diag.Errorf("invalid type for customer_managed_key")
-	}
 
-	if len(cmkResourcesRaw) == 0 {
+	cmkResourcesRaw, exists := d.GetOk("customer_managed_key")
+	if !exists {
 		return diag.Errorf("customer_managed_key must be set when subscription is in encryption key pending state")
 	}
 
-	cmks := buildCMKs(cmkResourcesRaw)
+	cmkList := cmkResourcesRaw.([]interface{})
+	if len(cmkList) == 0 || cmkList[0] == nil {
+		return diag.Errorf("customer_managed_key cannot be empty or null")
+	}
+
+	cmks := buildCMKs(cmkList)
 	deletionGracePeriod := d.Get("customer_managed_key_deletion_grace_period").(string)
 
 	updateCmkRequest := subscriptions.UpdateSubscriptionCMKs{
