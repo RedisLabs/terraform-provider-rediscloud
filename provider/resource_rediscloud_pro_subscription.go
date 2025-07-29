@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"reflect"
 	"regexp"
 	"strconv"
 	"time"
@@ -66,6 +67,11 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 						return fmt.Errorf(`"query_performance_factor" requires the "modules" list to contain "RediSearch"`)
 					}
 				}
+			}
+
+			err := cloudRegionsForceNewDiff(ctx, diff, meta)
+			if err != nil {
+				return err
 			}
 
 			return nil
@@ -155,24 +161,24 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 				Description: "A cloud provider object",
 				Type:        schema.TypeList,
 				Required:    true,
-				//ForceNew:    true, // TODO: change this back after debugging
-				MaxItems: 1,
-				MinItems: 1,
+				ForceNew:    true,
+				MaxItems:    1,
+				MinItems:    1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"provider": {
-							Description: "The cloud provider to use with the subscription, (either `AWS` or `GCP`)",
-							Type:        schema.TypeString,
-							Optional:    true,
-							//ForceNew:         true,
+							Description:      "The cloud provider to use with the subscription, (either `AWS` or `GCP`)",
+							Type:             schema.TypeString,
+							Optional:         true,
+							ForceNew:         true,
 							Default:          "AWS",
 							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(cloud_accounts.ProviderValues(), false)),
 						},
 						"cloud_account_id": {
-							Description: "Cloud account identifier. Default: Redis Labs internal cloud account (using Cloud Account Id = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created only with Redis Labs internal cloud account",
-							Type:        schema.TypeString,
-							Optional:    true,
-							//ForceNew:         true,
+							Description:      "Cloud account identifier. Default: Redis Labs internal cloud account (using Cloud Account Id = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created only with Redis Labs internal cloud account",
+							Type:             schema.TypeString,
+							Optional:         true,
+							ForceNew:         true,
 							ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 							Default:          "1",
 						},
@@ -180,8 +186,8 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 							Description: "Cloud networking details, per region (single region or multiple regions for Active-Active cluster only)",
 							Type:        schema.TypeSet,
 							Required:    true,
-							//ForceNew:    true,
-							MinItems: 1,
+							ForceNew:    false, // custom force new logic
+							MinItems:    1,
 							Set: func(v interface{}) int {
 								var buf bytes.Buffer
 								m := v.(map[string]interface{})
@@ -199,21 +205,21 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 										Description: "Deployment region as defined by cloud provider",
 										Type:        schema.TypeString,
 										Required:    true,
-										//ForceNew:    true, // TODO: change this back after debugging
+										ForceNew:    true,
 									},
 									"multiple_availability_zones": {
 										Description: "Support deployment on multiple availability zones within the selected region",
 										Type:        schema.TypeBool,
-										//ForceNew:    true,
-										Optional: true,
-										Default:  false,
+										ForceNew:    true,
+										Optional:    true,
+										Default:     false,
 									},
 									"preferred_availability_zones": {
 										Description: "List of availability zones used",
 										Type:        schema.TypeList,
 										Optional:    true,
-										//ForceNew:    true,
-										Computed: true,
+										ForceNew:    true,
+										Computed:    true,
 										Elem: &schema.Schema{
 											Type: schema.TypeString,
 										},
@@ -505,8 +511,39 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 					},
 				},
 			},
+			"customer_managed_key_redis_service_account": {
+				Description: "The principal of the Redis service account that the subscription is created in. This is used by the user to give access to their customer managed key",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 		},
 	}
+}
+
+// customised force new logic for CMK
+// region changes is not available whilst the subscription is in a pending state
+func cloudRegionsForceNewDiff(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+	// Add custom force new logic for region changes based on CMK
+	// Get the current subscription status
+	api := meta.(*apiClient)
+	subId, err := strconv.Atoi(diff.Id())
+	if err != nil {
+		return err
+	}
+
+	subscription, err := api.client.Subscription.Get(ctx, subId)
+	if err != nil {
+		return err
+	}
+
+	// Only check for force new if the subscription is not in CMK pending state
+	if redis.StringValue(subscription.Status) != subscriptions.SubscriptionStatusEncryptionKeyPending {
+		o, n := diff.GetChange("cloud_provider.0.region")
+		if o != nil && n != nil && !reflect.DeepEqual(o, n) {
+			diff.ForceNew("cloud_provider.0.region")
+		}
+	}
+	return nil
 }
 
 func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -688,6 +725,12 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 			return diag.FromErr(err)
 		}
 		if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if cmkEnabled == true {
+		if err := d.Set("customer_managed_key_redis_service_account", redis.StringValue(subscription.CustomerManagedKeyAccessDetails.RedisServiceAccount)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -1283,9 +1326,9 @@ func flattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource b
 			}
 
 			if isResource {
-				regionMapString["networking_deployment_cidr"] = currentRegion.Networking[0].DeploymentCIDR
-
-				if redis.BoolValue(currentRegion.MultipleAvailabilityZones) {
+				if len(currentRegion.Networking) > 0 && !redis.BoolValue(currentRegion.MultipleAvailabilityZones) {
+					regionMapString["networking_deployment_cidr"] = currentRegion.Networking[0].DeploymentCIDR
+				} else {
 					regionMapString["networking_deployment_cidr"] = ""
 				}
 			}
