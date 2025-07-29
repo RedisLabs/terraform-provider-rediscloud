@@ -482,15 +482,27 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 				Description: "Whether to enable CMK (customer managed key) for the subscription. If this is true, then the subscription will be put in a pending state until you supply the CMEK. See documentation for further details on this process. Do not supply a creation plan if this set as true. Defaults to false.",
 				Type:        schema.TypeBool,
 				Optional:    true,
-				ForceNew:    true,
 				Default:     false,
 			},
-			"customer_managed_key_id": {
-				Description: "ID of the CMK (customer managed key) used to encrypt the databases in this subscription. Ignored if `customer_managed_key_enabled` set to false. Supply after the database has been put into database pending state. See documentation for CMK flow.",
-				Type:        schema.TypeString,
+			"customer_managed_key": {
+				Description: "CMK resources used to encrypt the databases in this subscription. Ignored if `customer_managed_key_enabled` set to false. Supply after the database has been put into database pending state. See documentation for CMK flow.",
+				Type:        schema.TypeList,
 				Optional:    true,
-				ForceNew:    true,
 				Default:     nil,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"resource_name": {
+							Description: "Resource name of the customer managed key as defined by the cloud provider.",
+							Type:        schema.TypeString,
+							Required:    true,
+						},
+						"region": {
+							Description: "Name of region to for the customer managed key as defined by the cloud provider.",
+							Type:        schema.TypeString,
+							Optional:    true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -613,6 +625,8 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 
+	cmkEnabled := d.Get("customer_managed_key_enabled")
+
 	subscription, err := api.client.Subscription.Get(ctx, subId)
 	if err != nil {
 		if _, ok := err.(*subscriptions.NotFound); ok {
@@ -659,21 +673,25 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 		}
 	}
 
-	m, err := api.client.Maintenance.Get(ctx, subId)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("maintenance_windows", flattenMaintenance(m)); err != nil {
-		return diag.FromErr(err)
+	if cmkEnabled == false {
+		m, err := api.client.Maintenance.Get(ctx, subId)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("maintenance_windows", flattenMaintenance(m)); err != nil {
+			return diag.FromErr(err)
+		}
+
+		pricingList, err := api.client.Pricing.List(ctx, subId)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
-	pricingList, err := api.client.Pricing.List(ctx, subId)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
-		return diag.FromErr(err)
-	}
+	log.Printf("[DEBUG] Current state after read:\n%s", getResourceStateString(d))
 
 	return diags
 }
@@ -688,6 +706,23 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
+
+	subscription, err := api.client.Subscription.Get(ctx, subId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	// checks if we are in CMK flow
+	if *subscription.Status == subscriptions.SubscriptionStatusEncryptionKeyPending {
+		cmk_resources := d.Get("customer_managed_keys").(*schema.Set).List()
+		if len(cmk_resources) == 0 {
+			return diag.Errorf("customer_managed_keys must be set when subscription is in encryption key pending state")
+		}
+
+		ks := subscriptions.UpdateSubscriptionCMKs{}
+
+		err = api.client.Subscription.UpdateCMKs(ctx, subId, ks)
+	}
 
 	if d.HasChange("allowlist") {
 		cidrs := setToStringSlice(d.Get("allowlist.0.cidrs").(*schema.Set))
@@ -762,9 +797,33 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 	return resourceRedisCloudProSubscriptionRead(ctx, d, meta)
 }
 
+func getResourceStateString(d *schema.ResourceData) string {
+	var stateStr string
+
+	// Add basic resource information
+	stateStr += fmt.Sprintf("Resource ID: %s\n", d.Id())
+
+	// Get all attributes
+	for k, v := range d.State().Attributes {
+		stateStr += fmt.Sprintf("%-40s = %v\n", k, v)
+	}
+
+	// Add any known changes
+	stateStr += "\nChanges detected:\n"
+	for _, k := range d.State().Attributes {
+		if d.HasChange(k) {
+			old, new := d.GetChange(k)
+			stateStr += fmt.Sprintf("%-40s: %v -> %v\n", k, old, new)
+		}
+	}
+
+	return stateStr
+}
+
 func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*apiClient)
+	log.Printf("[DEBUG] Current state before deletion:\n%s", getResourceStateString(d))
 
 	var diags diag.Diagnostics
 
@@ -776,7 +835,7 @@ func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.Reso
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
-	if cmkEnabled, ok := d.GetOk("customer_managed_key"); ok && cmkEnabled.(bool) == true {
+	if cmkEnabled, ok := d.GetOk("customer_managed_key_enabled"); ok && cmkEnabled.(bool) == true {
 		if err := waitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api); err != nil {
 			return diag.FromErr(err)
 		}
