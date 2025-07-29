@@ -30,8 +30,8 @@ func TestAccResourceRedisCloudProSubscription_CMEK(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionCmekEnabledUpdate, name, gcpCmkResourceName),
-
+				Config:             fmt.Sprintf(testAccResourceRedisCloudProSubscriptionCmekEnabledUpdate, name, gcpCmkResourceName),
+				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 				),
