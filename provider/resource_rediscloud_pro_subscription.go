@@ -155,7 +155,7 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 				Description: "A cloud provider object",
 				Type:        schema.TypeList,
 				Required:    true,
-				//ForceNew:    true,
+				//ForceNew:    true, // TODO: change this back after debugging
 				MaxItems: 1,
 				MinItems: 1,
 				Elem: &schema.Resource{
@@ -199,7 +199,7 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 										Description: "Deployment region as defined by cloud provider",
 										Type:        schema.TypeString,
 										Required:    true,
-										//ForceNew:    true,
+										//ForceNew:    true, // TODO: change this back after debugging
 									},
 									"multiple_availability_zones": {
 										Description: "Support deployment on multiple availability zones within the selected region",
@@ -484,6 +484,12 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 				Optional:    true,
 				Default:     false,
 			},
+			"customer_managed_key_deletion_grace_period": {
+				Description: "The grace period for deleting the subscription. If not set, will default to immediate deletion grace period.",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "immediate",
+			},
 			"customer_managed_key": {
 				Description: "CMK resources used to encrypt the databases in this subscription. Ignored if `customer_managed_key_enabled` set to false. Supply after the database has been put into database pending state. See documentation for CMK flow.",
 				Type:        schema.TypeList,
@@ -495,11 +501,6 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 							Description: "Resource name of the customer managed key as defined by the cloud provider.",
 							Type:        schema.TypeString,
 							Required:    true,
-						},
-						"region": {
-							Description: "Name of region to for the customer managed key as defined by the cloud provider.",
-							Type:        schema.TypeString,
-							Optional:    true,
 						},
 					},
 				},
@@ -712,16 +713,15 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 		return diag.FromErr(err)
 	}
 
-	// checks if we are in CMK flow
+	// CMK flow
 	if *subscription.Status == subscriptions.SubscriptionStatusEncryptionKeyPending {
-		cmk_resources := d.Get("customer_managed_keys").(*schema.Set).List()
-		if len(cmk_resources) == 0 {
-			return diag.Errorf("customer_managed_keys must be set when subscription is in encryption key pending state")
+		diags := resourceRedisCloudProSubscriptionUpdateCmk(ctx, d, api, subId)
+
+		if diags != nil {
+			return diags
 		}
 
-		ks := subscriptions.UpdateSubscriptionCMKs{}
-
-		err = api.client.Subscription.UpdateCMKs(ctx, subId, ks)
+		return resourceRedisCloudProSubscriptionRead(ctx, d, meta)
 	}
 
 	if d.HasChange("allowlist") {
@@ -795,6 +795,46 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 	}
 
 	return resourceRedisCloudProSubscriptionRead(ctx, d, meta)
+}
+
+func resourceRedisCloudProSubscriptionUpdateCmk(ctx context.Context, d *schema.ResourceData, api *apiClient, subId int) diag.Diagnostics {
+	cmkResourcesRaw, ok := d.Get("customer_managed_key").([]interface{})
+	if !ok {
+		return diag.Errorf("invalid type for customer_managed_key")
+	}
+
+	if len(cmkResourcesRaw) == 0 {
+		return diag.Errorf("customer_managed_key must be set when subscription is in encryption key pending state")
+	}
+
+	cmks := buildCMKs(cmkResourcesRaw)
+	deletionGracePeriod := d.Get("customer_managed_key_deletion_grace_period").(string)
+
+	updateCmkRequest := subscriptions.UpdateSubscriptionCMKs{
+		DeletionGracePeriod: redis.String(deletionGracePeriod),
+		CustomerManagedKeys: &cmks,
+	}
+
+	if err := api.client.Subscription.UpdateCMKs(ctx, subId, updateCmkRequest); err != nil {
+		return diag.FromErr(err)
+	}
+
+	return nil
+}
+
+func buildCMKs(cmkResources []interface{}) []subscriptions.CustomerManagedKey {
+	cmks := make([]subscriptions.CustomerManagedKey, 0, len(cmkResources))
+	for _, resource := range cmkResources {
+		cmkMap := resource.(map[string]interface{})
+
+		cmk := subscriptions.CustomerManagedKey{
+			ResourceName: redis.String(cmkMap["resource_name"].(string)),
+		}
+
+		cmks = append(cmks, cmk)
+	}
+
+	return cmks
 }
 
 func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
