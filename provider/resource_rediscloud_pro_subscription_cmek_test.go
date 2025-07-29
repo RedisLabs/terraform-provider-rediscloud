@@ -11,6 +11,7 @@ import (
 func TestAccResourceRedisCloudProSubscription_CMEK(t *testing.T) {
 
 	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "GCP_CMK_RESOURCE_NAME")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_subscription.example"
