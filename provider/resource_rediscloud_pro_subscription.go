@@ -610,9 +610,9 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 		createSubscriptionRequest.RedisVersion = redis.String(redisVersion)
 	}
 
-	isCmk := d.Get("customer_managed_key_enabled").(bool)
+	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
 
-	if isCmk == true {
+	if cmkEnabled {
 		createSubscriptionRequest.PersistentStorageEncryptionType = redis.String(CMK_ENABLED_STRING)
 	}
 
@@ -624,7 +624,7 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 	d.SetId(strconv.Itoa(subId))
 
 	// If in a CMK flow, verify the pending state
-	if isCmk == true {
+	if cmkEnabled {
 		err = waitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api)
 		if err != nil {
 			return append(diags, diag.FromErr(err)...)
@@ -680,8 +680,6 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 
-	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
-
 	subscription, err := api.client.Subscription.Get(ctx, subId)
 	if err != nil {
 		if _, ok := err.(*subscriptions.NotFound); ok {
@@ -728,7 +726,8 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 		}
 	}
 
-	if cmkEnabled == false {
+	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
+	if !cmkEnabled {
 		m, err := api.client.Maintenance.Get(ctx, subId)
 		if err != nil {
 			return diag.FromErr(err)
