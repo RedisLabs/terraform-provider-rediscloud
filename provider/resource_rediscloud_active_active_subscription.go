@@ -485,6 +485,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 	}
 
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
+
 	if !cmkEnabled {
 		m, err := api.client.Maintenance.Get(ctx, subId)
 		if err != nil {
@@ -502,6 +503,13 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 			return diag.FromErr(err)
 		}
 	}
+
+	if subscription.CustomerManagedKeyAccessDetails != nil && subscription.CustomerManagedKeyAccessDetails.RedisServiceAccount != nil {
+		if err := d.Set("customer_managed_key_redis_service_account", subscription.CustomerManagedKeyAccessDetails.RedisServiceAccount); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	return diags
 }
 
@@ -590,18 +598,25 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
-	// Wait for the subscription to be active before deleting it.
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	subscription, err := api.client.Subscription.Get(ctx, subId)
+	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
-	// This additional wait ensures that the databases are deleted before the subscription is deleted.
-	time.Sleep(30 * time.Second) //lintignore:R018
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return diag.FromErr(err)
+	if *subscription.Status != subscriptions.SubscriptionStatusEncryptionKeyPending {
+		// Wait for the subscription to be active before deleting it.
+		if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+			return diag.FromErr(err)
+		}
+
+		// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
+		// This additional wait ensures that the databases are deleted before the subscription is deleted.
+		time.Sleep(30 * time.Second) //lintignore:R018
+		if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+			return diag.FromErr(err)
+		}
+		// Delete subscription once all databases are deleted
 	}
-	// Delete subscription once all databases are deleted
 	err = api.client.Subscription.Delete(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
