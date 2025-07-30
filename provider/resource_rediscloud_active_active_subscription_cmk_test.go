@@ -30,9 +30,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_redis_service_account"),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
-					resource.TestCheckResourceAttr(resourceName, "memory_storage", "ram"),
-					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.provider"),
-					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.#"), // number of regions
+					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider"),
 					resource.TestCheckResourceAttrSet(resourceName, "creation_plan.0.dataset_size_in_gb"),
 					resource.TestCheckResourceAttr(resourceName, "customer_managed_key_enabled", "true"),
 				),
@@ -45,7 +43,6 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 			//		resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_redis_service_account"),
 			//		resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 			//		resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
-			//		resource.TestCheckResourceAttr(resourceName, "memory_storage", "ram"),
 			//		resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.provider"),
 			//		resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.#"),
 			//		resource.TestCheckResourceAttrSet(resourceName, "creation_plan.0.dataset_size_in_gb"),

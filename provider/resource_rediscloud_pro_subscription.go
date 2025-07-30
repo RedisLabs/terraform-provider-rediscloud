@@ -514,8 +514,8 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 	}
 }
 
-// cloudRegionsForceNewDiff determines if changes to cloud region should force
-// creation of a new resource based on whether it's a CMK pending state.
+// cloudRegionsForceNewDiff determines if changes to a cloud region should force
+// creation of a new resource based on whether it is a CMK pending state.
 func cloudRegionsForceNewDiff(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
 	if diff.Id() == "" {
 		return handleNewResourceRegionChange(diff)
@@ -900,7 +900,6 @@ func buildCMKs(cmkResources []interface{}) []subscriptions.CustomerManagedKey {
 func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*apiClient)
-	log.Printf("[DEBUG] Current state before deletion:\n%s", getResourceStateString(d))
 
 	var diags diag.Diagnostics
 
