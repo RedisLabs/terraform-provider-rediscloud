@@ -287,6 +287,37 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 					},
 				},
 			},
+			"customer_managed_key_enabled": {
+				Description: "Whether to enable CMK (customer managed key) for the subscription. If this is true, then the subscription will be put in a pending state until you supply the CMEK. See documentation for further details on this process. Do not supply a creation plan if this set as true. Defaults to false.",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+			},
+			"customer_managed_key_deletion_grace_period": {
+				Description: "The grace period for deleting the subscription. If not set, will default to immediate deletion grace period.",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "immediate",
+			},
+			"customer_managed_key": {
+				Description: "CMK resources used to encrypt the databases in this subscription. Ignored if `customer_managed_key_enabled` set to false. Supply after the database has been put into database pending state. See documentation for CMK flow.",
+				Type:        schema.TypeList,
+				Optional:    true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"resource_name": {
+							Description: "Resource name of the customer managed key as defined by the cloud provider.",
+							Type:        schema.TypeString,
+							Required:    true,
+						},
+					},
+				},
+			},
+			"customer_managed_key_redis_service_account": {
+				Description: "The principal of the Redis service account that the subscription is created in. This is used by the user to give access to their customer managed key",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 		},
 	}
 }
@@ -319,15 +350,13 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 
 	dbs = buildSubscriptionCreatePlanAADatabases(planMap)
 
-	createSubscriptionRequest := subscriptions.CreateSubscription{
-		DeploymentType:  redis.String("active-active"),
-		Name:            redis.String(name),
-		DryRun:          redis.Bool(false),
-		PaymentMethodID: paymentMethodID,
-		PaymentMethod:   redis.String(paymentMethod),
-		CloudProviders:  providers,
-		Databases:       dbs,
-	}
+	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
+	createSubscriptionRequest := newCreateSubscription(name,
+		paymentMethodID,
+		paymentMethod,
+		providers,
+		dbs,
+		cmkEnabled)
 
 	redisVersion := d.Get("redis_version").(string)
 	if d.Get("redis_version").(string) != "" {
@@ -341,13 +370,22 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 
 	d.SetId(strconv.Itoa(subId))
 
+	// If in a CMK flow, verify the pending state
+	if cmkEnabled {
+		err = waitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		return resourceRedisCloudActiveActiveSubscriptionRead(ctx, d, meta)
+	}
+
 	// Confirm Subscription Active status
 	err = waitForSubscriptionToBeActive(ctx, subId, api)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	// There is a timing issue where the subscription is marked as active before the creation-plan databases are listed .
+	// There is a timing issue where the subscription is marked as active before the creation-plan databases are listed.
 	// This additional wait ensures that the databases will be listed before calling api.client.Database.List()
 	time.Sleep(30 * time.Second) //lintignore:R018
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
@@ -446,22 +484,24 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		return diag.FromErr(err)
 	}
 
-	m, err := api.client.Maintenance.Get(ctx, subId)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-	if err := d.Set("maintenance_windows", flattenMaintenance(m)); err != nil {
-		return diag.FromErr(err)
-	}
+	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
+	if !cmkEnabled {
+		m, err := api.client.Maintenance.Get(ctx, subId)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("maintenance_windows", flattenMaintenance(m)); err != nil {
+			return diag.FromErr(err)
+		}
 
-	pricingList, err := api.client.Pricing.List(ctx, subId)
-	if err != nil {
-		return diag.FromErr(err)
+		pricingList, err := api.client.Pricing.List(ctx, subId)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
-	if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
-		return diag.FromErr(err)
-	}
-
 	return diags
 }
 
@@ -575,6 +615,24 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 	}
 
 	return diags
+}
+
+func newCreateSubscription(name string, paymentMethodID *int, paymentMethod string, providers []*subscriptions.CreateCloudProvider, dbs []*subscriptions.CreateDatabase, cmkEnabled bool) subscriptions.CreateSubscription {
+	req := subscriptions.CreateSubscription{
+		DeploymentType:  redis.String("active-active"),
+		Name:            redis.String(name),
+		DryRun:          redis.Bool(false),
+		PaymentMethodID: paymentMethodID,
+		PaymentMethod:   redis.String(paymentMethod),
+		CloudProviders:  providers,
+		Databases:       dbs,
+	}
+
+	if cmkEnabled {
+		req.PersistentStorageEncryptionType = redis.String(CMK_ENABLED_STRING)
+	}
+
+	return req
 }
 
 func buildCreateActiveActiveCloudProviders(provider string, creationPlan map[string]interface{}) ([]*subscriptions.CreateCloudProvider, error) {
