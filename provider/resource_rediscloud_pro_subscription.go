@@ -863,12 +863,12 @@ func resourceRedisCloudProSubscriptionUpdateCmk(ctx context.Context, d *schema.R
 		return diag.Errorf("customer_managed_key cannot be empty or null")
 	}
 
-	cmks := buildCMKs(cmkList)
+	customerManagedKeys := buildProCmks(cmkList)
 	deletionGracePeriod := d.Get("customer_managed_key_deletion_grace_period").(string)
 
 	updateCmkRequest := subscriptions.UpdateSubscriptionCMKs{
 		DeletionGracePeriod: redis.String(deletionGracePeriod),
-		CustomerManagedKeys: &cmks,
+		CustomerManagedKeys: &customerManagedKeys,
 	}
 
 	if err := api.client.Subscription.UpdateCMKs(ctx, subId, updateCmkRequest); err != nil {
@@ -882,7 +882,7 @@ func resourceRedisCloudProSubscriptionUpdateCmk(ctx context.Context, d *schema.R
 	return nil
 }
 
-func buildCMKs(cmkResources []interface{}) []subscriptions.CustomerManagedKey {
+func buildProCmks(cmkResources []interface{}) []subscriptions.CustomerManagedKey {
 	cmks := make([]subscriptions.CustomerManagedKey, 0, len(cmkResources))
 	for _, resource := range cmkResources {
 		cmkMap := resource.(map[string]interface{})

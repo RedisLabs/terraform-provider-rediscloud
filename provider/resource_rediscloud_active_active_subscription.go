@@ -306,7 +306,12 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"resource_name": {
-							Description: "Resource name of the customer managed key as defined by the cloud provider.",
+							Description: "Resource name of the customer managed key as defined by the cloud provider, e.g. projects/PROJECT_ID/locations/LOCATION/keyRings/KEY_RING/cryptoKeys/KEY_NAME",
+							Type:        schema.TypeString,
+							Required:    true,
+						},
+						"region": {
+							Description: "Name of region for the customer managed key as defined by the cloud provider.",
 							Type:        schema.TypeString,
 							Required:    true,
 						},
@@ -524,6 +529,20 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 	subscriptionMutex.Lock(subId)
 	defer subscriptionMutex.Unlock(subId)
 
+	subscription, err := api.client.Subscription.Get(ctx, subId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	// CMK flow
+	if *subscription.Status == subscriptions.SubscriptionStatusEncryptionKeyPending {
+		diags := resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx, d, api, subId)
+
+		if diags != nil {
+			return diags
+		}
+	}
+
 	if d.HasChanges("name", "payment_method_id") {
 		updateSubscriptionRequest := subscriptions.UpdateSubscription{}
 
@@ -582,6 +601,37 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 	}
 
 	return resourceRedisCloudActiveActiveSubscriptionRead(ctx, d, meta)
+}
+
+func resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx context.Context, d *schema.ResourceData, api *apiClient, subId int) diag.Diagnostics {
+
+	cmkResourcesRaw, exists := d.GetOk("customer_managed_key")
+	if !exists {
+		return diag.Errorf("customer_managed_key must be set when subscription is in encryption key pending state")
+	}
+
+	cmkList := cmkResourcesRaw.([]interface{})
+	if len(cmkList) == 0 || cmkList[0] == nil {
+		return diag.Errorf("customer_managed_key cannot be empty or null")
+	}
+
+	customerManagedKeys := buildAACmks(cmkList)
+	deletionGracePeriod := d.Get("customer_managed_key_deletion_grace_period").(string)
+
+	updateCmkRequest := subscriptions.UpdateSubscriptionCMKs{
+		DeletionGracePeriod: redis.String(deletionGracePeriod),
+		CustomerManagedKeys: &customerManagedKeys,
+	}
+
+	if err := api.client.Subscription.UpdateCMKs(ctx, subId, updateCmkRequest); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return diag.FromErr(err)
+	}
+
+	return nil
 }
 
 func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -747,4 +797,20 @@ func createAADatabase(dbName string, idx *int, localThroughputs []*subscriptions
 		dbs = append(dbs, &createDatabase)
 	}
 	return dbs
+}
+
+func buildAACmks(cmkResources []interface{}) []subscriptions.CustomerManagedKey {
+	cmks := make([]subscriptions.CustomerManagedKey, 0, len(cmkResources))
+	for _, resource := range cmkResources {
+		cmkMap := resource.(map[string]interface{})
+
+		cmk := subscriptions.CustomerManagedKey{
+			ResourceName: redis.String(cmkMap["resource_name"].(string)),
+			Region:       redis.String(cmkMap["region"].(string)),
+		}
+
+		cmks = append(cmks, cmk)
+	}
+
+	return cmks
 }
