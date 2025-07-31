@@ -25,7 +25,7 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 		ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{
 			{
-				Config:             fmt.Sprintf(step1Config, name),
+				Config:             fmt.Sprintf(proCmkStep1Config, name),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -40,7 +40,7 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 				),
 			},
 			{
-				Config:             fmt.Sprintf(step2Config, name, gcpCmkResourceName),
+				Config:             fmt.Sprintf(proCmkStep2Config, name, gcpCmkResourceName),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -58,7 +58,7 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 	})
 }
 
-const step1Config = `
+const proCmkStep1Config = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
@@ -89,7 +89,7 @@ resource "rediscloud_subscription" "example" {
 }
 `
 
-const step2Config = `
+const proCmkStep2Config = `
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
 }
