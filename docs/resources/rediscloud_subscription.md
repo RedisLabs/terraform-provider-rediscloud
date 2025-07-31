@@ -20,6 +20,8 @@ subscription, then the databases defined as separate resources will be attached 
 the subscription. The creation_plan block can ONLY be used for provisioning new
 subscriptions, the block will be ignored if you make any further changes or try importing the resource (e.g. `terraform import` ...).
 
+~> **Note:** The CMK (customer managed encryption key) fields require a specific flow which involves a multi step apply. Please refer to the relevant documents if using these fields.
+
 ## Example Usage
 
 ```hcl
@@ -80,6 +82,9 @@ The following arguments are supported:
 * `cloud_provider` - (Required) A cloud provider object, documented below. **Modifying this attribute will force creation of a new resource.**
 * `creation_plan` - (Required) A creation plan object, documented below.
 * `maintenance_windows` - (Optional) The subscription's maintenance window specification, documented below.
+* `customer_managed_key_enabled` - (Optional) Whether to enable the customer managed encryption key flow.
+* `customer_managed_key_deletion_grace_period` - (Optional) The grace period for deleting the subscription. If not set, will default to immediate deletion grace period.
+* `customer_managed_key` - (Optional) The customer managed keys (CMK) to use for this subscription. If is active-active subscription, must set a key for each region.
 
 The `allowlist` block supports:
 
@@ -128,6 +133,9 @@ The cloud_provider `region` block supports:
 ~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI.
 This difference in behaviour is to guarantee that a plan after an apply does not generate differences. In AWS Redis internal cloud account, please set the zone IDs (for example: `["use-az2", "use-az3", "use-az5"]`).
 
+The `customer_managed_key` block supports:
+* `resource_name` - The resource name of the customer managed key as defined by the cloud provider, e.g. projects/PROJECT_ID/locations/LOCATION/keyRings/KEY_RING/cryptoKeys/KEY_NAME
+
 The `maintenance_windows` object has these attributes:
 
 * `mode` - Either `automatic` (Redis specified) or `manual` (User specified)
@@ -148,6 +156,8 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 * `delete` - (Defaults to 10 mins) Used when destroying the subscription
 
 ## Attribute reference
+
+* `customer_managed_key_redis_service_account` - Outputs the id of the service account associated with the subscription. Useful as part of the CMK flow.
 
 The `region` block has these attributes:
 

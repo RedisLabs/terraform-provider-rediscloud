@@ -480,7 +480,7 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 				},
 			},
 			"customer_managed_key_enabled": {
-				Description: "Whether to enable CMK (customer managed key) for the subscription. If this is true, then the subscription will be put in a pending state until you supply the CMEK. See documentation for further details on this process. Do not supply a creation plan if this set as true. Defaults to false.",
+				Description: "Whether to enable CMK (customer managed key) for the subscription. If this is true, then the subscription will be put in a pending state until you supply the CMEK. See documentation for further details on this process. Defaults to false.",
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     false,
