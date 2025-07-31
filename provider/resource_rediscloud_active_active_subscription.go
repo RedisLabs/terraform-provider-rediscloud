@@ -534,8 +534,10 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
+	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
+
 	// CMK flow
-	if *subscription.Status == subscriptions.SubscriptionStatusEncryptionKeyPending {
+	if *subscription.Status == subscriptions.SubscriptionStatusEncryptionKeyPending && cmkEnabled {
 		diags := resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx, d, api, subId)
 
 		if diags != nil {
