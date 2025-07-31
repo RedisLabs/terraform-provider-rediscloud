@@ -946,29 +946,6 @@ func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.Reso
 	return diags
 }
 
-func getResourceStateString(d *schema.ResourceData) string {
-	var stateStr string
-
-	// Add basic resource information
-	stateStr += fmt.Sprintf("Resource ID: %s\n", d.Id())
-
-	// Get all attributes
-	for k, v := range d.State().Attributes {
-		stateStr += fmt.Sprintf("%-40s = %v\n", k, v)
-	}
-
-	// Add any known changes
-	stateStr += "\nChanges detected:\n"
-	for _, k := range d.State().Attributes {
-		if d.HasChange(k) {
-			old, new := d.GetChange(k)
-			stateStr += fmt.Sprintf("%-40s: %v -> %v\n", k, old, new)
-		}
-	}
-
-	return stateStr
-}
-
 func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCloudProvider, error) {
 	createCloudProviders := make([]*subscriptions.CreateCloudProvider, 0)
 
