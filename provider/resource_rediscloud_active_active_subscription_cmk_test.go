@@ -22,6 +22,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:             fmt.Sprintf(activeActiveCmkStep1Config, name),

@@ -23,6 +23,7 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:             fmt.Sprintf(proCmkStep1Config, name),
