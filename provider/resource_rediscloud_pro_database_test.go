@@ -273,7 +273,8 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 
 const proSubscriptionBoilerplate = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_cloud_account" "account" {
@@ -317,8 +318,10 @@ resource "rediscloud_subscription" "example" {
 
 const multiModulesProSubscriptionBoilerplate = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
+
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
   provider_type            = "AWS"

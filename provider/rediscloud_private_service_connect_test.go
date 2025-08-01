@@ -52,7 +52,8 @@ func TestAccResourceRedisCloudPrivateServiceConnect_CRUDI(t *testing.T) {
 
 const testAccResourceRedisCloudPrivateServiceConnectProStep1 = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 resource "rediscloud_subscription" "subscription_resource" {
