@@ -66,7 +66,8 @@ func TestAccResourceRedisCloudTransitGatewayAttachment_Pro(t *testing.T) {
 
 const testAccResourceRedisCloudTransitGatewayPro = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_cloud_account" "account" {
@@ -116,7 +117,8 @@ data "rediscloud_transit_gateway" "test" {
 
 const testAccResourceRedisCloudTransitGatewayAttachmentPro = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_cloud_account" "account" {
@@ -171,7 +173,8 @@ resource "rediscloud_transit_gateway_attachment" "test" {
 
 const testAccResourceRedisCloudTransitGatewayAttachmentProWithCidrs = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_cloud_account" "account" {

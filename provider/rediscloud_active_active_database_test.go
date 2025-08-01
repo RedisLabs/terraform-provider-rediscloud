@@ -262,6 +262,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_timeUtcRequiresValidInterval(
 const activeActiveSubscriptionBoilerplate = `
 	data "rediscloud_payment_method" "card" {
 		card_type = "Visa"
+		last_four_numbers = "5556"
 	}
 
 	resource "rediscloud_active_active_subscription" "example" {
@@ -407,6 +408,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
 const testAccResourceRedisCloudActiveActiveDatabaseOptionalAttributes = `
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 resource "rediscloud_active_active_subscription" "example" {

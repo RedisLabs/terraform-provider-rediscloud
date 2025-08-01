@@ -348,6 +348,7 @@ data "rediscloud_essentials_subscription" "example" {
 const testAccResourceRedisCloudPaidCreditCardEssentialsSubscription = `
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_essentials_plan" "example" {
@@ -372,6 +373,7 @@ data "rediscloud_essentials_subscription" "example" {
 const testAccResourceRedisCloudPaidNoPaymentTypeEssentialsSubscription = `
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_essentials_plan" "example" {

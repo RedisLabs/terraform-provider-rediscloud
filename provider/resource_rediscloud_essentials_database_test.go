@@ -224,7 +224,9 @@ data "rediscloud_essentials_database" "example" {
 const testAccResourceRedisCloudEssentialsDatabaseBasicWithUpperCaseTagKey = `
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
+	last_four_numbers = "5556"
 }
+
 data "rediscloud_essentials_plan" "example" {
 	name = "250MB"
 	cloud_provider = "AWS"
@@ -334,6 +336,7 @@ const testAccResourceRedisCloudEssentialsDatabaseDisableDefaultUserCreate = `
 
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_essentials_plan" "example" {
@@ -375,6 +378,7 @@ resource "rediscloud_essentials_database" "example" {
 const testAccResourceRedisCloudEssentialsDatabaseDisableDefaultUserUpdate = `
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_essentials_plan" "example" {
