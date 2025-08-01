@@ -346,6 +346,7 @@ func testAccCheckActiveActiveSubscriptionDestroy(s *terraform.State) error {
 const testAccResourceRedisCloudActiveActiveSubscription = `
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 resource "rediscloud_active_active_subscription" "example" {
@@ -435,6 +436,7 @@ const testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan = `
   
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 resource "rediscloud_active_active_subscription" "example" {
@@ -455,6 +457,7 @@ data "rediscloud_active_active_subscription" "example" {
 const testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethod = `
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 resource "rediscloud_active_active_subscription" "example" {

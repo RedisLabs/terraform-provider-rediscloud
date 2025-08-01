@@ -31,7 +31,8 @@ func TestAccDataSourceRedisCloudPaymentMethod_basic(t *testing.T) {
 }
 
 const testAccDataSourceRedisCloudPaymentMethod = `
-data "rediscloud_payment_method" "foo" {
-  card_type = "Visa"
+data "rediscloud_payment_method" "card" {
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 `

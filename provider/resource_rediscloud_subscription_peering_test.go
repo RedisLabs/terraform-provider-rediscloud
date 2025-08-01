@@ -138,7 +138,8 @@ func cidrRangesOverlap(cidr1 string, cidr2 string) (bool, error) {
 
 const testAccResourceRedisCloudSubscriptionPeeringAWS = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_cloud_account" "account" {
@@ -184,7 +185,8 @@ resource "rediscloud_subscription_peering" "test" {
 
 const testAccResourceRedisCloudSubscriptionPeeringGCP = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 resource "rediscloud_subscription" "example" {

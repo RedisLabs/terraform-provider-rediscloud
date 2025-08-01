@@ -62,9 +62,9 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpoint_CRUDI(t 
 
 const testAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointProStep1 = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
-
 resource "rediscloud_active_active_subscription" "subscription_resource" {
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
