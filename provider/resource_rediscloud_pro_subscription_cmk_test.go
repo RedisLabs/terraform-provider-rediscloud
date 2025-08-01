@@ -61,7 +61,8 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 
 const proCmkStep1Config = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 resource "rediscloud_subscription" "example" {
@@ -92,7 +93,8 @@ resource "rediscloud_subscription" "example" {
 
 const proCmkStep2Config = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 resource "rediscloud_subscription" "example" {
