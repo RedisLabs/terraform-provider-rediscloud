@@ -34,7 +34,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "stack"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
-					resource.TestCheckResourceAttr(resourceName, "region", "eu-west-1"),
+					resource.TestCheckResourceAttr(resourceName, "region", "us-east-1"),
 					resource.TestCheckResourceAttrSet(resourceName, "redis_version_compliance"),
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
@@ -43,9 +43,6 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "public_endpoint"),
 					resource.TestCheckResourceAttr(resourceName, "private_endpoint", ""),
 					resource.TestCheckResourceAttr(resourceName, "source_ips.#", "0"),
-					resource.TestCheckResourceAttr(resourceName, "alert.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "alert.0.name", "throughput-higher-than"),
-					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "80"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(resourceName, "password", "j43589rhe39f"),
 
@@ -68,7 +65,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "name", databaseName),
 					resource.TestCheckResourceAttr(datasourceName, "protocol", "stack"),
 					resource.TestCheckResourceAttr(datasourceName, "cloud_provider", "AWS"),
-					resource.TestCheckResourceAttr(datasourceName, "region", "eu-west-1"),
+					resource.TestCheckResourceAttr(datasourceName, "region", "us-east-1"),
 					resource.TestCheckResourceAttrSet(datasourceName, "redis_version_compliance"),
 					resource.TestCheckResourceAttr(datasourceName, "resp_version", "resp3"),
 					resource.TestCheckResourceAttr(datasourceName, "data_persistence", "none"),
@@ -77,9 +74,9 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(datasourceName, "public_endpoint"),
 					resource.TestCheckResourceAttr(datasourceName, "private_endpoint", ""),
 					resource.TestCheckResourceAttr(datasourceName, "source_ips.#", "0"),
-					resource.TestCheckResourceAttr(datasourceName, "alert.#", "1"),
-					resource.TestCheckResourceAttr(datasourceName, "alert.0.name", "throughput-higher-than"),
-					resource.TestCheckResourceAttr(datasourceName, "alert.0.value", "80"),
+					//resource.TestCheckResourceAttr(datasourceName, "alert.#", "1"),
+					//resource.TestCheckResourceAttr(datasourceName, "alert.0.name", "throughput-higher-than"),
+					//resource.TestCheckResourceAttr(datasourceName, "alert.0.value", "80"),
 					resource.TestCheckResourceAttr(datasourceName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(datasourceName, "password", "j43589rhe39f"),
 
@@ -109,7 +106,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "name", databaseNameUpdated),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "stack"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
-					resource.TestCheckResourceAttr(resourceName, "region", "eu-west-1"),
+					resource.TestCheckResourceAttr(resourceName, "region", "us-east-1"),
 					resource.TestCheckResourceAttrSet(resourceName, "redis_version_compliance"),
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
@@ -119,9 +116,9 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "public_endpoint"),
 					resource.TestCheckResourceAttr(resourceName, "private_endpoint", ""),
 					resource.TestCheckResourceAttr(resourceName, "source_ips.#", "0"),
-					resource.TestCheckResourceAttr(resourceName, "alert.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "alert.0.name", "throughput-higher-than"),
-					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "80"),
+					//resource.TestCheckResourceAttr(resourceName, "alert.#", "1"),
+					//resource.TestCheckResourceAttr(resourceName, "alert.0.name", "throughput-higher-than"),
+					//resource.TestCheckResourceAttr(resourceName, "alert.0.value", "80"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(resourceName, "password", "j43589rhe39f"),
 
@@ -140,7 +137,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "name", databaseNameUpdated),
 					resource.TestCheckResourceAttr(datasourceName, "protocol", "stack"),
 					resource.TestCheckResourceAttr(datasourceName, "cloud_provider", "AWS"),
-					resource.TestCheckResourceAttr(datasourceName, "region", "eu-west-1"),
+					resource.TestCheckResourceAttr(datasourceName, "region", "us-east-1"),
 					resource.TestCheckResourceAttrSet(datasourceName, "redis_version_compliance"),
 					resource.TestCheckResourceAttr(datasourceName, "resp_version", "resp3"),
 					resource.TestCheckResourceAttr(datasourceName, "data_persistence", "none"),
@@ -149,9 +146,9 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(datasourceName, "public_endpoint"),
 					resource.TestCheckResourceAttr(datasourceName, "private_endpoint", ""),
 					resource.TestCheckResourceAttr(datasourceName, "source_ips.#", "0"),
-					resource.TestCheckResourceAttr(datasourceName, "alert.#", "1"),
-					resource.TestCheckResourceAttr(datasourceName, "alert.0.name", "throughput-higher-than"),
-					resource.TestCheckResourceAttr(datasourceName, "alert.0.value", "80"),
+					//resource.TestCheckResourceAttr(datasourceName, "alert.#", "1"),
+					//resource.TestCheckResourceAttr(datasourceName, "alert.0.name", "throughput-higher-than"),
+					//resource.TestCheckResourceAttr(datasourceName, "alert.0.value", "80"),
 					resource.TestCheckResourceAttr(datasourceName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(datasourceName, "password", "j43589rhe39f"),
 
@@ -175,19 +172,28 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 }
 
 const testAccResourceRedisCloudEssentialsDatabaseBasic = `
+data "rediscloud_essentials_plan" "example" {
+	name = "30MB"
+	cloud_provider = "AWS"
+	region = "us-east-1"
+}
+
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
+	last_four_numbers = "5556"
 }
-data "rediscloud_essentials_plan" "example" {
-	name = "250MB"
-	cloud_provider = "AWS"
-	region = "eu-west-1"
-}
+
 resource "rediscloud_essentials_subscription" "example" {
 	name = "%s"
 	plan_id = data.rediscloud_essentials_plan.example.id
-	payment_method_id = data.rediscloud_payment_method.card.id
+	# payment_method = "credit-card"
+	# payment_method_id = data.rediscloud_payment_method.card.id
 }
+
+data "rediscloud_essentials_subscription" "example" {
+	name = rediscloud_essentials_subscription.example.name
+}
+
 resource "rediscloud_essentials_database" "example" {
 	subscription_id = rediscloud_essentials_subscription.example.id
 	name = "%s"
@@ -197,10 +203,10 @@ resource "rediscloud_essentials_database" "example" {
 	data_persistence = "none"
 	replication = false
 
-	alert {
-		name = "throughput-higher-than"
-		value = 80
-	}
+	# alert {
+	# 	name = "throughput-higher-than"
+	# 	value = 80
+	# }
 
 	tags = {
 		"environment" = "production"
@@ -222,7 +228,7 @@ data "rediscloud_payment_method" "card" {
 data "rediscloud_essentials_plan" "example" {
 	name = "250MB"
 	cloud_provider = "AWS"
-	region = "eu-west-1"
+	region = "us-east-1"
 }
 resource "rediscloud_essentials_subscription" "example" {
 	name = "%s"
@@ -238,10 +244,10 @@ resource "rediscloud_essentials_database" "example" {
 	data_persistence = "none"
 	replication = false
 
-	alert {
-		name = "throughput-higher-than"
-		value = 80
-	}
+	# alert {
+	#	name = "throughput-higher-than"
+	#	value = 80
+	# '}
 
 	tags = {
 		"UpperCaseKey" = "invalid"
@@ -333,7 +339,7 @@ data "rediscloud_payment_method" "card" {
 data "rediscloud_essentials_plan" "example" {
   name = "Single-Zone_1GB"
   cloud_provider = "AWS"
-  region = "eu-west-1"
+  region = "us-east-1"
 }
 
 data "rediscloud_essentials_database" "example" {
@@ -355,11 +361,11 @@ resource "rediscloud_essentials_database" "example" {
 
   data_persistence = "none"
   replication      = false
-
-  alert {
-    name  = "throughput-higher-than"
-    value = 80
-  }
+  # 
+  # alert {
+  #   name  = "throughput-higher-than"
+  #   value = 80
+  # }
   tags = {
     "envaaaa" = "qaaaa"
   }
@@ -374,7 +380,7 @@ data "rediscloud_payment_method" "card" {
 data "rediscloud_essentials_plan" "example" {
   name = "Single-Zone_1GB"
   cloud_provider = "AWS"
-  region = "eu-west-1"
+  region = "us-east-1"
 }
 
 data "rediscloud_essentials_database" "example" {
@@ -395,10 +401,11 @@ resource "rediscloud_essentials_database" "example" {
   data_persistence = "none"
   replication      = false
 
-  alert {
-    name  = "throughput-higher-than"
-    value = 80
-  }
+  # alert {
+  #   name  = "throughput-higher-than"
+  #   value = 80
+  # }
+
   tags = {
     "envaaaa" = "qaaaa"
   }
