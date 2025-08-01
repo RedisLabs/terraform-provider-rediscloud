@@ -3,18 +3,23 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.2.0 (1st August 2025)
+
+### Added
+
+- Customer Managed Key support for active-active and pro subscriptions. Only supports redis internal GCP cloud subscriptions. CMKs are externally provided by a customer-supplied GCP account and are managed externally by the user.
 
 # 2.1.5 (1st July 2025)
 
 ### Added
 
-Feature: Support Marketplace as a payment method for Essentials subscription
-Feature: Add TLS certificate to databases’ data sources
+- Feature: Support Marketplace as a payment method for Essentials subscription
+- Feature: Add TLS certificate to databases’ data sources
 
 ### Fixed:
 
-Unexpected state `dynamic-endpoints-creation-pending'
-Can not disable default user on essentials db
+- Unexpected state `dynamic-endpoints-creation-pending'
+- Can not disable default user on essentials db
 
 # 2.1.4 (22nd May 2025)
 

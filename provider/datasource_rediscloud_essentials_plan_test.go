@@ -196,6 +196,7 @@ data "rediscloud_essentials_plan" "impossible" {
 const testAccResourceRedisCloudPaidEssentialsSubscriptionDataSource = `
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_essentials_plan" "fixed" {

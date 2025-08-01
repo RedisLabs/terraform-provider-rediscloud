@@ -725,7 +725,8 @@ func testAccCheckProSubscriptionDestroy(s *terraform.State) error {
 // TF config for provisioning a new subscription.
 const testAccResourceRedisCloudProSubscription = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_cloud_account" "account" {
@@ -772,7 +773,8 @@ resource "rediscloud_subscription" "example" {
 
 const testAccResourceRedisCloudProSubscriptionWithRedisVersion = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_cloud_account" "account" {
@@ -818,7 +820,8 @@ resource "rediscloud_subscription" "test" {
 
 const testAccResourceRedisCloudProSubscriptionPreferredAZsModulesOptional = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_cloud_account" "account" {
@@ -861,7 +864,8 @@ resource "rediscloud_subscription" "example" {
 // TF config for provisioning a subscription without the creation_plan block.
 const testAccResourceRedisCloudProSubscriptionNoCreationPlan = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_cloud_account" "account" {
@@ -1016,7 +1020,8 @@ resource "rediscloud_subscription" "example" {
 
 const testAccResourceRedisCloudProSubscriptionMaintenanceWindows = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_cloud_account" "account" {
