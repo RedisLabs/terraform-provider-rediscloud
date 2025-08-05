@@ -401,41 +401,37 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		RemoteBackup: buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
 	}
 
-	if v, ok := d.GetOk("query_performance_factor"); ok {
-		createDatabase.QueryPerformanceFactor = redis.String(v.(string))
-	}
+	utils.SetStringIfNotEmpty(d, "query_performance_factor", func(s *string) {
+		createDatabase.QueryPerformanceFactor = s
+	})
 
-	if v, ok := d.GetOk("redis_version"); ok {
-		createDatabase.RedisVersion = redis.String(v.(string))
-	}
+	utils.SetStringIfNotEmpty(d, "redis_version", func(s *string) {
+		createDatabase.RedisVersion = s
+	})
 
-	if v, ok := d.GetOk("password"); ok {
-		createDatabase.Password = redis.String(v.(string))
-	}
+	utils.SetStringIfNotEmpty(d, "password", func(s *string) {
+		createDatabase.Password = s
+	})
 
-	if v, ok := d.GetOk("average_item_size_in_bytes"); ok {
-		if size, valid := v.(int); valid && size > 0 {
-			createDatabase.AverageItemSizeInBytes = redis.Int(size)
-		}
-	}
+	utils.SetIntIfPositive(d, "average_item_size_in_bytes", func(i *int) {
+		createDatabase.AverageItemSizeInBytes = i
+	})
 
-	if v, ok := d.GetOk("dataset_size_in_gb"); ok {
-		createDatabase.DatasetSizeInGB = redis.Float64(v.(float64))
-	}
+	utils.SetFloat64(d, "dataset_size_in_gb", func(f *float64) {
+		createDatabase.DatasetSizeInGB = f
+	})
 
-	if v, ok := d.GetOk("memory_limit_in_gb"); ok {
-		createDatabase.MemoryLimitInGB = redis.Float64(v.(float64))
-	}
+	utils.SetFloat64(d, "memory_limit_in_gb", func(f *float64) {
+		createDatabase.MemoryLimitInGB = f
+	})
 
-	if v, ok := d.GetOk("port"); ok {
-		createDatabase.PortNumber = redis.Int(v.(int))
-	}
+	utils.SetInt(d, "port", func(i *int) {
+		createDatabase.PortNumber = i
+	})
 
-	if v, ok := d.GetOk("resp_version"); ok {
-		if s, valid := v.(string); valid && s != "" {
-			createDatabase.RespVersion = redis.String(s)
-		}
-	}
+	utils.SetStringIfNotEmpty(d, "resp_version", func(s *string) {
+		createDatabase.RespVersion = s
+	})
 
 	// Confirm sub is ready to accept a db request
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {

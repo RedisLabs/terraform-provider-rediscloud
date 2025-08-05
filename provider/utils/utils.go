@@ -28,3 +28,43 @@ func GetInt(d *schema.ResourceData, key string) *int {
 	}
 	return redis.Int(0)
 }
+
+func SetStringIfNotEmpty(d *schema.ResourceData, key string, setter func(*string)) {
+	if v, ok := d.GetOk(key); ok {
+		if s, valid := v.(string); valid && s != "" {
+			setter(redis.String(s))
+		}
+	}
+}
+
+func SetIntIfPositive(d *schema.ResourceData, key string, setter func(*int)) {
+	if v, ok := d.GetOk(key); ok {
+		if i, valid := v.(int); valid && i > 0 {
+			setter(redis.Int(i))
+		}
+	}
+}
+
+func SetInt(d *schema.ResourceData, key string, setter func(*int)) {
+	if v, ok := d.GetOk(key); ok {
+		if i, valid := v.(int); valid {
+			setter(redis.Int(i))
+		}
+	}
+}
+
+func SetFloat64(d *schema.ResourceData, key string, setter func(*float64)) {
+	if v, ok := d.GetOk(key); ok {
+		if f, valid := v.(float64); valid {
+			setter(redis.Float64(f))
+		}
+	}
+}
+
+func SetBool(d *schema.ResourceData, key string, setter func(*bool)) {
+	if v, ok := d.GetOk(key); ok {
+		if b, valid := v.(bool); valid {
+			setter(redis.Bool(b))
+		}
+	}
+}
