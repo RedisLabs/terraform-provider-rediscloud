@@ -19,7 +19,7 @@ subscription, then the databases defined as separate resources will be attached 
 the subscription. The creation_plan block can ONLY be used for provisioning new
 subscriptions, the block will be ignored if you make any further changes or try importing the resource (e.g. `terraform import` ...).
 
-~> **Note:** The CMK (customer managed encryption key) fields require a specific flow which involves a multi step apply. Please refer to the relevant documents if using these fields.
+~> **Note:** The CMK (customer managed encryption key) fields require a specific flow which involves a multistep apply. Refer to [this guide](../guides/cmk-guide.md) for more information.
 
 ## Example Usage
 
