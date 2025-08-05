@@ -235,6 +235,11 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 					return
 				},
 			},
+			"redis_version": {
+				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
+				Type:        schema.TypeString,
+				Optional:    true,
+			},
 			"modules": {
 				Description: "Modules to be provisioned in the database",
 				Type:        schema.TypeSet,
@@ -411,6 +416,10 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 
 	if queryPerformanceFactor != "" {
 		createDatabase.QueryPerformanceFactor = redis.String(queryPerformanceFactor)
+	}
+
+	if v, ok := d.GetOk("redis_version"); ok {
+		createDatabase.RedisVersion = redis.String(v.(string))
 	}
 
 	if password != "" {
