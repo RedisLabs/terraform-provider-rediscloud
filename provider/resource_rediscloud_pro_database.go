@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"regexp"
 	"strconv"
 	"strings"
@@ -14,9 +13,46 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+const (
+	AttrSubscriptionID                   = "subscription_id"
+	AttrDbId                             = "db_id"
+	AttrName                             = "name"
+	AttrProtocol                         = "protocol"
+	AttrMemoryLimitInGB                  = "memory_limit_in_gb"
+	AttrDatasetSizeInGB                  = "dataset_size_in_gb"
+	AttrSupportOSSClusterAPI             = "support_oss_cluster_api"
+	AttrRespVersion                      = "resp_version"
+	AttrExternalEndpointForOssClusterAPI = "external_endpoint_for_oss_cluster_api"
+	AttrDataPersistence                  = "data_persistence"
+	AttrDataEviction                     = "data_eviction"
+	AttrReplication                      = "replication"
+	AttrThroughputMeasurementBy          = "throughput_measurement_by"
+	AttrThroughputMeasurementValue       = "throughput_measurement_value"
+	AttrAverageItemSizeInBytes           = "average_item_size_in_bytes"
+	AttrPassword                         = "password"
+	AttrPublicEndpoint                   = "public_endpoint"
+	AttrPrivateEndpoint                  = "private_endpoint"
+	AttrClientSSLCertificate             = "client_ssl_certificate"
+	AttrClientTLSCertificates            = "client_tls_certificates"
+	AttrPeriodicBackupPath               = "periodic_backup_path"
+	AttrReplicaOf                        = "replica_of"
+	AttrAlert                            = "alert"
+	AttrQueryPerformanceFactor           = "query_performance_factor"
+	AttrRedisVersion                     = "redis_version"
+	AttrModules                          = "modules"
+	AttrSourceIPs                        = "source_ips"
+	AttrHashingPolicy                    = "hashing_policy"
+	AttrEnableTLS                        = "enable_tls"
+	AttrEnableDefaultUser                = "enable_default_user"
+	AttrPort                             = "port"
+	AttrRemoteBackup                     = "remote_backup"
+	AttrTags                             = "tags"
 )
 
 func resourceRedisCloudProDatabase() *schema.Resource {
@@ -33,7 +69,7 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 				if err != nil {
 					return nil, err
 				}
-				if err := d.Set("subscription_id", subId); err != nil {
+				if err := d.Set(AttrSubscriptionID, subId); err != nil {
 					return nil, err
 				}
 				if err := d.Set("db_id", dbId); err != nil {
@@ -54,24 +90,24 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 		CustomizeDiff: customizeDiff(),
 
 		Schema: map[string]*schema.Schema{
-			"subscription_id": {
+			AttrSubscriptionID: {
 				Description: "Identifier of the pro subscription",
 				Type:        schema.TypeInt,
 				Required:    true,
 				ForceNew:    true,
 			},
-			"db_id": {
+			AttrDbId: {
 				Description: "Identifier of the database created",
 				Type:        schema.TypeInt,
 				Computed:    true,
 			},
-			"name": {
+			AttrName: {
 				Description:      "A meaningful name to identify the database",
 				Type:             schema.TypeString,
 				Required:         true,
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringLenBetween(0, 40)),
 			},
-			"protocol": {
+			AttrProtocol: {
 				Description:      "The protocol that will be used to access the database, (either ‘redis’ or 'memcached’) ",
 				Type:             schema.TypeString,
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.ProtocolValues(), false)),
@@ -79,68 +115,68 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 				ForceNew:         true,
 				Default:          "redis",
 			},
-			"memory_limit_in_gb": {
+			AttrMemoryLimitInGB: {
 				Description:  "(Deprecated) Maximum memory usage for this specific database",
 				Type:         schema.TypeFloat,
 				Optional:     true,
 				Computed:     true,
-				ExactlyOneOf: []string{"memory_limit_in_gb", "dataset_size_in_gb"},
+				ExactlyOneOf: []string{AttrMemoryLimitInGB, AttrDatasetSizeInGB},
 			},
-			"dataset_size_in_gb": {
+			AttrDatasetSizeInGB: {
 				Description:  "Maximum amount of data in the dataset for this specific database in GB",
 				Type:         schema.TypeFloat,
 				Optional:     true,
 				Computed:     true,
-				ExactlyOneOf: []string{"memory_limit_in_gb", "dataset_size_in_gb"},
+				ExactlyOneOf: []string{AttrMemoryLimitInGB, AttrDatasetSizeInGB},
 			},
-			"support_oss_cluster_api": {
+			AttrSupportOSSClusterAPI: {
 				Description: "Support Redis open-source (OSS) Cluster API",
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     false,
 			},
-			"resp_version": {
+			AttrRespVersion: {
 				Description: "The database's RESP version",
 				Type:        schema.TypeString,
 				Optional:    true,
 				Computed:    true,
 			},
-			"external_endpoint_for_oss_cluster_api": {
+			AttrExternalEndpointForOssClusterAPI: {
 				Description: "Should use the external endpoint for open-source (OSS) Cluster API",
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     false,
 			},
-			"data_persistence": {
+			AttrDataPersistence: {
 				Description: "Rate of database data persistence (in persistent storage)",
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     "none",
 			},
-			"data_eviction": {
+			AttrDataEviction: {
 				Description: "(Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru')",
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     "volatile-lru",
 			},
-			"replication": {
+			AttrReplication: {
 				Description: "Databases replication",
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     true,
 			},
-			"throughput_measurement_by": {
+			AttrThroughputMeasurementBy: {
 				Description:      "Throughput measurement method, (either ‘number-of-shards’ or ‘operations-per-second’)",
 				Type:             schema.TypeString,
 				Required:         true,
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice([]string{"number-of-shards", "operations-per-second"}, false)),
 			},
-			"throughput_measurement_value": {
+			AttrThroughputMeasurementValue: {
 				Description: "Throughput value (as applies to selected measurement method)",
 				Type:        schema.TypeInt,
 				Required:    true,
 			},
-			"average_item_size_in_bytes": {
+			AttrAverageItemSizeInBytes: {
 				Description: "Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes) of the items stored in the database",
 				Type:        schema.TypeInt,
 				Optional:    true,
@@ -148,47 +184,47 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 				// specified. SDK's catch-all issue around this: https://github.com/hashicorp/terraform-plugin-sdk/issues/261
 				Default: 0,
 			},
-			"password": {
+			AttrPassword: {
 				Description: "Password used to access the database. If left empty, the password will be generated automatically",
 				Type:        schema.TypeString,
 				Optional:    true,
 				Sensitive:   true,
 				Computed:    true,
 			},
-			"public_endpoint": {
+			AttrPublicEndpoint: {
 				Description: "Public endpoint to access the database",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
-			"private_endpoint": {
+			AttrPrivateEndpoint: {
 				Description: "Private endpoint to access the database",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
-			"client_ssl_certificate": {
+			AttrClientSSLCertificate: {
 				Description: "SSL certificate to authenticate user connections",
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     "",
 			},
-			"client_tls_certificates": {
+			AttrClientTLSCertificates: {
 				Description: "TLS certificates to authenticate user connections",
 				Type:        schema.TypeList,
 				Optional:    true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				ConflictsWith: []string{"client_ssl_certificate"},
+				ConflictsWith: []string{AttrClientSSLCertificate},
 			},
-			"periodic_backup_path": {
+			AttrPeriodicBackupPath: {
 				Description:   "Path that will be used to store database backup files",
 				Type:          schema.TypeString,
 				Optional:      true,
 				Default:       "",
-				ConflictsWith: []string{"remote_backup"},
+				ConflictsWith: []string{AttrRemoteBackup},
 				Deprecated:    "Use `remote_backup` block instead",
 			},
-			"replica_of": {
+			AttrReplicaOf: {
 				Description: "Set of Redis database URIs, in the format `redis://user:password@host:port`, that this database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided",
 				Type:        schema.TypeSet,
 				Optional:    true,
@@ -197,7 +233,7 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 					ValidateDiagFunc: validation.ToDiagFunc(validation.IsURLWithScheme([]string{"redis"})),
 				},
 			},
-			"alert": {
+			AttrAlert: {
 				Description: "Set of alerts to enable on the database",
 				Type:        schema.TypeSet,
 				Optional:    true,
@@ -217,7 +253,7 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 					},
 				},
 			},
-			"query_performance_factor": {
+			AttrQueryPerformanceFactor: {
 				Description: "Query performance factor for this specific database",
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -236,12 +272,12 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 					return
 				},
 			},
-			"redis_version": {
+			AttrRedisVersion: {
 				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
 				Type:        schema.TypeString,
 				Optional:    true,
 			},
-			"modules": {
+			AttrModules: {
 				Description: "Modules to be provisioned in the database",
 				Type:        schema.TypeSet,
 				// In TF <0.12 List of objects is not supported, so we need to opt-in to use this old behaviour.
@@ -261,7 +297,7 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 					},
 				},
 			},
-			"source_ips": {
+			AttrSourceIPs: {
 				Description: "Set of CIDR addresses to allow access to the database",
 				Type:        schema.TypeSet,
 				Optional:    true,
@@ -271,7 +307,7 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 					ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 				},
 			},
-			"hashing_policy": {
+			AttrHashingPolicy: {
 				Description: "List of regular expression rules to shard the database by. See the documentation on clustering for more information on the hashing policy - https://docs.redislabs.com/latest/rc/concepts/clustering/",
 				Type:        schema.TypeList,
 				Optional:    true,
@@ -282,31 +318,31 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 					// which isn't a valid Go regex
 				},
 			},
-			"enable_tls": {
+			AttrEnableTLS: {
 				Description: "Use TLS for authentication",
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     false,
 			},
-			"enable_default_user": {
+			AttrEnableDefaultUser: {
 				Description: "When 'true', enables connecting to the database with the 'default' user. Default: 'true'",
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     true,
 			},
-			"port": {
+			AttrPort: {
 				Description:      "TCP port on which the database is available",
 				Type:             schema.TypeInt,
 				ValidateDiagFunc: validation.ToDiagFunc(validation.IntBetween(10000, 19999)),
 				Optional:         true,
 				ForceNew:         true,
 			},
-			"remote_backup": {
+			AttrRemoteBackup: {
 				Description:   "An object that specifies the backup options for the database",
 				Type:          schema.TypeList,
 				Optional:      true,
 				MaxItems:      1,
-				ConflictsWith: []string{"periodic_backup_path"},
+				ConflictsWith: []string{AttrPeriodicBackupPath},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"interval": {
@@ -336,7 +372,7 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 					},
 				},
 			},
-			"tags": {
+			AttrTags: {
 				Description: "Tags for database management",
 				Type:        schema.TypeMap,
 				Elem: &schema.Schema{
@@ -352,11 +388,11 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
-	subId := *utils.GetInt(d, "subscription_id")
+	subId := *utils.GetInt(d, AttrSubscriptionID)
 	subscriptionMutex.Lock(subId)
 
 	createModules := make([]*databases.Module, 0)
-	modules := d.Get("modules").(*schema.Set)
+	modules := d.Get(AttrModules).(*schema.Set)
 	for _, module := range modules.List() {
 		moduleMap := module.(map[string]interface{})
 
@@ -370,7 +406,7 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	}
 
 	createAlerts := make([]*databases.Alert, 0)
-	alerts := d.Get("alert").(*schema.Set)
+	alerts := d.Get(AttrAlert).(*schema.Set)
 	for _, alert := range alerts.List() {
 		alertMap := alert.(map[string]interface{})
 
@@ -386,50 +422,50 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	}
 
 	createDatabase := databases.CreateDatabase{
-		Name:                 utils.GetString(d, "name"),
-		Protocol:             utils.GetString(d, "protocol"),
-		SupportOSSClusterAPI: utils.GetBool(d, "support_oss_cluster_api"),
-		DataPersistence:      utils.GetString(d, "data_persistence"),
-		DataEvictionPolicy:   utils.GetString(d, "data_eviction"),
-		Replication:          utils.GetBool(d, "replication"),
+		Name:                 utils.GetString(d, AttrName),
+		Protocol:             utils.GetString(d, AttrProtocol),
+		SupportOSSClusterAPI: utils.GetBool(d, AttrSupportOSSClusterAPI),
+		DataPersistence:      utils.GetString(d, AttrDataPersistence),
+		DataEvictionPolicy:   utils.GetString(d, AttrDataEviction),
+		Replication:          utils.GetBool(d, AttrReplication),
 		ThroughputMeasurement: &databases.CreateThroughputMeasurement{
-			By:    utils.GetString(d, "throughput_measurement_by"),
-			Value: utils.GetInt(d, "throughput_measurement_value"),
+			By:    utils.GetString(d, AttrThroughputMeasurementBy),
+			Value: utils.GetInt(d, AttrThroughputMeasurementValue),
 		},
 		Modules:      createModules,
 		Alerts:       createAlerts,
-		RemoteBackup: buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		RemoteBackup: buildBackupPlan(d.Get(AttrRemoteBackup).([]interface{}), d.Get(AttrPeriodicBackupPath)),
 	}
 
-	utils.SetStringIfNotEmpty(d, "query_performance_factor", func(s *string) {
+	utils.SetStringIfNotEmpty(d, AttrQueryPerformanceFactor, func(s *string) {
 		createDatabase.QueryPerformanceFactor = s
 	})
 
-	utils.SetStringIfNotEmpty(d, "redis_version", func(s *string) {
+	utils.SetStringIfNotEmpty(d, AttrRedisVersion, func(s *string) {
 		createDatabase.RedisVersion = s
 	})
 
-	utils.SetStringIfNotEmpty(d, "password", func(s *string) {
+	utils.SetStringIfNotEmpty(d, AttrPassword, func(s *string) {
 		createDatabase.Password = s
 	})
 
-	utils.SetIntIfPositive(d, "average_item_size_in_bytes", func(i *int) {
+	utils.SetIntIfPositive(d, AttrAverageItemSizeInBytes, func(i *int) {
 		createDatabase.AverageItemSizeInBytes = i
 	})
 
-	utils.SetFloat64(d, "dataset_size_in_gb", func(f *float64) {
+	utils.SetFloat64(d, AttrDatasetSizeInGB, func(f *float64) {
 		createDatabase.DatasetSizeInGB = f
 	})
 
-	utils.SetFloat64(d, "memory_limit_in_gb", func(f *float64) {
+	utils.SetFloat64(d, AttrMemoryLimitInGB, func(f *float64) {
 		createDatabase.MemoryLimitInGB = f
 	})
 
-	utils.SetInt(d, "port", func(i *int) {
+	utils.SetInt(d, AttrPort, func(i *int) {
 		createDatabase.PortNumber = i
 	})
 
-	utils.SetStringIfNotEmpty(d, "resp_version", func(s *string) {
+	utils.SetStringIfNotEmpty(d, AttrRespVersion, func(s *string) {
 		createDatabase.RespVersion = s
 	})
 
@@ -474,7 +510,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 
 	// We are not import this resource, so we can read the subscription_id defined in this resource.
 	if subId == 0 {
-		subId = d.Get("subscription_id").(int)
+		subId = d.Get(AttrSubscriptionID).(int)
 	}
 
 	db, err := api.client.Database.Get(ctx, subId, dbId)
@@ -486,7 +522,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("db_id", redis.IntValue(db.ID)); err != nil {
+	if err := d.Set(AttrDbId, redis.IntValue(db.ID)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -498,31 +534,31 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("support_oss_cluster_api", redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {
+	if err := d.Set(AttrSupportOSSClusterAPI, redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("resp_version", redis.StringValue(db.RespVersion)); err != nil {
+	if err := d.Set(AttrRespVersion, redis.StringValue(db.RespVersion)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("data_persistence", redis.StringValue(db.DataPersistence)); err != nil {
+	if err := d.Set(AttrDataPersistence, redis.StringValue(db.DataPersistence)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("data_eviction", redis.StringValue(db.DataEvictionPolicy)); err != nil {
+	if err := d.Set(AttrDataEviction, redis.StringValue(db.DataEvictionPolicy)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("replication", redis.BoolValue(db.Replication)); err != nil {
+	if err := d.Set(AttrReplication, redis.BoolValue(db.Replication)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("throughput_measurement_by", redis.StringValue(db.ThroughputMeasurement.By)); err != nil {
+	if err := d.Set(AttrThroughputMeasurementBy, redis.StringValue(db.ThroughputMeasurement.By)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("throughput_measurement_value", redis.IntValue(db.ThroughputMeasurement.Value)); err != nil {
+	if err := d.Set(AttrThroughputMeasurementValue, redis.IntValue(db.ThroughputMeasurement.Value)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -534,15 +570,15 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("query_performance_factor", redis.StringValue(db.QueryPerformanceFactor)); err != nil {
+	if err := d.Set(AttrQueryPerformanceFactor, redis.StringValue(db.QueryPerformanceFactor)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("modules", flattenModules(db.Modules)); err != nil {
+	if err := d.Set(AttrModules, flattenModules(db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("alert", flattenAlerts(db.Alerts)); err != nil {
+	if err := d.Set(AttrAlert, flattenAlerts(db.Alerts)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -550,33 +586,33 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("external_endpoint_for_oss_cluster_api",
-		d.Get("external_endpoint_for_oss_cluster_api").(bool)); err != nil {
+	if err := d.Set(AttrExternalEndpointForOssClusterAPI,
+		d.Get(AttrExternalEndpointForOssClusterAPI).(bool)); err != nil {
 		return diag.FromErr(err)
 	}
 
 	// To prevent both fields being included in API requests, only one of these two fields should be set in the state
-	// Only add `dataset_size_in_gb` to the state if `memory_limit_in_gb` is not already in the state
-	if _, inState := d.GetOk("memory_limit_in_gb"); !inState {
-		if err := d.Set("dataset_size_in_gb", redis.Float64Value(db.DatasetSizeInGB)); err != nil {
+	// Only add DatasetSizeInGB to the state if MemoryLimitInGB is not already in the state
+	if _, inState := d.GetOk(AttrMemoryLimitInGB); !inState {
+		if err := d.Set(AttrDatasetSizeInGB, redis.Float64Value(db.DatasetSizeInGB)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
 	// Likewise, only add `memory_limit_in_gb` to the state if `dataset_size_in_gb` is not already in the state
-	if _, inState := d.GetOk("dataset_size_in_gb"); !inState {
-		if err := d.Set("memory_limit_in_gb", redis.Float64Value(db.MemoryLimitInGB)); err != nil {
+	if _, inState := d.GetOk(AttrDatasetSizeInGB); !inState {
+		if err := d.Set(AttrMemoryLimitInGB, redis.Float64Value(db.MemoryLimitInGB)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
-	password := d.Get("password").(string)
+	password := d.Get(AttrPassword).(string)
 	if redis.StringValue(db.Protocol) == "redis" {
 		// Only db with the "redis" protocol returns the password.
 		password = redis.StringValue(db.Security.Password)
 	}
 
-	if err := d.Set("password", password); err != nil {
+	if err := d.Set(AttrPassword, password); err != nil {
 		return diag.FromErr(err)
 	}
 	var sourceIPs []string
@@ -585,19 +621,19 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		sourceIPs = redis.StringSliceValue(db.Security.SourceIPs...)
 	}
 
-	if err := d.Set("source_ips", sourceIPs); err != nil {
+	if err := d.Set(AttrSourceIPs, sourceIPs); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("hashing_policy", flattenRegexRules(db.Clustering.RegexRules)); err != nil {
+	if err := d.Set(AttrHashingPolicy, flattenRegexRules(db.Clustering.RegexRules)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("enable_tls", redis.Bool(*db.Security.EnableTls)); err != nil {
+	if err := d.Set(AttrEnableTLS, redis.Bool(*db.Security.EnableTls)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("enable_default_user", redis.Bool(*db.Security.EnableDefaultUser)); err != nil {
+	if err := d.Set(AttrEnableDefaultUser, redis.Bool(*db.Security.EnableDefaultUser)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -606,12 +642,12 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("remote_backup", flattenBackupPlan(db.Backup, d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path").(string))); err != nil {
+	if err := d.Set(AttrRemoteBackup, flattenBackupPlan(db.Backup, d.Get(AttrRemoteBackup).([]interface{}), d.Get(AttrPeriodicBackupPath).(string))); err != nil {
 		return diag.FromErr(err)
 	}
 
 	if db.QueryPerformanceFactor != nil {
-		if err := d.Set("query_performance_factor", redis.String(*db.QueryPerformanceFactor)); err != nil {
+		if err := d.Set(AttrQueryPerformanceFactor, redis.String(*db.QueryPerformanceFactor)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -628,7 +664,7 @@ func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.Resource
 	api := meta.(*apiClient)
 
 	var diags diag.Diagnostics
-	subId := d.Get("subscription_id").(int)
+	subId := d.Get(AttrSubscriptionID).(int)
 
 	_, dbId, err := toDatabaseId(d.Id())
 	if err != nil {
@@ -665,7 +701,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	subId := d.Get("subscription_id").(int)
+	subId := d.Get(AttrSubscriptionID).(int)
 	subscriptionMutex.Lock(subId)
 
 	// If the recommended approach is taken and there are 0 alerts, a nil-slice value is sent to the UpdateDatabase
@@ -673,7 +709,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	//goland:noinspection GoPreferNilSlice
 	alerts := []*databases.Alert{}
 
-	for _, alert := range d.Get("alert").(*schema.Set).List() {
+	for _, alert := range d.Get(AttrAlert).(*schema.Set).List() {
 		dbAlert := alert.(map[string]interface{})
 
 		alerts = append(alerts, &databases.Alert{
@@ -683,53 +719,53 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	update := databases.UpdateDatabase{
-		Name:                 redis.String(d.Get("name").(string)),
-		SupportOSSClusterAPI: redis.Bool(d.Get("support_oss_cluster_api").(bool)),
-		Replication:          redis.Bool(d.Get("replication").(bool)),
+		Name:                 redis.String(d.Get(AttrName).(string)),
+		SupportOSSClusterAPI: redis.Bool(d.Get(AttrSupportOSSClusterAPI).(bool)),
+		Replication:          redis.Bool(d.Get(AttrReplication).(bool)),
 		ThroughputMeasurement: &databases.UpdateThroughputMeasurement{
-			By:    redis.String(d.Get("throughput_measurement_by").(string)),
-			Value: redis.Int(d.Get("throughput_measurement_value").(int)),
+			By:    redis.String(d.Get(AttrThroughputMeasurementBy).(string)),
+			Value: redis.Int(d.Get(AttrThroughputMeasurementValue).(int)),
 		},
-		DataPersistence:    redis.String(d.Get("data_persistence").(string)),
-		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
-		SourceIP:           setToStringSlice(d.Get("source_ips").(*schema.Set)),
+		DataPersistence:    redis.String(d.Get(AttrDataPersistence).(string)),
+		DataEvictionPolicy: redis.String(d.Get(AttrDataEviction).(string)),
+		SourceIP:           setToStringSlice(d.Get(AttrSourceIPs).(*schema.Set)),
 		Alerts:             &alerts,
-		RemoteBackup:       buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
-		EnableDefaultUser:  redis.Bool(d.Get("enable_default_user").(bool)),
+		RemoteBackup:       buildBackupPlan(d.Get(AttrRemoteBackup).([]interface{}), d.Get(AttrPeriodicBackupPath)),
+		EnableDefaultUser:  redis.Bool(d.Get(AttrEnableDefaultUser).(bool)),
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)
 	if v, ok := d.GetOk("dataset_size_in_gb"); ok {
 		update.DatasetSizeInGB = redis.Float64(v.(float64))
 	} else {
-		if v, ok := d.GetOk("memory_limit_in_gb"); ok {
+		if v, ok := d.GetOk(AttrMemoryLimitInGB); ok {
 			update.MemoryLimitInGB = redis.Float64(v.(float64))
 		}
 	}
 
 	// The below fields are optional and will only be sent in the request if they are present in the Terraform configuration
-	if len(setToStringSlice(d.Get("source_ips").(*schema.Set))) == 0 {
+	if len(setToStringSlice(d.Get(AttrSourceIPs).(*schema.Set))) == 0 {
 		update.SourceIP = []*string{redis.String("0.0.0.0/0")}
 	}
 
-	queryPerformanceFactor := d.Get("query_performance_factor").(string)
+	queryPerformanceFactor := d.Get(AttrQueryPerformanceFactor).(string)
 	if queryPerformanceFactor != "" {
 		update.QueryPerformanceFactor = redis.String(queryPerformanceFactor)
 	}
 
-	if d.Get("password").(string) != "" {
-		update.Password = redis.String(d.Get("password").(string))
+	if d.Get(AttrPassword).(string) != "" {
+		update.Password = redis.String(d.Get(AttrPassword).(string))
 	}
 
-	update.ReplicaOf = setToStringSlice(d.Get("replica_of").(*schema.Set))
+	update.ReplicaOf = setToStringSlice(d.Get(AttrReplicaOf).(*schema.Set))
 	if update.ReplicaOf == nil {
 		update.ReplicaOf = make([]*string, 0)
 	}
 
 	// The cert validation is done by the API (HTTP 400 is returned if it's invalid).
-	clientSSLCertificate := d.Get("client_ssl_certificate").(string)
-	clientTLSCertificates := interfaceToStringSlice(d.Get("client_tls_certificates").([]interface{}))
-	enableTLS := d.Get("enable_tls").(bool)
+	clientSSLCertificate := d.Get(AttrClientSSLCertificate).(string)
+	clientTLSCertificates := interfaceToStringSlice(d.Get(AttrClientTLSCertificates).([]interface{}))
+	enableTLS := d.Get(AttrEnableTLS).(bool)
 	if enableTLS {
 		update.EnableTls = redis.Bool(enableTLS)
 		if clientSSLCertificate != "" {
@@ -752,19 +788,19 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		}
 	}
 
-	regex := d.Get("hashing_policy").([]interface{})
+	regex := d.Get(AttrHashingPolicy).([]interface{})
 	if len(regex) != 0 {
 		update.RegexRules = interfaceToStringSlice(regex)
 	}
 
-	backupPath := d.Get("periodic_backup_path").(string)
+	backupPath := d.Get(AttrPeriodicBackupPath).(string)
 	if backupPath != "" {
 		update.PeriodicBackupPath = redis.String(backupPath)
 	}
 
-	update.UseExternalEndpointForOSSClusterAPI = redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool))
+	update.UseExternalEndpointForOSSClusterAPI = redis.Bool(d.Get(AttrExternalEndpointForOssClusterAPI).(bool))
 
-	respVersion := d.Get("resp_version").(string)
+	respVersion := d.Get(AttrRespVersion).(string)
 	if respVersion != "" {
 		update.RespVersion = redis.String(respVersion)
 	}
@@ -914,7 +950,7 @@ func customizeDiff() schema.CustomizeDiffFunc {
 		if err := validateQueryPerformanceFactor()(ctx, diff, meta); err != nil {
 			return err
 		}
-		if err := remoteBackupIntervalSetCorrectly("remote_backup")(ctx, diff, meta); err != nil {
+		if err := remoteBackupIntervalSetCorrectly(AttrRemoteBackup)(ctx, diff, meta); err != nil {
 			return err
 		}
 		return nil
@@ -923,19 +959,19 @@ func customizeDiff() schema.CustomizeDiffFunc {
 
 func validateQueryPerformanceFactor() schema.CustomizeDiffFunc {
 	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-		// Check if "query_performance_factor" is set
-		qpf, qpfExists := diff.GetOk("query_performance_factor")
+		// Check if query performance factor is set
+		qpf, qpfExists := diff.GetOk(AttrQueryPerformanceFactor)
 
 		// Ensure "modules" is explicitly defined in the HCL
-		_, modulesExists := diff.GetOkExists("modules")
+		_, modulesExists := diff.GetOkExists(AttrModules)
 
 		if qpfExists && qpf.(string) != "" {
 			if !modulesExists {
-				return fmt.Errorf(`"query_performance_factor" requires the "modules" key to be explicitly defined in HCL`)
+				return fmt.Errorf(`"%s" requires the "modules" key to be explicitly defined in HCL`, AttrQueryPerformanceFactor)
 			}
 
 			// Retrieve modules as a slice of interfaces
-			rawModules := diff.Get("modules").(*schema.Set).List()
+			rawModules := diff.Get(AttrModules).(*schema.Set).List()
 
 			// Convert modules to []map[string]interface{}
 			var modules []map[string]interface{}
@@ -947,7 +983,7 @@ func validateQueryPerformanceFactor() schema.CustomizeDiffFunc {
 
 			// Check if "RediSearch" exists
 			if !containsDBModule(modules, "RediSearch") {
-				return fmt.Errorf(`"query_performance_factor" requires the "modules" list to contain "RediSearch"`)
+				return fmt.Errorf(`"%s" requires the "modules" list to contain "RediSearch"`, AttrQueryPerformanceFactor)
 			}
 		}
 		return nil
@@ -997,12 +1033,12 @@ func readTags(ctx context.Context, api *apiClient, subId int, databaseId int, d 
 			tags[redis.StringValue(t.Key)] = redis.StringValue(t.Value)
 		}
 	}
-	return d.Set("tags", tags)
+	return d.Set(AttrTags, tags)
 }
 
 func writeTags(ctx context.Context, api *apiClient, subId int, databaseId int, d *schema.ResourceData) error {
 	tags := make([]*redisTags.Tag, 0)
-	tState := d.Get("tags").(map[string]interface{})
+	tState := d.Get(AttrTags).(map[string]interface{})
 	for k, v := range tState {
 		tags = append(tags, &redisTags.Tag{
 			Key:   redis.String(k),
