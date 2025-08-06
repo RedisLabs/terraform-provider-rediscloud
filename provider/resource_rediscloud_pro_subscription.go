@@ -363,6 +363,7 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
+				Deprecated:  "The `redis_version` attribute is deprecated on subscriptions. Please specify `redis_version` on databases directly instead.",
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if d.Id() == "" {
 						// Consider the property if the resource is about to be created.
@@ -603,11 +604,6 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 		MemoryStorage:   redis.String(memoryStorage),
 		CloudProviders:  providers,
 		Databases:       dbs,
-	}
-
-	redisVersion := d.Get("redis_version").(string)
-	if d.Get("redis_version").(string) != "" {
-		createSubscriptionRequest.RedisVersion = redis.String(redisVersion)
 	}
 
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
