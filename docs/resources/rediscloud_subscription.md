@@ -34,7 +34,6 @@ resource "rediscloud_subscription" "subscription-resource" {
   payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage    = "ram"
-  redis_version     = "7.2"
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
@@ -76,7 +75,7 @@ The following arguments are supported:
 * `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'. **(Changes to) this attribute are ignored after creation.**
 * `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. Only __Required__ when `payment_method` is `credit-card`.
 * `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of ‘ram-and-flash’. Default: ‘ram’. **Modifying this attribute will force creation of a new resource.**
-* `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default. **Modifying this attribute will force creation of a new resource.**
+* `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default.  **Deprecated: This attribute is deprecated on pro subscriptions. Please specify `redis_version` on databases directly instead.**
 * `allowlist` - (Optional) An allowlist object, documented below
 * `cloud_provider` - (Required) A cloud provider object, documented below. **Modifying this attribute will force creation of a new resource.**
 * `creation_plan` - (Required) A creation plan object, documented below.
