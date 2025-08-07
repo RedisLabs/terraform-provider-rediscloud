@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"regexp"
 	"strconv"
 	"strings"
@@ -235,6 +236,11 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 					return
 				},
 			},
+			"redis_version": {
+				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
+				Type:        schema.TypeString,
+				Optional:    true,
+			},
 			"modules": {
 				Description: "Modules to be provisioned in the database",
 				Type:        schema.TypeSet,
@@ -346,22 +352,8 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
-	subId := d.Get("subscription_id").(int)
-
+	subId := *utils.GetInt(d, "subscription_id")
 	subscriptionMutex.Lock(subId)
-
-	name := d.Get("name").(string)
-	protocol := d.Get("protocol").(string)
-	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
-	respVersion := d.Get("resp_version").(string)
-	dataPersistence := d.Get("data_persistence").(string)
-	dataEviction := d.Get("data_eviction").(string)
-	password := d.Get("password").(string)
-	replication := d.Get("replication").(bool)
-	throughputMeasurementBy := d.Get("throughput_measurement_by").(string)
-	throughputMeasurementValue := d.Get("throughput_measurement_value").(int)
-	averageItemSizeInBytes := d.Get("average_item_size_in_bytes").(int)
-	queryPerformanceFactor := d.Get("query_performance_factor").(string)
 
 	createModules := make([]*databases.Module, 0)
 	modules := d.Get("modules").(*schema.Set)
@@ -394,48 +386,52 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	}
 
 	createDatabase := databases.CreateDatabase{
-		Name:                 redis.String(name),
-		Protocol:             redis.String(protocol),
-		SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
-		DataPersistence:      redis.String(dataPersistence),
-		DataEvictionPolicy:   redis.String(dataEviction),
-		Replication:          redis.Bool(replication),
+		Name:                 utils.GetString(d, "name"),
+		Protocol:             utils.GetString(d, "protocol"),
+		SupportOSSClusterAPI: utils.GetBool(d, "support_oss_cluster_api"),
+		DataPersistence:      utils.GetString(d, "data_persistence"),
+		DataEvictionPolicy:   utils.GetString(d, "data_eviction"),
+		Replication:          utils.GetBool(d, "replication"),
 		ThroughputMeasurement: &databases.CreateThroughputMeasurement{
-			By:    redis.String(throughputMeasurementBy),
-			Value: redis.Int(throughputMeasurementValue),
+			By:    utils.GetString(d, "throughput_measurement_by"),
+			Value: utils.GetInt(d, "throughput_measurement_value"),
 		},
 		Modules:      createModules,
 		Alerts:       createAlerts,
 		RemoteBackup: buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
 	}
 
-	if queryPerformanceFactor != "" {
-		createDatabase.QueryPerformanceFactor = redis.String(queryPerformanceFactor)
-	}
+	utils.SetStringIfNotEmpty(d, "query_performance_factor", func(s *string) {
+		createDatabase.QueryPerformanceFactor = s
+	})
 
-	if password != "" {
-		createDatabase.Password = redis.String(password)
-	}
+	utils.SetStringIfNotEmpty(d, "redis_version", func(s *string) {
+		createDatabase.RedisVersion = s
+	})
 
-	if averageItemSizeInBytes > 0 {
-		createDatabase.AverageItemSizeInBytes = &averageItemSizeInBytes
-	}
+	utils.SetStringIfNotEmpty(d, "password", func(s *string) {
+		createDatabase.Password = s
+	})
 
-	if v, ok := d.GetOk("dataset_size_in_gb"); ok {
-		createDatabase.DatasetSizeInGB = redis.Float64(v.(float64))
-	}
+	utils.SetIntIfPositive(d, "average_item_size_in_bytes", func(i *int) {
+		createDatabase.AverageItemSizeInBytes = i
+	})
 
-	if v, ok := d.GetOk("memory_limit_in_gb"); ok {
-		createDatabase.MemoryLimitInGB = redis.Float64(v.(float64))
-	}
+	utils.SetFloat64(d, "dataset_size_in_gb", func(f *float64) {
+		createDatabase.DatasetSizeInGB = f
+	})
 
-	if v, ok := d.GetOk("port"); ok {
-		createDatabase.PortNumber = redis.Int(v.(int))
-	}
+	utils.SetFloat64(d, "memory_limit_in_gb", func(f *float64) {
+		createDatabase.MemoryLimitInGB = f
+	})
 
-	if respVersion != "" {
-		createDatabase.RespVersion = redis.String(respVersion)
-	}
+	utils.SetInt(d, "port", func(i *int) {
+		createDatabase.PortNumber = i
+	})
+
+	utils.SetStringIfNotEmpty(d, "resp_version", func(s *string) {
+		createDatabase.RespVersion = s
+	})
 
 	// Confirm sub is ready to accept a db request
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
