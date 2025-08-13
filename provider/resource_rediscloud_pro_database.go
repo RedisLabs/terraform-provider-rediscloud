@@ -539,6 +539,10 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
+	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
+		return diag.FromErr(err)
+	}
+
 	if err := d.Set("modules", flattenModules(db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
