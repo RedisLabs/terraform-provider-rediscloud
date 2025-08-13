@@ -19,7 +19,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 	const resourceName = "rediscloud_essentials_database.example"
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
@@ -276,7 +276,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 	const resourceName = "rediscloud_essentials_database.example"
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
