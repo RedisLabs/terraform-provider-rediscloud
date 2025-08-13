@@ -169,7 +169,7 @@ jobs:
       - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
         with:
           go-version-file: go.mod
-      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudProDatabase_Upgrade)"'
+      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudProDatabase_Upgrade"'
 
 
   tfproviderlint:
