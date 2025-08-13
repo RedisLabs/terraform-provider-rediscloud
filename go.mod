@@ -1,6 +1,8 @@
 module github.com/RedisLabs/terraform-provider-rediscloud
 
-go 1.22.4
+go 1.23.0
+
+toolchain go1.24.1
 
 require (
 	github.com/RedisLabs/rediscloud-go-api v0.33.1
@@ -53,7 +55,7 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/zclconf/go-cty v1.16.2 // indirect
-	golang.org/x/crypto v0.33.0 // indirect
+	golang.org/x/crypto v0.35.0 // indirect
 	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
@@ -66,6 +68,3 @@ require (
 	google.golang.org/protobuf v1.36.3 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-// for local development, uncomment this
-//replace github.com/RedisLabs/rediscloud-go-api => ../rediscloud-go-api
