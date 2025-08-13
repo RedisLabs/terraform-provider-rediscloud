@@ -26,7 +26,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 	const resourceName = "rediscloud_essentials_subscription.example"
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
@@ -91,7 +91,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 	const resourceName = "rediscloud_essentials_subscription.example"
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
@@ -157,7 +157,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 	const resourceName = "rediscloud_essentials_subscription.example"
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
@@ -228,7 +228,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 	const resourceName = "rediscloud_essentials_subscription.example"
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
