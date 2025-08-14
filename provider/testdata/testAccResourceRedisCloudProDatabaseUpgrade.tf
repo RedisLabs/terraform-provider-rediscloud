@@ -63,6 +63,7 @@ resource "rediscloud_subscription_database" "example" {
   periodic_backup_path = ""
   enable_default_user = true
   redis_version = local.redis_version
+  enable_redis_version_upgrade = true
 
   alert {
     name = "dataset-size"
