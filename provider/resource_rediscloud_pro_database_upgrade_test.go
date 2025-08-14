@@ -42,14 +42,14 @@ func TestAccResourceRedisCloudProDatabase_Upgrade(t *testing.T) {
 	})
 }
 
-func getRedisCloudUpgradeConfig(redisVersion string) string {
+func getRedisCloudUpgradeConfig(redisVersion string) (string, error) {
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 
 	content, err := os.ReadFile("./testdata/testAccResourceRedisCloudProDatabaseUpgrade.tf")
 	if err != nil {
-		panic(fmt.Errorf("failed to read test config file: %w", err))
+		return "", fmt.Errorf("could not read test data: %w", err)
 	}
 
-	return fmt.Sprintf(string(content), testCloudAccountName, name, redisVersion)
+	return fmt.Sprintf(string(content), testCloudAccountName, name, redisVersion), nil
 }
