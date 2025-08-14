@@ -789,18 +789,18 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	if d.HasChange("redis_version") {
 		// if we have just created the database, it will detect an upgrade unnecessarily
 		originalVersion, newVersion := d.GetChange("redis_version")
-		if originalVersion != "" || newVersion != "" {
-			if diags, unlocked := upgradeRedisVersion(ctx, d, subId, api, dbId); diags != nil {
+
+		ogVersionStr := originalVersion.(string)
+		newVersionStr := newVersion.(string)
+
+		// if either version is blank, it could attempt to upgrade unnecessarily.
+		// only upgrade when a known version goes to another known version
+		if ogVersionStr != "" && newVersionStr != "" {
+			if diags, unlocked := upgradeRedisVersion(ctx, api, subId, dbId, newVersionStr); diags != nil {
 				if !unlocked {
 					subscriptionMutex.Unlock(subId)
 				}
 				return diags
-			}
-
-			// wait for upgrade
-			if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-				subscriptionMutex.Unlock(subId)
-				return diag.FromErr(err)
 			}
 		}
 	}
@@ -831,14 +831,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	return resourceRedisCloudProDatabaseRead(ctx, d, meta)
 }
 
-func upgradeRedisVersion(ctx context.Context, d *schema.ResourceData, subId int, api *apiClient, dbId int) (diag.Diagnostics, bool) {
-	newVersionRaw := d.Get("redis_version")
-	newVersion, ok := newVersionRaw.(string)
-	if !ok || newVersion == "" {
-		subscriptionMutex.Unlock(subId)
-		return diag.Errorf("invalid redis_version value: %v", newVersionRaw), true
-	}
-
+func upgradeRedisVersion(ctx context.Context, api *apiClient, subId int, dbId int, newVersion string) (diag.Diagnostics, bool) {
 	log.Printf("[INFO] Requesting Redis version change to %s...", newVersion)
 
 	upgrade := databases.UpgradeRedisVersion{
@@ -851,6 +844,13 @@ func upgradeRedisVersion(ctx context.Context, d *schema.ResourceData, subId int,
 	}
 
 	log.Printf("[INFO] Redis version change request to %s accepted by API", newVersion)
+
+	// wait for upgrade
+	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		subscriptionMutex.Unlock(subId)
+		return diag.FromErr(err), true
+	}
+
 	return nil, false
 }
 
