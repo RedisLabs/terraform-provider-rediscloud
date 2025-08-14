@@ -22,7 +22,7 @@ func TestAccResourceRedisCloudProDatabase_Upgrade(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Test database and replica database creation
 			{
-				Config: getRedisCloudUpgradeConfig("7.2"),
+				Config: getRedisCloudUpgradeConfig(t, "7.2"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -31,7 +31,7 @@ func TestAccResourceRedisCloudProDatabase_Upgrade(t *testing.T) {
 			},
 			// Test database is updated successfully
 			{
-				Config: getRedisCloudUpgradeConfig("7.4"),
+				Config: getRedisCloudUpgradeConfig(t, "7.4"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -42,14 +42,14 @@ func TestAccResourceRedisCloudProDatabase_Upgrade(t *testing.T) {
 	})
 }
 
-func getRedisCloudUpgradeConfig(redisVersion string) (string, error) {
+func getRedisCloudUpgradeConfig(t *testing.T, redisVersion string) string {
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 
 	content, err := os.ReadFile("./testdata/testAccResourceRedisCloudProDatabaseUpgrade.tf")
 	if err != nil {
-		return "", fmt.Errorf("could not read test data: %w", err)
+		t.Fatalf("failed to read file: %v", err)
 	}
 
-	return fmt.Sprintf(string(content), testCloudAccountName, name, redisVersion), nil
+	return fmt.Sprintf(string(content), testCloudAccountName, name, redisVersion)
 }
