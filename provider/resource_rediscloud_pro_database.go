@@ -788,8 +788,8 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	// if redis_version has changed, then upgrade first
 	if d.HasChange("redis_version") {
 		// if we have just created the database, it will detect an upgrade unnecessarily
-		original, _ := d.GetChange("redis_version")
-		if original != "" {
+		originalVersion, newVersion := d.GetChange("redis_version")
+		if originalVersion != "" || newVersion != "" {
 			if diags, unlocked := upgradeRedisVersion(ctx, d, subId, api, dbId); diags != nil {
 				if !unlocked {
 					subscriptionMutex.Unlock(subId)

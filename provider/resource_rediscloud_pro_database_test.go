@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-// Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the database resource.
+// Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the database resource.
 func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 
 	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
