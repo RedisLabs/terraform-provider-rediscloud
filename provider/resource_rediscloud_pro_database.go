@@ -241,13 +241,7 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "",
-			},
-			"enable_redis_version_upgrade": {
-				Description: "Enables Redis version upgrades. Default false. Will only upgrade the redis database to a new version if enabled",
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     false,
+				Computed:    true,
 			},
 			"modules": {
 				Description: "Modules to be provisioned in the database",
@@ -793,17 +787,14 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	// if redis_version has changed, then upgrade first
-	if d.Get("enable_redis_version_upgrade").(bool) && d.HasChange("redis_version") {
+	if d.HasChange("redis_version") {
 		// if we have just created the database, it will detect an upgrade unnecessarily
 		originalVersion, newVersion := d.GetChange("redis_version")
 
-		ogVersionStr := originalVersion.(string)
-		newVersionStr := newVersion.(string)
-
 		// if either version is blank, it could attempt to upgrade unnecessarily.
 		// only upgrade when a known version goes to another known version
-		if ogVersionStr != "" && newVersionStr != "" {
-			if diags, unlocked := upgradeRedisVersion(ctx, api, subId, dbId, newVersionStr); diags != nil {
+		if originalVersion.(string) != "" && newVersion.(string) != "" {
+			if diags, unlocked := upgradeRedisVersion(ctx, api, subId, dbId, newVersion.(string)); diags != nil {
 				if !unlocked {
 					subscriptionMutex.Unlock(subId)
 				}
