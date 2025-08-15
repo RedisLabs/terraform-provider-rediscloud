@@ -14,7 +14,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 ### Changed
 - Updating multiple dependencies.
 
-## Removed
+### Removed
 - Deprecate subscription version support. If you use `redis_version` on your pro subscription a warning will come up. This will be removed entirely on a major update.
 
 # 2.2.0 (1st August 2025)
