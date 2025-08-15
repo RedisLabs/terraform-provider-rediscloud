@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -240,6 +241,7 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
 				Type:        schema.TypeString,
 				Optional:    true,
+				Computed:    true,
 			},
 			"modules": {
 				Description: "Modules to be provisioned in the database",
@@ -538,6 +540,10 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
+	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
+		return diag.FromErr(err)
+	}
+
 	if err := d.Set("modules", flattenModules(db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
@@ -683,19 +689,20 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	update := databases.UpdateDatabase{
-		Name:                 redis.String(d.Get("name").(string)),
-		SupportOSSClusterAPI: redis.Bool(d.Get("support_oss_cluster_api").(bool)),
-		Replication:          redis.Bool(d.Get("replication").(bool)),
+		Name:                 utils.GetString(d, "name"),
+		SupportOSSClusterAPI: utils.GetBool(d, "support_oss_cluster_api"),
+		Replication:          utils.GetBool(d, "replication"),
 		ThroughputMeasurement: &databases.UpdateThroughputMeasurement{
-			By:    redis.String(d.Get("throughput_measurement_by").(string)),
-			Value: redis.Int(d.Get("throughput_measurement_value").(int)),
+			By:    utils.GetString(d, "throughput_measurement_by"),
+			Value: utils.GetInt(d, "throughput_measurement_value"),
 		},
-		DataPersistence:    redis.String(d.Get("data_persistence").(string)),
-		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
+
+		DataPersistence:    utils.GetString(d, "data_persistence"),
+		DataEvictionPolicy: utils.GetString(d, "data_eviction"),
 		SourceIP:           setToStringSlice(d.Get("source_ips").(*schema.Set)),
 		Alerts:             &alerts,
 		RemoteBackup:       buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
-		EnableDefaultUser:  redis.Bool(d.Get("enable_default_user").(bool)),
+		EnableDefaultUser:  utils.GetBool(d, "enable_default_user"),
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)
@@ -779,6 +786,25 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
+	// if redis_version has changed, then upgrade first
+	if d.HasChange("redis_version") {
+		// if we have just created the database, it will detect an upgrade unnecessarily
+		originalVersion, newVersion := d.GetChange("redis_version")
+
+		// if either version is blank, it could attempt to upgrade unnecessarily.
+		// only upgrade when a known version goes to another known version
+		if originalVersion.(string) != "" && newVersion.(string) != "" {
+			if diags, unlocked := upgradeRedisVersion(ctx, api, subId, dbId, newVersion.(string)); diags != nil {
+				if !unlocked {
+					subscriptionMutex.Unlock(subId)
+				}
+				return diags
+			}
+		}
+	}
+
+	// Confirm db + sub active status
+
 	if err := api.client.Database.Update(ctx, subId, dbId, update); err != nil {
 		subscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
@@ -801,6 +827,29 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 
 	subscriptionMutex.Unlock(subId)
 	return resourceRedisCloudProDatabaseRead(ctx, d, meta)
+}
+
+func upgradeRedisVersion(ctx context.Context, api *apiClient, subId int, dbId int, newVersion string) (diag.Diagnostics, bool) {
+	log.Printf("[INFO] Requesting Redis version change to %s...", newVersion)
+
+	upgrade := databases.UpgradeRedisVersion{
+		TargetRedisVersion: redis.String(newVersion),
+	}
+
+	if err := api.client.Database.UpgradeRedisVersion(ctx, subId, dbId, upgrade); err != nil {
+		subscriptionMutex.Unlock(subId)
+		return diag.Errorf("failed to change Redis version to %s: %v", newVersion, err), true
+	}
+
+	log.Printf("[INFO] Redis version change request to %s accepted by API", newVersion)
+
+	// wait for upgrade
+	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		subscriptionMutex.Unlock(subId)
+		return diag.FromErr(err), true
+	}
+
+	return nil, false
 }
 
 func buildBackupPlan(data interface{}, periodicBackupPath interface{}) *databases.DatabaseBackupConfig {
