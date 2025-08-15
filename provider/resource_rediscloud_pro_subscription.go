@@ -606,6 +606,11 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 		Databases:       dbs,
 	}
 
+	redisVersion := d.Get("redis_version").(string)
+	if d.Get("redis_version").(string) != "" {
+		createSubscriptionRequest.RedisVersion = redis.String(redisVersion)
+	}
+
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
 
 	if cmkEnabled {
