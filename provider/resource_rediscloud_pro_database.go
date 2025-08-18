@@ -94,6 +94,12 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 				Computed:     true,
 				ExactlyOneOf: []string{"memory_limit_in_gb", "dataset_size_in_gb"},
 			},
+			"redis_version": {
+				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+			},
 			"support_oss_cluster_api": {
 				Description: "Support Redis open-source (OSS) Cluster API",
 				Type:        schema.TypeBool,
@@ -236,12 +242,6 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 					}
 					return
 				},
-			},
-			"redis_version": {
-				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
-				Type:        schema.TypeString,
-				Optional:    true,
-				Computed:    true,
 			},
 			"modules": {
 				Description: "Modules to be provisioned in the database",
