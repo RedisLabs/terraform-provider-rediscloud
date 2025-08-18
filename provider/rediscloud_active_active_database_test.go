@@ -161,6 +161,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					// Test datasource
 					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(datasourceName, "redis_version", "7.4"),
 					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "true"),
 				),
 			},
@@ -327,8 +328,8 @@ resource "rediscloud_active_active_subscription_database" "example" {
 		"priority" = "code-2"
 	}
 
-}
-// 
+} 
+
 data "rediscloud_active_active_subscription_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
 	name = rediscloud_active_active_subscription_database.example.name
