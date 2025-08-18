@@ -5,7 +5,7 @@ description: |-
   Database data source for Active-Active Subscriptions in the Redis Cloud Terraform provider.
 ---
 
-# Resource: rediscloud_active_active_subscription_database
+# Data Source: rediscloud_active_active_subscription_database
 
 This data source allows access to the details of an existing database within your Redis Enterprise Cloud account.
 
