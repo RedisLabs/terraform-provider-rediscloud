@@ -10,11 +10,11 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 - Redis Database version support on create. Specify a version on create to create a DB of that version.
 - Database upgrade path. If you specify a different version to something already specified, the provider will upgrade your database to the new version. Will fail on downgrade.
+- Redis AA Database version support on create. No upgrade path yet - if you change your `redis_version` it will force a new resource.
+- Updated data sources for pro and active active databases to also support `redis_version`.
 
 ### Changed
 - Updating multiple dependencies.
-
-### Removed
 - Deprecate subscription version support. If you use `redis_version` on your pro subscription a warning will come up. This will be removed entirely on a major update.
 
 # 2.2.0 (1st August 2025)
