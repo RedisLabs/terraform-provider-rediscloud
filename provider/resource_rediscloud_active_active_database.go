@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"regexp"
 	"strings"
@@ -96,6 +97,13 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ExactlyOneOf: []string{"memory_limit_in_gb", "dataset_size_in_gb"},
+			},
+			"redis_version": {
+				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				ForceNew:    true,
 			},
 			"support_oss_cluster_api": {
 				Description: "Support Redis open-source (OSS) Cluster API",
@@ -339,11 +347,7 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 	name := d.Get("name").(string)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
 	useExternalEndpointForOSSClusterAPI := d.Get("external_endpoint_for_oss_cluster_api").(bool)
-	dataEviction := d.Get("data_eviction").(string)
-	globalDataPersistence := d.Get("global_data_persistence").(string)
-	globalPassword := d.Get("global_password").(string)
 	globalSourceIp := setToStringSlice(d.Get("global_source_ips").(*schema.Set))
-	respVersion := d.Get("global_resp_version").(string)
 
 	createAlerts := make([]*databases.Alert, 0)
 	alerts := d.Get("global_alert").(*schema.Set)
@@ -399,33 +403,37 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 		LocalThroughputMeasurement:          localThroughputs,
 	}
 
-	if dataEviction != "" {
-		createDatabase.DataEvictionPolicy = redis.String(dataEviction)
-	}
+	utils.SetStringIfNotEmpty(d, "data_eviction", func(s *string) {
+		createDatabase.DataEvictionPolicy = s
+	})
 
-	if globalDataPersistence != "" {
-		createDatabase.GlobalDataPersistence = redis.String(globalDataPersistence)
-	}
+	utils.SetStringIfNotEmpty(d, "global_data_persistence", func(s *string) {
+		createDatabase.GlobalDataPersistence = s
+	})
 
-	if globalPassword != "" {
-		createDatabase.GlobalPassword = redis.String(globalPassword)
-	}
+	utils.SetStringIfNotEmpty(d, "global_password", func(s *string) {
+		createDatabase.GlobalPassword = s
+	})
 
-	if v, ok := d.GetOk("dataset_size_in_gb"); ok {
-		createDatabase.DatasetSizeInGB = redis.Float64(v.(float64))
-	}
+	utils.SetFloat64(d, "dataset_size_in_gb", func(f *float64) {
+		createDatabase.DatasetSizeInGB = f
+	})
 
-	if v, ok := d.GetOk("memory_limit_in_gb"); ok {
-		createDatabase.MemoryLimitInGB = redis.Float64(v.(float64))
-	}
+	utils.SetFloat64(d, "memory_limit_in_gb", func(f *float64) {
+		createDatabase.MemoryLimitInGB = f
+	})
 
-	if v, ok := d.GetOk("port"); ok {
-		createDatabase.PortNumber = redis.Int(v.(int))
-	}
+	utils.SetIntIfPositive(d, "port", func(i *int) {
+		createDatabase.PortNumber = i
+	})
 
-	if respVersion != "" {
-		createDatabase.RespVersion = redis.String(respVersion)
-	}
+	utils.SetStringIfNotEmpty(d, "global_resp_version", func(s *string) {
+		createDatabase.RespVersion = s
+	})
+
+	utils.SetStringIfNotEmpty(d, "redis_version", func(s *string) {
+		createDatabase.RedisVersion = s
+	})
 
 	// Confirm Subscription Active status before creating database
 	err = waitForSubscriptionToBeActive(ctx, subId, api)
@@ -588,6 +596,10 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 	if err := d.Set("global_modules", flattenModulesToNames(db.Modules)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
 		return diag.FromErr(err)
 	}
 
