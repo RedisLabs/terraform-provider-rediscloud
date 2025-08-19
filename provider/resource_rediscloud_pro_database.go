@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -91,6 +93,12 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ExactlyOneOf: []string{"memory_limit_in_gb", "dataset_size_in_gb"},
+			},
+			"redis_version": {
+				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
 			},
 			"support_oss_cluster_api": {
 				Description: "Support Redis open-source (OSS) Cluster API",
@@ -346,22 +354,8 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*apiClient)
 
-	subId := d.Get("subscription_id").(int)
-
+	subId := *utils.GetInt(d, "subscription_id")
 	subscriptionMutex.Lock(subId)
-
-	name := d.Get("name").(string)
-	protocol := d.Get("protocol").(string)
-	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
-	respVersion := d.Get("resp_version").(string)
-	dataPersistence := d.Get("data_persistence").(string)
-	dataEviction := d.Get("data_eviction").(string)
-	password := d.Get("password").(string)
-	replication := d.Get("replication").(bool)
-	throughputMeasurementBy := d.Get("throughput_measurement_by").(string)
-	throughputMeasurementValue := d.Get("throughput_measurement_value").(int)
-	averageItemSizeInBytes := d.Get("average_item_size_in_bytes").(int)
-	queryPerformanceFactor := d.Get("query_performance_factor").(string)
 
 	createModules := make([]*databases.Module, 0)
 	modules := d.Get("modules").(*schema.Set)
@@ -394,48 +388,52 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	}
 
 	createDatabase := databases.CreateDatabase{
-		Name:                 redis.String(name),
-		Protocol:             redis.String(protocol),
-		SupportOSSClusterAPI: redis.Bool(supportOSSClusterAPI),
-		DataPersistence:      redis.String(dataPersistence),
-		DataEvictionPolicy:   redis.String(dataEviction),
-		Replication:          redis.Bool(replication),
+		Name:                 utils.GetString(d, "name"),
+		Protocol:             utils.GetString(d, "protocol"),
+		SupportOSSClusterAPI: utils.GetBool(d, "support_oss_cluster_api"),
+		DataPersistence:      utils.GetString(d, "data_persistence"),
+		DataEvictionPolicy:   utils.GetString(d, "data_eviction"),
+		Replication:          utils.GetBool(d, "replication"),
 		ThroughputMeasurement: &databases.CreateThroughputMeasurement{
-			By:    redis.String(throughputMeasurementBy),
-			Value: redis.Int(throughputMeasurementValue),
+			By:    utils.GetString(d, "throughput_measurement_by"),
+			Value: utils.GetInt(d, "throughput_measurement_value"),
 		},
 		Modules:      createModules,
 		Alerts:       createAlerts,
 		RemoteBackup: buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
 	}
 
-	if queryPerformanceFactor != "" {
-		createDatabase.QueryPerformanceFactor = redis.String(queryPerformanceFactor)
-	}
+	utils.SetStringIfNotEmpty(d, "query_performance_factor", func(s *string) {
+		createDatabase.QueryPerformanceFactor = s
+	})
 
-	if password != "" {
-		createDatabase.Password = redis.String(password)
-	}
+	utils.SetStringIfNotEmpty(d, "redis_version", func(s *string) {
+		createDatabase.RedisVersion = s
+	})
 
-	if averageItemSizeInBytes > 0 {
-		createDatabase.AverageItemSizeInBytes = &averageItemSizeInBytes
-	}
+	utils.SetStringIfNotEmpty(d, "password", func(s *string) {
+		createDatabase.Password = s
+	})
 
-	if v, ok := d.GetOk("dataset_size_in_gb"); ok {
-		createDatabase.DatasetSizeInGB = redis.Float64(v.(float64))
-	}
+	utils.SetIntIfPositive(d, "average_item_size_in_bytes", func(i *int) {
+		createDatabase.AverageItemSizeInBytes = i
+	})
 
-	if v, ok := d.GetOk("memory_limit_in_gb"); ok {
-		createDatabase.MemoryLimitInGB = redis.Float64(v.(float64))
-	}
+	utils.SetFloat64(d, "dataset_size_in_gb", func(f *float64) {
+		createDatabase.DatasetSizeInGB = f
+	})
 
-	if v, ok := d.GetOk("port"); ok {
-		createDatabase.PortNumber = redis.Int(v.(int))
-	}
+	utils.SetFloat64(d, "memory_limit_in_gb", func(f *float64) {
+		createDatabase.MemoryLimitInGB = f
+	})
 
-	if respVersion != "" {
-		createDatabase.RespVersion = redis.String(respVersion)
-	}
+	utils.SetInt(d, "port", func(i *int) {
+		createDatabase.PortNumber = i
+	})
+
+	utils.SetStringIfNotEmpty(d, "resp_version", func(s *string) {
+		createDatabase.RespVersion = s
+	})
 
 	// Confirm sub is ready to accept a db request
 	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
@@ -539,6 +537,10 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	}
 
 	if err := d.Set("query_performance_factor", redis.StringValue(db.QueryPerformanceFactor)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -687,19 +689,20 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	update := databases.UpdateDatabase{
-		Name:                 redis.String(d.Get("name").(string)),
-		SupportOSSClusterAPI: redis.Bool(d.Get("support_oss_cluster_api").(bool)),
-		Replication:          redis.Bool(d.Get("replication").(bool)),
+		Name:                 utils.GetString(d, "name"),
+		SupportOSSClusterAPI: utils.GetBool(d, "support_oss_cluster_api"),
+		Replication:          utils.GetBool(d, "replication"),
 		ThroughputMeasurement: &databases.UpdateThroughputMeasurement{
-			By:    redis.String(d.Get("throughput_measurement_by").(string)),
-			Value: redis.Int(d.Get("throughput_measurement_value").(int)),
+			By:    utils.GetString(d, "throughput_measurement_by"),
+			Value: utils.GetInt(d, "throughput_measurement_value"),
 		},
-		DataPersistence:    redis.String(d.Get("data_persistence").(string)),
-		DataEvictionPolicy: redis.String(d.Get("data_eviction").(string)),
+
+		DataPersistence:    utils.GetString(d, "data_persistence"),
+		DataEvictionPolicy: utils.GetString(d, "data_eviction"),
 		SourceIP:           setToStringSlice(d.Get("source_ips").(*schema.Set)),
 		Alerts:             &alerts,
 		RemoteBackup:       buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
-		EnableDefaultUser:  redis.Bool(d.Get("enable_default_user").(bool)),
+		EnableDefaultUser:  utils.GetBool(d, "enable_default_user"),
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)
@@ -783,6 +786,25 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
+	// if redis_version has changed, then upgrade first
+	if d.HasChange("redis_version") {
+		// if we have just created the database, it will detect an upgrade unnecessarily
+		originalVersion, newVersion := d.GetChange("redis_version")
+
+		// if either version is blank, it could attempt to upgrade unnecessarily.
+		// only upgrade when a known version goes to another known version
+		if originalVersion.(string) != "" && newVersion.(string) != "" {
+			if diags, unlocked := upgradeRedisVersion(ctx, api, subId, dbId, newVersion.(string)); diags != nil {
+				if !unlocked {
+					subscriptionMutex.Unlock(subId)
+				}
+				return diags
+			}
+		}
+	}
+
+	// Confirm db + sub active status
+
 	if err := api.client.Database.Update(ctx, subId, dbId, update); err != nil {
 		subscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
@@ -805,6 +827,29 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 
 	subscriptionMutex.Unlock(subId)
 	return resourceRedisCloudProDatabaseRead(ctx, d, meta)
+}
+
+func upgradeRedisVersion(ctx context.Context, api *apiClient, subId int, dbId int, newVersion string) (diag.Diagnostics, bool) {
+	log.Printf("[INFO] Requesting Redis version change to %s...", newVersion)
+
+	upgrade := databases.UpgradeRedisVersion{
+		TargetRedisVersion: redis.String(newVersion),
+	}
+
+	if err := api.client.Database.UpgradeRedisVersion(ctx, subId, dbId, upgrade); err != nil {
+		subscriptionMutex.Unlock(subId)
+		return diag.Errorf("failed to change Redis version to %s: %v", newVersion, err), true
+	}
+
+	log.Printf("[INFO] Redis version change request to %s accepted by API", newVersion)
+
+	// wait for upgrade
+	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		subscriptionMutex.Unlock(subId)
+		return diag.FromErr(err), true
+	}
+
+	return nil, false
 }
 
 func buildBackupPlan(data interface{}, periodicBackupPath interface{}) *databases.DatabaseBackupConfig {

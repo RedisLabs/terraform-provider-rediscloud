@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+
+# 2.3.0 (15th August 2025)
+
+### Added
+
+- Redis Database version support on create. Specify a version on create to create a DB of that version.
+- Database upgrade path. If you specify a different version to something already specified, the provider will upgrade your database to the new version. Will fail on downgrade.
+
+### Changed
+- Updating multiple dependencies.
+
+### Removed
+- Deprecate subscription version support. If you use `redis_version` on your pro subscription a warning will come up. This will be removed entirely on a major update.
+
 # 2.2.0 (1st August 2025)
 
 ### Added

@@ -363,6 +363,7 @@ func resourceRedisCloudProSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
+				Deprecated:  "This attribute is deprecated on pro subscriptions. Please specify `redis_version` on databases directly instead.",
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if d.Id() == "" {
 						// Consider the property if the resource is about to be created.
@@ -1228,6 +1229,7 @@ func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClien
 			databases.StatusProxyPolicyChangePending,
 			databases.StatusProxyPolicyChangeDraft,
 			databases.StatusDynamicEndpointsCreationPending,
+			databases.StatusActiveUpgradePending,
 		},
 		Target:       []string{databases.StatusActive},
 		Timeout:      safetyTimeout,

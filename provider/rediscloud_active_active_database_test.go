@@ -144,6 +144,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.#", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.value", "60"),
+					resource.TestCheckResourceAttr(databaseResourceName, "redis_version", "7.2"),
 
 					// Changes are ignored after creation
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "1"),
@@ -161,6 +162,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					// Test datasource
 					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(datasourceName, "redis_version", "7.2"),
 					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "true"),
 				),
 			},
@@ -299,6 +301,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
     support_oss_cluster_api = false 
     external_endpoint_for_oss_cluster_api = false
 	enable_tls = false
+	redis_version = "7.2"
     
     global_data_persistence = "none"
     global_password = "%s" 
@@ -327,8 +330,8 @@ resource "rediscloud_active_active_subscription_database" "example" {
 		"priority" = "code-2"
 	}
 
-}
-// 
+} 
+
 data "rediscloud_active_active_subscription_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
 	name = rediscloud_active_active_subscription_database.example.name
@@ -415,7 +418,6 @@ resource "rediscloud_active_active_subscription" "example" {
 	name = "%s"
 	payment_method_id = data.rediscloud_payment_method.card.id
 	cloud_provider = "AWS"
-	redis_version = "latest"
 
 	creation_plan {
 		dataset_size_in_gb = 1
