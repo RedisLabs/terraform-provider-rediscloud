@@ -5,7 +5,7 @@ description: |-
   Database data source for Essentials Subscriptions in the Redis Cloud Terraform provider.
 ---
 
-# Resource: rediscloud_essentials_database
+# Data Source: rediscloud_essentials_database
 
 This data source allows access to the details of an existing database within your Redis Enterprise Cloud account.
 
