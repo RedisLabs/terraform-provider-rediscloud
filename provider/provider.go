@@ -3,6 +3,15 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/account"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/acl"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/active_active"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentials"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/misc"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/psc"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/transitgateway"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"strings"
 
@@ -12,8 +21,6 @@ import (
 
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 )
-
-const RedisCloudUrlEnvVar = "REDISCLOUD_URL"
 
 func init() {
 	schema.DescriptionKind = schema.StringMarkdown
@@ -27,7 +34,7 @@ func New(version string) func() *schema.Provider {
 					Type:        schema.TypeString,
 					Description: fmt.Sprintf("This is the URL of Redis Cloud and will default to `https://api.redislabs.com/v1`. This can also be set by the `%s` environment variable.", RedisCloudUrlEnvVar),
 					Optional:    true,
-					DefaultFunc: schema.EnvDefaultFunc(RedisCloudUrlEnvVar, ""),
+					DefaultFunc: schema.EnvDefaultFunc(utils.RedisCloudUrlEnvVar, ""),
 				},
 				"api_key": {
 					Type:        schema.TypeString,
@@ -41,62 +48,61 @@ func New(version string) func() *schema.Provider {
 				},
 			},
 			DataSourcesMap: map[string]*schema.Resource{
-				"rediscloud_cloud_account":    dataSourceRedisCloudCloudAccount(),
-				"rediscloud_data_persistence": dataSourceRedisCloudDataPersistence(),
+				"rediscloud_cloud_account":    account.DataSourceRedisCloudCloudAccount(),
+				"rediscloud_data_persistence": misc.DataSourceRedisCloudDataPersistence(),
 				// Note the difference in public data-source name and the file/method name.
 				// This is to help the developer relate their changes to what they would see happening in the Redis Console.
 				// <default> == flexible == pro
-				"rediscloud_subscription":                       dataSourceRedisCloudProSubscription(),
-				"rediscloud_database":                           dataSourceRedisCloudProDatabase(),
-				"rediscloud_database_modules":                   dataSourceRedisCloudDatabaseModules(),
-				"rediscloud_payment_method":                     dataSourceRedisCloudPaymentMethod(),
-				"rediscloud_regions":                            dataSourceRedisCloudRegions(),
-				"rediscloud_essentials_plan":                    dataSourceRedisCloudEssentialsPlan(),
-				"rediscloud_essentials_subscription":            dataSourceRedisCloudEssentialsSubscription(),
-				"rediscloud_essentials_database":                dataSourceRedisCloudEssentialsDatabase(),
-				"rediscloud_subscription_peerings":              dataSourceRedisCloudSubscriptionPeerings(),
-				"rediscloud_private_service_connect":            dataSourcePrivateServiceConnect(),
-				"rediscloud_private_service_connect_endpoints":  dataSourcePrivateServiceConnectEndpoints(),
-				"rediscloud_active_active_subscription":         dataSourceRedisCloudActiveActiveSubscription(),
-				"rediscloud_active_active_subscription_regions": dataSourceRedisCloudActiveActiveSubscriptionRegions(),
+				"rediscloud_subscription":                       pro.DataSourceRedisCloudProSubscription(),
+				"rediscloud_database":                           pro.DataSourceRedisCloudProDatabase(),
+				"rediscloud_database_modules":                   misc.DataSourceRedisCloudDatabaseModules(),
+				"rediscloud_payment_method":                     account.DataSourceRedisCloudPaymentMethod(),
+				"rediscloud_regions":                            misc.DataSourceRedisCloudRegions(),
+				"rediscloud_essentials_plan":                    essentials.DataSourceRedisCloudEssentialsPlan(),
+				"rediscloud_essentials_subscription":            essentials.DataSourceRedisCloudEssentialsSubscription(),
+				"rediscloud_essentials_database":                essentials.DataSourceRedisCloudEssentialsDatabase(),
+				"rediscloud_subscription_peerings":              psc.DataSourceRedisCloudSubscriptionPeerings(),
+				"rediscloud_private_service_connect":            psc.DataSourcePrivateServiceConnect(),
+				"rediscloud_private_service_connect_endpoints":  psc.DataSourcePrivateServiceConnectEndpoints(),
+				"rediscloud_active_active_subscription":         active_active.DataSourceRedisCloudActiveActiveSubscription(),
+				"rediscloud_active_active_subscription_regions": active_active.DataSourceRedisCloudActiveActiveSubscriptionRegions(),
 
 				// Note the difference in public data-source name and the file/method name.
 				// active_active_subscription_database == active_active_database
-				"rediscloud_active_active_subscription_database":             dataSourceRedisCloudActiveActiveDatabase(),
-				"rediscloud_active_active_private_service_connect":           dataSourceActiveActivePrivateServiceConnect(),
-				"rediscloud_active_active_private_service_connect_endpoints": dataSourceActiveActivePrivateServiceConnectEndpoints(),
-				"rediscloud_transit_gateway":                                 dataSourceTransitGateway(),
-				"rediscloud_active_active_transit_gateway":                   dataSourceActiveActiveTransitGateway(),
-				"rediscloud_acl_rule":                                        dataSourceRedisCloudAclRule(),
-				"rediscloud_acl_role":                                        dataSourceRedisCloudAclRole(),
-				"rediscloud_acl_user":                                        dataSourceRedisCloudAclUser(),
+				"rediscloud_active_active_subscription_database":             active_active.DataSourceRedisCloudActiveActiveDatabase(),
+				"rediscloud_active_active_private_service_connect":           active_active.DataSourceActiveActivePrivateServiceConnect(),
+				"rediscloud_active_active_private_service_connect_endpoints": active_active.DataSourceActiveActivePrivateServiceConnectEndpoints(),
+				"rediscloud_transit_gateway":                                 transitgateway.DataSourceTransitGateway(),
+				"rediscloud_active_active_transit_gateway":                   active_active.DataSourceActiveActiveTransitGateway(),
+				"rediscloud_acl_rule":                                        acl.DataSourceRedisCloudAclRule(),
+				"rediscloud_acl_role":                                        acl.DataSourceRedisCloudAclRole(),
+				"rediscloud_acl_user":                                        acl.DataSourceRedisCloudAclUser(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
-				"rediscloud_cloud_account":           resourceRedisCloudCloudAccount(),
-				"rediscloud_essentials_subscription": resourceRedisCloudEssentialsSubscription(),
-				"rediscloud_essentials_database":     resourceRedisCloudEssentialsDatabase(),
+				"rediscloud_cloud_account":           account.ResourceRedisCloudCloudAccount(),
+				"rediscloud_essentials_subscription": essentials.ResourceRedisCloudEssentialsSubscription(),
+				"rediscloud_essentials_database":     essentials.ResourceRedisCloudEssentialsDatabase(),
 				// Note the difference in public resource name and the file/method name.
 				// <default> == flexible == pro
-				"rediscloud_subscription":                              resourceRedisCloudProSubscription(),
-				"rediscloud_subscription_database":                     resourceRedisCloudProDatabase(),
-				"rediscloud_subscription_peering":                      resourceRedisCloudSubscriptionPeering(),
-				"rediscloud_private_service_connect":                   resourceRedisCloudPrivateServiceConnect(),
-				"rediscloud_private_service_connect_endpoint":          resourceRedisCloudPrivateServiceConnectEndpoint(),
-				"rediscloud_private_service_connect_endpoint_accepter": resourceRedisCloudPrivateServiceConnectEndpointAccepter(),
-				"rediscloud_active_active_subscription":                resourceRedisCloudActiveActiveSubscription(),
+				"rediscloud_subscription":                              pro.ResourceRedisCloudProSubscription(),
+				"rediscloud_subscription_database":                     pro.ResourceRedisCloudProDatabase(),
+				"rediscloud_subscription_peering":                      psc.ResourceRedisCloudSubscriptionPeering(),
+				"rediscloud_private_service_connect":                   psc.ResourceRedisCloudPrivateServiceConnect(),
+				"rediscloud_private_service_connect_endpoint":          psc.ResourceRedisCloudPrivateServiceConnectEndpoint(),
+				"rediscloud_private_service_connect_endpoint_accepter": psc.ResourceRedisCloudPrivateServiceConnectEndpointAccepter(),
+				"rediscloud_active_active_subscription":                active_active.ResourceRedisCloudActiveActiveSubscription(),
 				// Note the difference in public resource name and the file/method name.
 				// active_active_subscription_database == active_active_database
-				"rediscloud_active_active_subscription_database":                     resourceRedisCloudActiveActiveDatabase(),
-				"rediscloud_active_active_subscription_regions":                      resourceRedisCloudActiveActiveSubscriptionRegions(),
-				"rediscloud_active_active_subscription_peering":                      resourceRedisCloudActiveActiveSubscriptionPeering(),
-				"rediscloud_active_active_private_service_connect":                   resourceRedisCloudActiveActivePrivateServiceConnect(),
-				"rediscloud_active_active_private_service_connect_endpoint":          resourceRedisCloudActiveActivePrivateServiceConnectEndpoint(),
-				"rediscloud_active_active_private_service_connect_endpoint_accepter": resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter(),
-				"rediscloud_transit_gateway_attachment":                              resourceRedisCloudTransitGatewayAttachment(),
-				"rediscloud_active_active_transit_gateway_attachment":                resourceRedisCloudActiveActiveTransitGatewayAttachment(),
-				"rediscloud_acl_rule":                                                resourceRedisCloudAclRule(),
-				"rediscloud_acl_role":                                                resourceRedisCloudAclRole(),
-				"rediscloud_acl_user":                                                resourceRedisCloudAclUser(),
+				"rediscloud_active_active_subscription_database":                     active_active.ResourceRedisCloudActiveActiveDatabase(),
+				"rediscloud_active_active_subscription_regions":                      active_active.ResourceRedisCloudActiveActiveSubscriptionRegions(),
+				"rediscloud_active_active_subscription_peering":                      active_active.ResourceRedisCloudActiveActiveSubscriptionPeering(),
+				"rediscloud_active_active_private_service_connect":                   psc.ResourceRedisCloudActiveActivePrivateServiceConnect(),
+				"rediscloud_active_active_private_service_connect_endpoint":          psc.ResourceRedisCloudActiveActivePrivateServiceConnectEndpoint(),
+				"rediscloud_active_active_private_service_connect_endpoint_accepter": psc.ResourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter(),
+				"rediscloud_transit_gateway_attachment":                              transitgateway.ResourceRedisCloudTransitGatewayAttachment(),
+				"rediscloud_acl_rule":                                                acl.ResourceRedisCloudAclRule(),
+				"rediscloud_acl_role":                                                acl.ResourceRedisCloudAclRole(),
+				"rediscloud_acl_user":                                                acl.ResourceRedisCloudAclUser(),
 			},
 		}
 
@@ -104,13 +110,6 @@ func New(version string) func() *schema.Provider {
 
 		return p
 	}
-}
-
-// Lock that must be acquired when modifying something related to a subscription as only one _thing_ can modify a subscription and all sub-resources at any time
-var subscriptionMutex = newPerIdLock()
-
-type apiClient struct {
-	client *rediscloudApi.Client
 }
 
 func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
@@ -141,8 +140,8 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 			return nil, diag.FromErr(err)
 		}
 
-		return &apiClient{
-			client: client,
+		return &utils.ApiClient{
+			Client: client,
 		}, nil
 	}
 }

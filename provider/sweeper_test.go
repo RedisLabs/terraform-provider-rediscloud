@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"os"
 	"strings"
@@ -17,8 +18,6 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
-
-const testResourcePrefix = "tf-test"
 
 var sweeperClients map[string]*rediscloudApi.Client
 
@@ -281,7 +280,7 @@ func testSweepEssentialsSubscriptions(region string) error {
 			continue
 		}
 
-		if !strings.HasPrefix(redis.StringValue(sub.Name), testResourcePrefix) {
+		if !strings.HasPrefix(redis.StringValue(sub.Name), utils.TestResourcePrefix) {
 			continue
 		}
 

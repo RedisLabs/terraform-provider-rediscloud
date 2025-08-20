@@ -1,4 +1,4 @@
-package provider
+package pro
 
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -6,11 +6,11 @@ import (
 )
 
 var testProvider *schema.Provider
-var ProviderFactories map[string]func() (*schema.Provider, error)
+var providerFactories map[string]func() (*schema.Provider, error)
 
 func init() {
 	testProvider = New("dev")()
-	ProviderFactories = map[string]func() (*schema.Provider, error){
+	providerFactories = map[string]func() (*schema.Provider, error){
 		"rediscloud": func() (*schema.Provider, error) {
 			return testProvider, nil
 		},

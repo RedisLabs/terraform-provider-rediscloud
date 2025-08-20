@@ -1,0 +1,53 @@
+package utils
+
+import (
+	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
+	"os"
+	"testing"
+)
+
+const TestResourcePrefix = "tf-test"
+
+func TestAccRequiresEnvVar(t *testing.T, envVarName string) string {
+	envVarValue := os.Getenv(envVarName)
+	if envVarValue == "" || envVarValue == "false" {
+		t.Skipf("Skipping test because %s is not set.", envVarName)
+	}
+	return envVarValue
+}
+
+func TestAccPreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
+}
+
+func TestAccAwsPreExistingCloudAccountPreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
+}
+
+func testAccAwsCloudAccountPreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_ACCESS_SECRET_KEY", "AWS_CONSOLE_USERNAME", "AWS_CONSOLE_PASSWORD", "AWS_SIGNIN_URL")
+}
+
+func testAccAwsPeeringPreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "AWS_PEERING_REGION", "AWS_ACCOUNT_ID", "AWS_VPC_ID", "AWS_VPC_CIDR")
+}
+
+func testAccGcpProjectPreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "GCP_PROJECT_ID")
+}
+
+func testAccGcpCredentialsPreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "GOOGLE_CREDENTIALS")
+}
+
+func testAccAwsPreExistingTgwCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "AWS_TEST_TGW_ID")
+}
+
+func requireEnvironmentVariables(t *testing.T, names ...string) {
+	for _, name := range names {
+		if _, ok := os.LookupEnv(name); !ok {
+			t.Fatalf("Missing `%s` environment variable", name)
+		}
+	}
+}
