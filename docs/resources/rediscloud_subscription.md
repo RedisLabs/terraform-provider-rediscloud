@@ -81,6 +81,7 @@ The following arguments are supported:
 * `customer_managed_key_enabled` - (Optional) Whether to enable the customer managed encryption key flow.
 * `customer_managed_key_deletion_grace_period` - (Optional) The grace period for deleting the subscription. If not set, will default to immediate deletion grace period.
 * `customer_managed_key` - (Optional) The customer managed keys (CMK) to use for this subscription.
+
 The `allowlist` block supports:
 
 * `security_group_ids` - (Required) Set of security groups that are allowed to access the databases associated with this subscription
