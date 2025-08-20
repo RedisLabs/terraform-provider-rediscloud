@@ -45,7 +45,7 @@ data "rediscloud_database" "example" {
 * `memory_limit_in_gb` - The maximum memory usage for the database.
 * `dataset_size_in_gb` - Maximum amount of data in the dataset for this specific database in GB.
 * `support_oss_cluster_api` - Supports the Redis open-source (OSS) Cluster API.
-* `redis_version` - The Redis version of the database.
+* `redis_version` - The Redis database version.
 * `resp_version` - Either `resp2` or `resp3`. Database's RESP version.
 * `replica_of` - The set of Redis database URIs, in the format `redis://user:password@host:port`, that this
   database will be a replica of.

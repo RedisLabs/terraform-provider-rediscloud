@@ -71,8 +71,8 @@ resource "rediscloud_subscription_database" "database-resource" {
 The following arguments are supported:
 
 * `subscription_id` - (Required) The ID of the subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
-* `name` - (Required) A meaningful name to identify the database
-* `redis_version` - (Optional) The Redis version of the database. If omitted, the Redis version will be the default.
+* `name` - (Required) A meaningful name to identify the database.
+* `redis_version` - (Optional) Defines the Redis database version. Default: the default version as specified by the API.
 * `throughput_measurement_by` - (Required) Throughput measurement method that will be used by your databases. Either `number-of-shards` or `operations-per-second`. **`number-of-shards` is deprecated and only supported for legacy deployments.**
 * `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
 * `memory_limit_in_gb` - (Optional -  **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favor of `dataset_size_in_gb` - not possible to import databases with this attribute set**

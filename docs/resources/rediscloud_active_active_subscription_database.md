@@ -92,6 +92,7 @@ The following arguments are supported:
 * `memory_limit_in_gb` - (Optional -  **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favor of `dataset_size_in_gb` - not possible to import databases with this attribute set**
 * `dataset_size_in_gb` - (Optional - **Required if `memory_limit_in_gb` is unset**) The maximum amount of data in the dataset for this specific database is in GB
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
+* `redis_version` - (Optional) Defines the Redis database version. Default: the default version as specified by the API.
 * `external_endpoint_for_oss_cluster_api` - (Optional) Should use the external endpoint for open-source (OSS) Cluster API.
   Can only be enabled if OSS Cluster API support is enabled. Default: 'false'
 * `enable_tls` - (Optional) Use TLS for authentication. Default: ‘false’
