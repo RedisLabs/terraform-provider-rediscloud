@@ -36,7 +36,6 @@ resource "rediscloud_active_active_subscription" "subscription-resource" {
   creation_plan {
     dataset_size_in_gb = 1
     quantity = 1
-    modules = ["RedisJSON"]
     region {
       region = "us-east-1"
       networking_deployment_cidr = "192.168.0.0/24"
@@ -61,12 +60,12 @@ The following arguments are supported:
 * `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'. **(Changes to) this attribute are ignored after creation.**
 * `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types
 * `cloud_provider` - (Optional) The cloud provider to use with the subscription, (either `AWS` or `GCP`). Default: ‘AWS’. **Modifying this attribute will force creation of a new resource.**
-* `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default. **Modifying this attribute will force creation of a new resource.**
+* `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default. **Deprecated: This attribute is deprecated on the subscription level. Please specify `redis_version` on databases directly instead.**
 * `creation_plan` - (Required) A creation plan object, documented below. Ignored after creation.
 * `maintenance_windows` - (Optional) The subscription's maintenance window specification, documented below.
 * `customer_managed_key_enabled` - (Optional) Whether to enable the CMK flow.
 * `customer_managed_key_deletion_grace_period` - (Optional) The grace period for deleting the subscription. If not set, will default to immediate deletion grace period.
-* `customer_managed_key` - (Optional) The customer managed keys (CMK) to use for this subscription. If is active-active subscription, must set a key for each region.
+* `customer_managed_key` - (Optional) The customer managed keys (CMK) to use for this subscription. In an active-active subscription, you must set a key for each region.
 
 The `creation_plan` block supports:
 
