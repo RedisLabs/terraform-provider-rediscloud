@@ -10,6 +10,7 @@ require (
 	github.com/hashicorp/go-cty v1.5.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.37.0
 	github.com/stretchr/testify v1.10.0
+	golang.org/x/net v0.43.0
 )
 
 require (
@@ -57,7 +58,6 @@ require (
 	github.com/zclconf/go-cty v1.16.2 // indirect
 	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/mod v0.27.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
