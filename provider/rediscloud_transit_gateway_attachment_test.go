@@ -6,24 +6,23 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccResourceRedisCloudTransitGatewayAttachment_Pro(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	testTgwId := os.Getenv("AWS_TEST_TGW_ID")
-	baseName := acctest.RandomWithPrefix(utils.TestResourcePrefix) + "-pro-tgwa"
+	baseName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-tgwa"
 
 	const resourceName = "rediscloud_transit_gateway_attachment.test"
 	const datasourceName = "data.rediscloud_transit_gateway.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t); utils.TestAccAwsPreExistingTgwCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingTgwCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{

@@ -6,20 +6,19 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	const testCloudAccount = "data.rediscloud_cloud_account.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t); utils.TestAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      nil, // test doesn't create a resource at the moment, so don't need to check anything
 		Steps: []resource.TestStep{

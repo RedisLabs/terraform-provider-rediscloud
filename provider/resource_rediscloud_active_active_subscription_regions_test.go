@@ -15,10 +15,10 @@ import (
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TEST_SUB_ACTIVE_ACTIVE")
+	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUB_ACTIVE_ACTIVE")
 
-	subName := acctest.RandomWithPrefix(utils.TestResourcePrefix) + "-regions-test"
-	dbName := acctest.RandomWithPrefix(utils.TestResourcePrefix) + "-regions" + "-db"
+	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-regions-test"
+	dbName := acctest.RandomWithPrefix(testResourcePrefix) + "-regions" + "-db"
 	dbPass := acctest.RandString(20)
 	const resourceName = "rediscloud_active_active_subscription_regions.example"
 	const datasourceRegionName = "data.rediscloud_active_active_subscription_regions.example"
@@ -26,7 +26,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{

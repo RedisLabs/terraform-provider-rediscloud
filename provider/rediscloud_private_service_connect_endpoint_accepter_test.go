@@ -17,16 +17,16 @@ import (
 
 func TestAccResourceRedisCloudPrivateServiceConnectEndpointAccepter_Create(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	baseName := acctest.RandomWithPrefix(utils.TestResourcePrefix) + "-pro-pscea"
+	baseName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-pscea"
 
 	const resourceName = "rediscloud_private_service_connect_endpoint_accepter.accepter"
 	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
-			utils.TestAccPreCheck(t)
+			testAccPreCheck(t)
 			testAccGcpProjectPreCheck(t)
 			testAccGcpCredentialsPreCheck(t)
 		},

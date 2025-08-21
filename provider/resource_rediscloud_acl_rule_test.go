@@ -16,9 +16,9 @@ import (
 
 func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	prefix := acctest.RandomWithPrefix(utils.TestResourcePrefix)
+	prefix := acctest.RandomWithPrefix(testResourcePrefix)
 	testName := prefix + "-test-rule"
 	const testRule = "+@all"
 
@@ -33,7 +33,7 @@ func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 	const AclRuleTestData = "data.rediscloud_acl_rule.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckAclRuleDestroy,
 		Steps: []resource.TestStep{

@@ -5,13 +5,12 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccDataSourceRedisCloudAclRule_ForDefaultRule(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	// This rule already exists
 	const testName = "Read-Write"
@@ -20,7 +19,7 @@ func TestAccDataSourceRedisCloudAclRule_ForDefaultRule(t *testing.T) {
 
 	const AclRuleTest = "data.rediscloud_acl_rule.test"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      nil, // test doesn't create a resource, so don't need to check anything
 		Steps: []resource.TestStep{

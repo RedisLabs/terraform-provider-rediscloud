@@ -85,7 +85,7 @@ func testSweepCloudAccounts(region string) error {
 			continue
 		}
 
-		if !strings.HasPrefix(redis.StringValue(account.Name), utils.TestResourcePrefix) {
+		if !strings.HasPrefix(redis.StringValue(account.Name), testResourcePrefix) {
 			continue
 		}
 
@@ -114,7 +114,7 @@ func testSweepProSubscriptions(region string) error {
 			continue
 		}
 
-		if !strings.HasPrefix(redis.StringValue(sub.Name), utils.TestResourcePrefix) {
+		if !strings.HasPrefix(redis.StringValue(sub.Name), testResourcePrefix) {
 			continue
 		}
 
@@ -230,7 +230,7 @@ func testSweepActiveActiveSubscriptions(region string) error {
 			continue
 		}
 
-		if !strings.HasPrefix(redis.StringValue(sub.Name), utils.TestResourcePrefix) {
+		if !strings.HasPrefix(redis.StringValue(sub.Name), testResourcePrefix) {
 			continue
 		}
 
@@ -280,7 +280,7 @@ func testSweepEssentialsSubscriptions(region string) error {
 			continue
 		}
 
-		if !strings.HasPrefix(redis.StringValue(sub.Name), utils.TestResourcePrefix) {
+		if !strings.HasPrefix(redis.StringValue(sub.Name), testResourcePrefix) {
 			continue
 		}
 
@@ -324,7 +324,7 @@ func testSweepAcl(region string) error {
 	}
 
 	for _, user := range users {
-		if !strings.HasPrefix(redis.StringValue(user.Name), utils.TestResourcePrefix) {
+		if !strings.HasPrefix(redis.StringValue(user.Name), testResourcePrefix) {
 			continue
 		}
 
@@ -339,7 +339,7 @@ func testSweepAcl(region string) error {
 	}
 
 	for _, role := range roles {
-		if !strings.HasPrefix(redis.StringValue(role.Name), utils.TestResourcePrefix) {
+		if !strings.HasPrefix(redis.StringValue(role.Name), testResourcePrefix) {
 			continue
 		}
 
@@ -359,7 +359,7 @@ func testSweepAcl(region string) error {
 			continue
 		}
 
-		if !strings.HasPrefix(redis.StringValue(rule.Name), utils.TestResourcePrefix) {
+		if !strings.HasPrefix(redis.StringValue(rule.Name), testResourcePrefix) {
 			continue
 		}
 

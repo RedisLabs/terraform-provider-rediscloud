@@ -5,19 +5,18 @@ import (
 	"os"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccResourceRedisCloudProDatabase_Upgrade(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const resourceName = "rediscloud_subscription_database.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t); utils.TestAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -45,7 +44,7 @@ func TestAccResourceRedisCloudProDatabase_Upgrade(t *testing.T) {
 
 func getRedisCloudUpgradeConfig(t *testing.T, redisVersion string) string {
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-	name := acctest.RandomWithPrefix(utils.TestResourcePrefix)
+	name := acctest.RandomWithPrefix(testResourcePrefix)
 
 	content, err := os.ReadFile("./testdata/testAccResourceRedisCloudProDatabaseUpgrade.tf")
 	if err != nil {

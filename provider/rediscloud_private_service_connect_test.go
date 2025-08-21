@@ -4,22 +4,21 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccResourceRedisCloudPrivateServiceConnect_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	baseName := acctest.RandomWithPrefix(utils.TestResourcePrefix) + "-pro-psc"
+	baseName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-psc"
 
 	const resourceName = "rediscloud_private_service_connect.psc"
 	const datasourceName = "data.rediscloud_private_service_connect.psc"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{

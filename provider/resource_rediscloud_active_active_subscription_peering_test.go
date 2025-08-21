@@ -6,16 +6,15 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TEST_PEERING")
+	testAccRequiresEnvVar(t, "EXECUTE_TEST_PEERING")
 
-	name := acctest.RandomWithPrefix(utils.TestResourcePrefix)
+	name := acctest.RandomWithPrefix(testResourcePrefix)
 
 	cidrRange := os.Getenv("AWS_VPC_CIDR")
 	// Choose a CIDR range for the subscription that's unlikely to overlap with any VPC CIDR
@@ -50,9 +49,9 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
-			utils.TestAccPreCheck(t)
+			testAccPreCheck(t)
 			testAccAwsPeeringPreCheck(t)
-			utils.TestAccAwsPreExistingCloudAccountPreCheck(t)
+			testAccAwsPreExistingCloudAccountPreCheck(t)
 		},
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
@@ -79,9 +78,9 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_gcp(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TEST_PEERING")
+	testAccRequiresEnvVar(t, "EXECUTE_TEST_PEERING")
 
-	name := acctest.RandomWithPrefix(utils.TestResourcePrefix)
+	name := acctest.RandomWithPrefix(testResourcePrefix)
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionPeeringGCP,
 		name,
@@ -91,7 +90,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_gcp(t *testing.T) 
 	const resourceName = "rediscloud_active_active_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{

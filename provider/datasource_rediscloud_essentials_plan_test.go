@@ -4,18 +4,17 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccDataSourceRedisCloudEssentialsPlan_basic(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const basicPlan = "data.rediscloud_essentials_plan.basic"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      nil, // Essentials Plans aren't managed by this provider
 		Steps: []resource.TestStep{
@@ -52,12 +51,12 @@ func TestAccDataSourceRedisCloudEssentialsPlan_basic(t *testing.T) {
 
 func TestAccDataSourceRedisCloudEssentialsPlan_azure(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const azurePlan = "data.rediscloud_essentials_plan.azure"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      nil, // Essentials Plans aren't managed by this provider
 		Steps: []resource.TestStep{
@@ -94,12 +93,12 @@ func TestAccDataSourceRedisCloudEssentialsPlan_azure(t *testing.T) {
 
 func TestAccDataSourceRedisCloudEssentialsPlan_subscriptionId(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const examplePlan = "data.rediscloud_essentials_plan.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      nil, // Essentials Plans aren't managed by this provider
 
@@ -138,10 +137,10 @@ func TestAccDataSourceRedisCloudEssentialsPlan_subscriptionId(t *testing.T) {
 
 func TestAccDataSourceRedisCloudEssentialsPlan_ambiguous(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      nil, // Essentials Plans aren't managed by this provider
 		Steps: []resource.TestStep{
@@ -155,10 +154,10 @@ func TestAccDataSourceRedisCloudEssentialsPlan_ambiguous(t *testing.T) {
 
 func TestAccDataSourceRedisCloudEssentialsPlan_impossible(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      nil, // Essentials Plans aren't managed by this provider
 		Steps: []resource.TestStep{

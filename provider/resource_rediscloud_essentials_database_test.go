@@ -5,16 +5,15 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	subscriptionName := acctest.RandomWithPrefix(utils.TestResourcePrefix)
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	databaseName := subscriptionName + "-db"
 	databaseNameUpdated := databaseName + "-updated"
 
@@ -22,7 +21,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -269,9 +268,9 @@ data "rediscloud_essentials_database" "example" {
 
 // there was a bug where removing the default user would cause issues with passwords
 func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T) {
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	subscriptionName := acctest.RandomWithPrefix(utils.TestResourcePrefix)
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	databaseName := subscriptionName + "-db"
 	databaseNameUpdated := databaseName + "-updated"
 
@@ -279,7 +278,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{

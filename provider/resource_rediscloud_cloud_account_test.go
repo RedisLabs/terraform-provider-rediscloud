@@ -17,13 +17,13 @@ import (
 
 func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if testing.Short() {
 		t.Skip("Required environment variables currently not available under CI")
 	}
 
-	name := acctest.RandomWithPrefix(utils.TestResourcePrefix)
+	name := acctest.RandomWithPrefix(testResourcePrefix)
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudCloudAccount,
 		os.Getenv("AWS_ACCESS_KEY_ID"),
@@ -36,7 +36,7 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 	const resourceName = "rediscloud_cloud_account.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t); testAccAwsCloudAccountPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckCloudAccountDestroy,
 		Steps: []resource.TestStep{

@@ -6,16 +6,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpoint_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	baseName := acctest.RandomWithPrefix(utils.TestResourcePrefix) + "-pro-psce"
+	baseName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-psce"
 
 	const resourceName = "rediscloud_active_active_private_service_connect_endpoint.psce"
 	const datasourceName = "data.rediscloud_active_active_private_service_connect_endpoints.psce"
@@ -24,7 +23,7 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpoint_CRUDI(t 
 	gcpVPCSubnetName := fmt.Sprintf("%s-subnet", baseName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t); utils.TestAccGcpProjectPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t); testAccGcpProjectPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{

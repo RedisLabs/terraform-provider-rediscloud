@@ -20,16 +20,16 @@ var essentialsMarketplaceFlag = flag.Bool("essentialsMarketplace", false,
 
 func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	subscriptionName := acctest.RandomWithPrefix(utils.TestResourcePrefix)
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
 
 	const resourceName = "rediscloud_essentials_subscription.example"
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -85,16 +85,16 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	subscriptionName := acctest.RandomWithPrefix(utils.TestResourcePrefix)
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
 
 	const resourceName = "rediscloud_essentials_subscription.example"
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -151,16 +151,16 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 
 func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	subscriptionName := acctest.RandomWithPrefix(utils.TestResourcePrefix)
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
 
 	const resourceName = "rediscloud_essentials_subscription.example"
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -218,20 +218,20 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *testing.T) {
 	// Only the qa environment has access to the marketplace, so this test will normally fail.
 	// Leaving this in the test suite for manual runs
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*essentialsMarketplaceFlag {
 		t.Skip("The '-essentialsMarketplace' parameter wasn't provided in the test command.")
 	}
 
-	subscriptionName := acctest.RandomWithPrefix(utils.TestResourcePrefix)
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
 
 	const resourceName = "rediscloud_essentials_subscription.example"
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -288,12 +288,12 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 }
 
 func TestAccResourceRedisCloudEssentialsSubscription_Incorrect_PaymentIdForType(t *testing.T) {
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	subscriptionName := acctest.RandomWithPrefix(utils.TestResourcePrefix)
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { utils.TestAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheck(t) },
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{
