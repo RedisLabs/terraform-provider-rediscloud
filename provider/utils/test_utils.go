@@ -1,9 +1,10 @@
 package utils
 
 import (
-	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 	"os"
 	"testing"
+
+	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 )
 
 const TestResourcePrefix = "tf-test"

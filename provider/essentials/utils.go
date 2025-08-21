@@ -2,14 +2,15 @@ package essentials
 
 import (
 	"context"
+	"log"
+	"time"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	fixedDatabases "github.com/RedisLabs/rediscloud-go-api/service/fixed/databases"
 	fixedSubscriptions "github.com/RedisLabs/rediscloud-go-api/service/fixed/subscriptions"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"log"
-	"time"
 )
 
 func filterFixedDatabases(list *fixedDatabases.ListFixedDatabase, filters []func(db *fixedDatabases.FixedDatabase) bool) ([]*fixedDatabases.FixedDatabase, error) {

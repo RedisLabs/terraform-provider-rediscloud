@@ -2,12 +2,13 @@ package transitgateway
 
 import (
 	"context"
+	"strconv"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"strconv"
 )
 
 func DataSourceTransitGateway() *schema.Resource {

@@ -3,6 +3,9 @@ package provider
 import (
 	"context"
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/account"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/acl"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/active_active"
@@ -12,9 +15,6 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/transitgateway"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-	"log"
-	"strings"
-
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"

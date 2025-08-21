@@ -2,7 +2,6 @@ package active_active
 
 import (
 	"context"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -12,6 +11,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/regions"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"

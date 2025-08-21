@@ -3,6 +3,7 @@ package active_active
 import (
 	"context"
 	"fmt"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"

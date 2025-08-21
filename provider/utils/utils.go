@@ -1,26 +1,23 @@
 package utils
 
 import (
-	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
-	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
-	redisTags "github.com/RedisLabs/rediscloud-go-api/service/tags"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"golang.org/x/net/context"
+	"fmt"
 	"strconv"
 	"strings"
-)
-
-import (
-	"fmt"
 	"sync"
 	"time"
 
+	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/latest_backups"
 	"github.com/RedisLabs/rediscloud-go-api/service/latest_imports"
+	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
+	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
+	redisTags "github.com/RedisLabs/rediscloud-go-api/service/tags"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"golang.org/x/net/context"
 )
 
 const RedisCloudUrlEnvVar = "REDISCLOUD_URL"

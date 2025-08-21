@@ -1,10 +1,11 @@
 package provider
 
 import (
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"regexp"
 	"testing"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccDataSourceRedisCloudPaymentMethod_basic(t *testing.T) {

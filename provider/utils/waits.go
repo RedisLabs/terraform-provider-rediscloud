@@ -2,14 +2,15 @@ package utils
 
 import (
 	"context"
+	"log"
+	"time"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/redis_rules"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/psc"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"log"
-	"time"
 )
 
 // This timeout is an absolute maximum used in some of the waitForStatus operations concerning creation and updating

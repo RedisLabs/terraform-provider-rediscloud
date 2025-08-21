@@ -3,16 +3,16 @@ package essentials
 import (
 	"context"
 	"errors"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	fixedSubscriptions "github.com/RedisLabs/rediscloud-go-api/service/fixed/subscriptions"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourceRedisCloudEssentialsSubscription() *schema.Resource {

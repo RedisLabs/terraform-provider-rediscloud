@@ -3,14 +3,15 @@ package pro
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func flattenSubscriptionAllowlist(ctx context.Context, subId int, api *utils.ApiClient) ([]map[string]interface{}, error) {

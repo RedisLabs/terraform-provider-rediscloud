@@ -2,6 +2,10 @@ package account
 
 import (
 	"context"
+	"log"
+	"strconv"
+	"time"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
@@ -9,9 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"log"
-	"strconv"
-	"time"
 )
 
 func ResourceRedisCloudCloudAccount() *schema.Resource {

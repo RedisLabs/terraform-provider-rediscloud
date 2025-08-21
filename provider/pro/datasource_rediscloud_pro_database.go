@@ -3,12 +3,12 @@ package pro
 import (
 	"context"
 	"fmt"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"regexp"
 	"strconv"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"

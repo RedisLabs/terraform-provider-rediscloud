@@ -2,19 +2,18 @@ package essentials
 
 import (
 	"context"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	fixedDatabases "github.com/RedisLabs/rediscloud-go-api/service/fixed/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/tags"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-
-	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func ResourceRedisCloudEssentialsDatabase() *schema.Resource {
