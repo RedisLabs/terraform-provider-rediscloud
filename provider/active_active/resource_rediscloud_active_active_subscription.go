@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"regexp"
 	"strconv"
 	"time"
@@ -347,7 +347,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 	name := d.Get("name").(string)
 
 	paymentMethod := d.Get("payment_method").(string)
-	paymentMethodID, err := provider.readPaymentMethodID(d)
+	paymentMethodID, err := utils.ReadPaymentMethodID(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -498,7 +498,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("maintenance_windows", provider.flattenMaintenance(m)); err != nil {
+		if err := d.Set("maintenance_windows", utils.FlattenMaintenance(m)); err != nil {
 			return diag.FromErr(err)
 		}
 
@@ -506,7 +506,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("pricing", provider.flattenPricing(pricingList)); err != nil {
+		if err := d.Set("pricing", utils.FlattenPricing(pricingList)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -556,7 +556,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 		}
 
 		if d.HasChange("payment_method_id") {
-			paymentMethodID, err := provider.readPaymentMethodID(d)
+			paymentMethodID, err := utils.ReadPaymentMethodID(d)
 			if err != nil {
 				return diag.FromErr(err)
 			}

@@ -437,15 +437,15 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 			return diag.FromErr(err)
 		}
 	}
-	if err := d.Set("alert", FlattenAlerts(db.Alerts)); err != nil {
+	if err := d.Set("alert", utils.FlattenAlerts(db.Alerts)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("module", FlattenModules(db.Modules)); err != nil {
+	if err := d.Set("module", utils.FlattenModules(db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
 
 	if db.Clustering != nil {
-		if err := d.Set("hashing_policy", FlattenRegexRules(db.Clustering.RegexRules)); err != nil {
+		if err := d.Set("hashing_policy", utils.FlattenRegexRules(db.Clustering.RegexRules)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -483,7 +483,7 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	if err := readTags(ctx, api, subId, dbId, d); err != nil {
+	if err := utils.ReadTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
 

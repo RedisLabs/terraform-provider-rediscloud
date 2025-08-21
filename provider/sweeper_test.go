@@ -31,11 +31,11 @@ func sharedClientForRegion(region string) (*rediscloudApi.Client, error) {
 		return client, nil
 	}
 
-	if os.Getenv(RedisCloudUrlEnvVar) == "" || os.Getenv(rediscloudApi.AccessKeyEnvVar) == "" || os.Getenv(rediscloudApi.SecretKeyEnvVar) == "" {
-		return nil, fmt.Errorf("must provide environment variables %s, %s, %s", RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
+	if os.Getenv(utils.RedisCloudUrlEnvVar) == "" || os.Getenv(rediscloudApi.AccessKeyEnvVar) == "" || os.Getenv(rediscloudApi.SecretKeyEnvVar) == "" {
+		return nil, fmt.Errorf("must provide environment variables %s, %s, %s", utils.RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
 	}
 
-	client, err := rediscloudApi.NewClient(rediscloudApi.BaseURL(os.Getenv(RedisCloudUrlEnvVar)))
+	client, err := rediscloudApi.NewClient(rediscloudApi.BaseURL(os.Getenv(utils.RedisCloudUrlEnvVar)))
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func testSweepCloudAccounts(region string) error {
 			continue
 		}
 
-		if !strings.HasPrefix(redis.StringValue(account.Name), testResourcePrefix) {
+		if !strings.HasPrefix(redis.StringValue(account.Name), utils.TestResourcePrefix) {
 			continue
 		}
 
@@ -114,7 +114,7 @@ func testSweepProSubscriptions(region string) error {
 			continue
 		}
 
-		if !strings.HasPrefix(redis.StringValue(sub.Name), testResourcePrefix) {
+		if !strings.HasPrefix(redis.StringValue(sub.Name), utils.TestResourcePrefix) {
 			continue
 		}
 
@@ -230,7 +230,7 @@ func testSweepActiveActiveSubscriptions(region string) error {
 			continue
 		}
 
-		if !strings.HasPrefix(redis.StringValue(sub.Name), testResourcePrefix) {
+		if !strings.HasPrefix(redis.StringValue(sub.Name), utils.TestResourcePrefix) {
 			continue
 		}
 
@@ -324,7 +324,7 @@ func testSweepAcl(region string) error {
 	}
 
 	for _, user := range users {
-		if !strings.HasPrefix(redis.StringValue(user.Name), testResourcePrefix) {
+		if !strings.HasPrefix(redis.StringValue(user.Name), utils.TestResourcePrefix) {
 			continue
 		}
 
@@ -339,7 +339,7 @@ func testSweepAcl(region string) error {
 	}
 
 	for _, role := range roles {
-		if !strings.HasPrefix(redis.StringValue(role.Name), testResourcePrefix) {
+		if !strings.HasPrefix(redis.StringValue(role.Name), utils.TestResourcePrefix) {
 			continue
 		}
 
@@ -359,7 +359,7 @@ func testSweepAcl(region string) error {
 			continue
 		}
 
-		if !strings.HasPrefix(redis.StringValue(rule.Name), testResourcePrefix) {
+		if !strings.HasPrefix(redis.StringValue(rule.Name), utils.TestResourcePrefix) {
 			continue
 		}
 

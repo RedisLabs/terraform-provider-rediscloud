@@ -2,6 +2,7 @@ package active_active
 
 import (
 	"context"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"reflect"
 	"regexp"
 	"strconv"

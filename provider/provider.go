@@ -8,8 +8,8 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/active_active"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentials"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/misc"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/private_service_connect"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/psc"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/transitgateway"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
@@ -32,7 +32,7 @@ func New(version string) func() *schema.Provider {
 			Schema: map[string]*schema.Schema{
 				"url": {
 					Type:        schema.TypeString,
-					Description: fmt.Sprintf("This is the URL of Redis Cloud and will default to `https://api.redislabs.com/v1`. This can also be set by the `%s` environment variable.", RedisCloudUrlEnvVar),
+					Description: fmt.Sprintf("This is the URL of Redis Cloud and will default to `https://api.redislabs.com/v1`. This can also be set by the `%s` environment variable.", utils.RedisCloudUrlEnvVar),
 					Optional:    true,
 					DefaultFunc: schema.EnvDefaultFunc(utils.RedisCloudUrlEnvVar, ""),
 				},
@@ -61,9 +61,9 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_essentials_plan":                    essentials.DataSourceRedisCloudEssentialsPlan(),
 				"rediscloud_essentials_subscription":            essentials.DataSourceRedisCloudEssentialsSubscription(),
 				"rediscloud_essentials_database":                essentials.DataSourceRedisCloudEssentialsDatabase(),
-				"rediscloud_subscription_peerings":              psc.DataSourceRedisCloudSubscriptionPeerings(),
-				"rediscloud_private_service_connect":            psc.DataSourcePrivateServiceConnect(),
-				"rediscloud_private_service_connect_endpoints":  psc.DataSourcePrivateServiceConnectEndpoints(),
+				"rediscloud_subscription_peerings":              private_service_connect.DataSourceRedisCloudSubscriptionPeerings(),
+				"rediscloud_private_service_connect":            private_service_connect.DataSourcePrivateServiceConnect(),
+				"rediscloud_private_service_connect_endpoints":  private_service_connect.DataSourcePrivateServiceConnectEndpoints(),
 				"rediscloud_active_active_subscription":         active_active.DataSourceRedisCloudActiveActiveSubscription(),
 				"rediscloud_active_active_subscription_regions": active_active.DataSourceRedisCloudActiveActiveSubscriptionRegions(),
 
@@ -71,9 +71,9 @@ func New(version string) func() *schema.Provider {
 				// active_active_subscription_database == active_active_database
 				"rediscloud_active_active_subscription_database":             active_active.DataSourceRedisCloudActiveActiveDatabase(),
 				"rediscloud_active_active_private_service_connect":           active_active.DataSourceActiveActivePrivateServiceConnect(),
-				"rediscloud_active_active_private_service_connect_endpoints": active_active.DataSourceActiveActivePrivateServiceConnectEndpoints(),
+				"rediscloud_active_active_private_service_connect_endpoints": private_service_connect.DataSourceActiveActivePrivateServiceConnectEndpoints(),
 				"rediscloud_transit_gateway":                                 transitgateway.DataSourceTransitGateway(),
-				"rediscloud_active_active_transit_gateway":                   active_active.DataSourceActiveActiveTransitGateway(),
+				"rediscloud_active_active_transit_gateway":                   transitgateway.DataSourceActiveActiveTransitGateway(),
 				"rediscloud_acl_rule":                                        acl.DataSourceRedisCloudAclRule(),
 				"rediscloud_acl_role":                                        acl.DataSourceRedisCloudAclRole(),
 				"rediscloud_acl_user":                                        acl.DataSourceRedisCloudAclUser(),
@@ -86,19 +86,19 @@ func New(version string) func() *schema.Provider {
 				// <default> == flexible == pro
 				"rediscloud_subscription":                              pro.ResourceRedisCloudProSubscription(),
 				"rediscloud_subscription_database":                     pro.ResourceRedisCloudProDatabase(),
-				"rediscloud_subscription_peering":                      psc.ResourceRedisCloudSubscriptionPeering(),
-				"rediscloud_private_service_connect":                   psc.ResourceRedisCloudPrivateServiceConnect(),
-				"rediscloud_private_service_connect_endpoint":          psc.ResourceRedisCloudPrivateServiceConnectEndpoint(),
-				"rediscloud_private_service_connect_endpoint_accepter": psc.ResourceRedisCloudPrivateServiceConnectEndpointAccepter(),
+				"rediscloud_subscription_peering":                      private_service_connect.ResourceRedisCloudSubscriptionPeering(),
+				"rediscloud_private_service_connect":                   private_service_connect.ResourceRedisCloudPrivateServiceConnect(),
+				"rediscloud_private_service_connect_endpoint":          private_service_connect.ResourceRedisCloudPrivateServiceConnectEndpoint(),
+				"rediscloud_private_service_connect_endpoint_accepter": private_service_connect.ResourceRedisCloudPrivateServiceConnectEndpointAccepter(),
 				"rediscloud_active_active_subscription":                active_active.ResourceRedisCloudActiveActiveSubscription(),
 				// Note the difference in public resource name and the file/method name.
 				// active_active_subscription_database == active_active_database
 				"rediscloud_active_active_subscription_database":                     active_active.ResourceRedisCloudActiveActiveDatabase(),
 				"rediscloud_active_active_subscription_regions":                      active_active.ResourceRedisCloudActiveActiveSubscriptionRegions(),
-				"rediscloud_active_active_subscription_peering":                      active_active.ResourceRedisCloudActiveActiveSubscriptionPeering(),
-				"rediscloud_active_active_private_service_connect":                   psc.ResourceRedisCloudActiveActivePrivateServiceConnect(),
-				"rediscloud_active_active_private_service_connect_endpoint":          psc.ResourceRedisCloudActiveActivePrivateServiceConnectEndpoint(),
-				"rediscloud_active_active_private_service_connect_endpoint_accepter": psc.ResourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter(),
+				"rediscloud_active_active_subscription_peering":                      private_service_connect.ResourceRedisCloudActiveActiveSubscriptionPeering(),
+				"rediscloud_active_active_private_service_connect":                   private_service_connect.ResourceRedisCloudActiveActivePrivateServiceConnect(),
+				"rediscloud_active_active_private_service_connect_endpoint":          private_service_connect.ResourceRedisCloudActiveActivePrivateServiceConnectEndpoint(),
+				"rediscloud_active_active_private_service_connect_endpoint_accepter": private_service_connect.ResourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter(),
 				"rediscloud_transit_gateway_attachment":                              transitgateway.ResourceRedisCloudTransitGatewayAttachment(),
 				"rediscloud_acl_rule":                                                acl.ResourceRedisCloudAclRule(),
 				"rediscloud_acl_role":                                                acl.ResourceRedisCloudAclRole(),

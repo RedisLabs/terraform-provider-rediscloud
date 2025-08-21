@@ -3,10 +3,10 @@ package active_active
 import (
 	"context"
 	"fmt"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -326,7 +326,7 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 	if err := d.Set("data_eviction", redis.StringValue(db.DataEvictionPolicy)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("global_modules", provider.flattenModulesToNames(db.Modules)); err != nil {
+	if err := d.Set("global_modules", flattenModulesToNames(db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -358,7 +358,7 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 		if err != nil {
 			// Forgive errors here, sometimes we just can't get a latest status
 		} else {
-			parsedLatestBackupStatus, err := provider.parseLatestBackupStatus(latestBackupStatus)
+			parsedLatestBackupStatus, err := utils.ParseLatestBackupStatus(latestBackupStatus)
 			if err != nil {
 				return diag.FromErr(err)
 			}
@@ -376,7 +376,7 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 	if err != nil {
 		// Forgive errors here, sometimes we just can't get a latest status
 	} else {
-		parsedLatestImportStatus, err = provider.parseLatestImportStatus(latestImportStatus)
+		parsedLatestImportStatus, err = utils.ParseLatestImportStatus(latestImportStatus)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -385,7 +385,7 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	}
 
-	if err := provider.readTags(ctx, api, subId, dbId, d); err != nil {
+	if err := utils.ReadTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
 

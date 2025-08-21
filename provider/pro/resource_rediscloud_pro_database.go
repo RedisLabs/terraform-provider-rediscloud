@@ -3,18 +3,13 @@ package pro
 import (
 	"context"
 	"fmt"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"regexp"
-	"strconv"
-	"strings"
 	"time"
-
-	redisTags "github.com/RedisLabs/rediscloud-go-api/service/tags"
-	"github.com/hashicorp/go-cty/cty"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -30,7 +25,7 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-				subId, dbId, err := ToDatabaseId(d.Id())
+				subId, dbId, err := utils.ToDatabaseId(d.Id())
 				if err != nil {
 					return nil, err
 				}
@@ -345,7 +340,7 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 					Type: schema.TypeString,
 				},
 				Optional:         true,
-				ValidateDiagFunc: ValidateTagsfunc,
+				ValidateDiagFunc: utils.ValidateTagsfunc,
 			},
 		},
 	}
@@ -400,7 +395,7 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		},
 		Modules:      createModules,
 		Alerts:       createAlerts,
-		RemoteBackup: buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		RemoteBackup: utils.BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
 	}
 
 	utils.SetStringIfNotEmpty(d, "query_performance_factor", func(s *string) {
@@ -436,7 +431,7 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	})
 
 	// Confirm sub is ready to accept a db request
-	if err := WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -449,11 +444,11 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	d.SetId(utils.BuildResourceId(subId, dbId))
 
 	// Confirm db + sub active status
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
-	if err := WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
@@ -469,7 +464,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 
 	var diags diag.Diagnostics
 
-	subId, dbId, err := ToDatabaseId(d.Id())
+	subId, dbId, err := utils.ToDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -544,11 +539,11 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("modules", FlattenModules(db.Modules)); err != nil {
+	if err := d.Set("modules", utils.FlattenModules(db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("alert", FlattenAlerts(db.Alerts)); err != nil {
+	if err := d.Set("alert", utils.FlattenAlerts(db.Alerts)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -595,7 +590,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("hashing_policy", FlattenRegexRules(db.Clustering.RegexRules)); err != nil {
+	if err := d.Set("hashing_policy", utils.FlattenRegexRules(db.Clustering.RegexRules)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -612,7 +607,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("remote_backup", flattenBackupPlan(db.Backup, d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path").(string))); err != nil {
+	if err := d.Set("remote_backup", utils.FlattenBackupPlan(db.Backup, d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path").(string))); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -622,7 +617,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		}
 	}
 
-	if err := readTags(ctx, api, subId, dbId, d); err != nil {
+	if err := utils.ReadTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -636,7 +631,7 @@ func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.Resource
 	var diags diag.Diagnostics
 	subId := d.Get("subscription_id").(int)
 
-	_, dbId, err := ToDatabaseId(d.Id())
+	_, dbId, err := utils.ToDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -645,10 +640,10 @@ func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.Resource
 	defer utils.SubscriptionMutex.Unlock(subId)
 
 	// Confirm sub + db are ready to accept a db request
-	if err := WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -656,7 +651,7 @@ func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	if err := WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -666,7 +661,7 @@ func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.Resource
 func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*utils.ApiClient)
 
-	_, dbId, err := ToDatabaseId(d.Id())
+	_, dbId, err := utils.ToDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -701,7 +696,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		DataEvictionPolicy: utils.GetString(d, "data_eviction"),
 		SourceIP:           utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
 		Alerts:             &alerts,
-		RemoteBackup:       buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		RemoteBackup:       utils.BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
 		EnableDefaultUser:  utils.GetBool(d, "enable_default_user"),
 	}
 
@@ -777,11 +772,11 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	// Confirm sub + db are ready to accept a db request
-	if err := WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
@@ -811,17 +806,17 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	// Confirm db + sub active status
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
-	if err := WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
 	// The Tags API is synchronous so we shouldn't have to wait for anything
-	if err := writeTags(ctx, api, subId, dbId, d); err != nil {
+	if err := utils.WriteTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -844,238 +839,10 @@ func upgradeRedisVersion(ctx context.Context, api *utils.ApiClient, subId int, d
 	log.Printf("[INFO] Redis version change request to %s accepted by API", newVersion)
 
 	// wait for upgrade
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err), true
 	}
 
 	return nil, false
-}
-
-func buildBackupPlan(data interface{}, periodicBackupPath interface{}) *databases.DatabaseBackupConfig {
-	var d map[string]interface{}
-
-	switch v := data.(type) {
-	case []interface{}:
-		if len(v) != 1 {
-			if periodicBackupPath == nil {
-				return &databases.DatabaseBackupConfig{Active: redis.Bool(false)}
-			} else {
-				return nil
-			}
-		}
-		d = v[0].(map[string]interface{})
-	default:
-		d = v.(map[string]interface{})
-	}
-
-	config := databases.DatabaseBackupConfig{
-		Active:      redis.Bool(true),
-		Interval:    redis.String(d["interval"].(string)),
-		StorageType: redis.String(d["storage_type"].(string)),
-		StoragePath: redis.String(d["storage_path"].(string)),
-	}
-
-	if v := d["time_utc"].(string); v != "" {
-		config.TimeUTC = redis.String(v)
-	}
-
-	return &config
-}
-
-func flattenBackupPlan(backup *databases.Backup, existing []interface{}, periodicBackupPath string) []map[string]interface{} {
-	if backup == nil || !redis.BoolValue(backup.Enabled) || periodicBackupPath != "" {
-		return nil
-	}
-
-	storageType := ""
-	if len(existing) == 1 {
-		d := existing[0].(map[string]interface{})
-		storageType = d["storage_type"].(string)
-	}
-
-	return []map[string]interface{}{
-		{
-			"interval":     redis.StringValue(backup.Interval),
-			"time_utc":     redis.StringValue(backup.TimeUTC),
-			"storage_type": storageType,
-			"storage_path": redis.StringValue(backup.Destination),
-		},
-	}
-}
-
-func ToDatabaseId(id string) (int, int, error) {
-	parts := strings.Split(id, "/")
-
-	if len(parts) > 2 {
-		return 0, 0, fmt.Errorf("invalid id: %s", id)
-	}
-
-	if len(parts) == 1 {
-		dbId, err := strconv.Atoi(parts[0])
-		if err != nil {
-			return 0, 0, err
-		}
-		return 0, dbId, nil
-	}
-
-	subId, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return 0, 0, err
-	}
-
-	dbId, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return 0, 0, err
-	}
-
-	return subId, dbId, nil
-}
-
-func skipDiffIfIntervalIs12And12HourTimeDiff(k, oldValue, newValue string, d *schema.ResourceData) bool {
-	// If interval is set to every 12 hours and the `time_utc` is in the afternoon,
-	// then the API will return the _morning_ time when queried.
-	// `interval` is assumed to be an attribute within the same block as the attribute being diffed.
-
-	parts := strings.Split(k, ".")
-	parts[len(parts)-1] = "interval"
-
-	var interval = d.Get(strings.Join(parts, "."))
-
-	if interval != databases.BackupIntervalEvery12Hours {
-		return false
-	}
-
-	oldTime, err := time.Parse("15:04", oldValue)
-	if err != nil {
-		return false
-	}
-	newTime, err := time.Parse("15:04", newValue)
-	if err != nil {
-		return false
-	}
-
-	return oldTime.Minute() == newTime.Minute() && oldTime.Add(12*time.Hour).Hour() == newTime.Hour()
-}
-
-func customizeDiff() schema.CustomizeDiffFunc {
-	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-		if err := validateQueryPerformanceFactor()(ctx, diff, meta); err != nil {
-			return err
-		}
-		if err := remoteBackupIntervalSetCorrectly("remote_backup")(ctx, diff, meta); err != nil {
-			return err
-		}
-		return nil
-	}
-}
-
-func validateQueryPerformanceFactor() schema.CustomizeDiffFunc {
-	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-		// Check if "query_performance_factor" is set
-		qpf, qpfExists := diff.GetOk("query_performance_factor")
-
-		// Ensure "modules" is explicitly defined in the HCL
-		_, modulesExists := diff.GetOkExists("modules")
-
-		if qpfExists && qpf.(string) != "" {
-			if !modulesExists {
-				return fmt.Errorf(`"query_performance_factor" requires the "modules" key to be explicitly defined in HCL`)
-			}
-
-			// Retrieve modules as a slice of interfaces
-			rawModules := diff.Get("modules").(*schema.Set).List()
-
-			// Convert modules to []map[string]interface{}
-			var modules []map[string]interface{}
-			for _, rawModule := range rawModules {
-				if moduleMap, ok := rawModule.(map[string]interface{}); ok {
-					modules = append(modules, moduleMap)
-				}
-			}
-
-			// Check if "RediSearch" exists
-			if !containsDBModule(modules, "RediSearch") {
-				return fmt.Errorf(`"query_performance_factor" requires the "modules" list to contain "RediSearch"`)
-			}
-		}
-		return nil
-	}
-}
-
-// Helper function to check if a module exists
-func containsDBModule(modules []map[string]interface{}, moduleName string) bool {
-	for _, module := range modules {
-		if name, ok := module["name"].(string); ok && name == moduleName {
-			return true
-		}
-	}
-	return false
-}
-
-func remoteBackupIntervalSetCorrectly(key string) schema.CustomizeDiffFunc {
-	// Validate multiple attributes - https://github.com/hashicorp/terraform-plugin-sdk/issues/233
-
-	return func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
-		if v, ok := diff.GetOk(key); ok {
-			backups := v.([]interface{})
-			if len(backups) == 1 {
-				v := backups[0].(map[string]interface{})
-
-				interval := v["interval"].(string)
-				timeUtc := v["time_utc"].(string)
-
-				if interval != databases.BackupIntervalEvery12Hours && interval != databases.BackupIntervalEvery24Hours && timeUtc != "" {
-					return fmt.Errorf("unexpected value at %s.0.time_utc - time_utc can only be set when interval is either %s or %s", key, databases.BackupIntervalEvery24Hours, databases.BackupIntervalEvery12Hours)
-				}
-			}
-		}
-		return nil
-	}
-
-}
-
-func readTags(ctx context.Context, api *utils.ApiClient, subId int, databaseId int, d *schema.ResourceData) error {
-	tags := make(map[string]string)
-	tagResponse, err := api.Client.Tags.Get(ctx, subId, databaseId)
-	if err != nil {
-		return err
-	}
-	if tagResponse.Tags != nil {
-		for _, t := range *tagResponse.Tags {
-			tags[redis.StringValue(t.Key)] = redis.StringValue(t.Value)
-		}
-	}
-	return d.Set("tags", tags)
-}
-
-func writeTags(ctx context.Context, api *utils.ApiClient, subId int, databaseId int, d *schema.ResourceData) error {
-	tags := make([]*redisTags.Tag, 0)
-	tState := d.Get("tags").(map[string]interface{})
-	for k, v := range tState {
-		tags = append(tags, &redisTags.Tag{
-			Key:   redis.String(k),
-			Value: redis.String(v.(string)),
-		})
-	}
-	return api.Client.Tags.Put(ctx, subId, databaseId, redisTags.AllTags{Tags: &tags})
-}
-
-func ValidateTagsfunc(tagsRaw interface{}, _ cty.Path) diag.Diagnostics {
-	tags := tagsRaw.(map[string]interface{})
-	invalid := make([]string, 0)
-	for k, v := range tags {
-		if k != strings.ToLower(k) {
-			invalid = append(invalid, k)
-		}
-		vStr := v.(string)
-		if vStr != strings.ToLower(vStr) {
-			invalid = append(invalid, vStr)
-		}
-	}
-
-	if len(invalid) > 0 {
-		return diag.Errorf("tag keys and values must be lower case, invalid entries: %s", strings.Join(invalid, ", "))
-	}
-	return nil
 }

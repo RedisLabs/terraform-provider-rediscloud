@@ -3,17 +3,15 @@ package essentials
 import (
 	"context"
 	"errors"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"log"
 	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	fixedSubscriptions "github.com/RedisLabs/rediscloud-go-api/service/fixed/subscriptions"
-	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -230,57 +228,4 @@ func resourceRedisCloudEssentialsSubscriptionDelete(ctx context.Context, d *sche
 	}
 
 	return diags
-}
-
-func waitForEssentialsSubscriptionToBeActive(ctx context.Context, id int, api *utils.ApiClient) error {
-	wait := &retry.StateChangeConf{
-		Delay:   10 * time.Second,
-		Pending: []string{subscriptions.SubscriptionStatusPending},
-		Target:  []string{subscriptions.SubscriptionStatusActive},
-		Timeout: utils.SafetyTimeout,
-
-		Refresh: func() (result interface{}, state string, err error) {
-			log.Printf("[DEBUG] Waiting for fixed subscription %d to be active", id)
-
-			subscription, err := api.Client.FixedSubscriptions.Get(ctx, id)
-			if err != nil {
-				return nil, "", err
-			}
-
-			return redis.StringValue(subscription.Status), redis.StringValue(subscription.Status), nil
-		},
-	}
-	if _, err := wait.WaitForStateContext(ctx); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func waitForEssentialsSubscriptionToBeDeleted(ctx context.Context, id int, api *utils.ApiClient) error {
-	wait := &retry.StateChangeConf{
-		Delay:   10 * time.Second,
-		Pending: []string{subscriptions.SubscriptionStatusDeleting},
-		Target:  []string{"deleted"},
-		Timeout: utils.SafetyTimeout,
-
-		Refresh: func() (result interface{}, state string, err error) {
-			log.Printf("[DEBUG] Waiting for fixed subscription %d to be deleted", id)
-
-			subscription, err := api.Client.FixedSubscriptions.Get(ctx, id)
-			if err != nil {
-				if _, ok := err.(*fixedSubscriptions.NotFound); ok {
-					return "deleted", "deleted", nil
-				}
-				return nil, "", err
-			}
-
-			return redis.StringValue(subscription.Status), redis.StringValue(subscription.Status), nil
-		},
-	}
-	if _, err := wait.WaitForStateContext(ctx); err != nil {
-		return err
-	}
-
-	return nil
 }

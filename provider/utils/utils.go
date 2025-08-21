@@ -2,8 +2,14 @@ package utils
 
 import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
+	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
+	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
+	redisTags "github.com/RedisLabs/rediscloud-go-api/service/tags"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"golang.org/x/net/context"
+	"strconv"
+	"strings"
 )
 
 import (
@@ -200,74 +206,185 @@ func ApplyCertificateHints(tlsAuthEnabled bool, d *schema.ResourceData) error {
 	return nil
 }
 
-func FlattenCidrs(cidrs []*attachments.Cidr) []string {
-	cidrStrings := make([]string, 0)
-	for _, cidr := range cidrs {
-		cidrStrings = append(cidrStrings, redis.StringValue(cidr.CidrAddress))
-	}
-	return cidrStrings
-}
-
-// GetString safely retrieves a string value from schema.ResourceData.
-func GetString(d *schema.ResourceData, key string) *string {
-	if v, ok := d.GetOk(key); ok {
-		return redis.String(v.(string))
-	}
-	return redis.String("")
-}
-
-// GetBool safely retrieves a bool value from schema.ResourceData.
-func GetBool(d *schema.ResourceData, key string) *bool {
-	if v, ok := d.GetOk(key); ok {
-		return redis.Bool(v.(bool))
-	}
-	return redis.Bool(false)
-}
-
-// GetInt safely retrieves an int value from schema.ResourceData.
-func GetInt(d *schema.ResourceData, key string) *int {
-	if v, ok := d.GetOk(key); ok {
-		return redis.Int(v.(int))
-	}
-	return redis.Int(0)
-}
-
-func SetStringIfNotEmpty(d *schema.ResourceData, key string, setter func(*string)) {
-	if v, ok := d.GetOk(key); ok {
-		if s, valid := v.(string); valid && s != "" {
-			setter(redis.String(s))
+func ValidateTagsfunc(tagsRaw interface{}, _ cty.Path) diag.Diagnostics {
+	tags := tagsRaw.(map[string]interface{})
+	invalid := make([]string, 0)
+	for k, v := range tags {
+		if k != strings.ToLower(k) {
+			invalid = append(invalid, k)
+		}
+		vStr := v.(string)
+		if vStr != strings.ToLower(vStr) {
+			invalid = append(invalid, vStr)
 		}
 	}
+
+	if len(invalid) > 0 {
+		return diag.Errorf("tag keys and values must be lower case, invalid entries: %s", strings.Join(invalid, ", "))
+	}
+	return nil
 }
 
-func SetIntIfPositive(d *schema.ResourceData, key string, setter func(*int)) {
-	if v, ok := d.GetOk(key); ok {
-		if i, valid := v.(int); valid && i > 0 {
-			setter(redis.Int(i))
-		}
+func ToDatabaseId(id string) (int, int, error) {
+	parts := strings.Split(id, "/")
+
+	if len(parts) > 2 {
+		return 0, 0, fmt.Errorf("invalid id: %s", id)
 	}
+
+	if len(parts) == 1 {
+		dbId, err := strconv.Atoi(parts[0])
+		if err != nil {
+			return 0, 0, err
+		}
+		return 0, dbId, nil
+	}
+
+	subId, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	dbId, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return subId, dbId, nil
 }
 
-func SetInt(d *schema.ResourceData, key string, setter func(*int)) {
-	if v, ok := d.GetOk(key); ok {
-		if i, valid := v.(int); valid {
-			setter(redis.Int(i))
+func ReadTags(ctx context.Context, api *ApiClient, subId int, databaseId int, d *schema.ResourceData) error {
+	tags := make(map[string]string)
+	tagResponse, err := api.Client.Tags.Get(ctx, subId, databaseId)
+	if err != nil {
+		return err
+	}
+	if tagResponse.Tags != nil {
+		for _, t := range *tagResponse.Tags {
+			tags[redis.StringValue(t.Key)] = redis.StringValue(t.Value)
 		}
 	}
+	return d.Set("tags", tags)
 }
 
-func SetFloat64(d *schema.ResourceData, key string, setter func(*float64)) {
-	if v, ok := d.GetOk(key); ok {
-		if f, valid := v.(float64); valid {
-			setter(redis.Float64(f))
+func ReadPaymentMethodID(d *schema.ResourceData) (*int, error) {
+	pmID := d.Get("payment_method_id").(string)
+	if pmID != "" {
+		pmID, err := strconv.Atoi(pmID)
+		if err != nil {
+			return nil, err
 		}
+		return redis.Int(pmID), nil
 	}
+	return nil, nil
 }
 
-func SetBool(d *schema.ResourceData, key string, setter func(*bool)) {
-	if v, ok := d.GetOk(key); ok {
-		if b, valid := v.(bool); valid {
-			setter(redis.Bool(b))
+func RemoteBackupIntervalSetCorrectly(key string) schema.CustomizeDiffFunc {
+	// Validate multiple attributes - https://github.com/hashicorp/terraform-plugin-sdk/issues/233
+
+	return func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
+		if v, ok := diff.GetOk(key); ok {
+			backups := v.([]interface{})
+			if len(backups) == 1 {
+				v := backups[0].(map[string]interface{})
+
+				interval := v["interval"].(string)
+				timeUtc := v["time_utc"].(string)
+
+				if interval != databases.BackupIntervalEvery12Hours && interval != databases.BackupIntervalEvery24Hours && timeUtc != "" {
+					return fmt.Errorf("unexpected value at %s.0.time_utc - time_utc can only be set when interval is either %s or %s", key, databases.BackupIntervalEvery24Hours, databases.BackupIntervalEvery12Hours)
+				}
+			}
+		}
+		return nil
+	}
+
+}
+
+func WriteTags(ctx context.Context, api *ApiClient, subId int, databaseId int, d *schema.ResourceData) error {
+	tags := make([]*redisTags.Tag, 0)
+	tState := d.Get("tags").(map[string]interface{})
+	for k, v := range tState {
+		tags = append(tags, &redisTags.Tag{
+			Key:   redis.String(k),
+			Value: redis.String(v.(string)),
+		})
+	}
+	return api.Client.Tags.Put(ctx, subId, databaseId, redisTags.AllTags{Tags: &tags})
+}
+
+func BuildBackupPlan(data interface{}, periodicBackupPath interface{}) *databases.DatabaseBackupConfig {
+	var d map[string]interface{}
+
+	switch v := data.(type) {
+	case []interface{}:
+		if len(v) != 1 {
+			if periodicBackupPath == nil {
+				return &databases.DatabaseBackupConfig{Active: redis.Bool(false)}
+			} else {
+				return nil
+			}
+		}
+		d = v[0].(map[string]interface{})
+	default:
+		d = v.(map[string]interface{})
+	}
+
+	config := databases.DatabaseBackupConfig{
+		Active:      redis.Bool(true),
+		Interval:    redis.String(d["interval"].(string)),
+		StorageType: redis.String(d["storage_type"].(string)),
+		StoragePath: redis.String(d["storage_path"].(string)),
+	}
+
+	if v := d["time_utc"].(string); v != "" {
+		config.TimeUTC = redis.String(v)
+	}
+
+	return &config
+}
+
+func FlattenPricing(pricing []*pricing.Pricing) []map[string]interface{} {
+	var tfs = make([]map[string]interface{}, 0)
+	for _, p := range pricing {
+
+		tf := map[string]interface{}{
+			"database_name":        p.DatabaseName,
+			"type":                 p.Type,
+			"type_details":         p.TypeDetails,
+			"quantity":             p.Quantity,
+			"quantity_measurement": p.QuantityMeasurement,
+			"price_per_unit":       p.PricePerUnit,
+			"price_currency":       p.PriceCurrency,
+			"price_period":         p.PricePeriod,
+			"region":               p.Region,
+		}
+		tfs = append(tfs, tf)
+	}
+
+	return tfs
+}
+
+func FilterSubscriptions(subs []*subscriptions.Subscription, filters []func(sub *subscriptions.Subscription) bool) []*subscriptions.Subscription {
+	var filteredSubs []*subscriptions.Subscription
+	for _, sub := range subs {
+		if filterSub(sub, filters) {
+			filteredSubs = append(filteredSubs, sub)
 		}
 	}
+
+	return filteredSubs
+}
+
+func filterSub(method *subscriptions.Subscription, filters []func(method *subscriptions.Subscription) bool) bool {
+	for _, f := range filters {
+		if !f(method) {
+			return false
+		}
+	}
+	return true
+}
+
+func BuildPrivateServiceConnectActiveActiveId(subId int, regionId int, pscServiceId int) string {
+	return fmt.Sprintf("%d/%d/%d", subId, regionId, pscServiceId)
 }

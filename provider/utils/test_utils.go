@@ -24,23 +24,23 @@ func TestAccAwsPreExistingCloudAccountPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
 }
 
-func testAccAwsCloudAccountPreCheck(t *testing.T) {
+func TestAccAwsCloudAccountPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_ACCESS_SECRET_KEY", "AWS_CONSOLE_USERNAME", "AWS_CONSOLE_PASSWORD", "AWS_SIGNIN_URL")
 }
 
-func testAccAwsPeeringPreCheck(t *testing.T) {
+func TestAccAwsPeeringPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "AWS_PEERING_REGION", "AWS_ACCOUNT_ID", "AWS_VPC_ID", "AWS_VPC_CIDR")
 }
 
-func testAccGcpProjectPreCheck(t *testing.T) {
+func TestAccGcpProjectPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "GCP_PROJECT_ID")
 }
 
-func testAccGcpCredentialsPreCheck(t *testing.T) {
+func TestAccGcpCredentialsPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "GOOGLE_CREDENTIALS")
 }
 
-func testAccAwsPreExistingTgwCheck(t *testing.T) {
+func TestAccAwsPreExistingTgwCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "AWS_TEST_TGW_ID")
 }
 

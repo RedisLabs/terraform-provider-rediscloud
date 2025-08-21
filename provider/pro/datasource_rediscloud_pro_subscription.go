@@ -243,7 +243,7 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 		})
 	}
 
-	subs = filterSubscriptions(subs, filters)
+	subs = utils.FilterSubscriptions(subs, filters)
 
 	if len(subs) == 0 {
 		return diag.Errorf("Your query returned no results. Please change your search criteria and try again.")
@@ -287,7 +287,7 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("maintenance_windows", flattenMaintenance(m)); err != nil {
+	if err := d.Set("maintenance_windows", utils.FlattenMaintenance(m)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -295,31 +295,11 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
+	if err := d.Set("pricing", utils.FlattenPricing(pricingList)); err != nil {
 		return diag.FromErr(err)
 	}
 
 	d.SetId(strconv.Itoa(subId))
 
 	return diags
-}
-
-func filterSubscriptions(subs []*subscriptions.Subscription, filters []func(sub *subscriptions.Subscription) bool) []*subscriptions.Subscription {
-	var filteredSubs []*subscriptions.Subscription
-	for _, sub := range subs {
-		if filterSub(sub, filters) {
-			filteredSubs = append(filteredSubs, sub)
-		}
-	}
-
-	return filteredSubs
-}
-
-func filterSub(method *subscriptions.Subscription, filters []func(method *subscriptions.Subscription) bool) bool {
-	for _, f := range filters {
-		if !f(method) {
-			return false
-		}
-	}
-	return true
 }

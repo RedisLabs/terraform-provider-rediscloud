@@ -2,7 +2,6 @@ package essentials
 
 import (
 	"context"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"time"
@@ -28,7 +27,7 @@ func ResourceRedisCloudEssentialsDatabase() *schema.Resource {
 
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-				subId, dbId, err := pro.ToDatabaseId(d.Id())
+				subId, dbId, err := utils.ToDatabaseId(d.Id())
 				if err != nil {
 					return nil, err
 				}
@@ -292,7 +291,7 @@ func ResourceRedisCloudEssentialsDatabase() *schema.Resource {
 					Type: schema.TypeString,
 				},
 				Optional:         true,
-				ValidateDiagFunc: pro.ValidateTagsfunc,
+				ValidateDiagFunc: utils.ValidateTagsfunc,
 			},
 		},
 	}
@@ -434,7 +433,7 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 
 	var diags diag.Diagnostics
 
-	subId, databaseId, err := pro.ToDatabaseId(d.Id())
+	subId, databaseId, err := utils.ToDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -534,10 +533,10 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 	if err := d.Set("enable_default_user", redis.Bool(*db.Security.EnableDefaultUser)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("alert", pro.FlattenAlerts(*db.Alerts)); err != nil {
+	if err := d.Set("alert", utils.FlattenAlerts(*db.Alerts)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("modules", pro.FlattenModules(*db.Modules)); err != nil {
+	if err := d.Set("modules", utils.FlattenModules(*db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -563,7 +562,7 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 		if err := d.Set("enable_database_clustering", redis.BoolValue(db.Clustering.Enabled)); err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("regex_rules", pro.FlattenRegexRules(db.Clustering.RegexRules)); err != nil {
+		if err := d.Set("regex_rules", utils.FlattenRegexRules(db.Clustering.RegexRules)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -588,7 +587,7 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*utils.ApiClient)
 
-	_, databaseId, err := pro.ToDatabaseId(d.Id())
+	_, databaseId, err := utils.ToDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -713,7 +712,7 @@ func resourceRedisCloudEssentialsDatabaseDelete(ctx context.Context, d *schema.R
 	var diags diag.Diagnostics
 	subId := d.Get("subscription_id").(int)
 
-	_, databaseId, err := pro.ToDatabaseId(d.Id())
+	_, databaseId, err := utils.ToDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}

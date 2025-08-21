@@ -2,6 +2,7 @@ package essentials
 
 import (
 	"context"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"strconv"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"

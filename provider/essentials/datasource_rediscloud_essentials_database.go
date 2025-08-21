@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	fixedDatabases "github.com/RedisLabs/rediscloud-go-api/service/fixed/databases"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -466,7 +466,7 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 	}
 
 	if db.Replica != nil {
-		if err := d.Set("replica", provider.writeReplica(*db.Replica)); err != nil {
+		if err := d.Set("replica", writeReplica(*db.Replica)); err != nil {
 			return diag.FromErr(err)
 		}
 	} else {
@@ -483,10 +483,10 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 	if err := d.Set("enable_default_user", redis.Bool(*db.Security.EnableDefaultUser)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("alert", provider.flattenAlerts(*db.Alerts)); err != nil {
+	if err := d.Set("alert", utils.FlattenAlerts(*db.Alerts)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("modules", provider.flattenModules(*db.Modules)); err != nil {
+	if err := d.Set("modules", utils.FlattenModules(*db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -495,7 +495,7 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 	if err != nil {
 		// Forgive errors here, sometimes we just can't get a latest status
 	} else {
-		parsedLatestBackupStatus, err = provider.parseLatestBackupStatus(latestBackupStatus)
+		parsedLatestBackupStatus, err = utils.ParseLatestBackupStatus(latestBackupStatus)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -509,7 +509,7 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 	if err != nil {
 		// Forgive errors here, sometimes we just can't get a latest status
 	} else {
-		parsedLatestImportStatus, err = provider.parseLatestImportStatus(latestImportStatus)
+		parsedLatestImportStatus, err = utils.ParseLatestImportStatus(latestImportStatus)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -540,7 +540,7 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 		if err := d.Set("enable_database_clustering", redis.BoolValue(db.Clustering.Enabled)); err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("regex_rules", provider.flattenRegexRules(db.Clustering.RegexRules)); err != nil {
+		if err := d.Set("regex_rules", utils.FlattenRegexRules(db.Clustering.RegexRules)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -555,32 +555,9 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 		}
 	}
 
-	if err := provider.readFixedTags(ctx, api, subId, databaseId, d); err != nil {
+	if err := readFixedTags(ctx, api, subId, databaseId, d); err != nil {
 		return diag.FromErr(err)
 	}
 
 	return diags
-}
-
-func filterFixedDatabases(list *fixedDatabases.ListFixedDatabase, filters []func(db *fixedDatabases.FixedDatabase) bool) ([]*fixedDatabases.FixedDatabase, error) {
-	var filtered []*fixedDatabases.FixedDatabase
-	for list.Next() {
-		if filterFixedDatabase(list.Value(), filters) {
-			filtered = append(filtered, list.Value())
-		}
-	}
-	if list.Err() != nil {
-		return nil, list.Err()
-	}
-
-	return filtered, nil
-}
-
-func filterFixedDatabase(db *fixedDatabases.FixedDatabase, filters []func(db *fixedDatabases.FixedDatabase) bool) bool {
-	for _, filter := range filters {
-		if !filter(db) {
-			return false
-		}
-	}
-	return true
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -124,28 +123,9 @@ func dataSourceTransitGatewayRead(ctx context.Context, d *schema.ResourceData, m
 	if err := d.Set("aws_account_id", redis.StringValue(tgw.AwsAccountId)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("cidrs", pro.flattenCidrs(tgw.Cidrs)); err != nil {
+	if err := d.Set("cidrs", utils.FlattenCidrs(tgw.Cidrs)); err != nil {
 		return diag.FromErr(err)
 	}
 
 	return diags
-}
-
-func filterTgwAttachments(getAttachmentsTask *attachments.GetAttachmentsTask, filters []func(tgwa *attachments.TransitGatewayAttachment) bool) []*attachments.TransitGatewayAttachment {
-	var filtered []*attachments.TransitGatewayAttachment
-	for _, tgwa := range getAttachmentsTask.Response.Resource.TransitGatewayAttachment {
-		if filterTgwAttachment(tgwa, filters) {
-			filtered = append(filtered, tgwa)
-		}
-	}
-	return filtered
-}
-
-func filterTgwAttachment(tgwa *attachments.TransitGatewayAttachment, filters []func(tgwa *attachments.TransitGatewayAttachment) bool) bool {
-	for _, filter := range filters {
-		if !filter(tgwa) {
-			return false
-		}
-	}
-	return true
 }

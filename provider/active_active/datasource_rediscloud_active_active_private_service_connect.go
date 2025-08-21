@@ -2,7 +2,7 @@ package active_active
 
 import (
 	"context"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -64,7 +64,7 @@ func dataSourceActiveActivePrivateServiceConnectRead(ctx context.Context, d *sch
 		return diag.FromErr(err)
 	}
 
-	d.SetId(provider.buildPrivateServiceConnectActiveActiveId(subId, regionId, *pscService.ID))
+	d.SetId(utils.BuildPrivateServiceConnectActiveActiveId(subId, regionId, *pscService.ID))
 	if err := d.Set("private_service_connect_service_id", pscService.ID); err != nil {
 		return diag.FromErr(err)
 	}
