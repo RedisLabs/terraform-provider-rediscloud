@@ -98,11 +98,6 @@ func DataSourceRedisCloudActiveActiveDatabase() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
-			"enable_default_user": {
-				Description: "When 'true', enables connecting to the database with the 'default' user. Default: 'true'",
-				Type:        schema.TypeBool,
-				Computed:    true,
-			},
 			"latest_backup_statuses": {
 				Description: "Details about the last backups that took place across each region for this active-active database",
 				Computed:    true,
@@ -343,12 +338,6 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 	}
 	if err := d.Set("private_endpoint", privateEndpointConfig); err != nil {
 		return diag.FromErr(err)
-	}
-
-	if db.Security != nil {
-		if err := d.Set("enable_default_user", redis.BoolValue(db.Security.EnableDefaultUser)); err != nil {
-			return diag.FromErr(err)
-		}
 	}
 
 	var parsedLatestBackupStatuses []map[string]interface{}
