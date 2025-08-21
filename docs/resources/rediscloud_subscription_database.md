@@ -23,7 +23,6 @@ resource "rediscloud_subscription" "subscription-resource" {
   name = "subscription-name"
   payment_method = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
@@ -43,7 +42,6 @@ resource "rediscloud_subscription" "subscription-resource" {
     replication=true
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 20000
-    modules = ["RedisJSON"]
   }
 }
 
@@ -56,12 +54,6 @@ resource "rediscloud_subscription_database" "database-resource" {
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 20000
     replication = true
-  
-    modules = [
-        {
-          name = "RedisJSON"
-        }
-    ]
     
     alert {
       name = "dataset-size"
