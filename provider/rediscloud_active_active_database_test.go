@@ -52,6 +52,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.0", "RedisJSON"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_source_ips.#", "2"),
 
+					resource.TestCheckResourceAttr(databaseResourceName, "enable_default_user", "false"),
+
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "2"),
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.name", "us-east-1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_data_persistence", "aof-every-write"),
@@ -145,6 +147,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.value", "60"),
 					resource.TestCheckResourceAttr(databaseResourceName, "redis_version", "7.2"),
+					resource.TestCheckResourceAttr(databaseResourceName, "enable_default_user", "false"),
+
 
 					// Changes are ignored after creation
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "1"),
@@ -164,11 +168,12 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(datasourceName, "redis_version", "7.2"),
 					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(datasourceName, "enable_default_user", "false"),
 				),
 			},
 			// Test database is updated, including deletion of global and local alerts and replacing modules
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlerts, subscriptionName, databaseName),
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlertsDefaultUser, subscriptionName, databaseName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "true"),
@@ -178,6 +183,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.#", "0"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.0", "RedisJSON"),
+					resource.TestCheckResourceAttr(databaseResourceName, "enable_default_user", "true"),
+
 
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.name", "us-east-1"),
@@ -302,7 +309,8 @@ resource "rediscloud_active_active_subscription_database" "example" {
     external_endpoint_for_oss_cluster_api = false
 	enable_tls = false
 	redis_version = "7.2"
-    
+    enable_default_user = false
+
     global_data_persistence = "none"
     global_password = "%s" 
     global_source_ips = ["192.168.0.0/16", "192.170.0.0/16"]
@@ -350,6 +358,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
     dataset_size_in_gb = 1
     support_oss_cluster_api = true 
     external_endpoint_for_oss_cluster_api = true
+    enable_default_user = false
     
     global_data_persistence = "aof-every-1-second"
     global_password = "updated-password" 
@@ -377,14 +386,15 @@ data "rediscloud_active_active_subscription_database" "example" {
 }
 `
 
-const testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlerts = activeActiveSubscriptionBoilerplate + `
+const testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlertsDefaultUser = activeActiveSubscriptionBoilerplate + `
 resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     dataset_size_in_gb = 1
     support_oss_cluster_api = true 
     external_endpoint_for_oss_cluster_api = true
-    
+    default_user = true
+
     global_data_persistence = "aof-every-1-second"
     global_password = "updated-password" 
     global_source_ips = ["192.170.0.0/16"]
