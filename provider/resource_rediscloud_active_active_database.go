@@ -143,6 +143,12 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Optional:    true,
 				Default:     "volatile-lru",
 			},
+			"enable_default_user": {
+				Description: "When 'true', enables connecting to the database with the 'default' user. Default: 'true'",
+				Type:        schema.TypeBool,
+				Computed:    true,
+				Default:     true,
+			},
 			"global_data_persistence": {
 				Description: "Rate of database data persistence (in persistent storage)",
 				Type:        schema.TypeString,
@@ -517,6 +523,10 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
+	if err := d.Set("enable_default_user", redis.Bool(*db.Security.EnableDefaultUser)); err != nil {
+		return diag.FromErr(err)
+	}
+
 	// To prevent both fields being included in API requests, only one of these two fields should be set in the state
 	// Only add `dataset_size_in_gb` to the state if `memory_limit_in_gb` is not already in the state
 	if _, inState := d.GetOk("memory_limit_in_gb"); !inState {
@@ -730,6 +740,7 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		GlobalAlerts:                        &updateAlerts,
 		GlobalSourceIP:                      globalSourceIps,
 		Regions:                             regions,
+		EnableDefaultUser:                   utils.GetBool(d, "enable_default_user"),
 	}
 
 	// One of the following fields must be set in the request, validation is handled in the schema (ExactlyOneOf)
