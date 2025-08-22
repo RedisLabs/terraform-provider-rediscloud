@@ -8,6 +8,8 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/psc"
+	psc2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/private_service_connect"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -23,7 +25,11 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter_
 	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccGcpProjectPreCheck(t); testAccGcpCredentialsPreCheck(t) },
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccGcpProjectPreCheck(t)
+			testAccGcpCredentialsPreCheck(t)
+		},
 		ProviderFactories: providerFactories,
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"google": {
@@ -40,21 +46,21 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter_
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
 
-						accepterId, err := toPscEndpointActiveActiveAccepterId(r.Primary.ID)
+						accepterId, err := psc2.ToPscEndpointActiveActiveAccepterId(r.Primary.ID)
 						if err != nil {
 							return fmt.Errorf("couldn't parse the accepter ID: %s", r.Primary.ID)
 						}
 
-						client := testProvider.Meta().(*apiClient)
-						endpoints, err := client.client.PrivateServiceConnect.GetActiveActiveEndpoints(context.TODO(),
-							accepterId.subscriptionId, accepterId.regionId, accepterId.pscServiceId)
+						client := testProvider.Meta().(*utils.ApiClient)
+						endpoints, err := client.Client.PrivateServiceConnect.GetActiveActiveEndpoints(context.TODO(),
+							accepterId.SubscriptionId, accepterId.RegionId, accepterId.PscServiceId)
 						if err != nil {
 							return err
 						}
 
-						endpoint := findPrivateServiceConnectEndpoints(accepterId.endpointId, endpoints.Endpoints)
+						endpoint := psc2.FindPrivateServiceConnectEndpoints(accepterId.EndpointId, endpoints.Endpoints)
 						if endpoint == nil {
-							return fmt.Errorf("couldn't find endpoint with ID: %d", accepterId.endpointId)
+							return fmt.Errorf("couldn't find endpoint with ID: %d", accepterId.EndpointId)
 						}
 
 						if redis.StringValue(endpoint.Status) != psc.EndpointStatusActive {

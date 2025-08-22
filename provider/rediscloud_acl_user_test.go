@@ -3,14 +3,16 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"os"
 	"regexp"
 	"strconv"
 	"testing"
+
+	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
@@ -81,8 +83,8 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the role ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						client := testProvider.Meta().(*apiClient)
-						user, err := client.client.Users.Get(context.TODO(), id)
+						client := testProvider.Meta().(*utils.ApiClient)
+						user, err := client.Client.Users.Get(context.TODO(), id)
 						if err != nil {
 							return err
 						}
@@ -193,7 +195,7 @@ data "rediscloud_acl_user" "test" {
 `
 
 func testAccCheckAclUserDestroy(s *terraform.State) error {
-	client := testProvider.Meta().(*apiClient)
+	client := testProvider.Meta().(*utils.ApiClient)
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_acl_user" {
@@ -205,7 +207,7 @@ func testAccCheckAclUserDestroy(s *terraform.State) error {
 			return err
 		}
 
-		roles, err := client.client.Users.List(context.TODO())
+		roles, err := client.Client.Users.List(context.TODO())
 		if err != nil {
 			return err
 		}
@@ -219,3 +221,84 @@ func testAccCheckAclUserDestroy(s *terraform.State) error {
 
 	return nil
 }
+
+const testAccResourceRedisCloudProDatabase = `
+data "rediscloud_payment_method" "card" {
+	card_type = "Visa"
+	last_four_numbers = "5556"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS" 
+  name = "%s"
+}
+
+resource "rediscloud_subscription" "example" {
+
+  name = "%s"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  memory_storage = "ram"
+
+  allowlist {
+    cidrs = ["192.168.0.0/16"]
+    security_group_ids = []
+  }
+
+  cloud_provider {
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region = "eu-west-1"
+      networking_deployment_cidr = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+
+  creation_plan {
+    dataset_size_in_gb = 1
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 1000
+    quantity = 1
+    replication=false
+    support_oss_cluster_api=false
+    modules = []
+  }
+}
+
+resource "rediscloud_subscription_database" "example" {
+    subscription_id = rediscloud_subscription.example.id
+    name = "example"
+    protocol = "redis"
+    dataset_size_in_gb = 3
+    data_persistence = "none"
+    data_eviction = "allkeys-random"
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 1000
+    password = "%s"
+    support_oss_cluster_api = false 
+    external_endpoint_for_oss_cluster_api = false
+    replication = false
+    average_item_size_in_bytes = 0
+    client_ssl_certificate = "" 
+    periodic_backup_path = ""
+	enable_default_user = true
+    redis_version = 7.2
+
+    alert {
+        name = "dataset-size"
+        value = 1
+    }
+
+    modules = [
+        {
+          name = "RedisBloom"
+        }
+    ]
+
+	tags = {
+		"market" = "emea"
+		"material" = "cardboard"
+	}
+} 
+`

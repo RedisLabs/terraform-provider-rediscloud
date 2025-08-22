@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -111,8 +112,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 							return err
 						}
 
-						client := testProvider.Meta().(*apiClient)
-						sub, err := client.client.Subscription.Get(context.TODO(), subId)
+						client := testProvider.Meta().(*utils.ApiClient)
+						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -315,7 +316,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 }
 
 func testAccCheckActiveActiveSubscriptionDestroy(s *terraform.State) error {
-	client := testProvider.Meta().(*apiClient)
+	client := testProvider.Meta().(*utils.ApiClient)
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_active_active_subscription" {
@@ -327,7 +328,7 @@ func testAccCheckActiveActiveSubscriptionDestroy(s *terraform.State) error {
 			return err
 		}
 
-		subs, err := client.client.Subscription.List(context.TODO())
+		subs, err := client.Client.Subscription.List(context.TODO())
 		if err != nil {
 			return err
 		}

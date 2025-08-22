@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -35,7 +36,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Test database and replica database creation
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabase, testCloudAccountName, name, password) + testAccResourceRedisCloudProDatabaseReplica,
+				Config: fmt.Sprintf(TestAccResourceRedisCloudProDatabase, testCloudAccountName, name, password) + testAccResourceRedisCloudProDatabaseReplica,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -79,8 +80,8 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the subscription ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						client := testProvider.Meta().(*apiClient)
-						sub, err := client.client.Subscription.Get(context.TODO(), subId)
+						client := testProvider.Meta().(*utils.ApiClient)
+						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -89,7 +90,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
 						}
 
-						listDb := client.client.Database.List(context.TODO(), subId)
+						listDb := client.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
 							return fmt.Errorf("no database found: %s", listDb.Err())
 						}
@@ -360,7 +361,7 @@ resource "rediscloud_subscription" "example" {
 
 // Create and Read tests
 // TF config for provisioning a new database
-const testAccResourceRedisCloudProDatabase = proSubscriptionBoilerplate + `
+const TestAccResourceRedisCloudProDatabase = proSubscriptionBoilerplate + `
 resource "rediscloud_subscription_database" "example" {
     subscription_id = rediscloud_subscription.example.id
     name = "example"

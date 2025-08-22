@@ -15,10 +15,9 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	fixedSubscriptions "github.com/RedisLabs/rediscloud-go-api/service/fixed/subscriptions"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
-
-const testResourcePrefix = "tf-test"
 
 var sweeperClients map[string]*rediscloudApi.Client
 
@@ -32,11 +31,11 @@ func sharedClientForRegion(region string) (*rediscloudApi.Client, error) {
 		return client, nil
 	}
 
-	if os.Getenv(RedisCloudUrlEnvVar) == "" || os.Getenv(rediscloudApi.AccessKeyEnvVar) == "" || os.Getenv(rediscloudApi.SecretKeyEnvVar) == "" {
-		return nil, fmt.Errorf("must provide environment variables %s, %s, %s", RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
+	if os.Getenv(utils.RedisCloudUrlEnvVar) == "" || os.Getenv(rediscloudApi.AccessKeyEnvVar) == "" || os.Getenv(rediscloudApi.SecretKeyEnvVar) == "" {
+		return nil, fmt.Errorf("must provide environment variables %s, %s, %s", utils.RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
 	}
 
-	client, err := rediscloudApi.NewClient(rediscloudApi.BaseURL(os.Getenv(RedisCloudUrlEnvVar)))
+	client, err := rediscloudApi.NewClient(rediscloudApi.BaseURL(os.Getenv(utils.RedisCloudUrlEnvVar)))
 	if err != nil {
 		return nil, err
 	}

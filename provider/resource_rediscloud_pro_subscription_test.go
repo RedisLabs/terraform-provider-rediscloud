@@ -11,6 +11,8 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -74,8 +76,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 							return err
 						}
 
-						client := testProvider.Meta().(*apiClient)
-						sub, err := client.client.Subscription.Get(context.TODO(), subId)
+						client := testProvider.Meta().(*utils.ApiClient)
+						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -451,7 +453,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRamAndFlash, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRamAndFlash, planMap)
 	assert.Empty(t, diags)
 	otherDatabases := 0
 	graphDatabases := 0
@@ -489,7 +491,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Empty(t, diags)
 	graphDatabases := 0
 	otherDatabases := 0
@@ -526,7 +528,7 @@ func TestFlexSubModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, numDatabases)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -551,7 +553,7 @@ func TestFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, numDatabases)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -578,7 +580,7 @@ func TestFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, 2)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -601,7 +603,7 @@ func TestFlexSubNoAverageItemSizeInBytes(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, 2)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -623,7 +625,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
@@ -644,7 +646,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
@@ -665,7 +667,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "operations-per-second", *createDb.ThroughputMeasurement.By)
@@ -686,7 +688,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, diags, 1, "Warning should be reported when storage was ram and using `average_item_size_in_bytes`")
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 	createDb := createDbs[0]
@@ -695,7 +697,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.
 }
 
 func testAccCheckProSubscriptionDestroy(s *terraform.State) error {
-	client := testProvider.Meta().(*apiClient)
+	client := testProvider.Meta().(*utils.ApiClient)
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_subscription" {
@@ -707,7 +709,7 @@ func testAccCheckProSubscriptionDestroy(s *terraform.State) error {
 			return err
 		}
 
-		subs, err := client.client.Subscription.List(context.TODO())
+		subs, err := client.Client.Subscription.List(context.TODO())
 		if err != nil {
 			return err
 		}
