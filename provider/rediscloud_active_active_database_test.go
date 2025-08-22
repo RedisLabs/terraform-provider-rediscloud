@@ -150,7 +150,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "redis_version", "7.2"),
 					resource.TestCheckResourceAttr(databaseResourceName, "enable_default_user", "false"),
 
-
 					// Changes are ignored after creation
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.0", "RedisJSON"),
@@ -185,7 +184,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.0", "RedisJSON"),
 					resource.TestCheckResourceAttr(databaseResourceName, "enable_default_user", "true"),
-
 
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.name", "us-east-1"),
