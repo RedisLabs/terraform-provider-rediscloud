@@ -30,7 +30,6 @@ resource "rediscloud_active_active_subscription_regions" "regions-resource" {
 	region {
 	  region = "us-east-2"
 	  networking_deployment_cidr = "10.0.1.0/24"
-    local_resp_version = "resp2"
 	  database {
 		  database_id = rediscloud_active_active_subscription_database.database-resource.db_id
       database_name = rediscloud_active_active_subscription_database.database-resource.name
