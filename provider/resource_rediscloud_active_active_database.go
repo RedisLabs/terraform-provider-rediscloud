@@ -146,7 +146,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 			"enable_default_user": {
 				Description: "When 'true', enables connecting to the database with the 'default' user. Default: 'true'",
 				Type:        schema.TypeBool,
-				Computed:    true,
+				Optional:    true,
 				Default:     true,
 			},
 			"global_data_persistence": {
