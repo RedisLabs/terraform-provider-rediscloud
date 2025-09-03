@@ -2,15 +2,17 @@ package provider
 
 import (
 	"context"
+	"log"
+	"strconv"
+	"time"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-	"log"
-	"strconv"
-	"time"
 )
 
 func resourceRedisCloudCloudAccount() *schema.Resource {
@@ -88,7 +90,7 @@ func resourceRedisCloudCloudAccount() *schema.Resource {
 }
 
 func resourceRedisCloudCloudAccountCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*apiClient)
+	client := meta.(*client2.ApiClient)
 
 	accessKey := d.Get("access_key_id").(string)
 	secretKey := d.Get("access_secret_key").(string)
@@ -98,7 +100,7 @@ func resourceRedisCloudCloudAccountCreate(ctx context.Context, d *schema.Resourc
 	provider := d.Get("provider_type").(string)
 	signInLoginUrl := d.Get("sign_in_login_url").(string)
 
-	id, err := client.client.CloudAccount.Create(ctx, cloud_accounts.CreateCloudAccount{
+	id, err := client.Client.CloudAccount.Create(ctx, cloud_accounts.CreateCloudAccount{
 		AccessKeyID:     redis.String(accessKey),
 		AccessSecretKey: redis.String(secretKey),
 		ConsoleUsername: redis.String(consoleUsername),
@@ -121,7 +123,7 @@ func resourceRedisCloudCloudAccountCreate(ctx context.Context, d *schema.Resourc
 	return resourceRedisCloudCloudAccountRead(ctx, d, meta)
 }
 
-func waitForCloudAccountToBeActive(ctx context.Context, id int, client *apiClient) error {
+func waitForCloudAccountToBeActive(ctx context.Context, id int, client *client2.ApiClient) error {
 	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{cloud_accounts.StatusDraft, cloud_accounts.StatusChangeDraft},
@@ -131,7 +133,7 @@ func waitForCloudAccountToBeActive(ctx context.Context, id int, client *apiClien
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for cloud account %d to be active", id)
 
-			account, err := client.client.CloudAccount.Get(ctx, id)
+			account, err := client.Client.CloudAccount.Get(ctx, id)
 			if err != nil {
 				return nil, "", err
 			}
@@ -148,7 +150,7 @@ func waitForCloudAccountToBeActive(ctx context.Context, id int, client *apiClien
 }
 
 func resourceRedisCloudCloudAccountRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*apiClient)
+	client := meta.(*client2.ApiClient)
 
 	var diags diag.Diagnostics
 
@@ -157,7 +159,7 @@ func resourceRedisCloudCloudAccountRead(ctx context.Context, d *schema.ResourceD
 		return diag.FromErr(err)
 	}
 
-	account, err := client.client.CloudAccount.Get(ctx, id)
+	account, err := client.Client.CloudAccount.Get(ctx, id)
 	if err != nil {
 		if _, ok := err.(*cloud_accounts.NotFound); ok {
 			d.SetId("")
@@ -183,7 +185,7 @@ func resourceRedisCloudCloudAccountRead(ctx context.Context, d *schema.ResourceD
 }
 
 func resourceRedisCloudCloudAccountUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*apiClient)
+	client := meta.(*client2.ApiClient)
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -197,7 +199,7 @@ func resourceRedisCloudCloudAccountUpdate(ctx context.Context, d *schema.Resourc
 	name := d.Get("name").(string)
 	signInLoginUrl := d.Get("sign_in_login_url").(string)
 
-	err = client.client.CloudAccount.Update(ctx, id, cloud_accounts.UpdateCloudAccount{
+	err = client.Client.CloudAccount.Update(ctx, id, cloud_accounts.UpdateCloudAccount{
 		AccessKeyID:     redis.String(accessKey),
 		AccessSecretKey: redis.String(secretKey),
 		ConsoleUsername: redis.String(consoleUsername),
@@ -214,14 +216,14 @@ func resourceRedisCloudCloudAccountUpdate(ctx context.Context, d *schema.Resourc
 }
 
 func resourceRedisCloudCloudAccountDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	client := meta.(*apiClient)
+	client := meta.(*client2.ApiClient)
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	err = client.client.CloudAccount.Delete(ctx, id)
+	err = client.Client.CloudAccount.Delete(ctx, id)
 	if err != nil {
 		return diag.FromErr(err)
 	}

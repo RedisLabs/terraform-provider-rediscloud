@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -46,9 +47,9 @@ func dataSourceRedisCloudCloudAccount() *schema.Resource {
 
 func dataSourceRedisCloudCloudAccountRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	client := meta.(*apiClient)
+	client := meta.(*client2.ApiClient)
 
-	accounts, err := client.client.CloudAccount.List(ctx)
+	accounts, err := client.Client.CloudAccount.List(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"github.com/RedisLabs/rediscloud-go-api/service/account"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -38,9 +39,9 @@ func dataSourceRedisCloudDataPersistence() *schema.Resource {
 
 func dataSourceRedisCloudDataPersistenceRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
-	dataPersistence, err := api.client.Account.ListDataPersistence(ctx)
+	dataPersistence, err := api.Client.Account.ListDataPersistence(ctx)
 
 	if err != nil {
 		return diag.FromErr(err)

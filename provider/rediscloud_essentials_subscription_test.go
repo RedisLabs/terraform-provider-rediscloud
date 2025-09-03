@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -413,7 +414,7 @@ data "rediscloud_essentials_subscription" "example" {
 `
 
 func testAccCheckEssentialsSubscriptionDestroy(s *terraform.State) error {
-	client := testProvider.Meta().(*apiClient)
+	client := testProvider.Meta().(*client2.ApiClient)
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_essentials_subscription" {
@@ -425,7 +426,7 @@ func testAccCheckEssentialsSubscriptionDestroy(s *terraform.State) error {
 			return err
 		}
 
-		subs, err := client.client.FixedSubscriptions.List(context.TODO())
+		subs, err := client.Client.FixedSubscriptions.List(context.TODO())
 		if err != nil {
 			return err
 		}

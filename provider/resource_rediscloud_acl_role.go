@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/roles"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -86,7 +87,7 @@ func resourceRedisCloudAclRole() *schema.Resource {
 }
 
 func resourceRedisCloudAclRoleCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	name := d.Get("name").(string)
 	associateWithRules := extractRules(d)
@@ -96,7 +97,7 @@ func resourceRedisCloudAclRoleCreate(ctx context.Context, d *schema.ResourceData
 		RedisRules: associateWithRules,
 	}
 
-	id, err := api.client.Roles.Create(ctx, createRoleRequest)
+	id, err := api.Client.Roles.Create(ctx, createRoleRequest)
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -123,7 +124,7 @@ func resourceRedisCloudAclRoleCreate(ctx context.Context, d *schema.ResourceData
 }
 
 func resourceRedisCloudAclRoleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 	var diags diag.Diagnostics
 
 	id, err := strconv.Atoi(d.Id())
@@ -131,7 +132,7 @@ func resourceRedisCloudAclRoleRead(ctx context.Context, d *schema.ResourceData, 
 		return diag.FromErr(err)
 	}
 
-	role, err := api.client.Roles.Get(ctx, id)
+	role, err := api.Client.Roles.Get(ctx, id)
 	if err != nil {
 		if _, ok := err.(*roles.NotFound); ok {
 			d.SetId("")
@@ -150,7 +151,7 @@ func resourceRedisCloudAclRoleRead(ctx context.Context, d *schema.ResourceData, 
 }
 
 func resourceRedisCloudAclRoleUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -165,7 +166,7 @@ func resourceRedisCloudAclRoleUpdate(ctx context.Context, d *schema.ResourceData
 		rules := extractRules(d)
 		updateRoleRequest.RedisRules = rules
 
-		err = api.client.Roles.Update(ctx, id, updateRoleRequest)
+		err = api.Client.Roles.Update(ctx, id, updateRoleRequest)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -190,7 +191,7 @@ func resourceRedisCloudAclRoleUpdate(ctx context.Context, d *schema.ResourceData
 }
 
 func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 	var diags diag.Diagnostics
 
 	id, err := strconv.Atoi(d.Id())
@@ -206,7 +207,7 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	err = api.client.Roles.Delete(ctx, id)
+	err = api.Client.Roles.Delete(ctx, id)
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -216,7 +217,7 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 
 	// Wait until it's really disappeared
 	err = retry.RetryContext(ctx, 5*time.Minute, func() *retry.RetryError {
-		role, err := api.client.Roles.Get(ctx, id)
+		role, err := api.Client.Roles.Get(ctx, id)
 
 		if err != nil {
 			if _, ok := err.(*roles.NotFound); ok {
@@ -310,7 +311,7 @@ func flattenDatabases(databases []*roles.GetDatabaseInRuleInRoleResponse) []map[
 	return tfs
 }
 
-func waitForAclRoleToBeActive(ctx context.Context, id int, api *apiClient) error {
+func waitForAclRoleToBeActive(ctx context.Context, id int, api *client.ApiClient) error {
 	wait := &retry.StateChangeConf{
 		Delay:   5 * time.Second,
 		Pending: []string{roles.StatusPending},
@@ -320,7 +321,7 @@ func waitForAclRoleToBeActive(ctx context.Context, id int, api *apiClient) error
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for role %d to be active", id)
 
-			role, err := api.client.Roles.Get(ctx, id)
+			role, err := api.Client.Roles.Get(ctx, id)
 			if err != nil {
 				return nil, "", err
 			}

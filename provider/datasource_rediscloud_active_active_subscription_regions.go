@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -79,9 +80,9 @@ func dataSourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 
 func dataSourceRedisCloudActiveActiveRegionsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
-	subs, err := api.client.Subscription.List(ctx)
+	subs, err := api.Client.Subscription.List(ctx)
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -113,7 +114,7 @@ func dataSourceRedisCloudActiveActiveRegionsRead(ctx context.Context, d *schema.
 
 	sub := subs[0]
 
-	regions, err := api.client.Subscription.ListActiveActiveRegions(ctx, *sub.ID)
+	regions, err := api.Client.Subscription.ListActiveActiveRegions(ctx, *sub.ID)
 
 	if err != nil {
 		return diag.FromErr(err)

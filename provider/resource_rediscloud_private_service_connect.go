@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"strconv"
 	"strings"
@@ -50,17 +52,17 @@ func resourceRedisCloudPrivateServiceConnect() *schema.Resource {
 }
 
 func resourceRedisCloudPrivateServiceConnectCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	subscriptionMutex.Lock(subscriptionId)
+	utils.SubscriptionMutex.Lock(subscriptionId)
 
-	pscServiceId, err := api.client.PrivateServiceConnect.CreateService(ctx, subscriptionId)
+	pscServiceId, err := api.Client.PrivateServiceConnect.CreateService(ctx, subscriptionId)
 	if err != nil {
-		subscriptionMutex.Unlock(subscriptionId)
+		utils.SubscriptionMutex.Unlock(subscriptionId)
 		return diag.FromErr(err)
 	}
 
@@ -70,30 +72,30 @@ func resourceRedisCloudPrivateServiceConnectCreate(ctx context.Context, d *schem
 		return refreshPrivateServiceConnectServiceStatus(ctx, subscriptionId, api)
 	})
 	if err != nil {
-		subscriptionMutex.Unlock(subscriptionId)
+		utils.SubscriptionMutex.Unlock(subscriptionId)
 		return diag.FromErr(err)
 	}
 
-	err = waitForSubscriptionToBeActive(ctx, subscriptionId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api)
 	if err != nil {
-		subscriptionMutex.Unlock(subscriptionId)
+		utils.SubscriptionMutex.Unlock(subscriptionId)
 		return diag.FromErr(err)
 	}
 
-	subscriptionMutex.Unlock(subscriptionId)
+	utils.SubscriptionMutex.Unlock(subscriptionId)
 	return resourceRedisCloudPrivateServiceConnectRead(ctx, d, meta)
 }
 
 func resourceRedisCloudPrivateServiceConnectRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	resId, err := toPscServiceId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	pscObj, err := api.client.PrivateServiceConnect.GetService(ctx, resId.subscriptionId)
+	pscObj, err := api.Client.PrivateServiceConnect.GetService(ctx, resId.subscriptionId)
 	if err != nil {
 		var notFound *psc.NotFound
 		if errors.As(err, &notFound) {
@@ -120,16 +122,16 @@ func resourceRedisCloudPrivateServiceConnectRead(ctx context.Context, d *schema.
 
 func resourceRedisCloudPrivateServiceConnectDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	subscriptionMutex.Lock(subscriptionId)
-	defer subscriptionMutex.Unlock(subscriptionId)
+	utils.SubscriptionMutex.Lock(subscriptionId)
+	defer utils.SubscriptionMutex.Unlock(subscriptionId)
 
-	err = api.client.PrivateServiceConnect.DeleteService(ctx, subscriptionId)
+	err = api.Client.PrivateServiceConnect.DeleteService(ctx, subscriptionId)
 	if err != nil {
 		var notFound *psc.NotFound
 		if errors.As(err, &notFound) {
@@ -141,7 +143,7 @@ func resourceRedisCloudPrivateServiceConnectDelete(ctx context.Context, d *schem
 
 	d.SetId("")
 
-	err = waitForSubscriptionToBeActive(ctx, subscriptionId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -180,10 +182,10 @@ func toPscServiceId(id string) (*privateServiceConnectServiceId, error) {
 	}, nil
 }
 
-func refreshPrivateServiceConnectServiceStatus(ctx context.Context, subscriptionId int, api *apiClient) (result interface{}, state string, err error) {
+func refreshPrivateServiceConnectServiceStatus(ctx context.Context, subscriptionId int, api *client.ApiClient) (result interface{}, state string, err error) {
 	log.Printf("[DEBUG] Waiting for private service connect service status %d to be active", subscriptionId)
 
-	pscService, err := api.client.PrivateServiceConnect.GetService(ctx, subscriptionId)
+	pscService, err := api.Client.PrivateServiceConnect.GetService(ctx, subscriptionId)
 	if err != nil {
 		return nil, "", err
 	}
@@ -198,7 +200,7 @@ func waitForPrivateServiceConnectServiceToBeActive(ctx context.Context, refreshF
 			psc.ServiceStatusInitialized,
 			psc.ServiceStatusCreatePending},
 		Target:       []string{psc.ServiceStatusActive},
-		Timeout:      safetyTimeout,
+		Timeout:      utils.SafetyTimeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 

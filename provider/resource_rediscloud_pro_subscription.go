@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"reflect"
 	"regexp"
@@ -558,16 +560,16 @@ func shouldForceNewRegion(oldRegion, newRegion interface{}) bool {
 }
 
 func getSubscription(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) (*subscriptions.Subscription, error) {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 	subscriptionID, err := strconv.Atoi(diff.Id())
 	if err != nil {
 		return nil, fmt.Errorf("invalid subscription ID: %w", err)
 	}
-	return api.client.Subscription.Get(ctx, subscriptionID)
+	return api.Client.Subscription.Get(ctx, subscriptionID)
 }
 
 func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	// Create CloudProviders
 	providers, err := buildCreateCloudProviders(d.Get("cloud_provider"))
@@ -617,7 +619,7 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 		createSubscriptionRequest.PersistentStorageEncryptionType = redis.String(CMK_ENABLED_STRING)
 	}
 
-	subId, err := api.client.Subscription.Create(ctx, createSubscriptionRequest)
+	subId, err := api.Client.Subscription.Create(ctx, createSubscriptionRequest)
 	if err != nil {
 		return append(diags, diag.FromErr(err)...)
 	}
@@ -634,7 +636,7 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 	}
 
 	// Confirm Subscription Active status
-	err = waitForSubscriptionToBeActive(ctx, subId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
 
 	if err != nil {
 		return append(diags, diag.FromErr(err)...)
@@ -643,12 +645,12 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are listed.
 	// This additional wait ensures that the databases will be listed before calling api.client.Database.List()
 	time.Sleep(30 * time.Second) //lintignore:R018
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return append(diags, diag.FromErr(err)...)
 	}
 
 	// Locate Databases to confirm Active status
-	dbList := api.client.Database.List(ctx, subId)
+	dbList := api.Client.Database.List(ctx, subId)
 
 	for dbList.Next() {
 		dbId := *dbList.Value().ID
@@ -657,7 +659,7 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 			return append(diags, diag.FromErr(err)...)
 		}
 		// Delete each creation-plan database
-		dbErr := api.client.Database.Delete(ctx, subId, dbId)
+		dbErr := api.Client.Database.Delete(ctx, subId, dbId)
 		if dbErr != nil {
 			diag.FromErr(dbErr)
 		}
@@ -672,7 +674,7 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 }
 
 func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	var diags diag.Diagnostics
 
@@ -681,7 +683,7 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 
-	subscription, err := api.client.Subscription.Get(ctx, subId)
+	subscription, err := api.Client.Subscription.Get(ctx, subId)
 	if err != nil {
 		if _, ok := err.(*subscriptions.NotFound); ok {
 			d.SetId("")
@@ -729,7 +731,7 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
 	if !cmkEnabled {
-		m, err := api.client.Maintenance.Get(ctx, subId)
+		m, err := api.Client.Maintenance.Get(ctx, subId)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -737,7 +739,7 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 			return diag.FromErr(err)
 		}
 
-		pricingList, err := api.client.Pricing.List(ctx, subId)
+		pricingList, err := api.Client.Pricing.List(ctx, subId)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -755,17 +757,17 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 }
 
 func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
+	utils.SubscriptionMutex.Lock(subId)
+	defer utils.SubscriptionMutex.Unlock(subId)
 
-	subscription, err := api.client.Subscription.Get(ctx, subId)
+	subscription, err := api.Client.Subscription.Get(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -785,7 +787,7 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 		cidrs := setToStringSlice(d.Get("allowlist.0.cidrs").(*schema.Set))
 		sgs := setToStringSlice(d.Get("allowlist.0.security_group_ids").(*schema.Set))
 
-		err := api.client.Subscription.UpdateCIDRAllowlist(ctx, subId, subscriptions.UpdateCIDRAllowlist{
+		err := api.Client.Subscription.UpdateCIDRAllowlist(ctx, subId, subscriptions.UpdateCIDRAllowlist{
 			CIDRIPs:          cidrs,
 			SecurityGroupIDs: sgs,
 		})
@@ -811,13 +813,13 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 			updateSubscriptionRequest.PaymentMethodID = paymentMethodID
 		}
 
-		err = api.client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
+		err = api.Client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -845,7 +847,7 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 				Mode: redis.String("automatic"),
 			}
 		}
-		err = api.client.Maintenance.Update(ctx, subId, updateMaintenanceRequest)
+		err = api.Client.Maintenance.Update(ctx, subId, updateMaintenanceRequest)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -854,7 +856,7 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 	return resourceRedisCloudProSubscriptionRead(ctx, d, meta)
 }
 
-func resourceRedisCloudProSubscriptionUpdateCmk(ctx context.Context, d *schema.ResourceData, api *apiClient, subId int) diag.Diagnostics {
+func resourceRedisCloudProSubscriptionUpdateCmk(ctx context.Context, d *schema.ResourceData, api *client.ApiClient, subId int) diag.Diagnostics {
 
 	cmkResourcesRaw, exists := d.GetOk("customer_managed_key")
 	if !exists {
@@ -874,11 +876,11 @@ func resourceRedisCloudProSubscriptionUpdateCmk(ctx context.Context, d *schema.R
 		CustomerManagedKeys: &customerManagedKeys,
 	}
 
-	if err := api.client.Subscription.UpdateCMKs(ctx, subId, updateCmkRequest); err != nil {
+	if err := api.Client.Subscription.UpdateCMKs(ctx, subId, updateCmkRequest); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -902,7 +904,7 @@ func buildProCmks(cmkResources []interface{}) []subscriptions.CustomerManagedKey
 
 func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	var diags diag.Diagnostics
 
@@ -911,30 +913,30 @@ func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.Reso
 		return diag.FromErr(err)
 	}
 
-	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
+	utils.SubscriptionMutex.Lock(subId)
+	defer utils.SubscriptionMutex.Unlock(subId)
 
-	subscription, err := api.client.Subscription.Get(ctx, subId)
+	subscription, err := api.Client.Subscription.Get(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	if *subscription.Status != subscriptions.SubscriptionStatusEncryptionKeyPending {
 		// Wait for the subscription to be active before deleting it.
-		if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 			return diag.FromErr(err)
 		}
 
 		// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 		// This additional wait ensures that the databases are deleted before the subscription is deleted.
 		time.Sleep(30 * time.Second) //lintignore:R018
-		if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
 	// Delete subscription once all databases are deleted
-	err = api.client.Subscription.Delete(ctx, subId)
+	err = api.Client.Subscription.Delete(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -1135,44 +1137,18 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 	return dbs
 }
 
-func waitForSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) error {
-	wait := &retry.StateChangeConf{
-		Pending:      []string{subscriptions.SubscriptionStatusPending},
-		Target:       []string{subscriptions.SubscriptionStatusActive},
-		Timeout:      safetyTimeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
-
-		Refresh: func() (result interface{}, state string, err error) {
-			log.Printf("[DEBUG] Waiting for subscription %d to be %s", id, subscriptions.SubscriptionStatusActive)
-
-			subscription, err := api.client.Subscription.Get(ctx, id)
-			if err != nil {
-				return nil, "", err
-			}
-
-			return redis.StringValue(subscription.Status), redis.StringValue(subscription.Status), nil
-		},
-	}
-	if _, err := wait.WaitForStateContext(ctx); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func waitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, api *apiClient) error {
+func waitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, api *client.ApiClient) error {
 	wait := &retry.StateChangeConf{
 		Pending:      []string{subscriptions.SubscriptionStatusPending},
 		Target:       []string{subscriptions.SubscriptionStatusEncryptionKeyPending, subscriptions.SubscriptionStatusActive},
-		Timeout:      safetyTimeout,
+		Timeout:      utils.SafetyTimeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for subscription %d to be %s", id, subscriptions.SubscriptionStatusEncryptionKeyPending)
 
-			subscription, err := api.client.Subscription.Get(ctx, id)
+			subscription, err := api.Client.Subscription.Get(ctx, id)
 			if err != nil {
 				return nil, "", err
 			}
@@ -1187,18 +1163,18 @@ func waitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, ap
 	return nil
 }
 
-func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient) error {
+func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *client.ApiClient) error {
 	wait := &retry.StateChangeConf{
 		Pending:      []string{subscriptions.SubscriptionStatusDeleting},
 		Target:       []string{"deleted"}, // TODO: update this with deleted field in SDK
-		Timeout:      safetyTimeout,
+		Timeout:      utils.SafetyTimeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for subscription %d to be deleted", id)
 
-			subscription, err := api.client.Subscription.Get(ctx, id)
+			subscription, err := api.Client.Subscription.Get(ctx, id)
 			if err != nil {
 				if _, ok := err.(*subscriptions.NotFound); ok {
 					return "deleted", "deleted", nil
@@ -1216,7 +1192,7 @@ func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient)
 	return nil
 }
 
-func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClient) error {
+func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient) error {
 	wait := &retry.StateChangeConf{
 		Pending: []string{
 			databases.StatusDraft,
@@ -1232,14 +1208,14 @@ func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClien
 			databases.StatusActiveUpgradePending,
 		},
 		Target:       []string{databases.StatusActive},
-		Timeout:      safetyTimeout,
+		Timeout:      utils.SafetyTimeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for database %d to be active", id)
 
-			database, err := api.client.Database.Get(ctx, subId, id)
+			database, err := api.Client.Database.Get(ctx, subId, id)
 			if err != nil {
 				return nil, "", err
 			}
@@ -1254,8 +1230,8 @@ func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClien
 	return nil
 }
 
-func flattenSubscriptionAllowlist(ctx context.Context, subId int, api *apiClient) ([]map[string]interface{}, error) {
-	allowlist, err := api.client.Subscription.GetCIDRAllowlist(ctx, subId)
+func flattenSubscriptionAllowlist(ctx context.Context, subId int, api *client.ApiClient) ([]map[string]interface{}, error) {
+	allowlist, err := api.Client.Subscription.GetCIDRAllowlist(ctx, subId)
 	if err != nil {
 		return nil, err
 	}

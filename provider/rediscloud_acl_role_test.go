@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -65,8 +66,8 @@ func TestAccResourceRedisCloudAclRole_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the role ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						client := testProvider.Meta().(*apiClient)
-						role, err := client.client.Roles.Get(context.TODO(), id)
+						client := testProvider.Meta().(*client2.ApiClient)
+						role, err := client.Client.Roles.Get(context.TODO(), id)
 						if err != nil {
 							return err
 						}

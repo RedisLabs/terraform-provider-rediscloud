@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"os"
 	"testing"
 
@@ -45,8 +46,8 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter_
 							return fmt.Errorf("couldn't parse the accepter ID: %s", r.Primary.ID)
 						}
 
-						client := testProvider.Meta().(*apiClient)
-						endpoints, err := client.client.PrivateServiceConnect.GetActiveActiveEndpoints(context.TODO(),
+						client := testProvider.Meta().(*client2.ApiClient)
+						endpoints, err := client.Client.PrivateServiceConnect.GetActiveActiveEndpoints(context.TODO(),
 							accepterId.subscriptionId, accepterId.regionId, accepterId.pscServiceId)
 						if err != nil {
 							return err

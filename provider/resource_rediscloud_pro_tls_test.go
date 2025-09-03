@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"os"
 	"regexp"
 	"strconv"
@@ -58,8 +59,8 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return err
 						}
 
-						client := testProvider.Meta().(*apiClient)
-						sub, err := client.client.Subscription.Get(context.TODO(), subId)
+						client := testProvider.Meta().(*client2.ApiClient)
+						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -68,7 +69,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
 						}
 
-						listDb := client.client.Database.List(context.TODO(), subId)
+						listDb := client.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
 							return fmt.Errorf("no database found: %s", listDb.Err())
 						}
@@ -162,8 +163,8 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return err
 						}
 
-						client := testProvider.Meta().(*apiClient)
-						sub, err := client.client.Subscription.Get(context.TODO(), subId)
+						client := testProvider.Meta().(*client2.ApiClient)
+						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -172,7 +173,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
 						}
 
-						listDb := client.client.Database.List(context.TODO(), subId)
+						listDb := client.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
 							return fmt.Errorf("no database found: %s", listDb.Err())
 						}
@@ -343,8 +344,8 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return err
 						}
 
-						client := testProvider.Meta().(*apiClient)
-						sub, err := client.client.Subscription.Get(context.TODO(), subId)
+						client := testProvider.Meta().(*client2.ApiClient)
+						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -353,7 +354,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
 						}
 
-						listDb := client.client.Database.List(context.TODO(), subId)
+						listDb := client.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
 							return fmt.Errorf("no database found: %s", listDb.Err())
 						}

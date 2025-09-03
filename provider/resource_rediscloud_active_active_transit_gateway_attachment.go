@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"strconv"
@@ -84,7 +85,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachment() *schema.Resource {
 }
 
 func resourceRedisCloudActiveActiveTransitGatewayAttachmentCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	regionId, err := strconv.Atoi(d.Get("region_id").(string))
@@ -99,7 +100,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentCreate(ctx context.Co
 		return diag.Errorf("Attachment cannot be created with Cidrs provided, it must be accepted first. This resource may then be updated with Cidrs.")
 	}
 
-	_, err = api.client.TransitGatewayAttachments.CreateActiveActive(ctx, subscriptionId, regionId, tgwId)
+	_, err = api.Client.TransitGatewayAttachments.CreateActiveActive(ctx, subscriptionId, regionId, tgwId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -109,7 +110,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentCreate(ctx context.Co
 
 func resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
@@ -121,7 +122,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx context.Cont
 	}
 	tgwId := d.Get("tgw_id").(int)
 
-	tgwTask, err := api.client.TransitGatewayAttachments.GetActiveActive(ctx, subId, regionId)
+	tgwTask, err := api.Client.TransitGatewayAttachments.GetActiveActive(ctx, subId, regionId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -166,7 +167,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx context.Cont
 }
 
 func resourceRedisCloudActiveActiveTransitGatewayAttachmentUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	regionId, err := strconv.Atoi(d.Get("region_id").(string))
@@ -180,7 +181,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentUpdate(ctx context.Co
 		cidrs = make([]*string, 0)
 	}
 
-	err = api.client.TransitGatewayAttachments.UpdateActiveActive(ctx, subId, tgwId, regionId, cidrs)
+	err = api.Client.TransitGatewayAttachments.UpdateActiveActive(ctx, subId, tgwId, regionId, cidrs)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -190,7 +191,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentUpdate(ctx context.Co
 
 func resourceRedisCloudActiveActiveTransitGatewayAttachmentDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
@@ -199,7 +200,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentDelete(ctx context.Co
 	regionId := d.Get("region_id").(int)
 	tgwId := d.Get("tgw_id").(int)
 
-	err = api.client.TransitGatewayAttachments.DeleteActiveActive(ctx, subscriptionId, regionId, tgwId)
+	err = api.Client.TransitGatewayAttachments.DeleteActiveActive(ctx, subscriptionId, regionId, tgwId)
 	if err != nil {
 		return diag.FromErr(err)
 	}

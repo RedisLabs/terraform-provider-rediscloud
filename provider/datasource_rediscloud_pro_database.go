@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"regexp"
 	"strconv"
 
@@ -317,7 +318,7 @@ func dataSourceRedisCloudProDatabase() *schema.Resource {
 
 func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
@@ -352,7 +353,7 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 		})
 	}
 
-	list := api.client.Database.List(ctx, subId)
+	list := api.Client.Database.List(ctx, subId)
 	dbs, err := filterProDatabases(list, filters)
 	if err != nil {
 		return diag.FromErr(list.Err())
@@ -368,7 +369,7 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 
 	// Some attributes are only returned when retrieving a single database
 	dbId := redis.IntValue(dbs[0].ID)
-	db, err := api.client.Database.Get(ctx, subId, dbId)
+	db, err := api.Client.Database.Get(ctx, subId, dbId)
 	if err != nil {
 		return diag.FromErr(list.Err())
 	}
@@ -455,7 +456,7 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 	}
 
 	var parsedLatestBackupStatus []map[string]interface{}
-	latestBackupStatus, err := api.client.LatestBackup.Get(ctx, subId, dbId)
+	latestBackupStatus, err := api.Client.LatestBackup.Get(ctx, subId, dbId)
 	if err != nil {
 		// Forgive errors here, sometimes we just can't get a latest status
 	} else {
@@ -469,7 +470,7 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 	}
 
 	var parsedLatestImportStatus []map[string]interface{}
-	latestImportStatus, err := api.client.LatestImport.Get(ctx, subId, dbId)
+	latestImportStatus, err := api.Client.LatestImport.Get(ctx, subId, dbId)
 	if err != nil {
 		// Forgive errors here, sometimes we just can't get a latest status
 	} else {

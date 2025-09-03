@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"strconv"
@@ -66,13 +67,13 @@ func dataSourceTransitGateway() *schema.Resource {
 
 func dataSourceTransitGatewayRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	tgwTask, err := api.client.TransitGatewayAttachments.Get(ctx, subId)
+	tgwTask, err := api.Client.TransitGatewayAttachments.Get(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
 	}

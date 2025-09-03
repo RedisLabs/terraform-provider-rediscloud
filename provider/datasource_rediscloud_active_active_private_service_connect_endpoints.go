@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"strconv"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -104,7 +105,7 @@ func dataSourceActiveActivePrivateServiceConnectEndpoints() *schema.Resource {
 
 func dataSourceActiveActivePrivateServiceConnectEndpointsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
@@ -114,7 +115,7 @@ func dataSourceActiveActivePrivateServiceConnectEndpointsRead(ctx context.Contex
 	regionId := d.Get("region_id").(int)
 	pscServiceId := d.Get("private_service_connect_service_id").(int)
 
-	endpoints, err := api.client.PrivateServiceConnect.GetActiveActiveEndpoints(ctx, subId, regionId, pscServiceId)
+	endpoints, err := api.Client.PrivateServiceConnect.GetActiveActiveEndpoints(ctx, subId, regionId, pscServiceId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -123,7 +124,7 @@ func dataSourceActiveActivePrivateServiceConnectEndpointsRead(ctx context.Contex
 	for _, endpoint := range endpoints.Endpoints {
 		serviceAttachments[*endpoint.ID] = []psc.TerraformGCPServiceAttachment{}
 		if redis.StringValue(endpoint.Status) != psc.EndpointStatusRejected && redis.StringValue(endpoint.Status) != psc.EndpointStatusDeleted {
-			script, err := api.client.PrivateServiceConnect.GetActiveActiveEndpointCreationScripts(ctx, subId, regionId, pscServiceId, redis.IntValue(endpoint.ID), true)
+			script, err := api.Client.PrivateServiceConnect.GetActiveActiveEndpointCreationScripts(ctx, subId, regionId, pscServiceId, redis.IntValue(endpoint.ID), true)
 			if err != nil {
 				return diag.FromErr(err)
 			}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/users"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"strconv"
@@ -31,7 +32,7 @@ func dataSourceRedisCloudAclUser() *schema.Resource {
 
 func dataSourceRedisCloudAclUserRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	var filters []func(user *users.GetUserResponse) bool
 	if v, ok := d.GetOk("name"); ok {
@@ -40,7 +41,7 @@ func dataSourceRedisCloudAclUserRead(ctx context.Context, d *schema.ResourceData
 		})
 	}
 
-	list, err := api.client.Users.List(ctx)
+	list, err := api.Client.Users.List(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}

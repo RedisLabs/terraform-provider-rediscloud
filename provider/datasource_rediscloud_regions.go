@@ -5,6 +5,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/account"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -48,9 +49,9 @@ func dataSourceRedisCloudRegions() *schema.Resource {
 
 func dataSourceRedisCloudRegionsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
-	regions, err := api.client.Account.ListRegions(ctx)
+	regions, err := api.Client.Account.ListRegions(ctx)
 
 	if err != nil {
 		return diag.FromErr(err)

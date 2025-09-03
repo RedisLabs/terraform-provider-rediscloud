@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -50,7 +51,7 @@ func dataSourceActiveActivePrivateServiceConnect() *schema.Resource {
 
 func dataSourceActiveActivePrivateServiceConnectRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
@@ -58,7 +59,7 @@ func dataSourceActiveActivePrivateServiceConnectRead(ctx context.Context, d *sch
 	}
 
 	regionId := d.Get("region_id").(int)
-	pscService, err := api.client.PrivateServiceConnect.GetActiveActiveService(ctx, subId, regionId)
+	pscService, err := api.Client.PrivateServiceConnect.GetActiveActiveService(ctx, subId, regionId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
