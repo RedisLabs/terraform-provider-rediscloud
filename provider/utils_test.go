@@ -35,3 +35,12 @@ func testAccRequiresEnvVar(t *testing.T, envVarName string) string {
 	}
 	return envVarValue
 }
+
+func getTestConfig(t *testing.T, testFile string) string {
+	content, err := os.ReadFile(testFile)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+
+	return string(content)
+}

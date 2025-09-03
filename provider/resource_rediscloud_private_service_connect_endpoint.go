@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"strconv"
 	"strings"
@@ -109,14 +111,14 @@ func resourceRedisCloudPrivateServiceConnectEndpoint() *schema.Resource {
 }
 
 func resourceRedisCloudPrivateServiceConnectEndpointCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	subscriptionMutex.Lock(subscriptionId)
-	defer subscriptionMutex.Unlock(subscriptionId)
+	utils.SubscriptionMutex.Lock(subscriptionId)
+	defer utils.SubscriptionMutex.Unlock(subscriptionId)
 
 	pscServiceId := d.Get("private_service_connect_service_id").(int)
 	gcpProjectId := d.Get("gcp_project_id").(string)
@@ -124,7 +126,7 @@ func resourceRedisCloudPrivateServiceConnectEndpointCreate(ctx context.Context, 
 	gcpVpcSubnetName := d.Get("gcp_vpc_subnet_name").(string)
 	endpointConnectionNamePrefix := d.Get("endpoint_connection_name").(string)
 
-	endpointId, err := api.client.PrivateServiceConnect.CreateEndpoint(ctx, subscriptionId, pscServiceId, psc.CreatePrivateServiceConnectEndpoint{
+	endpointId, err := api.Client.PrivateServiceConnect.CreateEndpoint(ctx, subscriptionId, pscServiceId, psc.CreatePrivateServiceConnectEndpoint{
 		GCPProjectID:           &gcpProjectId,
 		GCPVPCName:             &gcpVpcName,
 		GCPVPCSubnetName:       &gcpVpcSubnetName,
@@ -137,7 +139,7 @@ func resourceRedisCloudPrivateServiceConnectEndpointCreate(ctx context.Context, 
 
 	d.SetId(buildPrivateServiceConnectEndpointId(subscriptionId, pscServiceId, endpointId))
 
-	err = waitForSubscriptionToBeActive(ctx, subscriptionId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -147,14 +149,14 @@ func resourceRedisCloudPrivateServiceConnectEndpointCreate(ctx context.Context, 
 
 func resourceRedisCloudPrivateServiceConnectEndpointRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	resId, err := toPscEndpointId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	endpoints, err := api.client.PrivateServiceConnect.GetEndpoints(ctx, resId.subscriptionId, resId.pscServiceId)
+	endpoints, err := api.Client.PrivateServiceConnect.GetEndpoints(ctx, resId.subscriptionId, resId.pscServiceId)
 	if err != nil {
 		var notFound *psc.NotFound
 		if errors.As(err, &notFound) {
@@ -173,7 +175,7 @@ func resourceRedisCloudPrivateServiceConnectEndpointRead(ctx context.Context, d 
 	d.SetId(buildPrivateServiceConnectEndpointId(resId.subscriptionId, resId.pscServiceId, *endpoint.ID))
 
 	if redis.StringValue(endpoint.Status) != psc.EndpointStatusRejected && redis.StringValue(endpoint.Status) != psc.EndpointStatusDeleted {
-		creationScript, err := api.client.PrivateServiceConnect.GetEndpointCreationScripts(ctx,
+		creationScript, err := api.Client.PrivateServiceConnect.GetEndpointCreationScripts(ctx,
 			resId.subscriptionId, resId.pscServiceId, *endpoint.ID, true)
 		if err != nil {
 			var notFound *psc.NotFound
@@ -233,16 +235,16 @@ func resourceRedisCloudPrivateServiceConnectEndpointRead(ctx context.Context, d 
 
 func resourceRedisCloudPrivateServiceConnectEndpointDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	resId, err := toPscEndpointId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	subscriptionMutex.Lock(resId.subscriptionId)
-	defer subscriptionMutex.Unlock(resId.subscriptionId)
+	utils.SubscriptionMutex.Lock(resId.subscriptionId)
+	defer utils.SubscriptionMutex.Unlock(resId.subscriptionId)
 
-	endpoints, err := api.client.PrivateServiceConnect.GetEndpoints(ctx, resId.subscriptionId, resId.pscServiceId)
+	endpoints, err := api.Client.PrivateServiceConnect.GetEndpoints(ctx, resId.subscriptionId, resId.pscServiceId)
 	if err != nil {
 		var notFound *psc.NotFound
 		if errors.As(err, &notFound) {
@@ -260,7 +262,7 @@ func resourceRedisCloudPrivateServiceConnectEndpointDelete(ctx context.Context, 
 
 	if redis.StringValue(endpoint.Status) == psc.EndpointStatusInitialized {
 		// It's only possible to delete an endpoint in initialized status
-		err = api.client.PrivateServiceConnect.DeleteEndpoint(ctx, resId.subscriptionId, resId.pscServiceId, resId.endpointId)
+		err = api.Client.PrivateServiceConnect.DeleteEndpoint(ctx, resId.subscriptionId, resId.pscServiceId, resId.endpointId)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -327,12 +329,12 @@ func toPscEndpointId(id string) (*privateServiceConnectEndpointId, error) {
 }
 
 func refreshPrivateServiceConnectServiceEndpointDisappear(ctx context.Context, subscriptionId int,
-	pscServiceId int, endpointId int, api *apiClient) (result interface{}, state string, err error) {
+	pscServiceId int, endpointId int, api *client.ApiClient) (result interface{}, state string, err error) {
 
 	log.Printf("[DEBUG] Waiting for private service connect service endpoint %d/%d/%d to be deleted",
 		subscriptionId, pscServiceId, endpointId)
 
-	endpoints, err := api.client.PrivateServiceConnect.GetEndpoints(ctx, subscriptionId, pscServiceId)
+	endpoints, err := api.Client.PrivateServiceConnect.GetEndpoints(ctx, subscriptionId, pscServiceId)
 	if err != nil {
 		return nil, "", err
 	}
@@ -384,7 +386,7 @@ func waitForPrivateServiceConnectServiceEndpointDisappear(ctx context.Context, r
 			psc.EndpointStatusFailed,
 		},
 		Target:       []string{placeholderStatusDisappear},
-		Timeout:      safetyTimeout,
+		Timeout:      utils.SafetyTimeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 

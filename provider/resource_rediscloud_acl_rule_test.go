@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -53,8 +54,8 @@ func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the rule ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						client := testProvider.Meta().(*apiClient)
-						rule, err := client.client.RedisRules.Get(context.TODO(), id)
+						client := testProvider.Meta().(*client2.ApiClient)
+						rule, err := client.Client.RedisRules.Get(context.TODO(), id)
 						if err != nil {
 							return err
 						}
@@ -145,7 +146,7 @@ data "rediscloud_acl_rule" "test" {
 `
 
 func testAccCheckAclRuleDestroy(s *terraform.State) error {
-	client := testProvider.Meta().(*apiClient)
+	client := testProvider.Meta().(*client2.ApiClient)
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_acl_rule" {
@@ -157,7 +158,7 @@ func testAccCheckAclRuleDestroy(s *terraform.State) error {
 			return err
 		}
 
-		rules, err := client.client.RedisRules.List(context.TODO())
+		rules, err := client.Client.RedisRules.List(context.TODO())
 		if err != nil {
 			return err
 		}

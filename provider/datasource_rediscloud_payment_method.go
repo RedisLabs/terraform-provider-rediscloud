@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/account"
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -45,9 +46,9 @@ func dataSourceRedisCloudPaymentMethod() *schema.Resource {
 
 func dataSourceRedisCloudPaymentMethodRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	client := meta.(*apiClient)
+	client := meta.(*client2.ApiClient)
 
-	methods, err := client.client.Account.ListPaymentMethods(ctx)
+	methods, err := client.Client.Account.ListPaymentMethods(ctx)
 
 	if err != nil {
 		return diag.FromErr(err)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/redis_rules"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -48,7 +49,7 @@ func resourceRedisCloudAclRule() *schema.Resource {
 }
 
 func resourceRedisCloudAclRuleCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	name := d.Get("name").(string)
 	rule := d.Get("rule").(string)
@@ -58,7 +59,7 @@ func resourceRedisCloudAclRuleCreate(ctx context.Context, d *schema.ResourceData
 		RedisRule: redis.String(rule),
 	}
 
-	id, err := api.client.RedisRules.Create(ctx, createRule)
+	id, err := api.Client.RedisRules.Create(ctx, createRule)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -74,7 +75,7 @@ func resourceRedisCloudAclRuleCreate(ctx context.Context, d *schema.ResourceData
 }
 
 func resourceRedisCloudAclRuleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 	var diags diag.Diagnostics
 
 	id, err := strconv.Atoi(d.Id())
@@ -82,7 +83,7 @@ func resourceRedisCloudAclRuleRead(ctx context.Context, d *schema.ResourceData, 
 		return diag.FromErr(err)
 	}
 
-	rule, err := api.client.RedisRules.Get(ctx, id)
+	rule, err := api.Client.RedisRules.Get(ctx, id)
 	if err != nil {
 		if _, ok := err.(*redis_rules.NotFound); ok {
 			d.SetId("")
@@ -102,7 +103,7 @@ func resourceRedisCloudAclRuleRead(ctx context.Context, d *schema.ResourceData, 
 }
 
 func resourceRedisCloudAclRuleUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -120,7 +121,7 @@ func resourceRedisCloudAclRuleUpdate(ctx context.Context, d *schema.ResourceData
 		rule := d.Get("rule").(string)
 		updateRedisRuleRequest.RedisRule = &rule
 
-		err = api.client.RedisRules.Update(ctx, id, updateRedisRuleRequest)
+		err = api.Client.RedisRules.Update(ctx, id, updateRedisRuleRequest)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -135,7 +136,7 @@ func resourceRedisCloudAclRuleUpdate(ctx context.Context, d *schema.ResourceData
 }
 
 func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 	var diags diag.Diagnostics
 
 	id, err := strconv.Atoi(d.Id())
@@ -143,7 +144,7 @@ func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData
 		return diag.FromErr(err)
 	}
 
-	err = api.client.RedisRules.Delete(ctx, id)
+	err = api.Client.RedisRules.Delete(ctx, id)
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -153,7 +154,7 @@ func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData
 
 	// Wait until it's really disappeared
 	err = retry.RetryContext(ctx, 5*time.Minute, func() *retry.RetryError {
-		rule, err := api.client.RedisRules.Get(ctx, id)
+		rule, err := api.Client.RedisRules.Get(ctx, id)
 
 		if err != nil {
 			if _, ok := err.(*redis_rules.NotFound); ok {
@@ -177,7 +178,7 @@ func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData
 	return diags
 }
 
-func waitForAclRuleToBeActive(ctx context.Context, id int, api *apiClient) error {
+func waitForAclRuleToBeActive(ctx context.Context, id int, api *client.ApiClient) error {
 	wait := &retry.StateChangeConf{
 		Delay:   5 * time.Second,
 		Pending: []string{redis_rules.StatusPending},
@@ -187,7 +188,7 @@ func waitForAclRuleToBeActive(ctx context.Context, id int, api *apiClient) error
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for rule %d to be active", id)
 
-			rule, err := api.client.RedisRules.Get(ctx, id)
+			rule, err := api.Client.RedisRules.Get(ctx, id)
 			if err != nil {
 				return nil, "", err
 			}

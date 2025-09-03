@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/privatelink"
 	"log"
 	"strings"
 
@@ -59,6 +61,8 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_private_service_connect_endpoints":  dataSourcePrivateServiceConnectEndpoints(),
 				"rediscloud_active_active_subscription":         dataSourceRedisCloudActiveActiveSubscription(),
 				"rediscloud_active_active_subscription_regions": dataSourceRedisCloudActiveActiveSubscriptionRegions(),
+				"rediscloud_private_link":                       privatelink.DataSourcePrivateLink(),
+				"rediscloud_private_link_endpoint_script":       privatelink.DataSourcePrivateLinkEndpointScript(),
 
 				// Note the difference in public data-source name and the file/method name.
 				// active_active_subscription_database == active_active_database
@@ -83,6 +87,7 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_private_service_connect":                   resourceRedisCloudPrivateServiceConnect(),
 				"rediscloud_private_service_connect_endpoint":          resourceRedisCloudPrivateServiceConnectEndpoint(),
 				"rediscloud_private_service_connect_endpoint_accepter": resourceRedisCloudPrivateServiceConnectEndpointAccepter(),
+				"rediscloud_private_link":                              privatelink.ResourceRedisCloudPrivateLink(),
 				"rediscloud_active_active_subscription":                resourceRedisCloudActiveActiveSubscription(),
 				// Note the difference in public resource name and the file/method name.
 				// active_active_subscription_database == active_active_database
@@ -104,13 +109,6 @@ func New(version string) func() *schema.Provider {
 
 		return p
 	}
-}
-
-// Lock that must be acquired when modifying something related to a subscription as only one _thing_ can modify a subscription and all sub-resources at any time
-var subscriptionMutex = newPerIdLock()
-
-type apiClient struct {
-	client *rediscloudApi.Client
 }
 
 func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
@@ -141,8 +139,8 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 			return nil, diag.FromErr(err)
 		}
 
-		return &apiClient{
-			client: client,
+		return &client2.ApiClient{
+			Client: client,
 		}, nil
 	}
 }

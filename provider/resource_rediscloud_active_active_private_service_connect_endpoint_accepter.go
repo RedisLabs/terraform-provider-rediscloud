@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"strconv"
 	"strings"
@@ -68,21 +70,21 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter() *sche
 
 func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	subscriptionMutex.Lock(subscriptionId)
-	defer subscriptionMutex.Unlock(subscriptionId)
+	utils.SubscriptionMutex.Lock(subscriptionId)
+	defer utils.SubscriptionMutex.Unlock(subscriptionId)
 
 	regionId := d.Get("region_id").(int)
 	pscServiceId := d.Get("private_service_connect_service_id").(int)
 	endpointId := d.Get("private_service_connect_endpoint_id").(int)
 	action := d.Get("action").(string)
 
-	endpoints, err := api.client.PrivateServiceConnect.GetActiveActiveEndpoints(ctx, subscriptionId, regionId, pscServiceId)
+	endpoints, err := api.Client.PrivateServiceConnect.GetActiveActiveEndpoints(ctx, subscriptionId, regionId, pscServiceId)
 	if err != nil {
 		var notFound *psc.NotFoundActiveActive
 		if errors.As(err, &notFound) {
@@ -124,7 +126,7 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterCreate(c
 
 	d.SetId(buildPrivateServiceConnectActiveActiveEndpointAccepterId(subscriptionId, regionId, pscServiceId, endpointId))
 
-	err = api.client.PrivateServiceConnect.UpdateActiveActiveEndpoint(ctx, subscriptionId, regionId, pscServiceId, endpointId, &psc.UpdatePrivateServiceConnectEndpoint{
+	err = api.Client.PrivateServiceConnect.UpdateActiveActiveEndpoint(ctx, subscriptionId, regionId, pscServiceId, endpointId, &psc.UpdatePrivateServiceConnectEndpoint{
 		Action: redis.String(action),
 	})
 	if err != nil {
@@ -148,14 +150,14 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterCreate(c
 
 func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	resId, err := toPscEndpointActiveActiveAccepterId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	endpoints, err := api.client.PrivateServiceConnect.GetActiveActiveEndpoints(ctx, resId.subscriptionId, resId.regionId, resId.pscServiceId)
+	endpoints, err := api.Client.PrivateServiceConnect.GetActiveActiveEndpoints(ctx, resId.subscriptionId, resId.regionId, resId.pscServiceId)
 	if err != nil {
 		var notFound *psc.NotFoundActiveActive
 		if errors.As(err, &notFound) {
@@ -260,11 +262,11 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterDelete(_
 }
 
 func refreshPrivateServiceConnectServiceEndpointActiveActiveStatus(ctx context.Context, subscriptionId int, regionId int,
-	pscServiceId int, endpointId int, targetStatus string, api *apiClient) (result interface{}, state string, err error) {
+	pscServiceId int, endpointId int, targetStatus string, api *client.ApiClient) (result interface{}, state string, err error) {
 	log.Printf("[DEBUG] Waiting for private service connect service endpoint status %d/%d/%d/%d to be %s",
 		subscriptionId, regionId, pscServiceId, endpointId, targetStatus)
 
-	endpoints, err := api.client.PrivateServiceConnect.GetActiveActiveEndpoints(ctx, subscriptionId, regionId, pscServiceId)
+	endpoints, err := api.Client.PrivateServiceConnect.GetActiveActiveEndpoints(ctx, subscriptionId, regionId, pscServiceId)
 	if err != nil {
 		return nil, "", err
 	}

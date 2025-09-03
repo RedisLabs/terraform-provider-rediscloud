@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/fixed/plans"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"strconv"
@@ -150,7 +151,7 @@ func dataSourceRedisCloudEssentialsPlan() *schema.Resource {
 func dataSourceRedisCloudEssentialsPlanRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	list, err := getResourceList(ctx, d, api)
 
@@ -297,16 +298,16 @@ func dataSourceRedisCloudEssentialsPlanRead(ctx context.Context, d *schema.Resou
 	return diags
 }
 
-func getResourceList(ctx context.Context, d *schema.ResourceData, api *apiClient) ([]*plans.GetPlanResponse, error) {
+func getResourceList(ctx context.Context, d *schema.ResourceData, api *client.ApiClient) ([]*plans.GetPlanResponse, error) {
 	var list []*plans.GetPlanResponse
 	var err error
 
 	if id, ok := d.GetOk("subscription_id"); ok {
-		list, err = api.client.FixedPlanSubscriptions.List(ctx, id.(int))
+		list, err = api.Client.FixedPlanSubscriptions.List(ctx, id.(int))
 	} else if provider, ok := d.GetOk("cloud_provider"); ok {
-		list, err = api.client.FixedPlans.ListWithProvider(ctx, strings.ToUpper(provider.(string)))
+		list, err = api.Client.FixedPlans.ListWithProvider(ctx, strings.ToUpper(provider.(string)))
 	} else {
-		list, err = api.client.FixedPlans.List(ctx)
+		list, err = api.Client.FixedPlans.List(ctx)
 	}
 
 	return list, err
