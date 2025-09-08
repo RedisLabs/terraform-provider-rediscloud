@@ -20,6 +20,7 @@ subscription, then the databases defined as separate resources will be attached 
 the subscription. The creation_plan block can ONLY be used for provisioning new
 subscriptions, the block will be ignored if you make any further changes or try importing the resource (e.g. `terraform import` ...).
 
+~> **Note:** The CMK (customer managed encryption key) fields require a specific flow which involves a multistep apply. Refer to [this guide](../guides/cmk-guide.md) for more information.
 ## Example Usage
 
 ```hcl
@@ -32,8 +33,6 @@ resource "rediscloud_subscription" "subscription-resource" {
   name              = "subscription-name"
   payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage    = "ram"
-  redis_version     = "7.2"
 
   cloud_provider {
     provider = data.rediscloud_cloud_account.account.provider_type
@@ -53,7 +52,6 @@ resource "rediscloud_subscription" "subscription-resource" {
     replication                  = true
     throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 20000
-    modules                      = ["RedisJSON"]
   }
   
   maintenance_windows {
@@ -75,11 +73,14 @@ The following arguments are supported:
 * `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'. **(Changes to) this attribute are ignored after creation.**
 * `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. Only __Required__ when `payment_method` is `credit-card`.
 * `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of ‘ram-and-flash’. Default: ‘ram’. **Modifying this attribute will force creation of a new resource.**
-* `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default. **Modifying this attribute will force creation of a new resource.**
+* `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default.  **Deprecated: This attribute is deprecated on the subscriptions level. Please specify `redis_version` on databases directly instead.**
 * `allowlist` - (Optional) An allowlist object, documented below
 * `cloud_provider` - (Required) A cloud provider object, documented below. **Modifying this attribute will force creation of a new resource.**
 * `creation_plan` - (Required) A creation plan object, documented below.
 * `maintenance_windows` - (Optional) The subscription's maintenance window specification, documented below.
+* `customer_managed_key_enabled` - (Optional) Whether to enable the customer managed encryption key flow.
+* `customer_managed_key_deletion_grace_period` - (Optional) The grace period for deleting the subscription. If not set, will default to immediate deletion grace period.
+* `customer_managed_key` - (Optional) The customer managed keys (CMK) to use for this subscription.
 
 The `allowlist` block supports:
 
@@ -128,6 +129,9 @@ The cloud_provider `region` block supports:
 ~> **Note:** The preferred_availability_zones parameter is required for Terraform, but is optional within the Redis Enterprise Cloud UI.
 This difference in behaviour is to guarantee that a plan after an apply does not generate differences. In AWS Redis internal cloud account, please set the zone IDs (for example: `["use-az2", "use-az3", "use-az5"]`).
 
+The `customer_managed_key` block supports:
+* `resource_name` - The resource name of the customer managed key as defined by the cloud provider, e.g. projects/PROJECT_ID/locations/LOCATION/keyRings/KEY_RING/cryptoKeys/KEY_NAME
+
 The `maintenance_windows` object has these attributes:
 
 * `mode` - Either `automatic` (Redis specified) or `manual` (User specified)
@@ -148,6 +152,8 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 * `delete` - (Defaults to 10 mins) Used when destroying the subscription
 
 ## Attribute reference
+
+* `customer_managed_key_redis_service_account` - Outputs the id of the service account associated with the subscription. Useful as part of the CMK flow.
 
 The `region` block has these attributes:
 

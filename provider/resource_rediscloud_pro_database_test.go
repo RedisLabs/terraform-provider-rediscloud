@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-// Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the database resource.
+// Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the database resource.
 func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 
 	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
@@ -58,6 +58,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.2"),
 
 					resource.TestCheckResourceAttr(resourceName, "tags.market", "emea"),
 					resource.TestCheckResourceAttr(resourceName, "tags.material", "cardboard"),
@@ -125,6 +126,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.2"),
 				),
 			},
 			// Test that alerts are deleted
@@ -273,7 +275,8 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 
 const proSubscriptionBoilerplate = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
 
 data "rediscloud_cloud_account" "account" {
@@ -317,8 +320,10 @@ resource "rediscloud_subscription" "example" {
 
 const multiModulesProSubscriptionBoilerplate = `
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+	card_type = "Visa"
+	last_four_numbers = "5556"
 }
+
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
   provider_type            = "AWS"
@@ -373,6 +378,7 @@ resource "rediscloud_subscription_database" "example" {
     client_ssl_certificate = "" 
     periodic_backup_path = ""
 	enable_default_user = true
+    redis_version = 7.2
 
     alert {
         name = "dataset-size"
@@ -464,6 +470,7 @@ resource "rediscloud_subscription_database" "example" {
 	replication = true
 	average_item_size_in_bytes = 0
 	enable_default_user = true
+	redis_version = 7.2
 
 	alert {
 		name = "dataset-size"

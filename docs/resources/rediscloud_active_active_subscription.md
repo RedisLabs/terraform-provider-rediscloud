@@ -19,6 +19,8 @@ subscription, then the databases defined as separate resources will be attached 
 the subscription. The creation_plan block can ONLY be used for provisioning new
 subscriptions, the block will be ignored if you make any further changes or try importing the resource (e.g. `terraform import` ...).
 
+~> **Note:** The CMK (customer managed encryption key) fields require a specific flow which involves a multistep apply. Refer to [this guide](../guides/cmk-guide.md) for more information.
+
 ## Example Usage
 
 ```hcl
@@ -34,7 +36,6 @@ resource "rediscloud_active_active_subscription" "subscription-resource" {
   creation_plan {
     dataset_size_in_gb = 1
     quantity = 1
-    modules = ["RedisJSON"]
     region {
       region = "us-east-1"
       networking_deployment_cidr = "192.168.0.0/24"
@@ -59,9 +60,12 @@ The following arguments are supported:
 * `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'. **(Changes to) this attribute are ignored after creation.**
 * `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types
 * `cloud_provider` - (Optional) The cloud provider to use with the subscription, (either `AWS` or `GCP`). Default: ‘AWS’. **Modifying this attribute will force creation of a new resource.**
-* `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default. **Modifying this attribute will force creation of a new resource.**
+* `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default. **Deprecated: This attribute is deprecated on the subscription level. Please specify `redis_version` on databases directly instead.**
 * `creation_plan` - (Required) A creation plan object, documented below. Ignored after creation.
 * `maintenance_windows` - (Optional) The subscription's maintenance window specification, documented below.
+* `customer_managed_key_enabled` - (Optional) Whether to enable the CMK flow.
+* `customer_managed_key_deletion_grace_period` - (Optional) The grace period for deleting the subscription. If not set, will default to immediate deletion grace period.
+* `customer_managed_key` - (Optional) The customer managed keys (CMK) to use for this subscription. In an active-active subscription, you must set a key for each region.
 
 The `creation_plan` block supports:
 
@@ -78,6 +82,10 @@ The creation_plan `region` block supports:
 * `write_operations_per_second` - (Required) Throughput measurement for an active-active subscription
 * `read_operations_per_second` - (Required) Throughput measurement for an active-active subscription
 
+The `customer_managed_key` block supports:
+* `resource_name` - Resource name of the customer managed key as defined by the cloud provider, e.g. projects/PROJECT_ID/locations/LOCATION/keyRings/KEY_RING/cryptoKeys/KEY_NAME
+* `region` - Name of the region for the customer managed key as defined by the cloud provider.
+
 The `maintenance_windows` object has these attributes:
 
 * `mode` - Either `automatic` (Redis specified) or `manual` (User specified)
@@ -92,6 +100,8 @@ The `window` object has these attributes:
 ~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `cloud_provider`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
 
 ## Attribute reference
+
+* `customer_managed_key_redis_service_account` - Outputs the id of the service account associated with the subscription. Useful as part of the CMK flow.
 
 * `pricing` - A list of pricing objects, documented below
 

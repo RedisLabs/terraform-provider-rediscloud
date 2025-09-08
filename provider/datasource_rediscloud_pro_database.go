@@ -59,6 +59,11 @@ func dataSourceRedisCloudProDatabase() *schema.Resource {
 				Type:        schema.TypeFloat,
 				Computed:    true,
 			},
+			"redis_version": {
+				Description: "The redis version of the database",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"query_performance_factor": {
 				Description: "Query performance factor for this specific database",
 				Type:        schema.TypeString,
@@ -482,6 +487,10 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 	}
 
 	if err := d.Set("query_performance_factor", redis.String(*db.QueryPerformanceFactor)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("redis_version", redis.String(*db.RedisVersion)); err != nil {
 		return diag.FromErr(err)
 	}
 

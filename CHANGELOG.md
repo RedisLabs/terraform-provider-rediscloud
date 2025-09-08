@@ -4,17 +4,36 @@ All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 
+# 2.3.0 (19th August 2025)
+
+### Added
+
+- Redis Database version support on create. Specify a version on create to create a DB of that version.
+- Database upgrade path. If you specify a different version to something already specified, the provider will upgrade your database to the new version. Will fail on downgrade.
+- Redis AA Database version support on create. No upgrade path yet - if you change your `redis_version` it will force a new resource.
+- Updated data sources for pro and active active databases to also support `redis_version`.
+
+### Changed
+- Updating multiple dependencies.
+- Deprecate subscription version support. If you use `redis_version` on your pro subscription a warning will come up. This will be removed entirely on a major update.
+
+# 2.2.0 (1st August 2025)
+
+### Added
+
+- Customer Managed Key support for active-active and pro subscriptions. Only supports redis internal GCP cloud subscriptions. CMKs are externally provided by a customer-supplied GCP account and are managed externally by the user.
+
 # 2.1.5 (1st July 2025)
 
 ### Added
 
-Feature: Support Marketplace as a payment method for Essentials subscription
-Feature: Add TLS certificate to databases’ data sources
+- Feature: Support Marketplace as a payment method for Essentials subscription
+- Feature: Add TLS certificate to databases’ data sources
 
 ### Fixed:
 
-Unexpected state `dynamic-endpoints-creation-pending'
-Can not disable default user on essentials db
+- Unexpected state `dynamic-endpoints-creation-pending'
+- Can not disable default user on essentials db
 
 # 2.1.4 (22nd May 2025)
 
