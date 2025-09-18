@@ -104,8 +104,8 @@ The `databases` object has these attributes:
 * `resource_link_endpoint` - The resource link endpoint for the database.
 
 ## Import
-`rediscloud_private_link` can be imported using the ID of the subscription and the ID of the PrivateLink, e.g.
+`rediscloud_private_link` can be imported using the ID of the subscription, e.g.
 
 ```
-$ terraform import rediscloud_private_service_connect.id 1000/123456
+$ terraform import rediscloud_private_link.id 123456
 ```
