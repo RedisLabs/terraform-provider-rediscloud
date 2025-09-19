@@ -20,8 +20,8 @@ func ResourceRedisCloudActiveActivePrivateLink() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Manages a Private Link to an Active Active Subscription in your Redis Enterprise Cloud Account.",
 		CreateContext: resourceRedisCloudActiveActivePrivateLinkCreate,
-		UpdateContext: resourceRedisCloudActiveActivePrivateLinkUpdate,
 		ReadContext:   resourceRedisCloudActiveActivePrivateLinkRead,
+		UpdateContext: resourceRedisCloudActiveActivePrivateLinkUpdate,
 		DeleteContext: resourceRedisCloudActiveActivePrivateLinkDelete,
 
 		Importer: &schema.ResourceImporter{
@@ -38,6 +38,12 @@ func ResourceRedisCloudActiveActivePrivateLink() *schema.Resource {
 			"subscription_id": {
 				Description: "The ID of the Pro subscription to attach",
 				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+			},
+			"region_id": {
+				Description: "The ID of the active active subscription region",
+				Type:        schema.TypeInt,
 				Required:    true,
 				ForceNew:    true,
 			},
@@ -140,11 +146,6 @@ func ResourceRedisCloudActiveActivePrivateLink() *schema.Resource {
 					},
 				},
 			},
-			"region_id": {
-				Description: "",
-				Type:        schema.TypeString,
-				Computed:    true,
-			},
 		},
 	}
 }
@@ -157,19 +158,23 @@ func resourceRedisCloudActiveActivePrivateLinkCreate(ctx context.Context, d *sch
 		return diag.FromErr(err)
 	}
 	utils.SubscriptionMutex.Lock(subId)
+	defer utils.SubscriptionMutex.Unlock(subId)
 
 	shareName := d.Get("share_name").(string)
+
+	regionId, err := strconv.Atoi(d.Get("region_id").(string))
 
 	principals := principalsFromSet(d.Get("principal").(*schema.Set))
 	firstPrincipal := principals[0]
 
 	link := pl.CreatePrivateLink{
-		Principal:     firstPrincipal.Principal,
-		PrincipalType: firstPrincipal.Type,
-		ShareName:     redis.String(shareName),
+		Principal:      firstPrincipal.Principal,
+		PrincipalType:  firstPrincipal.Type,
+		PrincipalAlias: firstPrincipal.Alias,
+		ShareName:      redis.String(shareName),
 	}
 
-	err = api.Client.PrivateLink.CreatePrivateLink(ctx, subId, link)
+	err = api.Client.PrivateLink.CreateActiveActivePrivateLink(ctx, subId, regionId, link)
 	if err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
@@ -177,12 +182,27 @@ func resourceRedisCloudActiveActivePrivateLinkCreate(ctx context.Context, d *sch
 
 	d.SetId(strconv.Itoa(subId))
 
-	err = waitForPrivateLinkToBeActive(ctx, subId, api)
+	err = waitForActiveActivePrivateLinkToBeActive(ctx, api, subId, regionId)
 
 	if err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
+
+	utils.SubscriptionMutex.Unlock(subId)
+	err = createOtherActiveActivePrincipals(ctx, api, subId, regionId, principals[1:])
+
+	if err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
+		return diag.FromErr(err)
+	}
+
+	// TODO: figure out if this is necessary and remove/uncomment
+	//err = waitForAllPrincipalsToBeAssociated(ctx, api, subId, principals)
+	//if err != nil {
+	//	utils.SubscriptionMutex.Unlock(subId)
+	//	return diag.FromErr(err)
+	//}
 
 	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
 	if err != nil {
@@ -190,43 +210,26 @@ func resourceRedisCloudActiveActivePrivateLinkCreate(ctx context.Context, d *sch
 		return diag.FromErr(err)
 	}
 
-	utils.SubscriptionMutex.Unlock(subId)
-	err = createOtherPrincipals(ctx, principals[1:], err, api, subId)
-
-	if err != nil {
-		utils.SubscriptionMutex.Unlock(subId)
-		return diag.FromErr(err)
-	}
-
-	return resourceRedisCloudPrivateLinkRead(ctx, d, meta)
-}
-
-func createOtherActiveActivePrincipals(ctx context.Context, otherPrincipals []pl.PrivateLinkPrincipal, err error, api *client.ApiClient, subId int, regionId int) error {
-	if len(otherPrincipals) > 0 {
-		for _, principal := range otherPrincipals {
-			err = api.Client.PrivateLink.CreateActiveActivePrincipal(ctx, subId, regionId, pl.CreatePrivateLinkPrincipal{
-				Principal:      principal.Principal,
-				PrincipalType:  principal.Type,
-				PrincipalAlias: principal.Alias,
-			})
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	return resourceRedisCloudActiveActivePrivateLinkRead(ctx, d, meta)
 }
 
 func resourceRedisCloudActiveActivePrivateLinkRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
-	resId, err := toPrivateLinkId(d.Id())
+	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
+
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	privateLink, err := api.Client.PrivateLink.GetPrivateLink(ctx, resId.subscriptionId)
+	regionId, err := strconv.Atoi(d.Get("region_id").(string))
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	privateLink, err := api.Client.PrivateLink.GetActiveActivePrivateLink(ctx, subId, regionId)
 	if err != nil {
 		var notFound *pl.NotFound
 		if errors.As(err, &notFound) {
@@ -236,10 +239,37 @@ func resourceRedisCloudActiveActivePrivateLinkRead(ctx context.Context, d *schem
 		return diag.FromErr(err)
 	}
 
-	d.SetId(strconv.Itoa(*privateLink.SubscriptionId))
+	d.SetId(strconv.Itoa(subId))
 
-	err = d.Set("subscription_id", strconv.Itoa(resId.subscriptionId))
+	err = d.Set("share_name", privateLink.ShareName)
 	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("principal", flattenPrincipals(privateLink.Principals)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = d.Set("resource_configuration_id", privateLink.ResourceConfigurationId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = d.Set("resource_configuration_arn", privateLink.ResourceConfigurationArn)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = d.Set("share_arn", privateLink.ShareArn)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("connections", flattenConnections(privateLink.Connections)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("databases", flattenDatabases(privateLink.Databases)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -252,16 +282,20 @@ func resourceRedisCloudActiveActivePrivateLinkUpdate(ctx context.Context, d *sch
 
 	if d.HasChange("principals") {
 
-		subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
-
+		subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 		if err != nil {
 			return diag.FromErr(err)
 		}
 
-		utils.SubscriptionMutex.Lock(subscriptionId)
-		defer utils.SubscriptionMutex.Unlock(subscriptionId)
+		regionId, err := strconv.Atoi(d.Get("region_id").(string))
+		if err != nil {
+			return diag.FromErr(err)
+		}
 
-		privateLink, err := api.Client.PrivateLink.GetPrivateLink(ctx, subscriptionId)
+		utils.SubscriptionMutex.Lock(subId)
+		defer utils.SubscriptionMutex.Unlock(subId)
+
+		privateLink, err := api.Client.PrivateLink.GetActiveActivePrivateLink(ctx, subId, regionId)
 
 		if err != nil {
 			var notFound *pl.NotFound
@@ -275,13 +309,15 @@ func resourceRedisCloudActiveActivePrivateLinkUpdate(ctx context.Context, d *sch
 		apiPrincipals := privateLink.Principals
 		tfPrincipals := principalsFromSet(d.Get("principals").(*schema.Set))
 
-		err = createPrincipals(ctx, apiPrincipals, tfPrincipals, err, api, subscriptionId)
+		principalsToCreate := findPrincipalsToCreate(apiPrincipals, tfPrincipals)
+		err = createActiveActivePrincipals(ctx, api, subId, regionId, principalsToCreate)
 
 		if err != nil {
 			return diag.FromErr(err)
 		}
 
-		err = deletePrincipals(ctx, apiPrincipals, tfPrincipals, err, api, subscriptionId)
+		principalsToDelete := findPrincipalsToDelete(apiPrincipals, tfPrincipals)
+		err = deleteActiveActivePrincipals(ctx, api, subId, regionId, principalsToDelete)
 
 		if err != nil {
 			return diag.FromErr(err)
@@ -289,79 +325,7 @@ func resourceRedisCloudActiveActivePrivateLinkUpdate(ctx context.Context, d *sch
 
 	}
 
-	return resourceRedisCloudPrivateLinkRead(ctx, d, meta)
-}
-
-func deleteActiveActivePrincipals(ctx context.Context, apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipals []pl.PrivateLinkPrincipal, err error, api *client.ApiClient, subscriptionId int) error {
-	principals := findPrincipalsToDelete(apiPrincipals, tfPrincipals)
-
-	for _, principal := range principals {
-		err = api.Client.PrivateLink.DeletePrincipal(ctx, subscriptionId, *principal.Principal)
-
-		if err != nil {
-			return err
-		}
-
-	}
-	return nil
-}
-
-// If it can't find the existing principal in the terraform principals, deletes it
-func findActiveActivePrincipalsToDelete(apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipals []pl.PrivateLinkPrincipal) []pl.PrivateLinkPrincipal {
-	var result []pl.PrivateLinkPrincipal
-
-	for _, apiPrincipal := range apiPrincipals {
-		found := false
-		for _, tfPrincipal := range tfPrincipals {
-			if apiPrincipal.Principal == tfPrincipal.Principal {
-				found = true
-				break
-			}
-		}
-		if !found {
-			result = append(result, *apiPrincipal)
-		}
-	}
-	return result
-}
-
-func createActiveActivePrincipals(ctx context.Context, apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipals []pl.PrivateLinkPrincipal, err error, api *client.ApiClient, subscriptionId int) error {
-	principalsToCreate := findPrincipalsToCreate(apiPrincipals, tfPrincipals)
-
-	for _, principal := range principalsToCreate {
-
-		createPrincipal := pl.CreatePrivateLinkPrincipal{
-			Principal:      principal.Principal,
-			PrincipalType:  principal.Type,
-			PrincipalAlias: principal.Alias,
-		}
-
-		err = api.Client.PrivateLink.CreatePrincipal(ctx, subscriptionId, createPrincipal)
-
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// If it can't find the terraform principal in the principals found in the API, creates it
-func findActiveActivePrincipalsToCreate(apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipals []pl.PrivateLinkPrincipal) []pl.PrivateLinkPrincipal {
-	var result []pl.PrivateLinkPrincipal
-
-	for _, tfPrincipal := range tfPrincipals {
-		found := false
-		for _, apiPrincipal := range apiPrincipals {
-			if tfPrincipal.Principal == apiPrincipal.Principal {
-				found = true
-				break
-			}
-		}
-		if !found {
-			result = append(result, tfPrincipal)
-		}
-	}
-	return result
+	return resourceRedisCloudActiveActivePrivateLinkRead(ctx, d, meta)
 }
 
 func resourceRedisCloudActiveActivePrivateLinkDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -372,11 +336,17 @@ func resourceRedisCloudActiveActivePrivateLinkDelete(ctx context.Context, d *sch
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
+	regionId, err := strconv.Atoi(d.Get("region_id").(string))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
 
 	// direct delete doesn't exist on the API so delete each principal one by one
-	privateLink, err := api.Client.PrivateLink.GetPrivateLink(ctx, subId)
+	privateLink, err := api.Client.PrivateLink.GetActiveActivePrivateLink(ctx, subId, regionId)
 
 	if err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
@@ -389,7 +359,7 @@ func resourceRedisCloudActiveActivePrivateLinkDelete(ctx context.Context, d *sch
 	}
 
 	for _, principal := range privateLink.Principals {
-		err := api.Client.PrivateLink.DeletePrincipal(ctx, subId, *principal.Principal)
+		err := api.Client.PrivateLink.DeleteActiveActivePrincipal(ctx, subId, regionId, *principal.Principal)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -403,4 +373,43 @@ func resourceRedisCloudActiveActivePrivateLinkDelete(ctx context.Context, d *sch
 	}
 
 	return diags
+}
+
+func createOtherActiveActivePrincipals(ctx context.Context, api *client.ApiClient, subId int, regionId int, otherPrincipals []pl.PrivateLinkPrincipal) error {
+	if len(otherPrincipals) > 0 {
+		for _, principal := range otherPrincipals {
+			err := api.Client.PrivateLink.CreateActiveActivePrincipal(ctx, subId, regionId, pl.CreatePrivateLinkPrincipal{
+				Principal:      principal.Principal,
+				PrincipalType:  principal.Type,
+				PrincipalAlias: principal.Alias,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func createActiveActivePrincipals(ctx context.Context, api *client.ApiClient, subId int, regionId int, principals []pl.CreatePrivateLinkPrincipal) error {
+	for _, principal := range principals {
+		err := api.Client.PrivateLink.CreateActiveActivePrincipal(ctx, subId, regionId, principal)
+
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func deleteActiveActivePrincipals(ctx context.Context, api *client.ApiClient, subId int, regionId int, principals []pl.PrivateLinkPrincipal) error {
+	for _, principal := range principals {
+		err := api.Client.PrivateLink.DeleteActiveActivePrincipal(ctx, subId, regionId, *principal.Principal)
+
+		if err != nil {
+			return err
+		}
+
+	}
+	return nil
 }
