@@ -2,6 +2,7 @@ package privatelink
 
 import (
 	"context"
+	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"strconv"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
@@ -52,7 +53,7 @@ func dataSourceActiveActivePrivateLinkScriptRead(ctx context.Context, d *schema.
 
 	d.SetId(strconv.Itoa(subId))
 
-	err = d.Set("endpoint_script", endpointScript)
+	err = d.Set("endpoint_script", redis.StringValue(endpointScript))
 	if err != nil {
 		return diag.FromErr(err)
 	}
