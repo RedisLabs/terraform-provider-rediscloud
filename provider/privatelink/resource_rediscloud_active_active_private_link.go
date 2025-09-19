@@ -162,7 +162,7 @@ func resourceRedisCloudActiveActivePrivateLinkCreate(ctx context.Context, d *sch
 
 	shareName := d.Get("share_name").(string)
 
-	regionId, err := strconv.Atoi(d.Get("region_id").(string))
+	regionId := d.Get("region_id").(int)
 
 	principals := principalsFromSet(d.Get("principal").(*schema.Set))
 	firstPrincipal := principals[0]
@@ -223,11 +223,7 @@ func resourceRedisCloudActiveActivePrivateLinkRead(ctx context.Context, d *schem
 		return diag.FromErr(err)
 	}
 
-	regionId, err := strconv.Atoi(d.Get("region_id").(string))
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	regionId := d.Get("region_id").(int)
 
 	privateLink, err := api.Client.PrivateLink.GetActiveActivePrivateLink(ctx, subId, regionId)
 	if err != nil {
@@ -287,10 +283,7 @@ func resourceRedisCloudActiveActivePrivateLinkUpdate(ctx context.Context, d *sch
 			return diag.FromErr(err)
 		}
 
-		regionId, err := strconv.Atoi(d.Get("region_id").(string))
-		if err != nil {
-			return diag.FromErr(err)
-		}
+		regionId := d.Get("region_id").(int)
 
 		utils.SubscriptionMutex.Lock(subId)
 		defer utils.SubscriptionMutex.Unlock(subId)
@@ -337,10 +330,7 @@ func resourceRedisCloudActiveActivePrivateLinkDelete(ctx context.Context, d *sch
 		return diag.FromErr(err)
 	}
 
-	regionId, err := strconv.Atoi(d.Get("region_id").(string))
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	regionId := d.Get("region_id").(int)
 
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
