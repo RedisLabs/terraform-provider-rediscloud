@@ -12,7 +12,7 @@ import (
 func DataSourceActiveActivePrivateLink() *schema.Resource {
 	return &schema.Resource{
 		Description: "The Private Link data source allows access to an available Active Active Private Link within your Redis Enterprise Cloud Account.",
-		ReadContext: dataSourcePrivateLinkRead,
+		ReadContext: dataSourceActiveActivePrivateLinkRead,
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
@@ -23,7 +23,8 @@ func DataSourceActiveActivePrivateLink() *schema.Resource {
 			"region_id": {
 				Description: "The ID of the active active subscription region",
 				Type:        schema.TypeInt,
-				Computed:    true,
+				Required:    true,
+				ForceNew:    true,
 			},
 			"principals": {
 				Description: "List of principals attached to this PrivateLink",

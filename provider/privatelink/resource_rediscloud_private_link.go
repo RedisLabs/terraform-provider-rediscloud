@@ -20,8 +20,8 @@ func ResourceRedisCloudPrivateLink() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Manages a Private Link to a pro Subscription in your Redis Enterprise Cloud Account.",
 		CreateContext: resourceRedisCloudPrivateLinkCreate,
-		UpdateContext: resourceRedisCloudPrivateLinkUpdate,
 		ReadContext:   resourceRedisCloudPrivateLinkRead,
+		UpdateContext: resourceRedisCloudPrivateLinkUpdate,
 		DeleteContext: resourceRedisCloudPrivateLinkDelete,
 
 		Importer: &schema.ResourceImporter{
@@ -172,7 +172,7 @@ func resourceRedisCloudPrivateLinkCreate(ctx context.Context, d *schema.Resource
 
 	d.SetId(strconv.Itoa(subId))
 
-	err = waitForPrivateLinkToBeActive(ctx, subId, api)
+	err = waitForPrivateLinkToBeActive(ctx, api, subId)
 
 	if err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
@@ -180,7 +180,7 @@ func resourceRedisCloudPrivateLinkCreate(ctx context.Context, d *schema.Resource
 	}
 
 	utils.SubscriptionMutex.Unlock(subId)
-	err = createOtherPrincipals(ctx, principals[1:], err, api, subId)
+	err = createOtherPrincipals(ctx, api, subId, principals[1:])
 
 	if err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
@@ -210,6 +210,7 @@ func resourceRedisCloudPrivateLinkRead(ctx context.Context, d *schema.ResourceDa
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 
 	privateLink, err := api.Client.PrivateLink.GetPrivateLink(ctx, subId)
+
 	if err != nil {
 		var notFound *pl.NotFound
 		if errors.As(err, &notFound) {
@@ -262,16 +263,16 @@ func resourceRedisCloudPrivateLinkUpdate(ctx context.Context, d *schema.Resource
 
 	if d.HasChange("principals") {
 
-		subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
+		subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 
 		if err != nil {
 			return diag.FromErr(err)
 		}
 
-		utils.SubscriptionMutex.Lock(subscriptionId)
-		defer utils.SubscriptionMutex.Unlock(subscriptionId)
+		utils.SubscriptionMutex.Lock(subId)
+		defer utils.SubscriptionMutex.Unlock(subId)
 
-		privateLink, err := api.Client.PrivateLink.GetPrivateLink(ctx, subscriptionId)
+		privateLink, err := api.Client.PrivateLink.GetPrivateLink(ctx, subId)
 
 		if err != nil {
 			var notFound *pl.NotFound
@@ -285,13 +286,15 @@ func resourceRedisCloudPrivateLinkUpdate(ctx context.Context, d *schema.Resource
 		apiPrincipals := privateLink.Principals
 		tfPrincipals := principalsFromSet(d.Get("principals").(*schema.Set))
 
-		err = createPrincipals(ctx, apiPrincipals, tfPrincipals, err, api, subscriptionId)
+		principalsToCreate := findPrincipalsToCreate(apiPrincipals, tfPrincipals)
+		err = createPrincipals(ctx, api, subId, principalsToCreate)
 
 		if err != nil {
 			return diag.FromErr(err)
 		}
 
-		err = deletePrincipals(ctx, apiPrincipals, tfPrincipals, err, api, subscriptionId)
+		principals := findPrincipalsToDelete(apiPrincipals, tfPrincipals)
+		err = deletePrincipals(ctx, api, subId, principals)
 
 		if err != nil {
 			return diag.FromErr(err)
@@ -343,21 +346,62 @@ func resourceRedisCloudPrivateLinkDelete(ctx context.Context, d *schema.Resource
 	return resourceRedisCloudPrivateLinkDelete(ctx, d, meta)
 }
 
-func deletePrincipals(ctx context.Context, apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipals []pl.PrivateLinkPrincipal, err error, api *client.ApiClient, subscriptionId int) error {
-	principals := findPrincipalsToDelete(apiPrincipals, tfPrincipals)
+func createOtherPrincipals(ctx context.Context, api *client.ApiClient, subId int, otherPrincipals []pl.PrivateLinkPrincipal) error {
+	if len(otherPrincipals) > 0 {
+		for _, principal := range otherPrincipals {
+			err := api.Client.PrivateLink.CreatePrincipal(ctx, subId, pl.CreatePrivateLinkPrincipal{
+				Principal:      principal.Principal,
+				PrincipalType:  principal.Type,
+				PrincipalAlias: principal.Alias,
+			})
 
-	for _, principal := range principals {
-		err = api.Client.PrivateLink.DeletePrincipal(ctx, subscriptionId, *principal.Principal)
-
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
 		}
-
 	}
 	return nil
 }
 
-// If it can't find the existing principal in the terraform principals, deletes it
+func findPrincipalsToCreate(apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipals []pl.PrivateLinkPrincipal) []pl.CreatePrivateLinkPrincipal {
+	var principals []pl.PrivateLinkPrincipal
+
+	for _, tfPrincipal := range tfPrincipals {
+		found := false
+		for _, apiPrincipal := range apiPrincipals {
+			if tfPrincipal.Principal == apiPrincipal.Principal {
+				found = true
+				break
+			}
+		}
+		if !found {
+			principals = append(principals, tfPrincipal)
+		}
+	}
+
+	var createPrincipals []pl.CreatePrivateLinkPrincipal
+	for _, principal := range principals {
+		createPrincipal := pl.CreatePrivateLinkPrincipal{
+			Principal:      principal.Principal,
+			PrincipalType:  principal.Type,
+			PrincipalAlias: principal.Alias,
+		}
+		createPrincipals = append(createPrincipals, createPrincipal)
+	}
+
+	return createPrincipals
+}
+
+func createPrincipals(ctx context.Context, api *client.ApiClient, subscriptionId int, principals []pl.CreatePrivateLinkPrincipal) error {
+	for _, principal := range principals {
+		err := api.Client.PrivateLink.CreatePrincipal(ctx, subscriptionId, principal)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func findPrincipalsToDelete(apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipals []pl.PrivateLinkPrincipal) []pl.PrivateLinkPrincipal {
 	var result []pl.PrivateLinkPrincipal
 
@@ -376,67 +420,11 @@ func findPrincipalsToDelete(apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipa
 	return result
 }
 
-func createPrincipals(ctx context.Context, apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipals []pl.PrivateLinkPrincipal, err error, api *client.ApiClient, subscriptionId int) error {
-	principalsToCreate := findPrincipalsToCreate(apiPrincipals, tfPrincipals)
-
-	for _, principal := range principalsToCreate {
-
-		createPrincipal := pl.CreatePrivateLinkPrincipal{
-			Principal:      principal.Principal,
-			PrincipalType:  principal.Type,
-			PrincipalAlias: principal.Alias,
-		}
-
-		err = api.Client.PrivateLink.CreatePrincipal(ctx, subscriptionId, createPrincipal)
-
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// If it can't find the terraform principal in the principals found in the API, creates it
-func findPrincipalsToCreate(apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipals []pl.PrivateLinkPrincipal) []pl.PrivateLinkPrincipal {
-	var result []pl.PrivateLinkPrincipal
-
-	for _, tfPrincipal := range tfPrincipals {
-		found := false
-		for _, apiPrincipal := range apiPrincipals {
-			if tfPrincipal.Principal == apiPrincipal.Principal {
-				found = true
-				break
-			}
-		}
-		if !found {
-			result = append(result, tfPrincipal)
-		}
-	}
-	return result
-}
-
-func waitForAllPrincipalsToBeAssociated(ctx context.Context, api *client.ApiClient, subId int, principals []pl.PrivateLinkPrincipal) error {
+func deletePrincipals(ctx context.Context, api *client.ApiClient, subscriptionId int, principals []pl.PrivateLinkPrincipal) error {
 	for _, principal := range principals {
-		err := waitForPrincipalToBeAssociated(ctx, api, subId, principal.Principal)
+		err := api.Client.PrivateLink.DeletePrincipal(ctx, subscriptionId, *principal.Principal)
 		if err != nil {
 			return err
-		}
-	}
-	return nil
-}
-
-func createOtherPrincipals(ctx context.Context, otherPrincipals []pl.PrivateLinkPrincipal, err error, api *client.ApiClient, subId int) error {
-	if len(otherPrincipals) > 0 {
-		for _, principal := range otherPrincipals {
-			err = api.Client.PrivateLink.CreatePrincipal(ctx, subId, pl.CreatePrivateLinkPrincipal{
-				Principal:      principal.Principal,
-				PrincipalType:  principal.Type,
-				PrincipalAlias: principal.Alias,
-			})
-
-			if err != nil {
-				return err
-			}
 		}
 	}
 	return nil
