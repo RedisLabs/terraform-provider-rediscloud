@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/redis_rules"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"strconv"
@@ -31,7 +32,7 @@ func dataSourceRedisCloudAclRule() *schema.Resource {
 
 func dataSourceRedisCloudAclRuleRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	var filters []func(rule *redis_rules.GetRedisRuleResponse) bool
 	if v, ok := d.GetOk("name"); ok {
@@ -40,7 +41,7 @@ func dataSourceRedisCloudAclRuleRead(ctx context.Context, d *schema.ResourceData
 		})
 	}
 
-	list, err := api.client.RedisRules.List(ctx)
+	list, err := api.Client.RedisRules.List(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}

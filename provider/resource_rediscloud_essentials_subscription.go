@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"errors"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"log"
 	"regexp"
@@ -83,7 +85,7 @@ func resourceRedisCloudEssentialsSubscription() *schema.Resource {
 
 func resourceRedisCloudEssentialsSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	createSubscriptionRequest := fixedSubscriptions.FixedSubscriptionRequest{
 		Name:   redis.String(d.Get("name").(string)),
@@ -104,7 +106,7 @@ func resourceRedisCloudEssentialsSubscriptionCreate(ctx context.Context, d *sche
 	}
 
 	// Create Subscription
-	subId, err := api.client.FixedSubscriptions.Create(ctx, createSubscriptionRequest)
+	subId, err := api.Client.FixedSubscriptions.Create(ctx, createSubscriptionRequest)
 	if err != nil {
 		return append(diags, diag.FromErr(err)...)
 	}
@@ -122,14 +124,14 @@ func resourceRedisCloudEssentialsSubscriptionCreate(ctx context.Context, d *sche
 
 func resourceRedisCloudEssentialsSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	subscription, err := api.client.FixedSubscriptions.Get(ctx, subId)
+	subscription, err := api.Client.FixedSubscriptions.Get(ctx, subId)
 	if err != nil {
 		if _, ok := err.(*fixedSubscriptions.NotFound); ok {
 			d.SetId("")
@@ -162,15 +164,15 @@ func resourceRedisCloudEssentialsSubscriptionRead(ctx context.Context, d *schema
 
 func resourceRedisCloudEssentialsSubscriptionUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
+	utils.SubscriptionMutex.Lock(subId)
+	defer utils.SubscriptionMutex.Unlock(subId)
 
 	change := d.HasChanges("name", "plan_id", "payment_method_id")
 
@@ -191,7 +193,7 @@ func resourceRedisCloudEssentialsSubscriptionUpdate(ctx context.Context, d *sche
 		updateSubscriptionRequest.PaymentMethodID = redis.Int(v.(int))
 	}
 
-	err = api.client.FixedSubscriptions.Update(ctx, subId, updateSubscriptionRequest)
+	err = api.Client.FixedSubscriptions.Update(ctx, subId, updateSubscriptionRequest)
 	if err != nil {
 		return append(diags, diag.FromErr(err)...)
 	}
@@ -201,15 +203,15 @@ func resourceRedisCloudEssentialsSubscriptionUpdate(ctx context.Context, d *sche
 
 func resourceRedisCloudEssentialsSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
+	utils.SubscriptionMutex.Lock(subId)
+	defer utils.SubscriptionMutex.Unlock(subId)
 
 	// Wait for the subscription to be active before deleting it.
 	if err := waitForEssentialsSubscriptionToBeActive(ctx, subId, api); err != nil {
@@ -217,7 +219,7 @@ func resourceRedisCloudEssentialsSubscriptionDelete(ctx context.Context, d *sche
 	}
 
 	// Delete subscription once all databases are deleted
-	err = api.client.FixedSubscriptions.Delete(ctx, subId)
+	err = api.Client.FixedSubscriptions.Delete(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -232,17 +234,17 @@ func resourceRedisCloudEssentialsSubscriptionDelete(ctx context.Context, d *sche
 	return diags
 }
 
-func waitForEssentialsSubscriptionToBeActive(ctx context.Context, id int, api *apiClient) error {
+func waitForEssentialsSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiClient) error {
 	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{subscriptions.SubscriptionStatusPending},
 		Target:  []string{subscriptions.SubscriptionStatusActive},
-		Timeout: safetyTimeout,
+		Timeout: utils.SafetyTimeout,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for fixed subscription %d to be active", id)
 
-			subscription, err := api.client.FixedSubscriptions.Get(ctx, id)
+			subscription, err := api.Client.FixedSubscriptions.Get(ctx, id)
 			if err != nil {
 				return nil, "", err
 			}
@@ -257,17 +259,17 @@ func waitForEssentialsSubscriptionToBeActive(ctx context.Context, id int, api *a
 	return nil
 }
 
-func waitForEssentialsSubscriptionToBeDeleted(ctx context.Context, id int, api *apiClient) error {
+func waitForEssentialsSubscriptionToBeDeleted(ctx context.Context, id int, api *client.ApiClient) error {
 	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{subscriptions.SubscriptionStatusDeleting},
 		Target:  []string{"deleted"},
-		Timeout: safetyTimeout,
+		Timeout: utils.SafetyTimeout,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for fixed subscription %d to be deleted", id)
 
-			subscription, err := api.client.FixedSubscriptions.Get(ctx, id)
+			subscription, err := api.Client.FixedSubscriptions.Get(ctx, id)
 			if err != nil {
 				if _, ok := err.(*fixedSubscriptions.NotFound); ok {
 					return "deleted", "deleted", nil

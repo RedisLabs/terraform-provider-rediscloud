@@ -1,0 +1,406 @@
+package privatelink
+
+import (
+	"context"
+	"errors"
+	"regexp"
+	"strconv"
+	"time"
+
+	"github.com/RedisLabs/rediscloud-go-api/redis"
+	pl "github.com/RedisLabs/rediscloud-go-api/service/privatelink"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+)
+
+func ResourceRedisCloudActiveActivePrivateLink() *schema.Resource {
+	return &schema.Resource{
+		Description:   "Manages a Private Link to an Active Active Subscription in your Redis Enterprise Cloud Account.",
+		CreateContext: resourceRedisCloudActiveActivePrivateLinkCreate,
+		UpdateContext: resourceRedisCloudActiveActivePrivateLinkUpdate,
+		ReadContext:   resourceRedisCloudActiveActivePrivateLinkRead,
+		DeleteContext: resourceRedisCloudActiveActivePrivateLinkDelete,
+
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
+
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(30 * time.Minute),
+			Read:   schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
+		},
+
+		Schema: map[string]*schema.Schema{
+			"subscription_id": {
+				Description: "The ID of the Pro subscription to attach",
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    true,
+			},
+			"share_name": {
+				Description: "Name of this PrivateLink share",
+				Type:        schema.TypeString,
+				Required:    true,
+			},
+			"principal": {
+				Description: "List of principals attached to this PrivateLink",
+				Type:        schema.TypeSet,
+				Required:    true,
+				MinItems:    1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"principal": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"principal_type": {
+							Type:             schema.TypeString,
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(aws_account|organization|organization_unit|iam_role|iam_user|service_principal)$"), "must be 'credit-card' or 'marketplace'")),
+							Required:         true,
+						},
+						"principal_alias": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"resource_configuration_id": {
+				Description: "ID of the resource configuration to attach to this PrivateLink",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"resource_configuration_arn": {
+				Description: "ARN of the resource configuration attached to this PrivateLink",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"share_arn": {
+				Description: "ARN of the share to attach to this Private Link",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"connections": {
+				Description: "Connections attached to this PrivateLink",
+				Type:        schema.TypeSet,
+				Computed:    true,
+				Optional:    true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"association_id": {
+							Description: "Association ID of the PrivateLink connection",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"connection_id": {
+							Description: "Connection ID of the PrivateLink connection",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"connection_type": {
+							Description: "Connection type of the PrivateLink connection",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"owner_id": {
+							Description: "Owner ID of the PrivateLink connection",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"association_date": {
+							Description: "Date the connection was associated",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+					},
+				},
+			},
+			"databases": {
+				Description: "",
+				Type:        schema.TypeSet,
+				Computed:    true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"database_id": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"port": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"resource_link_endpoint": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"region_id": {
+				Description: "",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+		},
+	}
+}
+
+func resourceRedisCloudActiveActivePrivateLinkCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	api := meta.(*client.ApiClient)
+
+	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	utils.SubscriptionMutex.Lock(subId)
+
+	shareName := d.Get("share_name").(string)
+
+	principals := principalsFromSet(d.Get("principal").(*schema.Set))
+	firstPrincipal := principals[0]
+
+	link := pl.CreatePrivateLink{
+		Principal:     firstPrincipal.Principal,
+		PrincipalType: firstPrincipal.Type,
+		ShareName:     redis.String(shareName),
+	}
+
+	err = api.Client.PrivateLink.CreatePrivateLink(ctx, subId, link)
+	if err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
+		return diag.FromErr(err)
+	}
+
+	d.SetId(strconv.Itoa(subId))
+
+	err = waitForPrivateLinkToBeActive(ctx, subId, api)
+
+	if err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
+		return diag.FromErr(err)
+	}
+
+	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
+	if err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
+		return diag.FromErr(err)
+	}
+
+	utils.SubscriptionMutex.Unlock(subId)
+	err = createOtherPrincipals(ctx, principals[1:], err, api, subId)
+
+	if err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
+		return diag.FromErr(err)
+	}
+
+	return resourceRedisCloudPrivateLinkRead(ctx, d, meta)
+}
+
+func createOtherActiveActivePrincipals(ctx context.Context, otherPrincipals []pl.PrivateLinkPrincipal, err error, api *client.ApiClient, subId int, regionId int) error {
+	if len(otherPrincipals) > 0 {
+		for _, principal := range otherPrincipals {
+			err = api.Client.PrivateLink.CreateActiveActivePrincipal(ctx, subId, regionId, pl.CreatePrivateLinkPrincipal{
+				Principal:      principal.Principal,
+				PrincipalType:  principal.Type,
+				PrincipalAlias: principal.Alias,
+			})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func resourceRedisCloudActiveActivePrivateLinkRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	var diags diag.Diagnostics
+	api := meta.(*client.ApiClient)
+
+	resId, err := toPrivateLinkId(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	privateLink, err := api.Client.PrivateLink.GetPrivateLink(ctx, resId.subscriptionId)
+	if err != nil {
+		var notFound *pl.NotFound
+		if errors.As(err, &notFound) {
+			d.SetId("")
+			return diags
+		}
+		return diag.FromErr(err)
+	}
+
+	d.SetId(strconv.Itoa(*privateLink.SubscriptionId))
+
+	err = d.Set("subscription_id", strconv.Itoa(resId.subscriptionId))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	return diags
+}
+
+func resourceRedisCloudActiveActivePrivateLinkUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	var diags diag.Diagnostics
+	api := meta.(*client.ApiClient)
+
+	if d.HasChange("principals") {
+
+		subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
+
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		utils.SubscriptionMutex.Lock(subscriptionId)
+		defer utils.SubscriptionMutex.Unlock(subscriptionId)
+
+		privateLink, err := api.Client.PrivateLink.GetPrivateLink(ctx, subscriptionId)
+
+		if err != nil {
+			var notFound *pl.NotFound
+			if errors.As(err, &notFound) {
+				d.SetId("")
+				return diags
+			}
+			return diag.FromErr(err)
+		}
+
+		apiPrincipals := privateLink.Principals
+		tfPrincipals := principalsFromSet(d.Get("principals").(*schema.Set))
+
+		err = createPrincipals(ctx, apiPrincipals, tfPrincipals, err, api, subscriptionId)
+
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		err = deletePrincipals(ctx, apiPrincipals, tfPrincipals, err, api, subscriptionId)
+
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+	}
+
+	return resourceRedisCloudPrivateLinkRead(ctx, d, meta)
+}
+
+func deleteActiveActivePrincipals(ctx context.Context, apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipals []pl.PrivateLinkPrincipal, err error, api *client.ApiClient, subscriptionId int) error {
+	principals := findPrincipalsToDelete(apiPrincipals, tfPrincipals)
+
+	for _, principal := range principals {
+		err = api.Client.PrivateLink.DeletePrincipal(ctx, subscriptionId, *principal.Principal)
+
+		if err != nil {
+			return err
+		}
+
+	}
+	return nil
+}
+
+// If it can't find the existing principal in the terraform principals, deletes it
+func findActiveActivePrincipalsToDelete(apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipals []pl.PrivateLinkPrincipal) []pl.PrivateLinkPrincipal {
+	var result []pl.PrivateLinkPrincipal
+
+	for _, apiPrincipal := range apiPrincipals {
+		found := false
+		for _, tfPrincipal := range tfPrincipals {
+			if apiPrincipal.Principal == tfPrincipal.Principal {
+				found = true
+				break
+			}
+		}
+		if !found {
+			result = append(result, *apiPrincipal)
+		}
+	}
+	return result
+}
+
+func createActiveActivePrincipals(ctx context.Context, apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipals []pl.PrivateLinkPrincipal, err error, api *client.ApiClient, subscriptionId int) error {
+	principalsToCreate := findPrincipalsToCreate(apiPrincipals, tfPrincipals)
+
+	for _, principal := range principalsToCreate {
+
+		createPrincipal := pl.CreatePrivateLinkPrincipal{
+			Principal:      principal.Principal,
+			PrincipalType:  principal.Type,
+			PrincipalAlias: principal.Alias,
+		}
+
+		err = api.Client.PrivateLink.CreatePrincipal(ctx, subscriptionId, createPrincipal)
+
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// If it can't find the terraform principal in the principals found in the API, creates it
+func findActiveActivePrincipalsToCreate(apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipals []pl.PrivateLinkPrincipal) []pl.PrivateLinkPrincipal {
+	var result []pl.PrivateLinkPrincipal
+
+	for _, tfPrincipal := range tfPrincipals {
+		found := false
+		for _, apiPrincipal := range apiPrincipals {
+			if tfPrincipal.Principal == apiPrincipal.Principal {
+				found = true
+				break
+			}
+		}
+		if !found {
+			result = append(result, tfPrincipal)
+		}
+	}
+	return result
+}
+
+func resourceRedisCloudActiveActivePrivateLinkDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	var diags diag.Diagnostics
+	api := meta.(*client.ApiClient)
+
+	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	utils.SubscriptionMutex.Lock(subId)
+	defer utils.SubscriptionMutex.Unlock(subId)
+
+	// direct delete doesn't exist on the API so delete each principal one by one
+	privateLink, err := api.Client.PrivateLink.GetPrivateLink(ctx, subId)
+
+	if err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
+		var notFound *pl.NotFound
+		if errors.As(err, &notFound) {
+			d.SetId("")
+			return diags
+		}
+		return diag.FromErr(err)
+	}
+
+	for _, principal := range privateLink.Principals {
+		err := api.Client.PrivateLink.DeletePrincipal(ctx, subId, *principal.Principal)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	d.SetId("")
+
+	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	return diags
+}

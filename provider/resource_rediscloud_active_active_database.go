@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"regexp"
@@ -339,10 +340,10 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 }
 
 func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId := d.Get("subscription_id").(int)
-	subscriptionMutex.Lock(subId)
+	utils.SubscriptionMutex.Lock(subId)
 
 	name := d.Get("name").(string)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
@@ -375,9 +376,9 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 	}
 
 	// Get regions from /subscriptions/{subscriptionId}/regions, this will use the Regions API
-	regions, err := api.client.Regions.List(ctx, subId)
+	regions, err := api.Client.Regions.List(ctx, subId)
 	if err != nil {
-		subscriptionMutex.Unlock(subId)
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -436,15 +437,15 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 	})
 
 	// Confirm Subscription Active status before creating database
-	err = waitForSubscriptionToBeActive(ctx, subId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
 	if err != nil {
-		subscriptionMutex.Unlock(subId)
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
-	dbId, err := api.client.Database.ActiveActiveCreate(ctx, subId, createDatabase)
+	dbId, err := api.Client.Database.ActiveActiveCreate(ctx, subId, createDatabase)
 	if err != nil {
-		subscriptionMutex.Unlock(subId)
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -453,23 +454,23 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 	// Confirm Database Active status
 	err = waitForDatabaseToBeActive(ctx, subId, dbId, api)
 	if err != nil {
-		subscriptionMutex.Unlock(subId)
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		subscriptionMutex.Unlock(subId)
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
-	subscriptionMutex.Unlock(subId)
+	utils.SubscriptionMutex.Unlock(subId)
 	return resourceRedisCloudActiveActiveDatabaseUpdate(ctx, d, meta)
 }
 
 func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	var diags diag.Diagnostics
 
@@ -483,7 +484,7 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		subId = d.Get("subscription_id").(int)
 	}
 
-	db, err := api.client.Database.GetActiveActive(ctx, subId, dbId)
+	db, err := api.Client.Database.GetActiveActive(ctx, subId, dbId)
 	if err != nil {
 		if _, ok := err.(*databases.NotFound); ok {
 			d.SetId("")
@@ -617,7 +618,7 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 
 func resourceRedisCloudActiveActiveDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	var diags diag.Diagnostics
 	subId := d.Get("subscription_id").(int)
@@ -627,14 +628,14 @@ func resourceRedisCloudActiveActiveDatabaseDelete(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	}
 
-	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
+	utils.SubscriptionMutex.Lock(subId)
+	defer utils.SubscriptionMutex.Unlock(subId)
 
 	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
-	dbErr := api.client.Database.Delete(ctx, subId, dbId)
+	dbErr := api.Client.Database.Delete(ctx, subId, dbId)
 	if dbErr != nil {
 		diag.FromErr(dbErr)
 	}
@@ -647,7 +648,7 @@ func resourceRedisCloudActiveActiveDatabaseDelete(ctx context.Context, d *schema
 }
 
 func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	_, dbId, err := toDatabaseId(d.Id())
 	if err != nil {
@@ -655,8 +656,8 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 	}
 
 	subId := d.Get("subscription_id").(int)
-	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
+	utils.SubscriptionMutex.Lock(subId)
+	defer utils.SubscriptionMutex.Unlock(subId)
 
 	// Forcibly initialise, so we have a non-nil, zero-length slice
 	// A pointer to a nil-slice is interpreted as empty and omitted from the json payload
@@ -780,7 +781,7 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 	update.UseExternalEndpointForOSSClusterAPI = redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool))
 
-	err = api.client.Database.ActiveActiveUpdate(ctx, subId, dbId, update)
+	err = api.Client.Database.ActiveActiveUpdate(ctx, subId, dbId, update)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -789,7 +790,7 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	}
 
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -841,7 +842,7 @@ func getStateAlertsFromDbRegion(dbRegion map[string]interface{}) []*databases.Al
 	return overrideAlerts
 }
 
-func waitForDatabaseToBeDeleted(ctx context.Context, subId int, dbId int, api *apiClient) error {
+func waitForDatabaseToBeDeleted(ctx context.Context, subId int, dbId int, api *client.ApiClient) error {
 	wait := &retry.StateChangeConf{
 		Delay:        30 * time.Second,
 		Pending:      []string{"pending"},
@@ -852,7 +853,7 @@ func waitForDatabaseToBeDeleted(ctx context.Context, subId int, dbId int, api *a
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for database %d to be deleted", dbId)
 
-			_, err = api.client.Database.Get(ctx, subId, dbId)
+			_, err = api.Client.Database.Get(ctx, subId, dbId)
 			if err != nil {
 				if _, ok := err.(*databases.NotFound); ok {
 					return "deleted", "deleted", nil

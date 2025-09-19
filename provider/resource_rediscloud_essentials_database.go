@@ -2,6 +2,8 @@ package provider
 
 import (
 	"context"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"time"
 
@@ -297,11 +299,11 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 }
 
 func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId := d.Get("subscription_id").(int)
 
-	subscriptionMutex.Lock(subId)
+	utils.SubscriptionMutex.Lock(subId)
 
 	createDatabaseRequest := fixedDatabases.CreateFixedDatabase{
 		Name:               redis.String(d.Get("name").(string)),
@@ -405,9 +407,9 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 		createDatabaseRequest.EnableTls = redis.Bool(d.Get("enable_tls").(bool))
 	}
 
-	databaseId, err := api.client.FixedDatabases.Create(ctx, subId, createDatabaseRequest)
+	databaseId, err := api.Client.FixedDatabases.Create(ctx, subId, createDatabaseRequest)
 	if err != nil {
-		subscriptionMutex.Unlock(subId)
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -416,19 +418,19 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 	// Confirm Subscription Active status
 	err = waitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api)
 	if err != nil {
-		subscriptionMutex.Unlock(subId)
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases (enableDefaultUser)
 	// Others are omitted here _because_ the update will take care of them, such as tags
-	subscriptionMutex.Unlock(subId)
+	utils.SubscriptionMutex.Unlock(subId)
 	return resourceRedisCloudEssentialsDatabaseUpdate(ctx, d, meta)
 }
 
 func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	var diags diag.Diagnostics
 
@@ -442,7 +444,7 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 		subId = d.Get("subscription_id").(int)
 	}
 
-	db, err := api.client.FixedDatabases.Get(ctx, subId, databaseId)
+	db, err := api.Client.FixedDatabases.Get(ctx, subId, databaseId)
 	if err != nil {
 		if _, ok := err.(*fixedDatabases.NotFound); ok {
 			d.SetId("")
@@ -584,7 +586,7 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 }
 
 func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	_, databaseId, err := toDatabaseId(d.Id())
 	if err != nil {
@@ -592,8 +594,8 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 	}
 
 	subId := d.Get("subscription_id").(int)
-	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
+	utils.SubscriptionMutex.Lock(subId)
+	defer utils.SubscriptionMutex.Unlock(subId)
 
 	updateDatabaseRequest := fixedDatabases.UpdateFixedDatabase{
 		Name:               redis.String(d.Get("name").(string)),
@@ -683,7 +685,7 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 		updateDatabaseRequest.EnableTls = redis.Bool(d.Get("enable_tls").(bool))
 	}
 
-	err = api.client.FixedDatabases.Update(ctx, subId, databaseId, updateDatabaseRequest)
+	err = api.Client.FixedDatabases.Update(ctx, subId, databaseId, updateDatabaseRequest)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -706,7 +708,7 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 
 func resourceRedisCloudEssentialsDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	var diags diag.Diagnostics
 	subId := d.Get("subscription_id").(int)
@@ -716,21 +718,21 @@ func resourceRedisCloudEssentialsDatabaseDelete(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
-	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
+	utils.SubscriptionMutex.Lock(subId)
+	defer utils.SubscriptionMutex.Unlock(subId)
 
 	if err := waitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
-	dbErr := api.client.FixedDatabases.Delete(ctx, subId, databaseId)
+	dbErr := api.Client.FixedDatabases.Delete(ctx, subId, databaseId)
 	if dbErr != nil {
 		diag.FromErr(dbErr)
 	}
 	return diags
 }
 
-func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api *apiClient) error {
+func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient) error {
 	wait := &retry.StateChangeConf{
 		Delay: 30 * time.Second,
 		Pending: []string{
@@ -746,13 +748,13 @@ func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api
 			databases.StatusDynamicEndpointsCreationPending,
 		},
 		Target:       []string{databases.StatusActive},
-		Timeout:      safetyTimeout,
+		Timeout:      utils.SafetyTimeout,
 		PollInterval: 30 * time.Second,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for fixed database %d to be active", id)
 
-			database, err := api.client.FixedDatabases.Get(ctx, subId, id)
+			database, err := api.Client.FixedDatabases.Get(ctx, subId, id)
 			if err != nil {
 				return nil, "", err
 			}
@@ -788,9 +790,9 @@ func suppressIfPaygDisabled(_, _, _ string, d *schema.ResourceData) bool {
 	return !d.Get("enable_payg_features").(bool)
 }
 
-func readFixedTags(ctx context.Context, api *apiClient, subId int, databaseId int, d *schema.ResourceData) error {
+func readFixedTags(ctx context.Context, api *client.ApiClient, subId int, databaseId int, d *schema.ResourceData) error {
 	t := make(map[string]string)
-	tagResponse, err := api.client.Tags.GetFixed(ctx, subId, databaseId)
+	tagResponse, err := api.Client.Tags.GetFixed(ctx, subId, databaseId)
 	if err != nil {
 		return err
 	}
@@ -802,7 +804,7 @@ func readFixedTags(ctx context.Context, api *apiClient, subId int, databaseId in
 	return d.Set("tags", t)
 }
 
-func writeFixedTags(ctx context.Context, api *apiClient, subId int, databaseId int, d *schema.ResourceData) error {
+func writeFixedTags(ctx context.Context, api *client.ApiClient, subId int, databaseId int, d *schema.ResourceData) error {
 	t := make([]*tags.Tag, 0)
 	tState := d.Get("tags").(map[string]interface{})
 	for k, v := range tState {
@@ -811,5 +813,5 @@ func writeFixedTags(ctx context.Context, api *apiClient, subId int, databaseId i
 			Value: redis.String(v.(string)),
 		})
 	}
-	return api.client.Tags.PutFixed(ctx, subId, databaseId, tags.AllTags{Tags: &t})
+	return api.Client.Tags.PutFixed(ctx, subId, databaseId, tags.AllTags{Tags: &t})
 }

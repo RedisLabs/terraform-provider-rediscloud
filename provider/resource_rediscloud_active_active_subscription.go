@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"regexp"
 	"strconv"
 	"time"
@@ -328,7 +330,7 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 }
 
 func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	plan := d.Get("creation_plan").([]interface{})
 
@@ -368,7 +370,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 		createSubscriptionRequest.RedisVersion = redis.String(redisVersion)
 	}
 
-	subId, err := api.client.Subscription.Create(ctx, createSubscriptionRequest)
+	subId, err := api.Client.Subscription.Create(ctx, createSubscriptionRequest)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -385,7 +387,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 	}
 
 	// Confirm Subscription Active status
-	err = waitForSubscriptionToBeActive(ctx, subId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -393,12 +395,12 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are listed.
 	// This additional wait ensures that the databases will be listed before calling api.client.Database.List()
 	time.Sleep(30 * time.Second) //lintignore:R018
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
 	// Locate Databases to confirm Active status
-	dbList := api.client.Database.List(ctx, subId)
+	dbList := api.Client.Database.List(ctx, subId)
 
 	for dbList.Next() {
 		dbId := *dbList.Value().ID
@@ -407,7 +409,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 			return diag.FromErr(err)
 		}
 		// Delete each creation-plan database
-		dbErr := api.client.Database.Delete(ctx, subId, dbId)
+		dbErr := api.Client.Database.Delete(ctx, subId, dbId)
 		if dbErr != nil {
 			diag.FromErr(dbErr)
 		}
@@ -417,7 +419,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 	}
 
 	// Check that the subscription is in an active state before calling the read function
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -438,7 +440,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 			Mode:    redis.String(mMap["mode"].(string)),
 			Windows: windows,
 		}
-		err = api.client.Maintenance.Update(ctx, subId, updateMaintenanceRequest)
+		err = api.Client.Maintenance.Update(ctx, subId, updateMaintenanceRequest)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -448,7 +450,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 }
 
 func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	var diags diag.Diagnostics
 
@@ -457,7 +459,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		return diag.FromErr(err)
 	}
 
-	subscription, err := api.client.Subscription.Get(ctx, subId)
+	subscription, err := api.Client.Subscription.Get(ctx, subId)
 	if err != nil {
 		if _, ok := err.(*subscriptions.NotFound); ok {
 			d.SetId("")
@@ -492,7 +494,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
 
 	if !cmkEnabled {
-		m, err := api.client.Maintenance.Get(ctx, subId)
+		m, err := api.Client.Maintenance.Get(ctx, subId)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -500,7 +502,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 			return diag.FromErr(err)
 		}
 
-		pricingList, err := api.client.Pricing.List(ctx, subId)
+		pricingList, err := api.Client.Pricing.List(ctx, subId)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -519,17 +521,17 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 }
 
 func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
+	utils.SubscriptionMutex.Lock(subId)
+	defer utils.SubscriptionMutex.Unlock(subId)
 
-	subscription, err := api.client.Subscription.Get(ctx, subId)
+	subscription, err := api.Client.Subscription.Get(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -562,13 +564,13 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 			updateSubscriptionRequest.PaymentMethodID = paymentMethodID
 		}
 
-		err = api.client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
+		err = api.Client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -596,7 +598,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 				Mode: redis.String("automatic"),
 			}
 		}
-		err = api.client.Maintenance.Update(ctx, subId, updateMaintenanceRequest)
+		err = api.Client.Maintenance.Update(ctx, subId, updateMaintenanceRequest)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -605,7 +607,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 	return resourceRedisCloudActiveActiveSubscriptionRead(ctx, d, meta)
 }
 
-func resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx context.Context, d *schema.ResourceData, api *apiClient, subId int) diag.Diagnostics {
+func resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx context.Context, d *schema.ResourceData, api *client.ApiClient, subId int) diag.Diagnostics {
 
 	cmkResourcesRaw, exists := d.GetOk("customer_managed_key")
 	if !exists {
@@ -625,11 +627,11 @@ func resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx context.Context, d 
 		CustomerManagedKeys: &customerManagedKeys,
 	}
 
-	if err := api.client.Subscription.UpdateCMKs(ctx, subId, updateCmkRequest); err != nil {
+	if err := api.Client.Subscription.UpdateCMKs(ctx, subId, updateCmkRequest); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -638,7 +640,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx context.Context, d 
 
 func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	var diags diag.Diagnostics
 
@@ -647,29 +649,29 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
-	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
+	utils.SubscriptionMutex.Lock(subId)
+	defer utils.SubscriptionMutex.Unlock(subId)
 
-	subscription, err := api.client.Subscription.Get(ctx, subId)
+	subscription, err := api.Client.Subscription.Get(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	if *subscription.Status != subscriptions.SubscriptionStatusEncryptionKeyPending {
 		// Wait for the subscription to be active before deleting it.
-		if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 			return diag.FromErr(err)
 		}
 
 		// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 		// This additional wait ensures that the databases are deleted before the subscription is deleted.
 		time.Sleep(30 * time.Second) //lintignore:R018
-		if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 			return diag.FromErr(err)
 		}
 		// Delete subscription once all databases are deleted
 	}
-	err = api.client.Subscription.Delete(ctx, subId)
+	err = api.Client.Subscription.Delete(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
