@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -244,7 +245,7 @@ func dataSourceRedisCloudActiveActiveDatabase() *schema.Resource {
 
 func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId := d.Get("subscription_id").(int)
 
@@ -267,7 +268,7 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 		})
 	}
 
-	list := api.client.Database.ListActiveActive(ctx, subId)
+	list := api.Client.Database.ListActiveActive(ctx, subId)
 
 	dbs, err := filterAADatabases(list, filters)
 	if err != nil {
@@ -283,7 +284,7 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 	}
 
 	// Some attributes are only returned when retrieving a single database
-	db, err := api.client.Database.GetActiveActive(ctx, subId, redis.IntValue(dbs[0].ID))
+	db, err := api.Client.Database.GetActiveActive(ctx, subId, redis.IntValue(dbs[0].ID))
 	if err != nil {
 		return diag.FromErr(list.Err())
 	}
@@ -342,7 +343,7 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 	var parsedLatestBackupStatuses []map[string]interface{}
 	for _, regionDb := range db.CrdbDatabases {
 		region := redis.StringValue(regionDb.Region)
-		latestBackupStatus, err := api.client.LatestBackup.GetActiveActive(ctx, subId, dbId, region)
+		latestBackupStatus, err := api.Client.LatestBackup.GetActiveActive(ctx, subId, dbId, region)
 		if err != nil {
 			// Forgive errors here, sometimes we just can't get a latest status
 		} else {
@@ -360,7 +361,7 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 	}
 
 	var parsedLatestImportStatus []map[string]interface{}
-	latestImportStatus, err := api.client.LatestImport.Get(ctx, subId, dbId)
+	latestImportStatus, err := api.Client.LatestImport.Get(ctx, subId, dbId)
 	if err != nil {
 		// Forgive errors here, sometimes we just can't get a latest status
 	} else {
@@ -388,8 +389,8 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 	return diags
 }
 
-func getCertificateData(ctx context.Context, api *apiClient, subId int, dbId int) (*databases.DatabaseCertificate, error) {
-	dbTlsCertificate, err := api.client.Database.GetCertificate(ctx, subId, dbId)
+func getCertificateData(ctx context.Context, api *client.ApiClient, subId int, dbId int) (*databases.DatabaseCertificate, error) {
+	dbTlsCertificate, err := api.Client.Database.GetCertificate(ctx, subId, dbId)
 
 	if err != nil {
 		return nil, err

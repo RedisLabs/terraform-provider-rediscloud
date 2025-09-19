@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	fixedDatabases "github.com/RedisLabs/rediscloud-go-api/service/fixed/databases"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -367,7 +368,7 @@ func dataSourceRedisCloudEssentialsDatabase() *schema.Resource {
 
 func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId := d.Get("subscription_id").(int)
 
@@ -385,7 +386,7 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 		})
 	}
 
-	list := api.client.FixedDatabases.List(ctx, subId)
+	list := api.Client.FixedDatabases.List(ctx, subId)
 	dbs, err := filterFixedDatabases(list, filters)
 	if err != nil {
 		return diag.FromErr(list.Err())
@@ -400,7 +401,7 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 	}
 
 	// Some attributes are only returned when retrieving a single database
-	db, err := api.client.FixedDatabases.Get(ctx, subId, redis.IntValue(dbs[0].DatabaseId))
+	db, err := api.Client.FixedDatabases.Get(ctx, subId, redis.IntValue(dbs[0].DatabaseId))
 	if err != nil {
 		return diag.FromErr(list.Err())
 	}
@@ -490,7 +491,7 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 	}
 
 	var parsedLatestBackupStatus []map[string]interface{}
-	latestBackupStatus, err := api.client.LatestBackup.GetFixed(ctx, subId, databaseId)
+	latestBackupStatus, err := api.Client.LatestBackup.GetFixed(ctx, subId, databaseId)
 	if err != nil {
 		// Forgive errors here, sometimes we just can't get a latest status
 	} else {
@@ -504,7 +505,7 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 	}
 
 	var parsedLatestImportStatus []map[string]interface{}
-	latestImportStatus, err := api.client.LatestImport.GetFixed(ctx, subId, databaseId)
+	latestImportStatus, err := api.Client.LatestImport.GetFixed(ctx, subId, databaseId)
 	if err != nil {
 		// Forgive errors here, sometimes we just can't get a latest status
 	} else {

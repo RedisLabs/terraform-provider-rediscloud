@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"strconv"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -53,9 +54,9 @@ func dataSourceRedisCloudEssentialsSubscription() *schema.Resource {
 
 func dataSourceRedisCloudEssentialsSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
-	subs, err := api.client.FixedSubscriptions.List(ctx)
+	subs, err := api.Client.FixedSubscriptions.List(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}

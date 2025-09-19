@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 
+# 2.4.0 (18th September 2025)
+
+### Added
+
+- AWS PrivateLink support for Pro Subscriptions.
+- New resource: `rediscloud_private_link` which allows users to manage peering between Redis Subscriptions and AWS resources.
+- New data source: `rediscloud_private_link` which allows users to fetch information about Redis Subscriptions.
+- 
+
+
 # 2.3.0 (19th August 2025)
 
 ### Added

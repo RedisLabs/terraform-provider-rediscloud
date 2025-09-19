@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"regexp"
 	"strconv"
 
@@ -116,14 +117,14 @@ func dataSourceRedisCloudSubscriptionPeerings() *schema.Resource {
 
 func dataSourceRedisCloudSubscriptionPeeringsRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	vpcPeering, err := api.client.Subscription.ListVPCPeering(ctx, subId)
+	vpcPeering, err := api.Client.Subscription.ListVPCPeering(ctx, subId)
 
 	if err != nil {
 		return diag.FromErr(err)

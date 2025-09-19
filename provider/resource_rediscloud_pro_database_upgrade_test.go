@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
+const testFileName = "./testdata/testAccResourceRedisCloudProDatabaseUpgrade.tf"
+
 func TestAccResourceRedisCloudProDatabase_Upgrade(t *testing.T) {
 
 	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
@@ -22,7 +24,7 @@ func TestAccResourceRedisCloudProDatabase_Upgrade(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Test database and replica database creation
 			{
-				Config: getRedisCloudUpgradeConfig(t, "7.2"),
+				Config: getRedisCloudUpgradeConfig(t, testFileName, "7.2"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -31,7 +33,7 @@ func TestAccResourceRedisCloudProDatabase_Upgrade(t *testing.T) {
 			},
 			// Test database is updated successfully
 			{
-				Config: getRedisCloudUpgradeConfig(t, "7.4"),
+				Config: getRedisCloudUpgradeConfig(t, testFileName, "7.4"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -42,11 +44,11 @@ func TestAccResourceRedisCloudProDatabase_Upgrade(t *testing.T) {
 	})
 }
 
-func getRedisCloudUpgradeConfig(t *testing.T, redisVersion string) string {
+func getRedisCloudUpgradeConfig(t *testing.T, testFileName string, redisVersion string) string {
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 
-	content, err := os.ReadFile("./testdata/testAccResourceRedisCloudProDatabaseUpgrade.tf")
+	content, err := os.ReadFile(testFileName)
 	if err != nil {
 		t.Fatalf("failed to read file: %v", err)
 	}

@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"regexp"
@@ -352,10 +353,10 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 }
 
 func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	subId := *utils.GetInt(d, "subscription_id")
-	subscriptionMutex.Lock(subId)
+	utils.SubscriptionMutex.Lock(subId)
 
 	createModules := make([]*databases.Module, 0)
 	modules := d.Get("modules").(*schema.Set)
@@ -436,13 +437,13 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	})
 
 	// Confirm sub is ready to accept a db request
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
-	dbId, err := api.client.Database.Create(ctx, subId, createDatabase)
+	dbId, err := api.Client.Database.Create(ctx, subId, createDatabase)
 	if err != nil {
-		subscriptionMutex.Unlock(subId)
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -450,22 +451,22 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 
 	// Confirm db + sub active status
 	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-		subscriptionMutex.Unlock(subId)
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		subscriptionMutex.Unlock(subId)
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password, enableDefaultUser and so on.
-	subscriptionMutex.Unlock(subId)
+	utils.SubscriptionMutex.Unlock(subId)
 	return resourceRedisCloudProDatabaseUpdate(ctx, d, meta)
 }
 
 func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	var diags diag.Diagnostics
 
@@ -479,7 +480,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		subId = d.Get("subscription_id").(int)
 	}
 
-	db, err := api.client.Database.Get(ctx, subId, dbId)
+	db, err := api.Client.Database.Get(ctx, subId, dbId)
 	if err != nil {
 		if _, ok := err.(*databases.NotFound); ok {
 			d.SetId("")
@@ -631,7 +632,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 
 func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	var diags diag.Diagnostics
 	subId := d.Get("subscription_id").(int)
@@ -641,22 +642,22 @@ func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	subscriptionMutex.Lock(subId)
-	defer subscriptionMutex.Unlock(subId)
+	utils.SubscriptionMutex.Lock(subId)
+	defer utils.SubscriptionMutex.Unlock(subId)
 
 	// Confirm sub + db are ready to accept a db request
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := api.client.Database.Delete(ctx, subId, dbId); err != nil {
+	if err := api.Client.Database.Delete(ctx, subId, dbId); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -664,7 +665,7 @@ func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.Resource
 }
 
 func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
 	_, dbId, err := toDatabaseId(d.Id())
 	if err != nil {
@@ -672,7 +673,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	subId := d.Get("subscription_id").(int)
-	subscriptionMutex.Lock(subId)
+	utils.SubscriptionMutex.Lock(subId)
 
 	// If the recommended approach is taken and there are 0 alerts, a nil-slice value is sent to the UpdateDatabase
 	// constructor. We instead want a non-nil (but zero length) slice to be passed forward.
@@ -751,7 +752,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		if clientSSLCertificate != "" {
 			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
 		} else if len(clientTLSCertificates) > 0 {
-			subscriptionMutex.Unlock(subId)
+			utils.SubscriptionMutex.Unlock(subId)
 			return diag.Errorf("TLS certificates may not be provided while enable_tls is false")
 		} else {
 			// Default: enable_tls=false, client_ssl_certificate=""
@@ -777,12 +778,12 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	// Confirm sub + db are ready to accept a db request
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		subscriptionMutex.Unlock(subId)
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-		subscriptionMutex.Unlock(subId)
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -796,7 +797,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		if originalVersion.(string) != "" && newVersion.(string) != "" {
 			if diags, unlocked := upgradeRedisVersion(ctx, api, subId, dbId, newVersion.(string)); diags != nil {
 				if !unlocked {
-					subscriptionMutex.Unlock(subId)
+					utils.SubscriptionMutex.Unlock(subId)
 				}
 				return diags
 			}
@@ -805,18 +806,18 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 
 	// Confirm db + sub active status
 
-	if err := api.client.Database.Update(ctx, subId, dbId, update); err != nil {
-		subscriptionMutex.Unlock(subId)
+	if err := api.Client.Database.Update(ctx, subId, dbId, update); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
 	// Confirm db + sub active status
 	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-		subscriptionMutex.Unlock(subId)
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
-	if err := waitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		subscriptionMutex.Unlock(subId)
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -825,19 +826,19 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	subscriptionMutex.Unlock(subId)
+	utils.SubscriptionMutex.Unlock(subId)
 	return resourceRedisCloudProDatabaseRead(ctx, d, meta)
 }
 
-func upgradeRedisVersion(ctx context.Context, api *apiClient, subId int, dbId int, newVersion string) (diag.Diagnostics, bool) {
+func upgradeRedisVersion(ctx context.Context, api *client.ApiClient, subId int, dbId int, newVersion string) (diag.Diagnostics, bool) {
 	log.Printf("[INFO] Requesting Redis version change to %s...", newVersion)
 
 	upgrade := databases.UpgradeRedisVersion{
 		TargetRedisVersion: redis.String(newVersion),
 	}
 
-	if err := api.client.Database.UpgradeRedisVersion(ctx, subId, dbId, upgrade); err != nil {
-		subscriptionMutex.Unlock(subId)
+	if err := api.Client.Database.UpgradeRedisVersion(ctx, subId, dbId, upgrade); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.Errorf("failed to change Redis version to %s: %v", newVersion, err), true
 	}
 
@@ -845,7 +846,7 @@ func upgradeRedisVersion(ctx context.Context, api *apiClient, subId int, dbId in
 
 	// wait for upgrade
 	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-		subscriptionMutex.Unlock(subId)
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err), true
 	}
 
@@ -1035,9 +1036,9 @@ func remoteBackupIntervalSetCorrectly(key string) schema.CustomizeDiffFunc {
 
 }
 
-func readTags(ctx context.Context, api *apiClient, subId int, databaseId int, d *schema.ResourceData) error {
+func readTags(ctx context.Context, api *client.ApiClient, subId int, databaseId int, d *schema.ResourceData) error {
 	tags := make(map[string]string)
-	tagResponse, err := api.client.Tags.Get(ctx, subId, databaseId)
+	tagResponse, err := api.Client.Tags.Get(ctx, subId, databaseId)
 	if err != nil {
 		return err
 	}
@@ -1049,7 +1050,7 @@ func readTags(ctx context.Context, api *apiClient, subId int, databaseId int, d 
 	return d.Set("tags", tags)
 }
 
-func writeTags(ctx context.Context, api *apiClient, subId int, databaseId int, d *schema.ResourceData) error {
+func writeTags(ctx context.Context, api *client.ApiClient, subId int, databaseId int, d *schema.ResourceData) error {
 	tags := make([]*redisTags.Tag, 0)
 	tState := d.Get("tags").(map[string]interface{})
 	for k, v := range tState {
@@ -1058,7 +1059,7 @@ func writeTags(ctx context.Context, api *apiClient, subId int, databaseId int, d
 			Value: redis.String(v.(string)),
 		})
 	}
-	return api.client.Tags.Put(ctx, subId, databaseId, redisTags.AllTags{Tags: &tags})
+	return api.Client.Tags.Put(ctx, subId, databaseId, redisTags.AllTags{Tags: &tags})
 }
 
 func validateTagsfunc(tagsRaw interface{}, _ cty.Path) diag.Diagnostics {

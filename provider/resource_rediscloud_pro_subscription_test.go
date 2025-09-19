@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"os"
 	"regexp"
 	"strconv"
@@ -74,8 +75,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 							return err
 						}
 
-						client := testProvider.Meta().(*apiClient)
-						sub, err := client.client.Subscription.Get(context.TODO(), subId)
+						client := testProvider.Meta().(*client2.ApiClient)
+						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -695,7 +696,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.
 }
 
 func testAccCheckProSubscriptionDestroy(s *terraform.State) error {
-	client := testProvider.Meta().(*apiClient)
+	client := testProvider.Meta().(*client2.ApiClient)
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_subscription" {
@@ -707,7 +708,7 @@ func testAccCheckProSubscriptionDestroy(s *terraform.State) error {
 			return err
 		}
 
-		subs, err := client.client.Subscription.List(context.TODO())
+		subs, err := client.Client.Subscription.List(context.TODO())
 		if err != nil {
 			return err
 		}

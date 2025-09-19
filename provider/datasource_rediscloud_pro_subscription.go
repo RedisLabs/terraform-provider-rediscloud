@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"strconv"
@@ -222,9 +223,9 @@ func dataSourceRedisCloudProSubscription() *schema.Resource {
 
 func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
-	api := meta.(*apiClient)
+	api := meta.(*client.ApiClient)
 
-	subs, err := api.client.Subscription.List(ctx)
+	subs, err := api.Client.Subscription.List(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -282,7 +283,7 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 
 	subId := redis.IntValue(sub.ID)
 
-	m, err := api.client.Maintenance.Get(ctx, subId)
+	m, err := api.Client.Maintenance.Get(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -290,7 +291,7 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 		return diag.FromErr(err)
 	}
 
-	pricingList, err := api.client.Pricing.List(ctx, subId)
+	pricingList, err := api.Client.Pricing.List(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
