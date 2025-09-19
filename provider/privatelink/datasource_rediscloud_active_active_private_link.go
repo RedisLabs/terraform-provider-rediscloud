@@ -21,10 +21,9 @@ func DataSourceActiveActivePrivateLink() *schema.Resource {
 				Required:    true,
 			},
 			"region_id": {
-				Description: "The ID of the active active subscription region",
-				Type:        schema.TypeInt,
+				Description: "The ID of the active active subscription region, e.g. us-east-1",
+				Type:        schema.TypeString,
 				Required:    true,
-				ForceNew:    true,
 			},
 			"principals": {
 				Description: "List of principals attached to this PrivateLink",
@@ -137,7 +136,7 @@ func dataSourceActiveActivePrivateLinkRead(ctx context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 
-	regionId := d.Get("region_id").(int)
+	regionId := d.Get("region_id").(string)
 
 	privateLink, err := api.Client.PrivateLink.GetActiveActivePrivateLink(ctx, subId, regionId)
 	if err != nil {
