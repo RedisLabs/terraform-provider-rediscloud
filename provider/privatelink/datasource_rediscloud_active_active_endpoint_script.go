@@ -44,7 +44,7 @@ func dataSourceActiveActivePrivateLinkScriptRead(ctx context.Context, d *schema.
 		return diag.FromErr(err)
 	}
 
-	regionId := d.Get("region_id").(string)
+	regionId := d.Get("region_id").(int)
 
 	endpointScript, err := api.Client.PrivateLink.GetActiveActivePrivateLinkEndpointScript(ctx, subId, regionId)
 	if err != nil {

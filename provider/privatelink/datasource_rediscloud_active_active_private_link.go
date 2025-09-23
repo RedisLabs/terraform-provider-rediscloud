@@ -11,18 +11,18 @@ import (
 
 func DataSourceActiveActivePrivateLink() *schema.Resource {
 	return &schema.Resource{
-		Description: "The Private Link data source allows access to an available Active Active Private Link within your Redis Enterprise Cloud Account.",
+		Description: "The Private Link data source allows access to an available Active-Active Private Link within your Redis Enterprise Cloud Account.",
 		ReadContext: dataSourceActiveActivePrivateLinkRead,
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
-				Description: "The ID of an active active subscription",
+				Description: "The ID of an active-active subscription",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
 			"region_id": {
-				Description: "The ID of the active active subscription region, e.g. us-east-1",
-				Type:        schema.TypeString,
+				Description: "The RedisCloud ID of the active-active subscription region",
+				Type:        schema.TypeInt,
 				Required:    true,
 			},
 			"principals": {
@@ -136,7 +136,7 @@ func dataSourceActiveActivePrivateLinkRead(ctx context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 
-	regionId := d.Get("region_id").(string)
+	regionId := d.Get("region_id").(int)
 
 	privateLink, err := api.Client.PrivateLink.GetActiveActivePrivateLink(ctx, subId, regionId)
 	if err != nil {
