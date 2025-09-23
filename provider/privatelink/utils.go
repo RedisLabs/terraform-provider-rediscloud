@@ -40,7 +40,7 @@ func waitForPrivateLinkToBeActive(ctx context.Context, client *client.ApiClient,
 	return nil
 }
 
-func waitForActiveActivePrivateLinkToBeActive(ctx context.Context, client *client.ApiClient, subscriptionId int, regionId string) error {
+func waitForActiveActivePrivateLinkToBeActive(ctx context.Context, client *client.ApiClient, subscriptionId int, regionId int) error {
 	wait := &retry.StateChangeConf{
 		Pending: []string{
 			pl.PrivateLinkStatusInitializing},
