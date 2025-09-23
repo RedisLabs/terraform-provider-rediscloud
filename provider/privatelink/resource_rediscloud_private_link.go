@@ -315,7 +315,6 @@ func resourceRedisCloudPrivateLinkDelete(ctx context.Context, d *schema.Resource
 	privateLink, err := api.Client.PrivateLink.GetPrivateLink(ctx, subId)
 
 	if err != nil {
-		utils.SubscriptionMutex.Unlock(subId)
 		var notFound *pl.NotFound
 		if errors.As(err, &notFound) {
 			d.SetId("")
