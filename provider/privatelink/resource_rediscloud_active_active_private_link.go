@@ -187,7 +187,6 @@ func resourceRedisCloudActiveActivePrivateLinkCreate(ctx context.Context, d *sch
 		return diag.FromErr(err)
 	}
 
-	utils.SubscriptionMutex.Unlock(subId)
 	err = createOtherActiveActivePrincipals(ctx, api, subId, regionId, principals[1:])
 
 	if err != nil {
@@ -334,7 +333,6 @@ func resourceRedisCloudActiveActivePrivateLinkDelete(ctx context.Context, d *sch
 	privateLink, err := api.Client.PrivateLink.GetActiveActivePrivateLink(ctx, subId, regionId)
 
 	if err != nil {
-		utils.SubscriptionMutex.Unlock(subId)
 		var notFound *pl.NotFound
 		if errors.As(err, &notFound) {
 			d.SetId("")
