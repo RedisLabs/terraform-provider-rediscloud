@@ -15,10 +15,15 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 
 	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
+	password := acctest.RandString(20)
+
+	principal1 := "123456789012"
+	principal2 := "234567890123"
+
 	const resourceName = "rediscloud_private_link.private_link"
 	const datasourceName = "data.rediscloud_private_link.private_link"
 	shareName := acctest.RandomWithPrefix(testResourcePrefix) + "privatelink-active-active_test-share"
-	terraformConfig := getRedisActiveActivePrivateLinkConfig(t, testActiveActivePrivateLinkConfigFile, shareName)
+	terraformConfig := getRedisActiveActivePrivateLinkConfig(t, testActiveActivePrivateLinkConfigFile, shareName, password, principal1, principal2)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -58,7 +63,7 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 	})
 }
 
-func getRedisActiveActivePrivateLinkConfig(t *testing.T, testFile string, shareName string) string {
+func getRedisActiveActivePrivateLinkConfig(t *testing.T, testFile, shareName, password, principal1, principal2 string) string {
 	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-aa-private-link"
 	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -67,5 +72,5 @@ func getRedisActiveActivePrivateLinkConfig(t *testing.T, testFile string, shareN
 		t.Fatalf("failed to read file: %v", err)
 	}
 
-	return fmt.Sprintf(string(content), subName, exampleCloudAccountName, shareName)
+	return fmt.Sprintf(string(content), subName, exampleCloudAccountName, shareName, password, principal1, principal2)
 }

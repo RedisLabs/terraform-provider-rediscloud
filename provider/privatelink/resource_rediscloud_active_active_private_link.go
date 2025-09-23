@@ -42,8 +42,8 @@ func ResourceRedisCloudActiveActivePrivateLink() *schema.Resource {
 				ForceNew:    true,
 			},
 			"region_id": {
-				Description: "The ID of the active active subscription region, e.g. us-east-1",
-				Type:        schema.TypeString,
+				Description: "The RedisCloud ID of the active active subscription region",
+				Type:        schema.TypeInt,
 				Required:    true,
 				ForceNew:    true,
 			},
@@ -176,7 +176,6 @@ func resourceRedisCloudActiveActivePrivateLinkCreate(ctx context.Context, d *sch
 
 	err = api.Client.PrivateLink.CreateActiveActivePrivateLink(ctx, subId, regionId, link)
 	if err != nil {
-		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -185,7 +184,6 @@ func resourceRedisCloudActiveActivePrivateLinkCreate(ctx context.Context, d *sch
 	err = waitForActiveActivePrivateLinkToBeActive(ctx, api, subId, regionId)
 
 	if err != nil {
-		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -193,20 +191,17 @@ func resourceRedisCloudActiveActivePrivateLinkCreate(ctx context.Context, d *sch
 	err = createOtherActiveActivePrincipals(ctx, api, subId, regionId, principals[1:])
 
 	if err != nil {
-		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
 	// TODO: figure out if this is necessary and remove/uncomment
 	//err = waitForAllPrincipalsToBeAssociated(ctx, api, subId, principals)
 	//if err != nil {
-	//	utils.SubscriptionMutex.Unlock(subId)
 	//	return diag.FromErr(err)
 	//}
 
 	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
 	if err != nil {
-		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
