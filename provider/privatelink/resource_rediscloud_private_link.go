@@ -151,6 +151,7 @@ func resourceRedisCloudPrivateLinkCreate(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 	utils.SubscriptionMutex.Lock(subId)
+	defer utils.SubscriptionMutex.Unlock(subId)
 
 	shareName := d.Get("share_name").(string)
 
@@ -166,7 +167,6 @@ func resourceRedisCloudPrivateLinkCreate(ctx context.Context, d *schema.Resource
 
 	err = api.Client.PrivateLink.CreatePrivateLink(ctx, subId, link)
 	if err != nil {
-		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -175,28 +175,23 @@ func resourceRedisCloudPrivateLinkCreate(ctx context.Context, d *schema.Resource
 	err = waitForPrivateLinkToBeActive(ctx, api, subId)
 
 	if err != nil {
-		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
-	utils.SubscriptionMutex.Unlock(subId)
 	err = createOtherPrincipals(ctx, api, subId, principals[1:])
 
 	if err != nil {
-		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
 	// TODO: figure out if this is necessary and remove/uncomment
 	//err = waitForAllPrincipalsToBeAssociated(ctx, api, subId, principals)
 	//if err != nil {
-	//	utils.SubscriptionMutex.Unlock(subId)
 	//	return diag.FromErr(err)
 	//}
 
 	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
 	if err != nil {
-		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
