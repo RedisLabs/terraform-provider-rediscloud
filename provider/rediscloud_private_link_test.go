@@ -15,8 +15,6 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 
 	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
 	testAccRequiresEnvVar(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
-	testAccRequiresEnvVar(t, "AWS_TEST_CLOUD_ACCOUNT_PRINCIPAL_1")
-	testAccRequiresEnvVar(t, "AWS_TEST_CLOUD_ACCOUNT_PRINCIPAL_2")
 
 	const resourceName = "rediscloud_private_link.private_link"
 	const datasourceName = "data.rediscloud_private_link.private_link"
@@ -70,8 +68,9 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 func getRedisPrivateLinkConfig(t *testing.T, shareName string) string {
 	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-private-link"
 	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-	principal1 := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_PRINCIPAL_1")
-	principal2 := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_PRINCIPAL_2")
+
+	principal1 := "123456789012"
+	principal2 := "234567890123"
 
 	content := getTestConfig(t, testPrivateLinkConfigFile)
 	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName, principal1, principal2)
