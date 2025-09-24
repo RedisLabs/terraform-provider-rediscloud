@@ -270,7 +270,7 @@ func resourceRedisCloudActiveActivePrivateLinkUpdate(ctx context.Context, d *sch
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
-	if d.HasChange("principals") {
+	if d.HasChange("principal") {
 
 		subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 		if err != nil {
