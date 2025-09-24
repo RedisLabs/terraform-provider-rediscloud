@@ -65,7 +65,7 @@ func ResourceRedisCloudActiveActivePrivateLink() *schema.Resource {
 						},
 						"principal_type": {
 							Type:             schema.TypeString,
-							ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(aws_account|organization|organization_unit|iam_role|iam_user|service_principal)$"), "must be 'credit-card' or 'marketplace'")),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(aws_account|organization|organization_unit|iam_role|iam_user|service_principal)$"), "Must be an allowed Principal Type. ('aws_account', 'organization', 'organization_unit', 'iam_role', 'iam_user')'")),
 							Required:         true,
 						},
 						"principal_alias": {
@@ -94,7 +94,6 @@ func ResourceRedisCloudActiveActivePrivateLink() *schema.Resource {
 				Description: "Connections attached to this PrivateLink",
 				Type:        schema.TypeSet,
 				Computed:    true,
-				Optional:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"association_id": {
@@ -294,7 +293,7 @@ func resourceRedisCloudActiveActivePrivateLinkUpdate(ctx context.Context, d *sch
 		}
 
 		apiPrincipals := privateLink.Principals
-		tfPrincipals := principalsFromSet(d.Get("principals").(*schema.Set))
+		tfPrincipals := principalsFromSet(d.Get("principal").(*schema.Set))
 
 		principalsToCreate := findPrincipalsToCreate(apiPrincipals, tfPrincipals)
 		err = createActiveActivePrincipals(ctx, api, subId, regionId, principalsToCreate)

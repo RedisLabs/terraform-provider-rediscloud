@@ -72,7 +72,7 @@ resource "rediscloud_private_link" "private_link" {
 
 ## Argument Reference
 
-* `subscription_id` - (Required) The ID of the Pro Subscription to attach the PrivateLink to.  **Modifying this attribute will force creation of a new resource.**
+* `subscription_id` - (Required) The ID of the Pro Subscription to attach the PrivateLink to. **Modifying this attribute will force creation of a new resource.**
 * `share_name` - (Required) The share name of the PrivateLink.
 * `principal` - (Required) The principal(s) attached to the PrivateLink.
 
@@ -84,11 +84,11 @@ The `principal` block supports:
 
 ## Attribute Reference
 
-* `resource_configuration_id`
-* `resource_configuration_arn`
-* `share_arn`
-* `connections`
-* `databases`
+* `resource_configuration_id` - ID of the resource configuration to attach to this PrivateLink
+* `resource_configuration_arn` - ARN of the resource configuration to attach to this PrivateLink
+* `share_arn` - Share ARN of this PrivateLink.
+* `connections` - List of connections associated with the PrivateLink.
+* `databases` - List of databases associated with the PrivateLink.
 
 The `connections` object has these attributes:
 
