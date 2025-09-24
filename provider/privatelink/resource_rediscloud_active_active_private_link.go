@@ -159,10 +159,12 @@ func resourceRedisCloudActiveActivePrivateLinkCreate(ctx context.Context, d *sch
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
 
-	shareName := d.Get("share_name").(string)
-
 	regionId := d.Get("region_id").(int)
 
+	privateLinkId := makeActiveActivePrivateLinkId(subId, regionId)
+	d.SetId(privateLinkId)
+
+	shareName := d.Get("share_name").(string)
 	principals := principalsFromSet(d.Get("principal").(*schema.Set))
 	firstPrincipal := principals[0]
 
@@ -217,6 +219,9 @@ func resourceRedisCloudActiveActivePrivateLinkRead(ctx context.Context, d *schem
 	}
 
 	regionId := d.Get("region_id").(int)
+
+	privateLinkId := makeActiveActivePrivateLinkId(subId, regionId)
+	d.SetId(privateLinkId)
 
 	privateLink, err := api.Client.PrivateLink.GetActiveActivePrivateLink(ctx, subId, regionId)
 	if err != nil {
