@@ -6,7 +6,6 @@ import (
 	"log"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -17,31 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-type privateLinkId struct {
-	subscriptionId int
-	principalId    string
-}
-
-func toPrivateLinkId(id string) (*privateLinkId, error) {
-	parts := strings.Split(id, "/")
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid id: %s", id)
-	}
-
-	subId, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return nil, err
-	}
-
-	privateLinkIdStr := parts[1]
-
-	return &privateLinkId{
-		subscriptionId: subId,
-		principalId:    privateLinkIdStr,
-	}, nil
-}
-
-func waitForPrivateLinkToBeActive(ctx context.Context, id int, client *client.ApiClient) error {
+func waitForPrivateLinkToBeActive(ctx context.Context, client *client.ApiClient, subscriptionId int) error {
 	wait := &retry.StateChangeConf{
 		Pending: []string{
 			pl.PrivateLinkStatusInitializing},
@@ -50,14 +25,39 @@ func waitForPrivateLinkToBeActive(ctx context.Context, id int, client *client.Ap
 		Delay:        10 * time.Second,
 		PollInterval: 10 * time.Second,
 		Refresh: func() (result interface{}, state string, err error) {
-			log.Printf("[DEBUG] Waiting for private link %d to be active", id)
+			log.Printf("[DEBUG] Waiting for private link %d to be active", subscriptionId)
 
-			privatelink, err := client.Client.PrivateLink.GetPrivateLink(ctx, id)
+			privateLink, err := client.Client.PrivateLink.GetPrivateLink(ctx, subscriptionId)
 			if err != nil {
 				return "", "", err
 			}
 
-			return *privatelink.ShareName, *privatelink.Status, nil
+			return *privateLink.ShareName, *privateLink.Status, nil
+		}}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func waitForActiveActivePrivateLinkToBeActive(ctx context.Context, client *client.ApiClient, subscriptionId int, regionId int) error {
+	wait := &retry.StateChangeConf{
+		Pending: []string{
+			pl.PrivateLinkStatusInitializing},
+		Target:       []string{pl.PrivateLinkStatusActive},
+		Timeout:      utils.SafetyTimeout,
+		Delay:        10 * time.Second,
+		PollInterval: 10 * time.Second,
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for private link %d to be active", subscriptionId)
+
+			privateLink, err := client.Client.PrivateLink.GetActiveActivePrivateLink(ctx, subscriptionId, regionId)
+			if err != nil {
+				return "", "", err
+			}
+
+			return *privateLink.ShareName, *privateLink.Status, nil
 		}}
 	if _, err := wait.WaitForStateContext(ctx); err != nil {
 		return err
@@ -167,4 +167,18 @@ func flattenConnections(connections []*pl.PrivateLinkConnection) []map[string]in
 	}
 
 	return tfs
+}
+
+func waitForAllPrincipalsToBeAssociated(ctx context.Context, api *client.ApiClient, subId int, principals []pl.PrivateLinkPrincipal) error {
+	for _, principal := range principals {
+		err := waitForPrincipalToBeAssociated(ctx, api, subId, principal.Principal)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func makeActiveActivePrivateLinkId(subId int, regionId int) string {
+	return strconv.Itoa(subId) + "/" + strconv.Itoa(regionId)
 }
