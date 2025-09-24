@@ -20,7 +20,7 @@ import (
 
 func resourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 	return &schema.Resource{
-		Description:   "Creates an Active Active Region and within your Redis Enterprise Cloud Account.",
+		Description:   "Creates an Active Active Region within your Redis Enterprise Cloud Account.",
 		CreateContext: resourceRedisCloudActiveActiveRegionCreate,
 		ReadContext:   resourceRedisCloudActiveActiveRegionRead,
 		UpdateContext: resourceRedisCloudActiveActiveRegionUpdate,

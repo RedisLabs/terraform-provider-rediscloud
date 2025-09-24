@@ -32,6 +32,11 @@ func dataSourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
+						"region_id": {
+							Description: "Deployment region ID as used by RedisCloud",
+							Type:        schema.TypeInt,
+							Computed:    true,
+						},
 						"networking_deployment_cidr": {
 							Description: "Deployment CIDR mask",
 							Type:        schema.TypeString,
@@ -154,6 +159,7 @@ func flattenActiveActiveRegions(regionList []*subscriptions.ActiveActiveRegion) 
 
 		regionMap := map[string]interface{}{
 			"region":                     currentRegion.Region,
+			"region_id":                  currentRegion.RegionId,
 			"networking_deployment_cidr": currentRegion.DeploymentCIDR,
 			"vpc_id":                     currentRegion.VpcId,
 			"databases":                  dbs,
