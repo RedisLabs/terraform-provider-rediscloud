@@ -1,0 +1,53 @@
+---
+layout: "rediscloud"
+page_title: "Redis Cloud: rediscloud_private_link"
+description: |-
+  PrivateLink data source for Pro Subscription in the Redis Cloud Terraform provider.
+---
+
+# Data Source: rediscloud_active_active_private_link
+The PrivateLink data source allows the user to retrieve information about an existing PrivateLink for an Active Active Subscription in the provider.
+
+## Example Usage
+
+```hcl
+data "rediscloud_active_active_private_link" "example" {
+  subscription_id = "1234"
+  region_id = 1
+}
+
+output "rediscloud_private_link_principals" {
+  value = data.rediscloud_active_active_private_link.example.principals
+}
+```
+
+## Argument Reference
+
+* `subscription_id` - (Required) The ID of the Active Active Subscription the PrivateLink is attached to.
+* `region_id` - (Required) The region ID within the Active Active subscription that the PrivateLink is attached to.
+
+## Attribute reference
+
+* `principals` - The principal(s) attached to the PrivateLink.
+* `resource_configuration_id` - ID of the resource configuration to attach to this PrivateLink
+* `resource_configuration_arn` - ARN of the resource configuration to attach to this PrivateLink
+* `share_arn` - Share ARN of this PrivateLink.
+* `connections` - List of connections associated with the PrivateLink.
+* `databases` - List of databases associated with the PrivateLink.
+
+The `principals` object is a list, with these attributes:
+* `principal` - The principal attached to this PrivateLink.
+* `principal_type` - The principal type.
+* `principal_alias` - The friendly name to refer to the principal.
+
+The `connections` object is a list, with these attributes:
+* `association_id` - Association ID of the PrivateLink connection.
+* `connection_id` - Connection ID of the PrivateLink connection
+* `connection_type` - The PrivateLink connection type.
+* `owner_id` - Owner ID of the connection.
+* `association_date` - Date the connection was associated.
+
+The `databases`  object is a list, with these attributes:
+* `database_id` - ID of the database.
+* `port` - The port which the database is available on.
+* `resource_link_endpoint` - The resource link endpoint for the database.

@@ -2,6 +2,9 @@ locals {
   rediscloud_subscription_name = "%s"
   rediscloud_cloud_account = "%s"
   rediscloud_private_link_share_name = "%s"
+  rediscloud_database_password = "%s"
+  rediscloud_principal_1 = "%s"
+  rediscloud_principal_2 = "%s"
 }
 
 data "rediscloud_payment_method" "card" {
@@ -38,24 +41,40 @@ resource "rediscloud_active_active_subscription" "subscription" {
   }
 }
 
+resource "rediscloud_active_active_subscription_database" "database_resource" {
+  subscription_id         = rediscloud_active_active_subscription.subscription.id
+  name                    = "db"
+  memory_limit_in_gb      = 1
+  global_data_persistence = "aof-every-1-second"
+  global_password         = local.rediscloud_database_password
+}
+
+data "rediscloud_active_active_subscription_regions" "regions_info" {
+  subscription_name = rediscloud_active_active_subscription.subscription.name
+  depends_on = [rediscloud_active_active_subscription_database.database_resource]
+}
+
 resource "rediscloud_active_active_private_link" "private_link" {
   subscription_id = rediscloud_active_active_subscription.subscription.id
   share_name = local.rediscloud_private_link_share_name
-  region = "eu-west-1"
+  region_id =  data.rediscloud_active_active_subscription_regions.regions_info.regions[0].region_id
 
   principal {
-    principal = "620187402834"
+    principal = local.rediscloud_principal_1
     principal_type = "aws_account"
     principal_alias = "terraform test aws account"
   }
 
   principal {
-    principal = "688576139038"
+    principal = local.rediscloud_principal_2
     principal_type = "aws_account"
-    principal_alias = "terraform test aws accoun 2"
+    principal_alias = "terraform test aws account 2"
   }
 }
 
 data "rediscloud_active_active_private_link" "private_link" {
-  subscription_id = rediscloud_private_link.private_link.subscription_id
+  subscription_id = rediscloud_active_active_private_link.private_link.subscription_id
+  region_id = 1
 }
+
+
