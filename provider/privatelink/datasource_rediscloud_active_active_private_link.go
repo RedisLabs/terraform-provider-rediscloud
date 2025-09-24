@@ -141,7 +141,8 @@ func dataSourceActiveActivePrivateLinkRead(ctx context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 
-	d.SetId(strconv.Itoa(subId))
+	privateLinkId := makeActiveActivePrivateLinkId(subId, regionId)
+	d.SetId(privateLinkId)
 
 	if err := d.Set("resource_configuration_id", privateLink.ResourceConfigurationId); err != nil {
 		return diag.FromErr(err)

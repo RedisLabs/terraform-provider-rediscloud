@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -176,4 +177,8 @@ func waitForAllPrincipalsToBeAssociated(ctx context.Context, api *client.ApiClie
 		}
 	}
 	return nil
+}
+
+func makeActiveActivePrivateLinkId(subId int, regionId int) string {
+	return strconv.Itoa(subId) + "/" + strconv.Itoa(regionId)
 }
