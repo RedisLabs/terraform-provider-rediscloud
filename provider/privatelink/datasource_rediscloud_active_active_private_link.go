@@ -11,19 +11,19 @@ import (
 
 func DataSourceActiveActivePrivateLink() *schema.Resource {
 	return &schema.Resource{
-		Description: "The Private Link data source allows access to an available Active Active Private Link within your Redis Enterprise Cloud Account.",
-		ReadContext: dataSourcePrivateLinkRead,
+		Description: "The Private Link data source allows access to an available Active-Active Private Link within your Redis Enterprise Cloud Account.",
+		ReadContext: dataSourceActiveActivePrivateLinkRead,
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
-				Description: "The ID of an active active subscription",
+				Description: "The ID of an active-active subscription",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
 			"region_id": {
-				Description: "The ID of the active active subscription region",
+				Description: "The RedisCloud ID of the active-active subscription region",
 				Type:        schema.TypeInt,
-				Computed:    true,
+				Required:    true,
 			},
 			"principals": {
 				Description: "List of principals attached to this PrivateLink",
@@ -33,15 +33,15 @@ func DataSourceActiveActivePrivateLink() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"principal": {
 							Type:     schema.TypeString,
-							Required: true,
+							Computed: true,
 						},
 						"principal_type": {
 							Type:     schema.TypeString,
-							Required: true,
+							Computed: true,
 						},
 						"principal_alias": {
 							Type:     schema.TypeString,
-							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -65,13 +65,11 @@ func DataSourceActiveActivePrivateLink() *schema.Resource {
 				Description: "ARN of the share to attach to this PrivateLink",
 				Type:        schema.TypeString,
 				Computed:    true,
-				Optional:    true,
 			},
 			"connections": {
 				Description: "Connections attached to this PrivateLink",
 				Type:        schema.TypeSet,
 				Computed:    true,
-				Optional:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"association_id": {
@@ -143,7 +141,8 @@ func dataSourceActiveActivePrivateLinkRead(ctx context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 
-	d.SetId(strconv.Itoa(subId))
+	privateLinkId := makeActiveActivePrivateLinkId(subId, regionId)
+	d.SetId(privateLinkId)
 
 	if err := d.Set("resource_configuration_id", privateLink.ResourceConfigurationId); err != nil {
 		return diag.FromErr(err)
@@ -161,6 +160,14 @@ func dataSourceActiveActivePrivateLinkRead(ctx context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 	if err := d.Set("region_id", privateLink.RegionId); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("connections", flattenConnections(privateLink.Connections)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("databases", flattenDatabases(privateLink.Databases)); err != nil {
 		return diag.FromErr(err)
 	}
 
