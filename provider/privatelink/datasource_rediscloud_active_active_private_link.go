@@ -33,15 +33,15 @@ func DataSourceActiveActivePrivateLink() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"principal": {
 							Type:     schema.TypeString,
-							Required: true,
+							Computed: true,
 						},
 						"principal_type": {
 							Type:     schema.TypeString,
-							Required: true,
+							Computed: true,
 						},
 						"principal_alias": {
 							Type:     schema.TypeString,
-							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -65,13 +65,11 @@ func DataSourceActiveActivePrivateLink() *schema.Resource {
 				Description: "ARN of the share to attach to this PrivateLink",
 				Type:        schema.TypeString,
 				Computed:    true,
-				Optional:    true,
 			},
 			"connections": {
 				Description: "Connections attached to this PrivateLink",
 				Type:        schema.TypeSet,
 				Computed:    true,
-				Optional:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"association_id": {
