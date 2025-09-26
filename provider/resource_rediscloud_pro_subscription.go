@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"reflect"
 	"regexp"
@@ -18,6 +16,8 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/maintenance"
 	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -655,7 +655,7 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 	for dbList.Next() {
 		dbId := *dbList.Value().ID
 
-		if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 			return append(diags, diag.FromErr(err)...)
 		}
 		// Delete each creation-plan database
@@ -1183,44 +1183,6 @@ func waitForSubscriptionToBeDeleted(ctx context.Context, id int, api *client.Api
 			}
 
 			return redis.StringValue(subscription.Status), redis.StringValue(subscription.Status), nil
-		},
-	}
-	if _, err := wait.WaitForStateContext(ctx); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func waitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient) error {
-	wait := &retry.StateChangeConf{
-		Pending: []string{
-			databases.StatusDraft,
-			databases.StatusPending,
-			databases.StatusActiveChangePending,
-			databases.StatusRCPActiveChangeDraft,
-			databases.StatusActiveChangeDraft,
-			databases.StatusRCPDraft,
-			databases.StatusRCPChangePending,
-			databases.StatusProxyPolicyChangePending,
-			databases.StatusProxyPolicyChangeDraft,
-			databases.StatusDynamicEndpointsCreationPending,
-			databases.StatusActiveUpgradePending,
-		},
-		Target:       []string{databases.StatusActive},
-		Timeout:      utils.SafetyTimeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
-
-		Refresh: func() (result interface{}, state string, err error) {
-			log.Printf("[DEBUG] Waiting for database %d to be active", id)
-
-			database, err := api.Client.Database.Get(ctx, subId, id)
-			if err != nil {
-				return nil, "", err
-			}
-
-			return redis.StringValue(database.Status), redis.StringValue(database.Status), nil
 		},
 	}
 	if _, err := wait.WaitForStateContext(ctx); err != nil {

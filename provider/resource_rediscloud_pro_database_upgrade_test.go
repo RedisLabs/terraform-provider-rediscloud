@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-const testFileName = "./testdata/testAccResourceRedisCloudProDatabaseUpgrade.tf"
+const testFileName = "./pro/testdata/testAccResourceRedisCloudProDatabaseUpgrade.tf"
 
 func TestAccResourceRedisCloudProDatabase_Upgrade(t *testing.T) {
 

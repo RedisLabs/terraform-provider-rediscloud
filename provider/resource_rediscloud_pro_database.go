@@ -450,7 +450,7 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	d.SetId(buildResourceId(subId, dbId))
 
 	// Confirm db + sub active status
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
@@ -649,7 +649,7 @@ func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.Resource
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -782,7 +782,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
@@ -812,7 +812,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	// Confirm db + sub active status
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
@@ -845,7 +845,7 @@ func upgradeRedisVersion(ctx context.Context, api *client.ApiClient, subId int, 
 	log.Printf("[INFO] Redis version change request to %s accepted by API", newVersion)
 
 	// wait for upgrade
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err), true
 	}

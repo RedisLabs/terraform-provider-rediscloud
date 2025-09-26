@@ -72,7 +72,7 @@ func getRedisProDbDatasourceConfig(t *testing.T, password string) string {
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 
-	content, err := os.ReadFile("./testdata/testAccDatasourceRedisCloudProDatabase.tf")
+	content, err := os.ReadFile("./pro/testdata/testAccDatasourceRedisCloudProDatabase.tf")
 	if err != nil {
 		t.Fatalf("failed to read file: %v", err)
 	}
