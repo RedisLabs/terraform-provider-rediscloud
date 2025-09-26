@@ -405,7 +405,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 	for dbList.Next() {
 		dbId := *dbList.Value().ID
 
-		if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 			return diag.FromErr(err)
 		}
 		// Delete each creation-plan database
