@@ -523,10 +523,6 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("enable_default_user", redis.Bool(*db.Security.EnableDefaultUser)); err != nil {
-		return diag.FromErr(err)
-	}
-
 	// To prevent both fields being included in API requests, only one of these two fields should be set in the state
 	// Only add `dataset_size_in_gb` to the state if `memory_limit_in_gb` is not already in the state
 	if _, inState := d.GetOk("memory_limit_in_gb"); !inState {
@@ -589,6 +585,8 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		}
 
 		regionDbConfig["remote_backup"] = flattenBackupPlan(regionDb.Backup, getStateRemoteBackup(d, region), "")
+
+		regionDbConfig["enable_default_user"] = redis.BoolValue(regionDb.Security.EnableDefaultUser)
 
 		regionDbConfigs = append(regionDbConfigs, regionDbConfig)
 	}
