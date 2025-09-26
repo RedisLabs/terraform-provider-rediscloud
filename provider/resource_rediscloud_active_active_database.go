@@ -143,12 +143,6 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Optional:    true,
 				Default:     "volatile-lru",
 			},
-			"enable_default_user": {
-				Description: "When 'true', enables connecting to the database with the 'default' user. Default: 'true'",
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     true,
-			},
 			"global_data_persistence": {
 				Description: "Rate of database data persistence (in persistent storage)",
 				Type:        schema.TypeString,
@@ -257,6 +251,12 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 							Description: "Rate of database data persistence (in persistent storage)",
 							Type:        schema.TypeString,
 							Optional:    true,
+						},
+						"enable_default_user": {
+							Description: "When 'true', enables connecting to the database with the 'default' user. Default: 'true'",
+							Type:        schema.TypeBool,
+							Optional:    true,
+							Default:     true,
 						},
 						"remote_backup": {
 							Description: "An object that specifies the backup options for the database in this region",
@@ -458,7 +458,7 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 	d.SetId(buildResourceId(subId, dbId))
 
 	// Confirm Database Active status
-	err = waitForDatabaseToBeActive(ctx, subId, dbId, api)
+	err = utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api)
 	if err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
@@ -641,7 +641,7 @@ func resourceRedisCloudActiveActiveDatabaseDelete(ctx context.Context, d *schema
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
 
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -698,7 +698,8 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		}
 
 		regionProps := &databases.LocalRegionProperties{
-			Region: redis.String(dbRegion["name"].(string)),
+			Region:            redis.String(dbRegion["name"].(string)),
+			EnableDefaultUser: redis.Bool(dbRegion["enable_default_user"].(bool)),
 		}
 
 		if len(overrideAlerts) > 0 {
@@ -740,7 +741,6 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		GlobalAlerts:                        &updateAlerts,
 		GlobalSourceIP:                      globalSourceIps,
 		Regions:                             regions,
-		EnableDefaultUser:                   utils.GetBool(d, "enable_default_user"),
 	}
 
 	// One of the following fields must be set in the request, validation is handled in the schema (ExactlyOneOf)
@@ -797,7 +797,7 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	}
 
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
