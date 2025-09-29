@@ -116,6 +116,7 @@ The `override_region` block supports:
 * `override_global_source_ips` - (Optional)  List of regional instance of an Active-Active database source IP addresses or subnet masks. If specified, Redis clients will be able to connect to this database only from within the specified source IP addresses ranges (example: ['192.168.10.0/32', '192.168.12.0/24'] )
 * `override_global_data_persistence` - (Optional) Regional instance of an Active-Active database data persistence rate (in persistent storage)
 * `remote_backup` - (Optional) Specifies the backup options for the database in this region, documented below
+* `enable_default_user` - (Optional) Whether the default user should be enabled or not. True by default.
 
 The `override_global_alert` block supports:
 
