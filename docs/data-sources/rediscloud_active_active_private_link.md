@@ -6,7 +6,7 @@ description: |-
 ---
 
 # Data Source: rediscloud_active_active_private_link
-The PrivateLink data source allows the user to retrieve information about an existing PrivateLink for an Active Active Subscription in the provider.
+The PrivateLink data source allows the user to retrieve information about an existing PrivateLink for an Active-Active Subscription region in the provider.
 
 ## Example Usage
 
@@ -23,8 +23,8 @@ output "rediscloud_private_link_principals" {
 
 ## Argument Reference
 
-* `subscription_id` - (Required) The ID of the Active Active Subscription the PrivateLink is attached to.
-* `region_id` - (Required) The region ID within the Active Active subscription that the PrivateLink is attached to.
+* `subscription_id` - (Required) The ID of the Active-Active Subscription the PrivateLink is attached to.
+* `region_id` - (Required) The region ID within the Active-Active subscription that the PrivateLink is attached to.
 
 ## Attribute reference
 
