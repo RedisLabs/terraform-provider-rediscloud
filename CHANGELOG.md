@@ -3,8 +3,17 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.4.2 (29th September 2025)
 
-# 2.4.1 (24rd September 2025)
+### Added
+
+- Gives users the option to disable a default user in active-active regions by setting the `enable_default_user` flag to false.
+
+### Fixed
+
+- Expanded PrivateLink documentation and fixed errata
+
+# 2.4.1 (24th September 2025)
 
 ### Added
 
