@@ -6,7 +6,7 @@ description: |-
 ---
 
 # Data Source: rediscloud_private_link
-The PrivateLink data source allows the user to retrieve information about an existing PrivateLink in the provider.
+Retrieves details of an existing PrivateLink for a Pro Subscription.
 
 ## Example Usage
 
@@ -24,14 +24,14 @@ output "rediscloud_private_link_principals" {
 
 * `subscription_id` - (Required) The ID of the Pro Subscription the PrivateLink is attached to.
 
-## Attribute reference
+## Attribute Reference
 
 * `principals` - The principal(s) attached to the PrivateLink.
-* `resource_configuration_id` - ID of the resource configuration to attach to this PrivateLink
-* `resource_configuration_arn` - ARN of the resource configuration to attach to this PrivateLink
-* `share_arn` - Share ARN of this PrivateLink.
-* `connections` - List of connections associated with the PrivateLink.
-* `databases` - List of databases associated with the PrivateLink.
+* `resource_configuration_id` - The ID of the resource configuration attached to this PrivateLink.
+* `resource_configuration_arn` - The ARN of the resource configuration attached to this PrivateLink.
+* `share_arn` - The share ARN of this PrivateLink.
+* `connections` - A list of connections associated with the PrivateLink.
+* `databases` - A list of databases associated with the PrivateLink.
 
 
 The `principals` object is a list, with these attributes:
@@ -40,13 +40,13 @@ The `principals` object is a list, with these attributes:
 * `principal_alias` - The friendly name to refer to the principal.
 
 The `connections` object is a list, with these attributes:
-* `association_id` - Association ID of the PrivateLink connection.
-* `connection_id` - Connection ID of the PrivateLink connection
+* `association_id` - The association ID of the PrivateLink connection.
+* `connection_id` - The connection ID of the PrivateLink connection.
 * `connection_type` - The PrivateLink connection type.
-* `owner_id` - Owner ID of the connection.
-* `association_date` - Date the connection was associated.
+* `owner_id` - The owner ID of the connection.
+* `association_date` - The date the connection was associated.
 
 The `databases`  object is a list, with these attributes:
-* `database_id` - ID of the database.
-* `port` - The port which the database is available on.
+* `database_id` - The database ID.
+* `port` - The port the database is available on.
 * `resource_link_endpoint` - The resource link endpoint for the database.
