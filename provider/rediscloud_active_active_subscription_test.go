@@ -4,12 +4,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"os"
 	"regexp"
 	"strconv"
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -40,7 +41,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscription, name, name),
+				Config: testAccResourceRedisCloudActiveActiveSubscription(t, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -175,11 +176,14 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.region", "us-east-2"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.networking_deployment_cidr", "10.0.1.0/24"),
 					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.1.vpc_id"),
+
+					// checks enabling default user is true
+					//resource.TestCheckResourceAttr(resourceName, "regions.1.enable_default_user", "true"),
 				),
 			},
 			{
 				// Checks if the changes in the creation plan are ignored.
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan, name, "AWS"),
+				Config: testAccResourceRedisCloudActiveActiveSubscriptionUpdate(t, name, "AWS"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
@@ -193,6 +197,9 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.0.read_operations_per_second", "1000"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.write_operations_per_second", "1000"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.read_operations_per_second", "1000"),
+
+					// also checks user has removed default user
+					//resource.TestCheckResourceAttr(resourceName, "regions.1.enable_default_user", "false"),
 
 					// maintenance windows spec is omitted so should default back to automatic
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
@@ -343,96 +350,6 @@ func testAccCheckActiveActiveSubscriptionDestroy(s *terraform.State) error {
 	return nil
 }
 
-// TF config for provisioning a new subscription.
-const testAccResourceRedisCloudActiveActiveSubscription = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-resource "rediscloud_active_active_subscription" "example" {
-  name = "%s"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  cloud_provider = "AWS"
-
-  creation_plan {
-    memory_limit_in_gb = 1
-    modules = ["RedisJSON"]
-    quantity = 1
-    region {
-      region = "us-east-1"
-      networking_deployment_cidr = "192.168.0.0/24"
-      write_operations_per_second = 1000
-      read_operations_per_second = 1000
-    }
-    region {
-      region = "us-east-2"
-      networking_deployment_cidr = "10.0.1.0/24"
-      write_operations_per_second = 1000
-      read_operations_per_second = 1000
-    }
-  }
-
-  maintenance_windows {
-    mode = "manual"
-    window {
-      start_hour = 22
-      duration_in_hours = 8
-      days = ["Monday", "Thursday"]
-    }
-    window {
-      start_hour = 12
-      duration_in_hours = 6
-      days = ["Friday", "Saturday", "Sunday"]
-    }
-  }
-}
-
-resource "rediscloud_active_active_subscription_database" "example" {
-  subscription_id = rediscloud_active_active_subscription.example.id
-  name = "%s"
-  dataset_size_in_gb = 1
-  global_data_persistence = "aof-every-1-second"
-  global_password = "some-random-pass-2"
-  global_source_ips = ["192.168.0.0/16"]
-  global_alert {
-    name = "dataset-size"
-    value = 40
-  }
-
-  global_modules = ["RedisJSON"]
-
-  override_region {
-    name = "us-east-2"
-    override_global_source_ips = ["192.10.0.0/16"]
-  }
-
-  override_region {
-    name = "us-east-1"
-    override_global_data_persistence = "none"
-    override_global_password = "region-specific-password"
-    override_global_alert {
-      name = "dataset-size"
-      value = 60
-    }
-  }
-
-  tags = {
-    "environment" = "production"
-    "cost_center" = "0700"
-  }
-}
-
-
-data "rediscloud_active_active_subscription" "example" {
-	name = rediscloud_active_active_subscription.example.name
-}
-
-data "rediscloud_active_active_subscription_regions" "example" {
-	subscription_name = rediscloud_active_active_subscription.example.name
-}
-`
-
 const testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan = `
   
 data "rediscloud_payment_method" "card" {
@@ -536,3 +453,23 @@ resource "rediscloud_active_active_subscription" "example" {
 	}
   }
 `
+
+func testAccResourceRedisCloudActiveActiveSubscription(t *testing.T, subscriptionName string) string {
+
+	content, err := os.ReadFile("./activeactive/testdata//testAccResourceRedisCloudActiveActiveSubscription.tf")
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+
+	return fmt.Sprintf(string(content), subscriptionName)
+}
+
+func testAccResourceRedisCloudActiveActiveSubscriptionUpdate(t *testing.T, subscriptionName string, cloudProvider string) string {
+
+	content, err := os.ReadFile("./activeactive/testdata/testAccResourceRedisCloudActiveActiveSubscriptionUpdate.tf")
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+
+	return fmt.Sprintf(string(content), subscriptionName, cloudProvider)
+}
