@@ -209,6 +209,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					"override_region.0.override_global_alert.0.value",
 					"override_region.0.override_global_data_persistence",
 					"override_region.0.override_global_password",
+					"override_region.0.enable_default_user",
 				},
 			},
 		},
