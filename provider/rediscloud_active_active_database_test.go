@@ -169,7 +169,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			},
 			// Test database is updated, including deletion of global and local alerts and replacing modules
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlerts, subscriptionName, databaseName),
+				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlertsDefaultUser, subscriptionName, databaseName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "true"),
@@ -209,6 +209,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					"override_region.0.override_global_alert.0.value",
 					"override_region.0.override_global_data_persistence",
 					"override_region.0.override_global_password",
+					"override_region.0.enable_default_user",
 				},
 			},
 		},
@@ -303,7 +304,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
     external_endpoint_for_oss_cluster_api = false
 	enable_tls = false
 	redis_version = "7.2"
-    
+
     global_data_persistence = "none"
     global_password = "%s" 
     global_source_ips = ["192.168.0.0/16", "192.170.0.0/16"]
@@ -378,14 +379,14 @@ data "rediscloud_active_active_subscription_database" "example" {
 }
 `
 
-const testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlerts = activeActiveSubscriptionBoilerplate + `
+const testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlertsDefaultUser = activeActiveSubscriptionBoilerplate + `
 resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
     dataset_size_in_gb = 1
     support_oss_cluster_api = true 
     external_endpoint_for_oss_cluster_api = true
-    
+
     global_data_persistence = "aof-every-1-second"
     global_password = "updated-password" 
     global_source_ips = ["192.170.0.0/16"]
