@@ -1,12 +1,12 @@
 ---
 layout: "rediscloud"
-page_title: "Redis Cloud: rediscloud_private_link"
+page_title: "Redis Cloud: rediscloud_active_active_private_link"
 description: |-
-  PrivateLink data source for Pro Subscription in the Redis Cloud Terraform provider.
+  PrivateLink data source for Active Active Subscription in the Redis Cloud Terraform provider.
 ---
 
 # Data Source: rediscloud_active_active_private_link
-The PrivateLink data source allows the user to retrieve information about an existing PrivateLink for an Active-Active Subscription region in the provider.
+Retrieves details of an existing PrivateLink for an Active-Active subscription region.
 
 ## Example Usage
 
