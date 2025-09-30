@@ -158,9 +158,9 @@ func flattenConnections(connections []*pl.PrivateLinkConnection) []map[string]in
 	for _, connection := range connections {
 		tf := map[string]interface{}{
 			"association_id":   redis.StringValue(connection.AssociationId),
-			"connection_id":    redis.IntValue(connection.ConnectionId),
+			"connection_id":    redis.StringValue(connection.ConnectionId),
 			"type":             redis.StringValue(connection.Type),
-			"owner_id":         redis.IntValue(connection.OwnerId),
+			"owner_id":         redis.StringValue(connection.OwnerId),
 			"association_date": redis.StringValue(connection.AssociationDate),
 		}
 		tfs = append(tfs, tf)
