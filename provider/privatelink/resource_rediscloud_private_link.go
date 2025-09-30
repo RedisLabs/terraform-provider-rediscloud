@@ -337,7 +337,7 @@ func resourceRedisCloudPrivateLinkDelete(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	return resourceRedisCloudPrivateLinkDelete(ctx, d, meta)
+	return diags
 }
 
 func createOtherPrincipals(ctx context.Context, api *client.ApiClient, subId int, otherPrincipals []pl.PrivateLinkPrincipal) error {

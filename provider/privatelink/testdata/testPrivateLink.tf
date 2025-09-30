@@ -64,7 +64,16 @@
 # data "rediscloud_private_link_endpoint_script" "endpoint_script" {
 #   subscription_id = rediscloud_private_link.private_link.subscription_id
 # }
+#
+# output "endpoint_script" {
+#   value = data.rediscloud_private_link_endpoint_script.endpoint_script
+# }
 
-data "rediscloud_private_link" "pro_private_link" {
-  subscription_id = "122401"
+
+data "rediscloud_private_link_endpoint_script" "endpoint_script" {
+  subscription_id = 122536
+}
+
+output "endpoint_script" {
+  value = data.rediscloud_private_link_endpoint_script.endpoint_script
 }
