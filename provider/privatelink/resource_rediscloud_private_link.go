@@ -59,7 +59,7 @@ func ResourceRedisCloudPrivateLink() *schema.Resource {
 						},
 						"principal_type": {
 							Type:             schema.TypeString,
-							ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(aws_account|organization|organization_unit|iam_role|iam_user|service_principal)$"), "must be 'credit-card' or 'marketplace'")),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(aws_account|organization|organization_unit|iam_role|iam_user|service_principal)$"), "must be one of 'aws_account', 'organization', 'organization_unit', 'iam_role', 'iam_user', 'service_principal'")),
 							Required:         true,
 						},
 						"principal_alias": {
@@ -220,6 +220,11 @@ func resourceRedisCloudPrivateLinkRead(ctx context.Context, d *schema.ResourceDa
 
 	d.SetId(strconv.Itoa(subId))
 
+	err = d.Set("subscription_id", strconv.Itoa(subId))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	err = d.Set("share_name", privateLink.ShareName)
 	if err != nil {
 		return diag.FromErr(err)
@@ -282,7 +287,7 @@ func resourceRedisCloudPrivateLinkUpdate(ctx context.Context, d *schema.Resource
 		}
 
 		apiPrincipals := privateLink.Principals
-		tfPrincipals := principalsFromSet(d.Get("principals").(*schema.Set))
+		tfPrincipals := principalsFromSet(d.Get("principal").(*schema.Set))
 
 		principalsToCreate := findPrincipalsToCreate(apiPrincipals, tfPrincipals)
 		err = createPrincipals(ctx, api, subId, principalsToCreate)
