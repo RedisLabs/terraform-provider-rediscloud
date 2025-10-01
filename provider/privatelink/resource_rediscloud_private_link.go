@@ -202,7 +202,10 @@ func resourceRedisCloudPrivateLinkRead(ctx context.Context, d *schema.ResourceDa
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
-	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
+	subId, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	privateLink, err := api.Client.PrivateLink.GetPrivateLink(ctx, subId)
 
@@ -256,7 +259,7 @@ func resourceRedisCloudPrivateLinkUpdate(ctx context.Context, d *schema.Resource
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
-	if d.HasChange("principals") {
+	if d.HasChange("principal") {
 
 		subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 
