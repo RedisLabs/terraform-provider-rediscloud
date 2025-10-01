@@ -2,8 +2,6 @@ locals {
   rediscloud_subscription_name = "%s"
   rediscloud_cloud_account = "%s"
   rediscloud_private_link_share_name = "%s"
-  rediscloud_principal_1 = "%s"
-  rediscloud_principal_2 = "%s"
 }
 
 data "rediscloud_payment_method" "card" {
@@ -45,15 +43,15 @@ resource "rediscloud_private_link" "pro_private_link" {
   share_name = local.rediscloud_private_link_share_name
 
   principal {
-    principal = local.rediscloud_principal_1
+    principal = "123456789012"
     principal_type = "aws_account"
-    principal_alias = "terraform test aws account"
+    principal_alias = "principal 1"
   }
 
   principal {
-    principal = local.rediscloud_principal_2
+    principal = "234567890123"
     principal_type = "aws_account"
-    principal_alias = "terraform test aws account 2"
+    principal_alias = "principal 2"
   }
 }
 
