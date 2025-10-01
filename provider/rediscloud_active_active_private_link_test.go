@@ -17,13 +17,10 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 
 	password := acctest.RandString(20)
 
-	principal1 := "123456789012"
-	principal2 := "234567890123"
-
 	const resourceName = "rediscloud_private_link.private_link"
 	const datasourceName = "data.rediscloud_private_link.private_link"
 	shareName := acctest.RandomWithPrefix(testResourcePrefix) + "privatelink-active-active_test-share"
-	terraformConfig := getRedisActiveActivePrivateLinkConfig(t, testActiveActivePrivateLinkConfigFile, shareName, password, principal1, principal2)
+	terraformConfig := getRedisActiveActivePrivateLinkConfig(t, testActiveActivePrivateLinkConfigFile, shareName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -35,23 +32,25 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "subscription_id"),
-					resource.TestCheckResourceAttr(resourceName, "share_name", shareName),
-					resource.TestCheckResourceAttrSet(resourceName, "principal"),
+					resource.TestCheckResourceAttrSet(resourceName, "share_name"),
+					resource.TestCheckResourceAttrSet(resourceName, "region_id"),
+					resource.TestCheckResourceAttr(resourceName, "principal.#", "2"),
 					resource.TestCheckResourceAttrSet(resourceName, "resource_configuration_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "resource_configuration_arn"),
 					resource.TestCheckResourceAttrSet(resourceName, "share_arn"),
-					resource.TestCheckResourceAttrSet(resourceName, "connections"),
-					resource.TestCheckResourceAttrSet(resourceName, "databases"),
+					resource.TestCheckResourceAttr(resourceName, "connections.#", "0"),
+					resource.TestCheckResourceAttr(resourceName, "databases.#", "1"),
 
 					resource.TestCheckResourceAttrSet(datasourceName, "id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
-					resource.TestCheckResourceAttr(datasourceName, "share_name", shareName),
-					resource.TestCheckResourceAttrSet(datasourceName, "principal"),
+					resource.TestCheckResourceAttrSet(datasourceName, "region_id"),
+					resource.TestCheckResourceAttr(datasourceName, "principals.#", "2"),
+
 					resource.TestCheckResourceAttrSet(datasourceName, "resource_configuration_id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "resource_configuration_arn"),
 					resource.TestCheckResourceAttrSet(datasourceName, "share_arn"),
-					resource.TestCheckResourceAttrSet(datasourceName, "connections"),
-					resource.TestCheckResourceAttrSet(datasourceName, "databases"),
+					resource.TestCheckResourceAttr(datasourceName, "connections.#", "0"),
+					resource.TestCheckResourceAttr(datasourceName, "databases.#", "1"),
 				),
 			},
 			{
@@ -63,7 +62,7 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 	})
 }
 
-func getRedisActiveActivePrivateLinkConfig(t *testing.T, testFile, shareName, password, principal1, principal2 string) string {
+func getRedisActiveActivePrivateLinkConfig(t *testing.T, testFile, shareName, password string) string {
 	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-aa-private-link"
 	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -72,5 +71,5 @@ func getRedisActiveActivePrivateLinkConfig(t *testing.T, testFile, shareName, pa
 		t.Fatalf("failed to read file: %v", err)
 	}
 
-	return fmt.Sprintf(string(content), subName, exampleCloudAccountName, shareName, password, principal1, principal2)
+	return fmt.Sprintf(string(content), subName, exampleCloudAccountName, shareName, password)
 }
