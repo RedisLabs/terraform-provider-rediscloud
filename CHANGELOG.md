@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.4.3 (1st October 2025)
+
+## Added:
+- PrivateLink pro subscription tests
+
+## Changed:
+- Fixed recursive delete loop on PrivateLink deletes
+- Fixed import ID mismatches and subscription IDs to be more idiomatic
+- Updated API SDK to fix some API schema issues for PrivateLink
+- Fixed schema mismatches that could cause issues
+- Fixed description on some of the PrivateLink schema that was incorrect
+
 # 2.4.2 (29th September 2025)
 
 ### Added
