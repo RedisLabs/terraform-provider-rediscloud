@@ -5,6 +5,7 @@ import (
 	"errors"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -65,7 +66,7 @@ func ResourceRedisCloudActiveActivePrivateLink() *schema.Resource {
 						},
 						"principal_type": {
 							Type:             schema.TypeString,
-							ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(aws_account|organization|organization_unit|iam_role|iam_user|service_principal)$"), "Must be an allowed Principal Type. ('aws_account', 'organization', 'organization_unit', 'iam_role', 'iam_user')'")),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(aws_account|organization|organization_unit|iam_role|iam_user|service_principal)$"), "Must be an allowed Principal Type. ('aws_account', 'organization', 'organization_unit', 'iam_role', 'iam_user', 'service_principal')'")),
 							Required:         true,
 						},
 						"principal_alias": {
@@ -180,8 +181,6 @@ func resourceRedisCloudActiveActivePrivateLinkCreate(ctx context.Context, d *sch
 		return diag.FromErr(err)
 	}
 
-	d.SetId(strconv.Itoa(subId))
-
 	err = waitForActiveActivePrivateLinkToBeActive(ctx, api, subId, regionId)
 
 	if err != nil {
@@ -212,13 +211,30 @@ func resourceRedisCloudActiveActivePrivateLinkRead(ctx context.Context, d *schem
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
-	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
+	parts := strings.Split(d.Id(), "/")
+	if len(parts) != 2 {
+		return diag.Errorf("unexpected format of ID (%q), expected <subscription_id>/<region_id>", d.Id())
+	}
+
+	subId, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	regionId, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	err = d.Set("subscription_id", strconv.Itoa(subId))
 
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	regionId := d.Get("region_id").(int)
+	err = d.Set("region_id", regionId)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	privateLinkId := makeActiveActivePrivateLinkId(subId, regionId)
 	d.SetId(privateLinkId)
@@ -232,8 +248,6 @@ func resourceRedisCloudActiveActivePrivateLinkRead(ctx context.Context, d *schem
 		}
 		return diag.FromErr(err)
 	}
-
-	d.SetId(strconv.Itoa(subId))
 
 	err = d.Set("share_name", privateLink.ShareName)
 	if err != nil {

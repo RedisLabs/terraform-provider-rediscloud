@@ -59,7 +59,7 @@ func ResourceRedisCloudPrivateLink() *schema.Resource {
 						},
 						"principal_type": {
 							Type:             schema.TypeString,
-							ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(aws_account|organization|organization_unit|iam_role|iam_user|service_principal)$"), "must be 'credit-card' or 'marketplace'")),
+							ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(aws_account|organization|organization_unit|iam_role|iam_user|service_principal)$"), "must be one of 'aws_account', 'organization', 'organization_unit', 'iam_role', 'iam_user', 'service_principal'")),
 							Required:         true,
 						},
 						"principal_alias": {
@@ -202,7 +202,10 @@ func resourceRedisCloudPrivateLinkRead(ctx context.Context, d *schema.ResourceDa
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
-	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
+	subId, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	privateLink, err := api.Client.PrivateLink.GetPrivateLink(ctx, subId)
 
@@ -216,6 +219,11 @@ func resourceRedisCloudPrivateLinkRead(ctx context.Context, d *schema.ResourceDa
 	}
 
 	d.SetId(strconv.Itoa(subId))
+
+	err = d.Set("subscription_id", strconv.Itoa(subId))
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	err = d.Set("share_name", privateLink.ShareName)
 	if err != nil {
@@ -256,7 +264,7 @@ func resourceRedisCloudPrivateLinkUpdate(ctx context.Context, d *schema.Resource
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
-	if d.HasChange("principals") {
+	if d.HasChange("principal") {
 
 		subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 
@@ -279,7 +287,7 @@ func resourceRedisCloudPrivateLinkUpdate(ctx context.Context, d *schema.Resource
 		}
 
 		apiPrincipals := privateLink.Principals
-		tfPrincipals := principalsFromSet(d.Get("principals").(*schema.Set))
+		tfPrincipals := principalsFromSet(d.Get("principal").(*schema.Set))
 
 		principalsToCreate := findPrincipalsToCreate(apiPrincipals, tfPrincipals)
 		err = createPrincipals(ctx, api, subId, principalsToCreate)
@@ -337,7 +345,7 @@ func resourceRedisCloudPrivateLinkDelete(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	return resourceRedisCloudPrivateLinkDelete(ctx, d, meta)
+	return diags
 }
 
 func createOtherPrincipals(ctx context.Context, api *client.ApiClient, subId int, otherPrincipals []pl.PrivateLinkPrincipal) error {
