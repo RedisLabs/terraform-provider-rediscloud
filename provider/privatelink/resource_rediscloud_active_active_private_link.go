@@ -5,6 +5,7 @@ import (
 	"errors"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -212,13 +213,31 @@ func resourceRedisCloudActiveActivePrivateLinkRead(ctx context.Context, d *schem
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
-	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
+	parts := strings.Split(d.Id(), "/")
+	if len(parts) != 2 {
+		return diag.Errorf("unexpected format of ID (%q), expected <subscription_id>/<region_id>", d.Id())
+	}
+
+	subId, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	regionId, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = d.Set("subscription_id", subId)
 
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	regionId := d.Get("region_id").(int)
+	err = d.Set("region_id", regionId)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	privateLinkId := makeActiveActivePrivateLinkId(subId, regionId)
 	d.SetId(privateLinkId)
