@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"os"
 	"testing"
 
@@ -11,7 +12,7 @@ import (
 
 func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const dataSourceById = "data.rediscloud_database.example-by-id"
 	const dataSourceByName = "data.rediscloud_database.example-by-name"

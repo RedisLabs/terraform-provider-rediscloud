@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"os"
 	"testing"
 
@@ -13,8 +14,8 @@ const testPrivateLinkConfigFile = "./privatelink/testdata/testPrivateLink.tf"
 
 func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
-	testAccRequiresEnvVar(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	const resourceName = "rediscloud_private_link.pro_private_link"
 	const datasourceName = "data.rediscloud_private_link.pro_private_link"
@@ -70,6 +71,6 @@ func getRedisPrivateLinkConfig(t *testing.T, shareName string) string {
 	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-private-link"
 	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
-	content := getTestConfig(t, testPrivateLinkConfigFile)
+	content := utils.GetTestConfig(t, testPrivateLinkConfigFile)
 	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName)
 }

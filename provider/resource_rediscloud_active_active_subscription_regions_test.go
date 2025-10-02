@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"strconv"
 	"testing"
 
@@ -15,7 +16,7 @@ import (
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUB_ACTIVE_ACTIVE")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUB_ACTIVE_ACTIVE")
 
 	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-regions-test"
 	dbName := acctest.RandomWithPrefix(testResourcePrefix) + "-regions" + "-db"

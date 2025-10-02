@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -8,7 +9,7 @@ import (
 
 func TestAccDataSourceRedisCloudDataPersistence_basic(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const dataPersistenceFoo = "data.rediscloud_data_persistence.foo"
 	resource.ParallelTest(t, resource.TestCase{

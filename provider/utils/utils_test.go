@@ -1,8 +1,7 @@
-package provider
+package utils
 
 import (
 	"github.com/stretchr/testify/assert"
-	"os"
 	"testing"
 )
 
@@ -22,25 +21,8 @@ func TestIsTime(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.input, func(t *testing.T) {
-			actual := isTime()(test.input, nil)
+			actual := IsTime()(test.input, nil)
 			assert.Equal(t, test.errors, actual.HasError(), "%+v", actual)
 		})
 	}
-}
-
-func testAccRequiresEnvVar(t *testing.T, envVarName string) string {
-	envVarValue := os.Getenv(envVarName)
-	if envVarValue == "" || envVarValue == "false" {
-		t.Skipf("Skipping test because %s is not set.", envVarName)
-	}
-	return envVarValue
-}
-
-func getTestConfig(t *testing.T, testFile string) string {
-	content, err := os.ReadFile(testFile)
-	if err != nil {
-		t.Fatalf("failed to read file: %v", err)
-	}
-
-	return string(content)
 }

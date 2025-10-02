@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"os"
@@ -12,8 +13,8 @@ import (
 // to give the CMK the necessary permissions.
 func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
-	testAccRequiresEnvVar(t, "GCP_CMK_RESOURCE_NAME")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "GCP_CMK_RESOURCE_NAME")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_active_active_subscription.example"

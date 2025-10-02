@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"net"
 	"os"
 	"regexp"
@@ -13,7 +14,7 @@ import (
 
 func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 
@@ -77,7 +78,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 
 func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 
