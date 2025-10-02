@@ -5,6 +5,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"strconv"
@@ -274,7 +275,7 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 	if err := d.Set("number_of_databases", redis.IntValue(sub.NumberOfDatabases)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("cloud_provider", flattenCloudDetails(sub.CloudDetails, false)); err != nil {
+	if err := d.Set("cloud_provider", pro.FlattenCloudDetails(sub.CloudDetails, false)); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("status", redis.StringValue(sub.Status)); err != nil {
@@ -287,7 +288,7 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("maintenance_windows", flattenMaintenance(m)); err != nil {
+	if err := d.Set("maintenance_windows", pro.FlattenMaintenance(m)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -295,7 +296,7 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
+	if err := d.Set("pricing", pro.FlattenPricing(pricingList)); err != nil {
 		return diag.FromErr(err)
 	}
 

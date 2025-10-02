@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"os"
 	"testing"
 
@@ -13,7 +14,7 @@ const testFileName = "./pro/testdata/testAccResourceRedisCloudProDatabaseUpgrade
 
 func TestAccResourceRedisCloudProDatabase_Upgrade(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const resourceName = "rediscloud_subscription_database.example"
 

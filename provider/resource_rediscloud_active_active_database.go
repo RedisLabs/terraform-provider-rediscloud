@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"regexp"
@@ -27,7 +28,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-				subId, dbId, err := toDatabaseId(d.Id())
+				subId, dbId, err := pro.ToDatabaseId(d.Id())
 				if err != nil {
 					return nil, err
 				}
@@ -37,7 +38,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				if err := d.Set("db_id", dbId); err != nil {
 					return nil, err
 				}
-				d.SetId(buildResourceId(subId, dbId))
+				d.SetId(utils.BuildResourceId(subId, dbId))
 				return []*schema.ResourceData{d}, nil
 			},
 		},
@@ -58,7 +59,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 			}
 
 			for _, key := range keys {
-				if err := remoteBackupIntervalSetCorrectly(key)(ctx, diff, i); err != nil {
+				if err := pro.RemoteBackupIntervalSetCorrectly(key)(ctx, diff, i); err != nil {
 					return err
 				}
 			}
@@ -275,7 +276,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 										Description:      "Defines the hour automatic backups are made - only applicable when interval is `every-12-hours` or `every-24-hours`",
 										Type:             schema.TypeString,
 										Optional:         true,
-										ValidateDiagFunc: isTime(),
+										ValidateDiagFunc: utils.IsTime(),
 									},
 									"storage_type": {
 										Description:      "Defines the provider of the storage location",
@@ -339,7 +340,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 					Type: schema.TypeString,
 				},
 				Optional:         true,
-				ValidateDiagFunc: validateTagsfunc,
+				ValidateDiagFunc: pro.ValidateTagsfunc,
 			},
 		},
 	}
@@ -354,7 +355,7 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 	name := d.Get("name").(string)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
 	useExternalEndpointForOSSClusterAPI := d.Get("external_endpoint_for_oss_cluster_api").(bool)
-	globalSourceIp := setToStringSlice(d.Get("global_source_ips").(*schema.Set))
+	globalSourceIp := utils.SetToStringSlice(d.Get("global_source_ips").(*schema.Set))
 
 	createAlerts := make([]*databases.Alert, 0)
 	alerts := d.Get("global_alert").(*schema.Set)
@@ -373,7 +374,7 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 	}
 
 	createModules := make([]*databases.Module, 0)
-	planModules := interfaceToStringSlice(d.Get("global_modules").([]interface{}))
+	planModules := utils.InterfaceToStringSlice(d.Get("global_modules").([]interface{}))
 	for _, module := range planModules {
 		createModule := &databases.Module{
 			Name: module,
@@ -455,7 +456,7 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	}
 
-	d.SetId(buildResourceId(subId, dbId))
+	d.SetId(utils.BuildResourceId(subId, dbId))
 
 	// Confirm Database Active status
 	err = utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api)
@@ -480,7 +481,7 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 
 	var diags diag.Diagnostics
 
-	subId, dbId, err := toDatabaseId(d.Id())
+	subId, dbId, err := pro.ToDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -581,10 +582,10 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 
 		stateOverrideAlerts := getStateAlertsFromDbRegion(getStateOverrideRegion(d, region))
 		if len(stateOverrideAlerts) > 0 {
-			regionDbConfig["override_global_alert"] = flattenAlerts(regionDb.Alerts)
+			regionDbConfig["override_global_alert"] = pro.FlattenAlerts(regionDb.Alerts)
 		}
 
-		regionDbConfig["remote_backup"] = flattenBackupPlan(regionDb.Backup, getStateRemoteBackup(d, region), "")
+		regionDbConfig["remote_backup"] = pro.FlattenBackupPlan(regionDb.Backup, getStateRemoteBackup(d, region), "")
 
 		regionDbConfig["enable_default_user"] = redis.BoolValue(regionDb.Security.EnableDefaultUser)
 
@@ -613,11 +614,11 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	}
 
 	tlsAuthEnabled := *db.CrdbDatabases[0].Security.TLSClientAuthentication
-	if err := applyCertificateHints(tlsAuthEnabled, d); err != nil {
+	if err := utils.ApplyCertificateHints(tlsAuthEnabled, d); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := readTags(ctx, api, subId, dbId, d); err != nil {
+	if err := pro.ReadTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -631,7 +632,7 @@ func resourceRedisCloudActiveActiveDatabaseDelete(ctx context.Context, d *schema
 	var diags diag.Diagnostics
 	subId := d.Get("subscription_id").(int)
 
-	_, dbId, err := toDatabaseId(d.Id())
+	_, dbId, err := pro.ToDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -658,7 +659,7 @@ func resourceRedisCloudActiveActiveDatabaseDelete(ctx context.Context, d *schema
 func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
 
-	_, dbId, err := toDatabaseId(d.Id())
+	_, dbId, err := pro.ToDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -680,7 +681,7 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		})
 	}
 
-	globalSourceIps := setToStringSlice(d.Get("global_source_ips").(*schema.Set))
+	globalSourceIps := utils.SetToStringSlice(d.Get("global_source_ips").(*schema.Set))
 
 	// Make a list of region-specific configurations
 	var regions []*databases.LocalRegionProperties
@@ -726,7 +727,7 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 			}
 		}
 
-		regionProps.RemoteBackup = buildBackupPlan(dbRegion["remote_backup"], nil)
+		regionProps.RemoteBackup = pro.BuildBackupPlan(dbRegion["remote_backup"], nil)
 
 		regions = append(regions, regionProps)
 	}
@@ -765,7 +766,7 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 	//The cert validation is done by the API (HTTP 400 is returned if it's invalid).
 	clientSSLCertificate := d.Get("client_ssl_certificate").(string)
-	clientTLSCertificates := interfaceToStringSlice(d.Get("client_tls_certificates").([]interface{}))
+	clientTLSCertificates := utils.InterfaceToStringSlice(d.Get("client_tls_certificates").([]interface{}))
 	enableTLS := d.Get("enable_tls").(bool)
 	if enableTLS {
 		update.EnableTls = redis.Bool(enableTLS)
@@ -804,7 +805,7 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 	}
 
 	// The Tags API is synchronous so we shouldn't have to wait for anything
-	if err := writeTags(ctx, api, subId, dbId, d); err != nil {
+	if err := pro.WriteTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
 

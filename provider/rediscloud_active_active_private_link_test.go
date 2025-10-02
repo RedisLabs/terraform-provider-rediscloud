@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"os"
 	"testing"
 
@@ -13,7 +14,7 @@ const testActiveActivePrivateLinkConfigFile = "./privatelink/testdata/testActive
 
 func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	password := acctest.RandString(20)
 

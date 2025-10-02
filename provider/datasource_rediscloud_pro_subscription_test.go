@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"os"
 	"regexp"
 	"testing"
@@ -12,7 +13,7 @@ import (
 
 func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix("tf-test")
 
@@ -61,7 +62,7 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 
 func TestAccDataSourceRedisCloudProSubscription_ignoresAA(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
