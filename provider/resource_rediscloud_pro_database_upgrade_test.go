@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"os"
 	"testing"
 
@@ -13,7 +14,7 @@ const testFileName = "./pro/testdata/testAccResourceRedisCloudProDatabaseUpgrade
 
 func TestAccResourceRedisCloudProDatabase_Upgrade(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const resourceName = "rediscloud_subscription_database.example"
 
@@ -48,10 +49,6 @@ func getRedisCloudUpgradeConfig(t *testing.T, testFileName string, redisVersion 
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 
-	content, err := os.ReadFile(testFileName)
-	if err != nil {
-		t.Fatalf("failed to read file: %v", err)
-	}
-
-	return fmt.Sprintf(string(content), testCloudAccountName, name, redisVersion)
+	content := utils.GetTestConfig(t, testFileName)
+	return fmt.Sprintf(content, testCloudAccountName, name, redisVersion)
 }

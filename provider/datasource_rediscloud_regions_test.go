@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -8,7 +9,7 @@ import (
 
 func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -44,7 +45,7 @@ func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
 
 func TestAccDataSourceRedisCloudRegions_AWS(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -71,7 +72,7 @@ func TestAccDataSourceRedisCloudRegions_AWS(t *testing.T) {
 
 func TestAccDataSourceRedisCloudRegions_GCP(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },

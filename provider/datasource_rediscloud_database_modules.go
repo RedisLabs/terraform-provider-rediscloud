@@ -10,7 +10,7 @@ import (
 
 func dataSourceRedisCloudDatabaseModules() *schema.Resource {
 	return &schema.Resource{
-		Description: "The Database data source allows access to the details of an existing database within your Redis Enterprise Cloud account.",
+		Description: "The Database modules data source allows access to the details of existing database modules within your Redis Enterprise Cloud account.",
 		ReadContext: dataSourceRedisCloudDatabaseModulesRead,
 
 		Schema: map[string]*schema.Schema{

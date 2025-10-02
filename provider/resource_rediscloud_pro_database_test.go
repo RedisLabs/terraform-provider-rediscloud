@@ -3,13 +3,14 @@ package provider
 import (
 	"context"
 	"fmt"
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"os"
 	"regexp"
 	"strconv"
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -18,7 +19,7 @@ import (
 // Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the database resource.
 func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
@@ -162,7 +163,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	name := acctest.RandomWithPrefix(testResourcePrefix)
@@ -188,7 +189,7 @@ func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 
 func TestAccResourceRedisCloudProDatabase_timeUtcRequiresValidInterval(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -209,7 +210,7 @@ func TestAccResourceRedisCloudProDatabase_timeUtcRequiresValidInterval(t *testin
 // Tests the multi-modules feature in a database resource.
 func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	dbName := "db-multi-modules"
@@ -241,7 +242,7 @@ func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 
 func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	name := acctest.RandomWithPrefix(testResourcePrefix)
@@ -275,46 +276,44 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 }
 
 const proSubscriptionBoilerplate = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
+locals {
+  rediscloud_subscription_name = "%s"
 }
 
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS" 
-  name = "%s"
-}
 
-resource "rediscloud_subscription" "example" {
+resource "rediscloud_subscription_database" "example" {
+  subscription_id                       = rediscloud_subscription.example.id
+  name                                  = local.rediscloud_subscription_name
+  protocol                              = "redis"
+  dataset_size_in_gb                    = 3
+  data_persistence                      = "none"
+  data_eviction                         = "allkeys-random"
+  throughput_measurement_by             = "operations-per-second"
+  throughput_measurement_value          = 1000
+  password                              = "%s"
+  support_oss_cluster_api               = false
+  external_endpoint_for_oss_cluster_api = false
+  replication                           = false
+  average_item_size_in_bytes            = 0
+  client_ssl_certificate                = ""
+  periodic_backup_path                  = ""
+  enable_default_user                   = true
+  redis_version                         = 8.0
 
-  name = "%s"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-
-  allowlist {
-    cidrs = ["192.168.0.0/16"]
-    security_group_ids = []
+  alert {
+    name  = "dataset-size"
+    value = 1
   }
 
-  cloud_provider {
-    provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region = "eu-west-1"
-      networking_deployment_cidr = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
+  modules = [
+    {
+      name = "RedisBloom"
     }
-  }
+  ]
 
-  creation_plan {
-    dataset_size_in_gb = 1
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 1000
-    quantity = 1
-    replication=false
-    support_oss_cluster_api=false
-    modules = []
+  tags = {
+    "market"   = "emea"
+    "material" = "cardboard"
   }
 }
 `

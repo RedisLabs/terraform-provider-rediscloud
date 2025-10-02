@@ -5,6 +5,8 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	fixedDatabases "github.com/RedisLabs/rediscloud-go-api/service/fixed/databases"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -408,7 +410,7 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 
 	databaseId := redis.IntValue(db.DatabaseId)
 
-	d.SetId(buildResourceId(subId, databaseId))
+	d.SetId(utils.BuildResourceId(subId, databaseId))
 
 	if err := d.Set("db_id", redis.IntValue(db.DatabaseId)); err != nil {
 		return diag.FromErr(err)
@@ -483,10 +485,10 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 	if err := d.Set("enable_default_user", redis.Bool(*db.Security.EnableDefaultUser)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("alert", flattenAlerts(*db.Alerts)); err != nil {
+	if err := d.Set("alert", pro.FlattenAlerts(*db.Alerts)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("modules", flattenModules(*db.Modules)); err != nil {
+	if err := d.Set("modules", pro.FlattenModules(*db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -495,7 +497,7 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 	if err != nil {
 		// Forgive errors here, sometimes we just can't get a latest status
 	} else {
-		parsedLatestBackupStatus, err = parseLatestBackupStatus(latestBackupStatus)
+		parsedLatestBackupStatus, err = utils.ParseLatestBackupStatus(latestBackupStatus)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -509,7 +511,7 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 	if err != nil {
 		// Forgive errors here, sometimes we just can't get a latest status
 	} else {
-		parsedLatestImportStatus, err = parseLatestImportStatus(latestImportStatus)
+		parsedLatestImportStatus, err = utils.ParseLatestImportStatus(latestImportStatus)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -540,7 +542,7 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 		if err := d.Set("enable_database_clustering", redis.BoolValue(db.Clustering.Enabled)); err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("regex_rules", flattenRegexRules(db.Clustering.RegexRules)); err != nil {
+		if err := d.Set("regex_rules", pro.FlattenRegexRules(db.Clustering.RegexRules)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
