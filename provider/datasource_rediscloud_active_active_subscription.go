@@ -168,7 +168,7 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 		})
 	}
 
-	subs = filterSubscriptions(subs, filters)
+	subs = pro.FilterSubscriptions(subs, filters)
 
 	if len(subs) == 0 {
 		return diag.Errorf("Your query returned no results. Please change your search criteria and try again.")

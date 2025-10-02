@@ -30,7 +30,7 @@ var marketplaceFlag = flag.Bool("marketplace", false,
 // Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the subscription resource.
 func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_subscription.example"
@@ -139,7 +139,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_subscription.example"
@@ -163,7 +163,7 @@ func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *tes
 
 func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*contractFlag {
 		t.Skip("The '-contract' parameter wasn't provided in the test command.")
@@ -202,7 +202,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 
 func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*marketplaceFlag {
 		t.Skip("The '-marketplace' parameter wasn't provided in the test command.")
@@ -239,7 +239,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 
 func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -287,7 +287,7 @@ func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 
 func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-mw"
 	resourceName := "rediscloud_subscription.example"
@@ -441,7 +441,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 // Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is one.
 func TestFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	numDatabases := 1
 	planMap := map[string]interface{}{
@@ -479,7 +479,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 // Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is greater than one.
 func TestFlexSubModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	numDatabases := 5
 	planMap := map[string]interface{}{
@@ -516,7 +516,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 // Checks that modules are allocated correctly into each creation-plan db if the only module is "RedisGraph".
 func TestFlexSubModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	numDatabases := 5
 	planMap := map[string]interface{}{
@@ -541,7 +541,7 @@ func TestFlexSubModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 // Checks that modules are allocated correctly into the creation-plan dbs if "RedisGraph" is not included
 func TestFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	numDatabases := 5
 	planMap := map[string]interface{}{
@@ -569,7 +569,7 @@ func TestFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
 
 func TestFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -592,7 +592,7 @@ func TestFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
 
 func TestFlexSubNoAverageItemSizeInBytes(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0, // 0 is the value that is returned when the field is not present
@@ -614,7 +614,7 @@ func TestFlexSubNoAverageItemSizeInBytes(t *testing.T) {
 
 func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -635,7 +635,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing
 
 func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -656,7 +656,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.
 
 func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -677,7 +677,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing
 
 func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,

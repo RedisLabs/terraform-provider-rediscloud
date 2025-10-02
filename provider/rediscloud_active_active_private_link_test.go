@@ -14,7 +14,7 @@ const testActiveActivePrivateLinkConfigFile = "./privatelink/testdata/testActive
 
 func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	password := acctest.RandString(20)
 

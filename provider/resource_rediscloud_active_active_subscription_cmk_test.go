@@ -13,8 +13,8 @@ import (
 // to give the CMK the necessary permissions.
 func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
-	utils.TestAccRequiresEnvVar(t, "GCP_CMK_RESOURCE_NAME")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "GCP_CMK_RESOURCE_NAME")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_active_active_subscription.example"

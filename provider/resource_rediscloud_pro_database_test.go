@@ -19,7 +19,7 @@ import (
 // Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the database resource.
 func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	password := acctest.RandString(20)
@@ -163,7 +163,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	name := acctest.RandomWithPrefix(testResourcePrefix)
@@ -189,7 +189,7 @@ func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 
 func TestAccResourceRedisCloudProDatabase_timeUtcRequiresValidInterval(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -210,7 +210,7 @@ func TestAccResourceRedisCloudProDatabase_timeUtcRequiresValidInterval(t *testin
 // Tests the multi-modules feature in a database resource.
 func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	dbName := "db-multi-modules"
@@ -242,7 +242,7 @@ func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 
 func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	name := acctest.RandomWithPrefix(testResourcePrefix)

@@ -12,7 +12,7 @@ import (
 
 func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	databaseName := subscriptionName + "-db"
@@ -269,7 +269,7 @@ data "rediscloud_essentials_database" "example" {
 
 // there was a bug where removing the default user would cause issues with passwords
 func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T) {
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	databaseName := subscriptionName + "-db"

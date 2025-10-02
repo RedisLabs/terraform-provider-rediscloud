@@ -14,8 +14,8 @@ import (
 // TODO: integrate the GCP provider and set up these permissions automatically
 func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
-	utils.TestAccRequiresEnvVar(t, "GCP_CMK_RESOURCE_NAME")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "GCP_CMK_RESOURCE_NAME")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_subscription.example"

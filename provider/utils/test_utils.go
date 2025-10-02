@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestAccRequiresEnvVar(t *testing.T, envVarName string) string {
+func AccRequiresEnvVar(t *testing.T, envVarName string) string {
 	envVarValue := os.Getenv(envVarName)
 	if envVarValue == "" || envVarValue == "false" {
 		t.Skipf("Skipping test because %s is not set.", envVarName)

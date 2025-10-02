@@ -20,7 +20,7 @@ var essentialsMarketplaceFlag = flag.Bool("essentialsMarketplace", false,
 
 func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
@@ -85,7 +85,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
@@ -151,7 +151,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 
 func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
@@ -218,7 +218,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *testing.T) {
 	// Only the qa environment has access to the marketplace, so this test will normally fail.
 	// Leaving this in the test suite for manual runs
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*essentialsMarketplaceFlag {
 		t.Skip("The '-essentialsMarketplace' parameter wasn't provided in the test command.")
@@ -288,7 +288,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 }
 
 func TestAccResourceRedisCloudEssentialsSubscription_Incorrect_PaymentIdForType(t *testing.T) {
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 

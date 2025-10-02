@@ -13,7 +13,7 @@ import (
 
 func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 

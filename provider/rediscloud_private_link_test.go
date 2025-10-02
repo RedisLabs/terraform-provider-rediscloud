@@ -14,8 +14,8 @@ const testPrivateLinkConfigFile = "./privatelink/testdata/testPrivateLink.tf"
 
 func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
-	utils.TestAccRequiresEnvVar(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	const resourceName = "rediscloud_private_link.pro_private_link"
 	const datasourceName = "data.rediscloud_private_link.pro_private_link"

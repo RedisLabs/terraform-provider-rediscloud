@@ -17,7 +17,7 @@ import (
 
 func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if testing.Short() {
 		t.Skip("Required environment variables currently not available under CI")

@@ -12,7 +12,7 @@ import (
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TEST_PEERING")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_PEERING")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 
@@ -74,7 +74,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_gcp(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TEST_PEERING")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_PEERING")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 

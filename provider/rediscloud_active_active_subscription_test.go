@@ -27,7 +27,7 @@ var activeActiveMarketplaceFlag = flag.Bool("activeActiveMarketplace", false,
 // Also checks active-active subscription regions.
 func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_active_active_subscription.example"
@@ -245,7 +245,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayment(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*activeActiveContractFlag {
 		t.Skip("The '-activeActiveContract' parameter wasn't provided in the test command.")
@@ -285,7 +285,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 
 func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePayment(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*activeActiveMarketplaceFlag {
 		t.Skip("The '-activeActiveMarketplace' parameter wasn't provided in the test command.")

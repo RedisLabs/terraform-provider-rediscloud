@@ -9,7 +9,7 @@ import (
 
 func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -45,7 +45,7 @@ func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
 
 func TestAccDataSourceRedisCloudRegions_AWS(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -72,7 +72,7 @@ func TestAccDataSourceRedisCloudRegions_AWS(t *testing.T) {
 
 func TestAccDataSourceRedisCloudRegions_GCP(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },

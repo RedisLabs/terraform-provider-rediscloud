@@ -11,7 +11,7 @@ import (
 
 func TestAccDataSourceRedisCloudAclRule_ForDefaultRule(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	// This rule already exists
 	const testName = "Read-Write"

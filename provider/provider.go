@@ -49,8 +49,8 @@ func New(version string) func() *schema.Provider {
 				// Note the difference in public data-source name and the file/method name.
 				// This is to help the developer relate their changes to what they would see happening in the Redis Console.
 				// <default> == flexible == pro
-				"rediscloud_subscription":                               dataSourceRedisCloudProSubscription(),
-				"rediscloud_database":                                   dataSourceRedisCloudProDatabase(),
+				"rediscloud_subscription":                               pro.DataSourceRedisCloudProSubscription(),
+				"rediscloud_database":                                   pro.DataSourceRedisCloudProDatabase(),
 				"rediscloud_database_modules":                           dataSourceRedisCloudDatabaseModules(),
 				"rediscloud_payment_method":                             dataSourceRedisCloudPaymentMethod(),
 				"rediscloud_regions":                                    dataSourceRedisCloudRegions(),

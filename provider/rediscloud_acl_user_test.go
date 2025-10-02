@@ -17,7 +17,7 @@ import (
 
 func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	prefix := acctest.RandomWithPrefix(testResourcePrefix)
 	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")

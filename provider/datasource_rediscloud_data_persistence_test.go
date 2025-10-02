@@ -9,7 +9,7 @@ import (
 
 func TestAccDataSourceRedisCloudDataPersistence_basic(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const dataPersistenceFoo = "data.rediscloud_data_persistence.foo"
 	resource.ParallelTest(t, resource.TestCase{

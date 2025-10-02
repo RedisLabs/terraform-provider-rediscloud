@@ -14,7 +14,7 @@ const testFileName = "./pro/testdata/testAccResourceRedisCloudProDatabaseUpgrade
 
 func TestAccResourceRedisCloudProDatabase_Upgrade(t *testing.T) {
 
-	utils.TestAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const resourceName = "rediscloud_subscription_database.example"
 

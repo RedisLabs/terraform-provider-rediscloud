@@ -1,22 +1,21 @@
-package provider
+package pro
 
 import (
 	"context"
 	"fmt"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"regexp"
 	"strconv"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceRedisCloudProDatabase() *schema.Resource {
+func DataSourceRedisCloudProDatabase() *schema.Resource {
 	return &schema.Resource{
 		Description: "The Pro Database data source allows access to the details of an existing database within your Redis Enterprise Cloud account.",
 		ReadContext: dataSourceRedisCloudProDatabaseRead,
@@ -439,15 +438,15 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 			return diag.FromErr(err)
 		}
 	}
-	if err := d.Set("alert", pro.FlattenAlerts(db.Alerts)); err != nil {
+	if err := d.Set("alert", FlattenAlerts(db.Alerts)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("module", pro.FlattenModules(db.Modules)); err != nil {
+	if err := d.Set("module", FlattenModules(db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
 
 	if db.Clustering != nil {
-		if err := d.Set("hashing_policy", pro.FlattenRegexRules(db.Clustering.RegexRules)); err != nil {
+		if err := d.Set("hashing_policy", FlattenRegexRules(db.Clustering.RegexRules)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -485,7 +484,7 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	if err := pro.ReadTags(ctx, api, subId, dbId, d); err != nil {
+	if err := ReadTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
 
