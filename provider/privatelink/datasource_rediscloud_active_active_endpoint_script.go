@@ -13,7 +13,7 @@ import (
 func DataSourceActiveActivePrivateLinkEndpointScript() *schema.Resource {
 	return &schema.Resource{
 		Description: "The Active Active PrivateLink Endpoint Script data source allows users to request an endpoint script for an Active Active Subscription PrivateLink",
-		ReadContext: dataSourcePrivateLinkRead,
+		ReadContext: dataSourceActiveActivePrivateLinkScriptRead,
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
