@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-const testActiveActivePrivateLinkConfigFile = "./privatelink/testdata/testActiveActivePrivateLink.tf"
+const testActiveActivePrivateLinkConfigFile = "../privatelink/testdata/active_active_private_link.tf"
 
 func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 
