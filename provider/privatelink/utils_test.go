@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFlattenConnections(t *testing.T) {
+func TestUnitFlattenConnections(t *testing.T) {
 	// Test that flattenConnections produces keys that match the schema
 	connections := []*pl.PrivateLinkConnection{
 		{
@@ -38,12 +38,12 @@ func TestFlattenConnections(t *testing.T) {
 	assert.Equal(t, "2024-01-01", conn["association_date"])
 }
 
-func TestFlattenConnectionsEmpty(t *testing.T) {
+func TestUnitFlattenConnectionsEmpty(t *testing.T) {
 	result := flattenConnections([]*pl.PrivateLinkConnection{})
 	assert.Len(t, result, 0)
 }
 
-func TestFlattenDatabases(t *testing.T) {
+func TestUnitFlattenDatabases(t *testing.T) {
 	databases := []*pl.PrivateLinkDatabase{
 		{
 			DatabaseId:           redis.Int(12345),
@@ -66,7 +66,7 @@ func TestFlattenDatabases(t *testing.T) {
 	assert.Equal(t, "endpoint.example.com", db["resource_link_endpoint"])
 }
 
-func TestFlattenPrincipals(t *testing.T) {
+func TestUnitFlattenPrincipals(t *testing.T) {
 	principals := []*pl.PrivateLinkPrincipal{
 		{
 			Principal: redis.String("arn:aws:iam::123456789012:root"),
