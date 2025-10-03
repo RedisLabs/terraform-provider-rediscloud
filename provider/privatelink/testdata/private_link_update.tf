@@ -38,34 +38,23 @@ resource "rediscloud_subscription" "pro_subscription" {
   }
 }
 
-resource "rediscloud_private_link" "pro_private_link" {
+resource "rediscloud_private_link" "private_link" {
   subscription_id = rediscloud_subscription.pro_subscription.id
   share_name = local.rediscloud_private_link_share_name
 
-  principal {
-    principal = "123456789012"
-    principal_type = "aws_account"
-    principal_alias = "principal 1"
-  }
+  # principal {
+  #   principal = local.rediscloud_principal_1
+  #   principal_type = "aws_account"
+  #   principal_alias = "terraform test aws account"
+  # }
 
   principal {
     principal = "234567890123"
     principal_type = "aws_account"
-    principal_alias = "principal 2"
+    principal_alias = "terraform test aws account 2"
   }
 }
 
-data "rediscloud_private_link" "pro_private_link" {
-  subscription_id = rediscloud_private_link.pro_private_link.subscription_id
+data "rediscloud_private_link" "private_link" {
+  subscription_id = rediscloud_private_link.private_link.subscription_id
 }
-
-# not working yet
-# data "rediscloud_private_link_endpoint_script" "endpoint_script" {
-#   subscription_id = rediscloud_private_link.private_link.subscription_id
-# }
-#
-# output "endpoint_script" {
-#   value = data.rediscloud_private_link_endpoint_script.endpoint_script
-# }
-
-
