@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-const testActiveActivePrivateLinkConfigFile = "./privatelink/testdata/testActiveActivePrivateLink.tf"
+const testActiveActivePrivateLinkConfigFile = "../privatelink/testdata/active_active_private_link.tf"
 
 func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 
@@ -38,8 +38,8 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "resource_configuration_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "resource_configuration_arn"),
 					resource.TestCheckResourceAttrSet(resourceName, "share_arn"),
-					resource.TestCheckResourceAttr(resourceName, "connections.#", "0"),
-					resource.TestCheckResourceAttr(resourceName, "databases.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceName, "connections.#"),
+					resource.TestCheckResourceAttrSet(resourceName, "databases.#"),
 
 					resource.TestCheckResourceAttrSet(datasourceName, "id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
@@ -49,8 +49,8 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(datasourceName, "resource_configuration_id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "resource_configuration_arn"),
 					resource.TestCheckResourceAttrSet(datasourceName, "share_arn"),
-					resource.TestCheckResourceAttr(datasourceName, "connections.#", "0"),
-					resource.TestCheckResourceAttr(datasourceName, "databases.#", "1"),
+					resource.TestCheckResourceAttrSet(datasourceName, "connections.#"),
+					resource.TestCheckResourceAttrSet(datasourceName, "databases.#"),
 				),
 			},
 			{

@@ -159,7 +159,7 @@ func flattenConnections(connections []*pl.PrivateLinkConnection) []map[string]in
 		tf := map[string]interface{}{
 			"association_id":   redis.StringValue(connection.AssociationId),
 			"connection_id":    redis.StringValue(connection.ConnectionId),
-			"type":             redis.StringValue(connection.Type),
+			"connection_type":  redis.StringValue(connection.Type),
 			"owner_id":         redis.StringValue(connection.OwnerId),
 			"association_date": redis.StringValue(connection.AssociationDate),
 		}
