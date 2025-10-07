@@ -3,19 +3,20 @@ package provider
 import (
 	"context"
 	"fmt"
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"os"
+	"regexp"
 	"strconv"
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-// Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the database resource.
+// Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the database resource with Redis 8.
 func TestAccResourceRedisCloudProDatabase_Redis8_CRUDI(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
@@ -34,9 +35,9 @@ func TestAccResourceRedisCloudProDatabase_Redis8_CRUDI(t *testing.T) {
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
-			// Test database and replica database creation
+			// Test database and replica database creation with Redis 7.2
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabase, testCloudAccountName, name, password) + testAccResourceRedisCloudProDatabaseReplica,
+				Config: getRedis8DatabaseConfig(t, testCloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -56,8 +57,6 @@ func TestAccResourceRedisCloudProDatabase_Redis8_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "alert.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "1"),
-					resource.TestCheckResourceAttr(resourceName, "modules.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.2"),
 
@@ -80,8 +79,8 @@ func TestAccResourceRedisCloudProDatabase_Redis8_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the subscription ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						client := testProvider.Meta().(*client2.ApiClient)
-						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
+						apiClient := testProvider.Meta().(*client.ApiClient)
+						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -90,7 +89,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_CRUDI(t *testing.T) {
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
 						}
 
-						listDb := client.Client.Database.List(context.TODO(), subId)
+						listDb := apiClient.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
 							return fmt.Errorf("no database found: %s", listDb.Err())
 						}
@@ -102,9 +101,9 @@ func TestAccResourceRedisCloudProDatabase_Redis8_CRUDI(t *testing.T) {
 					},
 				),
 			},
-			// Test database is updated successfully
+			// Test database is updated successfully to Redis 8.0
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProDatabaseUpdate, testCloudAccountName, name),
+				Config: getRedis8DatabaseUpdateConfig(t, testCloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example-updated"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -124,8 +123,6 @@ func TestAccResourceRedisCloudProDatabase_Redis8_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "alert.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "80"),
-					resource.TestCheckResourceAttr(resourceName, "modules.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.0"),
 				),
@@ -140,6 +137,38 @@ func TestAccResourceRedisCloudProDatabase_Redis8_CRUDI(t *testing.T) {
 	})
 }
 
-const testAccResourceRedisCloudProDatabase8Modules = proSubscriptionBoilerplate + `
+// Test that modules cannot be set on Redis 8.x
+func TestAccResourceRedisCloudProDatabase_Redis8_ModulesBlocked(t *testing.T) {
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-`
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	password := acctest.RandString(20)
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config:      getRedis8WithModulesConfig(t, testCloudAccountName, name, password),
+				ExpectError: regexp.MustCompile(`"modules" cannot be explicitly set for Redis version 8\.0 as modules are bundled by default`),
+			},
+		},
+	})
+}
+
+func getRedis8DatabaseConfig(t *testing.T, cloudAccountName, subscriptionName, password string) string {
+	content := utils.GetTestConfig(t, "./pro/testdata/pro_database_redis_8.tf")
+	return fmt.Sprintf(content, cloudAccountName, subscriptionName, password)
+}
+
+func getRedis8DatabaseUpdateConfig(t *testing.T, cloudAccountName, subscriptionName string) string {
+	content := utils.GetTestConfig(t, "./pro/testdata/pro_database_redis_8_update.tf")
+	return fmt.Sprintf(content, cloudAccountName, subscriptionName)
+}
+
+func getRedis8WithModulesConfig(t *testing.T, cloudAccountName, subscriptionName, password string) string {
+	content := utils.GetTestConfig(t, "./pro/testdata/pro_database_redis_8_with_modules.tf")
+	return fmt.Sprintf(content, cloudAccountName, subscriptionName, password)
+}
