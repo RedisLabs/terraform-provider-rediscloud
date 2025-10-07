@@ -958,54 +958,11 @@ func skipDiffIfIntervalIs12And12HourTimeDiff(k, oldValue, newValue string, d *sc
 
 func customizeDiff() schema.CustomizeDiffFunc {
 	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-		if err := validateQueryPerformanceFactor()(ctx, diff, meta); err != nil {
-			return err
-		}
 		if err := validateModulesForRedis8()(ctx, diff, meta); err != nil {
 			return err
 		}
 		if err := RemoteBackupIntervalSetCorrectly("remote_backup")(ctx, diff, meta); err != nil {
 			return err
-		}
-		return nil
-	}
-}
-
-func validateQueryPerformanceFactor() schema.CustomizeDiffFunc {
-	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-		// Check if "query_performance_factor" is set
-		qpf, qpfExists := diff.GetOk("query_performance_factor")
-
-		if qpfExists && qpf.(string) != "" {
-			// Check if Redis version is 8.0 or later
-			redisVersion, _ := diff.GetOk("redis_version")
-			if redisVersion != nil && redisVersion.(string) >= "8.0" {
-				// Redis 8.0+ has RediSearch bundled by default, no need to check modules
-				return nil
-			}
-
-			// Ensure "modules" is explicitly defined in the HCL for Redis < 8.0
-			_, modulesExists := diff.GetOkExists("modules")
-
-			if !modulesExists {
-				return fmt.Errorf(`"query_performance_factor" requires the "modules" key to be explicitly defined in HCL`)
-			}
-
-			// Retrieve modules as a slice of interfaces
-			rawModules := diff.Get("modules").(*schema.Set).List()
-
-			// Convert modules to []map[string]interface{}
-			var modules []map[string]interface{}
-			for _, rawModule := range rawModules {
-				if moduleMap, ok := rawModule.(map[string]interface{}); ok {
-					modules = append(modules, moduleMap)
-				}
-			}
-
-			// Check if "RediSearch" exists
-			if !containsDBModule(modules, "RediSearch") {
-				return fmt.Errorf(`"query_performance_factor" requires the "modules" list to contain "RediSearch"`)
-			}
 		}
 		return nil
 	}
