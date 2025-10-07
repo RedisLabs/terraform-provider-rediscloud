@@ -976,10 +976,17 @@ func validateQueryPerformanceFactor() schema.CustomizeDiffFunc {
 		// Check if "query_performance_factor" is set
 		qpf, qpfExists := diff.GetOk("query_performance_factor")
 
-		// Ensure "modules" is explicitly defined in the HCL
-		_, modulesExists := diff.GetOkExists("modules")
-
 		if qpfExists && qpf.(string) != "" {
+			// Check if Redis version is 8.0 or later
+			redisVersion, _ := diff.GetOk("redis_version")
+			if redisVersion != nil && redisVersion.(string) >= "8.0" {
+				// Redis 8.0+ has RediSearch bundled by default, no need to check modules
+				return nil
+			}
+
+			// Ensure "modules" is explicitly defined in the HCL for Redis < 8.0
+			_, modulesExists := diff.GetOkExists("modules")
+
 			if !modulesExists {
 				return fmt.Errorf(`"query_performance_factor" requires the "modules" key to be explicitly defined in HCL`)
 			}
