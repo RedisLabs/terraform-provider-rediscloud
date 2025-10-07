@@ -2,7 +2,9 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -49,6 +51,8 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 			Update: schema.DefaultTimeout(30 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
+
+		CustomizeDiff: essentialsCustomizeDiff(),
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
@@ -220,7 +224,7 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				},
 			},
 			"modules": {
-				Description: "Modules to be provisioned in the database",
+				Description: "Modules to be provisioned in the database. Note: Not supported for Redis 8.0 and higher as modules are bundled by default.",
 				Type:        schema.TypeSet,
 				// In TF <0.12 List of objects is not supported, so we need to opt-in to use this old behaviour.
 				ConfigMode: schema.SchemaConfigModeAttr,
@@ -814,4 +818,31 @@ func writeFixedTags(ctx context.Context, api *client.ApiClient, subId int, datab
 		})
 	}
 	return api.Client.Tags.PutFixed(ctx, subId, databaseId, tags.AllTags{Tags: &t})
+}
+
+func essentialsCustomizeDiff() schema.CustomizeDiffFunc {
+	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+		if err := validateModulesForRedis8Essentials()(ctx, diff, meta); err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
+func validateModulesForRedis8Essentials() schema.CustomizeDiffFunc {
+	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+		redisVersion, versionExists := diff.GetOk("redis_version")
+		modules, modulesExists := diff.GetOkExists("modules")
+
+		if versionExists && modulesExists {
+			version := redisVersion.(string)
+			if strings.HasPrefix(version, "8.") {
+				moduleSet := modules.(*schema.Set)
+				if moduleSet.Len() > 0 {
+					return fmt.Errorf(`"modules" cannot be explicitly set for Redis version %s as modules are bundled by default. Remove the "modules" field from your configuration`, version)
+				}
+			}
+		}
+		return nil
+	}
 }

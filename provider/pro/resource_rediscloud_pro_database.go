@@ -242,7 +242,7 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				},
 			},
 			"modules": {
-				Description: "Modules to be provisioned in the database",
+				Description: "Modules to be provisioned in the database. Note: NOT supported for Redis 8.0 and higher as modules are bundled by default.",
 				Type:        schema.TypeSet,
 				// In TF <0.12 List of objects is not supported, so we need to opt in to use this old behaviour.
 				ConfigMode: schema.SchemaConfigModeAttr,
@@ -961,6 +961,9 @@ func customizeDiff() schema.CustomizeDiffFunc {
 		if err := validateQueryPerformanceFactor()(ctx, diff, meta); err != nil {
 			return err
 		}
+		if err := validateModulesForRedis8()(ctx, diff, meta); err != nil {
+			return err
+		}
 		if err := RemoteBackupIntervalSetCorrectly("remote_backup")(ctx, diff, meta); err != nil {
 			return err
 		}
@@ -1009,6 +1012,25 @@ func containsDBModule(modules []map[string]interface{}, moduleName string) bool 
 		}
 	}
 	return false
+}
+
+func validateModulesForRedis8() schema.CustomizeDiffFunc {
+	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+		redisVersion, versionExists := diff.GetOk("redis_version")
+		modules, modulesExists := diff.GetOkExists("modules")
+
+		if versionExists && modulesExists {
+			version := redisVersion.(string)
+			// Check if version is >= 8.0
+			if strings.HasPrefix(version, "8.") {
+				moduleSet := modules.(*schema.Set)
+				if moduleSet.Len() > 0 {
+					return fmt.Errorf(`"modules" cannot be explicitly set for Redis version %s as modules are bundled by default. Remove the "modules" field from your configuration`, version)
+				}
+			}
+		}
+		return nil
+	}
 }
 
 func RemoteBackupIntervalSetCorrectly(key string) schema.CustomizeDiffFunc {
