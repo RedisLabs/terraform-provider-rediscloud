@@ -28,27 +28,27 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    dataset_size_in_gb = 15
+    dataset_size_in_gb = 1
     quantity = 1
-    replication = true
+    replication = false
     throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 20000
+    throughput_measurement_value = 1000
   }
 }
 
 resource "rediscloud_subscription_database" "example" {
   subscription_id                       = rediscloud_subscription.example.id
-  name                                  = "example-updated"
+  name                                  = "example"
   protocol                              = "redis"
-  dataset_size_in_gb                    = 1
-  data_persistence                      = "aof-every-write"
-  data_eviction                         = "volatile-lru"
+  dataset_size_in_gb                    = 3
+  data_persistence                      = "none"
+  data_eviction                         = "allkeys-random"
   throughput_measurement_by             = "operations-per-second"
-  throughput_measurement_value          = 2000
-  password                              = "updated-password"
-  support_oss_cluster_api               = true
-  external_endpoint_for_oss_cluster_api = true
-  replication                           = true
+  throughput_measurement_value          = 1000
+  password                              = local.rediscloud_database_password
+  support_oss_cluster_api               = false
+  external_endpoint_for_oss_cluster_api = false
+  replication                           = false
   average_item_size_in_bytes            = 0
   client_ssl_certificate                = ""
   periodic_backup_path                  = ""
@@ -57,26 +57,11 @@ resource "rediscloud_subscription_database" "example" {
 
   alert {
     name  = "dataset-size"
-    value = 80
+    value = 1
   }
 
   tags = {
     "market"   = "emea"
     "material" = "cardboard"
   }
-}
-
-resource "rediscloud_subscription_database" "example_replica" {
-  subscription_id = rediscloud_subscription.example.id
-  name = "example-replica"
-  protocol = "redis"
-  dataset_size_in_gb = 1
-  data_persistence = "none"
-  throughput_measurement_by = "operations-per-second"
-  throughput_measurement_value = 1000
-  password = "updated-password"
-  replication = false
-  redis_version = "8.0"
-
-  replica_of = ["redis://${rediscloud_subscription_database.example.public_endpoint}"]
 }
