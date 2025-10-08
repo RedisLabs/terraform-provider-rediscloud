@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.4.5 (9th October 2025)
+
+## Added:
+- Support for the global_enable_default_user attribute to Active-Active database resources, allowing users to control whether the default Redis user is enabled across all regions.
 
 # 2.4.4 (3rd October 2025)
 
