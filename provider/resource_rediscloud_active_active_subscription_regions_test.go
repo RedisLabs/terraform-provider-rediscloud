@@ -3,11 +3,11 @@ package provider
 import (
 	"context"
 	"fmt"
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"strconv"
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -60,8 +60,8 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 							return err
 						}
 
-						client := testProvider.Meta().(*client2.ApiClient)
-						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
+						apiClient := testProvider.Meta().(*client.ApiClient)
+						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
