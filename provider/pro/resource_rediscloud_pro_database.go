@@ -542,8 +542,21 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("modules", FlattenModules(db.Modules)); err != nil {
-		return diag.FromErr(err)
+	// For Redis 8.0+, modules are bundled by default and returned by the API
+	// Only set modules in state if they were explicitly defined in the config
+	redisVersion := redis.StringValue(db.RedisVersion)
+	if redisVersion >= "8.0" {
+		// Only set modules if they were explicitly configured by the user
+		if _, ok := d.GetOk("modules"); ok {
+			if err := d.Set("modules", FlattenModules(db.Modules)); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+	} else {
+		// For Redis < 8.0, always set modules from API response
+		if err := d.Set("modules", FlattenModules(db.Modules)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if err := d.Set("alert", FlattenAlerts(db.Alerts)); err != nil {
@@ -841,8 +854,12 @@ func upgradeRedisVersion(ctx context.Context, api *client.ApiClient, subId int, 
 
 	log.Printf("[INFO] Redis version change request to %s accepted by API", newVersion)
 
-	// wait for upgrade
 	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
+		return diag.FromErr(err), true
+	}
+
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err), true
 	}

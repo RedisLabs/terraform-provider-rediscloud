@@ -1,6 +1,7 @@
 locals {
   rediscloud_cloud_account = "%s"
   rediscloud_subscription_name = "%s"
+  rediscloud_database_password = "%s"
 }
 
 data "rediscloud_payment_method" "card" {
@@ -53,7 +54,7 @@ resource "rediscloud_subscription_database" "example" {
   client_ssl_certificate                = ""
   periodic_backup_path                  = ""
   enable_default_user                   = true
-  redis_version                         = "8.0"
+  redis_version                         = "7.2"
 
   alert {
     name  = "dataset-size"
