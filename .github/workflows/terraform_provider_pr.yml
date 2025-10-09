@@ -113,7 +113,6 @@ jobs:
           go-version-file: go.mod
       - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudActiveActiveDatabase_CRUDI"'
 
-
   go_test_smoke_essentials_sub:
     name: go test smoke essentials sub
     needs: [go_build]
