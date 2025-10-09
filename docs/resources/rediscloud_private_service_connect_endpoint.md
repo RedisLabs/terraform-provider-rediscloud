@@ -34,7 +34,7 @@ resource "rediscloud_subscription" "subscription" {
   }
 
   creation_plan {
-    dataset_size_in_gb           = 15
+    dataset_size_in_gb           = 1
     quantity                     = 1
     replication                  = true
     throughput_measurement_by    = "operations-per-second"
@@ -155,7 +155,7 @@ resource "rediscloud_subscription" "subscription" {
   }
 
   creation_plan {
-    dataset_size_in_gb           = 15
+    dataset_size_in_gb           = 1
     quantity                     = 1
     replication                  = true
     throughput_measurement_by    = "operations-per-second"
