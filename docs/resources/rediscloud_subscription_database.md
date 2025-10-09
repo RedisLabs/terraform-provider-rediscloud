@@ -37,7 +37,7 @@ resource "rediscloud_subscription" "subscription-resource" {
   // This block needs to be defined for provisioning a new subscription.
   // This allows creation of a well-optimized hardware specification for databases in the cluster
   creation_plan {
-    dataset_size_in_gb = 1
+    dataset_size_in_gb = 15
     quantity = 1
     replication=true
     throughput_measurement_by = "operations-per-second"
@@ -49,7 +49,7 @@ resource "rediscloud_subscription" "subscription-resource" {
 resource "rediscloud_subscription_database" "database-resource" {
     subscription_id = rediscloud_subscription.subscription-resource.id
     name = "database-name"
-    dataset_size_in_gb = 1
+    dataset_size_in_gb = 15
     data_persistence = "aof-every-write"
     throughput_measurement_by = "operations-per-second"
     throughput_measurement_value = 20000
