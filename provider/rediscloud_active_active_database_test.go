@@ -202,6 +202,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					"global_password",
 					"global_source_ips.#",
 					"global_source_ips.0",
+					"global_enable_default_user",
 					"override_region.#",
 					"override_region.0.%",
 					"override_region.0.name",
