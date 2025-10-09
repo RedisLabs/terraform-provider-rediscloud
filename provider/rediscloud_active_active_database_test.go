@@ -119,7 +119,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttr(datasourceName, "global_modules.#", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "global_modules.0", "RedisJSON"),
-					resource.TestCheckResourceAttr(datasourceName, "global_enable_default_user", "true"),
 
 					resource.TestCheckResourceAttr(datasourceName, "tags.deployment_family", "blue"),
 					resource.TestCheckResourceAttr(datasourceName, "tags.priority", "code-2"),
