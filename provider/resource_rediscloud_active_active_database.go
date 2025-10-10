@@ -2,8 +2,6 @@ package provider
 
 import (
 	"context"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"regexp"
 	"strings"
@@ -11,6 +9,8 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -199,6 +199,12 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 					Type:             schema.TypeString,
 					ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 				},
+			},
+			"global_enable_default_user": {
+				Description: "When 'true', enables connecting to the database with the 'default' user across all regions. Default: 'true'",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
 			},
 			"override_region": {
 				Description: "Region-specific configuration parameters to override the global configuration",
@@ -733,12 +739,9 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 	// Populate the database update request with the required fields
 	update := databases.UpdateActiveActiveDatabase{
-		SupportOSSClusterAPI:                redis.Bool(d.Get("support_oss_cluster_api").(bool)),
-		UseExternalEndpointForOSSClusterAPI: redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool)),
-		DataEvictionPolicy:                  redis.String(d.Get("data_eviction").(string)),
-		GlobalAlerts:                        &updateAlerts,
-		GlobalSourceIP:                      globalSourceIps,
-		Regions:                             regions,
+		GlobalAlerts:   &updateAlerts,
+		GlobalSourceIP: globalSourceIps,
+		Regions:        regions,
 	}
 
 	// One of the following fields must be set in the request, validation is handled in the schema (ExactlyOneOf)
@@ -761,6 +764,22 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 	if d.Get("global_data_persistence").(string) != "" {
 		update.GlobalDataPersistence = redis.String(d.Get("global_data_persistence").(string))
+	}
+
+	if v, ok := d.GetOk("global_enable_default_user"); ok {
+		update.GlobalEnableDefaultUser = redis.Bool(v.(bool))
+	}
+
+	if v, ok := d.GetOk("support_oss_cluster_api"); ok {
+		update.SupportOSSClusterAPI = redis.Bool(v.(bool))
+	}
+
+	if v, ok := d.GetOk("external_endpoint_for_oss_cluster_api"); ok {
+		update.UseExternalEndpointForOSSClusterAPI = redis.Bool(v.(bool))
+	}
+
+	if v, ok := d.GetOk("data_eviction"); ok {
+		update.DataEvictionPolicy = redis.String(v.(string))
 	}
 
 	//The cert validation is done by the API (HTTP 400 is returned if it's invalid).
@@ -787,8 +806,6 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 			update.EnableTls = redis.Bool(enableTLS)
 		}
 	}
-
-	update.UseExternalEndpointForOSSClusterAPI = redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool))
 
 	err = api.Client.Database.ActiveActiveUpdate(ctx, subId, dbId, update)
 	if err != nil {
