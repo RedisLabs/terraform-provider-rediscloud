@@ -67,6 +67,8 @@ resource "rediscloud_private_link" "pro_private_link" {
     principal_type = "aws_account"
     principal_alias = "principal 2"
   }
+
+  depends_on = [rediscloud_subscription_database.pro_database]
 }
 
 data "rediscloud_private_link" "pro_private_link" {
