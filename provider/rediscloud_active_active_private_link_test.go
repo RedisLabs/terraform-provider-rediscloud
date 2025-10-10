@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"os"
 	"testing"
 
@@ -13,7 +14,7 @@ const testActiveActivePrivateLinkConfigFile = "../privatelink/testdata/active_ac
 
 func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	password := acctest.RandString(20)
 
@@ -65,11 +66,6 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 func getRedisActiveActivePrivateLinkConfig(t *testing.T, testFile, shareName, password string) string {
 	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-aa-private-link"
 	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-
-	content, err := os.ReadFile(testFile)
-	if err != nil {
-		t.Fatalf("failed to read file: %v", err)
-	}
-
-	return fmt.Sprintf(string(content), subName, exampleCloudAccountName, shareName, password)
+	content := utils.GetTestConfig(t, testFile)
+	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName, password)
 }

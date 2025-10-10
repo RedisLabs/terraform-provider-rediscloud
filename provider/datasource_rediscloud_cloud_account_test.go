@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"os"
 	"regexp"
 	"testing"
@@ -11,7 +12,7 @@ import (
 
 func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 

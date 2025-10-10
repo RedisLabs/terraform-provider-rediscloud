@@ -5,6 +5,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"strconv"
@@ -167,7 +168,7 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 		})
 	}
 
-	subs = filterSubscriptions(subs, filters)
+	subs = pro.FilterSubscriptions(subs, filters)
 
 	if len(subs) == 0 {
 		return diag.Errorf("Your query returned no results. Please change your search criteria and try again.")
@@ -219,7 +220,7 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("maintenance_windows", flattenMaintenance(m)); err != nil {
+	if err := d.Set("maintenance_windows", pro.FlattenMaintenance(m)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -227,7 +228,7 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
+	if err := d.Set("pricing", pro.FlattenPricing(pricingList)); err != nil {
 		return diag.FromErr(err)
 	}
 

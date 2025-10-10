@@ -6,6 +6,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/roles"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -259,7 +260,7 @@ func extractRules(d *schema.ResourceData) []*roles.CreateRuleInRoleRequest {
 
 			var regions []*string = nil
 			if databaseMap["regions"] != nil {
-				regions = setToStringSlice(databaseMap["regions"].(*schema.Set))
+				regions = utils.SetToStringSlice(databaseMap["regions"].(*schema.Set))
 			}
 
 			createDatabaseAssociation := roles.CreateDatabaseInRuleInRoleRequest{

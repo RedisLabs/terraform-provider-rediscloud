@@ -74,16 +74,3 @@ data "rediscloud_active_active_private_link" "aa_private_link" {
 # data "rediscloud_private_link_endpoint_script" "endpoint_script" {
 #   subscription_id = rediscloud_private_link.private_link.subscription_id
 # }
-
-
-output "resource_aa_private_link" {
-  value = rediscloud_active_active_private_link.aa_private_link
-}
-
-output "data_aa_private_link" {
-  value = data.rediscloud_active_active_private_link.aa_private_link
-}
-
-# output "endpoint_script" {
-#   value = data.rediscloud_private_link_endpoint_script.endpoint_script.endpoint_script
-# }

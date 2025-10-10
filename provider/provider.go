@@ -3,11 +3,12 @@ package provider
 import (
 	"context"
 	"fmt"
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/privatelink"
 	"log"
 	"strings"
 
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/privatelink"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -48,8 +49,8 @@ func New(version string) func() *schema.Provider {
 				// Note the difference in public data-source name and the file/method name.
 				// This is to help the developer relate their changes to what they would see happening in the Redis Console.
 				// <default> == flexible == pro
-				"rediscloud_subscription":                               dataSourceRedisCloudProSubscription(),
-				"rediscloud_database":                                   dataSourceRedisCloudProDatabase(),
+				"rediscloud_subscription":                               pro.DataSourceRedisCloudProSubscription(),
+				"rediscloud_database":                                   pro.DataSourceRedisCloudProDatabase(),
 				"rediscloud_database_modules":                           dataSourceRedisCloudDatabaseModules(),
 				"rediscloud_payment_method":                             dataSourceRedisCloudPaymentMethod(),
 				"rediscloud_regions":                                    dataSourceRedisCloudRegions(),
@@ -83,8 +84,8 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_essentials_database":     resourceRedisCloudEssentialsDatabase(),
 				// Note the difference in public resource name and the file/method name.
 				// <default> == flexible == pro
-				"rediscloud_subscription":                              resourceRedisCloudProSubscription(),
-				"rediscloud_subscription_database":                     resourceRedisCloudProDatabase(),
+				"rediscloud_subscription":                              pro.ResourceRedisCloudProSubscription(),
+				"rediscloud_subscription_database":                     pro.ResourceRedisCloudProDatabase(),
 				"rediscloud_subscription_peering":                      resourceRedisCloudSubscriptionPeering(),
 				"rediscloud_private_service_connect":                   resourceRedisCloudPrivateServiceConnect(),
 				"rediscloud_private_service_connect_endpoint":          resourceRedisCloudPrivateServiceConnectEndpoint(),

@@ -1,20 +1,21 @@
-package provider
+package pro
 
 import (
 	"context"
 	"fmt"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"regexp"
 	"strconv"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceRedisCloudProDatabase() *schema.Resource {
+func DataSourceRedisCloudProDatabase() *schema.Resource {
 	return &schema.Resource{
 		Description: "The Pro Database data source allows access to the details of an existing database within your Redis Enterprise Cloud account.",
 		ReadContext: dataSourceRedisCloudProDatabaseRead,
@@ -437,15 +438,15 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 			return diag.FromErr(err)
 		}
 	}
-	if err := d.Set("alert", flattenAlerts(db.Alerts)); err != nil {
+	if err := d.Set("alert", FlattenAlerts(db.Alerts)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("module", flattenModules(db.Modules)); err != nil {
+	if err := d.Set("module", FlattenModules(db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
 
 	if db.Clustering != nil {
-		if err := d.Set("hashing_policy", flattenRegexRules(db.Clustering.RegexRules)); err != nil {
+		if err := d.Set("hashing_policy", FlattenRegexRules(db.Clustering.RegexRules)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -460,7 +461,7 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 	if err != nil {
 		// Forgive errors here, sometimes we just can't get a latest status
 	} else {
-		parsedLatestBackupStatus, err = parseLatestBackupStatus(latestBackupStatus)
+		parsedLatestBackupStatus, err = utils.ParseLatestBackupStatus(latestBackupStatus)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -474,7 +475,7 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 	if err != nil {
 		// Forgive errors here, sometimes we just can't get a latest status
 	} else {
-		parsedLatestImportStatus, err = parseLatestImportStatus(latestImportStatus)
+		parsedLatestImportStatus, err = utils.ParseLatestImportStatus(latestImportStatus)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -483,7 +484,7 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	if err := readTags(ctx, api, subId, dbId, d); err != nil {
+	if err := ReadTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
 

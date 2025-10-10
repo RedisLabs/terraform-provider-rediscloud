@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"os"
 	"regexp"
 	"strconv"
@@ -28,7 +30,7 @@ var marketplaceFlag = flag.Bool("marketplace", false,
 // Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the subscription resource.
 func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_subscription.example"
@@ -137,7 +139,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_subscription.example"
@@ -161,7 +163,7 @@ func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *tes
 
 func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*contractFlag {
 		t.Skip("The '-contract' parameter wasn't provided in the test command.")
@@ -200,7 +202,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 
 func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*marketplaceFlag {
 		t.Skip("The '-marketplace' parameter wasn't provided in the test command.")
@@ -237,7 +239,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 
 func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -285,7 +287,7 @@ func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 
 func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-mw"
 	resourceName := "rediscloud_subscription.example"
@@ -439,7 +441,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 // Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is one.
 func TestFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	numDatabases := 1
 	planMap := map[string]interface{}{
@@ -452,7 +454,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRamAndFlash, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRamAndFlash, planMap)
 	assert.Empty(t, diags)
 	otherDatabases := 0
 	graphDatabases := 0
@@ -477,7 +479,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 // Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is greater than one.
 func TestFlexSubModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	numDatabases := 5
 	planMap := map[string]interface{}{
@@ -490,7 +492,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Empty(t, diags)
 	graphDatabases := 0
 	otherDatabases := 0
@@ -514,7 +516,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 // Checks that modules are allocated correctly into each creation-plan db if the only module is "RedisGraph".
 func TestFlexSubModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	numDatabases := 5
 	planMap := map[string]interface{}{
@@ -527,7 +529,7 @@ func TestFlexSubModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, numDatabases)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -539,7 +541,7 @@ func TestFlexSubModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 // Checks that modules are allocated correctly into the creation-plan dbs if "RedisGraph" is not included
 func TestFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	numDatabases := 5
 	planMap := map[string]interface{}{
@@ -552,7 +554,7 @@ func TestFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, numDatabases)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -567,7 +569,7 @@ func TestFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
 
 func TestFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -579,7 +581,7 @@ func TestFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, 2)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -590,7 +592,7 @@ func TestFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
 
 func TestFlexSubNoAverageItemSizeInBytes(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0, // 0 is the value that is returned when the field is not present
@@ -602,7 +604,7 @@ func TestFlexSubNoAverageItemSizeInBytes(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, 2)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -612,7 +614,7 @@ func TestFlexSubNoAverageItemSizeInBytes(t *testing.T) {
 
 func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -624,7 +626,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
@@ -633,7 +635,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing
 
 func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -645,7 +647,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
@@ -654,7 +656,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.
 
 func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -666,7 +668,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "operations-per-second", *createDb.ThroughputMeasurement.By)
@@ -675,7 +677,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing
 
 func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,
@@ -687,7 +689,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, diags, 1, "Warning should be reported when storage was ram and using `average_item_size_in_bytes`")
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 	createDb := createDbs[0]

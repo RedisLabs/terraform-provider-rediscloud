@@ -5,6 +5,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"strconv"
@@ -110,7 +111,7 @@ func dataSourceActiveActiveTransitGatewayRead(ctx context.Context, d *schema.Res
 
 	tgw := tgws[0]
 	tgwId := redis.IntValue(tgw.Id)
-	d.SetId(buildResourceId(subId, tgwId))
+	d.SetId(utils.BuildResourceId(subId, tgwId))
 	if err := d.Set("tgw_id", tgwId); err != nil {
 		return diag.FromErr(err)
 	}

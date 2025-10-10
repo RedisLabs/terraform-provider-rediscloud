@@ -179,7 +179,7 @@ func resourceRedisCloudSubscriptionPeeringCreate(ctx context.Context, d *schema.
 		if vpcCIDR, ok := d.GetOk("vpc_cidr"); ok {
 			peeringRequest.VPCCidr = redis.String(vpcCIDR.(string))
 		} else if vpcCIDRs, ok := d.GetOk("vpc_cidrs"); ok {
-			peeringRequest.VPCCidrs = setToStringSlice(vpcCIDRs.(*schema.Set))
+			peeringRequest.VPCCidrs = utils.SetToStringSlice(vpcCIDRs.(*schema.Set))
 		} else {
 			return diag.Errorf("`vpc_cidr` or `vpc_cidrs` must be set when `provider_name` is `AWS`")
 		}
@@ -211,7 +211,7 @@ func resourceRedisCloudSubscriptionPeeringCreate(ctx context.Context, d *schema.
 		return diag.FromErr(err)
 	}
 
-	d.SetId(buildResourceId(subId, peering))
+	d.SetId(utils.BuildResourceId(subId, peering))
 
 	err = waitForPeeringToBeInitiated(ctx, subId, peering, api)
 	if err != nil {
