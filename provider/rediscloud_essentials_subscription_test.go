@@ -23,7 +23,11 @@ var essentialsMarketplaceFlag = flag.Bool("essentialsMarketplace", false,
 func testAccPreCheckEssentialsSubscription(t *testing.T) {
 	testAccPreCheck(t)
 
-	apiClient := testProvider.Meta().(*client.ApiClient)
+	apiClient, err := client.NewClient()
+	if err != nil {
+		t.Fatalf("Failed to create API client: %v", err)
+	}
+
 	subs, err := apiClient.Client.FixedSubscriptions.List(context.TODO())
 	if err != nil {
 		t.Fatalf("Failed to list essentials subscriptions: %v", err)
