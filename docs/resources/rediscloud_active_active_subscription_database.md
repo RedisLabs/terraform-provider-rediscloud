@@ -89,13 +89,13 @@ The following arguments are supported:
 * `subscription_id`: (Required) The ID of the Active-Active subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
 * `name` - (Required) A meaningful name to identify the database. **Modifying this attribute will force creation of a new resource.**
 * `redis_version` - (Optional) The Redis version of the database. If omitted, the Redis version will be the default.  **Modifying this attribute will force creation of a new resource.**
-* `memory_limit_in_gb` - (Optional -  **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favor of `dataset_size_in_gb` - not possible to import databases with this attribute set**
+* `memory_limit_in_gb` - (Optional - **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favor of `dataset_size_in_gb` - not possible to import databases with this attribute set**
 * `dataset_size_in_gb` - (Optional - **Required if `memory_limit_in_gb` is unset**) The maximum amount of data in the dataset for this specific database is in GB
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `external_endpoint_for_oss_cluster_api` - (Optional) Should use the external endpoint for open-source (OSS) Cluster API.
   Can only be enabled if OSS Cluster API support is enabled. Default: 'false'
 * `enable_tls` - (Optional) Use TLS for authentication. Default: ‘false’
-  `client_ssl_certificate` - (Optional) SSL certificate to authenticate user connections, conflicts with `client_tls_certificates`
+* `client_ssl_certificate` - (Optional) SSL certificate to authenticate user connections, conflicts with `client_tls_certificates`
 * `client_tls_certificates` - (Optional) A list of TLS certificates to authenticate user connections, conflicts with `client_ssl_certificate`
 * `data_eviction` - (Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru')
 * `global_data_persistence` - (Optional) Global rate of database data persistence (in persistent storage) of regions that dont override global settings. Default: 'none'
@@ -103,6 +103,7 @@ The following arguments are supported:
 * `global_alert` - (Optional) A block defining Redis database alert of regions that don't override global settings, documented below, can be specified multiple times. (either: 'dataset-size', 'datasets-size', 'throughput-higher-than', 'throughput-lower-than', 'latency', 'syncsource-error', 'syncsource-lag' or 'connections-limit')
 * `global_modules` - (Optional) A list of modules to be enabled on all deployments of this database. Supported modules: `RedisJSON`, `RediSearch`. Ignored after database creation.
 * `global_source_ips` - (Optional) List of source IP addresses or subnet masks of regions that don't override global settings. If specified, Redis clients will be able to connect to this database only from within the specified source IP addresses ranges (example: ['192.168.10.0/32', '192.168.12.0/24'])
+* `global_enable_default_user` - (Optional) When 'true', enables connecting to the database with the 'default' user across all regions. Default: 'true'
 * `global_resp_version` - (Optional) Either 'resp2' or 'resp3'. Resp version for Crdb databases within the AA database. Must be compatible with Redis version.
 * `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999. **Modifying this attribute will force creation of a new resource.**
 * `override_region` - (Optional) Override region specific configuration, documented below

@@ -3,13 +3,13 @@ package provider
 import (
 	"context"
 	"fmt"
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"os"
 	"regexp"
 	"strconv"
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -39,7 +39,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test resource
 					resource.TestCheckResourceAttr(databaseResourceName, "name", databaseName),
-					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "3"),
+					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_data_persistence", "none"),
 					resource.TestCheckResourceAttr(databaseResourceName, "external_endpoint_for_oss_cluster_api", "false"),
@@ -52,6 +52,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.0", "RedisJSON"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_source_ips.#", "2"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "true"),
 
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "2"),
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.name", "us-east-1"),
@@ -84,8 +85,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the subscription ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						client := testProvider.Meta().(*client2.ApiClient)
-						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
+						apiClient := testProvider.Meta().(*client.ApiClient)
+						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -94,7 +95,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
 						}
 
-						listDb := client.Client.Database.List(context.TODO(), subId)
+						listDb := apiClient.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
 							return fmt.Errorf("no database found: %s", listDb.Err())
 						}
@@ -109,7 +110,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "db_id"),
 					resource.TestCheckResourceAttr(datasourceName, "name", databaseName),
-					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "3"),
+					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(datasourceName, "enable_tls", "false"),
@@ -145,6 +146,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.#", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.value", "60"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "false"),
 					resource.TestCheckResourceAttr(databaseResourceName, "redis_version", "7.2"),
 
 					// Changes are ignored after creation
@@ -200,6 +202,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					"global_password",
 					"global_source_ips.#",
 					"global_source_ips.0",
+					"global_enable_default_user",
 					"override_region.#",
 					"override_region.0.%",
 					"override_region.0.name",
@@ -299,7 +302,7 @@ const testAccResourceRedisCloudActiveActiveDatabase = activeActiveSubscriptionBo
 resource "rediscloud_active_active_subscription_database" "example" {
     subscription_id = rediscloud_active_active_subscription.example.id
     name = "%s"
-    dataset_size_in_gb = 3
+    dataset_size_in_gb = 1
     support_oss_cluster_api = false 
     external_endpoint_for_oss_cluster_api = false
 	enable_tls = false
@@ -312,6 +315,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
 		name = "dataset-size"
 		value = 1
 	}
+	global_enable_default_user = true
 	global_modules = ["RedisJSON"]
 	override_region {
 		name = "us-east-1"
@@ -360,6 +364,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
 		name = "dataset-size"
 		value = 60
 	}
+	global_enable_default_user = false
 	global_modules = []
 
 	override_region {
@@ -442,7 +447,7 @@ resource "rediscloud_active_active_subscription" "example" {
 resource "rediscloud_active_active_subscription_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
 	name = "%s"
-	dataset_size_in_gb = 3
+	dataset_size_in_gb = 1
 	support_oss_cluster_api = false 
 	external_endpoint_for_oss_cluster_api = false
 	enable_tls = false
@@ -476,7 +481,7 @@ const testAccResourceRedisCloudActiveActiveDatabaseInvalidTimeUtc = activeActive
 resource "rediscloud_active_active_subscription_database" "example" {
 	subscription_id = rediscloud_active_active_subscription.example.id
 	name = "%s"
-	dataset_size_in_gb = 3
+	dataset_size_in_gb = 1
 	support_oss_cluster_api = false 
 	external_endpoint_for_oss_cluster_api = false
 	enable_tls = false

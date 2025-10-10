@@ -31,7 +31,7 @@ resource "rediscloud_subscription" "pro_subscription" {
   }
 
   creation_plan {
-    dataset_size_in_gb           = 15
+    dataset_size_in_gb           = 1
     quantity                     = 1
     replication                  = true
     throughput_measurement_by    = "operations-per-second"
@@ -67,6 +67,8 @@ resource "rediscloud_private_link" "pro_private_link" {
     principal_type = "aws_account"
     principal_alias = "principal 2"
   }
+
+  depends_on = [rediscloud_subscription_database.pro_database]
 }
 
 data "rediscloud_private_link" "pro_private_link" {
