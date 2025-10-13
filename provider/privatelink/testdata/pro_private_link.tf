@@ -75,12 +75,12 @@ data "rediscloud_private_link" "pro_private_link" {
   subscription_id = rediscloud_private_link.pro_private_link.subscription_id
 }
 
-data "rediscloud_private_link_endpoint_script" "endpoint_script" {
-  subscription_id = rediscloud_private_link.pro_private_link.subscription_id
-}
-
-output "endpoint_script" {
-  value = data.rediscloud_private_link_endpoint_script.endpoint_script
-}
+# data "rediscloud_private_link_endpoint_script" "endpoint_script" {
+#   subscription_id = rediscloud_private_link.pro_private_link.subscription_id
+# }
+#
+# output "endpoint_script" {
+#   value = data.rediscloud_private_link_endpoint_script.endpoint_script
+# }
 
 
