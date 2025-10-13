@@ -5,6 +5,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"strconv"
@@ -89,7 +90,7 @@ func resourceRedisCloudTransitGatewayAttachmentCreate(ctx context.Context, d *sc
 	}
 
 	// At this point, cidrs has to be empty. We cannot honour the user's configuration until the invitation has been accepted
-	cidrs := interfaceToStringSlice(d.Get("cidrs").([]interface{}))
+	cidrs := utils.InterfaceToStringSlice(d.Get("cidrs").([]interface{}))
 	if len(cidrs) > 0 {
 		return diag.Errorf("Attachment cannot be created with Cidrs provided, it must be accepted first. This resource may then be updated with Cidrs.")
 	}
@@ -133,7 +134,7 @@ func resourceRedisCloudTransitGatewayAttachmentRead(ctx context.Context, d *sche
 	}
 
 	tgw := tgws[0]
-	d.SetId(buildResourceId(subId, tgwId))
+	d.SetId(utils.BuildResourceId(subId, tgwId))
 	if err := d.Set("aws_tgw_uid", redis.StringValue(tgw.AwsTgwUid)); err != nil {
 		return diag.FromErr(err)
 	}
@@ -165,7 +166,7 @@ func resourceRedisCloudTransitGatewayAttachmentUpdate(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
-	cidrs := interfaceToStringSlice(d.Get("cidrs").([]interface{}))
+	cidrs := utils.InterfaceToStringSlice(d.Get("cidrs").([]interface{}))
 	if len(cidrs) == 0 {
 		cidrs = make([]*string, 0)
 	}

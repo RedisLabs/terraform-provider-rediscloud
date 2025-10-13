@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"regexp"
 	"testing"
@@ -8,7 +9,7 @@ import (
 
 func TestAccDataSourceRedisCloudEssentialsPlan_basic(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const basicPlan = "data.rediscloud_essentials_plan.basic"
 
@@ -50,7 +51,7 @@ func TestAccDataSourceRedisCloudEssentialsPlan_basic(t *testing.T) {
 
 func TestAccDataSourceRedisCloudEssentialsPlan_azure(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const azurePlan = "data.rediscloud_essentials_plan.azure"
 
@@ -92,7 +93,7 @@ func TestAccDataSourceRedisCloudEssentialsPlan_azure(t *testing.T) {
 
 func TestAccDataSourceRedisCloudEssentialsPlan_subscriptionId(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const examplePlan = "data.rediscloud_essentials_plan.example"
 
@@ -136,7 +137,7 @@ func TestAccDataSourceRedisCloudEssentialsPlan_subscriptionId(t *testing.T) {
 
 func TestAccDataSourceRedisCloudEssentialsPlan_ambiguous(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -153,7 +154,7 @@ func TestAccDataSourceRedisCloudEssentialsPlan_ambiguous(t *testing.T) {
 
 func TestAccDataSourceRedisCloudEssentialsPlan_impossible(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },

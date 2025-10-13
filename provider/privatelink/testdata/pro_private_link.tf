@@ -75,9 +75,8 @@ data "rediscloud_private_link" "pro_private_link" {
   subscription_id = rediscloud_private_link.pro_private_link.subscription_id
 }
 
-# not working yet
 # data "rediscloud_private_link_endpoint_script" "endpoint_script" {
-#   subscription_id = rediscloud_private_link.private_link.subscription_id
+#   subscription_id = rediscloud_private_link.pro_private_link.subscription_id
 # }
 #
 # output "endpoint_script" {
