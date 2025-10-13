@@ -41,7 +41,7 @@ resource "rediscloud_subscription_database" "example" {
   subscription_id                       = rediscloud_subscription.example.id
   name                                  = "example"
   protocol                              = "redis"
-  dataset_size_in_gb                    = 3
+  dataset_size_in_gb                    = 1
   data_persistence                      = "none"
   data_eviction                         = "allkeys-random"
   throughput_measurement_by             = "operations-per-second"
