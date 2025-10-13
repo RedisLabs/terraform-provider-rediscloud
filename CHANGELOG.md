@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+
+# 2.5.0 (13th October 2025)
+
+## Added:
+- Support for Redis 8 databases and upgrading. Redis 8 does not have modules so the provider should handle these gracefully. 
+- Support for `query_performance_factor` on Redis 8.0 - Updated validation logic to allow QPF on Redis 8.0+ databases since RediSearch is bundled by default.
+
+## Fixed:
+- Fix subscription state handling after Redis version upgrades - Added wait for subscription to become active after upgrading Redis versions to prevent "SUBSCRIPTION_NOT_ACTIVE" errors during subsequent operations.
+
+## Changed:
+
+- Refactor inline pro Terraform configs to external files.
+- Optimize test execution time by downsizing some configs
+
 # 2.4.5 (9th October 2025)
 
 ## Added:
