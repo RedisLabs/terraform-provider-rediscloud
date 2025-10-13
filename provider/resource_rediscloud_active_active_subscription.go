@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"regexp"
 	"strconv"
@@ -347,7 +348,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 	name := d.Get("name").(string)
 
 	paymentMethod := d.Get("payment_method").(string)
-	paymentMethodID, err := readPaymentMethodID(d)
+	paymentMethodID, err := pro.ReadPaymentMethodID(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -379,7 +380,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 
 	// If in a CMK flow, verify the pending state
 	if cmkEnabled {
-		err = waitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api)
+		err = pro.WaitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -432,7 +433,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 			windows = append(windows, &maintenance.Window{
 				StartHour:       redis.Int(wMap["start_hour"].(int)),
 				DurationInHours: redis.Int(wMap["duration_in_hours"].(int)),
-				Days:            interfaceToStringSlice(wMap["days"].([]interface{})),
+				Days:            utils.InterfaceToStringSlice(wMap["days"].([]interface{})),
 			})
 		}
 
@@ -498,7 +499,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("maintenance_windows", flattenMaintenance(m)); err != nil {
+		if err := d.Set("maintenance_windows", pro.FlattenMaintenance(m)); err != nil {
 			return diag.FromErr(err)
 		}
 
@@ -506,7 +507,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
+		if err := d.Set("pricing", pro.FlattenPricing(pricingList)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -556,7 +557,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 		}
 
 		if d.HasChange("payment_method_id") {
-			paymentMethodID, err := readPaymentMethodID(d)
+			paymentMethodID, err := pro.ReadPaymentMethodID(d)
 			if err != nil {
 				return diag.FromErr(err)
 			}
@@ -585,7 +586,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 				windows = append(windows, &maintenance.Window{
 					StartHour:       redis.Int(wMap["start_hour"].(int)),
 					DurationInHours: redis.Int(wMap["duration_in_hours"].(int)),
-					Days:            interfaceToStringSlice(wMap["days"].([]interface{})),
+					Days:            utils.InterfaceToStringSlice(wMap["days"].([]interface{})),
 				})
 			}
 
@@ -678,7 +679,7 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 
 	d.SetId("")
 
-	err = waitForSubscriptionToBeDeleted(ctx, subId, api)
+	err = pro.WaitForSubscriptionToBeDeleted(ctx, subId, api)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -698,7 +699,7 @@ func newCreateSubscription(name string, paymentMethodID *int, paymentMethod stri
 	}
 
 	if cmkEnabled {
-		req.PersistentStorageEncryptionType = redis.String(CMK_ENABLED_STRING)
+		req.PersistentStorageEncryptionType = redis.String(pro.CMK_ENABLED_STRING)
 	}
 
 	return req
@@ -766,7 +767,7 @@ func buildSubscriptionCreatePlanAADatabases(planMap map[string]interface{}) []*s
 	}
 
 	createModules := make([]*subscriptions.CreateModules, 0)
-	planModules := interfaceToStringSlice(planMap["modules"].([]interface{}))
+	planModules := utils.InterfaceToStringSlice(planMap["modules"].([]interface{}))
 	for _, module := range planModules {
 		createModule := &subscriptions.CreateModules{
 			Name: module,

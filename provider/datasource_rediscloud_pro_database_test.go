@@ -5,19 +5,24 @@ import (
 	"os"
 	"testing"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const dataSourceById = "data.rediscloud_database.example-by-id"
 	const dataSourceByName = "data.rediscloud_database.example-by-name"
 	password := acctest.RandString(20)
 
-	config := getRedisProDbDatasourceConfig(t, password)
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+
+	content := utils.GetTestConfig(t, "./pro/testdata/pro_database_data_source.tf")
+	config := fmt.Sprintf(content, testCloudAccountName, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
@@ -66,16 +71,4 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 		},
 	})
 
-}
-
-func getRedisProDbDatasourceConfig(t *testing.T, password string) string {
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
-
-	content, err := os.ReadFile("./pro/testdata/testAccDatasourceRedisCloudProDatabase.tf")
-	if err != nil {
-		t.Fatalf("failed to read file: %v", err)
-	}
-
-	return fmt.Sprintf(string(content), testCloudAccountName, subscriptionName, password)
 }

@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
@@ -11,7 +12,7 @@ import (
 
 func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	databaseName := subscriptionName + "-db"
@@ -268,7 +269,7 @@ data "rediscloud_essentials_database" "example" {
 
 // there was a bug where removing the default user would cause issues with passwords
 func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T) {
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	databaseName := subscriptionName + "-db"
