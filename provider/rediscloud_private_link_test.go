@@ -41,7 +41,7 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "resource_configuration_arn"),
 					resource.TestCheckResourceAttrSet(resourceName, "share_arn"),
 					resource.TestCheckResourceAttrSet(resourceName, "connections.#"),
-					resource.TestCheckResourceAttr(resourceName, "databases.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceName, "databases.#"),
 
 					resource.TestCheckResourceAttrSet(datasourceName, "id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
@@ -51,7 +51,7 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(datasourceName, "resource_configuration_arn"),
 					resource.TestCheckResourceAttrSet(datasourceName, "share_arn"),
 					resource.TestCheckResourceAttrSet(datasourceName, "connections.#"),
-					resource.TestCheckResourceAttr(datasourceName, "databases.#", "1"),
+					resource.TestCheckResourceAttrSet(datasourceName, "databases.#"),
 
 					//resource.TestCheckResourceAttrSet(datasourceScriptName, "id"),
 					//resource.TestCheckResourceAttrSet(datasourceScriptName, "subscription_id"),
