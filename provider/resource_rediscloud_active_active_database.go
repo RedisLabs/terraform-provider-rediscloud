@@ -560,10 +560,11 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 			"name": region,
 		}
 
-		// Handle source_ips based on subscription's public_endpoint_access setting
+		// Handle source_ips based on subscription's public_endpoint_access settings
 		// When public_endpoint_access is false and source_ips is empty, API returns private IP ranges
 		// When public_endpoint_access is true and source_ips is empty, API returns ["0.0.0.0/0"]
 		// When source_ips is explicitly set by user, API returns the user's input
+		// This is to prevent drift in terraform state as API response will differ from what terraform sees
 		var sourceIPs []string
 		privateIPRanges := []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10"}
 
