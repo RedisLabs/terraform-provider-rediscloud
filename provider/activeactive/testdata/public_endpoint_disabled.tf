@@ -49,7 +49,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
   override_region {
     name                = "us-east-2"
     enable_default_user = true
-    override_global_source_ips = ["192.10.0.0/16"]
+    override_global_source_ips = ["172.16.0.0/16"]
   }
 
   override_region {
