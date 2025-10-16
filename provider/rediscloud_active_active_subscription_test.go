@@ -46,6 +46,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					// Test the resource
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
+					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
@@ -322,6 +323,36 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 	})
 }
 
+func TestAccResourceRedisCloudActiveActiveSubscription_PublicEndpointAccess(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	const resourceName = "rediscloud_active_active_subscription.example"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointDisabled(t, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "false"),
+				),
+			},
+			{
+				Config: testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointEnabled(t, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckActiveActiveSubscriptionDestroy(s *terraform.State) error {
 	client := testProvider.Meta().(*client2.ApiClient)
 
@@ -462,4 +493,14 @@ func testAccResourceRedisCloudActiveActiveSubscription(t *testing.T, subscriptio
 func testAccResourceRedisCloudActiveActiveSubscriptionUpdate(t *testing.T, subscriptionName string, cloudProvider string) string {
 	content := utils.GetTestConfig(t, "./activeactive/testdata/testAccResourceRedisCloudActiveActiveSubscriptionUpdate.tf")
 	return fmt.Sprintf(content, subscriptionName, cloudProvider)
+}
+
+func testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointDisabled(t *testing.T, subscriptionName string) string {
+	content := utils.GetTestConfig(t, "./activeactive/testdata/testAccResourceRedisCloudActiveActiveSubscription_PublicEndpointDisabled.tf")
+	return fmt.Sprintf(content, subscriptionName)
+}
+
+func testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointEnabled(t *testing.T, subscriptionName string) string {
+	content := utils.GetTestConfig(t, "./activeactive/testdata/testAccResourceRedisCloudActiveActiveSubscription_PublicEndpointEnabled.tf")
+	return fmt.Sprintf(content, subscriptionName)
 }

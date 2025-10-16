@@ -326,6 +326,12 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
+			"public_endpoint_access": {
+				Description: "Whether databases in the subscription should have public endpoints. When set to false, databases will only have private endpoints. Defaults to true.",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+			},
 		},
 	}
 }
@@ -359,12 +365,14 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 	dbs = buildSubscriptionCreatePlanAADatabases(planMap)
 
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
+	publicEndpointAccess := d.Get("public_endpoint_access").(bool)
 	createSubscriptionRequest := newCreateSubscription(name,
 		paymentMethodID,
 		paymentMethod,
 		providers,
 		dbs,
-		cmkEnabled)
+		cmkEnabled,
+		publicEndpointAccess)
 
 	redisVersion := d.Get("redis_version").(string)
 	if d.Get("redis_version").(string) != "" {
@@ -518,6 +526,15 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		}
 	}
 
+	// Set public_endpoint_access, default to true if not set by API
+	publicEndpointAccess := true
+	if subscription.PublicEndpointAccess != nil {
+		publicEndpointAccess = redis.BoolValue(subscription.PublicEndpointAccess)
+	}
+	if err := d.Set("public_endpoint_access", publicEndpointAccess); err != nil {
+		return diag.FromErr(err)
+	}
+
 	return diags
 }
 
@@ -548,7 +565,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 		}
 	}
 
-	if d.HasChanges("name", "payment_method_id") {
+	if d.HasChanges("name", "payment_method_id", "public_endpoint_access") {
 		updateSubscriptionRequest := subscriptions.UpdateSubscription{}
 
 		if d.HasChange("name") {
@@ -563,6 +580,11 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 			}
 
 			updateSubscriptionRequest.PaymentMethodID = paymentMethodID
+		}
+
+		if d.HasChange("public_endpoint_access") {
+			publicEndpointAccess := d.Get("public_endpoint_access").(bool)
+			updateSubscriptionRequest.PublicEndpointAccess = redis.Bool(publicEndpointAccess)
 		}
 
 		err = api.Client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
@@ -687,15 +709,16 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 	return diags
 }
 
-func newCreateSubscription(name string, paymentMethodID *int, paymentMethod string, providers []*subscriptions.CreateCloudProvider, dbs []*subscriptions.CreateDatabase, cmkEnabled bool) subscriptions.CreateSubscription {
+func newCreateSubscription(name string, paymentMethodID *int, paymentMethod string, providers []*subscriptions.CreateCloudProvider, dbs []*subscriptions.CreateDatabase, cmkEnabled bool, publicEndpointAccess bool) subscriptions.CreateSubscription {
 	req := subscriptions.CreateSubscription{
-		DeploymentType:  redis.String("active-active"),
-		Name:            redis.String(name),
-		DryRun:          redis.Bool(false),
-		PaymentMethodID: paymentMethodID,
-		PaymentMethod:   redis.String(paymentMethod),
-		CloudProviders:  providers,
-		Databases:       dbs,
+		DeploymentType:       redis.String("active-active"),
+		Name:                 redis.String(name),
+		DryRun:               redis.Bool(false),
+		PaymentMethodID:      paymentMethodID,
+		PaymentMethod:        redis.String(paymentMethod),
+		CloudProviders:       providers,
+		Databases:            dbs,
+		PublicEndpointAccess: redis.Bool(publicEndpointAccess),
 	}
 
 	if cmkEnabled {
