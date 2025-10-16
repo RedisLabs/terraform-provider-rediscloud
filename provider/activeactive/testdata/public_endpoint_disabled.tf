@@ -67,3 +67,8 @@ resource "rediscloud_active_active_subscription_database" "example" {
     "cost_center" = "0700"
   }
 }
+
+data "rediscloud_active_active_subscription_database" "example" {
+  subscription_id = rediscloud_active_active_subscription.example.id
+  name           = rediscloud_active_active_subscription_database.example.name
+}
