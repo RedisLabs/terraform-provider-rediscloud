@@ -18,6 +18,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+// Default RFC1918 private IP ranges used when public_endpoint_access is false
+var defaultPrivateIPRanges = []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10"}
+
 func ResourceRedisCloudProDatabase() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates database resource within a pro subscription in your Redis Enterprise Cloud Account.",
@@ -472,7 +475,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	// We are not import this resource, so we can read the subscription_id defined in this resource.
+	// We are not importing this resource, so we can read the subscription_id defined in this resource.
 	if subId == 0 {
 		subId = d.Get("subscription_id").(int)
 	}
@@ -597,29 +600,9 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	// Handle source_ips based on subscription's public_endpoint_access setting
-	// When public_endpoint_access is false and source_ips is empty, API returns private IP ranges
-	// When public_endpoint_access is true and source_ips is empty, API returns ["0.0.0.0/0"]
-	// When source_ips is explicitly set by user, API returns the user's input
 	var sourceIPs []string
-	privateIPRanges := []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10"}
-
-	// Check if the returned source_ips matches default private IP ranges (when public access is blocked)
-	isPrivateIPRange := len(db.Security.SourceIPs) == len(privateIPRanges)
-	if isPrivateIPRange {
-		for i, ip := range db.Security.SourceIPs {
-			if redis.StringValue(ip) != privateIPRanges[i] {
-				isPrivateIPRange = false
-				break
-			}
-		}
-	}
-
-	// Check if the returned source_ips is the default public access ["0.0.0.0/0"]
-	isDefaultPublicAccess := len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0"
-
-	// Only set source_ips if they were explicitly configured by the user (not defaults)
-	if !isDefaultPublicAccess && !isPrivateIPRange {
+	if !(len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0") {
+		// The API handles an empty list as ["0.0.0.0/0"] but need to be careful to match the input to avoid Terraform detecting drift
 		sourceIPs = redis.StringSliceValue(db.Security.SourceIPs...)
 	}
 
