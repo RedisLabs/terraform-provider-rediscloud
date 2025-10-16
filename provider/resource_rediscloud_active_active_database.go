@@ -205,7 +205,6 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Description: "When 'true', enables connecting to the database with the 'default' user across all regions. Default: 'true'",
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     true,
 			},
 			"override_region": {
 				Description: "Region-specific configuration parameters to override the global configuration",
@@ -260,10 +259,9 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 							Optional:    true,
 						},
 						"enable_default_user": {
-							Description: "When 'true', enables connecting to the database with the 'default' user. Default: 'true'",
+							Description: "When 'true', enables connecting to the database with the 'default' user. If not set, the global setting will be used.",
 							Type:        schema.TypeBool,
 							Optional:    true,
-							Default:     true,
 						},
 						"remote_backup": {
 							Description: "An object that specifies the backup options for the database in this region",
@@ -561,11 +559,33 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		regionDbConfig := map[string]interface{}{
 			"name": region,
 		}
+
+		// Handle source_ips based on subscription's public_endpoint_access setting
+		// When public_endpoint_access is false and source_ips is empty, API returns private IP ranges
+		// When public_endpoint_access is true and source_ips is empty, API returns ["0.0.0.0/0"]
+		// When source_ips is explicitly set by user, API returns the user's input
 		var sourceIPs []string
-		if !(len(regionDb.Security.SourceIPs) == 1 && redis.StringValue(regionDb.Security.SourceIPs[0]) == "0.0.0.0/0") {
-			// The API handles an empty list as ["0.0.0.0/0"] but need to be careful to match the input to avoid Terraform detecting drift
+		privateIPRanges := []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10"}
+
+		// Check if the returned source_ips matches default private IP ranges (when public access is blocked)
+		isPrivateIPRange := len(regionDb.Security.SourceIPs) == len(privateIPRanges)
+		if isPrivateIPRange {
+			for i, ip := range regionDb.Security.SourceIPs {
+				if redis.StringValue(ip) != privateIPRanges[i] {
+					isPrivateIPRange = false
+					break
+				}
+			}
+		}
+
+		// Check if the returned source_ips is the default public access ["0.0.0.0/0"]
+		isDefaultPublicAccess := len(regionDb.Security.SourceIPs) == 1 && redis.StringValue(regionDb.Security.SourceIPs[0]) == "0.0.0.0/0"
+
+		// Only set source_ips if they were explicitly configured by the user (not defaults)
+		if !isDefaultPublicAccess && !isPrivateIPRange {
 			sourceIPs = redis.StringSliceValue(regionDb.Security.SourceIPs...)
 		}
+
 		if stateSourceIPs := getStateOverrideRegion(d, region)["override_global_source_ips"]; stateSourceIPs != nil {
 			if len(stateSourceIPs.(*schema.Set).List()) > 0 {
 				regionDbConfig["override_global_source_ips"] = sourceIPs
@@ -593,7 +613,10 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 
 		regionDbConfig["remote_backup"] = pro.FlattenBackupPlan(regionDb.Backup, getStateRemoteBackup(d, region), "")
 
-		regionDbConfig["enable_default_user"] = redis.BoolValue(regionDb.Security.EnableDefaultUser)
+		// Only set enable_default_user if it was explicitly configured in the override_region
+		if stateEnableDefaultUser := getStateOverrideRegion(d, region)["enable_default_user"]; stateEnableDefaultUser != nil {
+			regionDbConfig["enable_default_user"] = redis.BoolValue(regionDb.Security.EnableDefaultUser)
+		}
 
 		regionDbConfigs = append(regionDbConfigs, regionDbConfig)
 	}
@@ -703,8 +726,12 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		}
 
 		regionProps := &databases.LocalRegionProperties{
-			Region:            redis.String(dbRegion["name"].(string)),
-			EnableDefaultUser: redis.Bool(dbRegion["enable_default_user"].(bool)),
+			Region: redis.String(dbRegion["name"].(string)),
+		}
+
+		// Only set EnableDefaultUser if it was explicitly configured in the override_region
+		if val, exists := dbRegion["enable_default_user"]; exists && val != nil {
+			regionProps.EnableDefaultUser = redis.Bool(val.(bool))
 		}
 
 		if len(overrideAlerts) > 0 {
