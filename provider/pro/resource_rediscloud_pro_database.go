@@ -747,8 +747,27 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	// The below fields are optional and will only be sent in the request if they are present in the Terraform configuration
+	// When source_ips is not specified, default based on subscription's public_endpoint_access setting
 	if len(utils.SetToStringSlice(d.Get("source_ips").(*schema.Set))) == 0 {
-		update.SourceIP = []*string{redis.String("0.0.0.0/0")}
+		// Fetch subscription to check public_endpoint_access setting
+		subscription, err := api.Client.Subscription.Get(ctx, subId)
+		if err != nil {
+			utils.SubscriptionMutex.Unlock(subId)
+			return diag.FromErr(err)
+		}
+
+		// If public endpoint access is blocked, default to RFC1918 private IP ranges
+		if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
+			update.SourceIP = []*string{
+				redis.String("10.0.0.0/8"),
+				redis.String("172.16.0.0/12"),
+				redis.String("192.168.0.0/16"),
+				redis.String("100.64.0.0/10"),
+			}
+		} else {
+			// Default to public access
+			update.SourceIP = []*string{redis.String("0.0.0.0/0")}
+		}
 	}
 
 	queryPerformanceFactor := d.Get("query_performance_factor").(string)
