@@ -1,5 +1,6 @@
 locals {
   rediscloud_subscription_name = "%s"
+  rediscloud_database_password = "%s"
 }
 
 data "rediscloud_payment_method" "card" {
@@ -37,7 +38,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
   name                    = local.rediscloud_subscription_name
   dataset_size_in_gb      = 1
   global_data_persistence = "aof-every-1-second"
-  global_password         = "some-random-pass-2"
+  global_password         = local.rediscloud_database_password
   global_source_ips = ["192.168.0.0/16"]
   global_alert {
     name  = "dataset-size"
