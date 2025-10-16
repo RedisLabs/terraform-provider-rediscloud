@@ -19,8 +19,8 @@ func TestAccRedisCloudProDatabaseBlockPublicEndpoints(t *testing.T) {
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 
-	content := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_public_endpoint_disabled.tf")
-	configDisabled := fmt.Sprintf(content, subscriptionName, password)
+	contentDisabled := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_public_endpoint_disabled.tf")
+	configDisabled := fmt.Sprintf(contentDisabled, subscriptionName, password)
 
 	contentEnabled := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_public_endpoint_enabled.tf")
 	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)

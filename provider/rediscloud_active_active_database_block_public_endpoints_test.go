@@ -15,13 +15,14 @@ func TestAccActiveActiveSubscriptionDatabaseBlockPublicEndpoints(t *testing.T) {
 
 	const databaseResource = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
+	password := acctest.RandString(20)
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 
-	content := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_disabled.tf")
-	configDisabled := fmt.Sprintf(content, subscriptionName)
+	contentDisabled := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_disabled.tf")
+	configDisabled := fmt.Sprintf(contentDisabled, subscriptionName, password)
 
 	contentEnabled := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_enabled.tf")
-	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName)
+	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
