@@ -14,12 +14,16 @@ func TestAccRedisCloudProDatabaseBlockPublicEndpoints(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const databaseResource = "rediscloud_subscription_database.example"
+	const datasourceName = "data.rediscloud_database.example"
 	password := acctest.RandString(20)
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 
 	content := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_public_endpoint_disabled.tf")
-	config := fmt.Sprintf(content, subscriptionName, password)
+	configDisabled := fmt.Sprintf(content, subscriptionName, password)
+
+	contentEnabled := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_public_endpoint_enabled.tf")
+	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
@@ -27,7 +31,7 @@ func TestAccRedisCloudProDatabaseBlockPublicEndpoints(t *testing.T) {
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: config,
+				Config: configDisabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(databaseResource, "name", "example"),
 					resource.TestCheckResourceAttr(databaseResource, "protocol", "redis"),
@@ -42,6 +46,21 @@ func TestAccRedisCloudProDatabaseBlockPublicEndpoints(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResource, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(databaseResource, "redis_version", "8.2"),
 					resource.TestCheckResourceAttrSet(databaseResource, "source_ips"),
+					// Data source checks
+					resource.TestCheckResourceAttr(datasourceName, "name", "example"),
+					resource.TestCheckResourceAttr(datasourceName, "protocol", "redis"),
+					resource.TestCheckResourceAttrSet(datasourceName, "source_ips"),
+				),
+			},
+			{
+				Config: configEnabled,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(databaseResource, "name", "example"),
+					resource.TestCheckResourceAttr(databaseResource, "data_persistence", "none"),
+					resource.TestCheckResourceAttrSet(databaseResource, "source_ips"),
+					// Data source checks after update
+					resource.TestCheckResourceAttr(datasourceName, "name", "example"),
+					resource.TestCheckResourceAttrSet(datasourceName, "source_ips"),
 				),
 			},
 		},
