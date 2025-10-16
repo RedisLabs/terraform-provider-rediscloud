@@ -33,7 +33,7 @@ resource "rediscloud_subscription" "example" {
 
 resource "rediscloud_subscription_database" "example" {
   subscription_id                       = rediscloud_subscription.example.id
-  name                                  = "example"
+  name                                  = local.rediscloud_subscription_name
   protocol                              = "redis"
   dataset_size_in_gb                    = 1
   data_persistence                      = "none"
@@ -58,8 +58,4 @@ resource "rediscloud_subscription_database" "example" {
 data "rediscloud_database" "example" {
   subscription_id = rediscloud_subscription.example.id
   name           = rediscloud_subscription_database.example.name
-}
-
-output "db_source_ips" {
-  value = rediscloud_subscription_database.example.source_ips
 }

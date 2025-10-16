@@ -32,32 +32,54 @@ func TestAccActiveActiveSubscriptionDatabaseBlockPublicEndpoints(t *testing.T) {
 			{
 				Config: configDisabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
+					// Verify the subscription has public_endpoint_access disabled
+					resource.TestCheckResourceAttr("rediscloud_active_active_subscription.example", "public_endpoint_access", "false"),
+
+					// Database resource checks
 					resource.TestCheckResourceAttr(databaseResource, "name", subscriptionName),
-					resource.TestCheckResourceAttr(databaseResource, "dataset_size_in_gb", "1"),
-					resource.TestCheckResourceAttr(databaseResource, "global_data_persistence", "aof-every-1-second"),
-					resource.TestCheckResourceAttr(databaseResource, "global_modules.#", "1"),
-					resource.TestCheckResourceAttr(databaseResource, "global_modules.0", "RedisJSON"),
-					resource.TestCheckResourceAttr(databaseResource, "global_alert.#", "1"),
-					resource.TestCheckResourceAttr(databaseResource, "global_alert.0.name", "dataset-size"),
-					resource.TestCheckResourceAttr(databaseResource, "global_alert.0.value", "40"),
+
+					// Global source IPs should be explicitly set
 					resource.TestCheckResourceAttr(databaseResource, "global_source_ips.#", "1"),
-					resource.TestCheckResourceAttr(databaseResource, "global_source_ips.0", "192.168.0.0/16"),
-					resource.TestCheckResourceAttrSet(databaseResource, "override_region.0.source_ips"),
+					resource.TestCheckTypeSetElemAttr(databaseResource, "global_source_ips.*", "192.168.0.0/16"),
+
+					// Override region 0 (us-east-2) has explicit override of source_ips
+					resource.TestCheckResourceAttr(databaseResource, "override_region.0.override_global_source_ips.#", "1"),
+					resource.TestCheckTypeSetElemAttr(databaseResource, "override_region.0.override_global_source_ips.*", "172.16.0.0/16"),
+					resource.TestCheckResourceAttr(databaseResource, "override_region.0.source_ips.#", "1"),
+					resource.TestCheckTypeSetElemAttr(databaseResource, "override_region.0.source_ips.*", "172.16.0.0/16"),
+
+					// Override region 1 (us-east-1) has no override, should inherit global
+					resource.TestCheckResourceAttr(databaseResource, "override_region.1.override_global_source_ips.#", "0"),
+					resource.TestCheckResourceAttr(databaseResource, "override_region.1.source_ips.#", "1"),
+					resource.TestCheckTypeSetElemAttr(databaseResource, "override_region.1.source_ips.*", "192.168.0.0/16"),
+
 					// Data source checks
 					resource.TestCheckResourceAttr(datasourceName, "name", subscriptionName),
 					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "1"),
-					resource.TestCheckResourceAttrSet(datasourceName, "global_source_ips.#"),
+					resource.TestCheckResourceAttr(datasourceName, "global_source_ips.#", "1"),
+					resource.TestCheckTypeSetElemAttr(datasourceName, "global_source_ips.*", "192.168.0.0/16"),
 				),
 			},
 			{
 				Config: configEnabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
+					// Verify the subscription has public_endpoint_access enabled
+					resource.TestCheckResourceAttr("rediscloud_active_active_subscription.example", "public_endpoint_access", "true"),
+					// Database resource checks
 					resource.TestCheckResourceAttr(databaseResource, "name", subscriptionName),
-					resource.TestCheckResourceAttr(databaseResource, "dataset_size_in_gb", "1"),
-					resource.TestCheckResourceAttrSet(databaseResource, "global_source_ips.#"),
+
+					// Global source IPs should be the same (explicitly set in testdata)
+					resource.TestCheckResourceAttr(databaseResource, "global_source_ips.#", "1"),
+					resource.TestCheckTypeSetElemAttr(databaseResource, "global_source_ips.*", "192.168.0.0/16"),
+					// Override regions should have the same overrides
+					resource.TestCheckResourceAttr(databaseResource, "override_region.0.override_global_source_ips.#", "1"),
+					resource.TestCheckTypeSetElemAttr(databaseResource, "override_region.0.override_global_source_ips.*", "172.16.0.0/16"),
+					resource.TestCheckResourceAttr(databaseResource, "override_region.0.source_ips.#", "1"),
+					resource.TestCheckTypeSetElemAttr(databaseResource, "override_region.0.source_ips.*", "172.16.0.0/16"),
 					// Data source checks after update
 					resource.TestCheckResourceAttr(datasourceName, "name", subscriptionName),
-					resource.TestCheckResourceAttrSet(datasourceName, "global_source_ips.#"),
+					resource.TestCheckResourceAttr(datasourceName, "global_source_ips.#", "1"),
+					resource.TestCheckTypeSetElemAttr(datasourceName, "global_source_ips.*", "192.168.0.0/16"),
 				),
 			},
 		},
