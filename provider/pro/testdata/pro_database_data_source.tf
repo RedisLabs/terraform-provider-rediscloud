@@ -51,7 +51,7 @@ resource "rediscloud_subscription_database" "example" {
   replication				     = false
   enable_default_user 		 = true
   query_performance_factor	 = "2x"
-  redis_version = "7.2"
+  redis_version = "7.4"
   modules = [
     {
       name: "RediSearch"
