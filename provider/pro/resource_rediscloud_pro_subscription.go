@@ -512,6 +512,12 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
+			"public_endpoint_access": {
+				Description: "Whether databases in the subscription should have public endpoints. When set to false, databases will only have private endpoints. Defaults to true.",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+			},
 		},
 	}
 }
@@ -617,6 +623,9 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 	if cmkEnabled {
 		createSubscriptionRequest.PersistentStorageEncryptionType = redis.String(CMK_ENABLED_STRING)
 	}
+
+	publicEndpointAccess := d.Get("public_endpoint_access").(bool)
+	createSubscriptionRequest.PublicEndpointAccess = redis.Bool(publicEndpointAccess)
 
 	subId, err := api.Client.Subscription.Create(ctx, createSubscriptionRequest)
 	if err != nil {
@@ -752,6 +761,16 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 			return diag.FromErr(err)
 		}
 	}
+
+	// Set public_endpoint_access, default to true if not set by API
+	publicEndpointAccess := true
+	if subscription.PublicEndpointAccess != nil {
+		publicEndpointAccess = redis.BoolValue(subscription.PublicEndpointAccess)
+	}
+	if err := d.Set("public_endpoint_access", publicEndpointAccess); err != nil {
+		return diag.FromErr(err)
+	}
+
 	return diags
 }
 
@@ -795,7 +814,7 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 		}
 	}
 
-	if d.HasChanges("name", "payment_method_id") {
+	if d.HasChanges("name", "payment_method_id", "public_endpoint_access") {
 		updateSubscriptionRequest := subscriptions.UpdateSubscription{}
 
 		if d.HasChange("name") {
@@ -810,6 +829,11 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 			}
 
 			updateSubscriptionRequest.PaymentMethodID = paymentMethodID
+		}
+
+		if d.HasChange("public_endpoint_access") {
+			publicEndpointAccess := d.Get("public_endpoint_access").(bool)
+			updateSubscriptionRequest.PublicEndpointAccess = redis.Bool(publicEndpointAccess)
 		}
 
 		err = api.Client.Subscription.Update(ctx, subId, updateSubscriptionRequest)

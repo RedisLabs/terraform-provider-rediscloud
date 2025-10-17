@@ -148,7 +148,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.value", "60"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "false"),
-					resource.TestCheckResourceAttr(databaseResourceName, "redis_version", "7.2"),
+					resource.TestCheckResourceAttr(databaseResourceName, "redis_version", "7.4"),
 
 					// Changes are ignored after creation
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "1"),
@@ -166,7 +166,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					// Test datasource
 					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "true"),
-					resource.TestCheckResourceAttr(datasourceName, "redis_version", "7.2"),
+					resource.TestCheckResourceAttr(datasourceName, "redis_version", "7.4"),
 					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "true"),
 				),
 			},
@@ -307,7 +307,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
     support_oss_cluster_api = false 
     external_endpoint_for_oss_cluster_api = false
 	enable_tls = false
-	redis_version = "7.2"
+	redis_version = "7.4"
 
     global_data_persistence = "none"
     global_password = "%s" 

@@ -1,30 +1,23 @@
 locals {
-  rediscloud_cloud_account = "%s"
   rediscloud_subscription_name = "%s"
   rediscloud_database_password = "%s"
 }
 
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+  card_type         = "Visa"
   last_four_numbers = "5556"
-}
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS"
-  name = local.rediscloud_cloud_account
 }
 
 resource "rediscloud_subscription" "example" {
   name = local.rediscloud_subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
+  public_endpoint_access = false
+
   cloud_provider {
-    provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
+    provider = "AWS"
     region {
       region = "eu-west-1"
       networking_deployment_cidr = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
     }
   }
 
@@ -37,9 +30,10 @@ resource "rediscloud_subscription" "example" {
   }
 }
 
+
 resource "rediscloud_subscription_database" "example" {
   subscription_id                       = rediscloud_subscription.example.id
-  name                                  = "example"
+  name                                  = local.rediscloud_subscription_name
   protocol                              = "redis"
   dataset_size_in_gb                    = 1
   data_persistence                      = "none"
@@ -52,17 +46,16 @@ resource "rediscloud_subscription_database" "example" {
   replication                           = false
   average_item_size_in_bytes            = 0
   client_ssl_certificate                = ""
-  periodic_backup_path                  = ""
   enable_default_user                   = true
-  redis_version                         = "7.4"
+  redis_version                         = "8.2"
 
   alert {
     name  = "dataset-size"
     value = 1
   }
+}
 
-  tags = {
-    "market"   = "emea"
-    "material" = "cardboard"
-  }
+data "rediscloud_database" "example" {
+  subscription_id = rediscloud_subscription.example.id
+  name           = rediscloud_subscription_database.example.name
 }

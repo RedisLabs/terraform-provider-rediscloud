@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.6.0 (17th October 2025)
+
+## Added:
+- Support for disabling public endpoints on databases. When public endpoints are disabled, database connections are restricted to private networks only (via VPC peering, PrivateLink, or Private Service Connect).
+- `source_ips` attribute added to `rediscloud_database` data source.
+- `global_source_ips` attribute added to `rediscloud_active_active_subscription_database` data source.
+
+## Fixed:
+- The default value for `enable_default_user` on each region for active-active subscriptions made the global default effectively redundant. The default has been removed meaning that the global default should work correctly now.
 
 # 2.5.0 (13th October 2025)
 
