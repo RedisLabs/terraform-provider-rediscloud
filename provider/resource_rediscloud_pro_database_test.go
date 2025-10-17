@@ -60,7 +60,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
-					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.2"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.4"),
 
 					resource.TestCheckResourceAttr(resourceName, "tags.market", "emea"),
 					resource.TestCheckResourceAttr(resourceName, "tags.material", "cardboard"),
@@ -128,7 +128,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "modules.0.name", "RedisBloom"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
-					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.2"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.4"),
 				),
 			},
 			// Test that alerts are deleted

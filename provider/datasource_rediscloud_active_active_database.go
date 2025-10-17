@@ -241,6 +241,14 @@ func dataSourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				},
 				Computed: true,
 			},
+			"global_source_ips": {
+				Description: "Set of CIDR addresses to allow access to the database",
+				Type:        schema.TypeSet,
+				Computed:    true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -384,6 +392,13 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	} else if dbTlsCertificate != nil {
 		if err := d.Set("tls_certificate", dbTlsCertificate.PublicCertificatePEMString); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	// Set global_source_ips from the first region database
+	if len(db.CrdbDatabases) > 0 && db.CrdbDatabases[0].Security != nil {
+		if err := d.Set("global_source_ips", redis.StringSliceValue(db.CrdbDatabases[0].Security.SourceIPs...)); err != nil {
 			return diag.FromErr(err)
 		}
 	}

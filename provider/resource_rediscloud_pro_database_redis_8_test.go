@@ -138,7 +138,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "1"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
-					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.2"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.4"),
 
 					resource.TestCheckResourceAttr(resourceName, "tags.market", "emea"),
 					resource.TestCheckResourceAttr(resourceName, "tags.material", "cardboard"),

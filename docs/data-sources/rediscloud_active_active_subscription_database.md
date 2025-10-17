@@ -49,6 +49,7 @@ data "rediscloud_active_active_subscription_database" "example" {
 * `external_endpoint_for_oss_cluster_api` - Use the external endpoint for open-source (OSS) Cluster API.
 * `enable_tls` - Enable TLS for database.
 * `tls_certificate` - TLS certificate used for authentication.
+* `global_source_ips` - Set of CIDR addresses to allow access to the database.
 * `data_eviction` - The data items eviction policy.
 * `global_modules` - A list of modules to be enabled on all deployments of this database.
 * `public_endpoint` - Public endpoint to access the database.

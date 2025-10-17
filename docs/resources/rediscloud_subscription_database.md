@@ -96,7 +96,7 @@ The following arguments are supported:
 * `replication` - (Optional) Databases replication. Default: ‘true’
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes)
   of the items stored in the database. Default: 1000
-* `source_ips` - (Optional) List of source IP addresses or subnet masks. If specified, Redis clients will be able to connect to this database only from within the specified source IP addresses ranges (example: [‘192.168.10.0/32’, ‘192.168.12.0/24’])
+* `source_ips` - (Optional) List of source IP addresses or subnet masks that are allowed to connect to the database (example: ['192.168.10.0/32', '192.168.12.0/24']). When not specified, the default behavior depends on the subscription's `public_endpoint_access` setting: if `false`, defaults to RFC1918 private IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10); if `true`, defaults to 0.0.0.0/0 (unrestricted public access)
 * `hashing_policy` - (Optional) List of regular expression rules to shard the database by. See
   [the documentation on clustering](https://docs.redislabs.com/latest/rc/concepts/clustering/) for more information on the
   hashing policy. This cannot be set when `support_oss_cluster_api` is set to true.
