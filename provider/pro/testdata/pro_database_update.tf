@@ -51,7 +51,7 @@ resource "rediscloud_subscription_database" "example" {
 	replication = true
 	average_item_size_in_bytes = 0
 	enable_default_user = true
-	redis_version = "7.2"
+	redis_version = "7.4"
 
 	alert {
 		name = "dataset-size"
