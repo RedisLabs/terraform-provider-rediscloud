@@ -313,6 +313,15 @@ func DataSourceRedisCloudProDatabase() *schema.Resource {
 				},
 				Computed: true,
 			},
+			"source_ips": {
+				Description: "Set of CIDR addresses to allow access to the database",
+				Type:        schema.TypeSet,
+				Computed:    true,
+				Elem: &schema.Schema{
+					Type:             schema.TypeString,
+					ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
+				},
+			},
 		},
 	}
 }
@@ -452,6 +461,9 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 	}
 	if db.Security != nil {
 		if err := d.Set("enable_default_user", redis.BoolValue(db.Security.EnableDefaultUser)); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := d.Set("source_ips", redis.StringSliceValue(db.Security.SourceIPs...)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
