@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccActiveActiveSubscriptionDatabaseBlockPublicEndpoints(t *testing.T) {
+func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
