@@ -150,7 +150,7 @@ func TestAccResourceRedisCloudProDatabase_qpf_missingModule(t *testing.T) {
 
 	config := formatDatabaseConfig(name, testCloudAccountName, password, "4x", "")
 
-	testErrorCase(t, config, regexp.MustCompile("query_performance_factor\" requires the \"modules\" key to be explicitly defined in HCL"))
+	testErrorCase(t, config, regexp.MustCompile("DATABASE_QUERY_PERFORMANCE_FACTOR_SEARCH_IS_REQUIRED.*RediSearch.*required"))
 }
 
 func TestAccResourceRedisCloudProDatabase_qpf_missingRediSearchModule(t *testing.T) {
@@ -160,7 +160,7 @@ func TestAccResourceRedisCloudProDatabase_qpf_missingRediSearchModule(t *testing
 
 	config := formatDatabaseConfig(name, testCloudAccountName, password, "4x", `modules = [{ name = "RediBloom" }]`)
 
-	testErrorCase(t, config, regexp.MustCompile("query_performance_factor\" requires the \"modules\" list to contain \"RediSearch"))
+	testErrorCase(t, config, regexp.MustCompile("DATABASE_QUERY_PERFORMANCE_FACTOR_SEARCH_IS_REQUIRED.*RediSearch.*required"))
 }
 
 func TestAccResourceRedisCloudProDatabase_qpf_invalidQueryPerformanceFactors(t *testing.T) {
