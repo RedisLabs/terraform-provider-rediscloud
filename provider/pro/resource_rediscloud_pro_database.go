@@ -1048,7 +1048,8 @@ func validateModulesForRedis8() schema.CustomizeDiffFunc {
 			if strings.HasPrefix(version, "8.") {
 				moduleSet := modules.(*schema.Set)
 				if moduleSet.Len() > 0 {
-					return fmt.Errorf(`"modules" cannot be explicitly set for Redis version %s as modules are bundled by default. Remove the "modules" field from your configuration`, version)
+					log.Printf("[WARN] Modules are bundled by default in Redis %s. You should remove the modules block as it is deprecated for this version.", version)
+					return nil
 				}
 			}
 		}
