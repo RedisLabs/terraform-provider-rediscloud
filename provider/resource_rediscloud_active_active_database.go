@@ -653,6 +653,10 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
+	if err := d.Set("auto_minor_version_upgrade", redis.BoolValue(db.AutoMinorVersionUpgrade)); err != nil {
+		return diag.FromErr(err)
+	}
+
 	tlsAuthEnabled := *db.CrdbDatabases[0].Security.TLSClientAuthentication
 	if err := utils.ApplyCertificateHints(tlsAuthEnabled, d); err != nil {
 		return diag.FromErr(err)
