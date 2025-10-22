@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-# 2.7.0
+# 2.7.0 (22nd October 2025)
 
 ## Added:
 - Support for `auto_minor_version_upgrade` attribute on Pro and Active-Active databases. When set to `true`, enables automatic minor version upgrades for Redis databases.
