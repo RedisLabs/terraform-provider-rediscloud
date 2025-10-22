@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.7.0
+
+## Added:
+- Support for `auto_minor_version_upgrade` attribute on Pro and Active-Active databases. When set to `true`, enables automatic minor version upgrades for Redis databases.
+
+## Fixed:
+- Fixed module validation causing errors for Redis 8. It will now show a warning instead and ignore the modules.
+- Fixed `source_ips` being sent to the API for essentials databases on free plans, which caused errors. The `source_ips` attribute is now only sent for PAYG (Pay-As-You-Go) subscriptions when `enable_payg_features` is true.
+
 # 2.6.0 (17th October 2025)
 
 ## Added:
