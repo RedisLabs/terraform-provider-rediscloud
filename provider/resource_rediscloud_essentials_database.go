@@ -138,14 +138,15 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				Computed:    true,
 			},
 			"source_ips": {
-				Description: "Set of CIDR addresses to allow access to the database",
-				Type:        schema.TypeList,
-				Optional:    true,
-				MinItems:    1,
+				Description:      "Set of CIDR addresses to allow access to the database. Supported only for 'Pay-As-You-Go' subscriptions",
+				Type:             schema.TypeList,
+				Optional:         true,
+				MinItems:         1,
 				Elem: &schema.Schema{
 					Type:             schema.TypeString,
 					ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 				},
+				DiffSuppressFunc: suppressIfPaygDisabled,
 			},
 			"replica": {
 				Description: "Details of database replication",
@@ -333,11 +334,14 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 		createDatabaseRequest.RespVersion = redis.String(respVersion)
 	}
 
-	sourceIps := utils.InterfaceToStringSlice(d.Get("source_ips").([]interface{}))
-	if len(sourceIps) == 0 {
-		createDatabaseRequest.SourceIPs = []*string{redis.String("0.0.0.0/0")}
-	} else {
-		createDatabaseRequest.SourceIPs = sourceIps
+	// Only send source_ips for PAYG plans - free plans don't support this feature
+	if d.Get("enable_payg_features").(bool) {
+		sourceIps := utils.InterfaceToStringSlice(d.Get("source_ips").([]interface{}))
+		if len(sourceIps) == 0 {
+			createDatabaseRequest.SourceIPs = []*string{redis.String("0.0.0.0/0")}
+		} else {
+			createDatabaseRequest.SourceIPs = sourceIps
+		}
 	}
 
 	replicaRaw := d.Get("replica").([]interface{})
@@ -638,11 +642,14 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 		updateDatabaseRequest.RespVersion = redis.String(respVersion)
 	}
 
-	sourceIps := utils.InterfaceToStringSlice(d.Get("source_ips").([]interface{}))
-	if len(sourceIps) == 0 {
-		updateDatabaseRequest.SourceIPs = []*string{redis.String("0.0.0.0/0")}
-	} else {
-		updateDatabaseRequest.SourceIPs = sourceIps
+	// Only send source_ips for PAYG plans - free plans don't support this feature
+	if d.Get("enable_payg_features").(bool) {
+		sourceIps := utils.InterfaceToStringSlice(d.Get("source_ips").([]interface{}))
+		if len(sourceIps) == 0 {
+			updateDatabaseRequest.SourceIPs = []*string{redis.String("0.0.0.0/0")}
+		} else {
+			updateDatabaseRequest.SourceIPs = sourceIps
+		}
 	}
 
 	replicaRaw := d.Get("replica").([]interface{})
