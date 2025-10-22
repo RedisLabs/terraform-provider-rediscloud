@@ -1048,6 +1048,21 @@ func containsDBModule(modules []map[string]interface{}, moduleName string) bool 
 	return false
 }
 
+// shouldWarnRedis8Modules checks if a warning should be issued for modules in Redis 8.0 or higher
+func shouldWarnRedis8Modules(version string, hasModules bool) bool {
+	if !hasModules {
+		return false
+	}
+	// Extract major version (first character before the dot)
+	if len(version) > 0 {
+		majorVersionStr := strings.Split(version, ".")[0]
+		if majorVersion, err := strconv.Atoi(majorVersionStr); err == nil {
+			return majorVersion >= 8
+		}
+	}
+	return false
+}
+
 func validateModulesForRedis8() schema.CustomizeDiffFunc {
 	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
 		redisVersion, versionExists := diff.GetOk("redis_version")
@@ -1055,13 +1070,10 @@ func validateModulesForRedis8() schema.CustomizeDiffFunc {
 
 		if versionExists && modulesExists {
 			version := redisVersion.(string)
-			// Check if version is >= 8.0
-			if strings.HasPrefix(version, "8.") {
-				moduleSet := modules.(*schema.Set)
-				if moduleSet.Len() > 0 {
-					log.Printf("[WARN] Modules are bundled by default in Redis %s. You should remove the modules block as it is deprecated for this version.", version)
-					return nil
-				}
+			moduleSet := modules.(*schema.Set)
+
+			if shouldWarnRedis8Modules(version, moduleSet.Len() > 0) {
+				log.Printf("[WARN] Modules are bundled by default in Redis %s. You should remove the modules block as it is deprecated for this version.", version)
 			}
 		}
 		return nil
