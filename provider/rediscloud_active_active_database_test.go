@@ -515,3 +515,36 @@ resource "rediscloud_active_active_subscription_database" "example" {
 	}
 } 
 `
+
+func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
+	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
+	const resourceName = "rediscloud_active_active_subscription_database.example"
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			// Test database creation with auto_minor_version_upgrade set to false
+			{
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./testdata/active_active_database_auto_minor_version_upgrade.tf"), testCloudAccountName, subscriptionName, name, "false"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "auto-minor-version-upgrade-test"),
+					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "false"),
+				),
+			},
+			// Test database update with auto_minor_version_upgrade set to true
+			{
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./testdata/active_active_database_auto_minor_version_upgrade.tf"), testCloudAccountName, subscriptionName, name, "true"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "true"),
+				),
+			},
+		},
+	})
+}

@@ -297,6 +297,12 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 			},
+			"auto_minor_version_upgrade": {
+				Description: "When 'true', enables auto minor version upgrades for this database. Default: 'true'",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+			},
 			"port": {
 				Description:      "TCP port on which the database is available",
 				Type:             schema.TypeInt,
@@ -434,6 +440,10 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 
 	utils.SetStringIfNotEmpty(d, "resp_version", func(s *string) {
 		createDatabase.RespVersion = s
+	})
+
+	utils.SetBool(d, "auto_minor_version_upgrade", func(b *bool) {
+		createDatabase.AutoMinorVersionUpgrade = b
 	})
 
 	// Confirm sub is ready to accept a db request
@@ -731,12 +741,13 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 			Value: utils.GetInt(d, "throughput_measurement_value"),
 		},
 
-		DataPersistence:    utils.GetString(d, "data_persistence"),
-		DataEvictionPolicy: utils.GetString(d, "data_eviction"),
-		SourceIP:           utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
-		Alerts:             &alerts,
-		RemoteBackup:       BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
-		EnableDefaultUser:  utils.GetBool(d, "enable_default_user"),
+		DataPersistence:         utils.GetString(d, "data_persistence"),
+		DataEvictionPolicy:      utils.GetString(d, "data_eviction"),
+		SourceIP:                utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
+		Alerts:                  &alerts,
+		RemoteBackup:            BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		EnableDefaultUser:       utils.GetBool(d, "enable_default_user"),
+		AutoMinorVersionUpgrade: utils.GetBool(d, "auto_minor_version_upgrade"),
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)
