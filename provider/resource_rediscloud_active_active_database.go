@@ -206,7 +206,13 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 			},
-			"override_region": {
+		"auto_minor_version_upgrade": {
+			Description: "When 'true', enables auto minor version upgrades for this database. Default: 'true'",
+			Type:        schema.TypeBool,
+			Optional:    true,
+			Default:     true,
+		},
+		"override_region": {
 				Description: "Region-specific configuration parameters to override the global configuration",
 				Type:        schema.TypeSet,
 				Optional:    true,
@@ -445,6 +451,10 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 
 	utils.SetStringIfNotEmpty(d, "redis_version", func(s *string) {
 		createDatabase.RedisVersion = s
+	})
+
+	utils.SetBool(d, "auto_minor_version_upgrade", func(b *bool) {
+		createDatabase.AutoMinorVersionUpgrade = b
 	})
 
 	// Confirm Subscription Active status before creating database
@@ -797,6 +807,10 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 	if v, ok := d.GetOk("global_enable_default_user"); ok {
 		update.GlobalEnableDefaultUser = redis.Bool(v.(bool))
+	}
+
+	if v, ok := d.GetOk("auto_minor_version_upgrade"); ok {
+		update.AutoMinorVersionUpgrade = redis.Bool(v.(bool))
 	}
 
 	if v, ok := d.GetOk("support_oss_cluster_api"); ok {

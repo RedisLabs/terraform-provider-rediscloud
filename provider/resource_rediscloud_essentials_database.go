@@ -306,6 +306,7 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 	api := meta.(*client.ApiClient)
 
 	subId := d.Get("subscription_id").(int)
+	log.Printf("[DEBUG] Creating essentials database in subscription %d", subId)
 
 	utils.SubscriptionMutex.Lock(subId)
 
@@ -316,6 +317,11 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 		Replication:        redis.Bool(d.Get("replication").(bool)),
 		PeriodicBackupPath: redis.String(d.Get("periodic_backup_path").(string)),
 	}
+	log.Printf("[DEBUG] Essentials database create request - Name: %s, DataPersistence: %s, DataEviction: %s, Replication: %v",
+		redis.StringValue(createDatabaseRequest.Name),
+		redis.StringValue(createDatabaseRequest.DataPersistence),
+		redis.StringValue(createDatabaseRequest.DataEvictionPolicy),
+		redis.BoolValue(createDatabaseRequest.Replication))
 
 	protocol := d.Get("protocol").(string)
 	if protocol != "" {
@@ -411,11 +417,14 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 		createDatabaseRequest.EnableTls = redis.Bool(d.Get("enable_tls").(bool))
 	}
 
+	log.Printf("[DEBUG] Calling FixedDatabases.Create API for subscription %d with database name: %s", subId, redis.StringValue(createDatabaseRequest.Name))
 	databaseId, err := api.Client.FixedDatabases.Create(ctx, subId, createDatabaseRequest)
 	if err != nil {
+		log.Printf("[ERROR] FixedDatabases.Create failed for subscription %d: %v", subId, err)
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
+	log.Printf("[DEBUG] FixedDatabases.Create succeeded for subscription %d, database ID: %d", subId, databaseId)
 
 	d.SetId(utils.BuildResourceId(subId, databaseId))
 
