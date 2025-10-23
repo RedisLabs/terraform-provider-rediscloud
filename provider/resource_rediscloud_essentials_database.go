@@ -305,7 +305,6 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 	subId := d.Get("subscription_id").(int)
 
 	utils.SubscriptionMutex.Lock(subId)
-	defer utils.SubscriptionMutex.Unlock(subId)
 
 	createDatabaseRequest := fixedDatabases.CreateFixedDatabase{
 		Name:               redis.String(d.Get("name").(string)),
@@ -427,6 +426,7 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 	databaseId, err := api.Client.FixedDatabases.Create(ctx, subId, createDatabaseRequest)
 	if err != nil {
 		log.Printf("[ERROR] FixedDatabases.Create failed for subscription %d: %v", subId, err)
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 	log.Printf("[DEBUG] FixedDatabases.Create succeeded for subscription %d, database ID: %d", subId, databaseId)
@@ -436,6 +436,7 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 	// Confirm Subscription Active status
 	err = waitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api)
 	if err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 

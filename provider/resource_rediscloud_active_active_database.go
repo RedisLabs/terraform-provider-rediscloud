@@ -361,7 +361,6 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 
 	subId := d.Get("subscription_id").(int)
 	utils.SubscriptionMutex.Lock(subId)
-	defer utils.SubscriptionMutex.Unlock(subId)
 
 	name := d.Get("name").(string)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
@@ -396,6 +395,7 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 	// Get regions from /subscriptions/{subscriptionId}/regions, this will use the Regions API
 	regions, err := api.Client.Regions.List(ctx, subId)
 	if err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -460,11 +460,13 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 	// Confirm Subscription Active status before creating database
 	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
 	if err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
 	dbId, err := api.Client.Database.ActiveActiveCreate(ctx, subId, createDatabase)
 	if err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -473,10 +475,12 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 	// Confirm Database Active status
 	err = utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api)
 	if err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
