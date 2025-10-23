@@ -472,7 +472,6 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password, enableDefaultUser and so on.
-	// Unlock before calling Update since Update also needs to acquire the same subscription mutex.
 	utils.SubscriptionMutex.Unlock(subId)
 	return resourceRedisCloudProDatabaseUpdate(ctx, d, meta)
 }
