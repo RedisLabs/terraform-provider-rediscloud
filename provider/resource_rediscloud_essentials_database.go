@@ -138,10 +138,10 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				Computed:    true,
 			},
 			"source_ips": {
-				Description:      "Set of CIDR addresses to allow access to the database. Supported only for 'Pay-As-You-Go' subscriptions",
-				Type:             schema.TypeList,
-				Optional:         true,
-				MinItems:         1,
+				Description: "Set of CIDR addresses to allow access to the database.",
+				Type:        schema.TypeList,
+				Optional:    true,
+				MinItems:    1,
 				Elem: &schema.Schema{
 					Type:             schema.TypeString,
 					ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
@@ -307,7 +307,6 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 	api := meta.(*client.ApiClient)
 
 	subId := d.Get("subscription_id").(int)
-	log.Printf("[DEBUG] Creating essentials database in subscription %d", subId)
 
 	utils.SubscriptionMutex.Lock(subId)
 
@@ -318,11 +317,6 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 		Replication:        redis.Bool(d.Get("replication").(bool)),
 		PeriodicBackupPath: redis.String(d.Get("periodic_backup_path").(string)),
 	}
-	log.Printf("[DEBUG] Essentials database create request - Name: %s, DataPersistence: %s, DataEviction: %s, Replication: %v",
-		redis.StringValue(createDatabaseRequest.Name),
-		redis.StringValue(createDatabaseRequest.DataPersistence),
-		redis.StringValue(createDatabaseRequest.DataEvictionPolicy),
-		redis.BoolValue(createDatabaseRequest.Replication))
 
 	protocol := d.Get("protocol").(string)
 	if protocol != "" {
@@ -334,14 +328,11 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 		createDatabaseRequest.RespVersion = redis.String(respVersion)
 	}
 
-	// Only send source_ips for PAYG plans - free plans don't support this feature
-	if d.Get("enable_payg_features").(bool) {
-		sourceIps := utils.InterfaceToStringSlice(d.Get("source_ips").([]interface{}))
-		if len(sourceIps) == 0 {
-			createDatabaseRequest.SourceIPs = []*string{redis.String("0.0.0.0/0")}
-		} else {
-			createDatabaseRequest.SourceIPs = sourceIps
-		}
+	sourceIps := utils.InterfaceToStringSlice(d.Get("source_ips").([]interface{}))
+	if len(sourceIps) == 0 {
+		createDatabaseRequest.SourceIPs = []*string{redis.String("0.0.0.0/0")}
+	} else {
+		createDatabaseRequest.SourceIPs = sourceIps
 	}
 
 	replicaRaw := d.Get("replica").([]interface{})
@@ -642,14 +633,11 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 		updateDatabaseRequest.RespVersion = redis.String(respVersion)
 	}
 
-	// Only send source_ips for PAYG plans - free plans don't support this feature
-	if d.Get("enable_payg_features").(bool) {
-		sourceIps := utils.InterfaceToStringSlice(d.Get("source_ips").([]interface{}))
-		if len(sourceIps) == 0 {
-			updateDatabaseRequest.SourceIPs = []*string{redis.String("0.0.0.0/0")}
-		} else {
-			updateDatabaseRequest.SourceIPs = sourceIps
-		}
+	sourceIps := utils.InterfaceToStringSlice(d.Get("source_ips").([]interface{}))
+	if len(sourceIps) == 0 {
+		updateDatabaseRequest.SourceIPs = []*string{redis.String("0.0.0.0/0")}
+	} else {
+		updateDatabaseRequest.SourceIPs = sourceIps
 	}
 
 	replicaRaw := d.Get("replica").([]interface{})
