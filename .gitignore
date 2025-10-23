@@ -30,6 +30,8 @@ website/node_modules
 website/vendor
 vendor
 .vscode/
+.claude/
+CLAUDE.md
 
 # Test exclusions
 !command/test-fixtures/**/*.tfstate
@@ -37,3 +39,4 @@ vendor
 
 # Keep windows files with windows line endings
 *.winfile eol=crlf
+.claude

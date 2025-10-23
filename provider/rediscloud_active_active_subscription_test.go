@@ -4,13 +4,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -26,7 +26,7 @@ var activeActiveMarketplaceFlag = flag.Bool("activeActiveMarketplace", false,
 // Also checks active-active subscription regions.
 func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_active_active_subscription.example"
@@ -46,6 +46,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					// Test the resource
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
+					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
@@ -244,7 +245,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayment(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*activeActiveContractFlag {
 		t.Skip("The '-activeActiveContract' parameter wasn't provided in the test command.")
@@ -284,7 +285,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 
 func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePayment(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*activeActiveMarketplaceFlag {
 		t.Skip("The '-activeActiveMarketplace' parameter wasn't provided in the test command.")
@@ -316,6 +317,36 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionMarketplacePayment, updatedName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceRedisCloudActiveActiveSubscription_PublicEndpointAccess(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	const resourceName = "rediscloud_active_active_subscription.example"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointDisabled(t, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "false"),
+				),
+			},
+			{
+				Config: testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointEnabled(t, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
 				),
 			},
 		},
@@ -455,21 +486,21 @@ resource "rediscloud_active_active_subscription" "example" {
 `
 
 func testAccResourceRedisCloudActiveActiveSubscription(t *testing.T, subscriptionName string) string {
-
-	content, err := os.ReadFile("./activeactive/testdata//testAccResourceRedisCloudActiveActiveSubscription.tf")
-	if err != nil {
-		t.Fatalf("failed to read file: %v", err)
-	}
-
-	return fmt.Sprintf(string(content), subscriptionName)
+	content := utils.GetTestConfig(t, "./activeactive/testdata/testAccResourceRedisCloudActiveActiveSubscription.tf")
+	return fmt.Sprintf(content, subscriptionName)
 }
 
 func testAccResourceRedisCloudActiveActiveSubscriptionUpdate(t *testing.T, subscriptionName string, cloudProvider string) string {
+	content := utils.GetTestConfig(t, "./activeactive/testdata/testAccResourceRedisCloudActiveActiveSubscriptionUpdate.tf")
+	return fmt.Sprintf(content, subscriptionName, cloudProvider)
+}
 
-	content, err := os.ReadFile("./activeactive/testdata/testAccResourceRedisCloudActiveActiveSubscriptionUpdate.tf")
-	if err != nil {
-		t.Fatalf("failed to read file: %v", err)
-	}
+func testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointDisabled(t *testing.T, subscriptionName string) string {
+	content := utils.GetTestConfig(t, "./activeactive/testdata/testAccResourceRedisCloudActiveActiveSubscription_PublicEndpointDisabled.tf")
+	return fmt.Sprintf(content, subscriptionName)
+}
 
-	return fmt.Sprintf(string(content), subscriptionName, cloudProvider)
+func testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointEnabled(t *testing.T, subscriptionName string) string {
+	content := utils.GetTestConfig(t, "./activeactive/testdata/testAccResourceRedisCloudActiveActiveSubscription_PublicEndpointEnabled.tf")
+	return fmt.Sprintf(content, subscriptionName)
 }

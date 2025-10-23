@@ -63,6 +63,7 @@ data "rediscloud_database" "example" {
 * `private_endpoint` - Private endpoint to access the database
 * `enable_tls` - Enable TLS for database, default is `false`
 * `enable_default_user` - When `true` enables connecting to the database with the default user. Default `true`.
+* `source_ips` - Set of CIDR addresses to allow access to the database.
 * `latest_backup_status` - A latest_backup_status object, documented below.
 * `latest_import_status` - A latest_import_status object, documented below.
 * `tags` - A string/string map of all Tags associated with this database.

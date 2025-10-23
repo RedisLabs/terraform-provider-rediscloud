@@ -3,10 +3,12 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -239,6 +241,14 @@ func dataSourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				},
 				Computed: true,
 			},
+			"global_source_ips": {
+				Description: "Set of CIDR addresses to allow access to the database",
+				Type:        schema.TypeSet,
+				Computed:    true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -347,7 +357,7 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 		if err != nil {
 			// Forgive errors here, sometimes we just can't get a latest status
 		} else {
-			parsedLatestBackupStatus, err := parseLatestBackupStatus(latestBackupStatus)
+			parsedLatestBackupStatus, err := utils.ParseLatestBackupStatus(latestBackupStatus)
 			if err != nil {
 				return diag.FromErr(err)
 			}
@@ -365,7 +375,7 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 	if err != nil {
 		// Forgive errors here, sometimes we just can't get a latest status
 	} else {
-		parsedLatestImportStatus, err = parseLatestImportStatus(latestImportStatus)
+		parsedLatestImportStatus, err = utils.ParseLatestImportStatus(latestImportStatus)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -374,7 +384,7 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	}
 
-	if err := readTags(ctx, api, subId, dbId, d); err != nil {
+	if err := pro.ReadTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -382,6 +392,13 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	} else if dbTlsCertificate != nil {
 		if err := d.Set("tls_certificate", dbTlsCertificate.PublicCertificatePEMString); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	// Set global_source_ips from the first region database
+	if len(db.CrdbDatabases) > 0 && db.CrdbDatabases[0].Security != nil {
+		if err := d.Set("global_source_ips", redis.StringSliceValue(db.CrdbDatabases[0].Security.SourceIPs...)); err != nil {
 			return diag.FromErr(err)
 		}
 	}

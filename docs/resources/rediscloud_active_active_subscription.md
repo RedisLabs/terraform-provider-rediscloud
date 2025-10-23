@@ -59,6 +59,7 @@ The following arguments are supported:
 * `name` - (Required) A meaningful name to identify the subscription
 * `payment_method` - (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`).  Must not be set for direct contracts. If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'. **(Changes to) this attribute are ignored after creation.**
 * `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types
+* `public_endpoint_access` - (Optional) Allow public access to databases within this subscription. When set to `false`, database access is restricted to private IP ranges only. Default: `true`.
 * `cloud_provider` - (Optional) The cloud provider to use with the subscription, (either `AWS` or `GCP`). Default: ‘AWS’. **Modifying this attribute will force creation of a new resource.**
 * `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default. **Deprecated: This attribute is deprecated on the subscription level. Please specify `redis_version` on databases directly instead.**
 * `creation_plan` - (Required) A creation plan object, documented below. Ignored after creation.

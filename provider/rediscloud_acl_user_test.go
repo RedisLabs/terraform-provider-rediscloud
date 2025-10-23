@@ -3,20 +3,22 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/RedisLabs/rediscloud-go-api/redis"
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"os"
 	"regexp"
 	"strconv"
 	"testing"
+
+	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	prefix := acctest.RandomWithPrefix(testResourcePrefix)
 	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -31,20 +33,20 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 	testUserPassword := prefix + "aA.1"
 	testUserPasswordUpdated := testUserPassword + "-updated"
 
-	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabaseAcl, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRole, exampleRoleName) +
 		fmt.Sprintf(testUser, testUserName, testUserPassword)
 
 	// The User will be updated because the Role's name will have changed
-	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabaseAcl, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRole, exampleRoleNameUpdated) +
 		fmt.Sprintf(testUser, testUserName, testUserPassword)
 
-	testNewNameTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testNewNameTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabaseAcl, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRole, exampleRoleNameUpdated) +
 		fmt.Sprintf(testUser, testUserNameUpdated, testUserPassword)
 
-	testNewPasswordTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabase, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testNewPasswordTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabaseAcl, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRole, exampleRoleNameUpdated) +
 		fmt.Sprintf(testUser, testUserNameUpdated, testUserPasswordUpdated)
 
@@ -82,8 +84,8 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the role ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						client := testProvider.Meta().(*client2.ApiClient)
-						user, err := client.Client.Users.Get(context.TODO(), id)
+						apiClient := testProvider.Meta().(*client.ApiClient)
+						user, err := apiClient.Client.Users.Get(context.TODO(), id)
 						if err != nil {
 							return err
 						}
@@ -194,7 +196,7 @@ data "rediscloud_acl_user" "test" {
 `
 
 func testAccCheckAclUserDestroy(s *terraform.State) error {
-	client := testProvider.Meta().(*client2.ApiClient)
+	apiClient := testProvider.Meta().(*client.ApiClient)
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_acl_user" {
@@ -206,7 +208,7 @@ func testAccCheckAclUserDestroy(s *terraform.State) error {
 			return err
 		}
 
-		roles, err := client.Client.Users.List(context.TODO())
+		roles, err := apiClient.Client.Users.List(context.TODO())
 		if err != nil {
 			return err
 		}
@@ -220,3 +222,74 @@ func testAccCheckAclUserDestroy(s *terraform.State) error {
 
 	return nil
 }
+
+const testAccResourceRedisCloudProDatabaseAcl = `
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+  last_four_numbers = "5556"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS"
+  name = "%s"
+}
+
+resource "rediscloud_subscription" "example" {
+  name = "%s"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  cloud_provider {
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region = "eu-west-1"
+      networking_deployment_cidr = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+
+  creation_plan {
+    dataset_size_in_gb = 1
+    quantity = 1
+    replication = false
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 1000
+  }
+}
+
+resource "rediscloud_subscription_database" "example" {
+    subscription_id = rediscloud_subscription.example.id
+    name = "example"
+    protocol = "redis"
+    dataset_size_in_gb = 3
+    data_persistence = "none"
+    data_eviction = "allkeys-random"
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 1000
+    password = "%s"
+    support_oss_cluster_api = false
+    external_endpoint_for_oss_cluster_api = false
+    replication = false
+    average_item_size_in_bytes = 0
+    client_ssl_certificate = ""
+    periodic_backup_path = ""
+	enable_default_user = true
+    redis_version = "7.4"
+
+    alert {
+        name = "dataset-size"
+        value = 1
+    }
+
+    modules = [
+        {
+          name = "RedisBloom"
+        }
+    ]
+
+	tags = {
+		"market" = "emea"
+		"material" = "cardboard"
+	}
+}
+`

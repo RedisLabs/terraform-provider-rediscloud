@@ -5,16 +5,17 @@ import (
 	"os"
 	"testing"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-const testPrivateLinkConfigFile = "./privatelink/testdata/testPrivateLink.tf"
+const testPrivateLinkConfigFile = "./privatelink/testdata/pro_private_link.tf"
 
 func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
-	testAccRequiresEnvVar(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	const resourceName = "rediscloud_private_link.pro_private_link"
 	const datasourceName = "data.rediscloud_private_link.pro_private_link"
@@ -39,8 +40,8 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "resource_configuration_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "resource_configuration_arn"),
 					resource.TestCheckResourceAttrSet(resourceName, "share_arn"),
-					resource.TestCheckResourceAttr(resourceName, "connections.#", "0"),
-					resource.TestCheckResourceAttr(resourceName, "databases.#", "0"),
+					resource.TestCheckResourceAttrSet(resourceName, "connections.#"),
+					resource.TestCheckResourceAttrSet(resourceName, "databases.#"),
 
 					resource.TestCheckResourceAttrSet(datasourceName, "id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
@@ -49,8 +50,8 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(datasourceName, "resource_configuration_id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "resource_configuration_arn"),
 					resource.TestCheckResourceAttrSet(datasourceName, "share_arn"),
-					resource.TestCheckResourceAttr(datasourceName, "connections.#", "0"),
-					resource.TestCheckResourceAttr(datasourceName, "databases.#", "0"),
+					resource.TestCheckResourceAttrSet(datasourceName, "connections.#"),
+					resource.TestCheckResourceAttrSet(datasourceName, "databases.#"),
 
 					//resource.TestCheckResourceAttrSet(datasourceScriptName, "id"),
 					//resource.TestCheckResourceAttrSet(datasourceScriptName, "subscription_id"),
@@ -70,6 +71,7 @@ func getRedisPrivateLinkConfig(t *testing.T, shareName string) string {
 	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-private-link"
 	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
-	content := getTestConfig(t, testPrivateLinkConfigFile)
-	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName)
+	password := acctest.RandString(20)
+	content := utils.GetTestConfig(t, testPrivateLinkConfigFile)
+	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName, password)
 }

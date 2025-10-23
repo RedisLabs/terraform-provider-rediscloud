@@ -2,20 +2,20 @@ package provider
 
 import (
 	"context"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	fixedDatabases "github.com/RedisLabs/rediscloud-go-api/service/fixed/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/tags"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-
-	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceRedisCloudEssentialsDatabase() *schema.Resource {
@@ -28,7 +28,7 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-				subId, dbId, err := toDatabaseId(d.Id())
+				subId, dbId, err := pro.ToDatabaseId(d.Id())
 				if err != nil {
 					return nil, err
 				}
@@ -38,7 +38,7 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				if err := d.Set("db_id", dbId); err != nil {
 					return nil, err
 				}
-				d.SetId(buildResourceId(subId, dbId))
+				d.SetId(utils.BuildResourceId(subId, dbId))
 				return []*schema.ResourceData{d}, nil
 			},
 		},
@@ -134,7 +134,7 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				Computed:    true,
 			},
 			"source_ips": {
-				Description: "Set of CIDR addresses to allow access to the database",
+				Description: "Set of CIDR addresses to allow access to the database.",
 				Type:        schema.TypeList,
 				Optional:    true,
 				MinItems:    1,
@@ -142,6 +142,7 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 					Type:             schema.TypeString,
 					ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
 				},
+				DiffSuppressFunc: suppressIfPaygDisabled,
 			},
 			"replica": {
 				Description: "Details of database replication",
@@ -220,7 +221,7 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				},
 			},
 			"modules": {
-				Description: "Modules to be provisioned in the database",
+				Description: "Modules to be provisioned in the database. Note: Not supported for Redis 8.0 and higher as modules are bundled by default.",
 				Type:        schema.TypeSet,
 				// In TF <0.12 List of objects is not supported, so we need to opt-in to use this old behaviour.
 				ConfigMode: schema.SchemaConfigModeAttr,
@@ -292,7 +293,7 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 					Type: schema.TypeString,
 				},
 				Optional:         true,
-				ValidateDiagFunc: validateTagsfunc,
+				ValidateDiagFunc: pro.ValidateTagsfunc,
 			},
 		},
 	}
@@ -323,7 +324,7 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 		createDatabaseRequest.RespVersion = redis.String(respVersion)
 	}
 
-	sourceIps := interfaceToStringSlice(d.Get("source_ips").([]interface{}))
+	sourceIps := utils.InterfaceToStringSlice(d.Get("source_ips").([]interface{}))
 	if len(sourceIps) == 0 {
 		createDatabaseRequest.SourceIPs = []*string{redis.String("0.0.0.0/0")}
 	} else {
@@ -350,7 +351,7 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 		createDatabaseRequest.Replica = createReplica
 	}
 
-	tlsCertificates := interfaceToStringSlice(d.Get("client_tls_certificates").([]interface{}))
+	tlsCertificates := utils.InterfaceToStringSlice(d.Get("client_tls_certificates").([]interface{}))
 	if len(tlsCertificates) > 0 {
 		createCertificates := make([]*fixedDatabases.DatabaseCertificate, 0)
 		for _, cert := range tlsCertificates {
@@ -403,17 +404,18 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 		createDatabaseRequest.SupportOSSClusterAPI = redis.Bool(d.Get("support_oss_cluster_api").(bool))
 		createDatabaseRequest.UseExternalEndpointForOSSClusterAPI = redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool))
 		createDatabaseRequest.EnableDatabaseClustering = redis.Bool(d.Get("enable_database_clustering").(bool))
-		createDatabaseRequest.RegexRules = interfaceToStringSlice(d.Get("regex_rules").([]interface{}))
+		createDatabaseRequest.RegexRules = utils.InterfaceToStringSlice(d.Get("regex_rules").([]interface{}))
 		createDatabaseRequest.EnableTls = redis.Bool(d.Get("enable_tls").(bool))
 	}
 
 	databaseId, err := api.Client.FixedDatabases.Create(ctx, subId, createDatabaseRequest)
 	if err != nil {
+		log.Printf("[ERROR] FixedDatabases.Create failed for subscription %d: %v", subId, err)
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
-	d.SetId(buildResourceId(subId, databaseId))
+	d.SetId(utils.BuildResourceId(subId, databaseId))
 
 	// Confirm Subscription Active status
 	err = waitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api)
@@ -434,7 +436,7 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 
 	var diags diag.Diagnostics
 
-	subId, databaseId, err := toDatabaseId(d.Id())
+	subId, databaseId, err := pro.ToDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -453,7 +455,7 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 
-	d.SetId(buildResourceId(subId, databaseId))
+	d.SetId(utils.BuildResourceId(subId, databaseId))
 
 	if err := d.Set("db_id", redis.IntValue(db.DatabaseId)); err != nil {
 		return diag.FromErr(err)
@@ -534,10 +536,10 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 	if err := d.Set("enable_default_user", redis.Bool(*db.Security.EnableDefaultUser)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("alert", flattenAlerts(*db.Alerts)); err != nil {
+	if err := d.Set("alert", pro.FlattenAlerts(*db.Alerts)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("modules", flattenModules(*db.Modules)); err != nil {
+	if err := d.Set("modules", pro.FlattenModules(*db.Modules)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -563,7 +565,7 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 		if err := d.Set("enable_database_clustering", redis.BoolValue(db.Clustering.Enabled)); err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("regex_rules", flattenRegexRules(db.Clustering.RegexRules)); err != nil {
+		if err := d.Set("regex_rules", pro.FlattenRegexRules(db.Clustering.RegexRules)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -588,7 +590,7 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
 
-	_, databaseId, err := toDatabaseId(d.Id())
+	_, databaseId, err := pro.ToDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -611,7 +613,7 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 		updateDatabaseRequest.RespVersion = redis.String(respVersion)
 	}
 
-	sourceIps := interfaceToStringSlice(d.Get("source_ips").([]interface{}))
+	sourceIps := utils.InterfaceToStringSlice(d.Get("source_ips").([]interface{}))
 	if len(sourceIps) == 0 {
 		updateDatabaseRequest.SourceIPs = []*string{redis.String("0.0.0.0/0")}
 	} else {
@@ -638,7 +640,7 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 		updateDatabaseRequest.Replica = createReplica
 	}
 
-	tlsCertificates := interfaceToStringSlice(d.Get("client_tls_certificates").([]interface{}))
+	tlsCertificates := utils.InterfaceToStringSlice(d.Get("client_tls_certificates").([]interface{}))
 	if len(tlsCertificates) > 0 {
 		createCertificates := make([]*fixedDatabases.DatabaseCertificate, 0)
 		for _, cert := range tlsCertificates {
@@ -681,7 +683,7 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 		updateDatabaseRequest.SupportOSSClusterAPI = redis.Bool(d.Get("support_oss_cluster_api").(bool))
 		updateDatabaseRequest.UseExternalEndpointForOSSClusterAPI = redis.Bool(d.Get("external_endpoint_for_oss_cluster_api").(bool))
 		updateDatabaseRequest.EnableDatabaseClustering = redis.Bool(d.Get("enable_database_clustering").(bool))
-		updateDatabaseRequest.RegexRules = interfaceToStringSlice(d.Get("regex_rules").([]interface{}))
+		updateDatabaseRequest.RegexRules = utils.InterfaceToStringSlice(d.Get("regex_rules").([]interface{}))
 		updateDatabaseRequest.EnableTls = redis.Bool(d.Get("enable_tls").(bool))
 	}
 
@@ -713,7 +715,7 @@ func resourceRedisCloudEssentialsDatabaseDelete(ctx context.Context, d *schema.R
 	var diags diag.Diagnostics
 	subId := d.Get("subscription_id").(int)
 
-	_, databaseId, err := toDatabaseId(d.Id())
+	_, databaseId, err := pro.ToDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -727,7 +729,7 @@ func resourceRedisCloudEssentialsDatabaseDelete(ctx context.Context, d *schema.R
 
 	dbErr := api.Client.FixedDatabases.Delete(ctx, subId, databaseId)
 	if dbErr != nil {
-		diag.FromErr(dbErr)
+		return diag.FromErr(dbErr)
 	}
 	return diags
 }
@@ -814,4 +816,20 @@ func writeFixedTags(ctx context.Context, api *client.ApiClient, subId int, datab
 		})
 	}
 	return api.Client.Tags.PutFixed(ctx, subId, databaseId, tags.AllTags{Tags: &t})
+}
+
+func essentialsCustomizeDiff() schema.CustomizeDiffFunc {
+	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+		// Check if user is trying to specify modules
+		modules, modulesExists := diff.GetOkExists("modules")
+
+		if modulesExists {
+			moduleSet := modules.(*schema.Set)
+			if moduleSet.Len() > 0 {
+				// Warn, don't error
+				log.Printf("[WARN] Modules are explicitly configured. Note that some plans may use Redis 8.0+ where modules are bundled by default. The API will reject invalid configurations.")
+			}
+		}
+		return nil
+	}
 }

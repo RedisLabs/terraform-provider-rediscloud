@@ -4,22 +4,44 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/RedisLabs/rediscloud-go-api/redis"
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"regexp"
 	"strconv"
 	"testing"
+
+	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 var essentialsMarketplaceFlag = flag.Bool("essentialsMarketplace", false,
 	"Add this flag '-essentialsMarketplace' to run tests for marketplace associated accounts")
 
+// testAccPreCheckEssentialsSubscription checks if an essentials subscription already exists
+// and fails fast to avoid the test failing after provisioning attempts
+func testAccPreCheckEssentialsSubscription(t *testing.T) {
+	testAccPreCheck(t)
+
+	apiClient, err := client.NewClient()
+	if err != nil {
+		t.Fatalf("Failed to create API client: %v", err)
+	}
+
+	subs, err := apiClient.Client.FixedSubscriptions.List(context.TODO())
+	if err != nil {
+		t.Fatalf("Failed to list essentials subscriptions: %v", err)
+	}
+
+	if len(subs) > 0 {
+		t.Skipf("Essentials subscription already exists (ID: %d). Redis Cloud allows only 1 essentials subscription per account. Please delete the existing subscription before running this test.", redis.IntValue(subs[0].ID))
+	}
+}
+
 func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
@@ -28,7 +50,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -84,7 +106,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
@@ -93,7 +115,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -150,7 +172,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 
 func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 	subscriptionNameUpdated := subscriptionName + "-updated"
@@ -159,7 +181,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -217,7 +239,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *testing.T) {
 	// Only the qa environment has access to the marketplace, so this test will normally fail.
 	// Leaving this in the test suite for manual runs
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*essentialsMarketplaceFlag {
 		t.Skip("The '-essentialsMarketplace' parameter wasn't provided in the test command.")
@@ -230,7 +252,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -287,7 +309,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 }
 
 func TestAccResourceRedisCloudEssentialsSubscription_Incorrect_PaymentIdForType(t *testing.T) {
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 
@@ -414,7 +436,7 @@ data "rediscloud_essentials_subscription" "example" {
 `
 
 func testAccCheckEssentialsSubscriptionDestroy(s *terraform.State) error {
-	client := testProvider.Meta().(*client2.ApiClient)
+	apiClient := testProvider.Meta().(*client.ApiClient)
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_essentials_subscription" {
@@ -426,7 +448,7 @@ func testAccCheckEssentialsSubscriptionDestroy(s *terraform.State) error {
 			return err
 		}
 
-		subs, err := client.Client.FixedSubscriptions.List(context.TODO())
+		subs, err := apiClient.Client.FixedSubscriptions.List(context.TODO())
 		if err != nil {
 			return err
 		}

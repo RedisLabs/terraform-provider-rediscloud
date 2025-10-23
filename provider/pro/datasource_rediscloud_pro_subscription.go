@@ -1,16 +1,17 @@
-package provider
+package pro
 
 import (
 	"context"
+	"strconv"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"strconv"
 )
 
-func dataSourceRedisCloudProSubscription() *schema.Resource {
+func DataSourceRedisCloudProSubscription() *schema.Resource {
 	return &schema.Resource{
 		Description: "The Pro Subscription data source allows access to the details of an existing pro subscription within your Redis Enterprise Cloud account.",
 		ReadContext: dataSourceRedisCloudProSubscriptionRead,
@@ -243,7 +244,7 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 		})
 	}
 
-	subs = filterSubscriptions(subs, filters)
+	subs = FilterSubscriptions(subs, filters)
 
 	if len(subs) == 0 {
 		return diag.Errorf("Your query returned no results. Please change your search criteria and try again.")
@@ -274,7 +275,7 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 	if err := d.Set("number_of_databases", redis.IntValue(sub.NumberOfDatabases)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("cloud_provider", flattenCloudDetails(sub.CloudDetails, false)); err != nil {
+	if err := d.Set("cloud_provider", FlattenCloudDetails(sub.CloudDetails, false)); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("status", redis.StringValue(sub.Status)); err != nil {
@@ -287,7 +288,7 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("maintenance_windows", flattenMaintenance(m)); err != nil {
+	if err := d.Set("maintenance_windows", FlattenMaintenance(m)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -295,7 +296,7 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
+	if err := d.Set("pricing", FlattenPricing(pricingList)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -304,7 +305,7 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 	return diags
 }
 
-func filterSubscriptions(subs []*subscriptions.Subscription, filters []func(sub *subscriptions.Subscription) bool) []*subscriptions.Subscription {
+func FilterSubscriptions(subs []*subscriptions.Subscription, filters []func(sub *subscriptions.Subscription) bool) []*subscriptions.Subscription {
 	var filteredSubs []*subscriptions.Subscription
 	for _, sub := range subs {
 		if filterSub(sub, filters) {

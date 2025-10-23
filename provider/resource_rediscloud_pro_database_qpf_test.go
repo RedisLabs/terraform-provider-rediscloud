@@ -64,7 +64,7 @@ resource "rediscloud_subscription_database" "example" {
     subscription_id = rediscloud_subscription.example.id
     name = "example"
     protocol = "redis"
-    dataset_size_in_gb = 3
+    dataset_size_in_gb = 1
     data_persistence = "none"
     data_eviction = "allkeys-random"
     throughput_measurement_by = "operations-per-second"
@@ -123,7 +123,7 @@ func TestAccResourceRedisCloudProDatabase_qpf(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "name", "example"),
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "protocol", "redis"),
-					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "dataset_size_in_gb", "3"),
+					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "query_performance_factor", "4x"),
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "tags.market", "emea"),
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "tags.material", "cardboard"),
@@ -150,7 +150,7 @@ func TestAccResourceRedisCloudProDatabase_qpf_missingModule(t *testing.T) {
 
 	config := formatDatabaseConfig(name, testCloudAccountName, password, "4x", "")
 
-	testErrorCase(t, config, regexp.MustCompile("query_performance_factor\" requires the \"modules\" key to be explicitly defined in HCL"))
+	testErrorCase(t, config, regexp.MustCompile("DATABASE_QUERY_PERFORMANCE_FACTOR_SEARCH_IS_REQUIRED.*RediSearch.*required"))
 }
 
 func TestAccResourceRedisCloudProDatabase_qpf_missingRediSearchModule(t *testing.T) {
@@ -160,7 +160,7 @@ func TestAccResourceRedisCloudProDatabase_qpf_missingRediSearchModule(t *testing
 
 	config := formatDatabaseConfig(name, testCloudAccountName, password, "4x", `modules = [{ name = "RediBloom" }]`)
 
-	testErrorCase(t, config, regexp.MustCompile("query_performance_factor\" requires the \"modules\" list to contain \"RediSearch"))
+	testErrorCase(t, config, regexp.MustCompile("DATABASE_QUERY_PERFORMANCE_FACTOR_SEARCH_IS_REQUIRED.*RediSearch.*required"))
 }
 
 func TestAccResourceRedisCloudProDatabase_qpf_invalidQueryPerformanceFactors(t *testing.T) {

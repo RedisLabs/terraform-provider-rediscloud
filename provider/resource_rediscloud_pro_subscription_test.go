@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"os"
 	"regexp"
 	"strconv"
@@ -12,6 +11,9 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -28,7 +30,7 @@ var marketplaceFlag = flag.Bool("marketplace", false,
 // Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the subscription resource.
 func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_subscription.example"
@@ -46,6 +48,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
+					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
 					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
@@ -75,8 +78,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 							return err
 						}
 
-						client := testProvider.Meta().(*client2.ApiClient)
-						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
+						apiClient := testProvider.Meta().(*client.ApiClient)
+						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -137,7 +140,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_subscription.example"
@@ -161,7 +164,7 @@ func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *tes
 
 func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*contractFlag {
 		t.Skip("The '-contract' parameter wasn't provided in the test command.")
@@ -200,7 +203,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 
 func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	if !*marketplaceFlag {
 		t.Skip("The '-marketplace' parameter wasn't provided in the test command.")
@@ -237,7 +240,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 
 func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -285,7 +288,7 @@ func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 
 func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-mw"
 	resourceName := "rediscloud_subscription.example"
@@ -436,10 +439,41 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 	})
 }
 
+func TestAccResourceRedisCloudProSubscription_PublicEndpointAccess(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	resourceName := "rediscloud_subscription.example"
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPublicEndpointDisabled, testCloudAccountName, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "false"),
+				),
+			},
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPublicEndpointEnabled, testCloudAccountName, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
+				),
+			},
+		},
+	})
+}
+
 // Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is one.
 func TestFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	numDatabases := 1
 	planMap := map[string]interface{}{
@@ -452,7 +486,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRamAndFlash, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRamAndFlash, planMap)
 	assert.Empty(t, diags)
 	otherDatabases := 0
 	graphDatabases := 0
@@ -477,7 +511,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 // Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is greater than one.
 func TestFlexSubModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	numDatabases := 5
 	planMap := map[string]interface{}{
@@ -490,7 +524,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Empty(t, diags)
 	graphDatabases := 0
 	otherDatabases := 0
@@ -514,7 +548,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 // Checks that modules are allocated correctly into each creation-plan db if the only module is "RedisGraph".
 func TestFlexSubModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	numDatabases := 5
 	planMap := map[string]interface{}{
@@ -527,7 +561,7 @@ func TestFlexSubModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, numDatabases)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -539,7 +573,7 @@ func TestFlexSubModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 // Checks that modules are allocated correctly into the creation-plan dbs if "RedisGraph" is not included
 func TestFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	numDatabases := 5
 	planMap := map[string]interface{}{
@@ -552,7 +586,7 @@ func TestFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, numDatabases)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -567,7 +601,7 @@ func TestFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
 
 func TestFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -579,7 +613,7 @@ func TestFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, 2)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -590,7 +624,7 @@ func TestFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
 
 func TestFlexSubNoAverageItemSizeInBytes(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0, // 0 is the value that is returned when the field is not present
@@ -602,7 +636,7 @@ func TestFlexSubNoAverageItemSizeInBytes(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, createDbs, 2)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -612,7 +646,7 @@ func TestFlexSubNoAverageItemSizeInBytes(t *testing.T) {
 
 func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -624,7 +658,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
@@ -633,7 +667,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing
 
 func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -645,7 +679,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
@@ -654,7 +688,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.
 
 func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -666,7 +700,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "operations-per-second", *createDb.ThroughputMeasurement.By)
@@ -675,7 +709,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing
 
 func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUBSCRIPTION")
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,
@@ -687,7 +721,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := buildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, diags, 1, "Warning should be reported when storage was ram and using `average_item_size_in_bytes`")
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 	createDb := createDbs[0]
@@ -696,7 +730,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.
 }
 
 func testAccCheckProSubscriptionDestroy(s *terraform.State) error {
-	client := testProvider.Meta().(*client2.ApiClient)
+	apiClient := testProvider.Meta().(*client.ApiClient)
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_subscription" {
@@ -708,7 +742,7 @@ func testAccCheckProSubscriptionDestroy(s *terraform.State) error {
 			return err
 		}
 
-		subs, err := client.Client.Subscription.List(context.TODO())
+		subs, err := apiClient.Client.Subscription.List(context.TODO())
 		if err != nil {
 			return err
 		}
@@ -1063,5 +1097,97 @@ resource "rediscloud_subscription" "example" {
 
 data "rediscloud_subscription" "example" {
 	name = rediscloud_subscription.example.name
+}
+`
+
+const testAccResourceRedisCloudProSubscriptionPublicEndpointDisabled = `
+data "rediscloud_payment_method" "card" {
+  card_type         = "Visa"
+  last_four_numbers = "5556"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type            = "AWS"
+  name                     = "%s"
+}
+
+resource "rediscloud_subscription" "example" {
+  name                   = "%s"
+  payment_method         = "credit-card"
+  payment_method_id      = data.rediscloud_payment_method.card.id
+  memory_storage         = "ram"
+  public_endpoint_access = false
+
+  allowlist {
+    cidrs              = ["192.168.0.0/16"]
+    security_group_ids = []
+  }
+
+  cloud_provider {
+    provider         = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region                       = "eu-west-1"
+      networking_deployment_cidr   = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+
+  creation_plan {
+    dataset_size_in_gb           = 1
+    quantity                     = 1
+    replication                  = false
+    support_oss_cluster_api      = false
+    throughput_measurement_by    = "operations-per-second"
+    throughput_measurement_value = 10000
+    modules                      = ["RedisJSON"]
+  }
+}
+`
+
+const testAccResourceRedisCloudProSubscriptionPublicEndpointEnabled = `
+data "rediscloud_payment_method" "card" {
+  card_type         = "Visa"
+  last_four_numbers = "5556"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type            = "AWS"
+  name                     = "%s"
+}
+
+resource "rediscloud_subscription" "example" {
+  name                   = "%s"
+  payment_method         = "credit-card"
+  payment_method_id      = data.rediscloud_payment_method.card.id
+  memory_storage         = "ram"
+  public_endpoint_access = true
+
+  allowlist {
+    cidrs              = ["192.168.0.0/16"]
+    security_group_ids = []
+  }
+
+  cloud_provider {
+    provider         = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region                       = "eu-west-1"
+      networking_deployment_cidr   = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+
+  creation_plan {
+    dataset_size_in_gb           = 1
+    quantity                     = 1
+    replication                  = false
+    support_oss_cluster_api      = false
+    throughput_measurement_by    = "operations-per-second"
+    throughput_measurement_value = 10000
+    modules                      = ["RedisJSON"]
+  }
 }
 `

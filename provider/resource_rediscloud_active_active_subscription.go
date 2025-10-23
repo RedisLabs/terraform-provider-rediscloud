@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"regexp"
 	"strconv"
@@ -325,6 +326,12 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
+			"public_endpoint_access": {
+				Description: "Whether databases in the subscription should have public endpoints. When set to false, databases will only have private endpoints. Defaults to true.",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+			},
 		},
 	}
 }
@@ -347,7 +354,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 	name := d.Get("name").(string)
 
 	paymentMethod := d.Get("payment_method").(string)
-	paymentMethodID, err := readPaymentMethodID(d)
+	paymentMethodID, err := pro.ReadPaymentMethodID(d)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -358,12 +365,14 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 	dbs = buildSubscriptionCreatePlanAADatabases(planMap)
 
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
+	publicEndpointAccess := d.Get("public_endpoint_access").(bool)
 	createSubscriptionRequest := newCreateSubscription(name,
 		paymentMethodID,
 		paymentMethod,
 		providers,
 		dbs,
-		cmkEnabled)
+		cmkEnabled,
+		publicEndpointAccess)
 
 	redisVersion := d.Get("redis_version").(string)
 	if d.Get("redis_version").(string) != "" {
@@ -379,7 +388,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 
 	// If in a CMK flow, verify the pending state
 	if cmkEnabled {
-		err = waitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api)
+		err = pro.WaitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -432,7 +441,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 			windows = append(windows, &maintenance.Window{
 				StartHour:       redis.Int(wMap["start_hour"].(int)),
 				DurationInHours: redis.Int(wMap["duration_in_hours"].(int)),
-				Days:            interfaceToStringSlice(wMap["days"].([]interface{})),
+				Days:            utils.InterfaceToStringSlice(wMap["days"].([]interface{})),
 			})
 		}
 
@@ -498,7 +507,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("maintenance_windows", flattenMaintenance(m)); err != nil {
+		if err := d.Set("maintenance_windows", pro.FlattenMaintenance(m)); err != nil {
 			return diag.FromErr(err)
 		}
 
@@ -506,7 +515,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		if err := d.Set("pricing", flattenPricing(pricingList)); err != nil {
+		if err := d.Set("pricing", pro.FlattenPricing(pricingList)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -515,6 +524,15 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		if err := d.Set("customer_managed_key_redis_service_account", subscription.CustomerManagedKeyAccessDetails.RedisServiceAccount); err != nil {
 			return diag.FromErr(err)
 		}
+	}
+
+	// Set public_endpoint_access, default to true if not set by API
+	publicEndpointAccess := true
+	if subscription.PublicEndpointAccess != nil {
+		publicEndpointAccess = redis.BoolValue(subscription.PublicEndpointAccess)
+	}
+	if err := d.Set("public_endpoint_access", publicEndpointAccess); err != nil {
+		return diag.FromErr(err)
 	}
 
 	return diags
@@ -547,7 +565,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 		}
 	}
 
-	if d.HasChanges("name", "payment_method_id") {
+	if d.HasChanges("name", "payment_method_id", "public_endpoint_access") {
 		updateSubscriptionRequest := subscriptions.UpdateSubscription{}
 
 		if d.HasChange("name") {
@@ -556,12 +574,17 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 		}
 
 		if d.HasChange("payment_method_id") {
-			paymentMethodID, err := readPaymentMethodID(d)
+			paymentMethodID, err := pro.ReadPaymentMethodID(d)
 			if err != nil {
 				return diag.FromErr(err)
 			}
 
 			updateSubscriptionRequest.PaymentMethodID = paymentMethodID
+		}
+
+		if d.HasChange("public_endpoint_access") {
+			publicEndpointAccess := d.Get("public_endpoint_access").(bool)
+			updateSubscriptionRequest.PublicEndpointAccess = redis.Bool(publicEndpointAccess)
 		}
 
 		err = api.Client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
@@ -585,7 +608,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 				windows = append(windows, &maintenance.Window{
 					StartHour:       redis.Int(wMap["start_hour"].(int)),
 					DurationInHours: redis.Int(wMap["duration_in_hours"].(int)),
-					Days:            interfaceToStringSlice(wMap["days"].([]interface{})),
+					Days:            utils.InterfaceToStringSlice(wMap["days"].([]interface{})),
 				})
 			}
 
@@ -678,7 +701,7 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 
 	d.SetId("")
 
-	err = waitForSubscriptionToBeDeleted(ctx, subId, api)
+	err = pro.WaitForSubscriptionToBeDeleted(ctx, subId, api)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -686,19 +709,20 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 	return diags
 }
 
-func newCreateSubscription(name string, paymentMethodID *int, paymentMethod string, providers []*subscriptions.CreateCloudProvider, dbs []*subscriptions.CreateDatabase, cmkEnabled bool) subscriptions.CreateSubscription {
+func newCreateSubscription(name string, paymentMethodID *int, paymentMethod string, providers []*subscriptions.CreateCloudProvider, dbs []*subscriptions.CreateDatabase, cmkEnabled bool, publicEndpointAccess bool) subscriptions.CreateSubscription {
 	req := subscriptions.CreateSubscription{
-		DeploymentType:  redis.String("active-active"),
-		Name:            redis.String(name),
-		DryRun:          redis.Bool(false),
-		PaymentMethodID: paymentMethodID,
-		PaymentMethod:   redis.String(paymentMethod),
-		CloudProviders:  providers,
-		Databases:       dbs,
+		DeploymentType:       redis.String("active-active"),
+		Name:                 redis.String(name),
+		DryRun:               redis.Bool(false),
+		PaymentMethodID:      paymentMethodID,
+		PaymentMethod:        redis.String(paymentMethod),
+		CloudProviders:       providers,
+		Databases:            dbs,
+		PublicEndpointAccess: redis.Bool(publicEndpointAccess),
 	}
 
 	if cmkEnabled {
-		req.PersistentStorageEncryptionType = redis.String(CMK_ENABLED_STRING)
+		req.PersistentStorageEncryptionType = redis.String(pro.CMK_ENABLED_STRING)
 	}
 
 	return req
@@ -766,7 +790,7 @@ func buildSubscriptionCreatePlanAADatabases(planMap map[string]interface{}) []*s
 	}
 
 	createModules := make([]*subscriptions.CreateModules, 0)
-	planModules := interfaceToStringSlice(planMap["modules"].([]interface{}))
+	planModules := utils.InterfaceToStringSlice(planMap["modules"].([]interface{}))
 	for _, module := range planModules {
 		createModule := &subscriptions.CreateModules{
 			Name: module,

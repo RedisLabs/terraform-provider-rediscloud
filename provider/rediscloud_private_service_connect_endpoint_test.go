@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"os"
 	"strings"
 	"testing"
@@ -12,7 +13,7 @@ import (
 
 func TestAccResourceRedisCloudPrivateServiceConnectEndpoint_CRUDI(t *testing.T) {
 
-	testAccRequiresEnvVar(t, "EXECUTE_TESTS")
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	baseName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-psce"
 
@@ -79,7 +80,7 @@ resource "rediscloud_subscription" "subscription_resource" {
   }
 
   creation_plan {
-    dataset_size_in_gb           = 15
+    dataset_size_in_gb           = 1
     quantity                     = 1
     replication                  = true
     throughput_measurement_by    = "operations-per-second"

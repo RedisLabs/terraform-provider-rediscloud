@@ -72,6 +72,7 @@ The following arguments are supported:
 * `name` - (Required) A meaningful name to identify the subscription
 * `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card` or `marketplace`). Must not be set for direct contracts. If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'. **(Changes to) this attribute are ignored after creation.**
 * `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. Only __Required__ when `payment_method` is `credit-card`.
+* `public_endpoint_access` - (Optional) Allow public access to databases within this subscription. When set to `false`, database access is restricted to private IP ranges only. Default: `true`.
 * `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of ‘ram-and-flash’. Default: ‘ram’. **Modifying this attribute will force creation of a new resource.**
 * `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default.  **Deprecated: This attribute is deprecated on the subscriptions level. Please specify `redis_version` on databases directly instead.**
 * `allowlist` - (Optional) An allowlist object, documented below

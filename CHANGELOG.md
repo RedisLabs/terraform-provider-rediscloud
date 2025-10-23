@@ -3,6 +3,54 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.7.0 (22nd October 2025)
+
+## Added:
+- Add auto_minor_version_upgrade field to Pro and Active-Active database resources (default: true) to allow users to control automatic minor version upgrades. This will NOT affect existing databases.
+
+## Changed:
+- Change Redis 8.0 modules validation from hard error to warning since modules are bundled by default in Redis 8+.
+
+## Fixed:
+- Fix test error message patterns to match updated API error format.
+- Fix Redis 8 upgrade test expectation (dataset_size_in_gb: 3→1).
+
+
+# 2.6.0 (17th October 2025)
+
+## Added:
+- Support for disabling public endpoints on databases. When public endpoints are disabled, database connections are restricted to private networks only (via VPC peering, PrivateLink, or Private Service Connect).
+- `source_ips` attribute added to `rediscloud_database` data source.
+- `global_source_ips` attribute added to `rediscloud_active_active_subscription_database` data source.
+
+## Fixed:
+- The default value for `enable_default_user` on each region for active-active subscriptions made the global default effectively redundant. The default has been removed meaning that the global default should work correctly now.
+
+# 2.5.0 (13th October 2025)
+
+## Added:
+- Support for Redis 8 databases and upgrading. Redis 8 does not have modules so the provider should handle these gracefully. 
+- Support for `query_performance_factor` on Redis 8.0 - Updated validation logic to allow QPF on Redis 8.0+ databases since RediSearch is bundled by default.
+
+## Fixed:
+- Fix subscription state handling after Redis version upgrades - Added wait for subscription to become active after upgrading Redis versions to prevent "SUBSCRIPTION_NOT_ACTIVE" errors during subsequent operations.
+
+## Changed:
+
+- Refactor inline pro Terraform configs to external files.
+- Optimize test execution time by downsizing some configs
+
+# 2.4.5 (9th October 2025)
+
+## Added:
+- Support for the global_enable_default_user attribute to Active-Active database resources, allowing users to control whether the default Redis user is enabled across all regions.
+
+# 2.4.4 (3rd October 2025)
+
+## Changed:
+- Fixed AA endpoint script calling wrong method
+- Fixed connection flattening not aligning to schema
+
 # 2.4.3 (1st October 2025)
 
 ## Added:

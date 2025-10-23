@@ -2,6 +2,7 @@ locals {
   rediscloud_subscription_name = "%s"
   rediscloud_cloud_account = "%s"
   rediscloud_private_link_share_name = "%s"
+  rediscloud_database_password = "%s"
 }
 
 data "rediscloud_payment_method" "card" {
@@ -30,13 +31,26 @@ resource "rediscloud_subscription" "pro_subscription" {
   }
 
   creation_plan {
-    dataset_size_in_gb           = 15
+    dataset_size_in_gb           = 1
     quantity                     = 1
     replication                  = true
     throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 20000
   }
 }
+
+## this will give some connections and databases in the output
+resource "rediscloud_subscription_database" "pro_database" {
+  subscription_id         = rediscloud_subscription.pro_subscription.id
+  name                    = "db"
+  memory_limit_in_gb      = 1
+  password         = local.rediscloud_database_password
+  protocol = "redis"
+  data_persistence = "none"
+  throughput_measurement_by = "operations-per-second"
+  throughput_measurement_value = 10000
+}
+
 
 resource "rediscloud_private_link" "pro_private_link" {
   subscription_id = rediscloud_subscription.pro_subscription.id
@@ -53,15 +67,16 @@ resource "rediscloud_private_link" "pro_private_link" {
     principal_type = "aws_account"
     principal_alias = "principal 2"
   }
+
+  depends_on = [rediscloud_subscription_database.pro_database]
 }
 
 data "rediscloud_private_link" "pro_private_link" {
   subscription_id = rediscloud_private_link.pro_private_link.subscription_id
 }
 
-# not working yet
 # data "rediscloud_private_link_endpoint_script" "endpoint_script" {
-#   subscription_id = rediscloud_private_link.private_link.subscription_id
+#   subscription_id = rediscloud_private_link.pro_private_link.subscription_id
 # }
 #
 # output "endpoint_script" {

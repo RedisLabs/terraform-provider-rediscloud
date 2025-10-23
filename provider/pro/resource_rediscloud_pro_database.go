@@ -1,27 +1,27 @@
-package provider
+package pro
 
 import (
 	"context"
 	"fmt"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	redisTags "github.com/RedisLabs/rediscloud-go-api/service/tags"
-	"github.com/hashicorp/go-cty/cty"
-
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceRedisCloudProDatabase() *schema.Resource {
+// Default RFC1918 private IP ranges used when public_endpoint_access is false
+var defaultPrivateIPRanges = []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10"}
+
+func ResourceRedisCloudProDatabase() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates database resource within a pro subscription in your Redis Enterprise Cloud Account.",
 		CreateContext: resourceRedisCloudProDatabaseCreate,
@@ -31,7 +31,7 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
-				subId, dbId, err := toDatabaseId(d.Id())
+				subId, dbId, err := ToDatabaseId(d.Id())
 				if err != nil {
 					return nil, err
 				}
@@ -41,7 +41,7 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 				if err := d.Set("db_id", dbId); err != nil {
 					return nil, err
 				}
-				d.SetId(buildResourceId(subId, dbId))
+				d.SetId(utils.BuildResourceId(subId, dbId))
 				return []*schema.ResourceData{d}, nil
 			},
 		},
@@ -74,7 +74,7 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringLenBetween(0, 40)),
 			},
 			"protocol": {
-				Description:      "The protocol that will be used to access the database, (either ‘redis’ or 'memcached’) ",
+				Description:      "The protocol that will be used to access the database (either ‘redis’ or 'memcached’)",
 				Type:             schema.TypeString,
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice(databases.ProtocolValues(), false)),
 				Optional:         true,
@@ -245,12 +245,12 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 				},
 			},
 			"modules": {
-				Description: "Modules to be provisioned in the database",
+				Description: "Modules to be provisioned in the database. Note: NOT supported for Redis 8.0 and higher as modules are bundled by default.",
 				Type:        schema.TypeSet,
-				// In TF <0.12 List of objects is not supported, so we need to opt-in to use this old behaviour.
+				// In TF <0.12 List of objects is not supported, so we need to opt in to use this old behaviour.
 				ConfigMode: schema.SchemaConfigModeAttr,
 				Optional:   true,
-				// The API doesn't allow to update/delete modules. Unless we recreate the database.
+				// The API doesn't allow updating/delete modules. Unless we recreate the database.
 				ForceNew: true,
 				MinItems: 1,
 				Elem: &schema.Resource{
@@ -297,6 +297,12 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 			},
+			"auto_minor_version_upgrade": {
+				Description: "When 'true', enables auto minor version upgrades for this database. Default: 'true'",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+			},
 			"port": {
 				Description:      "TCP port on which the database is available",
 				Type:             schema.TypeInt,
@@ -322,7 +328,7 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 							Description:      "Defines the hour automatic backups are made - only applicable when interval is `every-12-hours` or `every-24-hours`",
 							Type:             schema.TypeString,
 							Optional:         true,
-							ValidateDiagFunc: isTime(),
+							ValidateDiagFunc: utils.IsTime(),
 							DiffSuppressFunc: skipDiffIfIntervalIs12And12HourTimeDiff,
 						},
 						"storage_type": {
@@ -346,7 +352,7 @@ func resourceRedisCloudProDatabase() *schema.Resource {
 					Type: schema.TypeString,
 				},
 				Optional:         true,
-				ValidateDiagFunc: validateTagsfunc,
+				ValidateDiagFunc: ValidateTagsfunc,
 			},
 		},
 	}
@@ -401,7 +407,7 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		},
 		Modules:      createModules,
 		Alerts:       createAlerts,
-		RemoteBackup: buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		RemoteBackup: BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
 	}
 
 	utils.SetStringIfNotEmpty(d, "query_performance_factor", func(s *string) {
@@ -436,8 +442,13 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		createDatabase.RespVersion = s
 	})
 
+	utils.SetBool(d, "auto_minor_version_upgrade", func(b *bool) {
+		createDatabase.AutoMinorVersionUpgrade = b
+	})
+
 	// Confirm sub is ready to accept a db request
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -447,7 +458,7 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	d.SetId(buildResourceId(subId, dbId))
+	d.SetId(utils.BuildResourceId(subId, dbId))
 
 	// Confirm db + sub active status
 	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
@@ -470,12 +481,12 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 
 	var diags diag.Diagnostics
 
-	subId, dbId, err := toDatabaseId(d.Id())
+	subId, dbId, err := ToDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	// We are not import this resource, so we can read the subscription_id defined in this resource.
+	// We are not importing this resource, so we can read the subscription_id defined in this resource.
 	if subId == 0 {
 		subId = d.Get("subscription_id").(int)
 	}
@@ -545,11 +556,24 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("modules", flattenModules(db.Modules)); err != nil {
-		return diag.FromErr(err)
+	// For Redis 8.0+, modules are bundled by default and returned by the API
+	// Only set modules in state if they were explicitly defined in the config
+	redisVersion := redis.StringValue(db.RedisVersion)
+	if redisVersion >= "8.0" {
+		// Only set modules if they were explicitly configured by the user
+		if _, ok := d.GetOk("modules"); ok {
+			if err := d.Set("modules", FlattenModules(db.Modules)); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+	} else {
+		// For Redis < 8.0, always set modules from API response
+		if err := d.Set("modules", FlattenModules(db.Modules)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
-	if err := d.Set("alert", flattenAlerts(db.Alerts)); err != nil {
+	if err := d.Set("alert", FlattenAlerts(db.Alerts)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -586,9 +610,29 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	if err := d.Set("password", password); err != nil {
 		return diag.FromErr(err)
 	}
+
+	// Handle source_ips defaults to avoid Terraform drift:
+	// - When public_endpoint_access=true and source_ips empty: API returns ["0.0.0.0/0"]
+	// - When public_endpoint_access=false and source_ips empty: API returns RFC1918 private ranges
+	// Only set source_ips in state if explicitly configured by user (not provider defaults)
 	var sourceIPs []string
-	if !(len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0") {
-		// The API handles an empty list as ["0.0.0.0/0"] but need to be careful to match the input to avoid Terraform detecting drift
+
+	// Check if returned source_ips matches default public access ["0.0.0.0/0"]
+	isDefaultPublicAccess := len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0"
+
+	// Check if returned source_ips matches default RFC1918 private ranges
+	isDefaultPrivateRanges := len(db.Security.SourceIPs) == len(defaultPrivateIPRanges)
+	if isDefaultPrivateRanges {
+		for i, ip := range db.Security.SourceIPs {
+			if redis.StringValue(ip) != defaultPrivateIPRanges[i] {
+				isDefaultPrivateRanges = false
+				break
+			}
+		}
+	}
+
+	// Only set source_ips in state if explicitly configured by user (not defaults)
+	if !isDefaultPublicAccess && !isDefaultPrivateRanges {
 		sourceIPs = redis.StringSliceValue(db.Security.SourceIPs...)
 	}
 
@@ -596,7 +640,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("hashing_policy", flattenRegexRules(db.Clustering.RegexRules)); err != nil {
+	if err := d.Set("hashing_policy", FlattenRegexRules(db.Clustering.RegexRules)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -609,11 +653,11 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	}
 
 	tlsAuthEnabled := *db.Security.TLSClientAuthentication
-	if err := applyCertificateHints(tlsAuthEnabled, d); err != nil {
+	if err := utils.ApplyCertificateHints(tlsAuthEnabled, d); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("remote_backup", flattenBackupPlan(db.Backup, d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path").(string))); err != nil {
+	if err := d.Set("remote_backup", FlattenBackupPlan(db.Backup, d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path").(string))); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -623,7 +667,11 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		}
 	}
 
-	if err := readTags(ctx, api, subId, dbId, d); err != nil {
+	if err := d.Set("auto_minor_version_upgrade", redis.BoolValue(db.AutoMinorVersionUpgrade)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := ReadTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -637,7 +685,7 @@ func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.Resource
 	var diags diag.Diagnostics
 	subId := d.Get("subscription_id").(int)
 
-	_, dbId, err := toDatabaseId(d.Id())
+	_, dbId, err := ToDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -667,7 +715,7 @@ func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.Resource
 func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
 
-	_, dbId, err := toDatabaseId(d.Id())
+	_, dbId, err := ToDatabaseId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -698,12 +746,13 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 			Value: utils.GetInt(d, "throughput_measurement_value"),
 		},
 
-		DataPersistence:    utils.GetString(d, "data_persistence"),
-		DataEvictionPolicy: utils.GetString(d, "data_eviction"),
-		SourceIP:           setToStringSlice(d.Get("source_ips").(*schema.Set)),
-		Alerts:             &alerts,
-		RemoteBackup:       buildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
-		EnableDefaultUser:  utils.GetBool(d, "enable_default_user"),
+		DataPersistence:         utils.GetString(d, "data_persistence"),
+		DataEvictionPolicy:      utils.GetString(d, "data_eviction"),
+		SourceIP:                utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
+		Alerts:                  &alerts,
+		RemoteBackup:            BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		EnableDefaultUser:       utils.GetBool(d, "enable_default_user"),
+		AutoMinorVersionUpgrade: utils.GetBool(d, "auto_minor_version_upgrade"),
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)
@@ -715,9 +764,28 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		}
 	}
 
-	// The below fields are optional and will only be sent in the request if they are present in the Terraform configuration
-	if len(setToStringSlice(d.Get("source_ips").(*schema.Set))) == 0 {
-		update.SourceIP = []*string{redis.String("0.0.0.0/0")}
+	// Handle source_ips defaults based on subscription's public_endpoint_access setting:
+	// - When public_endpoint_access=true and source_ips empty: default to ["0.0.0.0/0"]
+	// - When public_endpoint_access=false and source_ips empty: default to RFC1918 private ranges
+	if len(utils.SetToStringSlice(d.Get("source_ips").(*schema.Set))) == 0 {
+		// Fetch subscription to check public_endpoint_access setting
+		subscription, err := api.Client.Subscription.Get(ctx, subId)
+		if err != nil {
+			utils.SubscriptionMutex.Unlock(subId)
+			return diag.FromErr(err)
+		}
+
+		// Set defaults based on public_endpoint_access
+		if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
+			// Public access blocked: default to RFC1918 private ranges
+			update.SourceIP = make([]*string, len(defaultPrivateIPRanges))
+			for i, cidr := range defaultPrivateIPRanges {
+				update.SourceIP[i] = redis.String(cidr)
+			}
+		} else {
+			// Public access allowed: default to public access
+			update.SourceIP = []*string{redis.String("0.0.0.0/0")}
+		}
 	}
 
 	queryPerformanceFactor := d.Get("query_performance_factor").(string)
@@ -729,14 +797,14 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		update.Password = redis.String(d.Get("password").(string))
 	}
 
-	update.ReplicaOf = setToStringSlice(d.Get("replica_of").(*schema.Set))
+	update.ReplicaOf = utils.SetToStringSlice(d.Get("replica_of").(*schema.Set))
 	if update.ReplicaOf == nil {
 		update.ReplicaOf = make([]*string, 0)
 	}
 
 	// The cert validation is done by the API (HTTP 400 is returned if it's invalid).
 	clientSSLCertificate := d.Get("client_ssl_certificate").(string)
-	clientTLSCertificates := interfaceToStringSlice(d.Get("client_tls_certificates").([]interface{}))
+	clientTLSCertificates := utils.InterfaceToStringSlice(d.Get("client_tls_certificates").([]interface{}))
 	enableTLS := d.Get("enable_tls").(bool)
 	if enableTLS {
 		update.EnableTls = redis.Bool(enableTLS)
@@ -762,7 +830,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 
 	regex := d.Get("hashing_policy").([]interface{})
 	if len(regex) != 0 {
-		update.RegexRules = interfaceToStringSlice(regex)
+		update.RegexRules = utils.InterfaceToStringSlice(regex)
 	}
 
 	backupPath := d.Get("periodic_backup_path").(string)
@@ -822,7 +890,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	// The Tags API is synchronous so we shouldn't have to wait for anything
-	if err := writeTags(ctx, api, subId, dbId, d); err != nil {
+	if err := WriteTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -844,8 +912,12 @@ func upgradeRedisVersion(ctx context.Context, api *client.ApiClient, subId int, 
 
 	log.Printf("[INFO] Redis version change request to %s accepted by API", newVersion)
 
-	// wait for upgrade
 	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
+		return diag.FromErr(err), true
+	}
+
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err), true
 	}
@@ -853,7 +925,7 @@ func upgradeRedisVersion(ctx context.Context, api *client.ApiClient, subId int, 
 	return nil, false
 }
 
-func buildBackupPlan(data interface{}, periodicBackupPath interface{}) *databases.DatabaseBackupConfig {
+func BuildBackupPlan(data interface{}, periodicBackupPath interface{}) *databases.DatabaseBackupConfig {
 	var d map[string]interface{}
 
 	switch v := data.(type) {
@@ -884,7 +956,7 @@ func buildBackupPlan(data interface{}, periodicBackupPath interface{}) *database
 	return &config
 }
 
-func flattenBackupPlan(backup *databases.Backup, existing []interface{}, periodicBackupPath string) []map[string]interface{} {
+func FlattenBackupPlan(backup *databases.Backup, existing []interface{}, periodicBackupPath string) []map[string]interface{} {
 	if backup == nil || !redis.BoolValue(backup.Enabled) || periodicBackupPath != "" {
 		return nil
 	}
@@ -905,7 +977,7 @@ func flattenBackupPlan(backup *databases.Backup, existing []interface{}, periodi
 	}
 }
 
-func toDatabaseId(id string) (int, int, error) {
+func ToDatabaseId(id string) (int, int, error) {
 	parts := strings.Split(id, "/")
 
 	if len(parts) > 2 {
@@ -961,44 +1033,11 @@ func skipDiffIfIntervalIs12And12HourTimeDiff(k, oldValue, newValue string, d *sc
 
 func customizeDiff() schema.CustomizeDiffFunc {
 	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-		if err := validateQueryPerformanceFactor()(ctx, diff, meta); err != nil {
+		if err := validateModulesForRedis8()(ctx, diff, meta); err != nil {
 			return err
 		}
-		if err := remoteBackupIntervalSetCorrectly("remote_backup")(ctx, diff, meta); err != nil {
+		if err := RemoteBackupIntervalSetCorrectly("remote_backup")(ctx, diff, meta); err != nil {
 			return err
-		}
-		return nil
-	}
-}
-
-func validateQueryPerformanceFactor() schema.CustomizeDiffFunc {
-	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-		// Check if "query_performance_factor" is set
-		qpf, qpfExists := diff.GetOk("query_performance_factor")
-
-		// Ensure "modules" is explicitly defined in the HCL
-		_, modulesExists := diff.GetOkExists("modules")
-
-		if qpfExists && qpf.(string) != "" {
-			if !modulesExists {
-				return fmt.Errorf(`"query_performance_factor" requires the "modules" key to be explicitly defined in HCL`)
-			}
-
-			// Retrieve modules as a slice of interfaces
-			rawModules := diff.Get("modules").(*schema.Set).List()
-
-			// Convert modules to []map[string]interface{}
-			var modules []map[string]interface{}
-			for _, rawModule := range rawModules {
-				if moduleMap, ok := rawModule.(map[string]interface{}); ok {
-					modules = append(modules, moduleMap)
-				}
-			}
-
-			// Check if "RediSearch" exists
-			if !containsDBModule(modules, "RediSearch") {
-				return fmt.Errorf(`"query_performance_factor" requires the "modules" list to contain "RediSearch"`)
-			}
 		}
 		return nil
 	}
@@ -1014,7 +1053,39 @@ func containsDBModule(modules []map[string]interface{}, moduleName string) bool 
 	return false
 }
 
-func remoteBackupIntervalSetCorrectly(key string) schema.CustomizeDiffFunc {
+// shouldWarnRedis8Modules checks if a warning should be issued for modules in Redis 8.0 or higher
+func shouldWarnRedis8Modules(version string, hasModules bool) bool {
+	if !hasModules {
+		return false
+	}
+	// Extract major version (first character before the dot)
+	if len(version) > 0 {
+		majorVersionStr := strings.Split(version, ".")[0]
+		if majorVersion, err := strconv.Atoi(majorVersionStr); err == nil {
+			return majorVersion >= 8
+		}
+	}
+	return false
+}
+
+func validateModulesForRedis8() schema.CustomizeDiffFunc {
+	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+		redisVersion, versionExists := diff.GetOk("redis_version")
+		modules, modulesExists := diff.GetOkExists("modules")
+
+		if versionExists && modulesExists {
+			version := redisVersion.(string)
+			moduleSet := modules.(*schema.Set)
+
+			if shouldWarnRedis8Modules(version, moduleSet.Len() > 0) {
+				log.Printf("[WARN] Modules are bundled by default in Redis %s. You should remove the modules block as it is deprecated for this version.", version)
+			}
+		}
+		return nil
+	}
+}
+
+func RemoteBackupIntervalSetCorrectly(key string) schema.CustomizeDiffFunc {
 	// Validate multiple attributes - https://github.com/hashicorp/terraform-plugin-sdk/issues/233
 
 	return func(ctx context.Context, diff *schema.ResourceDiff, i interface{}) error {
@@ -1034,49 +1105,4 @@ func remoteBackupIntervalSetCorrectly(key string) schema.CustomizeDiffFunc {
 		return nil
 	}
 
-}
-
-func readTags(ctx context.Context, api *client.ApiClient, subId int, databaseId int, d *schema.ResourceData) error {
-	tags := make(map[string]string)
-	tagResponse, err := api.Client.Tags.Get(ctx, subId, databaseId)
-	if err != nil {
-		return err
-	}
-	if tagResponse.Tags != nil {
-		for _, t := range *tagResponse.Tags {
-			tags[redis.StringValue(t.Key)] = redis.StringValue(t.Value)
-		}
-	}
-	return d.Set("tags", tags)
-}
-
-func writeTags(ctx context.Context, api *client.ApiClient, subId int, databaseId int, d *schema.ResourceData) error {
-	tags := make([]*redisTags.Tag, 0)
-	tState := d.Get("tags").(map[string]interface{})
-	for k, v := range tState {
-		tags = append(tags, &redisTags.Tag{
-			Key:   redis.String(k),
-			Value: redis.String(v.(string)),
-		})
-	}
-	return api.Client.Tags.Put(ctx, subId, databaseId, redisTags.AllTags{Tags: &tags})
-}
-
-func validateTagsfunc(tagsRaw interface{}, _ cty.Path) diag.Diagnostics {
-	tags := tagsRaw.(map[string]interface{})
-	invalid := make([]string, 0)
-	for k, v := range tags {
-		if k != strings.ToLower(k) {
-			invalid = append(invalid, k)
-		}
-		vStr := v.(string)
-		if vStr != strings.ToLower(vStr) {
-			invalid = append(invalid, vStr)
-		}
-	}
-
-	if len(invalid) > 0 {
-		return diag.Errorf("tag keys and values must be lower case, invalid entries: %s", strings.Join(invalid, ", "))
-	}
-	return nil
 }
