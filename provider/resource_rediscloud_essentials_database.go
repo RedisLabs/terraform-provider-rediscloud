@@ -97,6 +97,12 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				Optional:    true,
 				Computed:    true,
 			},
+			"redis_version": {
+				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+			},
 			"data_persistence": {
 				Description: "Rate of database data persistence (in persistent storage).",
 				Type:        schema.TypeString,
@@ -324,6 +330,11 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 		createDatabaseRequest.RespVersion = redis.String(respVersion)
 	}
 
+	redisVersion := d.Get("redis_version").(string)
+	if redisVersion != "" {
+		createDatabaseRequest.RedisVersion = redis.String(redisVersion)
+	}
+
 	sourceIps := utils.InterfaceToStringSlice(d.Get("source_ips").([]interface{}))
 	if len(sourceIps) == 0 {
 		createDatabaseRequest.SourceIPs = []*string{redis.String("0.0.0.0/0")}
@@ -476,6 +487,9 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 	if err := d.Set("resp_version", redis.StringValue(db.RespVersion)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("data_persistence", redis.StringValue(db.DataPersistence)); err != nil {
@@ -687,6 +701,20 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 		updateDatabaseRequest.EnableTls = redis.Bool(d.Get("enable_tls").(bool))
 	}
 
+	// if redis_version has changed, then upgrade first
+	if d.HasChange("redis_version") {
+		// if we have just created the database, it will detect an upgrade unnecessarily
+		originalVersion, newVersion := d.GetChange("redis_version")
+
+		// if either version is blank, it could attempt to upgrade unnecessarily.
+		// only upgrade when a known version goes to another known version
+		if originalVersion.(string) != "" && newVersion.(string) != "" {
+			if diags := upgradeRedisVersionForEssentials(ctx, api, subId, databaseId, newVersion.(string)); diags != nil {
+				return diags
+			}
+		}
+	}
+
 	err = api.Client.FixedDatabases.Update(ctx, subId, databaseId, updateDatabaseRequest)
 	if err != nil {
 		return diag.FromErr(err)
@@ -816,6 +844,30 @@ func writeFixedTags(ctx context.Context, api *client.ApiClient, subId int, datab
 		})
 	}
 	return api.Client.Tags.PutFixed(ctx, subId, databaseId, tags.AllTags{Tags: &t})
+}
+
+func upgradeRedisVersionForEssentials(ctx context.Context, api *client.ApiClient, subId int, dbId int, newVersion string) diag.Diagnostics {
+	log.Printf("[INFO] Requesting Redis version change to %s...", newVersion)
+
+	upgrade := fixedDatabases.UpgradeRedisVersion{
+		TargetRedisVersion: redis.String(newVersion),
+	}
+
+	if err := api.Client.FixedDatabases.UpgradeRedisVersion(ctx, subId, dbId, upgrade); err != nil {
+		return diag.Errorf("failed to change Redis version to %s: %v", newVersion, err)
+	}
+
+	log.Printf("[INFO] Redis version change request to %s accepted by API", newVersion)
+
+	if err := waitForEssentialsDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := waitForEssentialsSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return diag.FromErr(err)
+	}
+
+	return nil
 }
 
 func essentialsCustomizeDiff() schema.CustomizeDiffFunc {
