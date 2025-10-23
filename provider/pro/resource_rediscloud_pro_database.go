@@ -297,6 +297,12 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 			},
+			"auto_minor_version_upgrade": {
+				Description: "When 'true', enables auto minor version upgrades for this database. Default: 'true'",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+			},
 			"port": {
 				Description:      "TCP port on which the database is available",
 				Type:             schema.TypeInt,
@@ -436,8 +442,13 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		createDatabase.RespVersion = s
 	})
 
+	utils.SetBool(d, "auto_minor_version_upgrade", func(b *bool) {
+		createDatabase.AutoMinorVersionUpgrade = b
+	})
+
 	// Confirm sub is ready to accept a db request
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -656,6 +667,10 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		}
 	}
 
+	if err := d.Set("auto_minor_version_upgrade", redis.BoolValue(db.AutoMinorVersionUpgrade)); err != nil {
+		return diag.FromErr(err)
+	}
+
 	if err := ReadTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
@@ -731,12 +746,13 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 			Value: utils.GetInt(d, "throughput_measurement_value"),
 		},
 
-		DataPersistence:    utils.GetString(d, "data_persistence"),
-		DataEvictionPolicy: utils.GetString(d, "data_eviction"),
-		SourceIP:           utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
-		Alerts:             &alerts,
-		RemoteBackup:       BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
-		EnableDefaultUser:  utils.GetBool(d, "enable_default_user"),
+		DataPersistence:         utils.GetString(d, "data_persistence"),
+		DataEvictionPolicy:      utils.GetString(d, "data_eviction"),
+		SourceIP:                utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
+		Alerts:                  &alerts,
+		RemoteBackup:            BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		EnableDefaultUser:       utils.GetBool(d, "enable_default_user"),
+		AutoMinorVersionUpgrade: utils.GetBool(d, "auto_minor_version_upgrade"),
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)
@@ -1037,6 +1053,21 @@ func containsDBModule(modules []map[string]interface{}, moduleName string) bool 
 	return false
 }
 
+// shouldWarnRedis8Modules checks if a warning should be issued for modules in Redis 8.0 or higher
+func shouldWarnRedis8Modules(version string, hasModules bool) bool {
+	if !hasModules {
+		return false
+	}
+	// Extract major version (first character before the dot)
+	if len(version) > 0 {
+		majorVersionStr := strings.Split(version, ".")[0]
+		if majorVersion, err := strconv.Atoi(majorVersionStr); err == nil {
+			return majorVersion >= 8
+		}
+	}
+	return false
+}
+
 func validateModulesForRedis8() schema.CustomizeDiffFunc {
 	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
 		redisVersion, versionExists := diff.GetOk("redis_version")
@@ -1044,12 +1075,10 @@ func validateModulesForRedis8() schema.CustomizeDiffFunc {
 
 		if versionExists && modulesExists {
 			version := redisVersion.(string)
-			// Check if version is >= 8.0
-			if strings.HasPrefix(version, "8.") {
-				moduleSet := modules.(*schema.Set)
-				if moduleSet.Len() > 0 {
-					return fmt.Errorf(`"modules" cannot be explicitly set for Redis version %s as modules are bundled by default. Remove the "modules" field from your configuration`, version)
-				}
+			moduleSet := modules.(*schema.Set)
+
+			if shouldWarnRedis8Modules(version, moduleSet.Len() > 0) {
+				log.Printf("[WARN] Modules are bundled by default in Redis %s. You should remove the modules block as it is deprecated for this version.", version)
 			}
 		}
 		return nil

@@ -59,10 +59,10 @@ func resourceRedisCloudPrivateServiceConnectCreate(ctx context.Context, d *schem
 		return diag.FromErr(err)
 	}
 	utils.SubscriptionMutex.Lock(subscriptionId)
+	defer utils.SubscriptionMutex.Unlock(subscriptionId)
 
 	pscServiceId, err := api.Client.PrivateServiceConnect.CreateService(ctx, subscriptionId)
 	if err != nil {
-		utils.SubscriptionMutex.Unlock(subscriptionId)
 		return diag.FromErr(err)
 	}
 
@@ -72,17 +72,14 @@ func resourceRedisCloudPrivateServiceConnectCreate(ctx context.Context, d *schem
 		return refreshPrivateServiceConnectServiceStatus(ctx, subscriptionId, api)
 	})
 	if err != nil {
-		utils.SubscriptionMutex.Unlock(subscriptionId)
 		return diag.FromErr(err)
 	}
 
 	err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api)
 	if err != nil {
-		utils.SubscriptionMutex.Unlock(subscriptionId)
 		return diag.FromErr(err)
 	}
 
-	utils.SubscriptionMutex.Unlock(subscriptionId)
 	return resourceRedisCloudPrivateServiceConnectRead(ctx, d, meta)
 }
 
