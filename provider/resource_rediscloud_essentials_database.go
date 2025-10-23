@@ -442,6 +442,8 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases (enableDefaultUser)
 	// Others are omitted here _because_ the update will take care of them, such as tags
+	// Unlock before calling Update since Update also needs to acquire the same subscription mutex.
+	utils.SubscriptionMutex.Unlock(subId)
 	return resourceRedisCloudEssentialsDatabaseUpdate(ctx, d, meta)
 }
 
