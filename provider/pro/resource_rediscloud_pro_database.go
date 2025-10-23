@@ -363,7 +363,6 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 
 	subId := *utils.GetInt(d, "subscription_id")
 	utils.SubscriptionMutex.Lock(subId)
-	defer utils.SubscriptionMutex.Unlock(subId)
 
 	createModules := make([]*databases.Module, 0)
 	modules := d.Get("modules").(*schema.Set)
@@ -449,11 +448,13 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 
 	// Confirm sub is ready to accept a db request
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
 	dbId, err := api.Client.Database.Create(ctx, subId, createDatabase)
 	if err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
@@ -461,9 +462,11 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 
 	// Confirm db + sub active status
 	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
 
