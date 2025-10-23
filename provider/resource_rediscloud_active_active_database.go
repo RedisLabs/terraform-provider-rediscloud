@@ -206,13 +206,13 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 			},
-		"auto_minor_version_upgrade": {
-			Description: "When 'true', enables auto minor version upgrades for this database. Default: 'true'",
-			Type:        schema.TypeBool,
-			Optional:    true,
-			Default:     true,
-		},
-		"override_region": {
+			"auto_minor_version_upgrade": {
+				Description: "When 'true', enables auto minor version upgrades for this database. Default: 'true'",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+			},
+			"override_region": {
 				Description: "Region-specific configuration parameters to override the global configuration",
 				Type:        schema.TypeSet,
 				Optional:    true,
@@ -486,7 +486,6 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
-	// Unlock before calling Update since Update also needs to acquire the same subscription mutex.
 	utils.SubscriptionMutex.Unlock(subId)
 	return resourceRedisCloudActiveActiveDatabaseUpdate(ctx, d, meta)
 }
