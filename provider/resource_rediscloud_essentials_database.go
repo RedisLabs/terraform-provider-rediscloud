@@ -408,28 +408,12 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 		createDatabaseRequest.EnableTls = redis.Bool(d.Get("enable_tls").(bool))
 	}
 
-	log.Printf("[DEBUG] Full essentials database create request - Name: %s, Protocol: %s, DataPersistence: %s, DataEviction: %s, Replication: %v, SourceIPs: %v, EnablePaygFeatures: %v, MemoryLimitInGB: %v, SupportOSSClusterAPI: %v, ExternalEndpointForOSSClusterAPI: %v, EnableDatabaseClustering: %v, EnableTls: %v",
-		redis.StringValue(createDatabaseRequest.Name),
-		redis.StringValue(createDatabaseRequest.Protocol),
-		redis.StringValue(createDatabaseRequest.DataPersistence),
-		redis.StringValue(createDatabaseRequest.DataEvictionPolicy),
-		redis.BoolValue(createDatabaseRequest.Replication),
-		createDatabaseRequest.SourceIPs,
-		d.Get("enable_payg_features").(bool),
-		createDatabaseRequest.MemoryLimitInGB,
-		createDatabaseRequest.SupportOSSClusterAPI,
-		createDatabaseRequest.UseExternalEndpointForOSSClusterAPI,
-		createDatabaseRequest.EnableDatabaseClustering,
-		createDatabaseRequest.EnableTls)
-
-	log.Printf("[DEBUG] Calling FixedDatabases.Create API for subscription %d with database name: %s", subId, redis.StringValue(createDatabaseRequest.Name))
 	databaseId, err := api.Client.FixedDatabases.Create(ctx, subId, createDatabaseRequest)
 	if err != nil {
 		log.Printf("[ERROR] FixedDatabases.Create failed for subscription %d: %v", subId, err)
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
 	}
-	log.Printf("[DEBUG] FixedDatabases.Create succeeded for subscription %d, database ID: %d", subId, databaseId)
 
 	d.SetId(utils.BuildResourceId(subId, databaseId))
 
