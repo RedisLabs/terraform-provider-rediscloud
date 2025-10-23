@@ -206,6 +206,12 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 			},
+			"auto_minor_version_upgrade": {
+				Description: "When 'true', enables auto minor version upgrades for this database. Default: 'true'",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+			},
 			"override_region": {
 				Description: "Region-specific configuration parameters to override the global configuration",
 				Type:        schema.TypeSet,
@@ -447,6 +453,10 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 		createDatabase.RedisVersion = s
 	})
 
+	utils.SetBool(d, "auto_minor_version_upgrade", func(b *bool) {
+		createDatabase.AutoMinorVersionUpgrade = b
+	})
+
 	// Confirm Subscription Active status before creating database
 	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
 	if err != nil {
@@ -643,6 +653,10 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
+	if err := d.Set("auto_minor_version_upgrade", redis.BoolValue(db.AutoMinorVersionUpgrade)); err != nil {
+		return diag.FromErr(err)
+	}
+
 	tlsAuthEnabled := *db.CrdbDatabases[0].Security.TLSClientAuthentication
 	if err := utils.ApplyCertificateHints(tlsAuthEnabled, d); err != nil {
 		return diag.FromErr(err)
@@ -797,6 +811,10 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 	if v, ok := d.GetOk("global_enable_default_user"); ok {
 		update.GlobalEnableDefaultUser = redis.Bool(v.(bool))
+	}
+
+	if v, ok := d.GetOk("auto_minor_version_upgrade"); ok {
+		update.AutoMinorVersionUpgrade = redis.Bool(v.(bool))
 	}
 
 	if v, ok := d.GetOk("support_oss_cluster_api"); ok {

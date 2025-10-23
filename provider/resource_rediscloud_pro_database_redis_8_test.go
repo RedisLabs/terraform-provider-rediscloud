@@ -121,7 +121,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
-					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "3"),
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "replication", "false"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
