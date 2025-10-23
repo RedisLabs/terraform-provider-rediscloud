@@ -2,9 +2,7 @@ package provider
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -51,8 +49,6 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 			Update: schema.DefaultTimeout(30 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
-
-		CustomizeDiff: essentialsCustomizeDiff(),
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
@@ -749,7 +745,7 @@ func resourceRedisCloudEssentialsDatabaseDelete(ctx context.Context, d *schema.R
 
 	dbErr := api.Client.FixedDatabases.Delete(ctx, subId, databaseId)
 	if dbErr != nil {
-		diag.FromErr(dbErr)
+		return diag.FromErr(dbErr)
 	}
 	return diags
 }
@@ -840,25 +836,14 @@ func writeFixedTags(ctx context.Context, api *client.ApiClient, subId int, datab
 
 func essentialsCustomizeDiff() schema.CustomizeDiffFunc {
 	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-		if err := validateModulesForRedis8Essentials()(ctx, diff, meta); err != nil {
-			return err
-		}
-		return nil
-	}
-}
-
-func validateModulesForRedis8Essentials() schema.CustomizeDiffFunc {
-	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-		redisVersion, versionExists := diff.GetOk("redis_version")
+		// Check if user is trying to specify modules
 		modules, modulesExists := diff.GetOkExists("modules")
 
-		if versionExists && modulesExists {
-			version := redisVersion.(string)
-			if strings.HasPrefix(version, "8.") {
-				moduleSet := modules.(*schema.Set)
-				if moduleSet.Len() > 0 {
-					return fmt.Errorf(`"modules" cannot be explicitly set for Redis version %s as modules are bundled by default. Remove the "modules" field from your configuration`, version)
-				}
+		if modulesExists {
+			moduleSet := modules.(*schema.Set)
+			if moduleSet.Len() > 0 {
+				// Warn, don't error
+				log.Printf("[WARN] Modules are explicitly configured. Note that some plans may use Redis 8.0+ where modules are bundled by default. The API will reject invalid configurations.")
 			}
 		}
 		return nil
