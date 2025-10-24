@@ -6,15 +6,10 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 # 2.7.0 (22nd October 2025)
 
 ## Added:
-- Add auto_minor_version_upgrade field to Pro and Active-Active database resources (default: true) to allow users to control automatic minor version upgrades. This will NOT affect existing databases.
+- Add `auto_minor_version_upgrade` field to Pro and Active-Active database resources (default: true) to allow users to control automatic minor version upgrades. This will NOT affect existing databases.
 
 ## Changed:
-- Change Redis 8.0 modules validation from hard error to warning since modules are bundled by default in Redis 8+.
-
-## Fixed:
-- Fix test error message patterns to match updated API error format.
-- Fix Redis 8 upgrade test expectation (dataset_size_in_gb: 3→1).
-
+- Change Redis 8.0 modules validation from a hard error to a warning, since modules are bundled by default in Redis 8+.
 
 # 2.6.0 (17th October 2025)
 

@@ -38,6 +38,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "region", "us-east-1"),
 					resource.TestCheckResourceAttrSet(resourceName, "redis_version_compliance"),
+				resource.TestCheckResourceAttrSet(resourceName, "redis_version"),
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
 					resource.TestCheckResourceAttr(resourceName, "data_eviction", "volatile-lru"),
@@ -69,6 +70,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "cloud_provider", "AWS"),
 					resource.TestCheckResourceAttr(datasourceName, "region", "us-east-1"),
 					resource.TestCheckResourceAttrSet(datasourceName, "redis_version_compliance"),
+				resource.TestCheckResourceAttrSet(datasourceName, "redis_version"),
 					resource.TestCheckResourceAttr(datasourceName, "resp_version", "resp3"),
 					resource.TestCheckResourceAttr(datasourceName, "data_persistence", "none"),
 					resource.TestCheckResourceAttr(datasourceName, "data_eviction", "volatile-lru"),
@@ -110,6 +112,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "region", "us-east-1"),
 					resource.TestCheckResourceAttrSet(resourceName, "redis_version_compliance"),
+				resource.TestCheckResourceAttrSet(resourceName, "redis_version"),
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
 					resource.TestCheckResourceAttr(resourceName, "data_eviction", "volatile-lru"),
@@ -141,6 +144,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "cloud_provider", "AWS"),
 					resource.TestCheckResourceAttr(datasourceName, "region", "us-east-1"),
 					resource.TestCheckResourceAttrSet(datasourceName, "redis_version_compliance"),
+				resource.TestCheckResourceAttrSet(datasourceName, "redis_version"),
 					resource.TestCheckResourceAttr(datasourceName, "resp_version", "resp3"),
 					resource.TestCheckResourceAttr(datasourceName, "data_persistence", "none"),
 					resource.TestCheckResourceAttr(datasourceName, "data_eviction", "volatile-lru"),
@@ -417,3 +421,52 @@ resource "rediscloud_essentials_database" "example" {
   }
 }
 `
+
+// Test upgrading Redis version on essentials database
+func TestAccResourceRedisCloudEssentialsDatabase_VersionUpgrade(t *testing.T) {
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	databaseName := subscriptionName + "-db"
+
+	const resourceName = "rediscloud_essentials_database.example"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: getEssentialsDatabaseVersionConfig(t, subscriptionName, databaseName, "7.2"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
+					resource.TestCheckResourceAttrSet(resourceName, "subscription_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "db_id"),
+					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.2"),
+					resource.TestCheckResourceAttr(resourceName, "protocol", "stack"),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
+					resource.TestCheckResourceAttr(resourceName, "region", "us-east-1"),
+				),
+			},
+			{
+				Config: getEssentialsDatabaseVersionConfig(t, subscriptionName, databaseName, "7.4"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
+					resource.TestCheckResourceAttrSet(resourceName, "subscription_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "db_id"),
+					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.4"),
+					resource.TestCheckResourceAttr(resourceName, "protocol", "stack"),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
+					resource.TestCheckResourceAttr(resourceName, "region", "us-east-1"),
+				),
+			},
+		},
+	})
+}
+
+func getEssentialsDatabaseVersionConfig(t *testing.T, subscriptionName, databaseName, version string) string {
+	content := utils.GetTestConfig(t, "./essentials/testdata/essentials_database_version.tf")
+	return fmt.Sprintf(content, subscriptionName, databaseName, version)
+}
