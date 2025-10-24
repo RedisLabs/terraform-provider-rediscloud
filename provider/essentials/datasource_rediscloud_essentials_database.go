@@ -1,7 +1,8 @@
-package provider
+package essentials
 
 import (
 	"context"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	fixedDatabases "github.com/RedisLabs/rediscloud-go-api/service/fixed/databases"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
@@ -12,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func dataSourceRedisCloudEssentialsDatabase() *schema.Resource {
+func DataSourceRedisCloudEssentialsDatabase() *schema.Resource {
 	return &schema.Resource{
 		Description: "The Essentials Database data source allows access to the details of an existing database within your Redis Enterprise Cloud account.",
 		ReadContext: dataSourceRedisCloudEssentialsDatabaseRead,

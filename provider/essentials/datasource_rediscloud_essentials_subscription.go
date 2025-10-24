@@ -1,17 +1,17 @@
-package provider
+package essentials
 
 import (
 	"context"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"strconv"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	fs "github.com/RedisLabs/rediscloud-go-api/service/fixed/subscriptions"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func dataSourceRedisCloudEssentialsSubscription() *schema.Resource {
+func DataSourceRedisCloudEssentialsSubscription() *schema.Resource {
 	return &schema.Resource{
 		Description: "Watches an Essentials Subscription within your Redis Enterprise Cloud Account.",
 		ReadContext: dataSourceRedisCloudEssentialsSubscriptionRead,

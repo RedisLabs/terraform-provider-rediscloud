@@ -1,4 +1,4 @@
-package provider
+package essentials
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceRedisCloudEssentialsDatabase() *schema.Resource {
+func ResourceRedisCloudEssentialsDatabase() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates database resource within an essentials subscription in your Redis Enterprise Cloud Account.",
 		CreateContext: resourceRedisCloudEssentialsDatabaseCreate,

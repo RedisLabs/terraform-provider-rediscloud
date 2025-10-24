@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentials"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/privatelink"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -54,9 +55,9 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_database_modules":                           dataSourceRedisCloudDatabaseModules(),
 				"rediscloud_payment_method":                             dataSourceRedisCloudPaymentMethod(),
 				"rediscloud_regions":                                    dataSourceRedisCloudRegions(),
-				"rediscloud_essentials_plan":                            dataSourceRedisCloudEssentialsPlan(),
-				"rediscloud_essentials_subscription":                    dataSourceRedisCloudEssentialsSubscription(),
-				"rediscloud_essentials_database":                        dataSourceRedisCloudEssentialsDatabase(),
+				"rediscloud_essentials_plan":                            essentials.DataSourceRedisCloudEssentialsPlan(),
+				"rediscloud_essentials_subscription":                    essentials.DataSourceRedisCloudEssentialsSubscription(),
+				"rediscloud_essentials_database":                        essentials.DataSourceRedisCloudEssentialsDatabase(),
 				"rediscloud_subscription_peerings":                      dataSourceRedisCloudSubscriptionPeerings(),
 				"rediscloud_private_service_connect":                    dataSourcePrivateServiceConnect(),
 				"rediscloud_private_service_connect_endpoints":          dataSourcePrivateServiceConnectEndpoints(),
@@ -80,8 +81,8 @@ func New(version string) func() *schema.Provider {
 			},
 			ResourcesMap: map[string]*schema.Resource{
 				"rediscloud_cloud_account":           resourceRedisCloudCloudAccount(),
-				"rediscloud_essentials_subscription": resourceRedisCloudEssentialsSubscription(),
-				"rediscloud_essentials_database":     resourceRedisCloudEssentialsDatabase(),
+				"rediscloud_essentials_subscription": essentials.ResourceRedisCloudEssentialsSubscription(),
+				"rediscloud_essentials_database":     essentials.ResourceRedisCloudEssentialsDatabase(),
 				// Note the difference in public resource name and the file/method name.
 				// <default> == flexible == pro
 				"rediscloud_subscription":                              pro.ResourceRedisCloudProSubscription(),

@@ -1,11 +1,8 @@
-package provider
+package essentials
 
 import (
 	"context"
 	"errors"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"log"
 	"regexp"
 	"strconv"
@@ -14,12 +11,15 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	fixedSubscriptions "github.com/RedisLabs/rediscloud-go-api/service/fixed/subscriptions"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
-func resourceRedisCloudEssentialsSubscription() *schema.Resource {
+func ResourceRedisCloudEssentialsSubscription() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Manages an Essentials Subscription within your Redis Enterprise Cloud Account.",
 		CreateContext: resourceRedisCloudEssentialsSubscriptionCreate,

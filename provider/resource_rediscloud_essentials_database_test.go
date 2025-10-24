@@ -27,7 +27,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseBasic, subscriptionName, databaseName),
+				Config: getEssentialsDatabaseBasicConfig(t, subscriptionName, databaseName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
@@ -38,7 +38,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "region", "us-east-1"),
 					resource.TestCheckResourceAttrSet(resourceName, "redis_version_compliance"),
-				resource.TestCheckResourceAttrSet(resourceName, "redis_version"),
+					resource.TestCheckResourceAttrSet(resourceName, "redis_version"),
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
 					resource.TestCheckResourceAttr(resourceName, "data_eviction", "volatile-lru"),
@@ -70,7 +70,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "cloud_provider", "AWS"),
 					resource.TestCheckResourceAttr(datasourceName, "region", "us-east-1"),
 					resource.TestCheckResourceAttrSet(datasourceName, "redis_version_compliance"),
-				resource.TestCheckResourceAttrSet(datasourceName, "redis_version"),
+					resource.TestCheckResourceAttrSet(datasourceName, "redis_version"),
 					resource.TestCheckResourceAttr(datasourceName, "resp_version", "resp3"),
 					resource.TestCheckResourceAttr(datasourceName, "data_persistence", "none"),
 					resource.TestCheckResourceAttr(datasourceName, "data_eviction", "volatile-lru"),
@@ -97,11 +97,11 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 				),
 			},
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseBasicWithUpperCaseTagKey, subscriptionName, databaseName),
+				Config:      getEssentialsDatabaseBasicWithUpperCaseTagKeyConfig(t, subscriptionName, databaseName),
 				ExpectError: regexp.MustCompile("tag keys and values must be lower case, invalid entries: UpperCaseKey"),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseBasic, subscriptionName, databaseNameUpdated),
+				Config: getEssentialsDatabaseBasicConfig(t, subscriptionName, databaseNameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
@@ -112,7 +112,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "region", "us-east-1"),
 					resource.TestCheckResourceAttrSet(resourceName, "redis_version_compliance"),
-				resource.TestCheckResourceAttrSet(resourceName, "redis_version"),
+					resource.TestCheckResourceAttrSet(resourceName, "redis_version"),
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
 					resource.TestCheckResourceAttr(resourceName, "data_eviction", "volatile-lru"),
@@ -144,7 +144,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "cloud_provider", "AWS"),
 					resource.TestCheckResourceAttr(datasourceName, "region", "us-east-1"),
 					resource.TestCheckResourceAttrSet(datasourceName, "redis_version_compliance"),
-				resource.TestCheckResourceAttrSet(datasourceName, "redis_version"),
+					resource.TestCheckResourceAttrSet(datasourceName, "redis_version"),
 					resource.TestCheckResourceAttr(datasourceName, "resp_version", "resp3"),
 					resource.TestCheckResourceAttr(datasourceName, "data_persistence", "none"),
 					resource.TestCheckResourceAttr(datasourceName, "data_eviction", "volatile-lru"),
@@ -167,7 +167,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 				),
 			},
 			{
-				Config:                  fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseBasic, subscriptionName, databaseName),
+				Config:                  getEssentialsDatabaseBasicConfig(t, subscriptionName, databaseName),
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -177,99 +177,25 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 	})
 }
 
-const testAccResourceRedisCloudEssentialsDatabaseBasic = `
-data "rediscloud_essentials_plan" "example" {
-	name = "30MB"
-	cloud_provider = "AWS"
-	region = "us-east-1"
+func getEssentialsDatabaseBasicConfig(t *testing.T, subscriptionName, databaseName string) string {
+	content := utils.GetTestConfig(t, "./essentials/testdata/essentials_database_basic.tf")
+	return fmt.Sprintf(content, subscriptionName, databaseName)
 }
 
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
+func getEssentialsDatabaseBasicWithUpperCaseTagKeyConfig(t *testing.T, subscriptionName, databaseName string) string {
+	content := utils.GetTestConfig(t, "./essentials/testdata/essentials_database_basic_uppercase_tags.tf")
+	return fmt.Sprintf(content, subscriptionName, databaseName)
 }
 
-resource "rediscloud_essentials_subscription" "example" {
-	name = "%s"
-	plan_id = data.rediscloud_essentials_plan.example.id
-	# payment_method = "credit-card"
-	# payment_method_id = data.rediscloud_payment_method.card.id
+func getEssentialsDatabaseDisableDefaultUserCreateConfig(t *testing.T, subscriptionName, databaseName string) string {
+	content := utils.GetTestConfig(t, "./essentials/testdata/essentials_database_disable_default_user_create.tf")
+	return fmt.Sprintf(content, subscriptionName, databaseName)
 }
 
-data "rediscloud_essentials_subscription" "example" {
-	name = rediscloud_essentials_subscription.example.name
+func getEssentialsDatabaseDisableDefaultUserUpdateConfig(t *testing.T, subscriptionName, databaseName string) string {
+	content := utils.GetTestConfig(t, "./essentials/testdata/essentials_database_disable_default_user_update.tf")
+	return fmt.Sprintf(content, subscriptionName, databaseName)
 }
-
-resource "rediscloud_essentials_database" "example" {
-	subscription_id = rediscloud_essentials_subscription.example.id
-	name = "%s"
-	enable_default_user = true
-	password = "j43589rhe39f"
-
-	data_persistence = "none"
-	replication = false
-
-	# alert {
-	# 	name = "throughput-higher-than"
-	# 	value = 80
-	# }
-
-	tags = {
-		"environment" = "production"
-		"cost_center" = "0700"
-		"department" = "finance"
-	}
-}
-
-data "rediscloud_essentials_database" "example" {
-	subscription_id = rediscloud_essentials_subscription.example.id
-	name = rediscloud_essentials_database.example.name
-}
-`
-
-const testAccResourceRedisCloudEssentialsDatabaseBasicWithUpperCaseTagKey = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-data "rediscloud_essentials_plan" "example" {
-	name = "250MB"
-	cloud_provider = "AWS"
-	region = "us-east-1"
-}
-resource "rediscloud_essentials_subscription" "example" {
-	name = "%s"
-	plan_id = data.rediscloud_essentials_plan.example.id
-	payment_method_id = data.rediscloud_payment_method.card.id
-}
-resource "rediscloud_essentials_database" "example" {
-	subscription_id = rediscloud_essentials_subscription.example.id
-	name = "%s"
-	enable_default_user = true
-	password = "j43589rhe39f"
-
-	data_persistence = "none"
-	replication = false
-
-	# alert {
-	#	name = "throughput-higher-than"
-	#	value = 80
-	# '}
-
-	tags = {
-		"UpperCaseKey" = "invalid"
-		"environment" = "production"
-		"cost_center" = "0700"
-		"department" = "finance"
-	}
-}
-
-data "rediscloud_essentials_database" "example" {
-	subscription_id = rediscloud_essentials_subscription.example.id
-	name = rediscloud_essentials_database.example.name
-}
-`
 
 // there was a bug where removing the default user would cause issues with passwords
 func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T) {
@@ -288,7 +214,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseDisableDefaultUserCreate, subscriptionName, databaseName),
+				Config: getEssentialsDatabaseDisableDefaultUserCreateConfig(t, subscriptionName, databaseName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test creating resource
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
@@ -309,7 +235,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 			},
 			{
 				// test update
-				Config: fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseDisableDefaultUserUpdate, subscriptionName, databaseNameUpdated),
+				Config: getEssentialsDatabaseDisableDefaultUserUpdateConfig(t, subscriptionName, databaseNameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
@@ -328,7 +254,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 				),
 			},
 			{
-				Config:                  fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseDisableDefaultUserUpdate, subscriptionName, databaseName),
+				Config:                  getEssentialsDatabaseDisableDefaultUserUpdateConfig(t, subscriptionName, databaseName),
 				ResourceName:            resourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -337,90 +263,6 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 		},
 	})
 }
-
-const testAccResourceRedisCloudEssentialsDatabaseDisableDefaultUserCreate = `
-
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-data "rediscloud_essentials_plan" "example" {
-  name = "Single-Zone_1GB"
-  cloud_provider = "AWS"
-  region = "us-east-1"
-}
-
-data "rediscloud_essentials_database" "example" {
-	subscription_id = rediscloud_essentials_subscription.example.id
-	name = rediscloud_essentials_database.example.name
-}
-
-resource "rediscloud_essentials_subscription" "example" {
-  name = "%s"
-  plan_id = data.rediscloud_essentials_plan.example.id
-  payment_method_id = data.rediscloud_payment_method.card.id
-}
-
-resource "rediscloud_essentials_database" "example" {
-  subscription_id     = rediscloud_essentials_subscription.example.id
-  name                = "%s"
-  enable_default_user = true
-  password            = "j43589rhe39f"
-
-  data_persistence = "none"
-  replication      = false
-  # 
-  # alert {
-  #   name  = "throughput-higher-than"
-  #   value = 80
-  # }
-  tags = {
-    "envaaaa" = "qaaaa"
-  }
-}
-`
-
-const testAccResourceRedisCloudEssentialsDatabaseDisableDefaultUserUpdate = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-data "rediscloud_essentials_plan" "example" {
-  name = "Single-Zone_1GB"
-  cloud_provider = "AWS"
-  region = "us-east-1"
-}
-
-data "rediscloud_essentials_database" "example" {
-	subscription_id = rediscloud_essentials_subscription.example.id
-	name = rediscloud_essentials_database.example.name
-}
-
-resource "rediscloud_essentials_subscription" "example" {
-  name = "%s"
-  plan_id = data.rediscloud_essentials_plan.example.id
-  payment_method_id = data.rediscloud_payment_method.card.id
-}
-
-resource "rediscloud_essentials_database" "example" {
-  subscription_id     = rediscloud_essentials_subscription.example.id
-  name                = "%s"
-  enable_default_user = false
-  data_persistence = "none"
-  replication      = false
-
-  # alert {
-  #   name  = "throughput-higher-than"
-  #   value = 80
-  # }
-
-  tags = {
-    "envaaaa" = "qaaaa"
-  }
-}
-`
 
 // Test upgrading Redis version on essentials database
 func TestAccResourceRedisCloudEssentialsDatabase_VersionUpgrade(t *testing.T) {

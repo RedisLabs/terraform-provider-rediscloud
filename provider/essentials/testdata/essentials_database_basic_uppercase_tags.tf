@@ -1,0 +1,48 @@
+locals {
+  rediscloud_subscription_name = "%s"
+  rediscloud_database_name     = "%s"
+}
+
+data "rediscloud_payment_method" "card" {
+  card_type          = "Visa"
+  last_four_numbers  = "5556"
+}
+
+data "rediscloud_essentials_plan" "example" {
+  name            = "250MB"
+  cloud_provider  = "AWS"
+  region          = "us-east-1"
+}
+
+resource "rediscloud_essentials_subscription" "example" {
+  name               = local.rediscloud_subscription_name
+  plan_id            = data.rediscloud_essentials_plan.example.id
+  payment_method_id  = data.rediscloud_payment_method.card.id
+}
+
+resource "rediscloud_essentials_database" "example" {
+  subscription_id     = rediscloud_essentials_subscription.example.id
+  name                = local.rediscloud_database_name
+  enable_default_user = true
+  password            = "j43589rhe39f"
+
+  data_persistence = "none"
+  replication      = false
+
+  # alert {
+  #   name  = "throughput-higher-than"
+  #   value = 80
+  # }
+
+  tags = {
+    "UpperCaseKey" = "invalid"
+    "environment"  = "production"
+    "cost_center"  = "0700"
+    "department"   = "finance"
+  }
+}
+
+data "rediscloud_essentials_database" "example" {
+  subscription_id = rediscloud_essentials_subscription.example.id
+  name            = rediscloud_essentials_database.example.name
+}
