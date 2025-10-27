@@ -251,8 +251,9 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				ConfigMode: schema.SchemaConfigModeAttr,
 				Optional:   true,
 				// The API doesn't allow updating/delete modules. Unless we recreate the database.
-				ForceNew: true,
-				MinItems: 1,
+				ForceNew:         true,
+				MinItems:         1,
+				DiffSuppressFunc: modulesDiffSuppressFunc,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -1066,6 +1067,30 @@ func shouldWarnRedis8Modules(version string, hasModules bool) bool {
 		}
 	}
 	return false
+}
+
+// shouldSuppressModuleDiffsForRedis8 checks if module diffs should be suppressed for Redis 8.0 or higher
+// In Redis 8.0+, modules are bundled by default, so we should ignore changes to explicitly configured modules
+func shouldSuppressModuleDiffsForRedis8(version string) bool {
+	if len(version) == 0 {
+		return false
+	}
+	majorVersionStr := strings.Split(version, ".")[0]
+	if majorVersion, err := strconv.Atoi(majorVersionStr); err == nil {
+		return majorVersion >= 8
+	}
+	return false
+}
+
+// modulesDiffSuppressFunc returns a DiffSuppressFunc that suppresses module diffs for Redis 8.0+
+// This prevents Terraform from showing module changes as "forces replacement" when upgrading to Redis 8.0+
+func modulesDiffSuppressFunc(k, oldValue, newValue string, d *schema.ResourceData) bool {
+	redisVersion, ok := d.GetOk("redis_version")
+	if !ok {
+		return false
+	}
+	version := redisVersion.(string)
+	return shouldSuppressModuleDiffsForRedis8(version)
 }
 
 func validateModulesForRedis8() schema.CustomizeDiffFunc {
