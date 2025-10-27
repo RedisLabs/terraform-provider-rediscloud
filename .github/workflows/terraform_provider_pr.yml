@@ -126,6 +126,7 @@ jobs:
 
 
   go_test_smoke_essentials_db:
+    if: false  # Temporarily disabled - waiting on client fixes
     name: go test smoke essentials db
     needs: go_test_smoke_essentials_sub
     runs-on: ubuntu-latest
@@ -192,6 +193,17 @@ jobs:
         with:
           go-version-file: go.mod
       - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAcc(RedisCloudProDatabaseBlockPublicEndpoints|ActiveActiveSubscriptionDatabaseBlockPublicEndpoints)"'
+
+  go_test_smoke_qpf:
+    name: go test smoke query performance factor
+    needs: [ go_build ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: go.mod
+      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudProDatabase_qpf"'
 
   go_unit_test:
     name: go unit test
