@@ -486,21 +486,21 @@ resource "rediscloud_active_active_subscription" "example" {
 `
 
 func testAccResourceRedisCloudActiveActiveSubscription(t *testing.T, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/testAccResourceRedisCloudActiveActiveSubscription.tf")
+	content := utils.GetTestConfig(t, "./activeactive/testdata/active_active_sub.tf")
 	return fmt.Sprintf(content, subscriptionName)
 }
 
 func testAccResourceRedisCloudActiveActiveSubscriptionUpdate(t *testing.T, subscriptionName string, cloudProvider string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/testAccResourceRedisCloudActiveActiveSubscriptionUpdate.tf")
+	content := utils.GetTestConfig(t, "./activeactive/testdata/subscription_update.tf")
 	return fmt.Sprintf(content, subscriptionName, cloudProvider)
 }
 
 func testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointDisabled(t *testing.T, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/testAccResourceRedisCloudActiveActiveSubscription_PublicEndpointDisabled.tf")
+	content := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_disabled.tf")
 	return fmt.Sprintf(content, subscriptionName)
 }
 
 func testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointEnabled(t *testing.T, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/testAccResourceRedisCloudActiveActiveSubscription_PublicEndpointEnabled.tf")
+	content := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_enabled.tf")
 	return fmt.Sprintf(content, subscriptionName)
 }
