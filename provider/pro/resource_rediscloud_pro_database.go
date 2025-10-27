@@ -230,7 +230,6 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Computed:    true,
-				ForceNew:    true,
 				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
 					v := val.(string)
 					matched, err := regexp.MatchString(`^([2468])x$`, v)
