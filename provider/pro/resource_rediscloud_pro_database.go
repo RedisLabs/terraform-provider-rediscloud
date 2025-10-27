@@ -571,7 +571,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	// For Redis 8.0+, modules are bundled by default and returned by the API
 	// Only set modules in state if they were explicitly defined in the config
 	redisVersion := redis.StringValue(db.RedisVersion)
-	if redisVersion >= "8.0" {
+	if shouldSuppressModuleDiffsForRedis8(redisVersion) {
 		// Only set modules if they were explicitly configured by the user
 		if _, ok := d.GetOk("modules"); ok {
 			if err := d.Set("modules", FlattenModules(db.Modules)); err != nil {
