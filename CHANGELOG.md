@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+
+# 2.7.1 (27th October 2025)
+
+## Fixed
+- rediscloud_subscription_database: The query_performance_factor attribute can now be updated in-place without recreating the database. Previously, any changes to this attribute would force resource replacement.
+- rediscloud_subscription_database (Redis 8.0+): Fixed drift detection issues where explicitly configured modules would incorrectly show as changes requiring resource replacement after upgrading to Redis 8.0 or higher. Modules are bundled
+  by default in Redis 8.0+, so configuration differences are now properly suppressed.
+- Test Suite: Fixed incorrect file path references in acceptance tests.
+
 # 2.7.0 (22nd October 2025)
 
 ## Added:
