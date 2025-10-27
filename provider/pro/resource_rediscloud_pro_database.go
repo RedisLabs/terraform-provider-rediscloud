@@ -418,6 +418,17 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		createDatabase.RedisVersion = s
 	})
 
+	// Warn if modules are explicitly configured for Redis 8.0+
+	var diags diag.Diagnostics
+	redisVersion := d.Get("redis_version").(string)
+	if shouldWarnRedis8Modules(redisVersion, len(createModules) > 0) {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Warning,
+			Summary:  "Modules are bundled by default in Redis 8.0+",
+			Detail:   fmt.Sprintf("The 'modules' block is deprecated for Redis %s and later versions, as modules (RediSearch, RedisJSON, RedisBloom, RedisTimeSeries) are bundled by default. You should remove the 'modules' block from your configuration.", redisVersion),
+		})
+	}
+
 	utils.SetStringIfNotEmpty(d, "password", func(s *string) {
 		createDatabase.Password = s
 	})
@@ -449,13 +460,13 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	// Confirm sub is ready to accept a db request
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
-		return diag.FromErr(err)
+		return append(diags, diag.FromErr(err)...)
 	}
 
 	dbId, err := api.Client.Database.Create(ctx, subId, createDatabase)
 	if err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
-		return diag.FromErr(err)
+		return append(diags, diag.FromErr(err)...)
 	}
 
 	d.SetId(utils.BuildResourceId(subId, dbId))
@@ -463,17 +474,18 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	// Confirm db + sub active status
 	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
-		return diag.FromErr(err)
+		return append(diags, diag.FromErr(err)...)
 	}
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
-		return diag.FromErr(err)
+		return append(diags, diag.FromErr(err)...)
 	}
 
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password, enableDefaultUser and so on.
 	utils.SubscriptionMutex.Unlock(subId)
-	return resourceRedisCloudProDatabaseUpdate(ctx, d, meta)
+	updateDiags := resourceRedisCloudProDatabaseUpdate(ctx, d, meta)
+	return append(diags, updateDiags...)
 }
 
 func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -714,6 +726,7 @@ func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.Resource
 
 func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	var diags diag.Diagnostics
 
 	_, dbId, err := ToDatabaseId(d.Id())
 	if err != nil {
@@ -821,7 +834,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 			update.ClientSSLCertificate = redis.String(clientSSLCertificate)
 		} else if len(clientTLSCertificates) > 0 {
 			utils.SubscriptionMutex.Unlock(subId)
-			return diag.Errorf("TLS certificates may not be provided while enable_tls is false")
+			return append(diags, diag.Errorf("TLS certificates may not be provided while enable_tls is false")...)
 		} else {
 			// Default: enable_tls=false, client_ssl_certificate=""
 			update.EnableTls = redis.Bool(enableTLS)
@@ -845,14 +858,25 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		update.RespVersion = redis.String(respVersion)
 	}
 
+	// Warn if modules are explicitly configured for Redis 8.0+
+	redisVersion := d.Get("redis_version").(string)
+	modules := d.Get("modules").(*schema.Set)
+	if shouldWarnRedis8Modules(redisVersion, modules.Len() > 0) {
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Warning,
+			Summary:  "Modules are bundled by default in Redis 8.0+",
+			Detail:   fmt.Sprintf("The 'modules' block is deprecated for Redis %s and later versions, as modules (RediSearch, RedisJSON, RedisBloom, RedisTimeSeries) are bundled by default. You should remove the 'modules' block from your configuration.", redisVersion),
+		})
+	}
+
 	// Confirm sub + db are ready to accept a db request
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
-		return diag.FromErr(err)
+		return append(diags, diag.FromErr(err)...)
 	}
 	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
-		return diag.FromErr(err)
+		return append(diags, diag.FromErr(err)...)
 	}
 
 	// if redis_version has changed, then upgrade first
@@ -863,11 +887,11 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		// if either version is blank, it could attempt to upgrade unnecessarily.
 		// only upgrade when a known version goes to another known version
 		if originalVersion.(string) != "" && newVersion.(string) != "" {
-			if diags, unlocked := upgradeRedisVersion(ctx, api, subId, dbId, newVersion.(string)); diags != nil {
+			if upgradeDiags, unlocked := upgradeRedisVersion(ctx, api, subId, dbId, newVersion.(string)); upgradeDiags != nil {
 				if !unlocked {
 					utils.SubscriptionMutex.Unlock(subId)
 				}
-				return diags
+				return append(diags, upgradeDiags...)
 			}
 		}
 	}
@@ -876,26 +900,27 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 
 	if err := api.Client.Database.Update(ctx, subId, dbId, update); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
-		return diag.FromErr(err)
+		return append(diags, diag.FromErr(err)...)
 	}
 
 	// Confirm db + sub active status
 	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
-		return diag.FromErr(err)
+		return append(diags, diag.FromErr(err)...)
 	}
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
-		return diag.FromErr(err)
+		return append(diags, diag.FromErr(err)...)
 	}
 
 	// The Tags API is synchronous so we shouldn't have to wait for anything
 	if err := WriteTags(ctx, api, subId, dbId, d); err != nil {
-		return diag.FromErr(err)
+		return append(diags, diag.FromErr(err)...)
 	}
 
 	utils.SubscriptionMutex.Unlock(subId)
-	return resourceRedisCloudProDatabaseRead(ctx, d, meta)
+	readDiags := resourceRedisCloudProDatabaseRead(ctx, d, meta)
+	return append(diags, readDiags...)
 }
 
 func upgradeRedisVersion(ctx context.Context, api *client.ApiClient, subId int, dbId int, newVersion string) (diag.Diagnostics, bool) {
@@ -1094,17 +1119,8 @@ func modulesDiffSuppressFunc(k, oldValue, newValue string, d *schema.ResourceDat
 
 func validateModulesForRedis8() schema.CustomizeDiffFunc {
 	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-		redisVersion, versionExists := diff.GetOk("redis_version")
-		modules, modulesExists := diff.GetOkExists("modules")
-
-		if versionExists && modulesExists {
-			version := redisVersion.(string)
-			moduleSet := modules.(*schema.Set)
-
-			if shouldWarnRedis8Modules(version, moduleSet.Len() > 0) {
-				log.Printf("[WARN] Modules are bundled by default in Redis %s. You should remove the modules block as it is deprecated for this version.", version)
-			}
-		}
+		// Module warnings are now shown to users in Create/Update functions
+		// This function is kept for potential future validation logic
 		return nil
 	}
 }
