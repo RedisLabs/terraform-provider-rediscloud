@@ -1119,8 +1119,23 @@ func modulesDiffSuppressFunc(k, oldValue, newValue string, d *schema.ResourceDat
 
 func validateModulesForRedis8() schema.CustomizeDiffFunc {
 	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-		// Module warnings are now shown to users in Create/Update functions
-		// This function is kept for potential future validation logic
+		// Check if modules are configured for Redis 8.0+
+		redisVersionRaw, ok := diff.GetOk("redis_version")
+		if !ok {
+			return nil
+		}
+		redisVersion := redisVersionRaw.(string)
+
+		modulesRaw, ok := diff.GetOk("modules")
+		if !ok {
+			return nil
+		}
+		modules := modulesRaw.(*schema.Set)
+
+		if shouldWarnRedis8Modules(redisVersion, modules.Len() > 0) {
+			log.Printf("[WARN] Modules are bundled by default in Redis %s and later versions. The 'modules' block is deprecated for Redis 8.0+ as modules (RediSearch, RedisJSON, RedisBloom, RedisTimeSeries) are bundled by default. You should remove the 'modules' block from your configuration.", redisVersion)
+		}
+
 		return nil
 	}
 }
