@@ -52,6 +52,8 @@ func WaitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.A
 			databases.StatusProxyPolicyChangeDraft,
 			databases.StatusDynamicEndpointsCreationPending,
 			databases.StatusActiveUpgradePending,
+			"bdb-update-pending", // Database update in progress.
+			// TODO replace with api model string in next release
 		},
 		Target:       []string{databases.StatusActive},
 		Timeout:      SafetyTimeout,

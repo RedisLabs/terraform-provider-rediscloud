@@ -371,12 +371,18 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 						return false
 					}
 
-					if old != new {
-						// The user is requesting a change
-						return false
+					// Suppress diff if user removes the deprecated attribute
+					if new == "" {
+						return true
 					}
 
-					return true
+					// Suppress diff if no actual change
+					if old == new {
+						return true
+					}
+
+					// User is requesting a version change - don't suppress
+					return false
 				},
 			},
 			"maintenance_windows": {

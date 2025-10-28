@@ -130,12 +130,11 @@ func TestAccResourceRedisCloudProDatabase_qpf(t *testing.T) {
 				),
 			},
 
-			// Test plan to ensure query_performance_factor change forces a new resource
+			// Test that query_performance_factor can be updated without forcing replacement
 			{
-				Config:             formatDatabaseConfig(name, testCloudAccountName, password, "2x", `modules = [{ name = "RediSearch" }]`),
-				PlanOnly:           true, // Runs terraform plan without applying
-				ExpectNonEmptyPlan: true, // Ensures that a change is detected
-				Check: resource.ComposeTestCheckFunc(
+				Config: formatDatabaseConfig(name, testCloudAccountName, password, "2x", `modules = [{ name = "RediSearch" }]`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "name", "example"),
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "query_performance_factor", "2x"),
 				),
 			},
