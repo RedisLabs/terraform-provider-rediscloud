@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 
+# 2.7.2 (29th October 2025)
+
+## Fixed
+- rediscloud_active_active_subscription_database: Fixed issue where changes to `global_enable_default_user` were not detected by Terraform. The field was not being read from the API response and set in state, preventing Terraform from triggering updates when users changed this attribute.
+
 # 2.7.1 (27th October 2025)
 
 ## Fixed
