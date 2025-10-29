@@ -657,9 +657,16 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
-	// Only set global_enable_default_user if Security field exists and EnableDefaultUser is not nil
-	if db.Security != nil && db.Security.EnableDefaultUser != nil {
-		if err := d.Set("global_enable_default_user", redis.BoolValue(db.Security.EnableDefaultUser)); err != nil {
+	// API doesn't return global_enable_default_user, so we echo back the config value to maintain state
+	// This allows Terraform to detect future changes properly
+	if v, ok := d.GetOk("global_enable_default_user"); ok {
+		// User has explicitly set it in config, preserve that value in state
+		if err := d.Set("global_enable_default_user", v.(bool)); err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		// Not set in config, assume API default of true
+		if err := d.Set("global_enable_default_user", true); err != nil {
 			return diag.FromErr(err)
 		}
 	}
