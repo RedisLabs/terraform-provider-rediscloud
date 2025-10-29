@@ -657,6 +657,13 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
+	// Only set global_enable_default_user if Security field exists and EnableDefaultUser is not nil
+	if db.Security != nil && db.Security.EnableDefaultUser != nil {
+		if err := d.Set("global_enable_default_user", redis.BoolValue(db.Security.EnableDefaultUser)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	tlsAuthEnabled := *db.CrdbDatabases[0].Security.TLSClientAuthentication
 	if err := utils.ApplyCertificateHints(tlsAuthEnabled, d); err != nil {
 		return diag.FromErr(err)
