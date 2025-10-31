@@ -4,10 +4,13 @@ All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 
-# 2.7.2 (29th October 2025)
+# 2.7.2 (31st October 2025)
 
 ## Fixed
-- rediscloud_active_active_subscription_database: Fixed state drift issue where the `global_enable_default_user` field was not properly tracked in Terraform state, preventing changes from being detected. 
+- rediscloud_active_active_subscription_database: Fixed state management for global configuration fields (`global_enable_default_user`, `global_data_persistence`, `global_password`). These fields are now read directly from the API response instead of being preserved from configuration, eliminating state drift issues and ensuring accurate change detection.
+- rediscloud_active_active_subscription_database: Fixed issue where setting `global_enable_default_user = false` was silently ignored during updates. The provider now correctly handles boolean `false` values.
+- rediscloud_private_link_endpoint_script and rediscloud_active_active_private_link_endpoint_script datasources: Updated to support changes in the underlying API structure for endpoint scripts.
+
 
 # 2.7.1 (27th October 2025)
 
