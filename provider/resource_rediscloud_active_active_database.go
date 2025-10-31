@@ -526,6 +526,20 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
+	// Read global_data_persistence from API response
+	if db.GlobalDataPersistence != nil {
+		if err := d.Set("global_data_persistence", redis.StringValue(db.GlobalDataPersistence)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	// Read global_password from API response
+	if db.GlobalPassword != nil {
+		if err := d.Set("global_password", redis.StringValue(db.GlobalPassword)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	if err := d.Set("support_oss_cluster_api", redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {
 		return diag.FromErr(err)
 	}
@@ -657,16 +671,9 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
-	// API doesn't return global_enable_default_user, so we echo back the config value to maintain state
-	// This allows Terraform to detect future changes properly
-	if v, ok := d.GetOk("global_enable_default_user"); ok {
-		// User has explicitly set it in config, preserve that value in state
-		if err := d.Set("global_enable_default_user", v.(bool)); err != nil {
-			return diag.FromErr(err)
-		}
-	} else {
-		// Not set in config, assume API default of true
-		if err := d.Set("global_enable_default_user", true); err != nil {
+	// Read global_enable_default_user from API response
+	if db.GlobalEnableDefaultUser != nil {
+		if err := d.Set("global_enable_default_user", redis.BoolValue(db.GlobalEnableDefaultUser)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
