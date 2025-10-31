@@ -830,7 +830,7 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		update.GlobalDataPersistence = redis.String(d.Get("global_data_persistence").(string))
 	}
 
-	if v, ok := d.GetOk("global_enable_default_user"); ok {
+	if v, ok := d.GetOkExists("global_enable_default_user"); ok {
 		update.GlobalEnableDefaultUser = redis.Bool(v.(bool))
 	}
 
