@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 
-# 2.7.2 (31st October 2025)
+# 2.7.2 (3rd November 2025)
 
 ## Fixed
 - rediscloud_active_active_subscription_database: Fixed state management for global configuration fields (`global_enable_default_user`, `global_data_persistence`, `global_password`). These fields are now read directly from the API response instead of being preserved from configuration, eliminating state drift issues and ensuring accurate change detection.
