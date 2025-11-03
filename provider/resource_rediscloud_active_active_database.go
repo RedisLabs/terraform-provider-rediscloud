@@ -526,6 +526,20 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
+	// Read global_data_persistence from API response
+	if db.GlobalDataPersistence != nil {
+		if err := d.Set("global_data_persistence", redis.StringValue(db.GlobalDataPersistence)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	// Read global_password from API response
+	if db.GlobalPassword != nil {
+		if err := d.Set("global_password", redis.StringValue(db.GlobalPassword)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	if err := d.Set("support_oss_cluster_api", redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {
 		return diag.FromErr(err)
 	}
@@ -655,6 +669,13 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 
 	if err := d.Set("auto_minor_version_upgrade", redis.BoolValue(db.AutoMinorVersionUpgrade)); err != nil {
 		return diag.FromErr(err)
+	}
+
+	// Read global_enable_default_user from API response
+	if db.GlobalEnableDefaultUser != nil {
+		if err := d.Set("global_enable_default_user", redis.BoolValue(db.GlobalEnableDefaultUser)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	tlsAuthEnabled := *db.CrdbDatabases[0].Security.TLSClientAuthentication
@@ -809,7 +830,7 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		update.GlobalDataPersistence = redis.String(d.Get("global_data_persistence").(string))
 	}
 
-	if v, ok := d.GetOk("global_enable_default_user"); ok {
+	if v, ok := d.GetOkExists("global_enable_default_user"); ok {
 		update.GlobalEnableDefaultUser = redis.Bool(v.(bool))
 	}
 
