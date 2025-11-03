@@ -183,6 +183,11 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 							ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 							Default:          "1",
 						},
+						"aws_account_id": {
+							Description: "AWS account ID associated with the subscription (only applicable for AWS subscriptions)",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
 						"region": {
 							Description: "Cloud networking details, per region (single region or multiple regions for Active-Active cluster only)",
 							Type:        schema.TypeSet,

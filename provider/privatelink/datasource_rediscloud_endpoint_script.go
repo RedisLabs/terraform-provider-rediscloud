@@ -59,9 +59,11 @@ func dataSourcePrivateLinkScriptRead(ctx context.Context, d *schema.ResourceData
 
 	d.SetId(strconv.Itoa(subId))
 
-	err = d.Set("endpoint_script", redis.StringValue(endpointScript.ResourceEndpointScript))
-	if err != nil {
-		return diag.FromErr(err)
+	if endpointScript != nil && endpointScript.ResourceEndpointScript != nil {
+		err = d.Set("endpoint_script", redis.StringValue(endpointScript.ResourceEndpointScript))
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return diags

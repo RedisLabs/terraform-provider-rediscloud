@@ -48,6 +48,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
+					resource.TestCheckResourceAttrSet(resourceName, "aws_account_id"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.memory_limit_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
@@ -131,6 +132,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttrSet(datasourceSubscriptionName, "payment_method_id"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "cloud_provider", "AWS"),
+					resource.TestCheckResourceAttrSet(datasourceSubscriptionName, "aws_account_id"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "number_of_databases", "0"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "status", "active"),
 

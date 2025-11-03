@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.1
 
 require (
-	github.com/RedisLabs/rediscloud-go-api v0.40.0
+	github.com/RedisLabs/rediscloud-go-api v0.41.0
 	github.com/bflad/tfproviderlint v0.31.0
 	github.com/hashicorp/go-cty v1.5.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.38.1

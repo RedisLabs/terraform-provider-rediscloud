@@ -99,6 +99,12 @@ func FlattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource b
 			"cloud_account_id": strconv.Itoa(redis.IntValue(currentCloudDetail.CloudAccountID)),
 			"region":           regions,
 		}
+
+		// Add AWS account ID if present
+		if currentCloudDetail.AWSAccountID != nil {
+			cdlMapString["aws_account_id"] = redis.StringValue(currentCloudDetail.AWSAccountID)
+		}
+
 		cdl = append(cdl, cdlMapString)
 	}
 

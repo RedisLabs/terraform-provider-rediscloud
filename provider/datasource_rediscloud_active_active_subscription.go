@@ -47,6 +47,11 @@ func dataSourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
+			"aws_account_id": {
+				Description: "AWS account ID associated with the subscription (only applicable for AWS subscriptions)",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"maintenance_windows": {
 				Description: "Details about the subscription's maintenance window specification",
 				Type:        schema.TypeList,
@@ -211,6 +216,13 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 		cloudProvider := cloudDetails[0].Provider
 		if err := d.Set("cloud_provider", cloudProvider); err != nil {
 			return diag.FromErr(err)
+		}
+
+		// Set AWS account ID if available
+		if cloudDetails[0].AWSAccountID != nil {
+			if err := d.Set("aws_account_id", redis.StringValue(cloudDetails[0].AWSAccountID)); err != nil {
+				return diag.FromErr(err)
+			}
 		}
 	}
 
