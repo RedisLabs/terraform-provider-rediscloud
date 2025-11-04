@@ -85,6 +85,17 @@ func dataSourceActiveActiveTransitGatewayRead(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 
+	// Check for nil response structure
+	if tgwTask == nil {
+		return diag.Errorf("Transit Gateway API returned nil task for subscription %d, region %d", subId, regionId)
+	}
+	if tgwTask.Response == nil {
+		return diag.Errorf("Transit Gateway API returned nil response for subscription %d, region %d", subId, regionId)
+	}
+	if tgwTask.Response.Resource == nil {
+		return diag.Errorf("Transit Gateway API returned nil resource for subscription %d, region %d - subscription may not be fully provisioned yet", subId, regionId)
+	}
+
 	var filters []func(db *attachments.TransitGatewayAttachment) bool
 
 	if v, ok := d.GetOk("tgw_id"); ok {
