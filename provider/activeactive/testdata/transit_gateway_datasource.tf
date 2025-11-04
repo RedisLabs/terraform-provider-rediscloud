@@ -32,8 +32,12 @@ resource "rediscloud_active_active_subscription" "test" {
   }
 }
 
+data "rediscloud_active_active_subscription_regions" "regions" {
+  subscription_name = rediscloud_active_active_subscription.test.name
+}
+
 data "rediscloud_active_active_transit_gateway" "test" {
   subscription_id = rediscloud_active_active_subscription.test.id
-  region_id = tolist(rediscloud_active_active_subscription.test.regions)[0].region_id
+  region_id = data.rediscloud_active_active_subscription_regions.regions.regions[0].region_id
   aws_tgw_uid = "%s"
 }
