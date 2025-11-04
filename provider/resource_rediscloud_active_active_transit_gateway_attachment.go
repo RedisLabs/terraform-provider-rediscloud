@@ -182,7 +182,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentUpdate(ctx context.Co
 		cidrs = make([]*string, 0)
 	}
 
-	err = api.Client.TransitGatewayAttachments.UpdateActiveActive(ctx, subId, tgwId, regionId, cidrs)
+	err = api.Client.TransitGatewayAttachments.UpdateActiveActive(ctx, subId, regionId, tgwId, cidrs)
 	if err != nil {
 		return diag.FromErr(err)
 	}
