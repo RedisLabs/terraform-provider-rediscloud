@@ -208,10 +208,8 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Default:     true,
 			},
 			"auto_minor_version_upgrade": {
-				Description: "When 'true', enables auto minor version upgrades for this database. Default: 'true'",
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     true,
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"override_region": {
 				Description: "Region-specific configuration parameters to override the global configuration",

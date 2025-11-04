@@ -516,6 +516,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
 `
 
 func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *testing.T) {
+	t.Skip("auto_minor_version_upgrade feature not yet available")
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
