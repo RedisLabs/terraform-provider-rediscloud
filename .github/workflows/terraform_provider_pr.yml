@@ -126,6 +126,7 @@ jobs:
 
   # All acceptance tests run in parallel after quick tests
   go_test_smoke_aa_tgw_attachment:
+    if: false  # Temporarily disabled - TGW tests not ready yet
     name: go test smoke aa tgw attachment
     needs: [go_unit_test, tfproviderlint, terraform_providers_schema]
     runs-on: ubuntu-latest

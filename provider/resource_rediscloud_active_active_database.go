@@ -572,119 +572,46 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	publicEndpointConfig := make(map[string]interface{})
 	privateEndpointConfig := make(map[string]interface{})
 
-	tflog.Debug(ctx, "Read: Starting to process regions from API", map[string]interface{}{
-		"regionCount": len(db.CrdbDatabases),
-	})
-
+	// Build API region lookup map
+	apiRegions := make(map[string]*databases.CrdbDatabase)
 	for _, regionDb := range db.CrdbDatabases {
 		region := redis.StringValue(regionDb.Region)
-		// Set the endpoints for the region
+		apiRegions[region] = regionDb
+		// Set the endpoints for all regions
 		publicEndpointConfig[region] = redis.StringValue(regionDb.PublicEndpoint)
 		privateEndpointConfig[region] = redis.StringValue(regionDb.PrivateEndpoint)
-		// Check if the region is in the state as an override
-		stateOverrideRegion := getStateOverrideRegion(d, region)
-		if stateOverrideRegion == nil {
-			tflog.Debug(ctx, "Read: Skipping region (not in state override_region)", map[string]interface{}{
+	}
+
+	// Iterate through STATE override_region blocks (not API regions) to preserve Set ordering/hashing
+	stateOverrideRegions := d.Get("override_region").(*schema.Set).List()
+	tflog.Debug(ctx, "Read: Starting to process regions from STATE", map[string]interface{}{
+		"regionCount": len(stateOverrideRegions),
+	})
+
+	for _, stateRegion := range stateOverrideRegions {
+		stateRegionMap := stateRegion.(map[string]interface{})
+		region := stateRegionMap["name"].(string)
+
+		// Debug: log what keys are in stateRegionMap
+		mapKeys := make([]string, 0, len(stateRegionMap))
+		for k := range stateRegionMap {
+			mapKeys = append(mapKeys, k)
+		}
+		tflog.Debug(ctx, "Read: StateRegionMap keys", map[string]interface{}{
+			"region": region,
+			"keys":   mapKeys,
+		})
+
+		// Look up corresponding API data
+		regionDb, exists := apiRegions[region]
+		if !exists {
+			tflog.Warn(ctx, "Read: Region in state not found in API response", map[string]interface{}{
 				"region": region,
 			})
 			continue
 		}
 
-		tflog.Debug(ctx, "Read: Processing region from state", map[string]interface{}{
-			"region": region,
-			"stateHasEnableDefaultUser": stateOverrideRegion["enable_default_user"] != nil,
-		})
-
-		regionDbConfig := map[string]interface{}{
-			"name": region,
-		}
-
-		// Handle source_ips based on subscription's public_endpoint_access settings
-		// When public_endpoint_access is false and source_ips is empty, API returns private IP ranges
-		// When public_endpoint_access is true and source_ips is empty, API returns ["0.0.0.0/0"]
-		// When source_ips is explicitly set by user, API returns the user's input
-		// This is to prevent drift in terraform state as API response will differ from what terraform sees
-		var sourceIPs []string
-		privateIPRanges := []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10"}
-
-		// Check if the returned source_ips matches default private IP ranges (when public access is blocked)
-		isPrivateIPRange := len(regionDb.Security.SourceIPs) == len(privateIPRanges)
-		if isPrivateIPRange {
-			for i, ip := range regionDb.Security.SourceIPs {
-				if redis.StringValue(ip) != privateIPRanges[i] {
-					isPrivateIPRange = false
-					break
-				}
-			}
-		}
-
-		// Check if the returned source_ips is the default public access ["0.0.0.0/0"]
-		isDefaultPublicAccess := len(regionDb.Security.SourceIPs) == 1 && redis.StringValue(regionDb.Security.SourceIPs[0]) == "0.0.0.0/0"
-
-		// Only set source_ips if they were explicitly configured by the user (not defaults)
-		if !isDefaultPublicAccess && !isPrivateIPRange {
-			sourceIPs = redis.StringSliceValue(regionDb.Security.SourceIPs...)
-		}
-
-		// Only set override fields if they were in the old state (user configured them)
-		if stateSourceIPs := getStateOverrideRegion(d, region)["override_global_source_ips"]; stateSourceIPs != nil {
-			if len(stateSourceIPs.(*schema.Set).List()) > 0 {
-				regionDbConfig["override_global_source_ips"] = sourceIPs
-			}
-		}
-
-		if stateDataPersistence := getStateOverrideRegion(d, region)["override_global_data_persistence"]; stateDataPersistence != nil {
-			if stateDataPersistence.(string) != "" {
-				regionDbConfig["override_global_data_persistence"] = regionDb.DataPersistence
-			}
-		}
-
-		if stateOverridePassword := getStateOverrideRegion(d, region)["override_global_password"]; stateOverridePassword != "" {
-			if *regionDb.Security.Password == d.Get("global_password").(string) {
-				regionDbConfig["override_global_password"] = ""
-			} else {
-				regionDbConfig["override_global_password"] = redis.StringValue(regionDb.Security.Password)
-			}
-		}
-
-		stateOverrideAlerts := getStateAlertsFromDbRegion(getStateOverrideRegion(d, region))
-		if len(stateOverrideAlerts) > 0 {
-			regionDbConfig["override_global_alert"] = pro.FlattenAlerts(regionDb.Alerts)
-		}
-
-		regionDbConfig["remote_backup"] = pro.FlattenBackupPlan(regionDb.Backup, getStateRemoteBackup(d, region), "")
-
-		// Only set enable_default_user if it differs from global (was overridden)
-		// This prevents drift when region inherits from global (not explicitly set in config)
-		globalEnableDefaultUser := d.Get("global_enable_default_user").(bool)
-		regionEnableDefaultUser := redis.BoolValue(regionDb.Security.EnableDefaultUser)
-
-		tflog.Debug(ctx, "Read: Checking enable_default_user for region", map[string]interface{}{
-			"region":       region,
-			"globalValue":  globalEnableDefaultUser,
-			"regionValue":  regionEnableDefaultUser,
-			"isDifferent":  regionEnableDefaultUser != globalEnableDefaultUser,
-		})
-
-		if regionEnableDefaultUser != globalEnableDefaultUser {
-			// Region value differs from global, meaning it was explicitly overridden
-			tflog.Debug(ctx, "Read: Setting enable_default_user in state (differs from global)", map[string]interface{}{
-				"region": region,
-				"value":  regionEnableDefaultUser,
-			})
-			regionDbConfig["enable_default_user"] = regionEnableDefaultUser
-		} else {
-			tflog.Debug(ctx, "Read: NOT setting enable_default_user in state (matches global)", map[string]interface{}{
-				"region": region,
-			})
-		}
-
-		tflog.Debug(ctx, "Read: Completed region config", map[string]interface{}{
-			"region":                      region,
-			"hasEnableDefaultUser":        regionDbConfig["enable_default_user"] != nil,
-			"enableDefaultUserValue":      regionDbConfig["enable_default_user"],
-		})
-
+		regionDbConfig := buildRegionConfigFromAPIAndState(ctx, d, db, region, regionDb, stateRegionMap)
 		regionDbConfigs = append(regionDbConfigs, regionDbConfig)
 	}
 
@@ -1065,15 +992,15 @@ func flattenModulesToNames(modules []*databases.Module) []string {
 	return moduleNames
 }
 
-// isOverrideFieldExplicitlySetInConfig checks if a field was explicitly set in the
-// Terraform configuration for a specific region in the override_region block.
+// isEnableDefaultUserExplicitlySetInConfig checks if enable_default_user was explicitly
+// set in the Terraform configuration for a specific region in the override_region block.
 //
-// This is needed to distinguish between "not set" and "set to default/empty value".
-// We use GetRawConfig() to check if the field exists in the original HCL configuration.
-func isOverrideFieldExplicitlySetInConfig(d *schema.ResourceData, regionName string, fieldName string) bool {
+// This is used by the Update function to determine whether to send the field to the API.
+// We only need this for Update operations where GetRawConfig() is available.
+func isEnableDefaultUserExplicitlySetInConfig(d *schema.ResourceData, regionName string) bool {
 	rawConfig := d.GetRawConfig()
 
-	// If raw config is null (e.g., during Read operations), fall back to conservative behavior
+	// During Update, raw config should always be available
 	if rawConfig.IsNull() {
 		return false
 	}
@@ -1098,9 +1025,9 @@ func isOverrideFieldExplicitlySetInConfig(d *schema.ResourceData, regionName str
 			if regionVal.Type().HasAttribute("name") {
 				nameAttr := regionVal.GetAttr("name")
 				if !nameAttr.IsNull() && nameAttr.AsString() == regionName {
-					// Found the matching region, check if field exists
-					if regionVal.Type().HasAttribute(fieldName) {
-						fieldAttr := regionVal.GetAttr(fieldName)
+					// Found the matching region, check if enable_default_user exists
+					if regionVal.Type().HasAttribute("enable_default_user") {
+						fieldAttr := regionVal.GetAttr("enable_default_user")
 						// If the attribute exists and is not null, it was explicitly set
 						return !fieldAttr.IsNull()
 					}
@@ -1115,10 +1042,251 @@ func isOverrideFieldExplicitlySetInConfig(d *schema.ResourceData, regionName str
 	return false
 }
 
-// isEnableDefaultUserExplicitlySetInConfig checks if enable_default_user was explicitly
-// set in the Terraform configuration for a specific region in the override_region block.
-//
-// This is a convenience wrapper around isOverrideFieldExplicitlySetInConfig.
-func isEnableDefaultUserExplicitlySetInConfig(d *schema.ResourceData, regionName string) bool {
-	return isOverrideFieldExplicitlySetInConfig(d, regionName, "enable_default_user")
+// buildRegionConfigFromAPIAndState builds a region config map from API data and state data.
+// This function handles all the complex logic for determining which fields to include in the
+// region config based on what's in the API response and what was previously in the state.
+func buildRegionConfigFromAPIAndState(ctx context.Context, d *schema.ResourceData, db *databases.ActiveActiveDatabase, region string, regionDb *databases.CrdbDatabase, stateOverrideRegion map[string]interface{}) map[string]interface{} {
+	tflog.Debug(ctx, "Read: Processing region from state", map[string]interface{}{
+		"region":                                 region,
+		"stateHasEnableDefaultUser":              stateOverrideRegion["enable_default_user"] != nil,
+		"stateHasOverrideGlobalSourceIps":        stateOverrideRegion["override_global_source_ips"] != nil,
+		"stateHasOverrideGlobalDataPersistence":  stateOverrideRegion["override_global_data_persistence"] != nil,
+		"stateHasOverrideGlobalPassword":         stateOverrideRegion["override_global_password"] != nil && stateOverrideRegion["override_global_password"] != "",
+		"stateHasOverrideGlobalAlert":            stateOverrideRegion["override_global_alert"] != nil,
+		"stateHasRemoteBackup":                   stateOverrideRegion["remote_backup"] != nil,
+	})
+
+	regionDbConfig := map[string]interface{}{
+		"name": region,
+	}
+
+	// Handle source_ips based on subscription's public_endpoint_access settings
+	// When public_endpoint_access is false and source_ips is empty, API returns private IP ranges
+	// When public_endpoint_access is true and source_ips is empty, API returns ["0.0.0.0/0"]
+	// When source_ips is explicitly set by user, API returns the user's input
+	// This is to prevent drift in terraform state as API response will differ from what terraform sees
+	var sourceIPs []string
+	privateIPRanges := []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10"}
+
+	// Check if the returned source_ips matches default private IP ranges (when public access is blocked)
+	isPrivateIPRange := len(regionDb.Security.SourceIPs) == len(privateIPRanges)
+	if isPrivateIPRange {
+		for i, ip := range regionDb.Security.SourceIPs {
+			if redis.StringValue(ip) != privateIPRanges[i] {
+				isPrivateIPRange = false
+				break
+			}
+		}
+	}
+
+	// Check if the returned source_ips is the default public access ["0.0.0.0/0"]
+	isDefaultPublicAccess := len(regionDb.Security.SourceIPs) == 1 && redis.StringValue(regionDb.Security.SourceIPs[0]) == "0.0.0.0/0"
+
+	// Only set source_ips if they were explicitly configured by the user (not defaults)
+	if !isDefaultPublicAccess && !isPrivateIPRange {
+		sourceIPs = redis.StringSliceValue(regionDb.Security.SourceIPs...)
+	}
+
+	// Only set override fields if they differ from global values FROM API
+	// This prevents drift when regions inherit from global (not explicitly overridden in config)
+	// IMPORTANT: Compare against API global values (db.Global*), not state values (d.Get())
+	// because state may have empty/default values when user didn't specify them
+	//
+	// We use pure API-to-API comparison without config checking because:
+	// 1. Update function correctly handles field removal (sends global value when field removed from config)
+	// 2. This makes Apply and Refresh behave identically (no GetRawConfig dependency)
+	// 3. Matches the pattern used by Pro database resources
+
+	// override_global_source_ips: only set if differs from global
+	// Note: db.GlobalSourceIPs doesn't exist in API, source IPs are per-region only
+	globalSourceIPsPtrs := utils.SetToStringSlice(d.Get("global_source_ips").(*schema.Set))
+	globalSourceIPs := redis.StringSliceValue(globalSourceIPsPtrs...)
+	if !stringSlicesEqual(sourceIPs, globalSourceIPs) && len(sourceIPs) > 0 {
+		regionDbConfig["override_global_source_ips"] = sourceIPs
+	}
+
+	// override_global_data_persistence: only set if differs from global API value
+	if regionDb.DataPersistence != nil && db.GlobalDataPersistence != nil {
+		if redis.StringValue(regionDb.DataPersistence) != redis.StringValue(db.GlobalDataPersistence) {
+			regionDbConfig["override_global_data_persistence"] = regionDb.DataPersistence
+		}
+	}
+
+	// override_global_password: only set if differs from global API value
+	if regionDb.Security.Password != nil && db.GlobalPassword != nil {
+		if *regionDb.Security.Password != redis.StringValue(db.GlobalPassword) {
+			regionDbConfig["override_global_password"] = redis.StringValue(regionDb.Security.Password)
+		}
+	}
+
+	// override_global_alert: only set if differs from global
+	// Note: Active-Active API doesn't return global alerts separately, so we compare counts
+	globalAlerts := d.Get("global_alert").(*schema.Set).List()
+	regionAlerts := pro.FlattenAlerts(regionDb.Alerts)
+	if len(globalAlerts) != len(regionAlerts) {
+		regionDbConfig["override_global_alert"] = regionAlerts
+	}
+
+	// remote_backup: only set if it exists in API response
+	if regionDb.Backup != nil {
+		stateRemoteBackup := stateOverrideRegion["remote_backup"]
+		if stateRemoteBackup != nil {
+			stateRemoteBackupList := stateRemoteBackup.([]interface{})
+			if len(stateRemoteBackupList) > 0 {
+				regionDbConfig["remote_backup"] = pro.FlattenBackupPlan(regionDb.Backup, stateRemoteBackupList, "")
+			}
+		}
+	}
+
+	// enable_default_user: Hybrid approach using GetRawConfig when available, state preservation when not
+	// GetRawConfig is available during Apply/Update but NULL during standalone Refresh
+	if regionDb.Security.EnableDefaultUser != nil && db.GlobalEnableDefaultUser != nil {
+		globalEnableDefaultUser := redis.BoolValue(db.GlobalEnableDefaultUser)
+		regionEnableDefaultUser := redis.BoolValue(regionDb.Security.EnableDefaultUser)
+
+		// Check if GetRawConfig is available (indicates we're in Apply/Update context)
+		rawConfig := d.GetRawConfig()
+		getRawConfigAvailable := !rawConfig.IsNull()
+
+		tflog.Debug(ctx, "Read: enable_default_user - checking GetRawConfig availability", map[string]interface{}{
+			"region":                 region,
+			"getRawConfigAvailable":  getRawConfigAvailable,
+			"globalValue":            globalEnableDefaultUser,
+			"regionValue":            regionEnableDefaultUser,
+			"isDifferent":            regionEnableDefaultUser != globalEnableDefaultUser,
+		})
+
+		if getRawConfigAvailable {
+			// GetRawConfig available - use config-based detection
+			wasExplicitlySet := isEnableDefaultUserExplicitlySetInConfig(d, region)
+
+			tflog.Debug(ctx, "Read: Using config-based detection (GetRawConfig available)", map[string]interface{}{
+				"region":           region,
+				"wasExplicitlySet": wasExplicitlySet,
+			})
+
+			if wasExplicitlySet {
+				tflog.Debug(ctx, "Read: Setting enable_default_user (explicitly in config)", map[string]interface{}{
+					"region": region,
+					"value":  regionEnableDefaultUser,
+				})
+				regionDbConfig["enable_default_user"] = regionEnableDefaultUser
+			} else if regionEnableDefaultUser != globalEnableDefaultUser {
+				tflog.Debug(ctx, "Read: Setting enable_default_user (not in config but differs from global)", map[string]interface{}{
+					"region": region,
+					"value":  regionEnableDefaultUser,
+				})
+				regionDbConfig["enable_default_user"] = regionEnableDefaultUser
+			} else {
+				tflog.Debug(ctx, "Read: NOT setting enable_default_user (not in config, matches global)", map[string]interface{}{
+					"region": region,
+				})
+			}
+		} else {
+			// GetRawConfig unavailable (Refresh) - use state preservation
+			fieldWasInOldState := stateOverrideRegion["enable_default_user"] != nil
+			var oldStateValue interface{}
+			if fieldWasInOldState {
+				oldStateValue = stateOverrideRegion["enable_default_user"]
+			}
+
+			tflog.Debug(ctx, "Read: Using state-based preservation (GetRawConfig unavailable)", map[string]interface{}{
+				"region":            region,
+				"fieldWasInOldState": fieldWasInOldState,
+				"oldStateValue":     oldStateValue,
+			})
+
+			if fieldWasInOldState {
+				// Field was in previous state - preserve it if it still makes sense
+				if regionEnableDefaultUser != globalEnableDefaultUser {
+					// Still differs from global - definitely keep it
+					tflog.Debug(ctx, "Read: Setting enable_default_user (was in old state, differs from global)", map[string]interface{}{
+						"region": region,
+						"value":  regionEnableDefaultUser,
+					})
+					regionDbConfig["enable_default_user"] = regionEnableDefaultUser
+				} else {
+					// Matches global but was in old state - assume user still wants it explicit
+					tflog.Debug(ctx, "Read: Setting enable_default_user (was in old state, preserving even though matches global)", map[string]interface{}{
+						"region": region,
+						"value":  regionEnableDefaultUser,
+					})
+					regionDbConfig["enable_default_user"] = regionEnableDefaultUser
+				}
+			} else {
+				// Field was NOT in previous state
+				if regionEnableDefaultUser != globalEnableDefaultUser {
+					// Not in old state but differs - might be new override
+					tflog.Debug(ctx, "Read: Setting enable_default_user (not in old state, but differs from global)", map[string]interface{}{
+						"region": region,
+						"value":  regionEnableDefaultUser,
+					})
+					regionDbConfig["enable_default_user"] = regionEnableDefaultUser
+				} else {
+					// Not in old state and matches global - don't add (inherited)
+					tflog.Debug(ctx, "Read: NOT setting enable_default_user (not in old state, matches global)", map[string]interface{}{
+						"region": region,
+					})
+				}
+			}
+		}
+	}
+
+	tflog.Debug(ctx, "Read: Completed region config", map[string]interface{}{
+		"region":                           region,
+		"hasEnableDefaultUser":             regionDbConfig["enable_default_user"] != nil,
+		"enableDefaultUserValue":           regionDbConfig["enable_default_user"],
+		"hasOverrideGlobalSourceIps":       regionDbConfig["override_global_source_ips"] != nil,
+		"hasOverrideGlobalDataPersistence": regionDbConfig["override_global_data_persistence"] != nil,
+		"hasOverrideGlobalPassword":        regionDbConfig["override_global_password"] != nil,
+		"hasOverrideGlobalAlert":           regionDbConfig["override_global_alert"] != nil,
+		"hasRemoteBackup":                  regionDbConfig["remote_backup"] != nil,
+	})
+
+	return regionDbConfig
+}
+
+// stringSlicesEqual compares two string slices for equality (order matters)
+func stringSlicesEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// alertsEqualMaps performs deep comparison of two alert lists (order-independent)
+// Both parameters are []map[string]interface{} from pro.FlattenAlerts()
+func alertsEqualMaps(alerts1, alerts2 []map[string]interface{}) bool {
+	if len(alerts1) != len(alerts2) {
+		return false
+	}
+
+	// For each alert in list1, find a matching alert in list2
+	for _, alert1 := range alerts1 {
+		name1 := alert1["name"].(string)
+		value1 := alert1["value"].(int)
+
+		// Look for matching alert in list2
+		found := false
+		for _, alert2 := range alerts2 {
+			name2 := alert2["name"].(string)
+			value2 := alert2["value"].(int)
+
+			if name1 == name2 && value1 == value2 {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return false
+		}
+	}
+
+	return true
 }

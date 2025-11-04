@@ -7,14 +7,12 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 # Unreleased
 
 ## Fixed
-- `rediscloud_active_active_subscription_database`: Fixed issue where regional `enable_default_user` would incorrectly default to `false` instead of inheriting from `global_enable_default_user` when not explicitly specified in the region configuration.
-- `rediscloud_active_active_transit_gateway_attachment`: Fixed parameter order bug in update operation where `region_id` and `tgw_id` were swapped, causing "SUBSCRIPTION_INVALID_REGION_ID" errors when updating CIDRs.
+- `rediscloud_active_active_subscription_database`: Fixed multiple issues concerning regional `enable_default_user` and `global_enable_default_user` to do with drift or incorrectly not detecting changes. You may get a plan diff on first apply, but this is due to Terraform incorrectly storing state in a previous build.
+- `rediscloud_active_active_transit_gateway_attachment`: Fixed parameter order bug in update operation.
 
 ## Testing
 - Added acceptance tests covering `enable_default_user` inheritance and override scenarios
 - Added acceptance test for `rediscloud_active_active_transit_gateway_attachment` resource lifecycle (Create/Read/Update/Delete/Import)
-- Added dedicated smoke test jobs in GitHub Actions for both `enable_default_user` and Transit Gateway attachment tests
-
 
 # 2.7.2 (3rd November 2025)
 

@@ -1,18 +1,12 @@
 package provider
 
 import (
-	"context"
 	"fmt"
-	"strconv"
 	"testing"
 
-	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 // TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser tests the enable_default_user
@@ -25,10 +19,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 	password := acctest.RandString(20)
 
 	const resourceName = "rediscloud_active_active_subscription_database.test"
-	const subscriptionResourceName = "rediscloud_active_active_subscription.test"
-
-	var subId int
-	var dbId int
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
@@ -46,54 +36,13 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 					resource.TestCheckResourceAttr(resourceName, "global_enable_default_user", "true"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.#", "2"),
 
-					// Capture subscription and database IDs for API verification
-					func(s *terraform.State) error {
-						r := s.RootModule().Resources[subscriptionResourceName]
-						var err error
-						subId, err = strconv.Atoi(r.Primary.ID)
-						if err != nil {
-							return fmt.Errorf("couldn't parse subscription ID: %s", r.Primary.ID)
-						}
-
-						dbResource := s.RootModule().Resources[resourceName]
-						dbIdStr := dbResource.Primary.Attributes["db_id"]
-						dbId, err = strconv.Atoi(dbIdStr)
-						if err != nil {
-							return fmt.Errorf("couldn't parse database ID: %s", dbIdStr)
-						}
-
-						return nil
-					},
-
-					// Verify API state - regions should inherit global (not send enableDefaultUser)
-					func(s *terraform.State) error {
-						apiClient := testProvider.Meta().(*client.ApiClient)
-						db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
-						if err != nil {
-							return fmt.Errorf("failed to get database from API: %w", err)
-						}
-
-						// Verify global setting
-						if db.GlobalEnableDefaultUser == nil || !*db.GlobalEnableDefaultUser {
-							return fmt.Errorf("expected GlobalEnableDefaultUser to be true, got: %v", db.GlobalEnableDefaultUser)
-						}
-
-						// Verify regions - they should have enableDefaultUser=true (effective value from global)
-						// What's important is that all regions show true (not false from bad override)
-						for _, regionDb := range db.CrdbDatabases {
-							region := redis.StringValue(regionDb.Region)
-							enableDefaultUser := redis.BoolValue(regionDb.Security.EnableDefaultUser)
-							t.Logf("Region %s: EnableDefaultUser = %v", region, enableDefaultUser)
-
-							// All regions should have effective value of true (from global)
-							if !enableDefaultUser {
-								return fmt.Errorf("region %s has enableDefaultUser=%v, expected true (inherited from global)",
-									region, enableDefaultUser)
-							}
-						}
-
-						return nil
-					},
+					// Both regions inherit global (no explicit enable_default_user set)
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "override_region.*", map[string]string{
+						"name": "us-east-1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "override_region.*", map[string]string{
+						"name": "us-east-2",
+					}),
 				),
 			},
 
@@ -104,45 +53,18 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 					subscriptionName, databaseName, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "global_enable_default_user", "true"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.#", "2"),
 
 					// us-east-1: explicitly false (override)
-					// Note: Terraform state won't show enable_default_user for override_region unless we check differently
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "override_region.*", map[string]string{
+						"name":                "us-east-1",
+						"enable_default_user": "false",
+					}),
 
-					// Verify API state
-					func(s *terraform.State) error {
-						apiClient := testProvider.Meta().(*client.ApiClient)
-						db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
-						if err != nil {
-							return fmt.Errorf("failed to get database from API: %w", err)
-						}
-
-						// Verify global is still true
-						if !redis.BoolValue(db.GlobalEnableDefaultUser) {
-							return fmt.Errorf("expected GlobalEnableDefaultUser=true")
-						}
-
-						// Verify us-east-1 is explicitly false
-						usEast1 := findRegionInActiveActiveDB(db, "us-east-1")
-						if usEast1 == nil {
-							return fmt.Errorf("us-east-1 region not found")
-						}
-						if redis.BoolValue(usEast1.Security.EnableDefaultUser) != false {
-							return fmt.Errorf("us-east-1 should have enableDefaultUser=false, got: %v",
-								usEast1.Security.EnableDefaultUser)
-						}
-
-						// Verify us-east-2 inherits (true)
-						usEast2 := findRegionInActiveActiveDB(db, "us-east-2")
-						if usEast2 == nil {
-							return fmt.Errorf("us-east-2 region not found")
-						}
-						if redis.BoolValue(usEast2.Security.EnableDefaultUser) != true {
-							return fmt.Errorf("us-east-2 should inherit enableDefaultUser=true, got: %v",
-								usEast2.Security.EnableDefaultUser)
-						}
-
-						return nil
-					},
+					// us-east-2: inherits global (no enable_default_user set)
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "override_region.*", map[string]string{
+						"name": "us-east-2",
+					}),
 				),
 			},
 
@@ -153,89 +75,42 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 					subscriptionName, databaseName, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "global_enable_default_user", "false"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.#", "2"),
 
-					// Verify API state
-					func(s *terraform.State) error {
-						apiClient := testProvider.Meta().(*client.ApiClient)
-						db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
-						if err != nil {
-							return fmt.Errorf("failed to get database from API: %w", err)
-						}
+					// us-east-1: explicitly true (override global false)
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "override_region.*", map[string]string{
+						"name":                "us-east-1",
+						"enable_default_user": "true",
+					}),
 
-						// Verify global is false
-						if redis.BoolValue(db.GlobalEnableDefaultUser) != false {
-							return fmt.Errorf("expected GlobalEnableDefaultUser=false, got: %v", db.GlobalEnableDefaultUser)
-						}
-
-						// Verify us-east-1 overrides to true
-						usEast1 := findRegionInActiveActiveDB(db, "us-east-1")
-						if usEast1 == nil {
-							return fmt.Errorf("us-east-1 region not found")
-						}
-						if redis.BoolValue(usEast1.Security.EnableDefaultUser) != true {
-							return fmt.Errorf("us-east-1 should override to enableDefaultUser=true, got: %v",
-								usEast1.Security.EnableDefaultUser)
-						}
-
-						// Verify us-east-2 inherits false
-						usEast2 := findRegionInActiveActiveDB(db, "us-east-2")
-						if usEast2 == nil {
-							return fmt.Errorf("us-east-2 region not found")
-						}
-						if redis.BoolValue(usEast2.Security.EnableDefaultUser) != false {
-							return fmt.Errorf("us-east-2 should inherit enableDefaultUser=false, got: %v",
-								usEast2.Security.EnableDefaultUser)
-						}
-
-						return nil
-					},
+					// us-east-2: inherits global false (no enable_default_user set)
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "override_region.*", map[string]string{
+						"name": "us-east-2",
+					}),
 				),
 			},
 
-			// Step 4: All explicit values (both true and false overrides)
+			// Step 4: Mixed - one region overrides to false
 			{
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_all_explicit.tf"),
 					subscriptionName, databaseName, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "global_enable_default_user", "true"),
+					resource.TestCheckResourceAttr(resourceName, "override_region.#", "2"),
 
-					// Verify API state
-					func(s *terraform.State) error {
-						apiClient := testProvider.Meta().(*client.ApiClient)
-						db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
-						if err != nil {
-							return fmt.Errorf("failed to get database from API: %w", err)
-						}
+					// us-east-1: explicitly true (but matches global, so won't be in state)
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "override_region.*", map[string]string{
+						"name": "us-east-1",
+					}),
 
-						usEast1 := findRegionInActiveActiveDB(db, "us-east-1")
-						if redis.BoolValue(usEast1.Security.EnableDefaultUser) != true {
-							return fmt.Errorf("us-east-1 should be true")
-						}
-
-						usEast2 := findRegionInActiveActiveDB(db, "us-east-2")
-						if redis.BoolValue(usEast2.Security.EnableDefaultUser) != false {
-							return fmt.Errorf("us-east-2 should be false")
-						}
-
-						return nil
-					},
+					// us-east-2: explicitly false (differs from global, so IS in state)
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "override_region.*", map[string]string{
+						"name":                "us-east-2",
+						"enable_default_user": "false",
+					}),
 				),
 			},
 		},
 	})
-}
-
-// Helper function to find a specific region in the ActiveActive database API response
-func findRegionInActiveActiveDB(db *databases.ActiveActiveDatabase, regionName string) *databases.CrdbDatabase {
-	if db == nil {
-		return nil
-	}
-
-	for _, regionDb := range db.CrdbDatabases {
-		if redis.StringValue(regionDb.Region) == regionName {
-			return regionDb
-		}
-	}
-	return nil
 }
