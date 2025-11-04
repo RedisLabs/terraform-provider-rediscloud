@@ -205,6 +205,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Description: "When 'true', enables connecting to the database with the 'default' user across all regions. Default: 'true'",
 				Type:        schema.TypeBool,
 				Optional:    true,
+				Default:     true,
 			},
 			"auto_minor_version_upgrade": {
 				Description: "When 'true', enables auto minor version upgrades for this database. Default: 'true'",
@@ -268,6 +269,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 							Description: "When 'true', enables connecting to the database with the 'default' user. If not set, the global setting will be used.",
 							Type:        schema.TypeBool,
 							Optional:    true,
+							Default:     true,
 						},
 						"remote_backup": {
 							Description: "An object that specifies the backup options for the database in this region",
@@ -765,10 +767,19 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 			Region: redis.String(dbRegion["name"].(string)),
 		}
 
-		// Only set EnableDefaultUser if it was explicitly configured in the override_region
-		if val, exists := dbRegion["enable_default_user"]; exists && val != nil {
-			regionProps.EnableDefaultUser = redis.Bool(val.(bool))
+		// Handle enable_default_user with three-state logic:
+		// - Not set in config -> don't send to API (inherit from global)
+		// - Explicitly true -> send true
+		// - Explicitly false -> send false
+		regionName := dbRegion["name"].(string)
+		enableDefaultUser := dbRegion["enable_default_user"].(bool)
+		wasExplicitlySet := isEnableDefaultUserExplicitlySetInConfig(d, regionName)
+
+		if wasExplicitlySet {
+			// Field was explicitly set in Terraform config, send the value
+			regionProps.EnableDefaultUser = redis.Bool(enableDefaultUser)
 		}
+		// If not explicitly set, don't send - let it inherit from global
 
 		if len(overrideAlerts) > 0 {
 			regionProps.Alerts = &overrideAlerts
@@ -971,4 +982,56 @@ func flattenModulesToNames(modules []*databases.Module) []string {
 		moduleNames = append(moduleNames, redis.StringValue(module.Name))
 	}
 	return moduleNames
+}
+
+// isEnableDefaultUserExplicitlySetInConfig checks if enable_default_user was explicitly
+// set in the Terraform configuration for a specific region in the override_region block.
+//
+// This is needed because TypeBool doesn't distinguish between "not set" and "false".
+// We use GetRawConfig() to check if the field exists in the original HCL configuration.
+func isEnableDefaultUserExplicitlySetInConfig(d *schema.ResourceData, regionName string) bool {
+	rawConfig := d.GetRawConfig()
+
+	// If raw config is null (e.g., in test environment), fall back to conservative behavior
+	if rawConfig.IsNull() {
+		// In this case, we can't determine if it was explicitly set
+		// Default to not sending it to avoid overriding global settings unintentionally
+		return false
+	}
+
+	// Check if override_region exists in raw config
+	if !rawConfig.Type().HasAttribute("override_region") {
+		return false
+	}
+
+	overrideRegionAttr := rawConfig.GetAttr("override_region")
+	if overrideRegionAttr.IsNull() {
+		return false
+	}
+
+	// Iterate through the set to find the matching region
+	if overrideRegionAttr.Type().IsSetType() {
+		iter := overrideRegionAttr.ElementIterator()
+		for iter.Next() {
+			_, regionVal := iter.Element()
+
+			// Check if this is the region we're looking for
+			if regionVal.Type().HasAttribute("name") {
+				nameAttr := regionVal.GetAttr("name")
+				if !nameAttr.IsNull() && nameAttr.AsString() == regionName {
+					// Found the matching region, check if enable_default_user exists
+					if regionVal.Type().HasAttribute("enable_default_user") {
+						eduAttr := regionVal.GetAttr("enable_default_user")
+						// If the attribute exists and is not null, it was explicitly set
+						return !eduAttr.IsNull()
+					}
+					// Field doesn't exist in config for this region
+					return false
+				}
+			}
+		}
+	}
+
+	// Region not found or enable_default_user not set
+	return false
 }

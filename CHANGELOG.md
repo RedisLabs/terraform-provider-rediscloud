@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 
+# Unreleased
+
+## Fixed
+- `rediscloud_active_active_subscription_database`: Fixed issue where regional `enable_default_user` would incorrectly default to `false` instead of inheriting from `global_enable_default_user` when not explicitly specified in the region configuration.
+
+## Testing
+- Added acceptance tests covering `enable_default_user` inheritance and override scenarios
+
+
 # 2.7.2 (3rd November 2025)
 
 ## Fixed
