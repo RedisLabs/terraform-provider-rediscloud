@@ -12,6 +12,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -267,7 +268,6 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 							Description: "When 'true', enables connecting to the database with the 'default' user. If not set, the global setting will be used.",
 							Type:        schema.TypeBool,
 							Optional:    true,
-							Default:     true,
 						},
 						"remote_backup": {
 							Description: "An object that specifies the backup options for the database in this region",
@@ -526,10 +526,11 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
-	// Read global_data_persistence from API response
-	if db.GlobalDataPersistence != nil {
-		if err := d.Set("global_data_persistence", redis.StringValue(db.GlobalDataPersistence)); err != nil {
-			return diag.FromErr(err)
+	if _, ok := d.GetOk("global_data_persistence"); ok {
+		if db.GlobalDataPersistence != nil {
+			if err := d.Set("global_data_persistence", redis.StringValue(db.GlobalDataPersistence)); err != nil {
+				return diag.FromErr(err)
+			}
 		}
 	}
 
@@ -570,6 +571,11 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	var regionDbConfigs []map[string]interface{}
 	publicEndpointConfig := make(map[string]interface{})
 	privateEndpointConfig := make(map[string]interface{})
+
+	tflog.Debug(ctx, "Read: Starting to process regions from API", map[string]interface{}{
+		"regionCount": len(db.CrdbDatabases),
+	})
+
 	for _, regionDb := range db.CrdbDatabases {
 		region := redis.StringValue(regionDb.Region)
 		// Set the endpoints for the region
@@ -578,8 +584,17 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		// Check if the region is in the state as an override
 		stateOverrideRegion := getStateOverrideRegion(d, region)
 		if stateOverrideRegion == nil {
+			tflog.Debug(ctx, "Read: Skipping region (not in state override_region)", map[string]interface{}{
+				"region": region,
+			})
 			continue
 		}
+
+		tflog.Debug(ctx, "Read: Processing region from state", map[string]interface{}{
+			"region": region,
+			"stateHasEnableDefaultUser": stateOverrideRegion["enable_default_user"] != nil,
+		})
+
 		regionDbConfig := map[string]interface{}{
 			"name": region,
 		}
@@ -611,6 +626,7 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 			sourceIPs = redis.StringSliceValue(regionDb.Security.SourceIPs...)
 		}
 
+		// Only set override fields if they were in the old state (user configured them)
 		if stateSourceIPs := getStateOverrideRegion(d, region)["override_global_source_ips"]; stateSourceIPs != nil {
 			if len(stateSourceIPs.(*schema.Set).List()) > 0 {
 				regionDbConfig["override_global_source_ips"] = sourceIPs
@@ -638,13 +654,43 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 
 		regionDbConfig["remote_backup"] = pro.FlattenBackupPlan(regionDb.Backup, getStateRemoteBackup(d, region), "")
 
-		// Only set enable_default_user if it was explicitly configured in the override_region
-		if stateEnableDefaultUser := getStateOverrideRegion(d, region)["enable_default_user"]; stateEnableDefaultUser != nil {
-			regionDbConfig["enable_default_user"] = redis.BoolValue(regionDb.Security.EnableDefaultUser)
+		// Only set enable_default_user if it differs from global (was overridden)
+		// This prevents drift when region inherits from global (not explicitly set in config)
+		globalEnableDefaultUser := d.Get("global_enable_default_user").(bool)
+		regionEnableDefaultUser := redis.BoolValue(regionDb.Security.EnableDefaultUser)
+
+		tflog.Debug(ctx, "Read: Checking enable_default_user for region", map[string]interface{}{
+			"region":       region,
+			"globalValue":  globalEnableDefaultUser,
+			"regionValue":  regionEnableDefaultUser,
+			"isDifferent":  regionEnableDefaultUser != globalEnableDefaultUser,
+		})
+
+		if regionEnableDefaultUser != globalEnableDefaultUser {
+			// Region value differs from global, meaning it was explicitly overridden
+			tflog.Debug(ctx, "Read: Setting enable_default_user in state (differs from global)", map[string]interface{}{
+				"region": region,
+				"value":  regionEnableDefaultUser,
+			})
+			regionDbConfig["enable_default_user"] = regionEnableDefaultUser
+		} else {
+			tflog.Debug(ctx, "Read: NOT setting enable_default_user in state (matches global)", map[string]interface{}{
+				"region": region,
+			})
 		}
+
+		tflog.Debug(ctx, "Read: Completed region config", map[string]interface{}{
+			"region":                      region,
+			"hasEnableDefaultUser":        regionDbConfig["enable_default_user"] != nil,
+			"enableDefaultUserValue":      regionDbConfig["enable_default_user"],
+		})
 
 		regionDbConfigs = append(regionDbConfigs, regionDbConfig)
 	}
+
+	tflog.Debug(ctx, "Read: Completed processing all regions", map[string]interface{}{
+		"totalRegionsProcessed": len(regionDbConfigs),
+	})
 
 	// Only set override_region if it is defined in the config
 	if len(d.Get("override_region").(*schema.Set).List()) > 0 {
@@ -667,15 +713,23 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("auto_minor_version_upgrade", redis.BoolValue(db.AutoMinorVersionUpgrade)); err != nil {
-		return diag.FromErr(err)
+	if _, ok := d.GetOk("auto_minor_version_upgrade"); ok {
+		if err := d.Set("auto_minor_version_upgrade", redis.BoolValue(db.AutoMinorVersionUpgrade)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	// Read global_enable_default_user from API response
 	if db.GlobalEnableDefaultUser != nil {
-		if err := d.Set("global_enable_default_user", redis.BoolValue(db.GlobalEnableDefaultUser)); err != nil {
+		globalValue := redis.BoolValue(db.GlobalEnableDefaultUser)
+		tflog.Debug(ctx, "Read: Setting global_enable_default_user from API", map[string]interface{}{
+			"value": globalValue,
+		})
+		if err := d.Set("global_enable_default_user", globalValue); err != nil {
 			return diag.FromErr(err)
 		}
+	} else {
+		tflog.Debug(ctx, "Read: global_enable_default_user is nil in API response", map[string]interface{}{})
 	}
 
 	tlsAuthEnabled := *db.CrdbDatabases[0].Security.TLSClientAuthentication
@@ -750,6 +804,11 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 	// Make a list of region-specific configurations
 	var regions []*databases.LocalRegionProperties
+
+	tflog.Debug(ctx, "Update: Starting to build region configurations", map[string]interface{}{
+		"regionCount": len(d.Get("override_region").(*schema.Set).List()),
+	})
+
 	for _, region := range d.Get("override_region").(*schema.Set).List() {
 		dbRegion := region.(map[string]interface{})
 
@@ -773,9 +832,23 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		enableDefaultUser := dbRegion["enable_default_user"].(bool)
 		wasExplicitlySet := isEnableDefaultUserExplicitlySetInConfig(d, regionName)
 
+		tflog.Debug(ctx, "Checking enable_default_user for region", map[string]interface{}{
+			"region":            regionName,
+			"value":             enableDefaultUser,
+			"wasExplicitlySet":  wasExplicitlySet,
+		})
+
 		if wasExplicitlySet {
 			// Field was explicitly set in Terraform config, send the value
+			tflog.Debug(ctx, "Sending enable_default_user to API", map[string]interface{}{
+				"region": regionName,
+				"value":  enableDefaultUser,
+			})
 			regionProps.EnableDefaultUser = redis.Bool(enableDefaultUser)
+		} else {
+			tflog.Debug(ctx, "Not sending enable_default_user (inherit from global)", map[string]interface{}{
+				"region": regionName,
+			})
 		}
 		// If not explicitly set, don't send - let it inherit from global
 
@@ -807,8 +880,18 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 		regionProps.RemoteBackup = pro.BuildBackupPlan(dbRegion["remote_backup"], nil)
 
+		tflog.Debug(ctx, "Update: Completed building region properties", map[string]interface{}{
+			"region":                      regionName,
+			"hasEnableDefaultUser":        regionProps.EnableDefaultUser != nil,
+			"enableDefaultUserValue":      regionProps.EnableDefaultUser,
+		})
+
 		regions = append(regions, regionProps)
 	}
+
+	tflog.Debug(ctx, "Update: Completed building all region configurations", map[string]interface{}{
+		"totalRegions": len(regions),
+	})
 
 	// Populate the database update request with the required fields
 	update := databases.UpdateActiveActiveDatabase{
@@ -982,18 +1065,16 @@ func flattenModulesToNames(modules []*databases.Module) []string {
 	return moduleNames
 }
 
-// isEnableDefaultUserExplicitlySetInConfig checks if enable_default_user was explicitly
-// set in the Terraform configuration for a specific region in the override_region block.
+// isOverrideFieldExplicitlySetInConfig checks if a field was explicitly set in the
+// Terraform configuration for a specific region in the override_region block.
 //
-// This is needed because TypeBool doesn't distinguish between "not set" and "false".
+// This is needed to distinguish between "not set" and "set to default/empty value".
 // We use GetRawConfig() to check if the field exists in the original HCL configuration.
-func isEnableDefaultUserExplicitlySetInConfig(d *schema.ResourceData, regionName string) bool {
+func isOverrideFieldExplicitlySetInConfig(d *schema.ResourceData, regionName string, fieldName string) bool {
 	rawConfig := d.GetRawConfig()
 
-	// If raw config is null (e.g., in test environment), fall back to conservative behavior
+	// If raw config is null (e.g., during Read operations), fall back to conservative behavior
 	if rawConfig.IsNull() {
-		// In this case, we can't determine if it was explicitly set
-		// Default to not sending it to avoid overriding global settings unintentionally
 		return false
 	}
 
@@ -1017,11 +1098,11 @@ func isEnableDefaultUserExplicitlySetInConfig(d *schema.ResourceData, regionName
 			if regionVal.Type().HasAttribute("name") {
 				nameAttr := regionVal.GetAttr("name")
 				if !nameAttr.IsNull() && nameAttr.AsString() == regionName {
-					// Found the matching region, check if enable_default_user exists
-					if regionVal.Type().HasAttribute("enable_default_user") {
-						eduAttr := regionVal.GetAttr("enable_default_user")
+					// Found the matching region, check if field exists
+					if regionVal.Type().HasAttribute(fieldName) {
+						fieldAttr := regionVal.GetAttr(fieldName)
 						// If the attribute exists and is not null, it was explicitly set
-						return !eduAttr.IsNull()
+						return !fieldAttr.IsNull()
 					}
 					// Field doesn't exist in config for this region
 					return false
@@ -1030,6 +1111,14 @@ func isEnableDefaultUserExplicitlySetInConfig(d *schema.ResourceData, regionName
 		}
 	}
 
-	// Region not found or enable_default_user not set
+	// Region not found or field not set
 	return false
+}
+
+// isEnableDefaultUserExplicitlySetInConfig checks if enable_default_user was explicitly
+// set in the Terraform configuration for a specific region in the override_region block.
+//
+// This is a convenience wrapper around isOverrideFieldExplicitlySetInConfig.
+func isEnableDefaultUserExplicitlySetInConfig(d *schema.ResourceData, regionName string) bool {
+	return isOverrideFieldExplicitlySetInConfig(d, regionName, "enable_default_user")
 }
