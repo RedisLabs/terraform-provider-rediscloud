@@ -80,20 +80,11 @@ func dataSourceActiveActiveTransitGatewayRead(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 	regionId := d.Get("region_id").(int)
-	tgwTask, err := api.Client.TransitGatewayAttachments.GetActiveActive(ctx, subId, regionId)
+
+	// Wait for Transit Gateway resource to become available (handles subscription provisioning delays)
+	tgwTask, err := utils.WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx, subId, regionId, api)
 	if err != nil {
 		return diag.FromErr(err)
-	}
-
-	// Check for nil response structure
-	if tgwTask == nil {
-		return diag.Errorf("Transit Gateway API returned nil task for subscription %d, region %d", subId, regionId)
-	}
-	if tgwTask.Response == nil {
-		return diag.Errorf("Transit Gateway API returned nil response for subscription %d, region %d", subId, regionId)
-	}
-	if tgwTask.Response.Resource == nil {
-		return diag.Errorf("Transit Gateway API returned nil resource for subscription %d, region %d - subscription may not be fully provisioned yet", subId, regionId)
 	}
 
 	var filters []func(db *attachments.TransitGatewayAttachment) bool
