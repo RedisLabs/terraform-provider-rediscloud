@@ -102,8 +102,8 @@ The `window` object has these attributes:
 
 ## Attribute reference
 
+* `aws_account_id` - AWS account ID that the subscription is deployed in (AWS subscriptions only).
 * `customer_managed_key_redis_service_account` - Outputs the id of the service account associated with the subscription. Useful as part of the CMK flow.
-
 * `pricing` - A list of pricing objects, documented below
 
 The `pricing` object has these attributes:

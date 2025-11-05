@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# Unreleased
+
+## Added
+- Added `aws_account_id` attribute to Pro and Active-Active subscription resources and data sources.
 
 # 2.7.4 (7th November 2025)
 

@@ -33,6 +33,7 @@ output "rediscloud_active_active_subscription" {
 
 `id` is set to the ID of the found subscription.
 
+* `aws_account_id` - AWS account ID that the subscription is deployed in (AWS subscriptions only).
 * `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card`
   or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'. **(
   Changes to) this attribute are ignored after creation.**
