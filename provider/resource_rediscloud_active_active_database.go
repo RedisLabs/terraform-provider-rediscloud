@@ -592,16 +592,6 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		stateRegionMap := stateRegion.(map[string]interface{})
 		region := stateRegionMap["name"].(string)
 
-		// Debug: log what keys are in stateRegionMap
-		mapKeys := make([]string, 0, len(stateRegionMap))
-		for k := range stateRegionMap {
-			mapKeys = append(mapKeys, k)
-		}
-		tflog.Debug(ctx, "Read: StateRegionMap keys", map[string]interface{}{
-			"region": region,
-			"keys":   mapKeys,
-		})
-
 		// Look up corresponding API data
 		regionDb, exists := apiRegions[region]
 		if !exists {
@@ -1042,20 +1032,58 @@ func isEnableDefaultUserExplicitlySetInConfig(d *schema.ResourceData, regionName
 	return false
 }
 
+// isEnableDefaultUserInActualPersistedState checks if enable_default_user was in the ACTUAL
+// persisted Terraform state (not the materialized Go map) for a specific region.
+// Uses GetRawState to bypass TypeSet materialization that adds all fields with zero-values.
+func isEnableDefaultUserInActualPersistedState(d *schema.ResourceData, regionName string) bool {
+	rawState := d.GetRawState()
+
+	// During Read, raw state should be available (contains previous state)
+	if rawState.IsNull() {
+		return false
+	}
+
+	// Check if override_region exists in raw state
+	if !rawState.Type().HasAttribute("override_region") {
+		return false
+	}
+
+	overrideRegionAttr := rawState.GetAttr("override_region")
+	if overrideRegionAttr.IsNull() {
+		return false
+	}
+
+	// Iterate through the set to find the matching region
+	if overrideRegionAttr.Type().IsSetType() {
+		iter := overrideRegionAttr.ElementIterator()
+		for iter.Next() {
+			_, regionVal := iter.Element()
+
+			// Check if this is the region we're looking for
+			if regionVal.Type().HasAttribute("name") {
+				nameAttr := regionVal.GetAttr("name")
+				if !nameAttr.IsNull() && nameAttr.AsString() == regionName {
+					// Found the matching region, check if enable_default_user exists
+					if regionVal.Type().HasAttribute("enable_default_user") {
+						fieldAttr := regionVal.GetAttr("enable_default_user")
+						// If the attribute exists and is not null, it was in the state
+						return !fieldAttr.IsNull()
+					}
+					// Field doesn't exist in persisted state for this region
+					return false
+				}
+			}
+		}
+	}
+
+	// Region not found
+	return false
+}
+
 // buildRegionConfigFromAPIAndState builds a region config map from API data and state data.
 // This function handles all the complex logic for determining which fields to include in the
 // region config based on what's in the API response and what was previously in the state.
 func buildRegionConfigFromAPIAndState(ctx context.Context, d *schema.ResourceData, db *databases.ActiveActiveDatabase, region string, regionDb *databases.CrdbDatabase, stateOverrideRegion map[string]interface{}) map[string]interface{} {
-	tflog.Debug(ctx, "Read: Processing region from state", map[string]interface{}{
-		"region":                                 region,
-		"stateHasEnableDefaultUser":              stateOverrideRegion["enable_default_user"] != nil,
-		"stateHasOverrideGlobalSourceIps":        stateOverrideRegion["override_global_source_ips"] != nil,
-		"stateHasOverrideGlobalDataPersistence":  stateOverrideRegion["override_global_data_persistence"] != nil,
-		"stateHasOverrideGlobalPassword":         stateOverrideRegion["override_global_password"] != nil && stateOverrideRegion["override_global_password"] != "",
-		"stateHasOverrideGlobalAlert":            stateOverrideRegion["override_global_alert"] != nil,
-		"stateHasRemoteBackup":                   stateOverrideRegion["remote_backup"] != nil,
-	})
-
 	regionDbConfig := map[string]interface{}{
 		"name": region,
 	}
@@ -1148,88 +1176,56 @@ func buildRegionConfigFromAPIAndState(ctx context.Context, d *schema.ResourceDat
 		rawConfig := d.GetRawConfig()
 		getRawConfigAvailable := !rawConfig.IsNull()
 
-		tflog.Debug(ctx, "Read: enable_default_user - checking GetRawConfig availability", map[string]interface{}{
-			"region":                 region,
-			"getRawConfigAvailable":  getRawConfigAvailable,
-			"globalValue":            globalEnableDefaultUser,
-			"regionValue":            regionEnableDefaultUser,
-			"isDifferent":            regionEnableDefaultUser != globalEnableDefaultUser,
-		})
+		var shouldIncludeField bool
+		var decisionReason string
 
 		if getRawConfigAvailable {
 			// GetRawConfig available - use config-based detection
 			wasExplicitlySet := isEnableDefaultUserExplicitlySetInConfig(d, region)
 
-			tflog.Debug(ctx, "Read: Using config-based detection (GetRawConfig available)", map[string]interface{}{
-				"region":           region,
-				"wasExplicitlySet": wasExplicitlySet,
-			})
-
 			if wasExplicitlySet {
-				tflog.Debug(ctx, "Read: Setting enable_default_user (explicitly in config)", map[string]interface{}{
-					"region": region,
-					"value":  regionEnableDefaultUser,
-				})
-				regionDbConfig["enable_default_user"] = regionEnableDefaultUser
+				shouldIncludeField = true
+				decisionReason = "explicitly set in config"
 			} else if regionEnableDefaultUser != globalEnableDefaultUser {
-				tflog.Debug(ctx, "Read: Setting enable_default_user (not in config but differs from global)", map[string]interface{}{
-					"region": region,
-					"value":  regionEnableDefaultUser,
-				})
-				regionDbConfig["enable_default_user"] = regionEnableDefaultUser
+				shouldIncludeField = true
+				decisionReason = "differs from global (API override)"
 			} else {
-				tflog.Debug(ctx, "Read: NOT setting enable_default_user (not in config, matches global)", map[string]interface{}{
-					"region": region,
-				})
+				shouldIncludeField = false
+				decisionReason = "matches global (inherited)"
 			}
 		} else {
-			// GetRawConfig unavailable (Refresh) - use state preservation
-			fieldWasInOldState := stateOverrideRegion["enable_default_user"] != nil
-			var oldStateValue interface{}
-			if fieldWasInOldState {
-				oldStateValue = stateOverrideRegion["enable_default_user"]
-			}
+			// GetRawConfig unavailable (Refresh) - use GetRawState to check ACTUAL persisted state
+			fieldWasInActualState := isEnableDefaultUserInActualPersistedState(d, region)
 
-			tflog.Debug(ctx, "Read: Using state-based preservation (GetRawConfig unavailable)", map[string]interface{}{
-				"region":            region,
-				"fieldWasInOldState": fieldWasInOldState,
-				"oldStateValue":     oldStateValue,
-			})
-
-			if fieldWasInOldState {
-				// Field was in previous state - preserve it if it still makes sense
+			if fieldWasInActualState {
+				shouldIncludeField = true
 				if regionEnableDefaultUser != globalEnableDefaultUser {
-					// Still differs from global - definitely keep it
-					tflog.Debug(ctx, "Read: Setting enable_default_user (was in old state, differs from global)", map[string]interface{}{
-						"region": region,
-						"value":  regionEnableDefaultUser,
-					})
-					regionDbConfig["enable_default_user"] = regionEnableDefaultUser
+					decisionReason = "was in state, differs from global"
 				} else {
-					// Matches global but was in old state - assume user still wants it explicit
-					tflog.Debug(ctx, "Read: Setting enable_default_user (was in old state, preserving even though matches global)", map[string]interface{}{
-						"region": region,
-						"value":  regionEnableDefaultUser,
-					})
-					regionDbConfig["enable_default_user"] = regionEnableDefaultUser
+					decisionReason = "was in state, preserving (user explicit)"
 				}
 			} else {
-				// Field was NOT in previous state
 				if regionEnableDefaultUser != globalEnableDefaultUser {
-					// Not in old state but differs - might be new override
-					tflog.Debug(ctx, "Read: Setting enable_default_user (not in old state, but differs from global)", map[string]interface{}{
-						"region": region,
-						"value":  regionEnableDefaultUser,
-					})
-					regionDbConfig["enable_default_user"] = regionEnableDefaultUser
+					shouldIncludeField = true
+					decisionReason = "not in state, but differs from global"
 				} else {
-					// Not in old state and matches global - don't add (inherited)
-					tflog.Debug(ctx, "Read: NOT setting enable_default_user (not in old state, matches global)", map[string]interface{}{
-						"region": region,
-					})
+					shouldIncludeField = false
+					decisionReason = "not in state, matches global (inherited)"
 				}
 			}
 		}
+
+		if shouldIncludeField {
+			regionDbConfig["enable_default_user"] = regionEnableDefaultUser
+		}
+
+		tflog.Debug(ctx, "Read: enable_default_user decision", map[string]interface{}{
+			"region":                region,
+			"getRawConfigAvailable": getRawConfigAvailable,
+			"shouldInclude":         shouldIncludeField,
+			"value":                 regionEnableDefaultUser,
+			"reason":                decisionReason,
+		})
 	}
 
 	tflog.Debug(ctx, "Read: Completed region config", map[string]interface{}{
