@@ -12,6 +12,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
@@ -982,252 +983,302 @@ func flattenModulesToNames(modules []*databases.Module) []string {
 	return moduleNames
 }
 
+// findRegionFieldInCtyValue navigates through a cty.Value structure to find a field
+// in the override_region Set for a specific region.
+//
+// This generic helper is used to check both raw config (GetRawConfig) and raw state (GetRawState)
+// without triggering SDK v2's TypeSet materialization that adds all schema fields with zero-values.
+//
+// Parameters:
+//   - ctyVal: The cty.Value to search (from GetRawConfig or GetRawState)
+//   - regionName: The name of the region to find (e.g., "us-east-1")
+//   - fieldName: The field name to check within the region (e.g., "enable_default_user")
+//
+// Returns:
+//   - fieldValue: The cty.Value of the field if found
+//   - exists: true if the field was found and is not null, false otherwise
+func findRegionFieldInCtyValue(ctyVal cty.Value, regionName string, fieldName string) (cty.Value, bool) {
+	if ctyVal.IsNull() {
+		return cty.NilVal, false
+	}
+
+	if !ctyVal.Type().HasAttribute("override_region") {
+		return cty.NilVal, false
+	}
+
+	overrideRegionAttr := ctyVal.GetAttr("override_region")
+	if overrideRegionAttr.IsNull() {
+		return cty.NilVal, false
+	}
+
+	if !overrideRegionAttr.Type().IsSetType() {
+		return cty.NilVal, false
+	}
+
+	iter := overrideRegionAttr.ElementIterator()
+	for iter.Next() {
+		_, regionVal := iter.Element()
+
+		// Check if this is the region we're looking for
+		if regionVal.Type().HasAttribute("name") {
+			nameAttr := regionVal.GetAttr("name")
+			if !nameAttr.IsNull() && nameAttr.AsString() == regionName {
+				// Found matching region, check for field
+				if regionVal.Type().HasAttribute(fieldName) {
+					fieldAttr := regionVal.GetAttr(fieldName)
+					if !fieldAttr.IsNull() {
+						return fieldAttr, true
+					}
+				}
+				return cty.NilVal, false
+			}
+		}
+	}
+
+	return cty.NilVal, false
+}
+
 // isEnableDefaultUserExplicitlySetInConfig checks if enable_default_user was explicitly
 // set in the Terraform configuration for a specific region in the override_region block.
 //
 // This is used by the Update function to determine whether to send the field to the API.
 // We only need this for Update operations where GetRawConfig() is available.
 func isEnableDefaultUserExplicitlySetInConfig(d *schema.ResourceData, regionName string) bool {
-	rawConfig := d.GetRawConfig()
-
-	// During Update, raw config should always be available
-	if rawConfig.IsNull() {
-		return false
-	}
-
-	// Check if override_region exists in raw config
-	if !rawConfig.Type().HasAttribute("override_region") {
-		return false
-	}
-
-	overrideRegionAttr := rawConfig.GetAttr("override_region")
-	if overrideRegionAttr.IsNull() {
-		return false
-	}
-
-	// Iterate through the set to find the matching region
-	if overrideRegionAttr.Type().IsSetType() {
-		iter := overrideRegionAttr.ElementIterator()
-		for iter.Next() {
-			_, regionVal := iter.Element()
-
-			// Check if this is the region we're looking for
-			if regionVal.Type().HasAttribute("name") {
-				nameAttr := regionVal.GetAttr("name")
-				if !nameAttr.IsNull() && nameAttr.AsString() == regionName {
-					// Found the matching region, check if enable_default_user exists
-					if regionVal.Type().HasAttribute("enable_default_user") {
-						fieldAttr := regionVal.GetAttr("enable_default_user")
-						// If the attribute exists and is not null, it was explicitly set
-						return !fieldAttr.IsNull()
-					}
-					// Field doesn't exist in config for this region
-					return false
-				}
-			}
-		}
-	}
-
-	// Region not found or field not set
-	return false
+	_, exists := findRegionFieldInCtyValue(d.GetRawConfig(), regionName, "enable_default_user")
+	return exists
 }
 
 // isEnableDefaultUserInActualPersistedState checks if enable_default_user was in the ACTUAL
 // persisted Terraform state (not the materialized Go map) for a specific region.
 // Uses GetRawState to bypass TypeSet materialization that adds all fields with zero-values.
 func isEnableDefaultUserInActualPersistedState(d *schema.ResourceData, regionName string) bool {
-	rawState := d.GetRawState()
+	_, exists := findRegionFieldInCtyValue(d.GetRawState(), regionName, "enable_default_user")
+	return exists
+}
 
-	// During Read, raw state should be available (contains previous state)
-	if rawState.IsNull() {
-		return false
-	}
+// enableDefaultUserDecision encapsulates the decision result for whether to include
+// enable_default_user in the region config.
+type enableDefaultUserDecision struct {
+	shouldInclude bool
+	reason        string
+}
 
-	// Check if override_region exists in raw state
-	if !rawState.Type().HasAttribute("override_region") {
-		return false
-	}
+// decideEnableDefaultUserInclusion determines whether to include enable_default_user
+// in the region state based on config/state context and API values.
+//
+// This implements the hybrid GetRawConfig/GetRawState strategy:
+//   - During Apply/Update (when GetRawConfig available): Check if explicitly set in config
+//   - During Refresh (when GetRawConfig unavailable): Check if was in persisted state
+//
+// Parameters:
+//   - d: ResourceData containing config and state
+//   - region: The region name (e.g., "us-east-1")
+//   - regionValue: The enable_default_user value from the API for this region
+//   - globalValue: The global_enable_default_user value from the API
+//
+// Returns:
+//   - Decision indicating whether to include the field and why
+func decideEnableDefaultUserInclusion(
+	d *schema.ResourceData,
+	region string,
+	regionValue bool,
+	globalValue bool,
+) enableDefaultUserDecision {
+	rawConfig := d.GetRawConfig()
+	valuesDiffer := regionValue != globalValue
 
-	overrideRegionAttr := rawState.GetAttr("override_region")
-	if overrideRegionAttr.IsNull() {
-		return false
-	}
-
-	// Iterate through the set to find the matching region
-	if overrideRegionAttr.Type().IsSetType() {
-		iter := overrideRegionAttr.ElementIterator()
-		for iter.Next() {
-			_, regionVal := iter.Element()
-
-			// Check if this is the region we're looking for
-			if regionVal.Type().HasAttribute("name") {
-				nameAttr := regionVal.GetAttr("name")
-				if !nameAttr.IsNull() && nameAttr.AsString() == regionName {
-					// Found the matching region, check if enable_default_user exists
-					if regionVal.Type().HasAttribute("enable_default_user") {
-						fieldAttr := regionVal.GetAttr("enable_default_user")
-						// If the attribute exists and is not null, it was in the state
-						return !fieldAttr.IsNull()
-					}
-					// Field doesn't exist in persisted state for this region
-					return false
-				}
+	// Try config-based detection first (available during Apply/Update)
+	if !rawConfig.IsNull() {
+		if isEnableDefaultUserExplicitlySetInConfig(d, region) {
+			return enableDefaultUserDecision{
+				shouldInclude: true,
+				reason:        "explicitly set in config",
 			}
+		}
+		if valuesDiffer {
+			return enableDefaultUserDecision{
+				shouldInclude: true,
+				reason:        "differs from global (API override)",
+			}
+		}
+		return enableDefaultUserDecision{
+			shouldInclude: false,
+			reason:        "matches global (inherited)",
 		}
 	}
 
-	// Region not found
-	return false
-}
+	// Fall back to state-based detection (during Refresh)
+	wasInState := isEnableDefaultUserInActualPersistedState(d, region)
 
-// buildRegionConfigFromAPIAndState builds a region config map from API data and state data.
-// This function handles all the complex logic for determining which fields to include in the
-// region config based on what's in the API response and what was previously in the state.
-func buildRegionConfigFromAPIAndState(ctx context.Context, d *schema.ResourceData, db *databases.ActiveActiveDatabase, region string, regionDb *databases.CrdbDatabase, stateOverrideRegion map[string]interface{}) map[string]interface{} {
-	regionDbConfig := map[string]interface{}{
-		"name": region,
+	if wasInState {
+		reason := "was in state, preserving (user explicit)"
+		if valuesDiffer {
+			reason = "was in state, differs from global"
+		}
+		return enableDefaultUserDecision{
+			shouldInclude: true,
+			reason:        reason,
+		}
 	}
 
-	// Handle source_ips based on subscription's public_endpoint_access settings
-	// When public_endpoint_access is false and source_ips is empty, API returns private IP ranges
-	// When public_endpoint_access is true and source_ips is empty, API returns ["0.0.0.0/0"]
-	// When source_ips is explicitly set by user, API returns the user's input
-	// This is to prevent drift in terraform state as API response will differ from what terraform sees
-	var sourceIPs []string
+	if valuesDiffer {
+		return enableDefaultUserDecision{
+			shouldInclude: true,
+			reason:        "not in state, but differs from global",
+		}
+	}
+
+	return enableDefaultUserDecision{
+		shouldInclude: false,
+		reason:        "not in state, matches global (inherited)",
+	}
+}
+
+// filterDefaultSourceIPs removes default source IP values that should not be in state.
+// Returns empty slice if IPs are default values (private ranges or 0.0.0.0/0).
+//
+// The API returns different defaults based on public_endpoint_access:
+//   - When public access disabled: Returns private IP ranges
+//   - When public access enabled: Returns ["0.0.0.0/0"]
+//   - When explicitly set by user: Returns user's values
+//
+// This filtering prevents drift from API-generated defaults.
+func filterDefaultSourceIPs(apiSourceIPs []*string) []string {
 	privateIPRanges := []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10"}
 
-	// Check if the returned source_ips matches default private IP ranges (when public access is blocked)
-	isPrivateIPRange := len(regionDb.Security.SourceIPs) == len(privateIPRanges)
-	if isPrivateIPRange {
-		for i, ip := range regionDb.Security.SourceIPs {
+	// Check for default public access ["0.0.0.0/0"]
+	if len(apiSourceIPs) == 1 && redis.StringValue(apiSourceIPs[0]) == "0.0.0.0/0" {
+		return []string{}
+	}
+
+	// Check for default private IP ranges
+	if len(apiSourceIPs) == len(privateIPRanges) {
+		isPrivateDefault := true
+		for i, ip := range apiSourceIPs {
 			if redis.StringValue(ip) != privateIPRanges[i] {
-				isPrivateIPRange = false
+				isPrivateDefault = false
 				break
 			}
 		}
+		if isPrivateDefault {
+			return []string{}
+		}
 	}
 
-	// Check if the returned source_ips is the default public access ["0.0.0.0/0"]
-	isDefaultPublicAccess := len(regionDb.Security.SourceIPs) == 1 && redis.StringValue(regionDb.Security.SourceIPs[0]) == "0.0.0.0/0"
+	return redis.StringSliceValue(apiSourceIPs...)
+}
 
-	// Only set source_ips if they were explicitly configured by the user (not defaults)
-	if !isDefaultPublicAccess && !isPrivateIPRange {
-		sourceIPs = redis.StringSliceValue(regionDb.Security.SourceIPs...)
+// addSourceIPsIfOverridden adds override_global_source_ips to region config if it differs from global.
+func addSourceIPsIfOverridden(regionDbConfig map[string]interface{}, d *schema.ResourceData, regionDb *databases.CrdbDatabase) {
+	sourceIPs := filterDefaultSourceIPs(regionDb.Security.SourceIPs)
+	if len(sourceIPs) == 0 {
+		return
 	}
 
-	// Only set override fields if they differ from global values FROM API
-	// This prevents drift when regions inherit from global (not explicitly overridden in config)
-	// IMPORTANT: Compare against API global values (db.Global*), not state values (d.Get())
-	// because state may have empty/default values when user didn't specify them
-	//
-	// We use pure API-to-API comparison without config checking because:
-	// 1. Update function correctly handles field removal (sends global value when field removed from config)
-	// 2. This makes Apply and Refresh behave identically (no GetRawConfig dependency)
-	// 3. Matches the pattern used by Pro database resources
-
-	// override_global_source_ips: only set if differs from global
-	// Note: db.GlobalSourceIPs doesn't exist in API, source IPs are per-region only
 	globalSourceIPsPtrs := utils.SetToStringSlice(d.Get("global_source_ips").(*schema.Set))
 	globalSourceIPs := redis.StringSliceValue(globalSourceIPsPtrs...)
-	if !stringSlicesEqual(sourceIPs, globalSourceIPs) && len(sourceIPs) > 0 {
+
+	if !stringSlicesEqual(sourceIPs, globalSourceIPs) {
 		regionDbConfig["override_global_source_ips"] = sourceIPs
 	}
+}
 
-	// override_global_data_persistence: only set if differs from global API value
+// addDataPersistenceIfOverridden adds override_global_data_persistence to region config if it differs from global.
+func addDataPersistenceIfOverridden(
+	regionDbConfig map[string]interface{},
+	db *databases.ActiveActiveDatabase,
+	regionDb *databases.CrdbDatabase,
+) {
 	if regionDb.DataPersistence != nil && db.GlobalDataPersistence != nil {
 		if redis.StringValue(regionDb.DataPersistence) != redis.StringValue(db.GlobalDataPersistence) {
 			regionDbConfig["override_global_data_persistence"] = regionDb.DataPersistence
 		}
 	}
+}
 
-	// override_global_password: only set if differs from global API value
+// addPasswordIfOverridden adds override_global_password to region config if it differs from global.
+func addPasswordIfOverridden(
+	regionDbConfig map[string]interface{},
+	db *databases.ActiveActiveDatabase,
+	regionDb *databases.CrdbDatabase,
+) {
 	if regionDb.Security.Password != nil && db.GlobalPassword != nil {
 		if *regionDb.Security.Password != redis.StringValue(db.GlobalPassword) {
 			regionDbConfig["override_global_password"] = redis.StringValue(regionDb.Security.Password)
 		}
 	}
+}
 
-	// override_global_alert: only set if differs from global
-	// Note: Active-Active API doesn't return global alerts separately, so we compare counts
+// addAlertsIfOverridden adds override_global_alert to region config if count differs from global.
+// Note: Active-Active API doesn't return global alerts separately, so we compare counts.
+func addAlertsIfOverridden(
+	regionDbConfig map[string]interface{},
+	d *schema.ResourceData,
+	regionDb *databases.CrdbDatabase,
+) {
 	globalAlerts := d.Get("global_alert").(*schema.Set).List()
 	regionAlerts := pro.FlattenAlerts(regionDb.Alerts)
+
 	if len(globalAlerts) != len(regionAlerts) {
 		regionDbConfig["override_global_alert"] = regionAlerts
 	}
+}
 
-	// remote_backup: only set if it exists in API response
-	if regionDb.Backup != nil {
-		stateRemoteBackup := stateOverrideRegion["remote_backup"]
-		if stateRemoteBackup != nil {
-			stateRemoteBackupList := stateRemoteBackup.([]interface{})
-			if len(stateRemoteBackupList) > 0 {
-				regionDbConfig["remote_backup"] = pro.FlattenBackupPlan(regionDb.Backup, stateRemoteBackupList, "")
-			}
-		}
+// addRemoteBackupIfConfigured adds remote_backup to region config if it exists in both API and state.
+func addRemoteBackupIfConfigured(
+	regionDbConfig map[string]interface{},
+	regionDb *databases.CrdbDatabase,
+	stateOverrideRegion map[string]interface{},
+) {
+	if regionDb.Backup == nil {
+		return
 	}
 
-	// enable_default_user: Hybrid approach using GetRawConfig when available, state preservation when not
-	// GetRawConfig is available during Apply/Update but NULL during standalone Refresh
-	if regionDb.Security.EnableDefaultUser != nil && db.GlobalEnableDefaultUser != nil {
-		globalEnableDefaultUser := redis.BoolValue(db.GlobalEnableDefaultUser)
-		regionEnableDefaultUser := redis.BoolValue(regionDb.Security.EnableDefaultUser)
-
-		// Check if GetRawConfig is available (indicates we're in Apply/Update context)
-		rawConfig := d.GetRawConfig()
-		getRawConfigAvailable := !rawConfig.IsNull()
-
-		var shouldIncludeField bool
-		var decisionReason string
-
-		if getRawConfigAvailable {
-			// GetRawConfig available - use config-based detection
-			wasExplicitlySet := isEnableDefaultUserExplicitlySetInConfig(d, region)
-
-			if wasExplicitlySet {
-				shouldIncludeField = true
-				decisionReason = "explicitly set in config"
-			} else if regionEnableDefaultUser != globalEnableDefaultUser {
-				shouldIncludeField = true
-				decisionReason = "differs from global (API override)"
-			} else {
-				shouldIncludeField = false
-				decisionReason = "matches global (inherited)"
-			}
-		} else {
-			// GetRawConfig unavailable (Refresh) - use GetRawState to check ACTUAL persisted state
-			fieldWasInActualState := isEnableDefaultUserInActualPersistedState(d, region)
-
-			if fieldWasInActualState {
-				shouldIncludeField = true
-				if regionEnableDefaultUser != globalEnableDefaultUser {
-					decisionReason = "was in state, differs from global"
-				} else {
-					decisionReason = "was in state, preserving (user explicit)"
-				}
-			} else {
-				if regionEnableDefaultUser != globalEnableDefaultUser {
-					shouldIncludeField = true
-					decisionReason = "not in state, but differs from global"
-				} else {
-					shouldIncludeField = false
-					decisionReason = "not in state, matches global (inherited)"
-				}
-			}
-		}
-
-		if shouldIncludeField {
-			regionDbConfig["enable_default_user"] = regionEnableDefaultUser
-		}
-
-		tflog.Debug(ctx, "Read: enable_default_user decision", map[string]interface{}{
-			"region":                region,
-			"getRawConfigAvailable": getRawConfigAvailable,
-			"shouldInclude":         shouldIncludeField,
-			"value":                 regionEnableDefaultUser,
-			"reason":                decisionReason,
-		})
+	stateRemoteBackup := stateOverrideRegion["remote_backup"]
+	if stateRemoteBackup == nil {
+		return
 	}
 
+	stateRemoteBackupList := stateRemoteBackup.([]interface{})
+	if len(stateRemoteBackupList) > 0 {
+		regionDbConfig["remote_backup"] = pro.FlattenBackupPlan(regionDb.Backup, stateRemoteBackupList, "")
+	}
+}
+
+// addEnableDefaultUserIfNeeded applies hybrid GetRawConfig/GetRawState logic
+// to determine if enable_default_user should be in state.
+func addEnableDefaultUserIfNeeded(
+	ctx context.Context,
+	regionDbConfig map[string]interface{},
+	d *schema.ResourceData,
+	db *databases.ActiveActiveDatabase,
+	region string,
+	regionDb *databases.CrdbDatabase,
+) {
+	if regionDb.Security.EnableDefaultUser == nil || db.GlobalEnableDefaultUser == nil {
+		return
+	}
+
+	regionEnableDefaultUser := redis.BoolValue(regionDb.Security.EnableDefaultUser)
+	globalEnableDefaultUser := redis.BoolValue(db.GlobalEnableDefaultUser)
+
+	decision := decideEnableDefaultUserInclusion(d, region, regionEnableDefaultUser, globalEnableDefaultUser)
+
+	if decision.shouldInclude {
+		regionDbConfig["enable_default_user"] = regionEnableDefaultUser
+	}
+
+	tflog.Debug(ctx, "Read: enable_default_user decision", map[string]interface{}{
+		"region":                region,
+		"getRawConfigAvailable": !d.GetRawConfig().IsNull(),
+		"shouldInclude":         decision.shouldInclude,
+		"value":                 regionEnableDefaultUser,
+		"reason":                decision.reason,
+	})
+}
+
+// logRegionConfigBuilt logs the final region config for debugging.
+func logRegionConfigBuilt(ctx context.Context, region string, regionDbConfig map[string]interface{}) {
 	tflog.Debug(ctx, "Read: Completed region config", map[string]interface{}{
 		"region":                           region,
 		"hasEnableDefaultUser":             regionDbConfig["enable_default_user"] != nil,
@@ -1238,6 +1289,24 @@ func buildRegionConfigFromAPIAndState(ctx context.Context, d *schema.ResourceDat
 		"hasOverrideGlobalAlert":           regionDbConfig["override_global_alert"] != nil,
 		"hasRemoteBackup":                  regionDbConfig["remote_backup"] != nil,
 	})
+}
+
+// buildRegionConfigFromAPIAndState orchestrates building region config from API and state.
+// Each override field is handled by a dedicated helper function for clarity and maintainability.
+func buildRegionConfigFromAPIAndState(ctx context.Context, d *schema.ResourceData, db *databases.ActiveActiveDatabase, region string, regionDb *databases.CrdbDatabase, stateOverrideRegion map[string]interface{}) map[string]interface{} {
+	regionDbConfig := map[string]interface{}{
+		"name": region,
+	}
+
+	// Handle each override field using dedicated helper functions
+	addSourceIPsIfOverridden(regionDbConfig, d, regionDb)
+	addDataPersistenceIfOverridden(regionDbConfig, db, regionDb)
+	addPasswordIfOverridden(regionDbConfig, db, regionDb)
+	addAlertsIfOverridden(regionDbConfig, d, regionDb)
+	addRemoteBackupIfConfigured(regionDbConfig, regionDb, stateOverrideRegion)
+	addEnableDefaultUserIfNeeded(ctx, regionDbConfig, d, db, region, regionDb)
+
+	logRegionConfigBuilt(ctx, region, regionDbConfig)
 
 	return regionDbConfig
 }
@@ -1252,37 +1321,5 @@ func stringSlicesEqual(a, b []string) bool {
 			return false
 		}
 	}
-	return true
-}
-
-// alertsEqualMaps performs deep comparison of two alert lists (order-independent)
-// Both parameters are []map[string]interface{} from pro.FlattenAlerts()
-func alertsEqualMaps(alerts1, alerts2 []map[string]interface{}) bool {
-	if len(alerts1) != len(alerts2) {
-		return false
-	}
-
-	// For each alert in list1, find a matching alert in list2
-	for _, alert1 := range alerts1 {
-		name1 := alert1["name"].(string)
-		value1 := alert1["value"].(int)
-
-		// Look for matching alert in list2
-		found := false
-		for _, alert2 := range alerts2 {
-			name2 := alert2["name"].(string)
-			value2 := alert2["value"].(int)
-
-			if name1 == name2 && value1 == value2 {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			return false
-		}
-	}
-
 	return true
 }
