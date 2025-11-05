@@ -25,7 +25,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
-			// Step 1: Create with global=true, regions inherit (THE BUG SCENARIO)
+			// Step 1: Create with global=true, regions inherit
 			{
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_global_true_inherit.tf"),
@@ -68,7 +68,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 				),
 			},
 
-			// Step 3: Global false, specific regions enable (CRITICAL USE CASE)
+			// Step 3: Global false, specific regions enable
 			{
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_global_false_region_true.tf"),
