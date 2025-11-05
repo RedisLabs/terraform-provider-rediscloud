@@ -8,6 +8,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/maintenance"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
@@ -505,7 +509,6 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		return diag.FromErr(err)
 	}
 
-	// Set AWS account ID if available
 	if cloudDetails[0].AWSAccountID != nil {
 		if err := d.Set("aws_account_id", redis.StringValue(cloudDetails[0].AWSAccountID)); err != nil {
 			return diag.FromErr(err)

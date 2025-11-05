@@ -3,8 +3,9 @@ package pro
 import (
 	"context"
 	"fmt"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"strconv"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -100,7 +101,6 @@ func FlattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource b
 			"region":           regions,
 		}
 
-		// Add AWS account ID if present
 		if currentCloudDetail.AWSAccountID != nil {
 			cdlMapString["aws_account_id"] = redis.StringValue(currentCloudDetail.AWSAccountID)
 		}
