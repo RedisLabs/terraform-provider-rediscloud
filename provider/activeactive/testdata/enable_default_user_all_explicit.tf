@@ -1,10 +1,17 @@
+# Template signature: fmt.Sprintf(template, subscription_name, database_name, password)
+locals {
+	subscription_name = "%s"
+	database_name     = "%s"
+	password          = "%s"
+}
+
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
 	last_four_numbers = "5556"
 }
 
 resource "rediscloud_active_active_subscription" "test" {
-	name = "%s"
+	name = local.subscription_name
 	payment_method_id = data.rediscloud_payment_method.card.id
 	cloud_provider = "AWS"
 
@@ -28,9 +35,9 @@ resource "rediscloud_active_active_subscription" "test" {
 
 resource "rediscloud_active_active_subscription_database" "test" {
 	subscription_id = rediscloud_active_active_subscription.test.id
-	name = "%s"
+	name = local.database_name
 	dataset_size_in_gb = 1
-	global_password = "%s"
+	global_password = local.password
 	global_enable_default_user = true
 
 	# us-east-1: explicitly true
