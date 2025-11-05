@@ -9,6 +9,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 - Added `aws_account_id` attribute to Pro and Active-Active subscription resources and data sources.
 - Added `region_id` to the attribute reference documentation for `rediscloud_active_active_subscription_regions` data source.
 - Added `region_id` attribute to `rediscloud_regions` data source.
+- Added `db_id` to the attribute reference documentation for `rediscloud_database` data source.
 
 # 2.7.4 (7th November 2025)
 
