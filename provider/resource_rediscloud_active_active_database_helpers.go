@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"sort"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -198,79 +199,162 @@ func filterDefaultSourceIPs(apiSourceIPs []*string) []string {
 }
 
 // addSourceIPsIfOverridden adds override_global_source_ips to region config if it differs from global.
-func addSourceIPsIfOverridden(regionDbConfig map[string]interface{}, d *schema.ResourceData, regionDb *databases.CrdbDatabase) {
+func addSourceIPsIfOverridden(ctx context.Context, regionDbConfig map[string]interface{}, d *schema.ResourceData, regionDb *databases.CrdbDatabase, region string) {
 	sourceIPs := filterDefaultSourceIPs(regionDb.Security.SourceIPs)
+
+	tflog.Debug(ctx, "Read: addSourceIPsIfOverridden", map[string]interface{}{
+		"region":              region,
+		"apiSourceIPsCount":   len(regionDb.Security.SourceIPs),
+		"filteredIPsCount":    len(sourceIPs),
+		"filteredIPs":         sourceIPs,
+	})
+
 	if len(sourceIPs) == 0 {
+		tflog.Debug(ctx, "Read: Skipping source IPs (filtered to empty)", map[string]interface{}{"region": region})
 		return
 	}
 
 	globalSourceIPsPtrs := utils.SetToStringSlice(d.Get("global_source_ips").(*schema.Set))
 	globalSourceIPs := redis.StringSliceValue(globalSourceIPsPtrs...)
 
-	if !stringSlicesEqual(sourceIPs, globalSourceIPs) {
+	shouldAdd := !stringSlicesEqual(sourceIPs, globalSourceIPs)
+	tflog.Debug(ctx, "Read: Source IPs comparison", map[string]interface{}{
+		"region":       region,
+		"regionIPs":    sourceIPs,
+		"globalIPs":    globalSourceIPs,
+		"shouldAdd":    shouldAdd,
+	})
+
+	if shouldAdd {
 		regionDbConfig["override_global_source_ips"] = sourceIPs
 	}
 }
 
 // addDataPersistenceIfOverridden adds override_global_data_persistence to region config if it differs from global.
 func addDataPersistenceIfOverridden(
+	ctx context.Context,
 	regionDbConfig map[string]interface{},
 	db *databases.ActiveActiveDatabase,
 	regionDb *databases.CrdbDatabase,
+	region string,
 ) {
 	if regionDb.DataPersistence != nil && db.GlobalDataPersistence != nil {
-		if redis.StringValue(regionDb.DataPersistence) != redis.StringValue(db.GlobalDataPersistence) {
+		regionValue := redis.StringValue(regionDb.DataPersistence)
+		globalValue := redis.StringValue(db.GlobalDataPersistence)
+		shouldAdd := regionValue != globalValue
+
+		tflog.Debug(ctx, "Read: Data persistence comparison", map[string]interface{}{
+			"region":       region,
+			"regionValue":  regionValue,
+			"globalValue":  globalValue,
+			"shouldAdd":    shouldAdd,
+		})
+
+		if shouldAdd {
 			regionDbConfig["override_global_data_persistence"] = regionDb.DataPersistence
 		}
+	} else {
+		tflog.Debug(ctx, "Read: Skipping data persistence (nil values)", map[string]interface{}{
+			"region":           region,
+			"regionIsNil":      regionDb.DataPersistence == nil,
+			"globalIsNil":      db.GlobalDataPersistence == nil,
+		})
 	}
 }
 
 // addPasswordIfOverridden adds override_global_password to region config if it differs from global.
 func addPasswordIfOverridden(
+	ctx context.Context,
 	regionDbConfig map[string]interface{},
 	db *databases.ActiveActiveDatabase,
 	regionDb *databases.CrdbDatabase,
+	region string,
 ) {
 	if regionDb.Security.Password != nil && db.GlobalPassword != nil {
-		if *regionDb.Security.Password != redis.StringValue(db.GlobalPassword) {
-			regionDbConfig["override_global_password"] = redis.StringValue(regionDb.Security.Password)
+		regionValue := *regionDb.Security.Password
+		globalValue := redis.StringValue(db.GlobalPassword)
+		shouldAdd := regionValue != globalValue
+
+		tflog.Debug(ctx, "Read: Password comparison", map[string]interface{}{
+			"region":       region,
+			"regionValue":  "[REDACTED]",
+			"globalValue":  "[REDACTED]",
+			"valuesDiffer": shouldAdd,
+			"shouldAdd":    shouldAdd,
+		})
+
+		if shouldAdd {
+			regionDbConfig["override_global_password"] = regionValue
 		}
+	} else {
+		tflog.Debug(ctx, "Read: Skipping password (nil values)", map[string]interface{}{
+			"region":      region,
+			"regionIsNil": regionDb.Security.Password == nil,
+			"globalIsNil": db.GlobalPassword == nil,
+		})
 	}
 }
 
 // addAlertsIfOverridden adds override_global_alert to region config if count differs from global.
 // Note: Active-Active API doesn't return global alerts separately, so we compare counts.
 func addAlertsIfOverridden(
+	ctx context.Context,
 	regionDbConfig map[string]interface{},
 	d *schema.ResourceData,
 	regionDb *databases.CrdbDatabase,
+	region string,
 ) {
 	globalAlerts := d.Get("global_alert").(*schema.Set).List()
 	regionAlerts := pro.FlattenAlerts(regionDb.Alerts)
+	shouldAdd := len(globalAlerts) != len(regionAlerts)
 
-	if len(globalAlerts) != len(regionAlerts) {
+	tflog.Debug(ctx, "Read: Alerts comparison", map[string]interface{}{
+		"region":            region,
+		"globalAlertsCount": len(globalAlerts),
+		"globalAlerts":      globalAlerts,
+		"regionAlertsCount": len(regionAlerts),
+		"regionAlerts":      regionAlerts,
+		"shouldAdd":         shouldAdd,
+	})
+
+	if shouldAdd {
 		regionDbConfig["override_global_alert"] = regionAlerts
 	}
 }
 
 // addRemoteBackupIfConfigured adds remote_backup to region config if it exists in both API and state.
 func addRemoteBackupIfConfigured(
+	ctx context.Context,
 	regionDbConfig map[string]interface{},
 	regionDb *databases.CrdbDatabase,
 	stateOverrideRegion map[string]interface{},
+	region string,
 ) {
+	tflog.Debug(ctx, "Read: Checking remote backup", map[string]interface{}{
+		"region":      region,
+		"apiHasBackup": regionDb.Backup != nil,
+	})
+
 	if regionDb.Backup == nil {
+		tflog.Debug(ctx, "Read: Skipping remote backup (nil in API)", map[string]interface{}{"region": region})
 		return
 	}
 
 	stateRemoteBackup := stateOverrideRegion["remote_backup"]
 	if stateRemoteBackup == nil {
+		tflog.Debug(ctx, "Read: Skipping remote backup (nil in state)", map[string]interface{}{"region": region})
 		return
 	}
 
 	stateRemoteBackupList := stateRemoteBackup.([]interface{})
+	tflog.Debug(ctx, "Read: Remote backup state list", map[string]interface{}{
+		"region":    region,
+		"listCount": len(stateRemoteBackupList),
+	})
+
 	if len(stateRemoteBackupList) > 0 {
 		regionDbConfig["remote_backup"] = pro.FlattenBackupPlan(regionDb.Backup, stateRemoteBackupList, "")
+		tflog.Debug(ctx, "Read: Added remote_backup to region config", map[string]interface{}{"region": region})
 	}
 }
 
@@ -323,16 +407,20 @@ func logRegionConfigBuilt(ctx context.Context, region string, regionDbConfig map
 // buildRegionConfigFromAPIAndState orchestrates building region config from API and state.
 // Each override field is handled by a dedicated helper function for clarity and maintainability.
 func buildRegionConfigFromAPIAndState(ctx context.Context, d *schema.ResourceData, db *databases.ActiveActiveDatabase, region string, regionDb *databases.CrdbDatabase, stateOverrideRegion map[string]interface{}) map[string]interface{} {
+	tflog.Debug(ctx, "Read: Starting buildRegionConfigFromAPIAndState", map[string]interface{}{
+		"region": region,
+	})
+
 	regionDbConfig := map[string]interface{}{
 		"name": region,
 	}
 
 	// Handle each override field using dedicated helper functions
-	addSourceIPsIfOverridden(regionDbConfig, d, regionDb)
-	addDataPersistenceIfOverridden(regionDbConfig, db, regionDb)
-	addPasswordIfOverridden(regionDbConfig, db, regionDb)
-	addAlertsIfOverridden(regionDbConfig, d, regionDb)
-	addRemoteBackupIfConfigured(regionDbConfig, regionDb, stateOverrideRegion)
+	addSourceIPsIfOverridden(ctx, regionDbConfig, d, regionDb, region)
+	addDataPersistenceIfOverridden(ctx, regionDbConfig, db, regionDb, region)
+	addPasswordIfOverridden(ctx, regionDbConfig, db, regionDb, region)
+	addAlertsIfOverridden(ctx, regionDbConfig, d, regionDb, region)
+	addRemoteBackupIfConfigured(ctx, regionDbConfig, regionDb, stateOverrideRegion, region)
 	addEnableDefaultUserIfNeeded(ctx, regionDbConfig, d, db, region, regionDb)
 
 	logRegionConfigBuilt(ctx, region, regionDbConfig)
@@ -340,13 +428,26 @@ func buildRegionConfigFromAPIAndState(ctx context.Context, d *schema.ResourceDat
 	return regionDbConfig
 }
 
-// stringSlicesEqual compares two string slices for equality (order matters)
+// stringSlicesEqual compares two string slices for equality (order-insensitive).
+// This is used for comparing source IP lists where order doesn't matter.
 func stringSlicesEqual(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	for i := range a {
-		if a[i] != b[i] {
+
+	// Make copies to avoid modifying the original slices
+	aCopy := make([]string, len(a))
+	bCopy := make([]string, len(b))
+	copy(aCopy, a)
+	copy(bCopy, b)
+
+	// Sort both copies
+	sort.Strings(aCopy)
+	sort.Strings(bCopy)
+
+	// Compare sorted slices
+	for i := range aCopy {
+		if aCopy[i] != bCopy[i] {
 			return false
 		}
 	}
