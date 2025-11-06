@@ -723,13 +723,21 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 	var regions []*databases.LocalRegionProperties
 
 	tflog.Debug(ctx, "Update: Starting to build region configurations", map[string]interface{}{
-		"regionCount": len(d.Get("override_region").(*schema.Set).List()),
+		"regionCount":       len(d.Get("override_region").(*schema.Set).List()),
+		"globalAlertsCount": len(updateAlerts),
+		"globalAlerts":      updateAlerts,
 	})
 
 	for _, region := range d.Get("override_region").(*schema.Set).List() {
 		dbRegion := region.(map[string]interface{})
 
 		overrideAlerts := getStateAlertsFromDbRegion(getStateOverrideRegion(d, dbRegion["name"].(string)))
+
+		tflog.Debug(ctx, "Update: Parsed alerts for region", map[string]interface{}{
+			"region":             dbRegion["name"].(string),
+			"overrideAlertsLen":  len(overrideAlerts),
+			"overrideAlerts":     overrideAlerts,
+		})
 
 		// Make a list of region-specific source IPs for use in the regions list below
 		var overrideSourceIps []*string
@@ -771,14 +779,30 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 		if len(overrideAlerts) > 0 {
 			regionProps.Alerts = &overrideAlerts
+			tflog.Debug(ctx, "Update: Setting region alerts from override", map[string]interface{}{
+				"region":      regionName,
+				"alertCount":  len(overrideAlerts),
+				"alertValues": overrideAlerts,
+			})
 		} else if len(updateAlerts) > 0 {
 			regionProps.Alerts = &updateAlerts
+			tflog.Debug(ctx, "Update: Setting region alerts from global", map[string]interface{}{
+				"region":      regionName,
+				"alertCount":  len(updateAlerts),
+				"alertValues": updateAlerts,
+			})
 		} else {
 			// Explicitly send empty array to remove alerts from this region
 			// A pointer to a nil-slice is omitted from the json payload, which means the API keeps the existing value
 			//goland:noinspection GoPreferNilSlice
 			emptyAlerts := []*databases.Alert{}
 			regionProps.Alerts = &emptyAlerts
+			tflog.Debug(ctx, "Update: Setting empty alerts array to remove alerts", map[string]interface{}{
+				"region":             regionName,
+				"overrideAlertsLen":  len(overrideAlerts),
+				"updateAlertsLen":    len(updateAlerts),
+				"sendingEmptyArray":  true,
+			})
 		}
 		if len(overrideSourceIps) > 0 {
 			regionProps.SourceIP = overrideSourceIps
