@@ -70,7 +70,7 @@ The following arguments are supported:
 * `enable_default_user` - (Optional) When `true` enables connecting to the database with the default user. Default `true`. If set to `false`, any value for `password` will be ignored.
 * `alert` - (Optional) A block defining Redis database alert. Can be specified multiple times. Documented below.
 * `tags` - (Optional) A string/string map of tags to associate with this database. Note that all keys and values must be lowercase.
-* `modules` - (Optional) A list of modules objects, documented below. **Modifying this attribute will force creation of a new resource.**
+* `modules` - (Optional) A list of modules objects, documented below. **Don’t specify modules for DB versions 8 and above. All capabilities are bundled in the DB by default.**
 * `enable_payg_features` - (Optional) Whether to enable features restricted to Pay-As-You-Go legacy databases. It is not supported for new databases. Default `false`.
 * `memory_limit_in_gb` - (Optional) **Only used with Pay-As-You-Go databases.** Maximum memory usage for the database.
 * `support_oss_cluster_api` - (Optional) **Only used with Pay-As-You-Go databases.** Support Redis open-source (OSS) Cluster API. Default `false`.
