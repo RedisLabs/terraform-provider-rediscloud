@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 
+# 2.7.3 (6th November 2025)
+
+## Changed
+- Reworked the entire interaction between global/regional overrides and how they read config and state. This should fix many existing subtle state drift bugs.
+
+## Fixed
+- `rediscloud_active_active_subscription_database`: Fixed multiple issues concerning regional `enable_default_user` and `global_enable_default_user` to do with drift or incorrectly not detecting changes.
+- The default for `global_enable_default_user` was omitted, it is now set to true.
+- `rediscloud_active_active_transit_gateway_attachment`: Fixed parameter order bug in update operation.
+
+## Testing
+- Added acceptance tests covering `enable_default_user` inheritance and override scenarios
+- Added acceptance test for `rediscloud_active_active_transit_gateway_attachment` resource lifecycle (Create/Read/Update/Delete/Import)
+
 # 2.7.2 (3rd November 2025)
 
 ## Fixed

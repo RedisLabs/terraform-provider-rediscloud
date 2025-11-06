@@ -80,7 +80,9 @@ func dataSourceActiveActiveTransitGatewayRead(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 	regionId := d.Get("region_id").(int)
-	tgwTask, err := api.Client.TransitGatewayAttachments.GetActiveActive(ctx, subId, regionId)
+
+	// Wait for Transit Gateway resource to become available (handles subscription provisioning delays)
+	tgwTask, err := utils.WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx, subId, regionId, api)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -79,6 +79,17 @@ func dataSourceTransitGatewayRead(ctx context.Context, d *schema.ResourceData, m
 		return diag.FromErr(err)
 	}
 
+	// Check for nil response structure
+	if tgwTask == nil {
+		return diag.Errorf("Transit Gateway API returned nil task for subscription %d", subId)
+	}
+	if tgwTask.Response == nil {
+		return diag.Errorf("Transit Gateway API returned nil response for subscription %d", subId)
+	}
+	if tgwTask.Response.Resource == nil {
+		return diag.Errorf("Transit Gateway API returned nil resource for subscription %d - subscription may not be fully provisioned yet", subId)
+	}
+
 	var filters []func(db *attachments.TransitGatewayAttachment) bool
 
 	if v, ok := d.GetOk("tgw_id"); ok {
@@ -133,6 +144,12 @@ func dataSourceTransitGatewayRead(ctx context.Context, d *schema.ResourceData, m
 
 func filterTgwAttachments(getAttachmentsTask *attachments.GetAttachmentsTask, filters []func(tgwa *attachments.TransitGatewayAttachment) bool) []*attachments.TransitGatewayAttachment {
 	var filtered []*attachments.TransitGatewayAttachment
+
+	// Defensive nil checks - callers should validate before calling, but we guard here too
+	if getAttachmentsTask == nil || getAttachmentsTask.Response == nil || getAttachmentsTask.Response.Resource == nil {
+		return filtered
+	}
+
 	for _, tgwa := range getAttachmentsTask.Response.Resource.TransitGatewayAttachment {
 		if filterTgwAttachment(tgwa, filters) {
 			filtered = append(filtered, tgwa)

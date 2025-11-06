@@ -123,7 +123,8 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx context.Cont
 	}
 	tgwId := d.Get("tgw_id").(int)
 
-	tgwTask, err := api.Client.TransitGatewayAttachments.GetActiveActive(ctx, subId, regionId)
+	// Wait for Transit Gateway resource to become available (handles subscription provisioning delays)
+	tgwTask, err := utils.WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx, subId, regionId, api)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -182,7 +183,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentUpdate(ctx context.Co
 		cidrs = make([]*string, 0)
 	}
 
-	err = api.Client.TransitGatewayAttachments.UpdateActiveActive(ctx, subId, tgwId, regionId, cidrs)
+	err = api.Client.TransitGatewayAttachments.UpdateActiveActive(ctx, subId, regionId, tgwId, cidrs)
 	if err != nil {
 		return diag.FromErr(err)
 	}
