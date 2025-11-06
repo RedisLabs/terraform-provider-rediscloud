@@ -355,12 +355,17 @@ func addAlertsIfOverridden(
 			} else {
 				reason = "was in state, preserving (user explicit)"
 			}
-		} else if alertsDiffer {
-			shouldAdd = true
-			reason = "not in state, but differs from global"
 		} else {
+			// NOT in state - don't add even if API differs
+			// The Update function now explicitly removes alerts, so API should be correct.
+			// If API differs here, it's either: (1) stale data that will converge, or
+			// (2) out-of-band change that we'll detect on next refresh after convergence
 			shouldAdd = false
-			reason = "not in state, matches global (inherited)"
+			if alertsDiffer {
+				reason = "not in state, not adding despite API difference (inherited or stale)"
+			} else {
+				reason = "not in state, matches global (inherited)"
+			}
 		}
 	}
 

@@ -773,6 +773,12 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 			regionProps.Alerts = &overrideAlerts
 		} else if len(updateAlerts) > 0 {
 			regionProps.Alerts = &updateAlerts
+		} else {
+			// Explicitly send empty array to remove alerts from this region
+			// A pointer to a nil-slice is omitted from the json payload, which means the API keeps the existing value
+			//goland:noinspection GoPreferNilSlice
+			emptyAlerts := []*databases.Alert{}
+			regionProps.Alerts = &emptyAlerts
 		}
 		if len(overrideSourceIps) > 0 {
 			regionProps.SourceIP = overrideSourceIps
