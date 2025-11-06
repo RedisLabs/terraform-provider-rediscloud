@@ -58,6 +58,13 @@ func findRegionFieldInCtyValue(ctyVal cty.Value, regionName string, fieldName st
 				if regionVal.Type().HasAttribute(fieldName) {
 					fieldAttr := regionVal.GetAttr(fieldName)
 					if !fieldAttr.IsNull() {
+						// For Set types, check if they have any elements (not just that attribute exists)
+						if fieldAttr.Type().IsSetType() || fieldAttr.Type().IsListType() {
+							// Empty sets/lists mean field was not explicitly set
+							if fieldAttr.LengthInt() == 0 {
+								return cty.NilVal, false
+							}
+						}
 						return fieldAttr, true
 					}
 				}
