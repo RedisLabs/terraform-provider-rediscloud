@@ -73,7 +73,7 @@ The `creation_plan` block supports:
 * `memory_limit_in_gb` - (Optional -  **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favor of `dataset_size_in_gb` - not possible to import databases with this attribute set**
 * `dataset_size_in_gb` - (Optional - **Required if `memory_limit_in_gb` is unset**) The maximum amount of data in the dataset for this specific database is in GB
 * `quantity` - (Required) The planned number of databases in the subscription.
-* `modules` - (Optional) A list of modules to be enabled on all deployments of this database. Either: `RedisJSON` or `RediSearch`. Don’t specify modules for DB versions 8 and above. All capabilities are bundled in the DB by default.
+* `modules` - (Optional) A list of modules to be enabled on all deployments of this database. Either: `RedisJSON` or `RediSearch`. **Don’t specify modules for DB versions 8 and above. All capabilities are bundled in the DB by default.**
 * `region` - (Required) Deployment region block, documented below
 
 The creation_plan `region` block supports:
