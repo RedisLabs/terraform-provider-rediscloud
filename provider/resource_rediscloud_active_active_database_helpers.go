@@ -224,15 +224,7 @@ func filterDefaultSourceIPs(apiSourceIPs []*string) []string {
 func addSourceIPsIfOverridden(ctx context.Context, regionDbConfig map[string]interface{}, d *schema.ResourceData, regionDb *databases.CrdbDatabase, region string) {
 	sourceIPs := filterDefaultSourceIPs(regionDb.Security.SourceIPs)
 
-	tflog.Debug(ctx, "Read: addSourceIPsIfOverridden", map[string]interface{}{
-		"region":              region,
-		"apiSourceIPsCount":   len(regionDb.Security.SourceIPs),
-		"filteredIPsCount":    len(sourceIPs),
-		"filteredIPs":         sourceIPs,
-	})
-
 	if len(sourceIPs) == 0 {
-		tflog.Debug(ctx, "Read: Skipping source IPs (filtered to empty)", map[string]interface{}{"region": region})
 		return
 	}
 
@@ -240,12 +232,6 @@ func addSourceIPsIfOverridden(ctx context.Context, regionDbConfig map[string]int
 	globalSourceIPs := redis.StringSliceValue(globalSourceIPsPtrs...)
 
 	shouldAdd := !stringSlicesEqual(sourceIPs, globalSourceIPs)
-	tflog.Debug(ctx, "Read: Source IPs comparison", map[string]interface{}{
-		"region":       region,
-		"regionIPs":    sourceIPs,
-		"globalIPs":    globalSourceIPs,
-		"shouldAdd":    shouldAdd,
-	})
 
 	if shouldAdd {
 		regionDbConfig["override_global_source_ips"] = sourceIPs
@@ -263,24 +249,10 @@ func addDataPersistenceIfOverridden(
 	if regionDb.DataPersistence != nil && db.GlobalDataPersistence != nil {
 		regionValue := redis.StringValue(regionDb.DataPersistence)
 		globalValue := redis.StringValue(db.GlobalDataPersistence)
-		shouldAdd := regionValue != globalValue
 
-		tflog.Debug(ctx, "Read: Data persistence comparison", map[string]interface{}{
-			"region":       region,
-			"regionValue":  regionValue,
-			"globalValue":  globalValue,
-			"shouldAdd":    shouldAdd,
-		})
-
-		if shouldAdd {
+		if regionValue != globalValue {
 			regionDbConfig["override_global_data_persistence"] = regionDb.DataPersistence
 		}
-	} else {
-		tflog.Debug(ctx, "Read: Skipping data persistence (nil values)", map[string]interface{}{
-			"region":           region,
-			"regionIsNil":      regionDb.DataPersistence == nil,
-			"globalIsNil":      db.GlobalDataPersistence == nil,
-		})
 	}
 }
 
@@ -295,25 +267,10 @@ func addPasswordIfOverridden(
 	if regionDb.Security.Password != nil && db.GlobalPassword != nil {
 		regionValue := *regionDb.Security.Password
 		globalValue := redis.StringValue(db.GlobalPassword)
-		shouldAdd := regionValue != globalValue
 
-		tflog.Debug(ctx, "Read: Password comparison", map[string]interface{}{
-			"region":       region,
-			"regionValue":  "[REDACTED]",
-			"globalValue":  "[REDACTED]",
-			"valuesDiffer": shouldAdd,
-			"shouldAdd":    shouldAdd,
-		})
-
-		if shouldAdd {
+		if regionValue != globalValue {
 			regionDbConfig["override_global_password"] = regionValue
 		}
-	} else {
-		tflog.Debug(ctx, "Read: Skipping password (nil values)", map[string]interface{}{
-			"region":      region,
-			"regionIsNil": regionDb.Security.Password == nil,
-			"globalIsNil": db.GlobalPassword == nil,
-		})
 	}
 }
 
@@ -424,31 +381,18 @@ func addRemoteBackupIfConfigured(
 	stateOverrideRegion map[string]interface{},
 	region string,
 ) {
-	tflog.Debug(ctx, "Read: Checking remote backup", map[string]interface{}{
-		"region":      region,
-		"apiHasBackup": regionDb.Backup != nil,
-	})
-
 	if regionDb.Backup == nil {
-		tflog.Debug(ctx, "Read: Skipping remote backup (nil in API)", map[string]interface{}{"region": region})
 		return
 	}
 
 	stateRemoteBackup := stateOverrideRegion["remote_backup"]
 	if stateRemoteBackup == nil {
-		tflog.Debug(ctx, "Read: Skipping remote backup (nil in state)", map[string]interface{}{"region": region})
 		return
 	}
 
 	stateRemoteBackupList := stateRemoteBackup.([]interface{})
-	tflog.Debug(ctx, "Read: Remote backup state list", map[string]interface{}{
-		"region":    region,
-		"listCount": len(stateRemoteBackupList),
-	})
-
 	if len(stateRemoteBackupList) > 0 {
 		regionDbConfig["remote_backup"] = pro.FlattenBackupPlan(regionDb.Backup, stateRemoteBackupList, "")
-		tflog.Debug(ctx, "Read: Added remote_backup to region config", map[string]interface{}{"region": region})
 	}
 }
 
@@ -484,27 +428,9 @@ func addEnableDefaultUserIfNeeded(
 	})
 }
 
-// logRegionConfigBuilt logs the final region config for debugging.
-func logRegionConfigBuilt(ctx context.Context, region string, regionDbConfig map[string]interface{}) {
-	tflog.Debug(ctx, "Read: Completed region config", map[string]interface{}{
-		"region":                           region,
-		"hasEnableDefaultUser":             regionDbConfig["enable_default_user"] != nil,
-		"enableDefaultUserValue":           regionDbConfig["enable_default_user"],
-		"hasOverrideGlobalSourceIps":       regionDbConfig["override_global_source_ips"] != nil,
-		"hasOverrideGlobalDataPersistence": regionDbConfig["override_global_data_persistence"] != nil,
-		"hasOverrideGlobalPassword":        regionDbConfig["override_global_password"] != nil,
-		"hasOverrideGlobalAlert":           regionDbConfig["override_global_alert"] != nil,
-		"hasRemoteBackup":                  regionDbConfig["remote_backup"] != nil,
-	})
-}
-
 // buildRegionConfigFromAPIAndState orchestrates building region config from API and state.
 // Each override field is handled by a dedicated helper function for clarity and maintainability.
 func buildRegionConfigFromAPIAndState(ctx context.Context, d *schema.ResourceData, db *databases.ActiveActiveDatabase, region string, regionDb *databases.CrdbDatabase, stateOverrideRegion map[string]interface{}) map[string]interface{} {
-	tflog.Debug(ctx, "Read: Starting buildRegionConfigFromAPIAndState", map[string]interface{}{
-		"region": region,
-	})
-
 	regionDbConfig := map[string]interface{}{
 		"name": region,
 	}
@@ -516,8 +442,6 @@ func buildRegionConfigFromAPIAndState(ctx context.Context, d *schema.ResourceDat
 	addAlertsIfOverridden(ctx, regionDbConfig, d, regionDb, region)
 	addRemoteBackupIfConfigured(ctx, regionDbConfig, regionDb, stateOverrideRegion, region)
 	addEnableDefaultUserIfNeeded(ctx, regionDbConfig, d, db, region, regionDb)
-
-	logRegionConfigBuilt(ctx, region, regionDbConfig)
 
 	return regionDbConfig
 }
