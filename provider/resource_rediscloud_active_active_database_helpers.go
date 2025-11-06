@@ -79,6 +79,20 @@ func isEnableDefaultUserExplicitlySetInConfig(d *schema.ResourceData, regionName
 	return exists
 }
 
+// isOverrideGlobalAlertExplicitlySetInConfig checks if override_global_alert was explicitly
+// set in the Terraform configuration for a specific region in the override_region block.
+func isOverrideGlobalAlertExplicitlySetInConfig(d *schema.ResourceData, regionName string) bool {
+	_, exists := findRegionFieldInCtyValue(d.GetRawConfig(), regionName, "override_global_alert")
+	return exists
+}
+
+// isOverrideGlobalAlertInActualPersistedState checks if override_global_alert was in the ACTUAL
+// persisted Terraform state (not the materialized Go map) for a specific region.
+func isOverrideGlobalAlertInActualPersistedState(d *schema.ResourceData, regionName string) bool {
+	_, exists := findRegionFieldInCtyValue(d.GetRawState(), regionName, "override_global_alert")
+	return exists
+}
+
 // isEnableDefaultUserInActualPersistedState checks if enable_default_user was in the ACTUAL
 // persisted Terraform state (not the materialized Go map) for a specific region.
 // Uses GetRawState to bypass TypeSet materialization that adds all fields with zero-values.
@@ -296,7 +310,8 @@ func addPasswordIfOverridden(
 	}
 }
 
-// addAlertsIfOverridden adds override_global_alert to region config if alerts differ from global.
+// addAlertsIfOverridden adds override_global_alert to region config using hybrid GetRawConfig/GetRawState logic.
+// This prevents drift when alerts are removed from config but API still has stale values.
 func addAlertsIfOverridden(
 	ctx context.Context,
 	regionDbConfig map[string]interface{},
@@ -306,17 +321,52 @@ func addAlertsIfOverridden(
 ) {
 	globalAlerts := d.Get("global_alert").(*schema.Set).List()
 	regionAlerts := pro.FlattenAlerts(regionDb.Alerts)
+	rawConfig := d.GetRawConfig()
+	alertsDiffer := !alertsEqualContent(globalAlerts, regionAlerts)
 
-	// Compare alert content, not just counts
-	shouldAdd := !alertsEqualContent(globalAlerts, regionAlerts)
+	var shouldAdd bool
+	var reason string
+
+	// Hybrid GetRawConfig/GetRawState strategy (same as enable_default_user)
+	if !rawConfig.IsNull() {
+		// During Apply/Update: Check if explicitly set in config
+		if isOverrideGlobalAlertExplicitlySetInConfig(d, region) {
+			shouldAdd = true
+			reason = "explicitly set in config"
+		} else {
+			// Not in config - don't add even if API differs (user removed it or never set it)
+			shouldAdd = false
+			reason = "not in config (inherited or removed)"
+		}
+	} else {
+		// During Refresh: Check if was in persisted state
+		wasInState := isOverrideGlobalAlertInActualPersistedState(d, region)
+		if wasInState {
+			shouldAdd = true
+			if alertsDiffer {
+				reason = "was in state, differs from global"
+			} else {
+				reason = "was in state, preserving (user explicit)"
+			}
+		} else if alertsDiffer {
+			shouldAdd = true
+			reason = "not in state, but differs from global"
+		} else {
+			shouldAdd = false
+			reason = "not in state, matches global (inherited)"
+		}
+	}
 
 	tflog.Debug(ctx, "Read: Alerts comparison", map[string]interface{}{
-		"region":            region,
-		"globalAlertsCount": len(globalAlerts),
-		"globalAlerts":      globalAlerts,
-		"regionAlertsCount": len(regionAlerts),
-		"regionAlerts":      regionAlerts,
-		"shouldAdd":         shouldAdd,
+		"region":                region,
+		"globalAlertsCount":     len(globalAlerts),
+		"globalAlerts":          globalAlerts,
+		"regionAlertsCount":     len(regionAlerts),
+		"regionAlerts":          regionAlerts,
+		"alertsDiffer":          alertsDiffer,
+		"getRawConfigAvailable": !rawConfig.IsNull(),
+		"shouldAdd":             shouldAdd,
+		"reason":                reason,
 	})
 
 	if shouldAdd {
