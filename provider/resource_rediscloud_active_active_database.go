@@ -584,9 +584,6 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 
 	// Iterate through STATE override_region blocks (not API regions) to preserve Set ordering/hashing
 	stateOverrideRegions := d.Get("override_region").(*schema.Set).List()
-	tflog.Debug(ctx, "Read: Starting to process regions from STATE", map[string]interface{}{
-		"regionCount": len(stateOverrideRegions),
-	})
 
 	for _, stateRegion := range stateOverrideRegions {
 		stateRegionMap := stateRegion.(map[string]interface{})
@@ -604,10 +601,6 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		regionDbConfig := buildRegionConfigFromAPIAndState(ctx, d, db, region, regionDb, stateRegionMap)
 		regionDbConfigs = append(regionDbConfigs, regionDbConfig)
 	}
-
-	tflog.Debug(ctx, "Read: Completed processing all regions", map[string]interface{}{
-		"totalRegionsProcessed": len(regionDbConfigs),
-	})
 
 	// Only set override_region if it is defined in the config
 	if len(d.Get("override_region").(*schema.Set).List()) > 0 {
@@ -639,14 +632,9 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	// Read global_enable_default_user from API response
 	if db.GlobalEnableDefaultUser != nil {
 		globalValue := redis.BoolValue(db.GlobalEnableDefaultUser)
-		tflog.Debug(ctx, "Read: Setting global_enable_default_user from API", map[string]interface{}{
-			"value": globalValue,
-		})
 		if err := d.Set("global_enable_default_user", globalValue); err != nil {
 			return diag.FromErr(err)
 		}
-	} else {
-		tflog.Debug(ctx, "Read: global_enable_default_user is nil in API response", map[string]interface{}{})
 	}
 
 	tlsAuthEnabled := *db.CrdbDatabases[0].Security.TLSClientAuthentication
@@ -827,18 +815,8 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 		regionProps.RemoteBackup = pro.BuildBackupPlan(dbRegion["remote_backup"], nil)
 
-		tflog.Debug(ctx, "Update: Completed building region properties", map[string]interface{}{
-			"region":                      regionName,
-			"hasEnableDefaultUser":        regionProps.EnableDefaultUser != nil,
-			"enableDefaultUserValue":      regionProps.EnableDefaultUser,
-		})
-
 		regions = append(regions, regionProps)
 	}
-
-	tflog.Debug(ctx, "Update: Completed building all region configurations", map[string]interface{}{
-		"totalRegions": len(regions),
-	})
 
 	// Populate the database update request with the required fields
 	update := databases.UpdateActiveActiveDatabase{
