@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -295,8 +296,7 @@ func addPasswordIfOverridden(
 	}
 }
 
-// addAlertsIfOverridden adds override_global_alert to region config if count differs from global.
-// Note: Active-Active API doesn't return global alerts separately, so we compare counts.
+// addAlertsIfOverridden adds override_global_alert to region config if alerts differ from global.
 func addAlertsIfOverridden(
 	ctx context.Context,
 	regionDbConfig map[string]interface{},
@@ -306,7 +306,9 @@ func addAlertsIfOverridden(
 ) {
 	globalAlerts := d.Get("global_alert").(*schema.Set).List()
 	regionAlerts := pro.FlattenAlerts(regionDb.Alerts)
-	shouldAdd := len(globalAlerts) != len(regionAlerts)
+
+	// Compare alert content, not just counts
+	shouldAdd := !alertsEqualContent(globalAlerts, regionAlerts)
 
 	tflog.Debug(ctx, "Read: Alerts comparison", map[string]interface{}{
 		"region":            region,
@@ -320,6 +322,36 @@ func addAlertsIfOverridden(
 	if shouldAdd {
 		regionDbConfig["override_global_alert"] = regionAlerts
 	}
+}
+
+// alertsEqualContent compares two alert lists for equality by comparing their content.
+// Takes []interface{} (from state) and []map[string]interface{} (from API flatten) for comparison.
+func alertsEqualContent(globalAlerts []interface{}, regionAlerts []map[string]interface{}) bool {
+	if len(globalAlerts) != len(regionAlerts) {
+		return false
+	}
+
+	// Convert global alerts to a set of "name:value" strings
+	globalSet := make(map[string]bool, len(globalAlerts))
+	for _, alert := range globalAlerts {
+		alertMap := alert.(map[string]interface{})
+		name := alertMap["name"].(string)
+		value := alertMap["value"]
+		key := fmt.Sprintf("%s:%v", name, value)
+		globalSet[key] = true
+	}
+
+	// Check if all region alerts exist in global set
+	for _, alertMap := range regionAlerts {
+		name := alertMap["name"].(string)
+		value := alertMap["value"]
+		key := fmt.Sprintf("%s:%v", name, value)
+		if !globalSet[key] {
+			return false
+		}
+	}
+
+	return true
 }
 
 // addRemoteBackupIfConfigured adds remote_backup to region config if it exists in both API and state.
