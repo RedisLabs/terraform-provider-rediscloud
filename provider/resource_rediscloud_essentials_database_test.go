@@ -334,6 +334,40 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 	})
 }
 
+// Test redis_version field support - ensures version can be specified and read
+func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	databaseName := subscriptionName + "-db"
+
+	const resourceName = "rediscloud_essentials_database.example"
+	const datasourceName = "data.rediscloud_essentials_database.example"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseRedisVersion, subscriptionName, databaseName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Test the resource has redis_version set
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
+					resource.TestCheckResourceAttrSet(resourceName, "subscription_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "db_id"),
+					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
+					resource.TestCheckResourceAttrSet(resourceName, "redis_version"),
+
+					// Test the datasource also returns redis_version
+					resource.TestMatchResourceAttr(datasourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
+					resource.TestCheckResourceAttrSet(datasourceName, "redis_version"),
+				),
+			},
+		},
+	})
+}
+
 const testAccResourceRedisCloudEssentialsDatabaseDisableDefaultUserCreate = `
 
 data "rediscloud_payment_method" "card" {
@@ -414,6 +448,46 @@ resource "rediscloud_essentials_database" "example" {
 
   tags = {
     "envaaaa" = "qaaaa"
+  }
+}
+`
+
+const testAccResourceRedisCloudEssentialsDatabaseRedisVersion = `
+
+data "rediscloud_payment_method" "card" {
+	card_type = "Visa"
+	last_four_numbers = "5556"
+}
+
+data "rediscloud_essentials_plan" "example" {
+  name = "Single-Zone_1GB"
+  cloud_provider = "AWS"
+  region = "us-east-1"
+}
+
+data "rediscloud_essentials_database" "example" {
+	subscription_id = rediscloud_essentials_subscription.example.id
+	name = rediscloud_essentials_database.example.name
+}
+
+resource "rediscloud_essentials_subscription" "example" {
+  name = "%s"
+  plan_id = data.rediscloud_essentials_plan.example.id
+  payment_method_id = data.rediscloud_payment_method.card.id
+}
+
+resource "rediscloud_essentials_database" "example" {
+  subscription_id     = rediscloud_essentials_subscription.example.id
+  name                = "%s"
+  enable_default_user = true
+  password            = "j43589rhe39f"
+
+  data_persistence = "none"
+  replication      = false
+
+  alert {
+    name  = "throughput-higher-than"
+    value = 80
   }
 }
 `

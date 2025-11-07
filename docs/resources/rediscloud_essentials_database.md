@@ -58,6 +58,7 @@ The following arguments are supported:
 * `subscription_id` - (Required) The ID of the subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
 * `name` - (Required) A meaningful name to identify the database.
 * `protocol` - (Optional) Database protocol. 'stack' is a suite of all Redis' data modules. Default: 'stack'. Either: 'redis', 'memcached' or 'stack'. **'redis' is only used with Pay-As-You-Go databases.**
+* `redis_version` - (Optional) Defines the Redis database version. If omitted, the Redis version will be set to the default version.
 * `resp_version` - (Optional) RESP version must be compatible with the Redis version.
 * `data_persistence` - (Required) Rate of database data persistence (in persistent storage). Either: 'none', 'aof-every-1-second', 'aof-every-write', 'snapshot-every-1-hour', 'snapshot-every-6-hours' or 'snapshot-every-12-hours'.
 * `data_eviction` - (Optional) Data items eviction method. Either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru'.

@@ -39,6 +39,7 @@ data "rediscloud_essentials_database" "example" {
 ## Attribute Reference
 
 * `protocol` - The protocol of the database. Either `redis`, `memcached` or `stack`.
+* `redis_version` - The Redis database version.
 * `cloud_provider` - The Cloud Provider hosting this database.
 * `region` - The region within the Cloud Provider where this database is hosted.
 * `redis_version_compliance` - The compliance level (redis version) of this database.
