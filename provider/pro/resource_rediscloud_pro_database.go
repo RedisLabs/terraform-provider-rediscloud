@@ -298,8 +298,10 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Default:     true,
 			},
 			"auto_minor_version_upgrade": {
-				Type:     schema.TypeBool,
-				Optional: true,
+				Description: "When 'true', enables auto minor version upgrades for this database. Default: 'true'",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
 			},
 			"port": {
 				Description:      "TCP port on which the database is available",
@@ -757,12 +759,13 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 			Value: utils.GetInt(d, "throughput_measurement_value"),
 		},
 
-		DataPersistence:    utils.GetString(d, "data_persistence"),
-		DataEvictionPolicy: utils.GetString(d, "data_eviction"),
-		SourceIP:           utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
-		Alerts:             &alerts,
-		RemoteBackup:       BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
-		EnableDefaultUser:  utils.GetBool(d, "enable_default_user"),
+		DataPersistence:         utils.GetString(d, "data_persistence"),
+		DataEvictionPolicy:      utils.GetString(d, "data_eviction"),
+		SourceIP:                utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
+		Alerts:                  &alerts,
+		RemoteBackup:            BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		EnableDefaultUser:       utils.GetBool(d, "enable_default_user"),
+		AutoMinorVersionUpgrade: utils.GetBool(d, "auto_minor_version_upgrade"),
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)
@@ -805,11 +808,6 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 
 	if d.Get("password").(string) != "" {
 		update.Password = redis.String(d.Get("password").(string))
-	}
-
-	// Only send auto_minor_version_upgrade if explicitly set
-	if v, ok := d.GetOk("auto_minor_version_upgrade"); ok {
-		update.AutoMinorVersionUpgrade = redis.Bool(v.(bool))
 	}
 
 	update.ReplicaOf = utils.SetToStringSlice(d.Get("replica_of").(*schema.Set))

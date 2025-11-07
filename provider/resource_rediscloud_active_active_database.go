@@ -12,7 +12,6 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -206,11 +205,12 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Description: "When 'true', enables connecting to the database with the 'default' user across all regions. Default: 'true'",
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Default:     true,
 			},
 			"auto_minor_version_upgrade": {
-				Type:     schema.TypeBool,
-				Optional: true,
+				Description: "When 'true', enables auto minor version upgrades for this database. Default: 'true'",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
 			},
 			"override_region": {
 				Description: "Region-specific configuration parameters to override the global configuration",
@@ -526,11 +526,10 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
-	if _, ok := d.GetOk("global_data_persistence"); ok {
-		if db.GlobalDataPersistence != nil {
-			if err := d.Set("global_data_persistence", redis.StringValue(db.GlobalDataPersistence)); err != nil {
-				return diag.FromErr(err)
-			}
+	// Read global_data_persistence from API response
+	if db.GlobalDataPersistence != nil {
+		if err := d.Set("global_data_persistence", redis.StringValue(db.GlobalDataPersistence)); err != nil {
+			return diag.FromErr(err)
 		}
 	}
 
@@ -571,34 +570,79 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	var regionDbConfigs []map[string]interface{}
 	publicEndpointConfig := make(map[string]interface{})
 	privateEndpointConfig := make(map[string]interface{})
-
-	// Build API region lookup map
-	apiRegions := make(map[string]*databases.CrdbDatabase)
 	for _, regionDb := range db.CrdbDatabases {
 		region := redis.StringValue(regionDb.Region)
-		apiRegions[region] = regionDb
-		// Set the endpoints for all regions
+		// Set the endpoints for the region
 		publicEndpointConfig[region] = redis.StringValue(regionDb.PublicEndpoint)
 		privateEndpointConfig[region] = redis.StringValue(regionDb.PrivateEndpoint)
-	}
-
-	// Iterate through STATE override_region blocks (not API regions) to preserve Set ordering/hashing
-	stateOverrideRegions := d.Get("override_region").(*schema.Set).List()
-
-	for _, stateRegion := range stateOverrideRegions {
-		stateRegionMap := stateRegion.(map[string]interface{})
-		region := stateRegionMap["name"].(string)
-
-		// Look up corresponding API data
-		regionDb, exists := apiRegions[region]
-		if !exists {
-			tflog.Warn(ctx, "Read: Region in state not found in API response", map[string]interface{}{
-				"region": region,
-			})
+		// Check if the region is in the state as an override
+		stateOverrideRegion := getStateOverrideRegion(d, region)
+		if stateOverrideRegion == nil {
 			continue
 		}
+		regionDbConfig := map[string]interface{}{
+			"name": region,
+		}
 
-		regionDbConfig := buildRegionConfigFromAPIAndState(ctx, d, db, region, regionDb, stateRegionMap)
+		// Handle source_ips based on subscription's public_endpoint_access settings
+		// When public_endpoint_access is false and source_ips is empty, API returns private IP ranges
+		// When public_endpoint_access is true and source_ips is empty, API returns ["0.0.0.0/0"]
+		// When source_ips is explicitly set by user, API returns the user's input
+		// This is to prevent drift in terraform state as API response will differ from what terraform sees
+		var sourceIPs []string
+		privateIPRanges := []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10"}
+
+		// Check if the returned source_ips matches default private IP ranges (when public access is blocked)
+		isPrivateIPRange := len(regionDb.Security.SourceIPs) == len(privateIPRanges)
+		if isPrivateIPRange {
+			for i, ip := range regionDb.Security.SourceIPs {
+				if redis.StringValue(ip) != privateIPRanges[i] {
+					isPrivateIPRange = false
+					break
+				}
+			}
+		}
+
+		// Check if the returned source_ips is the default public access ["0.0.0.0/0"]
+		isDefaultPublicAccess := len(regionDb.Security.SourceIPs) == 1 && redis.StringValue(regionDb.Security.SourceIPs[0]) == "0.0.0.0/0"
+
+		// Only set source_ips if they were explicitly configured by the user (not defaults)
+		if !isDefaultPublicAccess && !isPrivateIPRange {
+			sourceIPs = redis.StringSliceValue(regionDb.Security.SourceIPs...)
+		}
+
+		if stateSourceIPs := getStateOverrideRegion(d, region)["override_global_source_ips"]; stateSourceIPs != nil {
+			if len(stateSourceIPs.(*schema.Set).List()) > 0 {
+				regionDbConfig["override_global_source_ips"] = sourceIPs
+			}
+		}
+
+		if stateDataPersistence := getStateOverrideRegion(d, region)["override_global_data_persistence"]; stateDataPersistence != nil {
+			if stateDataPersistence.(string) != "" {
+				regionDbConfig["override_global_data_persistence"] = regionDb.DataPersistence
+			}
+		}
+
+		if stateOverridePassword := getStateOverrideRegion(d, region)["override_global_password"]; stateOverridePassword != "" {
+			if *regionDb.Security.Password == d.Get("global_password").(string) {
+				regionDbConfig["override_global_password"] = ""
+			} else {
+				regionDbConfig["override_global_password"] = redis.StringValue(regionDb.Security.Password)
+			}
+		}
+
+		stateOverrideAlerts := getStateAlertsFromDbRegion(getStateOverrideRegion(d, region))
+		if len(stateOverrideAlerts) > 0 {
+			regionDbConfig["override_global_alert"] = pro.FlattenAlerts(regionDb.Alerts)
+		}
+
+		regionDbConfig["remote_backup"] = pro.FlattenBackupPlan(regionDb.Backup, getStateRemoteBackup(d, region), "")
+
+		// Only set enable_default_user if it was explicitly configured in the override_region
+		if stateEnableDefaultUser := getStateOverrideRegion(d, region)["enable_default_user"]; stateEnableDefaultUser != nil {
+			regionDbConfig["enable_default_user"] = redis.BoolValue(regionDb.Security.EnableDefaultUser)
+		}
+
 		regionDbConfigs = append(regionDbConfigs, regionDbConfig)
 	}
 
@@ -623,16 +667,13 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
-	if _, ok := d.GetOk("auto_minor_version_upgrade"); ok {
-		if err := d.Set("auto_minor_version_upgrade", redis.BoolValue(db.AutoMinorVersionUpgrade)); err != nil {
-			return diag.FromErr(err)
-		}
+	if err := d.Set("auto_minor_version_upgrade", redis.BoolValue(db.AutoMinorVersionUpgrade)); err != nil {
+		return diag.FromErr(err)
 	}
 
 	// Read global_enable_default_user from API response
 	if db.GlobalEnableDefaultUser != nil {
-		globalValue := redis.BoolValue(db.GlobalEnableDefaultUser)
-		if err := d.Set("global_enable_default_user", globalValue); err != nil {
+		if err := d.Set("global_enable_default_user", redis.BoolValue(db.GlobalEnableDefaultUser)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -709,23 +750,10 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 	// Make a list of region-specific configurations
 	var regions []*databases.LocalRegionProperties
-
-	tflog.Debug(ctx, "Update: Starting to build region configurations", map[string]interface{}{
-		"regionCount":       len(d.Get("override_region").(*schema.Set).List()),
-		"globalAlertsCount": len(updateAlerts),
-		"globalAlerts":      updateAlerts,
-	})
-
 	for _, region := range d.Get("override_region").(*schema.Set).List() {
 		dbRegion := region.(map[string]interface{})
 
 		overrideAlerts := getStateAlertsFromDbRegion(getStateOverrideRegion(d, dbRegion["name"].(string)))
-
-		tflog.Debug(ctx, "Update: Parsed alerts for region", map[string]interface{}{
-			"region":             dbRegion["name"].(string),
-			"overrideAlertsLen":  len(overrideAlerts),
-			"overrideAlerts":     overrideAlerts,
-		})
 
 		// Make a list of region-specific source IPs for use in the regions list below
 		var overrideSourceIps []*string
@@ -737,60 +765,15 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 			Region: redis.String(dbRegion["name"].(string)),
 		}
 
-		// Handle enable_default_user with three-state logic:
-		// - Not set in config -> don't send to API (inherit from global)
-		// - Explicitly true -> send true
-		// - Explicitly false -> send false
-		regionName := dbRegion["name"].(string)
-		enableDefaultUser := dbRegion["enable_default_user"].(bool)
-		wasExplicitlySet := isEnableDefaultUserExplicitlySetInConfig(d, regionName)
-
-		tflog.Debug(ctx, "Checking enable_default_user for region", map[string]interface{}{
-			"region":            regionName,
-			"value":             enableDefaultUser,
-			"wasExplicitlySet":  wasExplicitlySet,
-		})
-
-		if wasExplicitlySet {
-			// Field was explicitly set in Terraform config, send the value
-			tflog.Debug(ctx, "Sending enable_default_user to API", map[string]interface{}{
-				"region": regionName,
-				"value":  enableDefaultUser,
-			})
-			regionProps.EnableDefaultUser = redis.Bool(enableDefaultUser)
-		} else {
-			tflog.Debug(ctx, "Not sending enable_default_user (inherit from global)", map[string]interface{}{
-				"region": regionName,
-			})
+		// Only set EnableDefaultUser if it was explicitly configured in the override_region
+		if val, exists := dbRegion["enable_default_user"]; exists && val != nil {
+			regionProps.EnableDefaultUser = redis.Bool(val.(bool))
 		}
-		// If not explicitly set, don't send - let it inherit from global
 
 		if len(overrideAlerts) > 0 {
 			regionProps.Alerts = &overrideAlerts
-			tflog.Debug(ctx, "Update: Setting region alerts from override", map[string]interface{}{
-				"region":      regionName,
-				"alertCount":  len(overrideAlerts),
-				"alertValues": overrideAlerts,
-			})
 		} else if len(updateAlerts) > 0 {
 			regionProps.Alerts = &updateAlerts
-			tflog.Debug(ctx, "Update: Setting region alerts from global", map[string]interface{}{
-				"region":      regionName,
-				"alertCount":  len(updateAlerts),
-				"alertValues": updateAlerts,
-			})
-		} else {
-			// Explicitly send empty array to remove alerts from this region
-			// A pointer to a nil-slice is omitted from the json payload, which means the API keeps the existing value
-			//goland:noinspection GoPreferNilSlice
-			emptyAlerts := []*databases.Alert{}
-			regionProps.Alerts = &emptyAlerts
-			tflog.Debug(ctx, "Update: Setting empty alerts array to remove alerts", map[string]interface{}{
-				"region":             regionName,
-				"overrideAlertsLen":  len(overrideAlerts),
-				"updateAlertsLen":    len(updateAlerts),
-				"sendingEmptyArray":  true,
-			})
 		}
 		if len(overrideSourceIps) > 0 {
 			regionProps.SourceIP = overrideSourceIps
