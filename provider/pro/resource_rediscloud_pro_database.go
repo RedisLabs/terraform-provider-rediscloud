@@ -297,10 +297,6 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 			},
-			"auto_minor_version_upgrade": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
 			"port": {
 				Description:      "TCP port on which the database is available",
 				Type:             schema.TypeInt,
@@ -451,9 +447,6 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		createDatabase.RespVersion = s
 	})
 
-	utils.SetBool(d, "auto_minor_version_upgrade", func(b *bool) {
-		createDatabase.AutoMinorVersionUpgrade = b
-	})
 
 	// Confirm sub is ready to accept a db request
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
@@ -677,9 +670,6 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		}
 	}
 
-	if err := d.Set("auto_minor_version_upgrade", redis.BoolValue(db.AutoMinorVersionUpgrade)); err != nil {
-		return diag.FromErr(err)
-	}
 
 	if err := ReadTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
@@ -757,12 +747,12 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 			Value: utils.GetInt(d, "throughput_measurement_value"),
 		},
 
-		DataPersistence:    utils.GetString(d, "data_persistence"),
-		DataEvictionPolicy: utils.GetString(d, "data_eviction"),
-		SourceIP:           utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
-		Alerts:             &alerts,
-		RemoteBackup:       BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
-		EnableDefaultUser:  utils.GetBool(d, "enable_default_user"),
+		DataPersistence:         utils.GetString(d, "data_persistence"),
+		DataEvictionPolicy:      utils.GetString(d, "data_eviction"),
+		SourceIP:                utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
+		Alerts:                  &alerts,
+		RemoteBackup:            BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		EnableDefaultUser:       utils.GetBool(d, "enable_default_user"),
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)
@@ -805,11 +795,6 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 
 	if d.Get("password").(string) != "" {
 		update.Password = redis.String(d.Get("password").(string))
-	}
-
-	// Only send auto_minor_version_upgrade if explicitly set
-	if v, ok := d.GetOk("auto_minor_version_upgrade"); ok {
-		update.AutoMinorVersionUpgrade = redis.Bool(v.(bool))
 	}
 
 	update.ReplicaOf = utils.SetToStringSlice(d.Get("replica_of").(*schema.Set))

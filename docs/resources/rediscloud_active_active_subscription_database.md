@@ -103,7 +103,7 @@ The following arguments are supported:
 * `global_alert` - (Optional) A block defining Redis database alert of regions that don't override global settings, documented below, can be specified multiple times. (either: 'dataset-size', 'datasets-size', 'throughput-higher-than', 'throughput-lower-than', 'latency', 'syncsource-error', 'syncsource-lag' or 'connections-limit')
 * `global_modules` - (Optional) A list of modules to be enabled on all deployments of this database. Supported modules: `RedisJSON`, `RediSearch`. Ignored after database creation.
 * `global_source_ips` - (Optional) List of source IP addresses or subnet masks that are allowed to connect to the database across all regions that don't override this setting (example: ['192.168.10.0/32', '192.168.12.0/24']). When not specified, the default behavior depends on the subscription's `public_endpoint_access` setting: if `false`, defaults to RFC1918 private IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10); if `true`, defaults to 0.0.0.0/0 (unrestricted public access)
-* `global_enable_default_user` - (Optional) When 'true', enables connecting to the database with the 'default' user across all regions. Default: 'true'
+* `global_enable_default_user` - (Optional) When 'true', enables connecting to the database with the 'default' user across all regions. Default: 'true'. To disable, explicitly set to 'false'
 * `global_resp_version` - (Optional) Either 'resp2' or 'resp3'. Resp version for Crdb databases within the AA database. Must be compatible with Redis version.
 * `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999. **Modifying this attribute will force creation of a new resource.**
 * `override_region` - (Optional) Override region specific configuration, documented below
@@ -117,7 +117,7 @@ The `override_region` block supports:
 * `override_global_source_ips` - (Optional) List of source IP addresses or subnet masks that are allowed to connect to the database in this specific region, overriding the global `global_source_ips` setting (example: ['192.168.10.0/32', '192.168.12.0/24']). If not specified, the global `global_source_ips` setting applies to this region
 * `override_global_data_persistence` - (Optional) Regional instance of an Active-Active database data persistence rate (in persistent storage)
 * `remote_backup` - (Optional) Specifies the backup options for the database in this region, documented below
-* `enable_default_user` - (Optional) Whether the default user should be enabled or not. True by default.
+* `enable_default_user` - (Optional) Whether the default user should be enabled for this specific region. Default: 'true'. To disable the default user for this region, you must explicitly set this to 'false'
 
 The `override_global_alert` block supports:
 

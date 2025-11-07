@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 
+# 2.7.4 (7th November 2025)
+
+## Changed
+- Reverted global/regional override rework from v2.7.3 due to regressions. Active-Active database global configuration behavior has been restored to v2.7.2 state. Transit Gateway improvements from v2.7.3 have been preserved.
+- `rediscloud_active_active_subscription_database`: Both `global_enable_default_user` and the region-level `enable_default_user` (in `override_region` blocks) now default to `true`. To disable the default user in a specific region, you must explicitly set `enable_default_user = false` in that region's `override_region` block.
+
 # 2.7.3 (6th November 2025)
 
 ## Changed
