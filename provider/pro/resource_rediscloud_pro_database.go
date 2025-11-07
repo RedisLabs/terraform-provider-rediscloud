@@ -297,12 +297,6 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 			},
-			"auto_minor_version_upgrade": {
-				Description: "When 'true', enables auto minor version upgrades for this database. Default: 'true'",
-				Type:        schema.TypeBool,
-				Optional:    true,
-				Default:     true,
-			},
 			"port": {
 				Description:      "TCP port on which the database is available",
 				Type:             schema.TypeInt,
@@ -453,9 +447,6 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		createDatabase.RespVersion = s
 	})
 
-	utils.SetBool(d, "auto_minor_version_upgrade", func(b *bool) {
-		createDatabase.AutoMinorVersionUpgrade = b
-	})
 
 	// Confirm sub is ready to accept a db request
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
@@ -679,9 +670,6 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		}
 	}
 
-	if err := d.Set("auto_minor_version_upgrade", redis.BoolValue(db.AutoMinorVersionUpgrade)); err != nil {
-		return diag.FromErr(err)
-	}
 
 	if err := ReadTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
@@ -765,7 +753,6 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		Alerts:                  &alerts,
 		RemoteBackup:            BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
 		EnableDefaultUser:       utils.GetBool(d, "enable_default_user"),
-		AutoMinorVersionUpgrade: utils.GetBool(d, "auto_minor_version_upgrade"),
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)
