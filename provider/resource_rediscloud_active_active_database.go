@@ -205,6 +205,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Description: "When 'true', enables connecting to the database with the 'default' user across all regions. Default: 'true'",
 				Type:        schema.TypeBool,
 				Optional:    true,
+			Default:     true,
 			},
 			"auto_minor_version_upgrade": {
 				Description: "When 'true', enables auto minor version upgrades for this database. Default: 'true'",
@@ -265,9 +266,10 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 							Optional:    true,
 						},
 						"enable_default_user": {
-							Description: "When 'true', enables connecting to the database with the 'default' user. If not set, the global setting will be used.",
+							Description: "When 'true', enables connecting to the database with the 'default' user. Default: 'true'",
 							Type:        schema.TypeBool,
 							Optional:    true,
+						Default:     true,
 						},
 						"remote_backup": {
 							Description: "An object that specifies the backup options for the database in this region",
