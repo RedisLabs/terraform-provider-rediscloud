@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	fixedDatabases "github.com/RedisLabs/rediscloud-go-api/service/fixed/databases"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"

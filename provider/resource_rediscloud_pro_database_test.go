@@ -276,9 +276,9 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) {
-	t.Skip("auto_minor_version_upgrade feature not yet available")
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+	t.Skip("auto_minor_version_upgrade feature temporarily removed")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
 	const resourceName = "rediscloud_subscription_database.example"

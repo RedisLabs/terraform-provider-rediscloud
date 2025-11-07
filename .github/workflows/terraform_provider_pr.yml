@@ -56,28 +56,6 @@ jobs:
         name: go build
         run: go build -o terraform-plugin-dir/registry.terraform.io/RedisLabs/rediscloud/99.99.99/$(go env GOOS)_$(go env GOARCH)/terraform-provider-rediscloud .
 
-  go_unit_test:
-    name: go unit test
-    needs: [go_build]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: go.mod
-      - run: go test ./... -run="^TestUnit"  # Runs tests starting with TestUnit
-
-  tfproviderlint:
-    name: tfproviderlint
-    needs: [go_build]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: go.mod
-      - run: make tfproviderlint
-
   terraform_providers_schema:
     name: terraform providers schema
     needs: [go_build]
@@ -124,7 +102,17 @@ jobs:
           mkdir terraform-providers-schema
           terraform providers schema -json > terraform-providers-schema/schema.json
 
-  # All acceptance tests run in parallel after quick tests
+  go_unit_test:
+    name: go unit test
+    needs: [go_build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: go.mod
+      - run: go test ./... -run="^TestUnit"  # Runs tests starting with TestUnit
+
   go_test_smoke_aa_tgw_attachment:
     if: false  # Temporarily disabled - TGW tests not ready yet
     name: go test smoke aa tgw attachment
@@ -136,17 +124,6 @@ jobs:
         with:
           go-version-file: go.mod
       - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudActiveActiveTransitGatewayAttachment_CRUDI"'
-
-  go_test_smoke_aa_enable_default_user:
-    name: go test smoke aa enable default user
-    needs: [go_unit_test, tfproviderlint, terraform_providers_schema]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: go.mod
-      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser"'
 
   go_test_smoke_aa_db:
     name: go test smoke aa db
@@ -250,3 +227,14 @@ jobs:
         with:
           go-version-file: go.mod
       - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudProDatabase_qpf"'
+
+  tfproviderlint:
+    name: tfproviderlint
+    needs: [go_build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: go.mod
+      - run: make tfproviderlint

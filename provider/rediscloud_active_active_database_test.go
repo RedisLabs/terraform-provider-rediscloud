@@ -182,6 +182,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.#", "0"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.0", "RedisJSON"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "true"),
 
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.name", "us-east-1"),
@@ -239,6 +240,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseOptionalAttributes, subscriptionName, name, password, portNumber),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "port", strconv.Itoa(portNumber)),
+					resource.TestCheckResourceAttr(resourceName, "global_enable_default_user", "true"),
 				),
 			},
 		},
@@ -516,9 +518,9 @@ resource "rediscloud_active_active_subscription_database" "example" {
 `
 
 func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *testing.T) {
-	t.Skip("auto_minor_version_upgrade feature not yet available")
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+	t.Skip("auto_minor_version_upgrade feature temporarily removed")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
 	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"

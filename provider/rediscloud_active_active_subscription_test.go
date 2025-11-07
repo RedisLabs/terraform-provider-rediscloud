@@ -199,6 +199,9 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.write_operations_per_second", "1000"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.read_operations_per_second", "1000"),
 
+					// Check database enable_default_user settings
+					resource.TestCheckResourceAttr("rediscloud_active_active_subscription_database.example", "global_enable_default_user", "false"),
+
 					// also checks user has removed default user
 					//resource.TestCheckResourceAttr(resourceName, "regions.1.enable_default_user", "false"),
 
