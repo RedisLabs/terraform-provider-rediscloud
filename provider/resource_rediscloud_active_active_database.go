@@ -205,12 +205,6 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Description: "When 'true', enables connecting to the database with the 'default' user across all regions. Default: 'true'",
 				Type:        schema.TypeBool,
 				Optional:    true,
-			Default:     true,
-			},
-			"auto_minor_version_upgrade": {
-				Description: "When 'true', enables auto minor version upgrades for this database. Default: 'true'",
-				Type:        schema.TypeBool,
-				Optional:    true,
 				Default:     true,
 			},
 			"override_region": {
@@ -269,7 +263,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 							Description: "When 'true', enables connecting to the database with the 'default' user. Default: 'true'",
 							Type:        schema.TypeBool,
 							Optional:    true,
-						Default:     true,
+							Default:     true,
 						},
 						"remote_backup": {
 							Description: "An object that specifies the backup options for the database in this region",
@@ -455,9 +449,6 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 		createDatabase.RedisVersion = s
 	})
 
-	utils.SetBool(d, "auto_minor_version_upgrade", func(b *bool) {
-		createDatabase.AutoMinorVersionUpgrade = b
-	})
 
 	// Confirm Subscription Active status before creating database
 	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
@@ -669,9 +660,6 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("auto_minor_version_upgrade", redis.BoolValue(db.AutoMinorVersionUpgrade)); err != nil {
-		return diag.FromErr(err)
-	}
 
 	// Read global_enable_default_user from API response
 	if db.GlobalEnableDefaultUser != nil {
@@ -836,9 +824,6 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		update.GlobalEnableDefaultUser = redis.Bool(v.(bool))
 	}
 
-	if v, ok := d.GetOk("auto_minor_version_upgrade"); ok {
-		update.AutoMinorVersionUpgrade = redis.Bool(v.(bool))
-	}
 
 	if v, ok := d.GetOk("support_oss_cluster_api"); ok {
 		update.SupportOSSClusterAPI = redis.Bool(v.(bool))
