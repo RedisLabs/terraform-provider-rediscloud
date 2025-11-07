@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 
-# Unreleased
+# 2.7.4 (7th November 2025)
 
 ## Changed
 - Reverted global/regional override rework from v2.7.3 due to regressions. Active-Active database global configuration behavior has been restored to v2.7.2 state. Transit Gateway improvements from v2.7.3 have been preserved.
