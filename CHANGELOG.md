@@ -8,8 +8,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ## Changed
 - Reverted global/regional override rework from v2.7.3 due to regressions. Active-Active database global configuration behavior has been restored to v2.7.2 state. Transit Gateway improvements from v2.7.3 have been preserved.
-- `global_enable_default_user` now have a default override of `true`. This is due to technical limitations in the current Terraform SDK framework. If you wish to turn off the default user per region you have to explicitly do so.
-
+- `rediscloud_active_active_subscription_database`: Both `global_enable_default_user` and the region-level `enable_default_user` (in `override_region` blocks) now default to `true`. To disable the default user in a specific region, you must explicitly set `enable_default_user = false` in that region's `override_region` block.
 
 # 2.7.3 (6th November 2025)
 
