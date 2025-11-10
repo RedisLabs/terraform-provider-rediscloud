@@ -307,6 +307,17 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     "immediate",
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					// Only suppress diff when:
+					// 1. Old is empty (upgrading from provider version without this field)
+					// 2. New is the default value "immediate"
+					// 3. CMK is NOT being enabled (customer_managed_key_enabled is false)
+					if old == "" && new == "immediate" {
+						cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
+						return !cmkEnabled
+					}
+					return false
+				},
 			},
 			"customer_managed_key": {
 				Description: "CMK resources used to encrypt the databases in this subscription. Ignored if `customer_managed_key_enabled` set to false. See documentation for CMK flow.",

@@ -503,6 +503,18 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     "immediate",
+				// TODO: remove this when customer_managed_key_deletion_grace_period is supported on api side
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					// Only suppress diff when:
+					// 1. Old is empty (upgrading from provider version without this field)
+					// 2. New is the default value "immediate"
+					// 3. CMK is NOT being enabled (customer_managed_key_enabled is false)
+					if old == "" && new == "immediate" {
+						cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
+						return !cmkEnabled
+					}
+					return false
+				},
 			},
 			"customer_managed_key": {
 				Description: "CMK resources used to encrypt the databases in this subscription. Ignored if `customer_managed_key_enabled` set to false. Supply after the database has been put into database pending state. See documentation for CMK flow.",
@@ -769,13 +781,6 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 
 	if subscription.CustomerManagedKeyAccessDetails != nil && subscription.CustomerManagedKeyAccessDetails.RedisServiceAccount != nil {
 		if err := d.Set("customer_managed_key_redis_service_account", subscription.CustomerManagedKeyAccessDetails.RedisServiceAccount); err != nil {
-			return diag.FromErr(err)
-		}
-	}
-
-	// Set customer_managed_key_deletion_grace_period from API response if available
-	if subscription.DeletionGracePeriod != nil {
-		if err := d.Set("customer_managed_key_deletion_grace_period", redis.StringValue(subscription.DeletionGracePeriod)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
