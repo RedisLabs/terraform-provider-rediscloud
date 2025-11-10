@@ -300,24 +300,15 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Description: "Whether to enable CMK (customer managed key) for the subscription. If this is true, then the subscription will be put in a pending state until you supply the CMEK. See documentation for further details on this process. Defaults to false.",
 				Type:        schema.TypeBool,
 				Optional:    true,
+				Computed:    true,
 				Default:     false,
 			},
 			"customer_managed_key_deletion_grace_period": {
 				Description: "The grace period for deleting the subscription. If not set, will default to immediate deletion grace period.",
 				Type:        schema.TypeString,
 				Optional:    true,
+				Computed:    true,
 				Default:     "immediate",
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					// Only suppress diff when:
-					// 1. Old is empty (upgrading from provider version without this field)
-					// 2. New is the default value "immediate"
-					// 3. CMK is NOT being enabled (customer_managed_key_enabled is false)
-					if old == "" && new == "immediate" {
-						cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
-						return !cmkEnabled
-					}
-					return false
-				},
 			},
 			"customer_managed_key": {
 				Description: "CMK resources used to encrypt the databases in this subscription. Ignored if `customer_managed_key_enabled` set to false. See documentation for CMK flow.",
@@ -523,7 +514,13 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		}
 	}
 
-	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
+	// Determine CMK status from API response
+	// CMK is enabled if persistentStorageEncryptionType is "customer-managed-key"
+	cmkEnabled := subscription.PersistentStorageEncryptionType != nil &&
+		*subscription.PersistentStorageEncryptionType == pro.CMK_ENABLED_STRING
+	if err := d.Set("customer_managed_key_enabled", cmkEnabled); err != nil {
+		return diag.FromErr(err)
+	}
 
 	if !cmkEnabled {
 		m, err := api.Client.Maintenance.Get(ctx, subId)
@@ -545,6 +542,13 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 
 	if subscription.CustomerManagedKeyAccessDetails != nil && subscription.CustomerManagedKeyAccessDetails.RedisServiceAccount != nil {
 		if err := d.Set("customer_managed_key_redis_service_account", subscription.CustomerManagedKeyAccessDetails.RedisServiceAccount); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	// Set customer_managed_key_deletion_grace_period from API response if available
+	if subscription.DeletionGracePeriod != nil {
+		if err := d.Set("customer_managed_key_deletion_grace_period", redis.StringValue(subscription.DeletionGracePeriod)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
