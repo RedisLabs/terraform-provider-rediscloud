@@ -64,6 +64,11 @@ func DataSourceRedisCloudProSubscription() *schema.Resource {
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
+						"aws_account_id": {
+							Description: "AWS account ID associated with the subscription (only applicable for AWS subscriptions)",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
 						"region": {
 							Description: "Cloud networking details, per region",
 							Type:        schema.TypeSet,

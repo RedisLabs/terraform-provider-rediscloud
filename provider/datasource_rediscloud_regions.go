@@ -30,6 +30,11 @@ func dataSourceRedisCloudRegions() *schema.Resource {
 				Computed:    true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"region_id": {
+							Description: "The unique identifier of the region",
+							Computed:    true,
+							Type:        schema.TypeInt,
+						},
 						"name": {
 							Description: "The identifier assigned by the cloud provider, (for example `eu-west-1` for `AWS`)",
 							Computed:    true,
@@ -111,6 +116,7 @@ func flattenRegions(regionList []*account.Region) []map[string]interface{} {
 	for _, currentRegion := range regionList {
 
 		regionMapString := map[string]interface{}{
+			"region_id":     currentRegion.ID,
 			"name":          currentRegion.Name,
 			"provider_name": currentRegion.Provider,
 		}

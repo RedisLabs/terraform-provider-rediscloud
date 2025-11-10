@@ -88,7 +88,7 @@ The following arguments are supported:
 * `replica_of` - (Optional) Set of Redis database URIs, in the format `redis://user:password@host:port`, that this
   database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided.
   Cannot be enabled when `support_oss_cluster_api` is enabled.
-* `modules` - (Optional) A list of modules objects, documented below. **Modifying this attribute will force creation of a new resource.**
+* `modules` - (Optional) A list of modules objects, documented below. **Don’t specify modules for DB versions 8 and above. All capabilities are bundled in the DB by default.**
 * `alert` - (Optional) A block defining Redis database alert, documented below, can be specified multiple times
 * `data_persistence` - (Optional) Rate of database's storage data persistence (either: 'none', 'aof-every-1-second', 'aof-every-write', 'snapshot-every-1-hour', 'snapshot-every-6-hours' or 'snapshot-every-12-hours'). Default: ‘none’
 * `data_eviction` - (Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'). Default: 'volatile-lru'

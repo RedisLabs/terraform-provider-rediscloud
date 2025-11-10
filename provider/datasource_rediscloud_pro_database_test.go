@@ -32,6 +32,7 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(dataSourceById, "db_id"),
 					resource.TestCheckResourceAttr(dataSourceById, "name", "tf-database"),
 					resource.TestCheckResourceAttr(dataSourceById, "protocol", "redis"),
 					resource.TestCheckResourceAttr(dataSourceById, "region", "eu-west-1"),
@@ -49,6 +50,7 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceById, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(dataSourceById, "query_performance_factor", "2x"),
 
+					resource.TestCheckResourceAttrSet(dataSourceByName, "db_id"),
 					resource.TestCheckResourceAttr(dataSourceByName, "name", "tf-database"),
 					resource.TestCheckResourceAttr(dataSourceByName, "protocol", "redis"),
 					resource.TestCheckResourceAttr(dataSourceByName, "region", "eu-west-1"),

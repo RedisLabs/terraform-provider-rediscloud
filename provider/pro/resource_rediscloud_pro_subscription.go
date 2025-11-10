@@ -183,6 +183,11 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 							ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 							Default:          "1",
 						},
+						"aws_account_id": {
+							Description: "AWS account ID associated with the subscription (only applicable for AWS subscriptions)",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
 						"region": {
 							Description: "Cloud networking details, per region (single region or multiple regions for Active-Active cluster only)",
 							Type:        schema.TypeSet,
@@ -498,6 +503,18 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     "immediate",
+				// TODO: remove this when customer_managed_key_deletion_grace_period is supported on api side
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					// Only suppress diff when:
+					// 1. Old is empty (upgrading from provider version without this field)
+					// 2. New is the default value "immediate"
+					// 3. CMK is NOT being enabled (customer_managed_key_enabled is false)
+					if old == "" && new == "immediate" {
+						cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
+						return !cmkEnabled
+					}
+					return false
+				},
 			},
 			"customer_managed_key": {
 				Description: "CMK resources used to encrypt the databases in this subscription. Ignored if `customer_managed_key_enabled` set to false. Supply after the database has been put into database pending state. See documentation for CMK flow.",

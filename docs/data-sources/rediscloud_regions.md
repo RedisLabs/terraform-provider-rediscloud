@@ -44,6 +44,8 @@ data "rediscloud_regions" "example_gcp" {
 
 Each region entry provides the following attributes
 
+* `region_id` The unique identifier of the region
+
 * `name` The identifier assigned by the cloud provider, (for example `eu-west-1` for `AWS`)
 
 * `provider_name` The identifier of the owning cloud provider, (either `AWS` or `GCP`)

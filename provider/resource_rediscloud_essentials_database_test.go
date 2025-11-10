@@ -334,6 +334,83 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 	})
 }
 
+// Test redis_version field support - ensures version can be specified and read
+func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	databaseName := subscriptionName + "-db"
+
+	const resourceName = "rediscloud_essentials_database.example"
+	const datasourceName = "data.rediscloud_essentials_database.example"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: getEssentialsDatabaseConfigRedisVersion(t, subscriptionName, databaseName),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Test the resource has redis_version set
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
+					resource.TestCheckResourceAttrSet(resourceName, "subscription_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "db_id"),
+					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
+					resource.TestCheckResourceAttrSet(resourceName, "redis_version"),
+
+					// Test the datasource also returns redis_version
+					resource.TestMatchResourceAttr(datasourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
+					resource.TestCheckResourceAttrSet(datasourceName, "redis_version"),
+				),
+			},
+		},
+	})
+}
+
+// Test redis_version upgrade - ensures version can be upgraded after database creation
+func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.T) {
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	databaseName := subscriptionName + "-db"
+	password := "test-password-123!"
+
+	const resourceName = "rediscloud_essentials_database.example"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: Create database with Redis 7.2
+			{
+				Config: getEssentialsDatabaseConfigWithVersion(t, subscriptionName, databaseName, password, "7.2"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
+					resource.TestCheckResourceAttrSet(resourceName, "subscription_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "db_id"),
+					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.2"),
+					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
+				),
+			},
+			// Step 2: Upgrade to Redis 7.4 with updated data_persistence
+			{
+				Config: getEssentialsDatabaseConfigWithVersionUpdated(t, subscriptionName, databaseName, password, "7.4"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
+					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.4"),
+					resource.TestCheckResourceAttr(resourceName, "data_persistence", "aof-every-write"),
+					// Verify database is still active and accessible
+					resource.TestCheckResourceAttrSet(resourceName, "public_endpoint"),
+				),
+			},
+		},
+	})
+}
+
 const testAccResourceRedisCloudEssentialsDatabaseDisableDefaultUserCreate = `
 
 data "rediscloud_payment_method" "card" {
@@ -417,3 +494,22 @@ resource "rediscloud_essentials_database" "example" {
   }
 }
 `
+
+// Helper function to load essentials database config for testing redis_version field (default version)
+func getEssentialsDatabaseConfigRedisVersion(t *testing.T, subscriptionName, databaseName string) string {
+	content := utils.GetTestConfig(t, "./essentials/testdata/essentials_database_redis_version.tf")
+	return fmt.Sprintf(content, subscriptionName, databaseName)
+}
+
+// Helper function to load basic essentials database config with version
+func getEssentialsDatabaseConfigWithVersion(t *testing.T, subscriptionName, databaseName, password, redisVersion string) string {
+	content := utils.GetTestConfig(t, "./essentials/testdata/essentials_database_basic.tf")
+	return fmt.Sprintf(content, subscriptionName, databaseName, redisVersion, password)
+}
+
+// Helper function to load updated essentials database config with new version
+func getEssentialsDatabaseConfigWithVersionUpdated(t *testing.T, subscriptionName, databaseName, password, redisVersion string) string {
+	content := utils.GetTestConfig(t, "./essentials/testdata/essentials_database_updated_version.tf")
+	return fmt.Sprintf(content, subscriptionName, databaseName, redisVersion, password)
+}
+

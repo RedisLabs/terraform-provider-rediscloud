@@ -58,6 +58,7 @@ The following arguments are supported:
 * `subscription_id` - (Required) The ID of the subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
 * `name` - (Required) A meaningful name to identify the database.
 * `protocol` - (Optional) Database protocol. 'stack' is a suite of all Redis' data modules. Default: 'stack'. Either: 'redis', 'memcached' or 'stack'. **'redis' is only used with Pay-As-You-Go databases.**
+* `redis_version` - (Optional) Defines the Redis database version. If omitted, the Redis version will be set to the default version.
 * `resp_version` - (Optional) RESP version must be compatible with the Redis version.
 * `data_persistence` - (Required) Rate of database data persistence (in persistent storage). Either: 'none', 'aof-every-1-second', 'aof-every-write', 'snapshot-every-1-hour', 'snapshot-every-6-hours' or 'snapshot-every-12-hours'.
 * `data_eviction` - (Optional) Data items eviction method. Either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru'.
@@ -70,7 +71,7 @@ The following arguments are supported:
 * `enable_default_user` - (Optional) When `true` enables connecting to the database with the default user. Default `true`. If set to `false`, any value for `password` will be ignored.
 * `alert` - (Optional) A block defining Redis database alert. Can be specified multiple times. Documented below.
 * `tags` - (Optional) A string/string map of tags to associate with this database. Note that all keys and values must be lowercase.
-* `modules` - (Optional) A list of modules objects, documented below. **Modifying this attribute will force creation of a new resource.**
+* `modules` - (Optional) A list of modules objects, documented below. **Don’t specify modules for DB versions 8 and above. All capabilities are bundled in the DB by default.**
 * `enable_payg_features` - (Optional) Whether to enable features restricted to Pay-As-You-Go legacy databases. It is not supported for new databases. Default `false`.
 * `memory_limit_in_gb` - (Optional) **Only used with Pay-As-You-Go databases.** Maximum memory usage for the database.
 * `support_oss_cluster_api` - (Optional) **Only used with Pay-As-You-Go databases.** Support Redis open-source (OSS) Cluster API. Default `false`.

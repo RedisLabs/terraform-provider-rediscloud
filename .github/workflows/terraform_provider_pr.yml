@@ -149,7 +149,6 @@ jobs:
 
 
   go_test_smoke_essentials_db:
-    if: false  # Temporarily disabled - waiting on client fixes
     name: go test smoke essentials db
     needs: go_test_smoke_essentials_sub
     runs-on: ubuntu-latest

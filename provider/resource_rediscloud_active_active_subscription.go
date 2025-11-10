@@ -8,12 +8,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/rediscloud-go-api/service/maintenance"
-	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+
+	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/rediscloud-go-api/service/maintenance"
+	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -85,6 +86,11 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Optional:         true,
 				Default:          "AWS",
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(GCP|AWS)$"), "must be 'GCP' or 'AWS'")),
+			},
+			"aws_account_id": {
+				Description: "AWS account ID associated with the subscription (only applicable for AWS subscriptions)",
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
 			"creation_plan": {
 				Description: "Information about the planned databases used to optimise the database infrastructure. This information is only used when creating a new subscription and any changes will be ignored after this.",
@@ -301,6 +307,17 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     "immediate",
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					// Only suppress diff when:
+					// 1. Old is empty (upgrading from provider version without this field)
+					// 2. New is the default value "immediate"
+					// 3. CMK is NOT being enabled (customer_managed_key_enabled is false)
+					if old == "" && new == "immediate" {
+						cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
+						return !cmkEnabled
+					}
+					return false
+				},
 			},
 			"customer_managed_key": {
 				Description: "CMK resources used to encrypt the databases in this subscription. Ignored if `customer_managed_key_enabled` set to false. See documentation for CMK flow.",
@@ -498,6 +515,12 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 	cloudProvider := cloudDetails[0].Provider
 	if err := d.Set("cloud_provider", cloudProvider); err != nil {
 		return diag.FromErr(err)
+	}
+
+	if cloudDetails[0].AWSAccountID != nil {
+		if err := d.Set("aws_account_id", redis.StringValue(cloudDetails[0].AWSAccountID)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
