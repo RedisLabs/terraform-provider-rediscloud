@@ -33,6 +33,11 @@ vendor
 .claude/
 CLAUDE.md
 
+# npm/node
+node_modules/
+package-lock.json
+package.json
+
 # Test exclusions
 !command/test-fixtures/**/*.tfstate
 !command/test-fixtures/**/.terraform/
