@@ -36,6 +36,10 @@ clean:
 testacc: bin
 	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 360m -p=1 -parallel=$(TEST_PARALLELISM) -coverprofile bin/coverage.out
 
+# Essentials tests must run serially due to API limitation of one essentials db per account
+testacc-essentials: bin
+	TF_ACC=1 go test ./provider -v -run="TestAccResourceRedisCloudEssentials|TestAccDataSourceRedisCloudEssentials" -timeout 360m -p=1 -parallel=1 -coverprofile bin/coverage.out
+
 generate_coverage:
 	go tool cover -html=bin/coverage.out -o bin/coverage.html
 
