@@ -12,6 +12,9 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 - Added `region_id` attribute to `rediscloud_regions` data source.
 - Added `db_id` to the attribute reference documentation for `rediscloud_database` data source.
 
+## Fixed
+- Spurious diffs for `customer_managed_key_deletion_grace_period` are now suppressed when upgrading the provider.
+
 # 2.7.4 (7th November 2025)
 
 ## Changed
