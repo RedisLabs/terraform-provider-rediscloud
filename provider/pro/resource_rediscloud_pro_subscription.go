@@ -773,6 +773,13 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 		}
 	}
 
+	// Set customer_managed_key_deletion_grace_period from API response if available
+	if subscription.DeletionGracePeriod != nil {
+		if err := d.Set("customer_managed_key_deletion_grace_period", redis.StringValue(subscription.DeletionGracePeriod)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	// Set public_endpoint_access, default to true if not set by API
 	publicEndpointAccess := true
 	if subscription.PublicEndpointAccess != nil {
