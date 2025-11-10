@@ -33,7 +33,7 @@ output "rediscloud_active_active_subscription_regions" {
 
 Each block within the `regions` list supports:
 
-* `region_id` - The ID of the region.
+* `region_id` - The unique identifier of the region.
 * `region` - Deployment region as defined by the cloud provider.
 * `networking_deployment_cidr` - Deployment CIDR mask.
 * `vpc_id` - VPC ID for the region.
