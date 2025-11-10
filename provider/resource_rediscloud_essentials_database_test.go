@@ -350,7 +350,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseRedisVersion, subscriptionName, databaseName),
+				Config: getEssentialsDatabaseConfigRedisVersion(t, subscriptionName, databaseName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource has redis_version set
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
@@ -495,6 +495,12 @@ resource "rediscloud_essentials_database" "example" {
 }
 `
 
+// Helper function to load essentials database config for testing redis_version field (default version)
+func getEssentialsDatabaseConfigRedisVersion(t *testing.T, subscriptionName, databaseName string) string {
+	content := utils.GetTestConfig(t, "./essentials/testdata/essentials_database_redis_version.tf")
+	return fmt.Sprintf(content, subscriptionName, databaseName)
+}
+
 // Helper function to load basic essentials database config with version
 func getEssentialsDatabaseConfigWithVersion(t *testing.T, subscriptionName, databaseName, password, redisVersion string) string {
 	content := utils.GetTestConfig(t, "./essentials/testdata/essentials_database_basic.tf")
@@ -507,42 +513,3 @@ func getEssentialsDatabaseConfigWithVersionUpdated(t *testing.T, subscriptionNam
 	return fmt.Sprintf(content, subscriptionName, databaseName, redisVersion, password)
 }
 
-const testAccResourceRedisCloudEssentialsDatabaseRedisVersion = `
-
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-data "rediscloud_essentials_plan" "example" {
-  name = "Single-Zone_1GB"
-  cloud_provider = "AWS"
-  region = "us-east-1"
-}
-
-data "rediscloud_essentials_database" "example" {
-	subscription_id = rediscloud_essentials_subscription.example.id
-	name = rediscloud_essentials_database.example.name
-}
-
-resource "rediscloud_essentials_subscription" "example" {
-  name = "%s"
-  plan_id = data.rediscloud_essentials_plan.example.id
-  payment_method_id = data.rediscloud_payment_method.card.id
-}
-
-resource "rediscloud_essentials_database" "example" {
-  subscription_id     = rediscloud_essentials_subscription.example.id
-  name                = "%s"
-  enable_default_user = true
-  password            = "j43589rhe39f"
-
-  data_persistence = "none"
-  replication      = false
-
-  alert {
-    name  = "throughput-higher-than"
-    value = 80
-  }
-}
-`
