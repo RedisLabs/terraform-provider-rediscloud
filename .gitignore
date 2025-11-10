@@ -6,6 +6,7 @@ terraform.tfplan
 terraform.tfstate
 bin/
 dist/
+terraform-plugin-dir/
 .envrc
 modules-dev/
 /pkg/

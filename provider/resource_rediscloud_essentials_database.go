@@ -618,14 +618,9 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 
 		// Only perform upgrade if both versions are non-empty (prevents unnecessary upgrades on creation)
 		if originalVersion.(string) != "" && newVersion.(string) != "" {
-			if upgradeDiags, unlocked := upgradeRedisVersionEssentials(ctx, api, subId, databaseId, newVersion.(string)); upgradeDiags != nil {
-				if !unlocked {
-					utils.SubscriptionMutex.Unlock(subId)
-				}
-				return append(diag.Diagnostics{}, upgradeDiags...)
+			if upgradeDiags := upgradeRedisVersionEssentials(ctx, api, subId, databaseId, newVersion.(string)); upgradeDiags != nil {
+				return upgradeDiags
 			}
-			// Lock again since the upgrade function unlocked it
-			utils.SubscriptionMutex.Lock(subId)
 		}
 	}
 
@@ -764,7 +759,7 @@ func resourceRedisCloudEssentialsDatabaseDelete(ctx context.Context, d *schema.R
 	return diags
 }
 
-func upgradeRedisVersionEssentials(ctx context.Context, api *client.ApiClient, subId int, dbId int, newVersion string) (diag.Diagnostics, bool) {
+func upgradeRedisVersionEssentials(ctx context.Context, api *client.ApiClient, subId int, dbId int, newVersion string) diag.Diagnostics {
 	log.Printf("[INFO] Requesting Redis version change to %s...", newVersion)
 
 	upgrade := fixedDatabases.UpgradeRedisVersion{
@@ -772,25 +767,22 @@ func upgradeRedisVersionEssentials(ctx context.Context, api *client.ApiClient, s
 	}
 
 	if err := api.Client.FixedDatabases.UpgradeRedisVersion(ctx, subId, dbId, upgrade); err != nil {
-		utils.SubscriptionMutex.Unlock(subId)
-		return diag.Errorf("failed to change Redis version to %s: %v", newVersion, err), true
+		return diag.Errorf("failed to change Redis version to %s: %v", newVersion, err)
 	}
 
 	log.Printf("[INFO] Redis version change request to %s accepted by API", newVersion)
 
 	// Wait for database to be active
 	if err := waitForEssentialsDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-		utils.SubscriptionMutex.Unlock(subId)
-		return diag.FromErr(err), true
+		return diag.FromErr(err)
 	}
 
 	// Wait for subscription to be active
 	if err := waitForEssentialsSubscriptionToBeActive(ctx, subId, api); err != nil {
-		utils.SubscriptionMutex.Unlock(subId)
-		return diag.FromErr(err), true
+		return diag.FromErr(err)
 	}
 
-	return nil, false
+	return nil
 }
 
 func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient) error {

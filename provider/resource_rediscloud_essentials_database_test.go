@@ -368,6 +368,49 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
 	})
 }
 
+// Test redis_version upgrade - ensures version can be upgraded after database creation
+func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.T) {
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	databaseName := subscriptionName + "-db"
+	password := "test-password-123!"
+
+	const resourceName = "rediscloud_essentials_database.example"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: Create database with Redis 7.2
+			{
+				Config: getEssentialsDatabaseConfigWithVersion(t, subscriptionName, databaseName, password, "7.2"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
+					resource.TestCheckResourceAttrSet(resourceName, "subscription_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "db_id"),
+					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.2"),
+					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
+				),
+			},
+			// Step 2: Upgrade to Redis 7.4 with updated data_persistence
+			{
+				Config: getEssentialsDatabaseConfigWithVersionUpdated(t, subscriptionName, databaseName, password, "7.4"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
+					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.4"),
+					resource.TestCheckResourceAttr(resourceName, "data_persistence", "aof-every-write"),
+					// Verify database is still active and accessible
+					resource.TestCheckResourceAttrSet(resourceName, "public_endpoint"),
+				),
+			},
+		},
+	})
+}
+
 const testAccResourceRedisCloudEssentialsDatabaseDisableDefaultUserCreate = `
 
 data "rediscloud_payment_method" "card" {
@@ -451,6 +494,18 @@ resource "rediscloud_essentials_database" "example" {
   }
 }
 `
+
+// Helper function to load basic essentials database config with version
+func getEssentialsDatabaseConfigWithVersion(t *testing.T, subscriptionName, databaseName, password, redisVersion string) string {
+	content := utils.GetTestConfig(t, "./essentials/testdata/essentials_database_basic.tf")
+	return fmt.Sprintf(content, subscriptionName, databaseName, redisVersion, password)
+}
+
+// Helper function to load updated essentials database config with new version
+func getEssentialsDatabaseConfigWithVersionUpdated(t *testing.T, subscriptionName, databaseName, password, redisVersion string) string {
+	content := utils.GetTestConfig(t, "./essentials/testdata/essentials_database_updated_version.tf")
+	return fmt.Sprintf(content, subscriptionName, databaseName, redisVersion, password)
+}
 
 const testAccResourceRedisCloudEssentialsDatabaseRedisVersion = `
 

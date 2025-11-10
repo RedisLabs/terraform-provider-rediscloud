@@ -33,7 +33,7 @@ data "rediscloud_essentials_database" "example" {
 ## Argument Reference
 
 * `subscription_id` - (Required) ID of the subscription that the database belongs to
-* `db_id` - (Optional) The id of the database to filter returned databases
+* `db_id` - (Optional) The ID of the database to filter returned databases
 * `name` - (Optional) The name of the database to filter returned databases
 
 ## Attribute Reference
