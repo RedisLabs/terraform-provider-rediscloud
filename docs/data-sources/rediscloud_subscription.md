@@ -32,11 +32,12 @@ output "rediscloud_subscription" {
 
 `id` is set to the ID of the found subscription.
 
+* `aws_account_id` - AWS account ID that the subscription is deployed in (AWS subscriptions only).
 * `payment_method_id` - A valid payment method pre-defined in the current account
-* `memory_storage` - Memory storage preference: either ‘ram’ or a combination of 'ram-and-flash’
+* `memory_storage` - Memory storage preference: either 'ram' or a combination of 'ram-and-flash'
 * `cloud_provider` - A cloud provider object, documented below
 * `number_of_databases` - The number of databases that are linked to this subscription.
-* `status` - Current status of the subscription 
+* `status` - Current status of the subscription
 * `maintenance_windows` - Details about the subscription's maintenance window specification, documented below
 * `pricing` - A list of pricing objects, documented below
 

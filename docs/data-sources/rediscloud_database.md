@@ -34,12 +34,14 @@ data "rediscloud_database" "example" {
 ## Argument Reference
 
 * `subscription_id` - (Required) ID of the subscription that the database belongs to
+* `db_id` - (Optional) The id of the database to filter returned databases
 * `name` - (Optional) The name of the database to filter returned databases
 * `protocol` - (Optional) The protocol of the database to filter returned databases
 * `region` - (Optional) The region of the database to filter returned databases
 
 ## Attributes Reference
 
+* `db_id` - The ID of the database
 * `name` - The name of the database
 * `protocol` - The protocol of the database.
 * `memory_limit_in_gb` - The maximum memory usage for the database.

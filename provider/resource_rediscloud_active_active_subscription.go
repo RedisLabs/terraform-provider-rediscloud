@@ -8,6 +8,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/maintenance"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
@@ -85,6 +89,11 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Optional:         true,
 				Default:          "AWS",
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^(GCP|AWS)$"), "must be 'GCP' or 'AWS'")),
+			},
+			"aws_account_id": {
+				Description: "AWS account ID associated with the subscription (only applicable for AWS subscriptions)",
+				Type:        schema.TypeString,
+				Computed:    true,
 			},
 			"creation_plan": {
 				Description: "Information about the planned databases used to optimise the database infrastructure. This information is only used when creating a new subscription and any changes will be ignored after this.",
@@ -498,6 +507,12 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 	cloudProvider := cloudDetails[0].Provider
 	if err := d.Set("cloud_provider", cloudProvider); err != nil {
 		return diag.FromErr(err)
+	}
+
+	if cloudDetails[0].AWSAccountID != nil {
+		if err := d.Set("aws_account_id", redis.StringValue(cloudDetails[0].AWSAccountID)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)

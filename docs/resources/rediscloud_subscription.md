@@ -102,8 +102,7 @@ The `creation_plan` block supports:
 
 * `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database. You can not set both dataset_size_in_gb and memory_limit_in_gb. **Deprecated: Use `dataset_size_in_gb` instead**
 * `dataset_size_in_gb` - (Required) The maximum amount of data in the dataset for this specific database is in GB. You can not set both dataset_size_in_gb and memory_limit_in_gb.
-* `modules` - (Optional) a list of modules that will be used by the databases in this subscription. Not currently compatible with ‘ram-and-flash’ memory storage.  
-  Example: `modules = ["RedisJSON", "RediSearch", "RedisTimeSeries", "RedisBloom"]`
+* `modules` - (Optional) a list of modules that will be used by the databases in this subscription. **Don’t specify modules for DB versions 8 and above. All capabilities are bundled in the DB by default.**
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `replication` - (Optional) Databases replication. Default: ‘true’
 * `quantity` - (Required) The planned number of databases in the subscription
@@ -112,8 +111,6 @@ The `creation_plan` block supports:
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters
   Estimated average size (measured in bytes) of the items stored in the database. The value needs to
   be the maximum average item size defined in one of your databases.  Default: 1000
-
-~> **Note:** If the number of modules exceeds the `quantity` then additional creation-plan databases will be created with the modules defined in the `modules` block.
 
 ~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `memory_storage` or `cloud_provider`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
 
@@ -154,6 +151,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Attribute reference
 
+* `aws_account_id` - AWS account ID that the subscription is deployed in (AWS subscriptions only).
 * `customer_managed_key_redis_service_account` - Outputs the id of the service account associated with the subscription. Useful as part of the CMK flow.
 
 The `region` block has these attributes:

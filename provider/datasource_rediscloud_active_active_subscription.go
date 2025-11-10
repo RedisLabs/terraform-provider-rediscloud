@@ -2,13 +2,14 @@ package provider
 
 import (
 	"context"
+	"strconv"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"strconv"
 )
 
 func dataSourceRedisCloudActiveActiveSubscription() *schema.Resource {
@@ -44,6 +45,11 @@ func dataSourceRedisCloudActiveActiveSubscription() *schema.Resource {
 			},
 			"cloud_provider": {
 				Description: "A cloud provider string either GCP or AWS",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"aws_account_id": {
+				Description: "AWS account ID associated with the subscription (only applicable for AWS subscriptions)",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
@@ -211,6 +217,12 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 		cloudProvider := cloudDetails[0].Provider
 		if err := d.Set("cloud_provider", cloudProvider); err != nil {
 			return diag.FromErr(err)
+		}
+
+		if cloudDetails[0].AWSAccountID != nil {
+			if err := d.Set("aws_account_id", redis.StringValue(cloudDetails[0].AWSAccountID)); err != nil {
+				return diag.FromErr(err)
+			}
 		}
 	}
 

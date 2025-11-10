@@ -76,6 +76,12 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				Computed:         true,
 				ForceNew:         true,
 			},
+			"redis_version": {
+				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+			},
 			"cloud_provider": {
 				Description: "The Cloud Provider hosting this database",
 				Type:        schema.TypeString,
@@ -319,6 +325,10 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 		createDatabaseRequest.Protocol = redis.String(protocol)
 	}
 
+	utils.SetStringIfNotEmpty(d, "redis_version", func(s *string) {
+		createDatabaseRequest.RedisVersion = s
+	})
+
 	respVersion := d.Get("resp_version").(string)
 	if respVersion != "" {
 		createDatabaseRequest.RespVersion = redis.String(respVersion)
@@ -466,6 +476,9 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 	if err := d.Set("protocol", redis.StringValue(db.Protocol)); err != nil {
 		return diag.FromErr(err)
 	}
+	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
+		return diag.FromErr(err)
+	}
 	if err := d.Set("cloud_provider", redis.StringValue(db.Provider)); err != nil {
 		return diag.FromErr(err)
 	}
@@ -598,6 +611,23 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 	subId := d.Get("subscription_id").(int)
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
+
+	// Handle redis_version upgrades before other updates
+	if d.HasChange("redis_version") {
+		originalVersion, newVersion := d.GetChange("redis_version")
+
+		// Only perform upgrade if both versions are non-empty (prevents unnecessary upgrades on creation)
+		if originalVersion.(string) != "" && newVersion.(string) != "" {
+			if upgradeDiags, unlocked := upgradeRedisVersionEssentials(ctx, api, subId, databaseId, newVersion.(string)); upgradeDiags != nil {
+				if !unlocked {
+					utils.SubscriptionMutex.Unlock(subId)
+				}
+				return append(diag.Diagnostics{}, upgradeDiags...)
+			}
+			// Lock again since the upgrade function unlocked it
+			utils.SubscriptionMutex.Lock(subId)
+		}
+	}
 
 	updateDatabaseRequest := fixedDatabases.UpdateFixedDatabase{
 		Name:               redis.String(d.Get("name").(string)),
@@ -734,6 +764,35 @@ func resourceRedisCloudEssentialsDatabaseDelete(ctx context.Context, d *schema.R
 	return diags
 }
 
+func upgradeRedisVersionEssentials(ctx context.Context, api *client.ApiClient, subId int, dbId int, newVersion string) (diag.Diagnostics, bool) {
+	log.Printf("[INFO] Requesting Redis version change to %s...", newVersion)
+
+	upgrade := fixedDatabases.UpgradeRedisVersion{
+		TargetRedisVersion: redis.String(newVersion),
+	}
+
+	if err := api.Client.FixedDatabases.UpgradeRedisVersion(ctx, subId, dbId, upgrade); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
+		return diag.Errorf("failed to change Redis version to %s: %v", newVersion, err), true
+	}
+
+	log.Printf("[INFO] Redis version change request to %s accepted by API", newVersion)
+
+	// Wait for database to be active
+	if err := waitForEssentialsDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
+		return diag.FromErr(err), true
+	}
+
+	// Wait for subscription to be active
+	if err := waitForEssentialsSubscriptionToBeActive(ctx, subId, api); err != nil {
+		utils.SubscriptionMutex.Unlock(subId)
+		return diag.FromErr(err), true
+	}
+
+	return nil, false
+}
+
 func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient) error {
 	wait := &retry.StateChangeConf{
 		Delay: 30 * time.Second,
@@ -770,6 +829,7 @@ func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api
 
 	return nil
 }
+
 
 func writeReplica(replica fixedDatabases.ReplicaOf) []map[string]interface{} {
 	tf := map[string]interface{}{}

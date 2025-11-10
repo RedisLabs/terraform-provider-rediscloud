@@ -50,6 +50,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
+					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.aws_account_id"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
 					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
