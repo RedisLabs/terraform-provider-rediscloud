@@ -134,7 +134,9 @@ jobs:
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: go.mod
-      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudActiveActiveDatabase_CRUDI"'
+      - uses: ./.github/actions/run-testacc
+        with:
+          test_pattern: TestAccResourceRedisCloudActiveActiveDatabase_CRUDI
 
   go_test_smoke_aa_db_enable_default_user:
     name: go test smoke aa db enable default user
@@ -145,7 +147,9 @@ jobs:
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: go.mod
-      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser"'
+      - uses: ./.github/actions/run-testacc
+        with:
+          test_pattern: TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser
 
   go_test_smoke_essentials_sub:
     name: go test smoke essentials sub
@@ -156,7 +160,9 @@ jobs:
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: go.mod
-      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudEssentialsSubscription"'
+      - uses: ./.github/actions/run-testacc
+        with:
+          test_pattern: TestAccResourceRedisCloudEssentialsSubscription
 
 
   go_test_smoke_essentials_db:
@@ -168,7 +174,9 @@ jobs:
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: go.mod
-      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudEssentialsDatabase_CRUDI"'
+      - uses: ./.github/actions/run-testacc
+        with:
+          test_pattern: TestAccResourceRedisCloudEssentialsDatabase_CRUDI
 
   go_test_smoke_pro_db:
     name: go test smoke pro db
@@ -179,7 +187,9 @@ jobs:
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: go.mod
-      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudProDatabase_CRUDI"'
+      - uses: ./.github/actions/run-testacc
+        with:
+          test_pattern: TestAccResourceRedisCloudProDatabase_CRUDI
 
 
   go_test_smoke_misc:
@@ -191,7 +201,9 @@ jobs:
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: go.mod
-      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloud(PrivateServiceConnect_CRUDI|AclRule_CRUDI)"'
+      - uses: ./.github/actions/run-testacc
+        with:
+          test_pattern: TestAccResourceRedisCloud(PrivateServiceConnect_CRUDI|AclRule_CRUDI)
 
   go_test_pro_db_upgrade:
     name: go test smoke pro db upgrade
@@ -202,7 +214,9 @@ jobs:
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: go.mod
-      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudProDatabase_Upgrade"'
+      - uses: ./.github/actions/run-testacc
+        with:
+          test_pattern: TestAccResourceRedisCloudProDatabase_Redis8_Upgrade
 
   go_test_privatelink:
     name: go test smoke privatelink
@@ -213,7 +227,9 @@ jobs:
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: go.mod
-      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudPrivateLink_CRUDI"'
+      - uses: ./.github/actions/run-testacc
+        with:
+          test_pattern: TestAccResourceRedisCloudPrivateLink_CRUDI
 
 
   go_test_block_public_endpoints:
@@ -225,7 +241,9 @@ jobs:
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: go.mod
-      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAcc(RedisCloudProDatabaseBlockPublicEndpoints|ActiveActiveSubscriptionDatabaseBlockPublicEndpoints)"'
+      - uses: ./.github/actions/run-testacc
+        with:
+          test_pattern: TestAcc(RedisCloudProDatabase_BlockPublicEndpoints|ActiveActiveSubscriptionDatabase_BlockPublicEndpoints)
 
   go_test_smoke_qpf:
     name: go test smoke query performance factor
@@ -236,7 +254,9 @@ jobs:
       - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: go.mod
-      - run: EXECUTE_TESTS=true make testacc TESTARGS='-run="TestAccResourceRedisCloudProDatabase_qpf"'
+      - uses: ./.github/actions/run-testacc
+        with:
+          test_pattern: TestAccResourceRedisCloudProDatabase_qpf
 
   tfproviderlint:
     name: tfproviderlint
