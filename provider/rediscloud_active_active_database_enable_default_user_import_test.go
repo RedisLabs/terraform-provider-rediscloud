@@ -70,7 +70,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport(t *te
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_debug_import_step1.tf"),
 					subscriptionID,
-					databaseID,
 					databaseName,
 					databasePassword,
 				),
@@ -87,7 +86,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport(t *te
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_debug_import_step1.tf"),
 					subscriptionID,
-					databaseID,
 					databaseName,
 					databasePassword,
 				),
@@ -119,7 +117,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport(t *te
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_debug_import_step2.tf"),
 					subscriptionID,
-					databaseID,
 					databaseName,
 					databasePassword,
 				),
@@ -151,7 +148,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport(t *te
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_debug_import_step3.tf"),
 					subscriptionID,
-					databaseID,
 					databaseName,
 					databasePassword,
 				),

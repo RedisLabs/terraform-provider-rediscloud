@@ -1,8 +1,7 @@
 # DEBUG VERSION - Imports existing database
-# Template signature: fmt.Sprintf(template, subscription_id, database_id, database_name, password)
+# Template signature: fmt.Sprintf(template, subscription_id, database_name, password)
 locals {
   subscription_id = "%s"
-  database_id     = "%s"
   database_name   = "%s"
   password        = "%s"
 }
@@ -10,7 +9,6 @@ locals {
 # Step 3: global=false, us-east-1 explicit true
 resource "rediscloud_active_active_subscription_database" "example" {
   subscription_id    = local.subscription_id
-  db_id              = local.database_id
   name               = local.database_name
   memory_limit_in_gb = 1
 
