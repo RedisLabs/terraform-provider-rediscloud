@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -16,44 +15,79 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-// TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserDebug is a DEBUG version
-// that reuses an existing subscription to speed up testing during development.
+// TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport is a DEBUG version
+// that imports and modifies an existing database to speed up testing during development.
 //
 // SETUP:
-// 1. Set DEBUG_SUBSCRIPTION_ID environment variable to an existing AA subscription ID
-// 2. The subscription must have us-east-1 and us-east-2 regions
-// 3. Run with: DEBUG_SUBSCRIPTION_ID=12345 EXECUTE_TESTS=true make testacc TESTARGS='-run=TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserDebug'
+// 1. Set DEBUG_SUBSCRIPTION_ID and DEBUG_DATABASE_ID environment variables
+// 2. The database must have us-east-1 and us-east-2 regions
+// 3. Run with: DEBUG_SUBSCRIPTION_ID=124134 DEBUG_DATABASE_ID=4923 EXECUTE_TESTS=true make testacc TESTARGS='-run=TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport'
 //
 // This test will:
-// - Create a new database in the existing subscription
-// - Update it through 2 test steps (global=true variants)
-// - Delete the database at the end
-func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserDebug(t *testing.T) {
+// - Import the existing database
+// - Update it through 3 test steps to test enable_default_user drift detection
+// - Leave the database in place (no destroy)
+func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionID := os.Getenv("DEBUG_SUBSCRIPTION_ID")
-	if subscriptionID == "" {
-		t.Skip("DEBUG_SUBSCRIPTION_ID not set - skipping debug test")
+	databaseID := os.Getenv("DEBUG_DATABASE_ID")
+
+	if subscriptionID == "" || databaseID == "" {
+		t.Skip("DEBUG_SUBSCRIPTION_ID and DEBUG_DATABASE_ID must be set - skipping import debug test")
 	}
 
-	databaseName := acctest.RandomWithPrefix("debug-enable-default-user")
-	databasePassword := acctest.RandString(20)
+	// Get the actual database name and password from API
+	apiClient, err := client.NewClient()
+	if err != nil {
+		t.Fatalf("Failed to create API client: %v", err)
+	}
+
+	subId, _ := strconv.Atoi(subscriptionID)
+	dbId, _ := strconv.Atoi(databaseID)
+	ctx := context.Background()
+
+	db, err := apiClient.Client.Database.GetActiveActive(ctx, subId, dbId)
+	if err != nil {
+		t.Fatalf("Failed to fetch database %s/%s: %v", subscriptionID, databaseID, err)
+	}
+
+	databaseName := redis.StringValue(db.Name)
+	databasePassword := acctest.RandString(20) // Use new password for testing
 
 	const databaseResourceName = "rediscloud_active_active_subscription_database.example"
+	importID := fmt.Sprintf("%s/%s", subscriptionID, databaseID)
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckActiveActiveDatabaseDestroy,
 		Steps: []resource.TestStep{
+			// Step 0: Import existing database
+			{
+				PreConfig: func() {
+					t.Logf("DEBUG Step 0: Importing database %s (sub: %s, db: %s)", databaseName, subscriptionID, databaseID)
+				},
+				Config: fmt.Sprintf(
+					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_debug_import_step1.tf"),
+					subscriptionID,
+					databaseID,
+					databaseName,
+					databasePassword,
+				),
+				ResourceName:      databaseResourceName,
+				ImportState:       true,
+				ImportStateId:     importID,
+				ImportStateVerify: false, // Don't verify all fields, just get it into state
+			},
 			// Step 1: global=true, both regions inherit
 			{
 				PreConfig: func() {
-					t.Logf("DEBUG Step 1: global=true, both inherit (subscription: %s, database: %s)", subscriptionID, databaseName)
+					t.Logf("DEBUG Step 1: global=true, both inherit")
 				},
 				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_debug_step1.tf"),
+					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_debug_import_step1.tf"),
 					subscriptionID,
+					databaseID,
 					databaseName,
 					databasePassword,
 				),
@@ -61,6 +95,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserDebug(t *tes
 					// Global setting
 					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "true"),
 					resource.TestCheckResourceAttr(databaseResourceName, "subscription_id", subscriptionID),
+					resource.TestCheckResourceAttr(databaseResourceName, "db_id", databaseID),
 
 					// Both regions should exist
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "2"),
@@ -70,7 +105,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserDebug(t *tes
 					resource.TestCheckNoResourceAttr(databaseResourceName, "override_region.1.enable_default_user"),
 
 					// API check
-					testCheckEnableDefaultUserInAPIDebug(databaseResourceName, true, map[string]*bool{
+					testCheckEnableDefaultUserInAPIImport(databaseResourceName, true, map[string]*bool{
 						"us-east-1": nil,
 						"us-east-2": nil,
 					}),
@@ -82,8 +117,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserDebug(t *tes
 					t.Logf("DEBUG Step 2: global=true, us-east-1 explicit false")
 				},
 				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_debug_step2.tf"),
+					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_debug_import_step2.tf"),
 					subscriptionID,
+					databaseID,
 					databaseName,
 					databasePassword,
 				),
@@ -101,8 +137,40 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserDebug(t *tes
 					}),
 
 					// API check
-					testCheckEnableDefaultUserInAPIDebug(databaseResourceName, true, map[string]*bool{
+					testCheckEnableDefaultUserInAPIImport(databaseResourceName, true, map[string]*bool{
 						"us-east-1": redis.Bool(false),
+						"us-east-2": nil,
+					}),
+				),
+			},
+			// Step 3: global=false, us-east-1 explicit true
+			{
+				PreConfig: func() {
+					t.Logf("DEBUG Step 3: global=false, us-east-1 explicit true")
+				},
+				Config: fmt.Sprintf(
+					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_debug_import_step3.tf"),
+					subscriptionID,
+					databaseID,
+					databaseName,
+					databasePassword,
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Global setting
+					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "false"),
+
+					// Two regions
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "2"),
+
+					// us-east-1 has explicit true
+					resource.TestCheckTypeSetElemNestedAttrs(databaseResourceName, "override_region.*", map[string]string{
+						"name":                "us-east-1",
+						"enable_default_user": "true",
+					}),
+
+					// API check
+					testCheckEnableDefaultUserInAPIImport(databaseResourceName, false, map[string]*bool{
+						"us-east-1": redis.Bool(true),
 						"us-east-2": nil,
 					}),
 				),
@@ -111,8 +179,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserDebug(t *tes
 	})
 }
 
-// testCheckEnableDefaultUserInAPIDebug is identical to the regular version but for the debug test
-func testCheckEnableDefaultUserInAPIDebug(resourceName string, expectedGlobal bool, expectedRegions map[string]*bool) resource.TestCheckFunc {
+// testCheckEnableDefaultUserInAPIImport is identical to the regular version but for the import test
+func testCheckEnableDefaultUserInAPIImport(resourceName string, expectedGlobal bool, expectedRegions map[string]*bool) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
@@ -177,44 +245,4 @@ func testCheckEnableDefaultUserInAPIDebug(resourceName string, expectedGlobal bo
 
 		return nil
 	}
-}
-
-// testAccCheckActiveActiveDatabaseDestroy verifies the database was destroyed (subscription remains)
-func testAccCheckActiveActiveDatabaseDestroy(s *terraform.State) error {
-	apiClient, err := client.NewClient()
-	if err != nil {
-		return err
-	}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "rediscloud_active_active_subscription_database" {
-			continue
-		}
-
-		subId, err := strconv.Atoi(rs.Primary.Attributes["subscription_id"])
-		if err != nil {
-			continue
-		}
-
-		dbId, err := strconv.Atoi(rs.Primary.Attributes["db_id"])
-		if err != nil {
-			continue
-		}
-
-		ctx := context.Background()
-		db, err := apiClient.Client.Database.GetActiveActive(ctx, subId, dbId)
-		if err != nil {
-			// Database not found is expected
-			if _, ok := err.(*databases.NotFound); ok {
-				continue
-			}
-			return err
-		}
-
-		if db != nil {
-			return fmt.Errorf("database %d still exists in subscription %d", dbId, subId)
-		}
-	}
-
-	return nil
 }
