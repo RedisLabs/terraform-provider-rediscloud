@@ -32,7 +32,6 @@ output "rediscloud_subscription" {
 
 `id` is set to the ID of the found subscription.
 
-* `aws_account_id` - AWS account ID that the subscription is deployed in (AWS subscriptions only).
 * `payment_method_id` - A valid payment method pre-defined in the current account
 * `memory_storage` - Memory storage preference: either 'ram' or a combination of 'ram-and-flash'
 * `cloud_provider` - A cloud provider object, documented below
@@ -45,6 +44,7 @@ The `cloud_provider` block supports:
 
 * `provider` - The cloud provider to use with the subscription, (either `AWS` or `GCP`)
 * `cloud_account_id` - Cloud account identifier, (A Cloud Account Id = 1 implies using Redis Labs internal cloud account)
+* `aws_account_id` - AWS account ID that the subscription is deployed in (AWS subscriptions only).
 * `region` - Cloud networking details, per region (single region or multiple regions for Active-Active cluster only), documented below
 
 The cloud_provider `region` block supports:
