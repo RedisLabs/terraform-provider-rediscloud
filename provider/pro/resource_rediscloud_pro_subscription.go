@@ -497,14 +497,12 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Computed:    true,
-				Default:     false,
 			},
 			"customer_managed_key_deletion_grace_period": {
 				Description: "The grace period for deleting the subscription. If not set, will default to immediate deletion grace period.",
 				Type:        schema.TypeString,
 				Optional:    true,
 				Computed:    true,
-				Default:     "immediate",
 			},
 			"customer_managed_key": {
 				Description: "CMK resources used to encrypt the databases in this subscription. Ignored if `customer_managed_key_enabled` set to false. Supply after the database has been put into database pending state. See documentation for CMK flow.",
