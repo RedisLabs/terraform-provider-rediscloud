@@ -297,18 +297,16 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				},
 			},
 			"customer_managed_key_enabled": {
-				Description: "Whether to enable CMK (customer managed key) for the subscription. If this is true, then the subscription will be put in a pending state until you supply the CMEK. See documentation for further details on this process. Defaults to false.",
+				Description: "Whether to enable CMK (customer managed key) for the subscription. If this is true, then the subscription will be put in a pending state until you supply the CMEK. See documentation for further details on this process. When not specified, defaults to false.",
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Computed:    true,
-				Default:     false,
 			},
 			"customer_managed_key_deletion_grace_period": {
-				Description: "The grace period for deleting the subscription. If not set, will default to immediate deletion grace period.",
+				Description: "The grace period for deleting the subscription. When not specified, defaults to immediate deletion.",
 				Type:        schema.TypeString,
 				Optional:    true,
 				Computed:    true,
-				Default:     "immediate",
 			},
 			"customer_managed_key": {
 				Description: "CMK resources used to encrypt the databases in this subscription. Ignored if `customer_managed_key_enabled` set to false. See documentation for CMK flow.",
