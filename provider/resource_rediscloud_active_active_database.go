@@ -13,6 +13,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -149,6 +150,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Description: "Rate of database data persistence (in persistent storage)",
 				Type:        schema.TypeString,
 				Optional:    true,
+				Computed:    true,
 			},
 			"global_password": {
 				Description: "Password used to access the database. If left empty, the password will be generated automatically",
@@ -637,7 +639,11 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 			globalEnableDefaultUser := d.Get("global_enable_default_user").(bool)
 			regionEnableDefaultUser := redis.BoolValue(regionDb.Security.EnableDefaultUser)
 
-			log.Printf("[DEBUG] Read enable_default_user for region %s: region=%v, global=%v", region, regionEnableDefaultUser, globalEnableDefaultUser)
+			tflog.Debug(ctx, "Read enable_default_user for region", map[string]interface{}{
+				"region":       region,
+				"region_value": regionEnableDefaultUser,
+				"global_value": globalEnableDefaultUser,
+			})
 
 			// Check if GetRawConfig is available (during Apply/Update)
 			rawConfig := d.GetRawConfig()
@@ -649,7 +655,10 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 			if getRawConfigAvailable {
 				// Config-based mode: Check if explicitly set in config
 				wasExplicitlySet := isEnableDefaultUserExplicitlySetInConfig(d, region)
-				log.Printf("[DEBUG] Config-based detection for region %s: wasExplicitlySet=%v", region, wasExplicitlySet)
+				tflog.Debug(ctx, "Config-based detection for region", map[string]interface{}{
+					"region":            region,
+					"wasExplicitlySet": wasExplicitlySet,
+				})
 
 				if wasExplicitlySet {
 					shouldInclude = true
@@ -664,7 +673,10 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 			} else {
 				// State-based mode: Check if was in actual persisted state
 				fieldWasInActualState := isEnableDefaultUserInActualPersistedState(d, region)
-				log.Printf("[DEBUG] State-based detection for region %s: fieldWasInActualState=%v", region, fieldWasInActualState)
+				tflog.Debug(ctx, "State-based detection for region", map[string]interface{}{
+					"region":                region,
+					"fieldWasInActualState": fieldWasInActualState,
+				})
 
 				if fieldWasInActualState {
 					shouldInclude = true
@@ -678,7 +690,11 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 				}
 			}
 
-			log.Printf("[DEBUG] enable_default_user decision for region %s: shouldInclude=%v, reason=%s", region, shouldInclude, reason)
+			tflog.Debug(ctx, "enable_default_user decision for region", map[string]interface{}{
+				"region":        region,
+				"shouldInclude": shouldInclude,
+				"reason":        reason,
+			})
 
 			if shouldInclude {
 				regionDbConfig["enable_default_user"] = regionEnableDefaultUser
@@ -811,11 +827,16 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 			// User explicitly set it in config - send the value
 			if val, exists := dbRegion["enable_default_user"]; exists && val != nil {
 				regionProps.EnableDefaultUser = redis.Bool(val.(bool))
-				log.Printf("[DEBUG] Update: Sending enable_default_user=%v for region %s (explicitly set)", val, regionName)
+				tflog.Debug(ctx, "Update: Sending enable_default_user for region (explicitly set)", map[string]interface{}{
+					"region": regionName,
+					"value":  val,
+				})
 			}
 		} else {
 			// Not explicitly set - don't send field, API will use global
-			log.Printf("[DEBUG] Update: NOT sending enable_default_user for region %s (inherits from global)", regionName)
+			tflog.Debug(ctx, "Update: NOT sending enable_default_user for region (inherits from global)", map[string]interface{}{
+				"region": regionName,
+			})
 		}
 
 		if len(overrideAlerts) > 0 {
