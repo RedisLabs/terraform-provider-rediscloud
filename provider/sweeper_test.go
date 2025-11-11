@@ -152,12 +152,13 @@ func testSweepProSubscriptions(region string) error {
 func testSweepReadDatabases(client *rediscloudApi.Client, subId int) (bool, []int, error) {
 	var dbIds []int
 	list := client.Database.List(context.TODO(), subId)
+	forceSweep := os.Getenv("FORCE_SWEEP") != ""
 
 	for list.Next() {
 		db := list.Value()
 
-		if !redis.TimeValue(db.ActivatedOn).Add(24 * -1 * time.Hour).Before(time.Now()) {
-			// Subscription _probably_ created within the last day, so assume someone might be
+		if !forceSweep && !redis.TimeValue(db.ActivatedOn).Add(2 * -1 * time.Hour).Before(time.Now()) {
+			// Subscription _probably_ created within the last 2 hours, so assume someone might be
 			// currently running the tests
 			return false, nil, nil
 		}
@@ -185,12 +186,13 @@ func testSweepReadDatabases(client *rediscloudApi.Client, subId int) (bool, []in
 func testSweepReadEssentialsDatabases(client *rediscloudApi.Client, subId int) (bool, []int, error) {
 	var dbIds []int
 	list := client.FixedDatabases.List(context.TODO(), subId)
+	forceSweep := os.Getenv("FORCE_SWEEP") != ""
 
 	for list.Next() {
 		db := list.Value()
 
-		if !redis.TimeValue(db.ActivatedOn).Add(24 * -1 * time.Hour).Before(time.Now()) {
-			// Subscription _probably_ created within the last day, so assume someone might be
+		if !forceSweep && !redis.TimeValue(db.ActivatedOn).Add(2 * -1 * time.Hour).Before(time.Now()) {
+			// Subscription _probably_ created within the last 2 hours, so assume someone might be
 			// currently running the tests
 			return false, nil, nil
 		}
