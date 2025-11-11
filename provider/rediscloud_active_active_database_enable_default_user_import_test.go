@@ -52,7 +52,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport(t *te
 		t.Fatalf("Failed to fetch database %s/%s: %v", subscriptionID, databaseID, err)
 	}
 
-	databaseName := redis.StringValue(db.Name)
 	databasePassword := acctest.RandString(20) // Use new password for testing
 
 	const databaseResourceName = "rediscloud_active_active_subscription_database.example"
@@ -62,10 +61,10 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport(t *te
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
 		Steps: []resource.TestStep{
-			// Step 0: Import existing database
+			// Step 0: Import existing database into state
 			{
 				PreConfig: func() {
-					t.Logf("DEBUG Step 0: Importing database %s (sub: %s, db: %s)", databaseName, subscriptionID, databaseID)
+					t.Logf("DEBUG Step 0: Importing database (sub: %s, db: %s, name: %s)", subscriptionID, databaseID, redis.StringValue(db.Name))
 				},
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_debug_import_step1.tf"),
@@ -75,9 +74,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport(t *te
 				ResourceName:      databaseResourceName,
 				ImportState:       true,
 				ImportStateId:     importID,
-				ImportStateVerify: false, // Don't verify all fields, just get it into state
+				ImportStateVerify: false,
 			},
-			// Step 1: global=true, both regions inherit
+			// Step 1: Apply step1 config - global=true, both regions inherit
 			{
 				PreConfig: func() {
 					t.Logf("DEBUG Step 1: global=true, both inherit")
@@ -88,6 +87,18 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport(t *te
 					databasePassword,
 				),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					// Debug: Print state
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[databaseResourceName]
+						if !ok {
+							return fmt.Errorf("resource not found in state: %s", databaseResourceName)
+						}
+						t.Logf("DEBUG Step 1 State - ID: %s", rs.Primary.ID)
+						t.Logf("DEBUG Step 1 State - subscription_id: %s", rs.Primary.Attributes["subscription_id"])
+						t.Logf("DEBUG Step 1 State - db_id: %s", rs.Primary.Attributes["db_id"])
+						t.Logf("DEBUG Step 1 State - name: %s", rs.Primary.Attributes["name"])
+						return nil
+					},
 					// Global setting
 					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "true"),
 					resource.TestCheckResourceAttr(databaseResourceName, "subscription_id", subscriptionID),
@@ -115,7 +126,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport(t *te
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_debug_import_step2.tf"),
 					subscriptionID,
-					databaseName,
 					databasePassword,
 				),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -146,7 +156,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport(t *te
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_debug_import_step3.tf"),
 					subscriptionID,
-					databaseName,
 					databasePassword,
 				),
 				Check: resource.ComposeAggregateTestCheckFunc(

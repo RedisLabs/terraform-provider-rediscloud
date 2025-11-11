@@ -27,15 +27,13 @@ resource "rediscloud_active_active_subscription_database" "example" {
   lifecycle {
     ignore_changes = [
       # Ignore changes to fields we're not testing
+      name,
       memory_limit_in_gb,
       global_data_persistence,
       global_source_ips,
       global_alert,
       global_modules,
       port,
-      replication,
-      throughput_measurement_by,
-      throughput_measurement_value,
     ]
   }
 }

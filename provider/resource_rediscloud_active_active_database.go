@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -358,9 +359,10 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 	api := meta.(*client.ApiClient)
 
 	subId := d.Get("subscription_id").(int)
-	utils.SubscriptionMutex.Lock(subId)
-
 	name := d.Get("name").(string)
+	tflog.Debug(ctx, fmt.Sprintf("DEBUG CREATE CALLED: subscription_id=%d, name=%s, state_id=%s", subId, name, d.Id()))
+
+	utils.SubscriptionMutex.Lock(subId)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
 	useExternalEndpointForOSSClusterAPI := d.Get("external_endpoint_for_oss_cluster_api").(bool)
 	globalSourceIp := utils.SetToStringSlice(d.Get("global_source_ips").(*schema.Set))
@@ -785,6 +787,9 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 	}
 
 	subId := d.Get("subscription_id").(int)
+	name := d.Get("name").(string)
+	tflog.Debug(ctx, fmt.Sprintf("DEBUG UPDATE CALLED: subscription_id=%d, db_id=%d, name=%s, state_id=%s", subId, dbId, name, d.Id()))
+
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
 
