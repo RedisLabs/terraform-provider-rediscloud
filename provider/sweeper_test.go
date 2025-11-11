@@ -329,8 +329,8 @@ func testSweepAcl(region string) error {
 			continue
 		}
 
-		if client.Users.Delete(ctx, redis.IntValue(user.ID)) != nil {
-			return err
+		if delErr := client.Users.Delete(ctx, redis.IntValue(user.ID)); delErr != nil {
+			return delErr
 		}
 	}
 
@@ -344,8 +344,8 @@ func testSweepAcl(region string) error {
 			continue
 		}
 
-		if client.Roles.Delete(ctx, redis.IntValue(role.ID)) != nil {
-			return err
+		if delErr := client.Roles.Delete(ctx, redis.IntValue(role.ID)); delErr != nil {
+			return delErr
 		}
 	}
 

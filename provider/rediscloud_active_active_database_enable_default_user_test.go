@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -264,7 +263,7 @@ func testCheckEnableDefaultUserInAPI(resourceName string, expectedGlobal bool, e
 		}
 
 		// Get API client
-		apiClient, err := client.GetClient()
+		apiClient, err := client.NewClient()
 		if err != nil {
 			return fmt.Errorf("failed to get API client: %v", err)
 		}
