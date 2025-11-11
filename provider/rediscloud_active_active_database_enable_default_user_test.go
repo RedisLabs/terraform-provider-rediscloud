@@ -2,10 +2,10 @@ package provider
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
@@ -15,9 +15,9 @@ import (
 // - Regions explicitly override global (field IS in override_region)
 // - User explicitly sets same value as global (field IS in override_region, tests explicit vs inherited)
 func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.T) {
-	subscriptionName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME") + "-enable-default-user"
-	databaseName := "tf-test-enable-default-user"
-	databasePassword := "ThisIs!ATestPassword123"
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
+	databaseName := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
+	databasePassword := acctest.RandString(20)
 
 	const databaseResourceName = "rediscloud_active_active_subscription_database.example"
 
@@ -28,6 +28,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 		Steps: []resource.TestStep{
 			// Step 1: global=true, both regions inherit (NO enable_default_user in override_region)
 			{
+				PreConfig: func() {
+					t.Logf("Starting Step 1: global=true, both regions inherit (subscription: %s, database: %s)", subscriptionName, databaseName)
+				},
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_global_true_inherit.tf"),
 					subscriptionName,
@@ -48,6 +51,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 			},
 			// Step 2: global=true, us-east-1 explicit false (field SHOULD appear in override_region)
 			{
+				PreConfig: func() {
+					t.Logf("Starting Step 2: global=true, us-east-1 explicit false")
+				},
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_global_true_region_false.tf"),
 					subscriptionName,
@@ -68,6 +74,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 			},
 			// Step 3: global=false, us-east-1 explicit true (field SHOULD appear in override_region)
 			{
+				PreConfig: func() {
+					t.Logf("Starting Step 3: global=false, us-east-1 explicit true")
+				},
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_global_false_region_true.tf"),
 					subscriptionName,
@@ -87,6 +96,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 			// Step 4: global=true, both regions explicit (us-east-1=true, us-east-2=false)
 			// This tests that explicit values matching global are still preserved
 			{
+				PreConfig: func() {
+					t.Logf("Starting Step 4: global=true, both regions explicit (us-east-1=true, us-east-2=false)")
+				},
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_all_explicit.tf"),
 					subscriptionName,

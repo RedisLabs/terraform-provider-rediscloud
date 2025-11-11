@@ -6,7 +6,8 @@ locals {
 }
 
 data "rediscloud_payment_method" "card" {
-  card_type = "Visa"
+  card_type         = "Visa"
+  last_four_numbers = "5556"
 }
 
 resource "rediscloud_active_active_subscription" "example" {
