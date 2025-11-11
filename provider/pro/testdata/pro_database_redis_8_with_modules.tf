@@ -46,7 +46,7 @@ resource "rediscloud_subscription_database" "example" {
   throughput_measurement_by = "operations-per-second"
   throughput_measurement_value = 1000
   password = local.rediscloud_database_password
-  redis_version = "8.0"
+  redis_version = "8.2"
 
   modules = [
     {
