@@ -465,7 +465,6 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 		createDatabase.RedisVersion = s
 	})
 
-
 	// Confirm Subscription Active status before creating database
 	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
 	if err != nil {
@@ -504,8 +503,8 @@ type readOperationMode int
 
 const (
 	readModeImport  readOperationMode = iota // Import: no config/state exists yet
-	readModeApply                             // Apply/Update: config is available
-	readModeRefresh                           // Refresh: only state is available
+	readModeApply                            // Apply/Update: config is available
+	readModeRefresh                          // Refresh: only state is available
 )
 
 // String returns a human-readable name for the mode
@@ -641,10 +640,9 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 
 	switch mode {
 	case readModeImport:
-		// Import mode: Always populate override_region from API
-		// The subsequent Apply (Step 2) will reconcile with actual config
-		shouldTrackOverrideRegion = true
-		log.Printf("[DEBUG] Import mode detected - will populate override_region from API")
+		// Import mode: Don't populate override_region (preserves historical behavior since resource creation)
+		shouldTrackOverrideRegion = false
+		log.Printf("[DEBUG] Import mode detected")
 
 	case readModeApply:
 		// Apply/Update mode: Check if config has override_region blocks
@@ -831,7 +829,6 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
 		return diag.FromErr(err)
 	}
-
 
 	// Read global_enable_default_user from API response
 	if db.GlobalEnableDefaultUser != nil {
