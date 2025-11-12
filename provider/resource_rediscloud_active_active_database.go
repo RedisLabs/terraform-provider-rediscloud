@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -14,7 +13,6 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/go-cty/cty"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -31,17 +29,30 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 
 		Importer: &schema.ResourceImporter{
 			StateContext: func(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+				log.Printf("[DEBUG] IMPORT StateContext CALLED: import_id=%s", d.Id())
+				log.Printf("[INFO] Starting Active-Active database import: import_id=%s", d.Id())
+
 				subId, dbId, err := pro.ToDatabaseId(d.Id())
 				if err != nil {
+					log.Printf("[ERROR] Failed to parse import ID: import_id=%s, error=%v", d.Id(), err)
 					return nil, err
 				}
+
+				log.Printf("[DEBUG] IMPORT: Parsed subscription_id=%d, db_id=%d", subId, dbId)
+
 				if err := d.Set("subscription_id", subId); err != nil {
+					log.Printf("[ERROR] Failed to set subscription_id: subscription_id=%d, error=%v", subId, err)
 					return nil, err
 				}
 				if err := d.Set("db_id", dbId); err != nil {
+					log.Printf("[ERROR] Failed to set db_id: db_id=%d, error=%v", dbId, err)
 					return nil, err
 				}
 				d.SetId(utils.BuildResourceId(subId, dbId))
+
+				log.Printf("[DEBUG] IMPORT: Set resource ID to: %s", d.Id())
+				log.Printf("[INFO] Import initialization complete - Read will be called next: resource_id=%s", d.Id())
+
 				return []*schema.ResourceData{d}, nil
 			},
 		},
@@ -360,7 +371,8 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 
 	subId := d.Get("subscription_id").(int)
 	name := d.Get("name").(string)
-	tflog.Debug(ctx, fmt.Sprintf("DEBUG CREATE CALLED: subscription_id=%d, name=%s, state_id=%s", subId, name, d.Id()))
+	log.Printf("[DEBUG] CREATE CALLED: subscription_id=%d, name=%s, state_id=%s, has_id=%v",
+		subId, name, d.Id(), d.Id() != "")
 
 	utils.SubscriptionMutex.Lock(subId)
 	supportOSSClusterAPI := d.Get("support_oss_cluster_api").(bool)
@@ -502,14 +514,26 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		subId = d.Get("subscription_id").(int)
 	}
 
+	log.Printf("[DEBUG] READ CALLED: state_id=%s, parsed_sub_id=%d, parsed_db_id=%d, schema_sub_id=%v",
+		d.Id(), subId, dbId, d.Get("subscription_id"))
+	log.Printf("[INFO] Starting Active-Active database Read: resource_id=%s, subscription_id=%d, db_id=%d",
+		d.Id(), subId, dbId)
+
 	db, err := api.Client.Database.GetActiveActive(ctx, subId, dbId)
 	if err != nil {
 		if _, ok := err.(*databases.NotFound); ok {
+			log.Printf("[DEBUG] READ: Database not found, clearing state: sub_id=%d, db_id=%d", subId, dbId)
+			log.Printf("[INFO] Database not found, clearing state: subscription_id=%d, db_id=%d", subId, dbId)
 			d.SetId("")
 			return diags
 		}
 		return diag.FromErr(err)
 	}
+
+	log.Printf("[DEBUG] READ: Fetched from API - name=%s, id=%d, sub_id=%d",
+		redis.StringValue(db.Name), redis.IntValue(db.ID), subId)
+	log.Printf("[DEBUG] Fetched database from API: name=%s, id=%d, global_enable_default_user=%v, num_regions=%d",
+		redis.StringValue(db.Name), redis.IntValue(db.ID), redis.BoolValue(db.GlobalEnableDefaultUser), len(db.CrdbDatabases))
 
 	if err := d.Set("db_id", redis.IntValue(db.ID)); err != nil {
 		return diag.FromErr(err)
@@ -567,6 +591,9 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	var regionDbConfigs []map[string]interface{}
 	publicEndpointConfig := make(map[string]interface{})
 	privateEndpointConfig := make(map[string]interface{})
+
+	log.Printf("[DEBUG] Processing regions from API response: num_regions=%d", len(db.CrdbDatabases))
+
 	for _, regionDb := range db.CrdbDatabases {
 		region := redis.StringValue(regionDb.Region)
 		// Set the endpoints for the region
@@ -574,7 +601,12 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		privateEndpointConfig[region] = redis.StringValue(regionDb.PrivateEndpoint)
 		// Check if the region is in the state as an override
 		stateOverrideRegion := getStateOverrideRegion(d, region)
+
+		log.Printf("[DEBUG] Processing region: region=%s, has_override_in_state=%v, region_enable_default_user=%v",
+			region, stateOverrideRegion != nil, redis.BoolValue(regionDb.Security.EnableDefaultUser))
+
 		if stateOverrideRegion == nil {
+			log.Printf("[DEBUG] Skipping region - not in override_region state: region=%s", region)
 			continue
 		}
 		regionDbConfig := map[string]interface{}{
@@ -641,11 +673,8 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 			globalEnableDefaultUser := d.Get("global_enable_default_user").(bool)
 			regionEnableDefaultUser := redis.BoolValue(regionDb.Security.EnableDefaultUser)
 
-			tflog.Debug(ctx, "Read enable_default_user for region", map[string]interface{}{
-				"region":       region,
-				"region_value": regionEnableDefaultUser,
-				"global_value": globalEnableDefaultUser,
-			})
+			log.Printf("[DEBUG] Read enable_default_user for region - starting evaluation: region=%s, region_value_from_api=%v, global_value=%v, values_match=%v",
+				region, regionEnableDefaultUser, globalEnableDefaultUser, regionEnableDefaultUser == globalEnableDefaultUser)
 
 			// Check if GetRawConfig is available (during Apply/Update)
 			rawConfig := d.GetRawConfig()
@@ -657,10 +686,7 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 			if getRawConfigAvailable {
 				// Config-based mode: Check if explicitly set in config
 				wasExplicitlySet := isEnableDefaultUserExplicitlySetInConfig(d, region)
-				tflog.Debug(ctx, "Config-based detection for region", map[string]interface{}{
-					"region":            region,
-					"wasExplicitlySet": wasExplicitlySet,
-				})
+				log.Printf("[DEBUG] Config-based detection for region: region=%s, wasExplicitlySet=%v", region, wasExplicitlySet)
 
 				if wasExplicitlySet {
 					shouldInclude = true
@@ -675,10 +701,7 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 			} else {
 				// State-based mode: Check if was in actual persisted state
 				fieldWasInActualState := isEnableDefaultUserInActualPersistedState(d, region)
-				tflog.Debug(ctx, "State-based detection for region", map[string]interface{}{
-					"region":                region,
-					"fieldWasInActualState": fieldWasInActualState,
-				})
+				log.Printf("[DEBUG] State-based detection for region: region=%s, fieldWasInActualState=%v", region, fieldWasInActualState)
 
 				if fieldWasInActualState {
 					shouldInclude = true
@@ -692,25 +715,32 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 				}
 			}
 
-			tflog.Debug(ctx, "enable_default_user decision for region", map[string]interface{}{
-				"region":        region,
-				"shouldInclude": shouldInclude,
-				"reason":        reason,
-			})
+			log.Printf("[INFO] enable_default_user decision for region: region=%s, shouldInclude=%v, reason=%s, will_set_in_state=%v, value_if_set=%v",
+				region, shouldInclude, reason, shouldInclude, regionEnableDefaultUser)
 
 			if shouldInclude {
 				regionDbConfig["enable_default_user"] = regionEnableDefaultUser
+				log.Printf("[DEBUG] Set enable_default_user in regionDbConfig: region=%s, value=%v", region, regionEnableDefaultUser)
+			} else {
+				log.Printf("[DEBUG] NOT setting enable_default_user in regionDbConfig (will inherit from global): region=%s", region)
 			}
 		}
+
+		log.Printf("[DEBUG] Completed processing region, appending to regionDbConfigs: region=%s, has_enable_default_user_key=%v",
+			region, regionDbConfig["enable_default_user"] != nil)
 
 		regionDbConfigs = append(regionDbConfigs, regionDbConfig)
 	}
 
 	// Only set override_region if it is defined in the config
 	if len(d.Get("override_region").(*schema.Set).List()) > 0 {
+		log.Printf("[DEBUG] Setting override_region in state: num_regions=%d", len(regionDbConfigs))
 		if err := d.Set("override_region", regionDbConfigs); err != nil {
 			return diag.FromErr(err)
 		}
+		log.Printf("[INFO] Successfully set override_region in state: num_regions=%d", len(regionDbConfigs))
+	} else {
+		log.Printf("[DEBUG] NOT setting override_region - no regions in config")
 	}
 
 	if err := d.Set("public_endpoint", publicEndpointConfig); err != nil {
@@ -730,7 +760,9 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 
 	// Read global_enable_default_user from API response
 	if db.GlobalEnableDefaultUser != nil {
-		if err := d.Set("global_enable_default_user", redis.BoolValue(db.GlobalEnableDefaultUser)); err != nil {
+		globalValue := redis.BoolValue(db.GlobalEnableDefaultUser)
+		log.Printf("[DEBUG] Setting global_enable_default_user in state: value=%v", globalValue)
+		if err := d.Set("global_enable_default_user", globalValue); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -743,6 +775,9 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	if err := pro.ReadTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
+
+	log.Printf("[INFO] Completed Active-Active database Read: resource_id=%s, global_enable_default_user=%v, num_override_regions=%d",
+		d.Id(), d.Get("global_enable_default_user"), len(d.Get("override_region").(*schema.Set).List()))
 
 	return diags
 }
@@ -788,7 +823,9 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 	subId := d.Get("subscription_id").(int)
 	name := d.Get("name").(string)
-	tflog.Debug(ctx, fmt.Sprintf("DEBUG UPDATE CALLED: subscription_id=%d, db_id=%d, name=%s, state_id=%s", subId, dbId, name, d.Id()))
+	log.Printf("[DEBUG] UPDATE CALLED: subscription_id=%d, db_id=%d, name=%s, state_id=%s", subId, dbId, name, d.Id())
+	log.Printf("[INFO] Starting Active-Active database Update: subscription_id=%d, db_id=%d, name=%s, global_enable_default_user=%v",
+		subId, dbId, name, d.Get("global_enable_default_user"))
 
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
@@ -810,10 +847,17 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 	// Make a list of region-specific configurations
 	var regions []*databases.LocalRegionProperties
+
+	log.Printf("[DEBUG] Building region-specific configurations for Update: num_regions=%d", len(d.Get("override_region").(*schema.Set).List()))
+
 	for _, region := range d.Get("override_region").(*schema.Set).List() {
 		dbRegion := region.(map[string]interface{})
+		regionName := dbRegion["name"].(string)
 
-		overrideAlerts := getStateAlertsFromDbRegion(getStateOverrideRegion(d, dbRegion["name"].(string)))
+		log.Printf("[DEBUG] Processing region for Update: region=%s, has_enable_default_user_key=%v",
+			regionName, dbRegion["enable_default_user"] != nil)
+
+		overrideAlerts := getStateAlertsFromDbRegion(getStateOverrideRegion(d, regionName))
 
 		// Make a list of region-specific source IPs for use in the regions list below
 		var overrideSourceIps []*string
@@ -822,26 +866,30 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		}
 
 		regionProps := &databases.LocalRegionProperties{
-			Region: redis.String(dbRegion["name"].(string)),
+			Region: redis.String(regionName),
 		}
 
 		// Handle enable_default_user: Only send if explicitly set in config
 		// With Default removed from schema, we use GetRawConfig to detect explicit setting
-		regionName := dbRegion["name"].(string)
-		if isEnableDefaultUserExplicitlySetInConfig(d, regionName) {
+		explicitlySet := isEnableDefaultUserExplicitlySetInConfig(d, regionName)
+
+		log.Printf("[DEBUG] Update: Checking enable_default_user for region: region=%s, explicitly_set_in_config=%v, value_in_dbRegion=%v",
+			regionName, explicitlySet, dbRegion["enable_default_user"])
+
+		if explicitlySet {
 			// User explicitly set it in config - send the value
 			if val, exists := dbRegion["enable_default_user"]; exists && val != nil {
-				regionProps.EnableDefaultUser = redis.Bool(val.(bool))
-				tflog.Debug(ctx, "Update: Sending enable_default_user for region (explicitly set)", map[string]interface{}{
-					"region": regionName,
-					"value":  val,
-				})
+				boolVal := val.(bool)
+				regionProps.EnableDefaultUser = redis.Bool(boolVal)
+				log.Printf("[INFO] Update: SENDING enable_default_user for region (explicitly set): region=%s, value=%v, will_override_global=%v",
+					regionName, boolVal, boolVal != d.Get("global_enable_default_user").(bool))
+			} else {
+				log.Printf("[WARN] Update: Field marked as explicitly set but value missing: region=%s", regionName)
 			}
 		} else {
 			// Not explicitly set - don't send field, API will use global
-			tflog.Debug(ctx, "Update: NOT sending enable_default_user for region (inherits from global)", map[string]interface{}{
-				"region": regionName,
-			})
+			log.Printf("[INFO] Update: NOT sending enable_default_user for region (inherits from global): region=%s, global_value=%v",
+				regionName, d.Get("global_enable_default_user"))
 		}
 
 		if len(overrideAlerts) > 0 {
@@ -906,7 +954,10 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 
 	// global_enable_default_user has Default: true, so field always has a value
 	// No need for GetOkExists - just use d.Get() directly
-	update.GlobalEnableDefaultUser = redis.Bool(d.Get("global_enable_default_user").(bool))
+	globalEnableDefaultUserValue := d.Get("global_enable_default_user").(bool)
+	update.GlobalEnableDefaultUser = redis.Bool(globalEnableDefaultUserValue)
+
+	log.Printf("[INFO] Update: Setting global_enable_default_user in API request: value=%v", globalEnableDefaultUserValue)
 
 	if v, ok := d.GetOk("support_oss_cluster_api"); ok {
 		update.SupportOSSClusterAPI = redis.Bool(v.(bool))
@@ -945,10 +996,16 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		}
 	}
 
+	log.Printf("[INFO] Sending ActiveActiveUpdate API request: subscription_id=%d, db_id=%d, global_enable_default_user=%v, num_regions=%d",
+		subId, dbId, globalEnableDefaultUserValue, len(regions))
+
 	err = api.Client.Database.ActiveActiveUpdate(ctx, subId, dbId, update)
 	if err != nil {
+		log.Printf("[ERROR] ActiveActiveUpdate API request failed: subscription_id=%d, db_id=%d, error=%v", subId, dbId, err)
 		return diag.FromErr(err)
 	}
+
+	log.Printf("[INFO] ActiveActiveUpdate API request successful, waiting for database to be active: subscription_id=%d, db_id=%d", subId, dbId)
 
 	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
 		return diag.FromErr(err)
@@ -962,6 +1019,8 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 	if err := pro.WriteTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
 	}
+
+	log.Printf("[INFO] Update complete, calling Read to refresh state: subscription_id=%d, db_id=%d", subId, dbId)
 
 	return resourceRedisCloudActiveActiveDatabaseRead(ctx, d, meta)
 }
@@ -1131,6 +1190,8 @@ func findRegionFieldInCtyValue(ctyVal cty.Value, regionName string, fieldName st
 // set in the user's HCL config for a given region using GetRawConfig.
 // Returns true only if the field exists and is not null in the actual config.
 func isEnableDefaultUserExplicitlySetInConfig(d *schema.ResourceData, regionName string) bool {
+	// Note: ctx is not available in this function, so we use log.Printf
+	// The calling functions already have tflog statements showing the result
 	rawConfig := d.GetRawConfig()
 	if rawConfig.IsNull() || !rawConfig.IsKnown() {
 		log.Printf("[DEBUG] isEnableDefaultUserExplicitlySetInConfig: GetRawConfig is null/unknown for region %s", regionName)
@@ -1140,8 +1201,9 @@ func isEnableDefaultUserExplicitlySetInConfig(d *schema.ResourceData, regionName
 	log.Printf("[DEBUG] isEnableDefaultUserExplicitlySetInConfig: Checking region %s in config", regionName)
 
 	// Use the helper to navigate and find the field
-	_, found := findRegionFieldInCtyValue(rawConfig, regionName, "enable_default_user")
-	log.Printf("[DEBUG] isEnableDefaultUserExplicitlySetInConfig: Field found=%v for region %s", found, regionName)
+	fieldVal, found := findRegionFieldInCtyValue(rawConfig, regionName, "enable_default_user")
+	log.Printf("[DEBUG] isEnableDefaultUserExplicitlySetInConfig: Field found=%v for region %s, fieldVal.IsKnown=%v",
+		found, regionName, !fieldVal.IsNull() && fieldVal.IsKnown())
 
 	return found
 }
@@ -1150,6 +1212,8 @@ func isEnableDefaultUserExplicitlySetInConfig(d *schema.ResourceData, regionName
 // actual persisted state file (not the materialized state) for a given region using GetRawState.
 // Returns true only if the field exists and is not null in the state file.
 func isEnableDefaultUserInActualPersistedState(d *schema.ResourceData, regionName string) bool {
+	// Note: ctx is not available in this function, so we use log.Printf
+	// The calling functions already have tflog statements showing the result
 	rawState := d.GetRawState()
 	if rawState.IsNull() || !rawState.IsKnown() {
 		log.Printf("[DEBUG] isEnableDefaultUserInActualPersistedState: GetRawState is null/unknown for region %s", regionName)
@@ -1159,8 +1223,9 @@ func isEnableDefaultUserInActualPersistedState(d *schema.ResourceData, regionNam
 	log.Printf("[DEBUG] isEnableDefaultUserInActualPersistedState: Checking region %s in state", regionName)
 
 	// Use the helper to navigate and find the field
-	_, found := findRegionFieldInCtyValue(rawState, regionName, "enable_default_user")
-	log.Printf("[DEBUG] isEnableDefaultUserInActualPersistedState: Field found=%v for region %s", found, regionName)
+	fieldVal, found := findRegionFieldInCtyValue(rawState, regionName, "enable_default_user")
+	log.Printf("[DEBUG] isEnableDefaultUserInActualPersistedState: Field found=%v for region %s, fieldVal.IsKnown=%v",
+		found, regionName, !fieldVal.IsNull() && fieldVal.IsKnown())
 
 	return found
 }

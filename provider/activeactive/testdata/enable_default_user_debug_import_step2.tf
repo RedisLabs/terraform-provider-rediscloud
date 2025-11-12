@@ -8,22 +8,22 @@ locals {
 # Step 2: global=true, us-east-1 explicit false
 resource "rediscloud_active_active_subscription_database" "example" {
   subscription_id = local.subscription_id
-  name            = "matt-database-debug-testing"
+  name            = "matt-test-debugging"
   memory_limit_in_gb = 1
 
   # Global enable_default_user is true
   global_enable_default_user = true
   global_password            = local.password
 
+  # eu-west-1 inherits from global
+  override_region {
+    name = "eu-west-1"
+  }
+
   # us-east-1 explicitly set to false (differs from global)
   override_region {
     name                = "us-east-1"
     enable_default_user = false
-  }
-
-  # us-east-2 inherits from global
-  override_region {
-    name = "us-east-2"
   }
 
   lifecycle {
