@@ -19,11 +19,8 @@ import (
 // TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport is a DEBUG version
 // that imports and modifies an existing database to speed up testing during development.
 //
-// SETUP:
-// 1. Set DEBUG_SUBSCRIPTION_ID and DEBUG_DATABASE_ID environment variables
-// 2. The database must have eu-west-1 and us-east-1 regions
-// 3. Run with: DEBUG_SUBSCRIPTION_ID=124134 DEBUG_DATABASE_ID=4923 EXECUTE_TESTS=true make testacc TESTARGS='-run=TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport'
-//
+// Unfortunately this test does not currently work as many fields are NOT supported in active active databases.
+
 // This test will:
 // - Import the existing database with minimal stub config (Step 1)
 // - Apply initial baseline config with both regions inheriting from global (Step 2)
