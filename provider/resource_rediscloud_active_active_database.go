@@ -634,7 +634,8 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		// Handle enable_default_user with hybrid GetRawConfig/GetRawState approach
 		// to avoid drift issues with TypeSet materialization
 		if regionDb.Security.EnableDefaultUser != nil {
-			globalEnableDefaultUser := d.Get("global_enable_default_user").(bool)
+			// Use API value for global, not state value, to ensure correct comparison during all operations
+			globalEnableDefaultUser := redis.BoolValue(db.GlobalEnableDefaultUser)
 			regionEnableDefaultUser := redis.BoolValue(regionDb.Security.EnableDefaultUser)
 
 			log.Printf("[DEBUG] Read enable_default_user for region %s: region=%v, global=%v", region, regionEnableDefaultUser, globalEnableDefaultUser)
