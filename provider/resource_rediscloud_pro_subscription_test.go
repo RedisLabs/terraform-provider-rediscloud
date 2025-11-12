@@ -58,7 +58,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.query_performance_factor", "4x"),
 
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.#", "3"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.0", "RedisJSON"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.1", "RedisBloom"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.2", "RediSearch"),

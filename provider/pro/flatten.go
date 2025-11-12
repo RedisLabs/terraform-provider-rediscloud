@@ -73,6 +73,12 @@ func FlattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource b
 	var cdl []map[string]interface{}
 
 	for _, currentCloudDetail := range cloudDetails {
+		// Debug logging for aws_account_id
+		fmt.Printf("[DEBUG] FlattenCloudDetails: Provider=%s, CloudAccountID=%d, AWSAccountID=%v (nil=%v)\n",
+			redis.StringValue(currentCloudDetail.Provider),
+			redis.IntValue(currentCloudDetail.CloudAccountID),
+			currentCloudDetail.AWSAccountID,
+			currentCloudDetail.AWSAccountID == nil)
 
 		var regions []interface{}
 		for _, currentRegion := range currentCloudDetail.Regions {
@@ -102,7 +108,10 @@ func FlattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource b
 		}
 
 		if currentCloudDetail.AWSAccountID != nil {
+			fmt.Printf("[DEBUG] FlattenCloudDetails: Setting aws_account_id=%s\n", redis.StringValue(currentCloudDetail.AWSAccountID))
 			cdlMapString["aws_account_id"] = redis.StringValue(currentCloudDetail.AWSAccountID)
+		} else {
+			fmt.Printf("[DEBUG] FlattenCloudDetails: AWSAccountID is nil, NOT setting aws_account_id in state\n")
 		}
 
 		cdl = append(cdl, cdlMapString)
