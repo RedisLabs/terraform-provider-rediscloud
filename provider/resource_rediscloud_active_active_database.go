@@ -149,6 +149,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Description: "Rate of database data persistence (in persistent storage)",
 				Type:        schema.TypeString,
 				Optional:    true,
+			Computed:    true,
 			},
 			"global_password": {
 				Description: "Password used to access the database. If left empty, the password will be generated automatically",
