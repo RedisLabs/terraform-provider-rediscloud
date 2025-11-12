@@ -499,6 +499,49 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 	return resourceRedisCloudActiveActiveDatabaseUpdate(ctx, d, meta)
 }
 
+// readOperationMode identifies the context in which Read is being called
+type readOperationMode int
+
+const (
+	readModeImport  readOperationMode = iota // Import: no config/state exists yet
+	readModeApply                             // Apply/Update: config is available
+	readModeRefresh                           // Refresh: only state is available
+)
+
+// String returns a human-readable name for the mode
+func (m readOperationMode) String() string {
+	switch m {
+	case readModeImport:
+		return "import"
+	case readModeApply:
+		return "apply/update"
+	case readModeRefresh:
+		return "refresh"
+	default:
+		return "unknown"
+	}
+}
+
+// detectReadOperationMode determines which operation mode we're in based on availability of config and state
+func detectReadOperationMode(d *schema.ResourceData) readOperationMode {
+	rawConfig := d.GetRawConfig()
+	rawState := d.GetRawState()
+
+	configAvailable := !rawConfig.IsNull() && rawConfig.IsKnown()
+	stateExists := !rawState.IsNull() && rawState.IsKnown() && len(d.Get("override_region").(*schema.Set).List()) > 0
+
+	if !configAvailable && !stateExists {
+		// Import: Neither config nor state available yet
+		return readModeImport
+	} else if configAvailable {
+		// Apply/Update: Config is available (Create/Update operation)
+		return readModeApply
+	} else {
+		// Refresh: Only state available (standalone refresh operation)
+		return readModeRefresh
+	}
+}
+
 func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
 
@@ -592,23 +635,54 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	publicEndpointConfig := make(map[string]interface{})
 	privateEndpointConfig := make(map[string]interface{})
 
-	log.Printf("[DEBUG] Processing regions from API response: num_regions=%d", len(db.CrdbDatabases))
+	// Determine if override_region should be tracked based on operation mode
+	mode := detectReadOperationMode(d)
+	shouldTrackOverrideRegion := false
+
+	switch mode {
+	case readModeImport:
+		// Import mode: Always populate override_region from API
+		// The subsequent Apply (Step 2) will reconcile with actual config
+		shouldTrackOverrideRegion = true
+		log.Printf("[DEBUG] Import mode detected - will populate override_region from API")
+
+	case readModeApply:
+		// Apply/Update mode: Check if config has override_region blocks
+		// Config is source of truth - only track if user declared it
+		rawConfig := d.GetRawConfig()
+		overrideRegionValue := rawConfig.GetAttr("override_region")
+		if !overrideRegionValue.IsNull() && overrideRegionValue.LengthInt() > 0 {
+			shouldTrackOverrideRegion = true
+		}
+		log.Printf("[DEBUG] Apply/Update mode detected - shouldTrackOverrideRegion=%v (from config)", shouldTrackOverrideRegion)
+
+	case readModeRefresh:
+		// Refresh mode: Check if state has override_region blocks
+		// Preserve what was previously in state
+		shouldTrackOverrideRegion = len(d.Get("override_region").(*schema.Set).List()) > 0
+		log.Printf("[DEBUG] Refresh mode detected - shouldTrackOverrideRegion=%v (from state)", shouldTrackOverrideRegion)
+	}
+
+	log.Printf("[DEBUG] Processing regions from API response: num_regions=%d, mode=%v, shouldTrackOverrideRegion=%v",
+		len(db.CrdbDatabases), mode, shouldTrackOverrideRegion)
 
 	for _, regionDb := range db.CrdbDatabases {
 		region := redis.StringValue(regionDb.Region)
 		// Set the endpoints for the region
 		publicEndpointConfig[region] = redis.StringValue(regionDb.PublicEndpoint)
 		privateEndpointConfig[region] = redis.StringValue(regionDb.PrivateEndpoint)
-		// Check if the region is in the state as an override
-		stateOverrideRegion := getStateOverrideRegion(d, region)
 
-		log.Printf("[DEBUG] Processing region: region=%s, has_override_in_state=%v, region_enable_default_user=%v",
-			region, stateOverrideRegion != nil, redis.BoolValue(regionDb.Security.EnableDefaultUser))
-
-		if stateOverrideRegion == nil {
-			log.Printf("[DEBUG] Skipping region - not in override_region state: region=%s", region)
+		// If config doesn't have override_region blocks, skip all region processing
+		if !shouldTrackOverrideRegion {
+			log.Printf("[DEBUG] Skipping region - no override_region blocks in config: region=%s", region)
 			continue
 		}
+
+		// Get state for this region (may be nil during import, that's OK)
+		stateOverrideRegion := getStateOverrideRegion(d, region)
+
+		log.Printf("[DEBUG] Processing region: region=%s, has_override_in_state=%v, shouldTrackOverrideRegion=%v, region_enable_default_user=%v",
+			region, stateOverrideRegion != nil, shouldTrackOverrideRegion, redis.BoolValue(regionDb.Security.EnableDefaultUser))
 		regionDbConfig := map[string]interface{}{
 			"name": region,
 		}
@@ -670,7 +744,8 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		// Handle enable_default_user with hybrid GetRawConfig/GetRawState approach
 		// to avoid drift issues with TypeSet materialization
 		if regionDb.Security.EnableDefaultUser != nil {
-			globalEnableDefaultUser := d.Get("global_enable_default_user").(bool)
+			// Use API value for global, not state value, to ensure correct comparison during import
+			globalEnableDefaultUser := redis.BoolValue(db.GlobalEnableDefaultUser)
 			regionEnableDefaultUser := redis.BoolValue(regionDb.Security.EnableDefaultUser)
 
 			log.Printf("[DEBUG] Read enable_default_user for region - starting evaluation: region=%s, region_value_from_api=%v, global_value=%v, values_match=%v",
@@ -732,15 +807,15 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		regionDbConfigs = append(regionDbConfigs, regionDbConfig)
 	}
 
-	// Only set override_region if it is defined in the config
-	if len(d.Get("override_region").(*schema.Set).List()) > 0 {
+	// Only set override_region if it should be tracked (based on config check above)
+	if shouldTrackOverrideRegion {
 		log.Printf("[DEBUG] Setting override_region in state: num_regions=%d", len(regionDbConfigs))
 		if err := d.Set("override_region", regionDbConfigs); err != nil {
 			return diag.FromErr(err)
 		}
 		log.Printf("[INFO] Successfully set override_region in state: num_regions=%d", len(regionDbConfigs))
 	} else {
-		log.Printf("[DEBUG] NOT setting override_region - no regions in config")
+		log.Printf("[DEBUG] NOT setting override_region - no override_region blocks in config")
 	}
 
 	if err := d.Set("public_endpoint", publicEndpointConfig); err != nil {
