@@ -53,11 +53,6 @@ resource "rediscloud_active_active_subscription_database" "example" {
     override_global_source_ips = ["192.10.0.0/16"]
   }
 
-  override_region {
-    name                = "us-east-3"
-    enable_default_user = true
-  }
-
   tags = {
     "environment" = "production"
     "cost_center" = "0700"

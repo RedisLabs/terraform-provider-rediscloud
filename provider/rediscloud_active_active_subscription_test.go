@@ -43,7 +43,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 			{
 				Config: testAccResourceRedisCloudActiveActiveSubscription(t, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// Test the resource
+					// Test the subscription resource
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
@@ -180,6 +180,15 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.networking_deployment_cidr", "10.0.1.0/24"),
 					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.1.vpc_id"),
 
+					// Test the database resource - check override_region blocks reference valid subscription regions
+					resource.TestCheckResourceAttr("rediscloud_active_active_subscription_database.example", "override_region.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs("rediscloud_active_active_subscription_database.example", "override_region.*", map[string]string{
+						"name": "us-east-1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("rediscloud_active_active_subscription_database.example", "override_region.*", map[string]string{
+						"name": "us-east-2",
+					}),
+
 					// checks enabling default user is true
 					//resource.TestCheckResourceAttr(resourceName, "regions.1.enable_default_user", "true"),
 				),
@@ -201,8 +210,17 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.write_operations_per_second", "1000"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.region.1.read_operations_per_second", "1000"),
 
-					// Check database enable_default_user settings
+					// Check database settings
 					resource.TestCheckResourceAttr("rediscloud_active_active_subscription_database.example", "global_enable_default_user", "false"),
+
+					// Check database override_region blocks reference valid subscription regions
+					resource.TestCheckResourceAttr("rediscloud_active_active_subscription_database.example", "override_region.#", "2"),
+					resource.TestCheckTypeSetElemNestedAttrs("rediscloud_active_active_subscription_database.example", "override_region.*", map[string]string{
+						"name": "us-east-1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs("rediscloud_active_active_subscription_database.example", "override_region.*", map[string]string{
+						"name": "us-east-2",
+					}),
 
 					// also checks user has removed default user
 					//resource.TestCheckResourceAttr(resourceName, "regions.1.enable_default_user", "false"),
