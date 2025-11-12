@@ -50,6 +50,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserImport(t *te
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProviderFactories: providerFactories,
+		CheckDestroy:      nil, // No destroy - this test imports and modifies an existing database
 		Steps: []resource.TestStep{
 			// Step 1: Import existing database with full config
 			{
