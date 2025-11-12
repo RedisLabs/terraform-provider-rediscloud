@@ -483,6 +483,48 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 	return resourceRedisCloudActiveActiveDatabaseUpdate(ctx, d, meta)
 }
 
+type readOperationMode int
+
+const (
+	readModeImport  readOperationMode = iota // Import: no config/state exists yet
+	readModeApply                             // Apply/Update: config is available
+	readModeRefresh                           // Refresh: only state is available
+)
+
+// String returns a human-readable name for the mode
+func (m readOperationMode) String() string {
+	switch m {
+	case readModeImport:
+		return "import"
+	case readModeApply:
+		return "apply/update"
+	case readModeRefresh:
+		return "refresh"
+	default:
+		return "unknown"
+	}
+}
+
+// detectReadOperationMode determines which operation mode we're in based on availability of config and state
+func detectReadOperationMode(d *schema.ResourceData) readOperationMode {
+	rawConfig := d.GetRawConfig()
+	rawState := d.GetRawState()
+
+	configAvailable := !rawConfig.IsNull() && rawConfig.IsKnown()
+	stateExists := !rawState.IsNull() && rawState.IsKnown() && len(d.Get("override_region").(*schema.Set).List()) > 0
+
+	if !configAvailable && !stateExists {
+		// Import: Neither config nor state available yet
+		return readModeImport
+	} else if configAvailable {
+		// Apply/Update: Config is available (Create/Update operation)
+		return readModeApply
+	} else {
+		// Refresh: Only state available (standalone refresh operation)
+		return readModeRefresh
+	}
+}
+
 func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
 
@@ -640,17 +682,17 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 
 			log.Printf("[DEBUG] Read enable_default_user for region %s: region=%v, global=%v", region, regionEnableDefaultUser, globalEnableDefaultUser)
 
-			// Check if GetRawConfig is available (during Apply/Update)
-			rawConfig := d.GetRawConfig()
-			getRawConfigAvailable := !rawConfig.IsNull() && rawConfig.IsKnown()
+			// Detect operation mode to determine how to handle enable_default_user
+			mode := detectReadOperationMode(d)
 
 			shouldInclude := false
 			var reason string
 
-			if getRawConfigAvailable {
-				// Config-based mode: Check if explicitly set in config
+			switch mode {
+			case readModeApply:
+				// Apply/Update mode: Check if explicitly set in config
 				wasExplicitlySet := isEnableDefaultUserExplicitlySetInConfig(d, region)
-				log.Printf("[DEBUG] Config-based detection for region %s: wasExplicitlySet=%v", region, wasExplicitlySet)
+				log.Printf("[DEBUG] Apply/Update mode for region %s: wasExplicitlySet=%v", region, wasExplicitlySet)
 
 				if wasExplicitlySet {
 					shouldInclude = true
@@ -662,10 +704,11 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 					shouldInclude = false
 					reason = "not in config and matches global (inherited)"
 				}
-			} else {
-				// State-based mode: Check if was in actual persisted state
+
+			case readModeRefresh, readModeImport:
+				// Refresh/Import mode: Check if was in actual persisted state
 				fieldWasInActualState := isEnableDefaultUserInActualPersistedState(d, region)
-				log.Printf("[DEBUG] State-based detection for region %s: fieldWasInActualState=%v", region, fieldWasInActualState)
+				log.Printf("[DEBUG] %s mode for region %s: fieldWasInActualState=%v", mode.String(), region, fieldWasInActualState)
 
 				if fieldWasInActualState {
 					shouldInclude = true
