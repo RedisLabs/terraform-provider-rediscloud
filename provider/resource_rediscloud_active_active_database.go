@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -681,10 +682,12 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 			globalEnableDefaultUser := redis.BoolValue(db.GlobalEnableDefaultUser)
 			regionEnableDefaultUser := redis.BoolValue(regionDb.Security.EnableDefaultUser)
 
-			log.Printf("[DEBUG] Read enable_default_user for region %s: region=%v, global=%v", region, regionEnableDefaultUser, globalEnableDefaultUser)
+			log.Printf("[DEBUG] ========== Read: Processing enable_default_user for region %s ==========", region)
+			log.Printf("[DEBUG] Read: API returned - region.enable_default_user=%v, global_enable_default_user=%v", regionEnableDefaultUser, globalEnableDefaultUser)
 
 			// Detect operation mode to determine how to handle enable_default_user
 			mode := detectReadOperationMode(d)
+			log.Printf("[DEBUG] Read: Detected operation mode: %s", mode.String())
 
 			shouldInclude := false
 			var reason string
@@ -693,40 +696,51 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 			case readModeApply:
 				// Apply/Update mode: Check if explicitly set in config
 				wasExplicitlySet := isEnableDefaultUserExplicitlySetInConfig(d, region)
-				log.Printf("[DEBUG] Apply/Update mode for region %s: wasExplicitlySet=%v", region, wasExplicitlySet)
+				log.Printf("[DEBUG] Read: Apply/Update mode for region %s", region)
+				log.Printf("[DEBUG] Read: isEnableDefaultUserExplicitlySetInConfig returned: %v", wasExplicitlySet)
 
 				if wasExplicitlySet {
 					shouldInclude = true
 					reason = "explicitly set in config"
+					log.Printf("[DEBUG] Read: Decision - INCLUDE field (user explicitly set it in config)")
 				} else if regionEnableDefaultUser != globalEnableDefaultUser {
 					shouldInclude = true
 					reason = "differs from global (API override)"
+					log.Printf("[DEBUG] Read: Decision - INCLUDE field (not in config but API has override: region=%v != global=%v)", regionEnableDefaultUser, globalEnableDefaultUser)
 				} else {
 					shouldInclude = false
 					reason = "not in config and matches global (inherited)"
+					log.Printf("[DEBUG] Read: Decision - EXCLUDE field (not in config, region matches global: both=%v)", regionEnableDefaultUser)
 				}
 
 			case readModeRefresh, readModeImport:
 				// Refresh/Import mode: Check if was in actual persisted state
 				fieldWasInActualState := isEnableDefaultUserInActualPersistedState(d, region)
-				log.Printf("[DEBUG] %s mode for region %s: fieldWasInActualState=%v", mode.String(), region, fieldWasInActualState)
+				log.Printf("[DEBUG] Read: %s mode for region %s", mode.String(), region)
+				log.Printf("[DEBUG] Read: isEnableDefaultUserInActualPersistedState returned: %v", fieldWasInActualState)
 
 				if fieldWasInActualState {
 					shouldInclude = true
 					reason = "was in state, preserving (user explicit)"
+					log.Printf("[DEBUG] Read: Decision - INCLUDE field (was in persisted state, preserving user's explicit setting)")
 				} else if regionEnableDefaultUser != globalEnableDefaultUser {
 					shouldInclude = true
 					reason = "not in state but differs from global (API override)"
+					log.Printf("[DEBUG] Read: Decision - INCLUDE field (not in state but API has override: region=%v != global=%v)", regionEnableDefaultUser, globalEnableDefaultUser)
 				} else {
 					shouldInclude = false
 					reason = "not in state and matches global (inherited)"
+					log.Printf("[DEBUG] Read: Decision - EXCLUDE field (not in state, region matches global: both=%v)", regionEnableDefaultUser)
 				}
 			}
 
-			log.Printf("[DEBUG] enable_default_user decision for region %s: shouldInclude=%v, reason=%s", region, shouldInclude, reason)
+			log.Printf("[DEBUG] Read: FINAL DECISION for region %s: shouldInclude=%v, reason=%s", region, shouldInclude, reason)
 
 			if shouldInclude {
 				regionDbConfig["enable_default_user"] = regionEnableDefaultUser
+				log.Printf("[DEBUG] Read: Field INCLUDED in state for region %s with value %v", region, regionEnableDefaultUser)
+			} else {
+				log.Printf("[DEBUG] Read: Field EXCLUDED from state for region %s (will be inherited from global=%v)", region, globalEnableDefaultUser)
 			}
 		}
 
@@ -852,15 +866,21 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		// Handle enable_default_user: Only send if explicitly set in config
 		// With Default removed from schema, we use GetRawConfig to detect explicit setting
 		regionName := dbRegion["name"].(string)
-		if isEnableDefaultUserExplicitlySetInConfig(d, regionName) {
+		explicitlySet := isEnableDefaultUserExplicitlySetInConfig(d, regionName)
+		log.Printf("[DEBUG] Update: Region %s - isEnableDefaultUserExplicitlySetInConfig returned: %v", regionName, explicitlySet)
+		log.Printf("[DEBUG] Update: Region %s - dbRegion map contains: %+v", regionName, dbRegion)
+
+		if explicitlySet {
 			// User explicitly set it in config - send the value
 			if val, exists := dbRegion["enable_default_user"]; exists && val != nil {
 				regionProps.EnableDefaultUser = redis.Bool(val.(bool))
-				log.Printf("[DEBUG] Update: Sending enable_default_user=%v for region %s (explicitly set)", val, regionName)
+				log.Printf("[DEBUG] Update: Region %s - Sending enable_default_user=%v to API (explicitly set in config)", regionName, val)
+			} else {
+				log.Printf("[DEBUG] Update: Region %s - Field marked as explicit but not found in dbRegion map (exists=%v, val=%v)", regionName, exists, val)
 			}
 		} else {
 			// Not explicitly set - don't send field, API will use global
-			log.Printf("[DEBUG] Update: NOT sending enable_default_user for region %s (inherits from global)", regionName)
+			log.Printf("[DEBUG] Update: Region %s - NOT sending enable_default_user field to API (inherits from global=%v)", regionName, d.Get("global_enable_default_user").(bool))
 		}
 
 		if len(overrideAlerts) > 0 {
@@ -890,6 +910,13 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		}
 
 		regionProps.RemoteBackup = pro.BuildBackupPlan(dbRegion["remote_backup"], nil)
+
+		// Log final region properties being sent to API
+		enableDefaultUserValue := "nil (not set - will inherit)"
+		if regionProps.EnableDefaultUser != nil {
+			enableDefaultUserValue = fmt.Sprintf("%v", *regionProps.EnableDefaultUser)
+		}
+		log.Printf("[DEBUG] Update: Region %s - Final regionProps.EnableDefaultUser being sent to API: %s", regionName, enableDefaultUserValue)
 
 		regions = append(regions, regionProps)
 	}
@@ -962,6 +989,21 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 			// Default: enable_tls=false, client_ssl_certificate=""
 			update.EnableTls = redis.Bool(enableTLS)
 		}
+	}
+
+	// Log the full update request being sent to API
+	log.Printf("[DEBUG] Update: About to call ActiveActiveUpdate API")
+	log.Printf("[DEBUG] Update: GlobalEnableDefaultUser = %v", *update.GlobalEnableDefaultUser)
+	for i, region := range update.Regions {
+		regionName := ""
+		if region.Region != nil {
+			regionName = *region.Region
+		}
+		enableDefaultUserValue := "nil (not set - will inherit from global)"
+		if region.EnableDefaultUser != nil {
+			enableDefaultUserValue = fmt.Sprintf("%v", *region.EnableDefaultUser)
+		}
+		log.Printf("[DEBUG] Update: Regions[%d] %s - EnableDefaultUser = %s", i, regionName, enableDefaultUserValue)
 	}
 
 	err = api.Client.Database.ActiveActiveUpdate(ctx, subId, dbId, update)
@@ -1067,6 +1109,8 @@ func flattenModulesToNames(modules []*databases.Module) []string {
 // Returns the field's cty.Value and true if found, or cty.NilVal and false if not found.
 // This helper is used by both config and state detection functions.
 func findRegionFieldInCtyValue(ctyVal cty.Value, regionName string, fieldName string) (cty.Value, bool) {
+	log.Printf("[DEBUG] findRegionFieldInCtyValue: Starting search for field '%s' in region '%s'", fieldName, regionName)
+
 	// Check if ctyVal is null or unknown
 	if ctyVal.IsNull() || !ctyVal.IsKnown() {
 		log.Printf("[DEBUG] findRegionFieldInCtyValue: cty.Value is null or unknown for region=%s field=%s", regionName, fieldName)
@@ -1138,7 +1182,14 @@ func findRegionFieldInCtyValue(ctyVal cty.Value, regionName string, fieldName st
 			}
 		}
 
-		log.Printf("[DEBUG] findRegionFieldInCtyValue: Found field %s for region %s", fieldName, regionName)
+		// Log the value if it's a simple type
+		fieldValueStr := "complex type"
+		if fieldAttr.Type() == cty.Bool {
+			fieldValueStr = fmt.Sprintf("%v", fieldAttr.True())
+		} else if fieldAttr.Type() == cty.String {
+			fieldValueStr = fmt.Sprintf("%q", fieldAttr.AsString())
+		}
+		log.Printf("[DEBUG] findRegionFieldInCtyValue: Found field %s for region %s with value: %s", fieldName, regionName, fieldValueStr)
 		return fieldAttr, true
 	}
 

@@ -257,8 +257,29 @@ func testCheckEnableDefaultUserInAPI(resourceName string, expectedGlobal bool, e
 			}
 
 			if actualRegionValue != expectedRegionValue {
-				return fmt.Errorf("API region %s enable_default_user: expected %v, got %v",
-					regionName, expectedRegionValue, actualRegionValue)
+				inheritStr := ""
+				if hasExplicitOverride && expectedValue != nil {
+					inheritStr = fmt.Sprintf(" (explicit override in config)")
+				} else {
+					inheritStr = fmt.Sprintf(" (should inherit from global=%v)", expectedGlobal)
+				}
+
+				// Build a detailed error message showing all regions
+				errorMsg := fmt.Sprintf("API region %s enable_default_user mismatch:\n", regionName)
+				errorMsg += fmt.Sprintf("  Expected: %v%s\n", expectedRegionValue, inheritStr)
+				errorMsg += fmt.Sprintf("  Actual:   %v\n", actualRegionValue)
+				errorMsg += fmt.Sprintf("\nGlobal enable_default_user: %v\n", actualGlobal)
+				errorMsg += fmt.Sprintf("\nAll regions in API:")
+				for _, r := range db.CrdbDatabases {
+					rName := redis.StringValue(r.Region)
+					rValue := "nil"
+					if r.Security != nil && r.Security.EnableDefaultUser != nil {
+						rValue = fmt.Sprintf("%v", redis.BoolValue(r.Security.EnableDefaultUser))
+					}
+					errorMsg += fmt.Sprintf("\n  - %s: %s", rName, rValue)
+				}
+
+				return fmt.Errorf(errorMsg)
 			}
 		}
 
