@@ -3,13 +3,13 @@ package provider
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -28,9 +28,9 @@ import (
 //   Step 3: global=false, all 3 regions inherit (tests REMOVAL: explicit → inherit)
 //   Step 4: global=true,  region1=explicit false, region2&3=inherit (tests ADDITION: inherit → explicit)
 func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.T) {
-	subscriptionName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME") + "-enable-default-user"
-	databaseName := "tf-test-enable-default-user"
-	databasePassword := "ThisIs!ATestPassword123"
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-enable-default-user"
+	databaseName := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
+	databasePassword := acctest.RandString(20)
 
 	const databaseResourceName = "rediscloud_active_active_subscription_database.example"
 

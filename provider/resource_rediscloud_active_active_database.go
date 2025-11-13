@@ -266,6 +266,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 							Description: "When 'true', enables connecting to the database with the 'default' user. If not specified, the region inherits the value from global_enable_default_user.",
 							Type:        schema.TypeBool,
 							Optional:    true,
+							Computed:    true,
 						},
 						"remote_backup": {
 							Description: "An object that specifies the backup options for the database in this region",
