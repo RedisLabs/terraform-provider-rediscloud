@@ -279,7 +279,7 @@ func testCheckEnableDefaultUserInAPI(resourceName string, expectedGlobal bool, e
 					errorMsg += fmt.Sprintf("\n  - %s: %s", rName, rValue)
 				}
 
-				return fmt.Errorf(errorMsg)
+				return fmt.Errorf("%s", errorMsg)
 			}
 		}
 
