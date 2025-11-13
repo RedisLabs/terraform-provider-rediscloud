@@ -879,8 +879,10 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 				log.Printf("[DEBUG] Update: Region %s - Field marked as explicit but not found in dbRegion map (exists=%v, val=%v)", regionName, exists, val)
 			}
 		} else {
-			// Not explicitly set - don't send field, API will use global
-			log.Printf("[DEBUG] Update: Region %s - NOT sending enable_default_user field to API (inherits from global=%v)", regionName, d.Get("global_enable_default_user").(bool))
+			// Not explicitly set - send global value to clear any API override
+			globalValue := d.Get("global_enable_default_user").(bool)
+			regionProps.EnableDefaultUser = redis.Bool(globalValue)
+			log.Printf("[DEBUG] Update: Region %s - Sending enable_default_user=%v to API (global value, to clear any override)", regionName, globalValue)
 		}
 
 		if len(overrideAlerts) > 0 {
