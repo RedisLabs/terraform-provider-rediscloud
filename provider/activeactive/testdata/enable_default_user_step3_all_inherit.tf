@@ -32,6 +32,13 @@ resource "rediscloud_active_active_subscription" "example" {
       write_operations_per_second = 1000
       read_operations_per_second  = 1000
     }
+
+    region {
+      region                     = "eu-west-2"
+      networking_deployment_cidr = "10.2.0.0/24"
+      write_operations_per_second = 1000
+      read_operations_per_second  = 1000
+    }
   }
 }
 
@@ -40,18 +47,21 @@ resource "rediscloud_active_active_subscription_database" "example" {
   name               = local.database_name
   memory_limit_in_gb = 1
 
-  # Global enable_default_user is true
-  global_enable_default_user = true
+  # Global enable_default_user is false
+  global_enable_default_user = false
   global_password            = local.password
 
-  # us-east-1 explicitly disables default user (differs from global)
+  # All regions inherit from global - NO enable_default_user specified
+  # This tests the REMOVAL scenario: Step 2 had explicit values, now removed
   override_region {
-    name                = "us-east-1"
-    enable_default_user = false
+    name = "us-east-1"
   }
 
-  # us-east-2 inherits from global - NO enable_default_user specified
   override_region {
     name = "us-east-2"
+  }
+
+  override_region {
+    name = "eu-west-2"
   }
 }

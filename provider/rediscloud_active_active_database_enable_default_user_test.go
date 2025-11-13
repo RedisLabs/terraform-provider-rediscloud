@@ -16,17 +16,17 @@ import (
 
 // TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser tests the enable_default_user field
 // for global and regional override behavior, specifically testing for drift issues when:
-// - Regions inherit from global (field NOT in override_region) - Steps 1, 5
-// - Regions explicitly override global (field IS in override_region) - Steps 2, 3
-// - User explicitly sets same value as global (field IS in override_region, tests explicit vs inherited) - Steps 4, 6
+// - Regions inherit from global (field NOT in override_region)
+// - Regions explicitly override global (field IS in override_region)
+// - User explicitly sets same value as global (field IS in override_region, tests explicit vs inherited)
+// - User removes explicit overrides (explicit → inherit transition)
+// - User adds explicit overrides (inherit → explicit transition)
 //
-// Tests all 6 combinations:
-//   Step 1: global=true,  both inherit
-//   Step 2: global=true,  one region=false, one inherit
-//   Step 3: global=false, one region=true, one inherit
-//   Step 4: global=true,  region1=true (matches), region2=false
-//   Step 5: global=false, both inherit
-//   Step 6: global=false, region1=false (matches), one inherit
+// Tests all 6 combinations of the behavior matrix with 3 regions:
+//   Step 1: global=true,  region1=explicit true, region2=explicit false, region3=inherit
+//   Step 2: global=false, region1=explicit true, region2=explicit false, region3=inherit
+//   Step 3: global=false, all 3 regions inherit (tests REMOVAL: explicit → inherit)
+//   Step 4: global=true,  region1=explicit false, region2&3=inherit (tests ADDITION: inherit → explicit)
 func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.T) {
 	subscriptionName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME") + "-enable-default-user"
 	databaseName := "tf-test-enable-default-user"
@@ -39,10 +39,11 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
-			// Step 1: global=true, both regions inherit (NO enable_default_user in override_region)
+			// Step 1: global=true, 3 regions with mixed explicit/inherit
+			// Tests all 3 behaviors: explicit matching global, explicit differing, and inheritance
 			{
 				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_global_true_inherit.tf"),
+					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_step1_global_true_mixed.tf"),
 					subscriptionName,
 					databaseName,
 					databasePassword,
@@ -51,119 +52,38 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 					// Global setting
 					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "true"),
 
-					// Both regions should exist
-					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "2"),
+					// Three regions
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "3"),
 
-					// Neither region should have enable_default_user in state (inheriting from global)
-					resource.TestCheckNoResourceAttr(databaseResourceName, "override_region.0.enable_default_user"),
-					resource.TestCheckNoResourceAttr(databaseResourceName, "override_region.1.enable_default_user"),
-
-					// API check: Both regions should have true (inherited from global)
-					testCheckEnableDefaultUserInAPI(databaseResourceName, true, map[string]*bool{
-						"us-east-1": nil, // nil means inherits from global
-						"us-east-2": nil,
-					}),
-				),
-			},
-			// Step 2: global=true, us-east-1 explicit false (field SHOULD appear in override_region)
-			{
-				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_global_true_region_false.tf"),
-					subscriptionName,
-					databaseName,
-					databasePassword,
-				),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Global setting
-					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "true"),
-
-					// Two regions
-					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "2"),
-
-					// us-east-1 has explicit false (differs from global=true)
-					// us-east-2 inherits (no explicit field)
-					// Use TestCheckTypeSetElemNestedAttrs to verify specific TypeSet element fields
-					resource.TestCheckTypeSetElemNestedAttrs(databaseResourceName, "override_region.*", map[string]string{
-						"name":                "us-east-1",
-						"enable_default_user": "false",
-					}),
-
-					// API check: us-east-1=false (explicit), us-east-2=true (inherited)
-					testCheckEnableDefaultUserInAPI(databaseResourceName, true, map[string]*bool{
-						"us-east-1": redis.Bool(false), // Explicit override
-						"us-east-2": nil,                // Inherits from global
-					}),
-				),
-			},
-			// Step 3: global=false, us-east-1 explicit true (field SHOULD appear in override_region)
-			{
-				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_global_false_region_true.tf"),
-					subscriptionName,
-					databaseName,
-					databasePassword,
-				),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Global setting
-					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "false"),
-
-					// Two regions
-					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "2"),
-
-					// us-east-1 has explicit true (differs from global=false)
+					// us-east-1: explicit true (matches global)
 					resource.TestCheckTypeSetElemNestedAttrs(databaseResourceName, "override_region.*", map[string]string{
 						"name":                "us-east-1",
 						"enable_default_user": "true",
 					}),
-					// us-east-2 inherits (no explicit field)
 
-					// API check: us-east-1=true (explicit), us-east-2=false (inherited)
-					testCheckEnableDefaultUserInAPI(databaseResourceName, false, map[string]*bool{
-						"us-east-1": redis.Bool(true), // Explicit override
-						"us-east-2": nil,               // Inherits from global
-					}),
-				),
-			},
-			// Step 4: global=true, both regions explicit (us-east-1=true, us-east-2=false)
-			// This tests that explicit values matching global are still preserved
-			{
-				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_all_explicit.tf"),
-					subscriptionName,
-					databaseName,
-					databasePassword,
-				),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					// Global setting
-					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "true"),
-
-					// Two regions
-					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "2"),
-
-					// Both regions have explicit enable_default_user - both should be in state
-					// us-east-1 has true (matches global but explicit)
-					resource.TestCheckTypeSetElemNestedAttrs(databaseResourceName, "override_region.*", map[string]string{
-						"name":                "us-east-1",
-						"enable_default_user": "true",
-					}),
-					// us-east-2 has false (differs from global)
+					// us-east-2: explicit false (differs from global)
 					resource.TestCheckTypeSetElemNestedAttrs(databaseResourceName, "override_region.*", map[string]string{
 						"name":                "us-east-2",
 						"enable_default_user": "false",
 					}),
 
-					// API check: us-east-1=true (explicit), us-east-2=false (explicit)
+					// eu-west-2: inherits (no enable_default_user in state)
+					// Note: We can't use TestCheckTypeSetElemNestedAttrs with absent fields
+					// The API check below verifies inheritance works correctly
+
+					// API check: verify actual values
 					testCheckEnableDefaultUserInAPI(databaseResourceName, true, map[string]*bool{
 						"us-east-1": redis.Bool(true),  // Explicit (matches global)
 						"us-east-2": redis.Bool(false), // Explicit (differs from global)
+						"eu-west-2": nil,                // Inherits from global=true
 					}),
 				),
 			},
-			// Step 5: global=false, both regions inherit (NO enable_default_user in override_region)
-			// Mirror of Step 1 but with global=false
+			// Step 2: global=false, 3 regions with mixed explicit/inherit
+			// Tests global flip with same explicit/inherit pattern
 			{
 				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_global_false_inherit.tf"),
+					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_step2_global_false_mixed.tf"),
 					subscriptionName,
 					databaseName,
 					databasePassword,
@@ -172,47 +92,95 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 					// Global setting
 					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "false"),
 
-					// Both regions should exist
-					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "2"),
+					// Three regions
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "3"),
 
-					// Neither region should have enable_default_user in state (inheriting from global)
+					// us-east-1: explicit true (differs from global)
+					resource.TestCheckTypeSetElemNestedAttrs(databaseResourceName, "override_region.*", map[string]string{
+						"name":                "us-east-1",
+						"enable_default_user": "true",
+					}),
+
+					// us-east-2: explicit false (matches global)
+					resource.TestCheckTypeSetElemNestedAttrs(databaseResourceName, "override_region.*", map[string]string{
+						"name":                "us-east-2",
+						"enable_default_user": "false",
+					}),
+
+					// eu-west-2: inherits (no enable_default_user in state)
+
+					// API check: verify actual values
+					testCheckEnableDefaultUserInAPI(databaseResourceName, false, map[string]*bool{
+						"us-east-1": redis.Bool(true),  // Explicit (differs from global)
+						"us-east-2": redis.Bool(false), // Explicit (matches global)
+						"eu-west-2": nil,                // Inherits from global=false
+					}),
+				),
+			},
+			// Step 3: global=false, all 3 regions inherit
+			// CRITICAL TEST: Removal scenario (explicit → inherit)
+			// Verifies that removing explicit overrides from config:
+			// - Removes fields from state
+			// - Doesn't cause drift
+			// - Regions correctly inherit from global
+			{
+				Config: fmt.Sprintf(
+					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_step3_all_inherit.tf"),
+					subscriptionName,
+					databaseName,
+					databasePassword,
+				),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Global setting
+					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "false"),
+
+					// Three regions
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "3"),
+
+					// All regions inherit - NO enable_default_user in state
+					// We verify this by checking the API returns inherited values
 					resource.TestCheckNoResourceAttr(databaseResourceName, "override_region.0.enable_default_user"),
 					resource.TestCheckNoResourceAttr(databaseResourceName, "override_region.1.enable_default_user"),
+					resource.TestCheckNoResourceAttr(databaseResourceName, "override_region.2.enable_default_user"),
 
-					// API check: Both regions should have false (inherited from global)
+					// API check: All regions inherit from global=false
 					testCheckEnableDefaultUserInAPI(databaseResourceName, false, map[string]*bool{
 						"us-east-1": nil, // Inherits from global
-						"us-east-2": nil,
+						"us-east-2": nil, // Inherits from global
+						"eu-west-2": nil, // Inherits from global
 					}),
 				),
 			},
-			// Step 6: global=false, us-east-1 explicit false (field SHOULD appear in override_region)
-			// Tests explicit false matching global false (vs inheriting)
+			// Step 4: global=true, add explicit override to one region
+			// Tests addition scenario (inherit → explicit)
+			// Verifies that adding explicit override after removal works correctly
 			{
 				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_global_false_region_false.tf"),
+					utils.GetTestConfig(t, "./activeactive/testdata/enable_default_user_step4_one_explicit.tf"),
 					subscriptionName,
 					databaseName,
 					databasePassword,
 				),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Global setting
-					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "false"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "true"),
 
-					// Two regions
-					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "2"),
+					// Three regions
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "3"),
 
-					// us-east-1 has explicit false (matches global but is EXPLICIT)
+					// us-east-1: explicit false (differs from global)
 					resource.TestCheckTypeSetElemNestedAttrs(databaseResourceName, "override_region.*", map[string]string{
 						"name":                "us-east-1",
 						"enable_default_user": "false",
 					}),
-					// us-east-2 inherits (no explicit field)
 
-					// API check: us-east-1=false (explicit, matches global), us-east-2=false (inherited)
-					testCheckEnableDefaultUserInAPI(databaseResourceName, false, map[string]*bool{
-						"us-east-1": redis.Bool(false), // Explicit (matches global)
-						"us-east-2": nil,                // Inherits from global
+					// us-east-2 and eu-west-2: inherit (no enable_default_user in state)
+
+					// API check: us-east-1 explicit, others inherit
+					testCheckEnableDefaultUserInAPI(databaseResourceName, true, map[string]*bool{
+						"us-east-1": redis.Bool(false), // Explicit (differs from global)
+						"us-east-2": nil,                // Inherits from global=true
+						"eu-west-2": nil,                // Inherits from global=true
 					}),
 				),
 			},

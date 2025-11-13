@@ -32,6 +32,13 @@ resource "rediscloud_active_active_subscription" "example" {
       write_operations_per_second = 1000
       read_operations_per_second  = 1000
     }
+
+    region {
+      region                     = "eu-west-2"
+      networking_deployment_cidr = "10.2.0.0/24"
+      write_operations_per_second = 1000
+      read_operations_per_second  = 1000
+    }
   }
 }
 
@@ -40,16 +47,24 @@ resource "rediscloud_active_active_subscription_database" "example" {
   name               = local.database_name
   memory_limit_in_gb = 1
 
-  # Global enable_default_user is true (default behavior)
+  # Global enable_default_user is true
   global_enable_default_user = true
   global_password            = local.password
 
-  # Both regions inherit from global - NO enable_default_user specified
+  # us-east-1: explicitly set to false (differs from global)
+  # This tests the ADDITION scenario: Step 3 had all inherit, now adding explicit
   override_region {
-    name = "us-east-1"
+    name                = "us-east-1"
+    enable_default_user = false
   }
 
+  # us-east-2: NOT set (inherits from global=true)
   override_region {
     name = "us-east-2"
+  }
+
+  # eu-west-2: NOT set (inherits from global=true)
+  override_region {
+    name = "eu-west-2"
   }
 }

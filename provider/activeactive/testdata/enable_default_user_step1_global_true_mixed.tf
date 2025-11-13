@@ -32,6 +32,13 @@ resource "rediscloud_active_active_subscription" "example" {
       write_operations_per_second = 1000
       read_operations_per_second  = 1000
     }
+
+    region {
+      region                     = "eu-west-2"
+      networking_deployment_cidr = "10.2.0.0/24"
+      write_operations_per_second = 1000
+      read_operations_per_second  = 1000
+    }
   }
 }
 
@@ -44,16 +51,20 @@ resource "rediscloud_active_active_subscription_database" "example" {
   global_enable_default_user = true
   global_password            = local.password
 
-  # us-east-1 explicitly set to true (matches global but is EXPLICIT)
-  # This tests that explicit values are preserved even when matching global
+  # us-east-1: explicitly set to true (matches global)
   override_region {
     name                = "us-east-1"
     enable_default_user = true
   }
 
-  # us-east-2 explicitly set to false (differs from global)
+  # us-east-2: explicitly set to false (differs from global)
   override_region {
     name                = "us-east-2"
     enable_default_user = false
+  }
+
+  # eu-west-2: NOT set (inherits from global=true)
+  override_region {
+    name = "eu-west-2"
   }
 }
