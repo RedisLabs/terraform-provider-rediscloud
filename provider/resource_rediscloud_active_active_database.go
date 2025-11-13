@@ -214,6 +214,12 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Description: "Region-specific configuration parameters to override the global configuration",
 				Type:        schema.TypeSet,
 				Optional:    true,
+				Set: func(v interface{}) int {
+					m := v.(map[string]interface{})
+					// Hash only by region name to maintain stable element identity
+					// This prevents TypeSet from treating elements with different fields as different elements
+					return schema.HashString(m["name"].(string))
+				},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
