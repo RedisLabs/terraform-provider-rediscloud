@@ -27,8 +27,8 @@ var contractFlag = flag.Bool("contract", false,
 var marketplaceFlag = flag.Bool("marketplace", false,
 	"Add this flag '-marketplace' to run tests for marketplace associated accounts")
 
-// Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the subscription resource.
-func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
+// Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the subscription resource with Redis 7.
+func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
@@ -44,7 +44,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscription, testCloudAccountName, name),
+				Config: testAccResourceRedisCloudProSubscriptionRedis7(t, testCloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
@@ -61,6 +61,114 @@ func TestAccResourceRedisCloudProSubscription_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.0", "RedisJSON"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.1", "RedisBloom"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.2", "RediSearch"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.replication", "false"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.throughput_measurement_by", "operations-per-second"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.throughput_measurement_value", "10000"),
+
+					resource.TestCheckResourceAttr(resourceName, "pricing.#", "0"),
+
+					func(s *terraform.State) error {
+						r := s.RootModule().Resources[resourceName]
+
+						var err error
+						subId, err = strconv.Atoi(r.Primary.ID)
+						if err != nil {
+							return err
+						}
+
+						apiClient := testProvider.Meta().(*client.ApiClient)
+						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
+						if err != nil {
+							return err
+						}
+
+						if redis.StringValue(sub.Name) != name {
+							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
+						}
+						return nil
+					},
+				),
+			},
+			{
+				// Checks if the changes in the creation plan are ignored.
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, testCloudAccountName, name, "ram"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "0"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.dataset_size_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.replication", "false"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "false"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.throughput_measurement_by", "operations-per-second"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.throughput_measurement_value", "10000"),
+				),
+			},
+			{
+				// Checks if the changes to the payment_method are ignored.
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionChangedPaymentMethod, testCloudAccountName, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
+				),
+			},
+			{
+				// Checks if the payment_method and creation_plan block are ignored after the IMPORT operation.
+				ResourceName: resourceName,
+				ImportState:  true,
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					paymentMethod, ok := states[0].Attributes["payment_method"]
+					if ok && paymentMethod != "credit-card" {
+						return fmt.Errorf("Unexpected payment_method block. Should be 'credit-card', instead of  %s", paymentMethod)
+					}
+					creationPlan, ok := states[0].Attributes["creation_plan.#"]
+					if ok && creationPlan != "0" {
+						return fmt.Errorf("Unexpected creation_plan block. Should be 0, instead of  %s", creationPlan)
+					}
+					return nil
+				},
+			},
+			{
+				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
+				Config:       fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, testCloudAccountName, name, "ram-and-flash"),
+				ResourceName: resourceName,
+				ExpectError:  regexp.MustCompile(`Error: the "creation_plan" block is required`),
+			},
+		},
+	})
+}
+
+// Checks CRUDI (CREATE,READ,UPDATE,IMPORT) operations on the subscription resource with Redis 8.
+func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	const resourceName = "rediscloud_subscription.example"
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+
+	var subId int
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckProSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccResourceRedisCloudProSubscriptionRedis8(t, testCloudAccountName, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
+					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
+					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "0"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.dataset_size_in_gb", "1"),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.query_performance_factor", "4x"),
+
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.modules.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.replication", "false"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "false"),
@@ -1191,3 +1299,13 @@ resource "rediscloud_subscription" "example" {
   }
 }
 `
+
+func testAccResourceRedisCloudProSubscriptionRedis7(t *testing.T, cloudAccountName string, subscriptionName string) string {
+	content := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_redis7.tf")
+	return fmt.Sprintf(content, cloudAccountName, subscriptionName)
+}
+
+func testAccResourceRedisCloudProSubscriptionRedis8(t *testing.T, cloudAccountName string, subscriptionName string) string {
+	content := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_redis8.tf")
+	return fmt.Sprintf(content, cloudAccountName, subscriptionName)
+}
