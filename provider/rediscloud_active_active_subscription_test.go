@@ -675,15 +675,9 @@ data "rediscloud_active_active_subscription" "example" {
 `
 
 const testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethod = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
 resource "rediscloud_active_active_subscription" "example" {
 	name = "%s"
     payment_method = "marketplace"
-	payment_method_id = data.rediscloud_payment_method.card.id
 	cloud_provider = "AWS"
 
 	creation_plan {
