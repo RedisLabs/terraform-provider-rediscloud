@@ -20,6 +20,7 @@ resource "rediscloud_subscription" "example" {
   payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage    = "ram"
+  redis_version     = "7.4"
 
   allowlist {
     cidrs              = ["192.168.0.0/16"]
@@ -37,7 +38,6 @@ resource "rediscloud_subscription" "example" {
   }
 
   creation_plan {
-    redis_version                = "7.4"
     dataset_size_in_gb           = 1
     quantity                     = 1
     replication                  = false
