@@ -50,8 +50,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.#", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.value", "1"),
-					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "1"),
-					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.0", "RedisJSON"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "0"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_source_ips.#", "2"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "true"),
 
@@ -118,8 +117,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(datasourceName, "tls_certificate"),
 
 					resource.TestCheckResourceAttr(datasourceName, "data_eviction", "volatile-lru"),
-					resource.TestCheckResourceAttr(datasourceName, "global_modules.#", "1"),
-					resource.TestCheckResourceAttr(datasourceName, "global_modules.0", "RedisJSON"),
+					resource.TestCheckResourceAttr(datasourceName, "global_modules.#", "0"),
 
 					resource.TestCheckResourceAttr(datasourceName, "tags.deployment_family", "blue"),
 					resource.TestCheckResourceAttr(datasourceName, "tags.priority", "code-2"),
