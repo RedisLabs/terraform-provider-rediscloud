@@ -2,8 +2,10 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -148,6 +150,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Description: "Rate of database data persistence (in persistent storage)",
 				Type:        schema.TypeString,
 				Optional:    true,
+				Computed:    true,
 			},
 			"global_password": {
 				Description: "Password used to access the database. If left empty, the password will be generated automatically",
@@ -211,6 +214,8 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Description: "Region-specific configuration parameters to override the global configuration",
 				Type:        schema.TypeSet,
 				Optional:    true,
+				// Removed custom Set function - testing if it prevents field removal detection
+				// Default Terraform hash (all fields) should detect when enable_default_user removed
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
@@ -260,10 +265,64 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 							Optional:    true,
 						},
 						"enable_default_user": {
-							Description: "When 'true', enables connecting to the database with the 'default' user. Default: 'true'",
+							Description: "When 'true', enables connecting to the database with the 'default' user. If not specified, the region inherits the value from global_enable_default_user.",
 							Type:        schema.TypeBool,
 							Optional:    true,
-							Default:     true,
+							Computed:    true,
+							DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+								// Smart diff suppression: only suppress when truly inheriting from global
+								// Check both: value matches global AND field not explicitly set in config
+
+								log.Printf("[DEBUG] DiffSuppressFunc: Called for key=%s, old=%s, new=%s", k, old, new)
+
+								// Get global value
+								globalVal, ok := d.GetOk("global_enable_default_user")
+								if !ok {
+									log.Printf("[DEBUG] DiffSuppressFunc: No global_enable_default_user found, not suppressing")
+									return false
+								}
+								globalStr := strconv.FormatBool(globalVal.(bool))
+								log.Printf("[DEBUG] DiffSuppressFunc: global_enable_default_user=%s", globalStr)
+
+								// Extract TypeSet hash from key like "override_region.1234567.enable_default_user"
+								parts := strings.Split(k, ".")
+								if len(parts) < 3 {
+									log.Printf("[DEBUG] DiffSuppressFunc: Key has unexpected format, not suppressing")
+									return false
+								}
+								hashStr := parts[1]
+								log.Printf("[DEBUG] DiffSuppressFunc: Extracted hash=%s from key", hashStr)
+
+								// Find region name by matching hash
+								overrideRegions := d.Get("override_region").(*schema.Set)
+								for _, region := range overrideRegions.List() {
+									regionMap := region.(map[string]interface{})
+									regionName := regionMap["name"].(string)
+
+									// Our custom hash uses schema.HashString(name)
+									regionHash := schema.HashString(regionName)
+									if strconv.Itoa(regionHash) == hashStr {
+										log.Printf("[DEBUG] DiffSuppressFunc: Found matching region=%s (hash=%d)", regionName, regionHash)
+
+										// Check if field is explicitly set in config
+										explicitInConfig := isFieldInConfigForRegion(d, regionName, "enable_default_user")
+										log.Printf("[DEBUG] DiffSuppressFunc: Region %s - explicitInConfig=%v", regionName, explicitInConfig)
+
+										if !explicitInConfig && old == globalStr {
+											// Not in config and matches global → inheriting, suppress diff
+											log.Printf("[DEBUG] DiffSuppressFunc: Region %s - SUPPRESSING (not in config, old=%s matches global=%s)", regionName, old, globalStr)
+											return true
+										}
+
+										// Field in config or doesn't match global → real change, don't suppress
+										log.Printf("[DEBUG] DiffSuppressFunc: Region %s - NOT SUPPRESSING (explicitInConfig=%v, old=%s, global=%s)", regionName, explicitInConfig, old, globalStr)
+										return false
+									}
+								}
+
+								log.Printf("[DEBUG] DiffSuppressFunc: No matching region found for hash=%s, not suppressing", hashStr)
+								return false
+							},
 						},
 						"remote_backup": {
 							Description: "An object that specifies the backup options for the database in this region",
@@ -449,7 +508,6 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 		createDatabase.RedisVersion = s
 	})
 
-
 	// Confirm Subscription Active status before creating database
 	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
 	if err != nil {
@@ -631,9 +689,45 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 
 		regionDbConfig["remote_backup"] = pro.FlattenBackupPlan(regionDb.Backup, getStateRemoteBackup(d, region), "")
 
-		// Only set enable_default_user if it was explicitly configured in the override_region
-		if stateEnableDefaultUser := getStateOverrideRegion(d, region)["enable_default_user"]; stateEnableDefaultUser != nil {
-			regionDbConfig["enable_default_user"] = redis.BoolValue(regionDb.Security.EnableDefaultUser)
+		// Conditionally include enable_default_user in state
+		// Only include if: (1) explicitly set in config, OR (2) differs from global (API override)
+		// DiffSuppressFunc provides additional safety net for edge cases
+		if regionDb.Security.EnableDefaultUser != nil {
+			globalValue := d.Get("global_enable_default_user").(bool)
+			regionValue := redis.BoolValue(regionDb.Security.EnableDefaultUser)
+
+			shouldInclude := false
+
+			rawConfig := d.GetRawConfig()
+			if !rawConfig.IsNull() && rawConfig.IsKnown() {
+				// Apply/Update mode: GetRawConfig available - check actual HCL config
+				explicitInConfig := isFieldInConfigForRegion(d, region, "enable_default_user")
+
+				if explicitInConfig {
+					// User explicitly set it in config → always include
+					shouldInclude = true
+				} else if regionValue != globalValue {
+					// Not in config but differs from global → API override exists, include to track it
+					shouldInclude = true
+				}
+				// else: not in config and matches global → inheriting, omit from state
+			} else {
+				// Refresh mode: GetRawConfig is null - check previous state via GetRawState
+				fieldWasInState := isFieldInStateForRegion(d, region, "enable_default_user")
+
+				if fieldWasInState {
+					// Was explicitly tracked before → continue tracking
+					shouldInclude = true
+				} else if regionValue != globalValue {
+					// New API override detected → start tracking
+					shouldInclude = true
+				}
+				// else: wasn't tracked and matches global → keep omitted
+			}
+
+			if shouldInclude {
+				regionDbConfig["enable_default_user"] = regionValue
+			}
 		}
 
 		regionDbConfigs = append(regionDbConfigs, regionDbConfig)
@@ -652,14 +746,26 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	if err := d.Set("private_endpoint", privateEndpointConfig); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("global_modules", flattenModulesToNames(db.Modules)); err != nil {
-		return diag.FromErr(err)
+	// For Redis 8.0+, modules are bundled by default and returned by the API
+	// Only set modules in state if they were explicitly defined in the config
+	redisVersion := redis.StringValue(db.RedisVersion)
+	if shouldSuppressModuleDiffsForRedis8(redisVersion) {
+		// Only set modules if they were explicitly configured by the user
+		if _, ok := d.GetOk("global_modules"); ok {
+			if err := d.Set("global_modules", flattenModulesToNames(db.Modules)); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+	} else {
+		// For Redis < 8.0, always set modules from API response
+		if err := d.Set("global_modules", flattenModulesToNames(db.Modules)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
 		return diag.FromErr(err)
 	}
-
 
 	// Read global_enable_default_user from API response
 	if db.GlobalEnableDefaultUser != nil {
@@ -755,9 +861,19 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 			Region: redis.String(dbRegion["name"].(string)),
 		}
 
-		// Only set EnableDefaultUser if it was explicitly configured in the override_region
-		if val, exists := dbRegion["enable_default_user"]; exists && val != nil {
-			regionProps.EnableDefaultUser = redis.Bool(val.(bool))
+		// Always send enable_default_user: either region-specific value or global value
+		// Check GetRawConfig to distinguish "user set it" from "TypeSet materialized it"
+		regionName := dbRegion["name"].(string)
+		explicitInConfig := isFieldInConfigForRegion(d, regionName, "enable_default_user")
+
+		if explicitInConfig {
+			// User set it explicitly in config - use value from state
+			if val, exists := dbRegion["enable_default_user"]; exists {
+				regionProps.EnableDefaultUser = redis.Bool(val.(bool))
+			}
+		} else {
+			// Not in config - send global value to clear any API override
+			regionProps.EnableDefaultUser = redis.Bool(d.Get("global_enable_default_user").(bool))
 		}
 
 		if len(overrideAlerts) > 0 {
@@ -787,6 +903,13 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		}
 
 		regionProps.RemoteBackup = pro.BuildBackupPlan(dbRegion["remote_backup"], nil)
+
+		// Log final region properties being sent to API
+		enableDefaultUserValue := "nil (not set - will inherit)"
+		if regionProps.EnableDefaultUser != nil {
+			enableDefaultUserValue = fmt.Sprintf("%v", *regionProps.EnableDefaultUser)
+		}
+		log.Printf("[DEBUG] Update: Region %s - Final regionProps.EnableDefaultUser being sent to API: %s", dbRegion["name"].(string), enableDefaultUserValue)
 
 		regions = append(regions, regionProps)
 	}
@@ -820,10 +943,9 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		update.GlobalDataPersistence = redis.String(d.Get("global_data_persistence").(string))
 	}
 
-	if v, ok := d.GetOkExists("global_enable_default_user"); ok {
-		update.GlobalEnableDefaultUser = redis.Bool(v.(bool))
-	}
-
+	// global_enable_default_user has Default: true, so field always has a value
+	// No need for GetOkExists - just use d.Get() directly
+	update.GlobalEnableDefaultUser = redis.Bool(d.Get("global_enable_default_user").(bool))
 
 	if v, ok := d.GetOk("support_oss_cluster_api"); ok {
 		update.SupportOSSClusterAPI = redis.Bool(v.(bool))
@@ -860,6 +982,21 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 			// Default: enable_tls=false, client_ssl_certificate=""
 			update.EnableTls = redis.Bool(enableTLS)
 		}
+	}
+
+	// Log the full update request being sent to API
+	log.Printf("[DEBUG] Update: About to call ActiveActiveUpdate API")
+	log.Printf("[DEBUG] Update: GlobalEnableDefaultUser = %v", *update.GlobalEnableDefaultUser)
+	for i, region := range update.Regions {
+		regionName := ""
+		if region.Region != nil {
+			regionName = *region.Region
+		}
+		enableDefaultUserValue := "nil (not set - will inherit from global)"
+		if region.EnableDefaultUser != nil {
+			enableDefaultUserValue = fmt.Sprintf("%v", *region.EnableDefaultUser)
+		}
+		log.Printf("[DEBUG] Update: Regions[%d] %s - EnableDefaultUser = %s", i, regionName, enableDefaultUserValue)
 	}
 
 	err = api.Client.Database.ActiveActiveUpdate(ctx, subId, dbId, update)
@@ -958,4 +1095,118 @@ func flattenModulesToNames(modules []*databases.Module) []string {
 		moduleNames = append(moduleNames, redis.StringValue(module.Name))
 	}
 	return moduleNames
+}
+
+// isFieldInConfigForRegion checks if a field is explicitly set in the config
+// for a specific region's override_region block.
+// Returns true only if the field exists in the actual HCL config.
+func isFieldInConfigForRegion(d *schema.ResourceData, regionName string, fieldName string) bool {
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsKnown() {
+		return false
+	}
+
+	if !rawConfig.Type().HasAttribute("override_region") {
+		return false
+	}
+
+	overrideRegions := rawConfig.GetAttr("override_region")
+	if overrideRegions.IsNull() || !overrideRegions.IsKnown() {
+		return false
+	}
+
+	// Iterate through regions to find matching name
+	iter := overrideRegions.ElementIterator()
+	for iter.Next() {
+		_, regionVal := iter.Element()
+
+		if regionVal.IsNull() || !regionVal.IsKnown() {
+			continue
+		}
+
+		if !regionVal.Type().HasAttribute("name") {
+			continue
+		}
+
+		nameAttr := regionVal.GetAttr("name")
+		if nameAttr.IsNull() || !nameAttr.IsKnown() {
+			continue
+		}
+
+		// Check if the name matches
+		if nameAttr.AsString() == regionName {
+			// Found the region, check if field exists
+			if !regionVal.Type().HasAttribute(fieldName) {
+				return false
+			}
+			fieldAttr := regionVal.GetAttr(fieldName)
+			return !fieldAttr.IsNull()
+		}
+	}
+
+	return false
+}
+
+// isFieldInStateForRegion checks if a field is present in the actual persisted state
+// for a specific region's override_region block. Uses GetRawState() to bypass materialization.
+// Returns true only if the field exists in the actual state file.
+func isFieldInStateForRegion(d *schema.ResourceData, regionName string, fieldName string) bool {
+	rawState := d.GetRawState()
+	if rawState.IsNull() || !rawState.IsKnown() {
+		return false
+	}
+
+	if !rawState.Type().HasAttribute("override_region") {
+		return false
+	}
+
+	overrideRegions := rawState.GetAttr("override_region")
+	if overrideRegions.IsNull() || !overrideRegions.IsKnown() {
+		return false
+	}
+
+	// Iterate through regions to find matching name
+	iter := overrideRegions.ElementIterator()
+	for iter.Next() {
+		_, regionVal := iter.Element()
+
+		if regionVal.IsNull() || !regionVal.IsKnown() {
+			continue
+		}
+
+		if !regionVal.Type().HasAttribute("name") {
+			continue
+		}
+
+		nameAttr := regionVal.GetAttr("name")
+		if nameAttr.IsNull() || !nameAttr.IsKnown() {
+			continue
+		}
+
+		// Check if the name matches
+		if nameAttr.AsString() == regionName {
+			// Found the region, check if field exists
+			if !regionVal.Type().HasAttribute(fieldName) {
+				return false
+			}
+			fieldAttr := regionVal.GetAttr(fieldName)
+			return !fieldAttr.IsNull()
+		}
+	}
+
+	return false
+}
+
+// shouldSuppressModuleDiffsForRedis8 checks if the Redis version is 8.0 or higher.
+// For Redis 8+, modules are bundled by default, so we suppress drift for modules
+// that weren't explicitly configured by the user.
+func shouldSuppressModuleDiffsForRedis8(version string) bool {
+	if len(version) == 0 {
+		return false
+	}
+	majorVersionStr := strings.Split(version, ".")[0]
+	if majorVersion, err := strconv.Atoi(majorVersionStr); err == nil {
+		return majorVersion >= 8
+	}
+	return false
 }

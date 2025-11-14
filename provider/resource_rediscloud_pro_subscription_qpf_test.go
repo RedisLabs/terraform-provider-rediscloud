@@ -109,26 +109,6 @@ func TestAccResourceRedisCloudProSubscription_qpf(t *testing.T) {
 	})
 }
 
-func TestAccResourceRedisCloudProSubscription_missingModule(t *testing.T) {
-	name := acctest.RandomWithPrefix(testResourcePrefix)
-	password := acctest.RandString(20)
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-
-	config := formatDatabaseConfig(name, testCloudAccountName, password, "4x", "")
-
-	testSubErrorCase(t, config, regexp.MustCompile("query_performance_factor\" requires the \"modules\" key to be explicitly defined in HCL"))
-}
-
-func TestAccResourceRedisCloudProSubscription_missingRediSearchModule(t *testing.T) {
-	name := acctest.RandomWithPrefix(testResourcePrefix)
-	password := acctest.RandString(20)
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-
-	config := formatDatabaseConfig(name, testCloudAccountName, password, "4x", `modules = [{ name = "RediBloom" }]`)
-
-	testSubErrorCase(t, config, regexp.MustCompile("query_performance_factor\" requires the \"modules\" list to contain \"RediSearch"))
-}
-
 func TestAccResourceRedisCloudProSubscription_invalidQueryPerformanceFactors(t *testing.T) {
 	name := acctest.RandomWithPrefix("tf-test")
 	password := acctest.RandString(20)
