@@ -1,0 +1,20 @@
+name: 'Run Acceptance Tests'
+description: 'Run acceptance tests with validation that tests actually ran'
+inputs:
+  test_pattern:
+    description: 'Test pattern to pass to -run flag'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Run tests
+      shell: bash
+      env:
+        TEST_PATTERN: ${{ inputs.test_pattern }}
+      run: |
+        set -o pipefail
+        EXECUTE_TESTS=true make testacc TESTARGS="-run=\"$TEST_PATTERN\"" 2>&1 | tee test_output.txt
+        if ! grep -q "=== RUN" test_output.txt; then
+          echo "ERROR: No tests matched the pattern. Please check the -run argument."
+          exit 1
+        fi
