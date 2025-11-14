@@ -151,8 +151,11 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Attribute reference
 
-* `aws_account_id` - AWS account ID that the subscription is deployed in (AWS subscriptions only).
 * `customer_managed_key_redis_service_account` - Outputs the id of the service account associated with the subscription. Useful as part of the CMK flow.
+
+The `cloud_provider` block has these attributes:
+
+* `aws_account_id` - AWS account ID that the subscription is deployed in (AWS subscriptions only).
 
 The `region` block has these attributes:
 
