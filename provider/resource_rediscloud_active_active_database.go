@@ -272,14 +272,58 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 							Description: "When 'true', enables connecting to the database with the 'default' user. If not specified, the region inherits the value from global_enable_default_user.",
 							Type:        schema.TypeBool,
 							Optional:    true,
-							Computed:    true,
 							DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-								// Suppress diff when the region value matches global (semantic inheritance)
-								// This allows us to always include the field in state while avoiding drift
-								// when the user removes explicit overrides to inherit from global
-								if globalVal, ok := d.GetOk("global_enable_default_user"); ok {
-									return old == strconv.FormatBool(globalVal.(bool)) && new == strconv.FormatBool(globalVal.(bool))
+								// Smart diff suppression: only suppress when truly inheriting from global
+								// Check both: value matches global AND field not explicitly set in config
+
+								log.Printf("[DEBUG] DiffSuppressFunc: Called for key=%s, old=%s, new=%s", k, old, new)
+
+								// Get global value
+								globalVal, ok := d.GetOk("global_enable_default_user")
+								if !ok {
+									log.Printf("[DEBUG] DiffSuppressFunc: No global_enable_default_user found, not suppressing")
+									return false
 								}
+								globalStr := strconv.FormatBool(globalVal.(bool))
+								log.Printf("[DEBUG] DiffSuppressFunc: global_enable_default_user=%s", globalStr)
+
+								// Extract TypeSet hash from key like "override_region.1234567.enable_default_user"
+								parts := strings.Split(k, ".")
+								if len(parts) < 3 {
+									log.Printf("[DEBUG] DiffSuppressFunc: Key has unexpected format, not suppressing")
+									return false
+								}
+								hashStr := parts[1]
+								log.Printf("[DEBUG] DiffSuppressFunc: Extracted hash=%s from key", hashStr)
+
+								// Find region name by matching hash
+								overrideRegions := d.Get("override_region").(*schema.Set)
+								for _, region := range overrideRegions.List() {
+									regionMap := region.(map[string]interface{})
+									regionName := regionMap["name"].(string)
+
+									// Our custom hash uses schema.HashString(name)
+									regionHash := schema.HashString(regionName)
+									if strconv.Itoa(regionHash) == hashStr {
+										log.Printf("[DEBUG] DiffSuppressFunc: Found matching region=%s (hash=%d)", regionName, regionHash)
+
+										// Check if field is explicitly set in config
+										explicitInConfig := isFieldInConfigForRegion(d, regionName, "enable_default_user")
+										log.Printf("[DEBUG] DiffSuppressFunc: Region %s - explicitInConfig=%v", regionName, explicitInConfig)
+
+										if !explicitInConfig && old == globalStr {
+											// Not in config and matches global → inheriting, suppress diff
+											log.Printf("[DEBUG] DiffSuppressFunc: Region %s - SUPPRESSING (not in config, old=%s matches global=%s)", regionName, old, globalStr)
+											return true
+										}
+
+										// Field in config or doesn't match global → real change, don't suppress
+										log.Printf("[DEBUG] DiffSuppressFunc: Region %s - NOT SUPPRESSING (explicitInConfig=%v, old=%s, global=%s)", regionName, explicitInConfig, old, globalStr)
+										return false
+									}
+								}
+
+								log.Printf("[DEBUG] DiffSuppressFunc: No matching region found for hash=%s, not suppressing", hashStr)
 								return false
 							},
 						},
