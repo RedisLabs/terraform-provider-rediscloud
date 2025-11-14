@@ -33,6 +33,7 @@ resource "rediscloud_subscription" "example" {
     }
   }
   creation_plan {
+    redis_version                = "7.4"
     dataset_size_in_gb           = 1
     quantity                     = 1
     replication                  = false

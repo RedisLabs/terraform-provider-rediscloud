@@ -11,6 +11,7 @@ resource "rediscloud_active_active_subscription" "example" {
   name              = local.rediscloud_subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider    = "AWS"
+  redis_version     = "7.4"
 
   creation_plan {
     memory_limit_in_gb = 1

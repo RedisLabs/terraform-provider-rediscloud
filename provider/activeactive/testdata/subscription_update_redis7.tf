@@ -12,6 +12,7 @@ resource "rediscloud_active_active_subscription" "example" {
   name              = local.rediscloud_subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider    = local.rediscloud_cloud_provider_name
+  redis_version     = "7.4"
 
   maintenance_windows {
     mode = "automatic"
