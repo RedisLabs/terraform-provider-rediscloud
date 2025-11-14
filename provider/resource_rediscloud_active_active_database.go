@@ -878,12 +878,12 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		log.Printf("[DEBUG] Update: Region %s - dbRegion map contains: %+v", regionName, dbRegion)
 
 		if explicitlySet {
-			// User explicitly set it in config - send the value
-			if val, exists := dbRegion["enable_default_user"]; exists && val != nil {
-				regionProps.EnableDefaultUser = redis.Bool(val.(bool))
+			// User explicitly set it in config - read value directly from config
+			if val, found := getEnableDefaultUserValueFromConfig(d, regionName); found {
+				regionProps.EnableDefaultUser = redis.Bool(val)
 				log.Printf("[DEBUG] Update: Region %s - Sending enable_default_user=%v to API (explicitly set in config)", regionName, val)
 			} else {
-				log.Printf("[DEBUG] Update: Region %s - Field marked as explicit but not found in dbRegion map (exists=%v, val=%v)", regionName, exists, val)
+				log.Printf("[DEBUG] Update: Region %s - Field marked as explicit but not found in config", regionName)
 			}
 		} else {
 			// Not explicitly set - send global value to clear any API override
@@ -1223,6 +1223,28 @@ func isEnableDefaultUserExplicitlySetInConfig(d *schema.ResourceData, regionName
 	log.Printf("[DEBUG] isEnableDefaultUserExplicitlySetInConfig: Field found=%v for region %s", found, regionName)
 
 	return found
+}
+
+// getEnableDefaultUserValueFromConfig gets the actual bool value of enable_default_user
+// from the config for a given region. Returns (value, found).
+func getEnableDefaultUserValueFromConfig(d *schema.ResourceData, regionName string) (bool, bool) {
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsKnown() {
+		log.Printf("[DEBUG] getEnableDefaultUserValueFromConfig: GetRawConfig is null/unknown for region %s", regionName)
+		return false, false
+	}
+
+	log.Printf("[DEBUG] getEnableDefaultUserValueFromConfig: Reading value for region %s", regionName)
+
+	value, found := findRegionFieldInCtyValue(rawConfig, regionName, "enable_default_user")
+	if !found {
+		log.Printf("[DEBUG] getEnableDefaultUserValueFromConfig: Field not found for region %s", regionName)
+		return false, false
+	}
+
+	boolValue := value.True()
+	log.Printf("[DEBUG] getEnableDefaultUserValueFromConfig: Found value=%v for region %s", boolValue, regionName)
+	return boolValue, true
 }
 
 // isEnableDefaultUserInActualPersistedState checks if enable_default_user exists in the
