@@ -67,8 +67,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 						"enable_default_user": "false",
 					}),
 
-					// eu-west-2: inherits (no enable_default_user in state)
-					// Note: We can't use TestCheckTypeSetElemNestedAttrs with absent fields
+					// eu-west-2: inherits (has enable_default_user in state with global value=true)
+					// DiffSuppressFunc prevents drift since value matches global
 					// The API check below verifies inheritance works correctly
 
 					// API check: verify actual values
@@ -107,7 +107,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 						"enable_default_user": "false",
 					}),
 
-					// eu-west-2: inherits (no enable_default_user in state)
+					// eu-west-2: inherits (has enable_default_user in state with global value=false)
 
 					// API check: verify actual values
 					testCheckEnableDefaultUserInAPI(databaseResourceName, false, map[string]*bool{
@@ -137,11 +137,10 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 					// Three regions
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "3"),
 
-					// All regions inherit - NO enable_default_user in state
-					// We verify this by checking the API returns inherited values
-					resource.TestCheckNoResourceAttr(databaseResourceName, "override_region.0.enable_default_user"),
-					resource.TestCheckNoResourceAttr(databaseResourceName, "override_region.1.enable_default_user"),
-					resource.TestCheckNoResourceAttr(databaseResourceName, "override_region.2.enable_default_user"),
+					// All regions inherit - fields ALWAYS in state with global value
+					// DiffSuppressFunc prevents drift when value matches global
+					// Note: We cannot use TestCheckTypeSetElemNestedAttrs for all 3 because we don't know the order
+					// Instead we verify via API check below that all regions have the inherited value
 
 					// API check: All regions inherit from global=false
 					testCheckEnableDefaultUserInAPI(databaseResourceName, false, map[string]*bool{
@@ -174,7 +173,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 						"enable_default_user": "false",
 					}),
 
-					// us-east-2 and eu-west-2: inherit (no enable_default_user in state)
+					// us-east-2 and eu-west-2: inherit (have enable_default_user in state with global value)
+					// DiffSuppressFunc prevents drift since values match global
 
 					// API check: us-east-1 explicit, others inherit
 					testCheckEnableDefaultUserInAPI(databaseResourceName, true, map[string]*bool{
