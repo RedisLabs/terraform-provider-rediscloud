@@ -66,14 +66,6 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				}
 			}
 
-			// Force update when enable_default_user is removed from config
-			// (Computed fields don't trigger updates when removed, but we need to clear API override)
-			if diff.Id() != "" { // Only during updates, not creates
-				if err := forceUpdateWhenEnableDefaultUserRemoved(ctx, diff); err != nil {
-					return err
-				}
-			}
-
 			return nil
 		},
 
@@ -280,7 +272,6 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 							Description: "When 'true', enables connecting to the database with the 'default' user. If not specified, the region inherits the value from global_enable_default_user.",
 							Type:        schema.TypeBool,
 							Optional:    true,
-							Computed:    true,
 						},
 						"remote_backup": {
 							Description: "An object that specifies the backup options for the database in this region",
@@ -1274,94 +1265,3 @@ func isEnableDefaultUserInActualPersistedState(d *schema.ResourceData, regionNam
 	return found
 }
 
-// forceUpdateWhenEnableDefaultUserRemoved detects when enable_default_user is removed from config
-// and forces an update so the API override can be cleared. This is necessary because Computed fields
-// don't trigger updates when removed from config - Terraform carries forward the old value.
-func forceUpdateWhenEnableDefaultUserRemoved(ctx context.Context, diff *schema.ResourceDiff) error {
-	// Get actual config (not the merged diff with Computed fields carried forward)
-	rawConfig := diff.GetRawConfig()
-	if rawConfig.IsNull() || !rawConfig.IsKnown() {
-		return nil
-	}
-
-	// Find regions in CONFIG that don't have enable_default_user
-	configRegionsWithoutField := make(map[string]bool)
-
-	if rawConfig.Type().HasAttribute("override_region") {
-		overrideRegions := rawConfig.GetAttr("override_region")
-		if !overrideRegions.IsNull() && overrideRegions.IsKnown() {
-			iter := overrideRegions.ElementIterator()
-			for iter.Next() {
-				_, regionVal := iter.Element()
-
-				if !regionVal.Type().HasAttribute("name") {
-					continue
-				}
-
-				regionName := regionVal.GetAttr("name").AsString()
-
-				// Check if enable_default_user is in config for this region
-				hasField := false
-				if regionVal.Type().HasAttribute("enable_default_user") {
-					fieldAttr := regionVal.GetAttr("enable_default_user")
-					if !fieldAttr.IsNull() {
-						hasField = true
-					}
-				}
-
-				if !hasField {
-					configRegionsWithoutField[regionName] = true
-				}
-			}
-		}
-	}
-
-	// Check old state to see which regions HAD the field
-	oldOverrideRegion, _ := diff.GetChange("override_region")
-	if oldOverrideRegion != nil {
-		oldSet := oldOverrideRegion.(*schema.Set)
-		for _, oldRegion := range oldSet.List() {
-			oldMap := oldRegion.(map[string]interface{})
-			regionName := oldMap["name"].(string)
-
-			_, hadFieldInState := oldMap["enable_default_user"]
-			fieldRemovedFromConfig := configRegionsWithoutField[regionName]
-
-			if hadFieldInState && fieldRemovedFromConfig {
-				// Field was in state but removed from config!
-				log.Printf("[DEBUG] CustomizeDiff: enable_default_user removed from config for region %s, forcing update", regionName)
-
-				// Since override_region is not Computed, we can't use SetNewComputed
-				// Instead, rebuild the set without the removed field and use SetNew to force a diff
-				newRegionSet := make([]interface{}, 0, oldSet.Len())
-				for _, region := range oldSet.List() {
-					regionMap := region.(map[string]interface{})
-					regionName := regionMap["name"].(string)
-
-					// Create a new map for this region
-					newRegionMap := make(map[string]interface{})
-					for k, v := range regionMap {
-						// Copy all fields except enable_default_user if it should be removed
-						if k == "enable_default_user" && configRegionsWithoutField[regionName] {
-							// Skip this field - it was removed from config
-							continue
-						}
-						newRegionMap[k] = v
-					}
-					newRegionSet = append(newRegionSet, newRegionMap)
-				}
-
-				// Set the new value to force Terraform to detect a change
-				if err := diff.SetNew("override_region", newRegionSet); err != nil {
-					return fmt.Errorf("failed to set new override_region for region %s: %w", regionName, err)
-				}
-
-				log.Printf("[DEBUG] CustomizeDiff: Rebuilt override_region set without enable_default_user for removed regions")
-				// Only need to rebuild once for all removals
-				break
-			}
-		}
-	}
-
-	return nil
-}
