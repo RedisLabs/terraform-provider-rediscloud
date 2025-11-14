@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+
+# Unreleased
+
+## Fixed
+- `rediscloud_active_active_subscription_database`: Fixed drift detection for `enable_default_user` in region overrides. Regions now correctly inherit from `global_enable_default_user` when not explicitly set, eliminating spurious diffs.
+- `rediscloud_active_active_subscription_database`: Fixed drift detection for `global_data_persistence`. This field now correctly tracks API-returned values without causing unexpected diffs.
+
 # 2.8.0 (10th November 2025)
 
 ## Added
