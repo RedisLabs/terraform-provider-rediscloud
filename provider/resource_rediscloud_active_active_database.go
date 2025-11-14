@@ -773,12 +773,19 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		}
 
 		// Always send enable_default_user: either region-specific value or global value
-		// This ensures API overrides are properly cleared when user removes explicit overrides
-		enableDefaultUser := d.Get("global_enable_default_user").(bool)
-		if val, exists := dbRegion["enable_default_user"]; exists {
-			enableDefaultUser = val.(bool)
+		// Check GetRawConfig to distinguish "user set it" from "TypeSet materialized it"
+		regionName := dbRegion["name"].(string)
+		explicitInConfig := isFieldInConfigForRegion(d, regionName, "enable_default_user")
+
+		if explicitInConfig {
+			// User set it explicitly in config - use value from state
+			if val, exists := dbRegion["enable_default_user"]; exists {
+				regionProps.EnableDefaultUser = redis.Bool(val.(bool))
+			}
+		} else {
+			// Not in config - send global value to clear any API override
+			regionProps.EnableDefaultUser = redis.Bool(d.Get("global_enable_default_user").(bool))
 		}
-		regionProps.EnableDefaultUser = redis.Bool(enableDefaultUser)
 
 		if len(overrideAlerts) > 0 {
 			regionProps.Alerts = &overrideAlerts
@@ -999,5 +1006,55 @@ func flattenModulesToNames(modules []*databases.Module) []string {
 		moduleNames = append(moduleNames, redis.StringValue(module.Name))
 	}
 	return moduleNames
+}
+
+// isFieldInConfigForRegion checks if a field is explicitly set in the config
+// for a specific region's override_region block.
+// Returns true only if the field exists in the actual HCL config.
+func isFieldInConfigForRegion(d *schema.ResourceData, regionName string, fieldName string) bool {
+	rawConfig := d.GetRawConfig()
+	if rawConfig.IsNull() || !rawConfig.IsKnown() {
+		return false
+	}
+
+	if !rawConfig.Type().HasAttribute("override_region") {
+		return false
+	}
+
+	overrideRegions := rawConfig.GetAttr("override_region")
+	if overrideRegions.IsNull() || !overrideRegions.IsKnown() {
+		return false
+	}
+
+	// Iterate through regions to find matching name
+	iter := overrideRegions.ElementIterator()
+	for iter.Next() {
+		_, regionVal := iter.Element()
+
+		if regionVal.IsNull() || !regionVal.IsKnown() {
+			continue
+		}
+
+		if !regionVal.Type().HasAttribute("name") {
+			continue
+		}
+
+		nameAttr := regionVal.GetAttr("name")
+		if nameAttr.IsNull() || !nameAttr.IsKnown() {
+			continue
+		}
+
+		// Check if the name matches
+		if nameAttr.AsString() == regionName {
+			// Found the region, check if field exists
+			if !regionVal.Type().HasAttribute(fieldName) {
+				return false
+			}
+			fieldAttr := regionVal.GetAttr(fieldName)
+			return !fieldAttr.IsNull()
+		}
+	}
+
+	return false
 }
 
