@@ -490,6 +490,10 @@ func updateDatasetSize(ctx context.Context, subId int, api *client.ApiClient, ex
 			return err
 		}
 
+		if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbID, api); err != nil {
+			return err
+		}
+
 		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 			return err
 		}
