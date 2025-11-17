@@ -252,9 +252,9 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 		}
 	}
 
-	// Handle global dataset_size_in_gb changes - cascade to all databases
+	// Handle global dataset_size_in_gb changes - cascade to explicitly configured databases only
 	if datasetSizeInGB != nil {
-		err = updateDatasetSize(ctx, subId, api, existingRegionMap, datasetSizeInGB)
+		err = updateDatasetSize(ctx, subId, api, desiredRegions, datasetSizeInGB)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -459,10 +459,10 @@ func regionsUpdateDatabases(ctx context.Context, subId int, api *client.ApiClien
 	return nil
 }
 
-func updateDatasetSize(ctx context.Context, subId int, api *client.ApiClient, existingRegionMap map[string]*regions.Region, datasetSizeInGB *float64) error {
-	// Collect all unique database IDs from all regions
+func updateDatasetSize(ctx context.Context, subId int, api *client.ApiClient, desiredRegions map[string]*RequestedRegion, datasetSizeInGB *float64) error {
+	// Collect database IDs from explicitly configured regions only
 	dbIDs := make(map[int]bool)
-	for _, region := range existingRegionMap {
+	for _, region := range desiredRegions {
 		for _, db := range region.Databases {
 			dbIDs[*db.DatabaseId] = true
 		}
