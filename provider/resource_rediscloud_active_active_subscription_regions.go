@@ -339,11 +339,6 @@ func resourceRedisCloudActiveActiveRegionRead(ctx context.Context, d *schema.Res
 			if err := d.Set("dataset_size_in_gb", redis.Float64Value(db.DatasetSizeInGB)); err != nil {
 				return diag.FromErr(err)
 			}
-		} else if db.MemoryLimitInGB != nil {
-			// Fallback to memory_limit_in_gb if dataset_size_in_gb is not set
-			if err := d.Set("dataset_size_in_gb", redis.Float64Value(db.MemoryLimitInGB)); err != nil {
-				return diag.FromErr(err)
-			}
 		}
 	}
 
