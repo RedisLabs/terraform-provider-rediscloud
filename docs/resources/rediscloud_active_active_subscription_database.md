@@ -83,14 +83,44 @@ output "us-east-2-private-endpoints" {
 }
 ```
 
+### Managing Dataset Size with Regions Resource
+
+For Active-Active databases, you can also manage `dataset_size_in_gb` via the `rediscloud_active_active_subscription_regions` resource. This allows you to update both database sizing and per-region throughput in a single operation. When using both resources, reference the regions resource value to avoid conflicts:
+
+```hcl
+resource "rediscloud_active_active_subscription_regions" "regions-resource" {
+    subscription_id = rediscloud_active_active_subscription.subscription-resource.id
+    dataset_size_in_gb = 10
+
+    region {
+      region = "us-east-1"
+      networking_deployment_cidr = "192.168.0.0/24"
+      database {
+          database_id = rediscloud_active_active_subscription_database.database-resource.db_id
+          database_name = rediscloud_active_active_subscription_database.database-resource.name
+          local_write_operations_per_second = 1000
+          local_read_operations_per_second = 1000
+      }
+    }
+}
+
+resource "rediscloud_active_active_subscription_database" "database-resource" {
+    subscription_id = rediscloud_active_active_subscription.subscription-resource.id
+    name = "database-name"
+    # Reference the regions resource to avoid conflicts
+    dataset_size_in_gb = rediscloud_active_active_subscription_regions.regions-resource.dataset_size_in_gb
+    global_data_persistence = "aof-every-1-second"
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
 * `subscription_id`: (Required) The ID of the Active-Active subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
 * `name` - (Required) A meaningful name to identify the database. **Modifying this attribute will force creation of a new resource.**
 * `redis_version` - (Optional) The Redis version of the database. If omitted, the Redis version will be the default.  **Modifying this attribute will force creation of a new resource.**
-* `memory_limit_in_gb` - (Optional - **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favor of `dataset_size_in_gb` - not possible to import databases with this attribute set**
-* `dataset_size_in_gb` - (Optional - **Required if `memory_limit_in_gb` is unset**) The maximum amount of data in the dataset for this specific database is in GB
+* `memory_limit_in_gb` - (Optional - **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favour of `dataset_size_in_gb` - not possible to import databases with this attribute set**
+* `dataset_size_in_gb` - (Optional - **Required if `memory_limit_in_gb` is unset**) The maximum amount of data in the dataset for this specific database is in GB. Can also be managed via the `rediscloud_active_active_subscription_regions` resource. To avoid conflicts when using both resources, either reference the regions value or use `depends_on` to ensure proper ordering.
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `external_endpoint_for_oss_cluster_api` - (Optional) Should use the external endpoint for open-source (OSS) Cluster API.
   Can only be enabled if OSS Cluster API support is enabled. Default: 'false'
