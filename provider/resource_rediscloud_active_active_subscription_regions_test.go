@@ -121,6 +121,130 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 	})
 }
 
+func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_DatasetSize(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUB_ACTIVE_ACTIVE")
+
+	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-dataset-size-test"
+	dbName := acctest.RandomWithPrefix(testResourcePrefix) + "-dataset-size-db"
+	const resourceName = "rediscloud_active_active_subscription_regions.example"
+	const dbResourceName = "rediscloud_active_active_subscription_database.example"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Create regions with dataset_size_in_gb
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./activeactive/testdata/regions_with_dataset_size.tf"), subName, dbName, 1.5),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "1.5"),
+					resource.TestCheckResourceAttr(resourceName, "region.#", "2"),
+					func(s *terraform.State) error {
+						// Verify the database was actually updated by querying the API
+						r := s.RootModule().Resources[dbResourceName]
+						dbId, err := strconv.Atoi(r.Primary.Attributes["db_id"])
+						if err != nil {
+							return err
+						}
+						subId, err := strconv.Atoi(r.Primary.Attributes["subscription_id"])
+						if err != nil {
+							return err
+						}
+
+						apiClient := testProvider.Meta().(*client.ApiClient)
+						db, err := apiClient.Client.Database.Get(context.TODO(), subId, dbId)
+						if err != nil {
+							return err
+						}
+
+						if db.DatasetSizeInGB == nil {
+							return fmt.Errorf("expected dataset_size_in_gb to be set, got nil")
+						}
+
+						expectedSize := 1.5
+						actualSize := redis.Float64Value(db.DatasetSizeInGB)
+						if actualSize != expectedSize {
+							return fmt.Errorf("expected dataset_size_in_gb to be %f, got %f", expectedSize, actualSize)
+						}
+
+						return nil
+					},
+				),
+			},
+			{
+				// Update dataset_size_in_gb via regions resource
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./activeactive/testdata/regions_with_dataset_size.tf"), subName, dbName, 2.0),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "2"),
+					func(s *terraform.State) error {
+						// Verify the database size was actually updated
+						r := s.RootModule().Resources[dbResourceName]
+						dbId, err := strconv.Atoi(r.Primary.Attributes["db_id"])
+						if err != nil {
+							return err
+						}
+						subId, err := strconv.Atoi(r.Primary.Attributes["subscription_id"])
+						if err != nil {
+							return err
+						}
+
+						apiClient := testProvider.Meta().(*client.ApiClient)
+						db, err := apiClient.Client.Database.Get(context.TODO(), subId, dbId)
+						if err != nil {
+							return err
+						}
+
+						expectedSize := 2.0
+						actualSize := redis.Float64Value(db.DatasetSizeInGB)
+						if actualSize != expectedSize {
+							return fmt.Errorf("expected dataset_size_in_gb to be %f, got %f", expectedSize, actualSize)
+						}
+
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_ReferencePattern(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUB_ACTIVE_ACTIVE")
+
+	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-reference-pattern-test"
+	dbName := acctest.RandomWithPrefix(testResourcePrefix) + "-reference-db"
+	const resourceName = "rediscloud_active_active_subscription_regions.example"
+	const dbResourceName = "rediscloud_active_active_subscription_database.example"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Create with reference pattern
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./activeactive/testdata/regions_reference_pattern.tf"), subName, dbName, 1.5),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "1.5"),
+					resource.TestCheckResourceAttr(dbResourceName, "dataset_size_in_gb", "1.5"),
+					resource.TestCheckResourceAttr(resourceName, "region.#", "2"),
+				),
+			},
+			{
+				// Update via regions resource - database should follow
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./activeactive/testdata/regions_reference_pattern.tf"), subName, dbName, 2.5),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "2.5"),
+					resource.TestCheckResourceAttr(dbResourceName, "dataset_size_in_gb", "2.5"),
+				),
+			},
+		},
+	})
+}
+
 const testAARegionsBoilerplate = `
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
