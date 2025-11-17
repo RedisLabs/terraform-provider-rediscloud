@@ -94,7 +94,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				ExactlyOneOf: []string{"memory_limit_in_gb", "dataset_size_in_gb"},
 			},
 			"dataset_size_in_gb": {
-				Description:  "Maximum amount of data in the dataset for this specific database in GB",
+				Description:  "Maximum amount of data in the dataset for this specific database in GB. Can also be managed via the rediscloud_active_active_subscription_regions resource. To avoid conflicts when using both resources, either reference the regions value (dataset_size_in_gb = rediscloud_active_active_subscription_regions.example.dataset_size_in_gb) or use depends_on to ensure proper ordering.",
 				Type:         schema.TypeFloat,
 				Optional:     true,
 				Computed:     true,

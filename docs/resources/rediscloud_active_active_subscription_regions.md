@@ -13,13 +13,15 @@ This allows Redis Enterprise Cloud to efficiently provision your cluster within 
 
 ## Example Usage
 
-```hcl  
+### Basic Usage
+
+```hcl
 resource "rediscloud_active_active_subscription_regions" "regions-resource" {
 	subscription_id = rediscloud_active_active_subscription.subscription-resource.id
 	delete_regions = false
 	region {
 	  region = "us-east-1"
-	  networking_deployment_cidr = "192.168.0.0/24" 
+	  networking_deployment_cidr = "192.168.0.0/24"
 	  database {
 		  database_id = rediscloud_active_active_subscription_database.database-resource.db_id
       database_name = rediscloud_active_active_subscription_database.database-resource.name
@@ -40,12 +42,71 @@ resource "rediscloud_active_active_subscription_regions" "regions-resource" {
  }
 ```
 
+### Managing Dataset Size (Recommended Pattern)
+
+To manage both database sizing and per-region throughput together, use the `dataset_size_in_gb` field on the regions resource and reference it from the database resource:
+
+```hcl
+resource "rediscloud_active_active_subscription_regions" "regions-resource" {
+    subscription_id = rediscloud_active_active_subscription.subscription-resource.id
+    delete_regions = false
+    dataset_size_in_gb = 10
+    region {
+      region = "us-east-1"
+      networking_deployment_cidr = "192.168.0.0/24"
+      database {
+          database_id = rediscloud_active_active_subscription_database.database-resource.db_id
+      database_name = rediscloud_active_active_subscription_database.database-resource.name
+          local_write_operations_per_second = 1000
+          local_read_operations_per_second = 1000
+      }
+    }
+    region {
+      region = "us-east-2"
+      networking_deployment_cidr = "10.0.1.0/24"
+    local_resp_version = "resp2"
+      database {
+          database_id = rediscloud_active_active_subscription_database.database-resource.db_id
+      database_name = rediscloud_active_active_subscription_database.database-resource.name
+          local_write_operations_per_second = 2000
+          local_read_operations_per_second = 4000
+      }
+    }
+ }
+
+ resource "rediscloud_active_active_subscription_database" "database-resource" {
+    subscription_id = rediscloud_active_active_subscription.subscription-resource.id
+    name = "database-name"
+    # Reference the regions resource to avoid conflicts
+    dataset_size_in_gb = rediscloud_active_active_subscription_regions.regions-resource.dataset_size_in_gb
+    global_data_persistence = "aof-every-1-second"
+
+    override_region {
+      name = "us-east-2"
+      override_global_source_ips = ["192.10.0.0/16"]
+    }
+
+    override_region {
+      name = "us-east-1"
+      override_global_data_persistence = "none"
+      override_global_password = "region-specific-password"
+      override_global_alert {
+        name = "dataset-size"
+        value = 60
+      }
+   }
+ }
+```
+
+~> **Important:** The `dataset_size_in_gb` field is a global property that updates all databases in the subscription. To avoid conflicts, either reference this value from the database resource (as shown above) or use `depends_on` to ensure proper ordering. Do not set different values in both resources.
+
 ## Argument Reference
 
 The following arguments are supported:
 
 * `subscription_id` - (Required) ID of the subscription that the regions belong to. **Modifying this attribute will force creation of a new resource.**
 * `delete_regions` - (Optional) Flag required to be set when one or more regions is to be deleted, if the flag is not set an error will be thrown
+* `dataset_size_in_gb` - (Optional) Maximum amount of data in the dataset for all databases in this subscription in GB. This is a global property that updates all databases. To avoid conflicts, either reference this value from the database resource or use depends_on to ensure proper ordering. Do not set different values in both resources.
 * `region` - (Required) Cloud networking details, per region, documented below
 
 The `region` block supports:
