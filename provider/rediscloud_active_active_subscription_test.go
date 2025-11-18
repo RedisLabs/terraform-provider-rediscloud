@@ -245,6 +245,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 			},
 			{
 				// Checks if the payment_method and creation_plan block are ignored after the IMPORT operation.
+				Config:       testAccResourceRedisCloudActiveActiveSubscriptionImportRedis7(t, name),
 				ResourceName: resourceName,
 				ImportState:  true,
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
@@ -490,6 +491,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 			},
 			{
 				// Checks if the payment_method and creation_plan block are ignored after the IMPORT operation.
+				Config:       testAccResourceRedisCloudActiveActiveSubscriptionImportRedis8(t, name),
 				ResourceName: resourceName,
 				ImportState:  true,
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
@@ -787,5 +789,15 @@ func testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointDisabled(t *
 
 func testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointEnabled(t *testing.T, subscriptionName string) string {
 	content := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_enabled.tf")
+	return fmt.Sprintf(content, subscriptionName)
+}
+
+func testAccResourceRedisCloudActiveActiveSubscriptionImportRedis7(t *testing.T, subscriptionName string) string {
+	content := utils.GetTestConfig(t, "./activeactive/testdata/subscription_import_redis7.tf")
+	return fmt.Sprintf(content, subscriptionName)
+}
+
+func testAccResourceRedisCloudActiveActiveSubscriptionImportRedis8(t *testing.T, subscriptionName string) string {
+	content := utils.GetTestConfig(t, "./activeactive/testdata/subscription_import_redis8.tf")
 	return fmt.Sprintf(content, subscriptionName)
 }
