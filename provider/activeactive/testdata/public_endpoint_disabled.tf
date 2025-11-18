@@ -16,7 +16,6 @@ resource "rediscloud_active_active_subscription" "example" {
 
   creation_plan {
     memory_limit_in_gb = 1
-    modules            = ["RedisJSON"]
     quantity           = 1
     region {
       region                      = "us-east-1"
@@ -44,8 +43,6 @@ resource "rediscloud_active_active_subscription_database" "example" {
     name  = "dataset-size"
     value = 40
   }
-
-  global_modules = ["RedisJSON"]
 
   override_region {
     name                = "us-east-2"

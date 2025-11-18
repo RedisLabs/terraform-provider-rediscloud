@@ -5,9 +5,10 @@ go 1.24.0
 toolchain go1.24.1
 
 require (
-	github.com/RedisLabs/rediscloud-go-api v0.42.0
+	github.com/RedisLabs/rediscloud-go-api v0.43.0
 	github.com/bflad/tfproviderlint v0.31.0
 	github.com/hashicorp/go-cty v1.5.0
+	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.38.1
 	github.com/stretchr/testify v1.11.1
 )
@@ -38,7 +39,6 @@ require (
 	github.com/hashicorp/terraform-exec v0.23.1 // indirect
 	github.com/hashicorp/terraform-json v0.27.1 // indirect
 	github.com/hashicorp/terraform-plugin-go v0.29.0 // indirect
-	github.com/hashicorp/terraform-plugin-log v0.9.0 // indirect
 	github.com/hashicorp/terraform-registry-address v0.4.0 // indirect
 	github.com/hashicorp/terraform-svchost v0.1.1 // indirect
 	github.com/hashicorp/yamux v0.1.2 // indirect
@@ -71,4 +71,4 @@ require (
 )
 
 // for local development, uncomment this
-//replace github.com/RedisLabs/rediscloud-go-api => ../rediscloud-go-api
+// replace github.com/RedisLabs/rediscloud-go-api => ../rediscloud-go-api
