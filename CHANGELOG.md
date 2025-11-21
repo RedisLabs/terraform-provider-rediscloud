@@ -85,6 +85,8 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ## Fixed:
 - Fix subscription state handling after Redis version upgrades - Added wait for subscription to become active after upgrading Redis versions to prevent "SUBSCRIPTION_NOT_ACTIVE" errors during subsequent operations.
+- Added full compatibility with Redis 8.2 and later.
+- Older provider versions (<2.5.0) will fail during 8.2 database creation.
 
 ## Changed:
 
