@@ -25,15 +25,6 @@ import (
 
 const CMK_ENABLED_STRING = "customer-managed-key"
 
-func containsModule(modules []interface{}, requiredModule string) bool {
-	for _, m := range modules {
-		if mod, ok := m.(string); ok && mod == requiredModule {
-			return true
-		}
-	}
-	return false
-}
-
 func ResourceRedisCloudProSubscription() *schema.Resource {
 	return &schema.Resource{
 
@@ -46,28 +37,6 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 					return fmt.Errorf(`the "creation_plan" block is required`)
 				}
 				return nil
-			}
-
-			// Validate "query_performance_factor" dependency on "modules"
-			creationPlan := diff.Get("creation_plan").([]interface{})
-			if len(creationPlan) > 0 {
-				plan := creationPlan[0].(map[string]interface{})
-
-				qpf, qpfExists := plan["query_performance_factor"].(string)
-
-				// Ensure "modules" key is explicitly defined in HCL
-				_, modulesExists := diff.GetOkExists("creation_plan.0.modules")
-
-				if qpfExists && qpf != "" {
-					if !modulesExists {
-						return fmt.Errorf(`"query_performance_factor" requires the "modules" key to be explicitly defined in HCL`)
-					}
-
-					modules, _ := plan["modules"].([]interface{})
-					if !containsModule(modules, "RediSearch") {
-						return fmt.Errorf(`"query_performance_factor" requires the "modules" list to contain "RediSearch"`)
-					}
-				}
 			}
 
 			err := cloudRegionsForceNewDiff(ctx, diff, meta)

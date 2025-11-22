@@ -623,11 +623,18 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	// Check if returned source_ips matches default public access ["0.0.0.0/0"]
 	isDefaultPublicAccess := len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0"
 
-	// Check if returned source_ips matches default RFC1918 private ranges
-	isDefaultPrivateRanges := len(db.Security.SourceIPs) == len(defaultPrivateIPRanges)
-	if isDefaultPrivateRanges {
-		for i, ip := range db.Security.SourceIPs {
-			if redis.StringValue(ip) != defaultPrivateIPRanges[i] {
+	// Check if returned source_ips matches default RFC1918 private ranges (order-independent)
+	isDefaultPrivateRanges := false
+	if len(db.Security.SourceIPs) == len(defaultPrivateIPRanges) {
+		// Create a map for O(1) lookup
+		defaultRangesMap := make(map[string]bool)
+		for _, cidr := range defaultPrivateIPRanges {
+			defaultRangesMap[cidr] = true
+		}
+		// Check if all API-returned IPs are in the defaults map
+		isDefaultPrivateRanges = true
+		for _, ip := range db.Security.SourceIPs {
+			if !defaultRangesMap[redis.StringValue(ip)] {
 				isDefaultPrivateRanges = false
 				break
 			}
