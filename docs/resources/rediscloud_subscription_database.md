@@ -86,8 +86,7 @@ The following arguments are supported:
 * `client_tls_certificates` - (Optional) A list of TLS certificates to authenticate user connections, conflicts with `client_ssl_certificate`
 * `periodic_backup_path` - (Optional) Path that will be used to store database backup files. **Deprecated: Use `remote_backup` block instead**
 * `replica_of` - (Optional) Set of Redis database URIs, in the format `redis://user:password@host:port`, that this
-  database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided.
-  Cannot be enabled when `support_oss_cluster_api` is enabled.
+  database will be a replica of. If the URI provided is a Redis Cloud resource, only host and port should be provided.
 * `modules` - (Optional) A list of modules objects, documented below. **Don’t specify modules for DB versions 8 and above. All capabilities are bundled in the DB by default.**
 * `alert` - (Optional) A block defining Redis database alert, documented below, can be specified multiple times
 * `data_persistence` - (Optional) Rate of database's storage data persistence (either: 'none', 'aof-every-1-second', 'aof-every-write', 'snapshot-every-1-hour', 'snapshot-every-6-hours' or 'snapshot-every-12-hours'). Default: ‘none’
