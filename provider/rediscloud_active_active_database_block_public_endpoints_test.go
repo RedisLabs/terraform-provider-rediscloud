@@ -9,6 +9,74 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
+func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints_DefaultSourceIPs(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	const databaseResource = "rediscloud_active_active_subscription_database.example"
+	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
+	password := acctest.RandString(20)
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+
+	contentDisabled := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_disabled_default_source_ips.tf")
+	configDisabled := fmt.Sprintf(contentDisabled, subscriptionName, password)
+
+	contentEnabled := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_enabled_default_source_ips.tf")
+	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: configDisabled,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Verify the subscription has public_endpoint_access disabled
+					resource.TestCheckResourceAttr("rediscloud_active_active_subscription.example", "public_endpoint_access", "false"),
+
+					// Database resource checks
+					resource.TestCheckResourceAttr(databaseResource, "name", subscriptionName),
+
+					// Global source IPs should default to RFC1918 private ranges when public_endpoint_access=false
+					resource.TestCheckResourceAttr(databaseResource, "global_source_ips.#", "4"),
+					resource.TestCheckTypeSetElemAttr(databaseResource, "global_source_ips.*", "10.0.0.0/8"),
+					resource.TestCheckTypeSetElemAttr(databaseResource, "global_source_ips.*", "172.16.0.0/12"),
+					resource.TestCheckTypeSetElemAttr(databaseResource, "global_source_ips.*", "192.168.0.0/16"),
+					resource.TestCheckTypeSetElemAttr(databaseResource, "global_source_ips.*", "100.64.0.0/10"),
+
+					// Data source checks
+					resource.TestCheckResourceAttr(datasourceName, "name", subscriptionName),
+					resource.TestCheckResourceAttr(datasourceName, "global_source_ips.#", "4"),
+					resource.TestCheckTypeSetElemAttr(datasourceName, "global_source_ips.*", "10.0.0.0/8"),
+					resource.TestCheckTypeSetElemAttr(datasourceName, "global_source_ips.*", "172.16.0.0/12"),
+					resource.TestCheckTypeSetElemAttr(datasourceName, "global_source_ips.*", "192.168.0.0/16"),
+					resource.TestCheckTypeSetElemAttr(datasourceName, "global_source_ips.*", "100.64.0.0/10"),
+				),
+			},
+			{
+				Config: configEnabled,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Verify the subscription has public_endpoint_access enabled
+					resource.TestCheckResourceAttr("rediscloud_active_active_subscription.example", "public_endpoint_access", "true"),
+
+					// Database resource checks
+					resource.TestCheckResourceAttr(databaseResource, "name", subscriptionName),
+
+					// Global source IPs should default to public access when public_endpoint_access=true
+					resource.TestCheckResourceAttr(databaseResource, "global_source_ips.#", "1"),
+					resource.TestCheckTypeSetElemAttr(databaseResource, "global_source_ips.*", "0.0.0.0/0"),
+
+					// Data source checks
+					resource.TestCheckResourceAttr(datasourceName, "name", subscriptionName),
+					resource.TestCheckResourceAttr(datasourceName, "global_source_ips.#", "1"),
+					resource.TestCheckTypeSetElemAttr(datasourceName, "global_source_ips.*", "0.0.0.0/0"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")

@@ -614,39 +614,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	// Handle source_ips defaults to avoid Terraform drift:
-	// - When public_endpoint_access=true and source_ips empty: API returns ["0.0.0.0/0"]
-	// - When public_endpoint_access=false and source_ips empty: API returns RFC1918 private ranges
-	// Only set source_ips in state if explicitly configured by user (not provider defaults)
-	var sourceIPs []string
-
-	// Check if returned source_ips matches default public access ["0.0.0.0/0"]
-	isDefaultPublicAccess := len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0"
-
-	// Check if returned source_ips matches default RFC1918 private ranges (order-independent)
-	isDefaultPrivateRanges := false
-	if len(db.Security.SourceIPs) == len(defaultPrivateIPRanges) {
-		// Create a map for O(1) lookup
-		defaultRangesMap := make(map[string]bool)
-		for _, cidr := range defaultPrivateIPRanges {
-			defaultRangesMap[cidr] = true
-		}
-		// Check if all API-returned IPs are in the defaults map
-		isDefaultPrivateRanges = true
-		for _, ip := range db.Security.SourceIPs {
-			if !defaultRangesMap[redis.StringValue(ip)] {
-				isDefaultPrivateRanges = false
-				break
-			}
-		}
-	}
-
-	// Only set source_ips in state if explicitly configured by user (not defaults)
-	if !isDefaultPublicAccess && !isDefaultPrivateRanges {
-		sourceIPs = redis.StringSliceValue(db.Security.SourceIPs...)
-	}
-
-	if err := d.Set("source_ips", sourceIPs); err != nil {
+	if err := d.Set("source_ips", redis.StringSliceValue(db.Security.SourceIPs...)); err != nil {
 		return diag.FromErr(err)
 	}
 
