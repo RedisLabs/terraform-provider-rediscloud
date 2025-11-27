@@ -47,15 +47,15 @@ resource "rediscloud_active_active_subscription_database" "example" {
   global_modules = ["RedisJSON"]
 
   override_region {
-    name                = "us-east-2"
-    enable_default_user = true
-    override_global_source_ips = ["172.16.0.0/16"]
+    name                       = "us-east-2"
+    enable_default_user        = true
   }
 
   override_region {
     name                             = "us-east-1"
     override_global_data_persistence = "none"
     override_global_password         = "region-specific-password"
+    override_global_source_ips       = ["172.16.0.0/16"]
     override_global_alert {
       name  = "dataset-size"
       value = 60

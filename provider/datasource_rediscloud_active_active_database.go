@@ -396,7 +396,9 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 		}
 	}
 
-	// Set global_source_ips from the first region database
+	// Set global_source_ips from the first region database.
+	// Note: The API doesn't return a distinct "global" value - each region has its own source_ips
+	// which may be the global value or an override. We use the first region's value here.
 	if len(db.CrdbDatabases) > 0 && db.CrdbDatabases[0].Security != nil {
 		if err := d.Set("global_source_ips", redis.StringSliceValue(db.CrdbDatabases[0].Security.SourceIPs...)); err != nil {
 			return diag.FromErr(err)
