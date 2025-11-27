@@ -472,6 +472,12 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 		}
 	}
 
+	if redisVersion != "" {
+		if err := d.Set("redis_version", redisVersion); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	return resourceRedisCloudActiveActiveSubscriptionRead(ctx, d, meta)
 }
 

@@ -668,6 +668,12 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 		return append(diags, diag.FromErr(dbList.Err())...)
 	}
 
+	if redisVersion != "" {
+		if err := d.Set("redis_version", redisVersion); err != nil {
+			return append(diags, diag.FromErr(err)...)
+		}
+	}
+
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
 	return append(diags, resourceRedisCloudProSubscriptionUpdate(ctx, d, meta)...)
