@@ -238,7 +238,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 			},
 			{
 				// Checks if the changes to the payment_method are ignored.
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethod, name),
+				Config: testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethodRedis7(t, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 				),
@@ -780,6 +780,11 @@ func testAccResourceRedisCloudActiveActiveSubscriptionUpdateRedis7(t *testing.T,
 func testAccResourceRedisCloudActiveActiveSubscriptionUpdateRedis8(t *testing.T, subscriptionName string, cloudProvider string) string {
 	content := utils.GetTestConfig(t, "./activeactive/testdata/subscription_update_redis8.tf")
 	return fmt.Sprintf(content, subscriptionName, cloudProvider)
+}
+
+func testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethodRedis7(t *testing.T, subscriptionName string) string {
+	content := utils.GetTestConfig(t, "./activeactive/testdata/subscription_changed_payment_method_redis7.tf")
+	return fmt.Sprintf(content, subscriptionName)
 }
 
 func testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointDisabled(t *testing.T, subscriptionName string) string {
