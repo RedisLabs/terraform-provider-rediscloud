@@ -18,6 +18,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+// Default RFC1918 private IP ranges used when public_endpoint_access is false
+var defaultPrivateIPRanges = []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10"}
+
 func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates database resource within an active-active subscription in your Redis Enterprise Cloud Account.",
@@ -195,6 +198,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Description: "Set of CIDR addresses to allow access to the database",
 				Type:        schema.TypeSet,
 				Optional:    true,
+				Computed:    true,
 				MinItems:    1,
 				Elem: &schema.Schema{
 					Type:             schema.TypeString,
@@ -807,9 +811,27 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		update.MemoryLimitInGB = redis.Float64(v.(float64))
 	}
 
-	// The below fields are optional and will only be sent in the request if they are present in the Terraform configuration
+	// Handle global_source_ips defaults based on subscription's public_endpoint_access setting:
+	// - When public_endpoint_access=true and global_source_ips empty: default to ["0.0.0.0/0"]
+	// - When public_endpoint_access=false and global_source_ips empty: default to RFC1918 private ranges
 	if len(globalSourceIps) == 0 {
-		update.GlobalSourceIP = []*string{redis.String("0.0.0.0/0")}
+		// Fetch subscription to check public_endpoint_access setting
+		subscription, err := api.Client.Subscription.Get(ctx, subId)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		// Set defaults based on public_endpoint_access
+		if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
+			// Public access blocked: default to RFC1918 private ranges
+			update.GlobalSourceIP = make([]*string, len(defaultPrivateIPRanges))
+			for i, cidr := range defaultPrivateIPRanges {
+				update.GlobalSourceIP[i] = redis.String(cidr)
+			}
+		} else {
+			// Public access allowed: default to public access
+			update.GlobalSourceIP = []*string{redis.String("0.0.0.0/0")}
+		}
 	}
 
 	if d.Get("global_password").(string) != "" {

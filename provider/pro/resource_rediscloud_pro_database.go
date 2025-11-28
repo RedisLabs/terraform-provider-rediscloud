@@ -268,6 +268,7 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Description: "Set of CIDR addresses to allow access to the database",
 				Type:        schema.TypeSet,
 				Optional:    true,
+				Computed:    true,
 				MinItems:    1,
 				Elem: &schema.Schema{
 					Type:             schema.TypeString,
