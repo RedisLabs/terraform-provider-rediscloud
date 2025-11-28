@@ -569,8 +569,15 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	}
 
 	// Read global_source_ips from API response
-	// Apply defaults based on subscription's public_endpoint_access setting when empty
+	// Apply defaults based on subscription's public_endpoint_access setting
 	globalSourceIPs := redis.StringSliceValue(db.GlobalSourceIP...)
+
+	// Convert to []*string to use with isDefaultGlobalSourceIPs helper
+	globalSourceIPsPtrs := make([]*string, len(globalSourceIPs))
+	for i, ip := range globalSourceIPs {
+		globalSourceIPsPtrs[i] = redis.String(ip)
+	}
+
 	if len(globalSourceIPs) == 0 {
 		// API returned empty - check if user has configured a custom value in state
 		// If state has a non-default value, preserve it (the API may not return the value we sent)
@@ -578,21 +585,24 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		if !isDefaultGlobalSourceIPs(currentStateSourceIPs) {
 			// User has configured a custom value - preserve it
 			globalSourceIPs = redis.StringSliceValue(currentStateSourceIPs...)
-		} else {
-			// No custom value configured - apply defaults based on subscription's public_endpoint_access
-			subscription, err := api.Client.Subscription.Get(ctx, subId)
-			if err != nil {
-				return diag.FromErr(err)
-			}
+		}
+	}
 
-			// Set defaults based on public_endpoint_access
-			if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
-				// Public access blocked: default to RFC1918 private ranges
-				globalSourceIPs = defaultPrivateIPRanges
-			} else {
-				// Public access allowed: default to public access
-				globalSourceIPs = []string{"0.0.0.0/0"}
-			}
+	// If source IPs are empty or default values, ensure they match the current public_endpoint_access setting
+	// This handles migration when public_endpoint_access changes on the subscription
+	if len(globalSourceIPs) == 0 || isDefaultGlobalSourceIPs(globalSourceIPsPtrs) {
+		subscription, err := api.Client.Subscription.Get(ctx, subId)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		// Set defaults based on public_endpoint_access
+		if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
+			// Public access blocked: default to RFC1918 private ranges
+			globalSourceIPs = defaultPrivateIPRanges
+		} else {
+			// Public access allowed: default to public access
+			globalSourceIPs = []string{"0.0.0.0/0"}
 		}
 	}
 	if err := d.Set("global_source_ips", globalSourceIPs); err != nil {

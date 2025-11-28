@@ -647,8 +647,14 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	}
 
 	// Handle source_ips - apply defaults based on subscription's public_endpoint_access setting
-	// when the API returns empty/nil source_ips
 	sourceIPs := redis.StringSliceValue(db.Security.SourceIPs...)
+
+	// Convert to []*string to use with isDefaultSourceIPs helper
+	sourceIPsPtrs := make([]*string, len(sourceIPs))
+	for i, ip := range sourceIPs {
+		sourceIPsPtrs[i] = redis.String(ip)
+	}
+
 	if len(sourceIPs) == 0 {
 		// API returned empty - check if user has configured a custom value in state
 		// If state has a non-default value, preserve it (the API may not return the value we sent)
@@ -656,21 +662,24 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		if !isDefaultSourceIPs(currentStateSourceIPs) {
 			// User has configured a custom value - preserve it
 			sourceIPs = redis.StringSliceValue(currentStateSourceIPs...)
-		} else {
-			// No custom value configured - apply defaults based on subscription's public_endpoint_access
-			subscription, err := api.Client.Subscription.Get(ctx, subId)
-			if err != nil {
-				return diag.FromErr(err)
-			}
+		}
+	}
 
-			// Set defaults based on public_endpoint_access
-			if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
-				// Public access blocked: default to RFC1918 private ranges
-				sourceIPs = defaultPrivateIPRanges
-			} else {
-				// Public access allowed: default to public access
-				sourceIPs = []string{"0.0.0.0/0"}
-			}
+	// If source IPs are empty or default values, ensure they match the current public_endpoint_access setting
+	// This handles migration when public_endpoint_access changes on the subscription
+	if len(sourceIPs) == 0 || isDefaultSourceIPs(sourceIPsPtrs) {
+		subscription, err := api.Client.Subscription.Get(ctx, subId)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		// Set defaults based on public_endpoint_access
+		if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
+			// Public access blocked: default to RFC1918 private ranges
+			sourceIPs = defaultPrivateIPRanges
+		} else {
+			// Public access allowed: default to public access
+			sourceIPs = []string{"0.0.0.0/0"}
 		}
 	}
 	if err := d.Set("source_ips", sourceIPs); err != nil {
