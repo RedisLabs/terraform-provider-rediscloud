@@ -491,6 +491,11 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		return diag.FromErr(err)
 	}
 
+	// Wait for subscription to be active before reading to ensure cloud details are available
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		return diag.FromErr(err)
+	}
+
 	subscription, err := api.Client.Subscription.Get(ctx, subId)
 	if err != nil {
 		if _, ok := err.(*subscriptions.NotFound); ok {
