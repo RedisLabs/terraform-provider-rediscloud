@@ -572,19 +572,27 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	// Apply defaults based on subscription's public_endpoint_access setting when empty
 	globalSourceIPs := redis.StringSliceValue(db.GlobalSourceIP...)
 	if len(globalSourceIPs) == 0 {
-		// Fetch subscription to check public_endpoint_access setting
-		subscription, err := api.Client.Subscription.Get(ctx, subId)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
-		// Set defaults based on public_endpoint_access
-		if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
-			// Public access blocked: default to RFC1918 private ranges
-			globalSourceIPs = defaultPrivateIPRanges
+		// API returned empty - check if user has configured a custom value in state
+		// If state has a non-default value, preserve it (the API may not return the value we sent)
+		currentStateSourceIPs := utils.SetToStringSlice(d.Get("global_source_ips").(*schema.Set))
+		if !isDefaultGlobalSourceIPs(currentStateSourceIPs) {
+			// User has configured a custom value - preserve it
+			globalSourceIPs = redis.StringSliceValue(currentStateSourceIPs...)
 		} else {
-			// Public access allowed: default to public access
-			globalSourceIPs = []string{"0.0.0.0/0"}
+			// No custom value configured - apply defaults based on subscription's public_endpoint_access
+			subscription, err := api.Client.Subscription.Get(ctx, subId)
+			if err != nil {
+				return diag.FromErr(err)
+			}
+
+			// Set defaults based on public_endpoint_access
+			if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
+				// Public access blocked: default to RFC1918 private ranges
+				globalSourceIPs = defaultPrivateIPRanges
+			} else {
+				// Public access allowed: default to public access
+				globalSourceIPs = []string{"0.0.0.0/0"}
+			}
 		}
 	}
 	if err := d.Set("global_source_ips", globalSourceIPs); err != nil {
