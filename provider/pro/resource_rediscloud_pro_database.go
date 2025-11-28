@@ -664,6 +664,10 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		sourceIPs = redis.StringSliceValue(currentStateSourceIPs...)
 	} else if len(sourceIPs) == 0 || isDefaultSourceIPs(sourceIPsPtrs) {
 		// No custom value - ensure defaults match current public_endpoint_access setting
+		// Wait for subscription to be fully active to ensure we have the latest state
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+			return diag.FromErr(err)
+		}
 		subscription, err := api.Client.Subscription.Get(ctx, subId)
 		if err != nil {
 			return diag.FromErr(err)

@@ -577,6 +577,10 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		globalSourceIPs = redis.StringSliceValue(currentStateSourceIPs...)
 	} else {
 		// No custom value - compute default based on subscription's public_endpoint_access
+		// Wait for subscription to be fully active to ensure we have the latest state
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+			return diag.FromErr(err)
+		}
 		subscription, err := api.Client.Subscription.Get(ctx, subId)
 		if err != nil {
 			return diag.FromErr(err)
