@@ -60,7 +60,7 @@ func TestAccRedisCloudProDatabase_BlockPublicEndpoints(t *testing.T) {
 					// Verify subscription has public_endpoint_access enabled
 					resource.TestCheckResourceAttr("rediscloud_subscription.example", "public_endpoint_access", "true"),
 					// Database resource checks
-					resource.TestCheckResourceAttr(databaseResource, "name", "example"),
+					resource.TestCheckResourceAttr(databaseResource, "name", subscriptionName),
 					resource.TestCheckResourceAttr(databaseResource, "data_persistence", "none"),
 					// Source IPs should default to public access when public_endpoint_access=true
 					resource.TestCheckResourceAttr(databaseResource, "source_ips.#", "1"),
