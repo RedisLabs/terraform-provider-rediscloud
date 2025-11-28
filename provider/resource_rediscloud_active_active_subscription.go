@@ -626,6 +626,14 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
+	// Verify public_endpoint_access has propagated if it was changed
+	if d.HasChange("public_endpoint_access") {
+		expected := d.Get("public_endpoint_access").(bool)
+		if err := utils.WaitForSubscriptionPublicEndpointAccess(ctx, subId, api, expected); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	if d.HasChange("maintenance_windows") {
 		var updateMaintenanceRequest maintenance.Maintenance
 		if m, ok := d.GetOk("maintenance_windows"); ok {
