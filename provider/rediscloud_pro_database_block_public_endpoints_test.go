@@ -66,7 +66,7 @@ func TestAccRedisCloudProDatabase_BlockPublicEndpoints(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResource, "source_ips.#", "1"),
 					resource.TestCheckTypeSetElemAttr(databaseResource, "source_ips.*", "0.0.0.0/0"),
 					// Data source checks after update
-					resource.TestCheckResourceAttr(datasourceName, "name", "example"),
+					resource.TestCheckResourceAttr(datasourceName, "name", subscriptionName),
 					resource.TestCheckResourceAttr(datasourceName, "source_ips.#", "1"),
 					resource.TestCheckTypeSetElemAttr(datasourceName, "source_ips.*", "0.0.0.0/0"),
 				),

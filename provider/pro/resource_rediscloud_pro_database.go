@@ -21,6 +21,37 @@ import (
 // Default RFC1918 private IP ranges used when public_endpoint_access is false
 var defaultPrivateIPRanges = []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10"}
 
+// isDefaultSourceIPs checks if the given source IPs match one of the default patterns:
+// - RFC1918 private ranges (when public_endpoint_access is false)
+// - Public access "0.0.0.0/0" (when public_endpoint_access is true)
+// This is used to determine if source_ips should be re-computed when public_endpoint_access changes.
+func isDefaultSourceIPs(sourceIPs []*string) bool {
+	if len(sourceIPs) == 0 {
+		return true
+	}
+
+	// Check if it's the default public access pattern
+	if len(sourceIPs) == 1 && redis.StringValue(sourceIPs[0]) == "0.0.0.0/0" {
+		return true
+	}
+
+	// Check if it matches the RFC1918 private ranges
+	if len(sourceIPs) == len(defaultPrivateIPRanges) {
+		privateIPSet := make(map[string]bool)
+		for _, ip := range defaultPrivateIPRanges {
+			privateIPSet[ip] = true
+		}
+		for _, ip := range sourceIPs {
+			if !privateIPSet[redis.StringValue(ip)] {
+				return false
+			}
+		}
+		return true
+	}
+
+	return false
+}
+
 func ResourceRedisCloudProDatabase() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates database resource within a pro subscription in your Redis Enterprise Cloud Account.",
@@ -760,9 +791,12 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	// Handle source_ips defaults based on subscription's public_endpoint_access setting:
-	// - When public_endpoint_access=true and source_ips empty: default to ["0.0.0.0/0"]
-	// - When public_endpoint_access=false and source_ips empty: default to RFC1918 private ranges
-	if len(utils.SetToStringSlice(d.Get("source_ips").(*schema.Set))) == 0 {
+	// - When public_endpoint_access=true and source_ips is default: set to ["0.0.0.0/0"]
+	// - When public_endpoint_access=false and source_ips is default: set to RFC1918 private ranges
+	// This ensures that when public_endpoint_access changes, the source_ips are updated accordingly
+	// (unless the user has explicitly set custom source_ips)
+	sourceIPs := utils.SetToStringSlice(d.Get("source_ips").(*schema.Set))
+	if isDefaultSourceIPs(sourceIPs) {
 		// Fetch subscription to check public_endpoint_access setting
 		subscription, err := api.Client.Subscription.Get(ctx, subId)
 		if err != nil {
