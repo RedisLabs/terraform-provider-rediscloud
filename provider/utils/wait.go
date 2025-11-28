@@ -40,6 +40,39 @@ func WaitForSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiC
 	return nil
 }
 
+// WaitForSubscriptionPublicEndpointAccess waits for the subscription's public_endpoint_access
+// property to match the expected value. This handles API eventual consistency after updates.
+func WaitForSubscriptionPublicEndpointAccess(ctx context.Context, id int, api *client.ApiClient, expected bool) error {
+	wait := &retry.StateChangeConf{
+		Pending:      []string{"waiting"},
+		Target:       []string{"matched"},
+		Timeout:      30 * time.Second,
+		Delay:        2 * time.Second,
+		PollInterval: 5 * time.Second,
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for subscription %d public_endpoint_access to be %t", id, expected)
+
+			subscription, err := api.Client.Subscription.Get(ctx, id)
+			if err != nil {
+				return nil, "", err
+			}
+
+			// Default to true if nil (API behaviour)
+			actual := subscription.PublicEndpointAccess == nil || *subscription.PublicEndpointAccess
+			if actual == expected {
+				return subscription, "matched", nil
+			}
+			return subscription, "waiting", nil
+		},
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func WaitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient) error {
 	wait := &retry.StateChangeConf{
 		Pending: []string{

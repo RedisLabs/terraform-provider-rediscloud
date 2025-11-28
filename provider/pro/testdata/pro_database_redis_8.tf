@@ -54,7 +54,7 @@ resource "rediscloud_subscription_database" "example" {
   client_ssl_certificate                = ""
   periodic_backup_path                  = ""
   enable_default_user                   = true
-  redis_version                         = "8.0"
+  redis_version                         = "8.2"
 
   alert {
     name  = "dataset-size"
