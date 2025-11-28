@@ -9,7 +9,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints_DefaultSourceIPs(t *testing.T) {
+// NOTE: We do not test transitioning from public_endpoint_access=false to public_endpoint_access=true
+// with default source_ips because of an API limitation: the API sets default source_ips at database
+// creation time and does NOT automatically update them when the subscription's public_endpoint_access
+// changes. Users must explicitly set source_ips when changing public_endpoint_access.
+// The TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints test below covers the case where
+// source_ips are explicitly set and verifies they are preserved across public_endpoint_access changes.
+
+func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PrivateAccess(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
@@ -20,9 +27,6 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints_DefaultSourceI
 
 	contentDisabled := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_disabled_default_source_ips.tf")
 	configDisabled := fmt.Sprintf(contentDisabled, subscriptionName, password)
-
-	contentEnabled := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_enabled_default_source_ips.tf")
-	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
@@ -54,6 +58,27 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints_DefaultSourceI
 					resource.TestCheckTypeSetElemAttr(datasourceName, "global_source_ips.*", "100.64.0.0/10"),
 				),
 			},
+		},
+	})
+}
+
+func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PublicAccess(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	const databaseResource = "rediscloud_active_active_subscription_database.example"
+	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
+	password := acctest.RandString(20)
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+
+	contentEnabled := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_enabled_default_source_ips.tf")
+	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		Steps: []resource.TestStep{
 			{
 				Config: configEnabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
