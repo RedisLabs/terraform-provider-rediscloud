@@ -645,41 +645,37 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	// Handle source_ips - apply defaults based on subscription's public_endpoint_access setting
+	// Handle source_ips - read from API but apply defaults based on public_endpoint_access
+	// when API returns empty or default values
 	sourceIPs := redis.StringSliceValue(db.Security.SourceIPs...)
 
-	if len(sourceIPs) == 0 {
-		// API returned empty - check if user has configured a custom value in state
-		// If state has a non-default value, preserve it (the API may not return the value we sent)
-		currentStateSourceIPs := utils.SetToStringSlice(d.Get("source_ips").(*schema.Set))
-		if !isDefaultSourceIPs(currentStateSourceIPs) {
-			// User has configured a custom value - preserve it
-			sourceIPs = redis.StringSliceValue(currentStateSourceIPs...)
-		}
-	}
-
+	// Convert to []*string to use with isDefaultSourceIPs helper
 	sourceIPsPtrs := make([]*string, len(sourceIPs))
 	for i, ip := range sourceIPs {
 		sourceIPsPtrs[i] = redis.String(ip)
 	}
 
-	// If source IPs are empty or default values, ensure they match the current public_endpoint_access setting
-	// This handles migration when public_endpoint_access changes on the subscription
-	if len(sourceIPs) == 0 || isDefaultSourceIPs(sourceIPsPtrs) {
+	// Check if user has configured a custom (non-default) value in state
+	currentStateSourceIPs := utils.SetToStringSlice(d.Get("source_ips").(*schema.Set))
+	stateHasCustomValue := !isDefaultSourceIPs(currentStateSourceIPs)
+
+	// If API returned empty or defaults, but user has a custom value configured, preserve it
+	if (len(sourceIPs) == 0 || isDefaultSourceIPs(sourceIPsPtrs)) && stateHasCustomValue {
+		sourceIPs = redis.StringSliceValue(currentStateSourceIPs...)
+	} else if len(sourceIPs) == 0 || isDefaultSourceIPs(sourceIPsPtrs) {
+		// No custom value - ensure defaults match current public_endpoint_access setting
 		subscription, err := api.Client.Subscription.Get(ctx, subId)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 
-		// Set defaults based on public_endpoint_access
 		if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
-			// Public access blocked: default to RFC1918 private ranges
 			sourceIPs = defaultPrivateIPRanges
 		} else {
-			// Public access allowed: default to public access
 			sourceIPs = []string{"0.0.0.0/0"}
 		}
 	}
+
 	if err := d.Set("source_ips", sourceIPs); err != nil {
 		return diag.FromErr(err)
 	}

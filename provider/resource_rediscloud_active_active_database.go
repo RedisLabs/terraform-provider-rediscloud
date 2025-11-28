@@ -567,39 +567,24 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		}
 	}
 
-	// Read global_source_ips from API response
-	// Apply defaults based on subscription's public_endpoint_access setting
-	globalSourceIPs := redis.StringSliceValue(db.GlobalSourceIP...)
+	// Handle global_source_ips - we don't rely on API-returned defaults as they can be inconsistent.
+	// Instead, we preserve user's custom value or compute defaults based on public_endpoint_access.
+	var globalSourceIPs []string
+	currentStateSourceIPs := utils.SetToStringSlice(d.Get("global_source_ips").(*schema.Set))
 
-	if len(globalSourceIPs) == 0 {
-		// API returned empty - check if user has configured a custom value in state
-		// If state has a non-default value, preserve it (the API may not return the value we sent)
-		currentStateSourceIPs := utils.SetToStringSlice(d.Get("global_source_ips").(*schema.Set))
-		if !isDefaultGlobalSourceIPs(currentStateSourceIPs) {
-			// User has configured a custom value - preserve it
-			globalSourceIPs = redis.StringSliceValue(currentStateSourceIPs...)
-		}
-	}
-
-	globalSourceIPsPtrs := make([]*string, len(globalSourceIPs))
-	for i, ip := range globalSourceIPs {
-		globalSourceIPsPtrs[i] = redis.String(ip)
-	}
-
-	// If source IPs are empty or default values, ensure they match the current public_endpoint_access setting
-	// This handles migration when public_endpoint_access changes on the subscription
-	if len(globalSourceIPs) == 0 || isDefaultGlobalSourceIPs(globalSourceIPsPtrs) {
+	if !isDefaultGlobalSourceIPs(currentStateSourceIPs) {
+		// User has a custom value - preserve it
+		globalSourceIPs = redis.StringSliceValue(currentStateSourceIPs...)
+	} else {
+		// No custom value - compute default based on subscription's public_endpoint_access
 		subscription, err := api.Client.Subscription.Get(ctx, subId)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 
-		// Set defaults based on public_endpoint_access
 		if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
-			// Public access blocked: default to RFC1918 private ranges
 			globalSourceIPs = defaultPrivateIPRanges
 		} else {
-			// Public access allowed: default to public access
 			globalSourceIPs = []string{"0.0.0.0/0"}
 		}
 	}
