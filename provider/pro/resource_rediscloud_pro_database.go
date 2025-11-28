@@ -479,7 +479,6 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		createDatabase.RespVersion = s
 	})
 
-
 	// Confirm sub is ready to accept a db request
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
@@ -649,12 +648,6 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	// Handle source_ips - apply defaults based on subscription's public_endpoint_access setting
 	sourceIPs := redis.StringSliceValue(db.Security.SourceIPs...)
 
-	// Convert to []*string to use with isDefaultSourceIPs helper
-	sourceIPsPtrs := make([]*string, len(sourceIPs))
-	for i, ip := range sourceIPs {
-		sourceIPsPtrs[i] = redis.String(ip)
-	}
-
 	if len(sourceIPs) == 0 {
 		// API returned empty - check if user has configured a custom value in state
 		// If state has a non-default value, preserve it (the API may not return the value we sent)
@@ -663,6 +656,11 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 			// User has configured a custom value - preserve it
 			sourceIPs = redis.StringSliceValue(currentStateSourceIPs...)
 		}
+	}
+
+	sourceIPsPtrs := make([]*string, len(sourceIPs))
+	for i, ip := range sourceIPs {
+		sourceIPsPtrs[i] = redis.String(ip)
 	}
 
 	// If source IPs are empty or default values, ensure they match the current public_endpoint_access setting
@@ -712,7 +710,6 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 			return diag.FromErr(err)
 		}
 	}
-
 
 	if err := ReadTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
@@ -790,12 +787,12 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 			Value: utils.GetInt(d, "throughput_measurement_value"),
 		},
 
-		DataPersistence:         utils.GetString(d, "data_persistence"),
-		DataEvictionPolicy:      utils.GetString(d, "data_eviction"),
-		SourceIP:                utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
-		Alerts:                  &alerts,
-		RemoteBackup:            BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
-		EnableDefaultUser:       utils.GetBool(d, "enable_default_user"),
+		DataPersistence:    utils.GetString(d, "data_persistence"),
+		DataEvictionPolicy: utils.GetString(d, "data_eviction"),
+		SourceIP:           utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
+		Alerts:             &alerts,
+		RemoteBackup:       BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		EnableDefaultUser:  utils.GetBool(d, "enable_default_user"),
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)

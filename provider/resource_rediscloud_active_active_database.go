@@ -484,7 +484,6 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 		createDatabase.RedisVersion = s
 	})
 
-
 	// Confirm Subscription Active status before creating database
 	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
 	if err != nil {
@@ -572,12 +571,6 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	// Apply defaults based on subscription's public_endpoint_access setting
 	globalSourceIPs := redis.StringSliceValue(db.GlobalSourceIP...)
 
-	// Convert to []*string to use with isDefaultGlobalSourceIPs helper
-	globalSourceIPsPtrs := make([]*string, len(globalSourceIPs))
-	for i, ip := range globalSourceIPs {
-		globalSourceIPsPtrs[i] = redis.String(ip)
-	}
-
 	if len(globalSourceIPs) == 0 {
 		// API returned empty - check if user has configured a custom value in state
 		// If state has a non-default value, preserve it (the API may not return the value we sent)
@@ -586,6 +579,11 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 			// User has configured a custom value - preserve it
 			globalSourceIPs = redis.StringSliceValue(currentStateSourceIPs...)
 		}
+	}
+
+	globalSourceIPsPtrs := make([]*string, len(globalSourceIPs))
+	for i, ip := range globalSourceIPs {
+		globalSourceIPsPtrs[i] = redis.String(ip)
 	}
 
 	// If source IPs are empty or default values, ensure they match the current public_endpoint_access setting
@@ -735,7 +733,6 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
 		return diag.FromErr(err)
 	}
-
 
 	// Read global_enable_default_user from API response
 	if db.GlobalEnableDefaultUser != nil {
@@ -919,7 +916,6 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 	if v, ok := d.GetOkExists("global_enable_default_user"); ok {
 		update.GlobalEnableDefaultUser = redis.Bool(v.(bool))
 	}
-
 
 	if v, ok := d.GetOk("support_oss_cluster_api"); ok {
 		update.SupportOSSClusterAPI = redis.Bool(v.(bool))
