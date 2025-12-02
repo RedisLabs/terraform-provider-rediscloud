@@ -55,6 +55,10 @@ func testAccAwsPreExistingTgwCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "AWS_TEST_TGW_ID")
 }
 
+func testAccAwsCredentialsPreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION")
+}
+
 func requireEnvironmentVariables(t *testing.T, names ...string) {
 	for _, name := range names {
 		if _, ok := os.LookupEnv(name); !ok {
