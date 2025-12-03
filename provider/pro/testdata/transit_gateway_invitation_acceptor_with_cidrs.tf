@@ -1,7 +1,7 @@
 locals {
-  cloud_account_name       = "%s"
-  subscription_name        = "%s"
-  aws_region               = "%s"
+  cloud_account_name        = "%s"
+  subscription_name         = "%s"
+  aws_region                = "%s"
   rediscloud_aws_account_id = "%s"
 }
 
@@ -109,4 +109,5 @@ data "rediscloud_transit_gateway" "test" {
 resource "rediscloud_transit_gateway_attachment" "test" {
   subscription_id = rediscloud_subscription.example.id
   tgw_id          = data.rediscloud_transit_gateway.test.tgw_id
+  cidrs           = ["10.10.20.0/24"]
 }

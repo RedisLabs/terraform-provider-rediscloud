@@ -3,6 +3,7 @@ package provider
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"testing"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
@@ -16,10 +17,11 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	testAwsRegion := os.Getenv("AWS_REGION")
 	rediscloudAwsAccountId := os.Getenv("REDISCLOUD_AWS_ACCOUNT_ID")
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-aa-tgw-inv"
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-aa-tgw"
 
 	const invitationsDatasourceName = "data.rediscloud_active_active_transit_gateway_invitations.test"
 	const acceptorResourceName = "rediscloud_active_active_transit_gateway_invitation_acceptor.test"
+	const attachmentResourceName = "rediscloud_active_active_transit_gateway_attachment.test"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
@@ -46,8 +48,10 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 					utils.GetTestConfig(t, "./activeactive/testdata/transit_gateway_invitation_acceptor.tf"),
 					testCloudAccountName, subscriptionName, testAwsRegion, rediscloudAwsAccountId),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					// Invitations data source checks
 					resource.TestCheckResourceAttrSet(invitationsDatasourceName, "subscription_id"),
 					resource.TestCheckResourceAttrSet(invitationsDatasourceName, "invitations.#"),
+					// Acceptor resource checks
 					resource.TestCheckResourceAttrSet(acceptorResourceName, "id"),
 					resource.TestCheckResourceAttr(acceptorResourceName, "action", "accept"),
 					resource.TestCheckResourceAttrSet(acceptorResourceName, "name"),
@@ -55,6 +59,16 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 					resource.TestCheckResourceAttrSet(acceptorResourceName, "status"),
 					resource.TestCheckResourceAttrSet(acceptorResourceName, "aws_account_id"),
 					resource.TestCheckResourceAttrSet(acceptorResourceName, "shared_date"),
+					// Attachment resource checks
+					resource.TestCheckResourceAttrSet(attachmentResourceName, "id"),
+					resource.TestCheckResourceAttrSet(attachmentResourceName, "aws_tgw_uid"),
+					resource.TestCheckResourceAttrSet(attachmentResourceName, "attachment_uid"),
+					resource.TestCheckResourceAttr(attachmentResourceName, "status", "available"),
+					resource.TestCheckResourceAttr(attachmentResourceName, "attachment_status", "pending-acceptance"),
+					resource.TestCheckResourceAttrSet(attachmentResourceName, "aws_account_id"),
+					resource.TestCheckResourceAttrSet(attachmentResourceName, "region_id"),
+					resource.TestCheckResourceAttrSet(attachmentResourceName, "tgw_id"),
+					resource.TestCheckResourceAttr(attachmentResourceName, "cidrs.#", "0"),
 				),
 			},
 			{
@@ -62,6 +76,17 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"action"},
+			},
+			{
+				ResourceName:      attachmentResourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: fmt.Sprintf(
+					utils.GetTestConfig(t, "./activeactive/testdata/transit_gateway_invitation_acceptor_with_cidrs.tf"),
+					testCloudAccountName, subscriptionName, testAwsRegion, rediscloudAwsAccountId),
+				ExpectError: regexp.MustCompile("Transit Gateway attachment is not active|SUBSCRIPTION_INVALID_REGION_ID"),
 			},
 		},
 	})

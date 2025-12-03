@@ -25,16 +25,16 @@ resource "rediscloud_active_active_subscription" "test" {
     dataset_size_in_gb = 1
     quantity           = 1
     region {
-      region                       = local.aws_region
-      networking_deployment_cidr   = "192.168.0.0/24"
-      write_operations_per_second  = 1000
-      read_operations_per_second   = 1000
+      region                      = local.aws_region
+      networking_deployment_cidr  = "192.168.0.0/24"
+      write_operations_per_second = 1000
+      read_operations_per_second  = 1000
     }
     region {
-      region                       = "us-east-2"
-      networking_deployment_cidr   = "10.0.1.0/24"
-      write_operations_per_second  = 1000
-      read_operations_per_second   = 1000
+      region                      = "us-east-2"
+      networking_deployment_cidr  = "10.0.1.0/24"
+      write_operations_per_second = 1000
+      read_operations_per_second  = 1000
     }
   }
 }
@@ -108,4 +108,5 @@ resource "rediscloud_active_active_transit_gateway_attachment" "test" {
   subscription_id = rediscloud_active_active_subscription.test.id
   region_id       = data.rediscloud_active_active_subscription_regions.regions.regions[0].region_id
   tgw_id          = data.rediscloud_active_active_transit_gateway.test.tgw_id
+  cidrs           = ["10.10.20.0/24"]
 }
