@@ -60,13 +60,18 @@ func ResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor() *schema.Re
 				Required:         true,
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice([]string{"accept", "reject"}, false)),
 			},
-			"tgw_id": {
-				Description: "The Transit Gateway ID",
-				Type:        schema.TypeInt,
+			"name": {
+				Description: "The name of the resource share",
+				Type:        schema.TypeString,
 				Computed:    true,
 			},
-			"aws_tgw_uid": {
-				Description: "The AWS Transit Gateway UID",
+			"resource_share_uid": {
+				Description: "The AWS Resource Share ARN",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"aws_account_id": {
+				Description: "The AWS account ID",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
@@ -75,8 +80,8 @@ func ResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor() *schema.Re
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
-			"aws_account_id": {
-				Description: "The AWS account ID",
+			"shared_date": {
+				Description: "The date the resource was shared",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
@@ -170,16 +175,19 @@ func resourceRedisCloudActiveActiveTransitGatewayInvitationAcceptorRead(ctx cont
 	if err := d.Set("tgw_invitation_id", redis.IntValue(invitation.Id)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("tgw_id", redis.IntValue(invitation.TgwId)); err != nil {
+	if err := d.Set("name", redis.StringValue(invitation.Name)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("aws_tgw_uid", redis.StringValue(invitation.AwsTgwUid)); err != nil {
+	if err := d.Set("resource_share_uid", redis.StringValue(invitation.ResourceShareUid)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("aws_account_id", redis.StringValue(invitation.AwsAccountId)); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("status", redis.StringValue(invitation.Status)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("aws_account_id", redis.StringValue(invitation.AwsAccountId)); err != nil {
+	if err := d.Set("shared_date", redis.StringValue(invitation.SharedDate)); err != nil {
 		return diag.FromErr(err)
 	}
 

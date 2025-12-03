@@ -33,13 +33,18 @@ func DataSourceRedisCloudTransitGatewayInvitations() *schema.Resource {
 							Type:        schema.TypeInt,
 							Computed:    true,
 						},
-						"tgw_id": {
-							Description: "The Transit Gateway ID",
-							Type:        schema.TypeInt,
+						"name": {
+							Description: "The name of the resource share",
+							Type:        schema.TypeString,
 							Computed:    true,
 						},
-						"aws_tgw_uid": {
-							Description: "The AWS Transit Gateway UID",
+						"resource_share_uid": {
+							Description: "The AWS Resource Share ARN",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"aws_account_id": {
+							Description: "The AWS account ID",
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
@@ -48,8 +53,8 @@ func DataSourceRedisCloudTransitGatewayInvitations() *schema.Resource {
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
-						"aws_account_id": {
-							Description: "The AWS account ID",
+						"shared_date": {
+							Description: "The date the resource was shared",
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
@@ -87,11 +92,12 @@ func flattenTransitGatewayInvitations(invitations []*attachments.TransitGatewayI
 	var result []map[string]interface{}
 	for _, invitation := range invitations {
 		invitationMap := map[string]interface{}{
-			"id":             redis.IntValue(invitation.Id),
-			"tgw_id":         redis.IntValue(invitation.TgwId),
-			"aws_tgw_uid":    redis.StringValue(invitation.AwsTgwUid),
-			"status":         redis.StringValue(invitation.Status),
-			"aws_account_id": redis.StringValue(invitation.AwsAccountId),
+			"id":                 redis.IntValue(invitation.Id),
+			"name":               redis.StringValue(invitation.Name),
+			"resource_share_uid": redis.StringValue(invitation.ResourceShareUid),
+			"aws_account_id":     redis.StringValue(invitation.AwsAccountId),
+			"status":             redis.StringValue(invitation.Status),
+			"shared_date":        redis.StringValue(invitation.SharedDate),
 		}
 		result = append(result, invitationMap)
 	}

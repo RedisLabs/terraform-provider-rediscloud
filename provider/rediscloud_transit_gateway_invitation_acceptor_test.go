@@ -50,10 +50,11 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 					resource.TestCheckResourceAttrSet(invitationsDatasourceName, "invitations.#"),
 					resource.TestCheckResourceAttrSet(acceptorResourceName, "id"),
 					resource.TestCheckResourceAttr(acceptorResourceName, "action", "accept"),
-					resource.TestCheckResourceAttrSet(acceptorResourceName, "tgw_id"),
-					resource.TestCheckResourceAttrSet(acceptorResourceName, "aws_tgw_uid"),
+					resource.TestCheckResourceAttrSet(acceptorResourceName, "name"),
+					resource.TestCheckResourceAttrSet(acceptorResourceName, "resource_share_uid"),
 					resource.TestCheckResourceAttrSet(acceptorResourceName, "status"),
 					resource.TestCheckResourceAttrSet(acceptorResourceName, "aws_account_id"),
+					resource.TestCheckResourceAttrSet(acceptorResourceName, "shared_date"),
 				),
 			},
 			{

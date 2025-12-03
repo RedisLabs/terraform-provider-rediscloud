@@ -34,10 +34,11 @@ resource "rediscloud_active_active_transit_gateway_invitation_acceptor" "example
 
 ## Attribute Reference
 
-* `tgw_id` - The Transit Gateway ID relative to the associated subscription
-* `aws_tgw_uid` - The AWS Transit Gateway ID
+* `name` - The name of the resource share
+* `resource_share_uid` - The AWS Resource Share ARN
+* `aws_account_id` - The AWS account ID that shared the Transit Gateway
 * `status` - The status of the invitation
-* `aws_account_id` - The AWS account ID associated with the Transit Gateway
+* `shared_date` - The date the resource was shared
 
 ## Import
 

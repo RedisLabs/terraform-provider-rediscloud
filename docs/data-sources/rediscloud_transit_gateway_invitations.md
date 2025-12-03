@@ -32,7 +32,8 @@ output "pending_invitations" {
 The `invitations` object has these attributes:
 
 * `id` - The ID of the Transit Gateway invitation
-* `tgw_id` - The Transit Gateway ID relative to the associated subscription
-* `aws_tgw_uid` - The AWS Transit Gateway ID
-* `status` - The status of the invitation (e.g., `pending`)
-* `aws_account_id` - The AWS account ID associated with the Transit Gateway
+* `name` - The name of the resource share
+* `resource_share_uid` - The AWS Resource Share ARN
+* `aws_account_id` - The AWS account ID that shared the Transit Gateway
+* `status` - The status of the invitation (e.g., `pending`, `accepted`, `rejected`)
+* `shared_date` - The date the resource was shared

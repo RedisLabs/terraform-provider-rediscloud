@@ -37,13 +37,18 @@ func DataSourceRedisCloudActiveActiveTransitGatewayInvitations() *schema.Resourc
 							Type:        schema.TypeInt,
 							Computed:    true,
 						},
-						"tgw_id": {
-							Description: "The Transit Gateway ID",
-							Type:        schema.TypeInt,
+						"name": {
+							Description: "The name of the resource share",
+							Type:        schema.TypeString,
 							Computed:    true,
 						},
-						"aws_tgw_uid": {
-							Description: "The AWS Transit Gateway UID",
+						"resource_share_uid": {
+							Description: "The AWS Resource Share ARN",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"aws_account_id": {
+							Description: "The AWS account ID",
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
@@ -52,8 +57,8 @@ func DataSourceRedisCloudActiveActiveTransitGatewayInvitations() *schema.Resourc
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
-						"aws_account_id": {
-							Description: "The AWS account ID",
+						"shared_date": {
+							Description: "The date the resource was shared",
 							Type:        schema.TypeString,
 							Computed:    true,
 						},
