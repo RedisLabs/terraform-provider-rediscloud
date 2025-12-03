@@ -1,7 +1,8 @@
 locals {
-  cloud_account_name = "%s"
-  subscription_name  = "%s"
-  aws_region         = "%s"
+  cloud_account_name       = "%s"
+  subscription_name        = "%s"
+  aws_region               = "%s"
+  rediscloud_aws_account_id = "%s"
 }
 
 data "rediscloud_payment_method" "card" {
@@ -54,11 +55,6 @@ resource "aws_ec2_transit_gateway" "test" {
   }
 }
 
-data "rediscloud_transit_gateway" "test" {
-  subscription_id = rediscloud_subscription.example.id
-  aws_tgw_uid     = aws_ec2_transit_gateway.test.id
-}
-
 resource "aws_ram_resource_share" "test" {
   name                      = local.subscription_name
   allow_external_principals = true
@@ -71,13 +67,18 @@ resource "aws_ram_resource_association" "test" {
 
 resource "aws_ram_principal_association" "test" {
   resource_share_arn = aws_ram_resource_share.test.arn
-  principal          = data.rediscloud_transit_gateway.test.aws_account_id
+  principal          = local.rediscloud_aws_account_id
+}
+
+resource "time_sleep" "wait_for_invitation" {
+  depends_on      = [aws_ram_principal_association.test]
+  create_duration = "60s"
 }
 
 data "rediscloud_transit_gateway_invitations" "test" {
   subscription_id = rediscloud_subscription.example.id
 
-  depends_on = [aws_ram_principal_association.test]
+  depends_on = [time_sleep.wait_for_invitation]
 }
 
 resource "rediscloud_transit_gateway_invitation_acceptor" "test" {

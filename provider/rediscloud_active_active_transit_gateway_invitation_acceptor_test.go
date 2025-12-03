@@ -15,6 +15,7 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	testAwsRegion := os.Getenv("AWS_REGION")
+	rediscloudAwsAccountId := os.Getenv("REDISCLOUD_AWS_ACCOUNT_ID")
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-aa-tgw-inv"
 
 	const invitationsDatasourceName = "data.rediscloud_active_active_transit_gateway_invitations.test"
@@ -25,6 +26,7 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 			testAccPreCheck(t)
 			testAccAwsPreExistingCloudAccountPreCheck(t)
 			testAccAwsCredentialsPreCheck(t)
+			testAccRedisCloudAwsAccountPreCheck(t)
 		},
 		ProviderFactories: providerFactories,
 		ExternalProviders: map[string]resource.ExternalProvider{
@@ -32,13 +34,17 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 				Source:            "hashicorp/aws",
 				VersionConstraint: "~> 5.0",
 			},
+			"time": {
+				Source:            "hashicorp/time",
+				VersionConstraint: "~> 0.9",
+			},
 		},
 		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/transit_gateway_invitation_acceptor.tf"),
-					testCloudAccountName, subscriptionName, testAwsRegion),
+					testCloudAccountName, subscriptionName, testAwsRegion, rediscloudAwsAccountId),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(invitationsDatasourceName, "subscription_id"),
 					resource.TestCheckResourceAttrSet(invitationsDatasourceName, "invitations.#"),
