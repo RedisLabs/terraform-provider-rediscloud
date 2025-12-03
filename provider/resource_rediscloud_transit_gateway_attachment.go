@@ -2,14 +2,16 @@ package provider
 
 import (
 	"context"
+	"strconv"
+	"time"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/transitgateway"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"strconv"
-	"time"
 )
 
 func resourceRedisCloudTransitGatewayAttachment() *schema.Resource {
@@ -100,6 +102,8 @@ func resourceRedisCloudTransitGatewayAttachmentCreate(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
+	d.SetId(utils.BuildResourceId(subscriptionId, tgwId))
+
 	return resourceRedisCloudTransitGatewayAttachmentRead(ctx, d, meta)
 }
 
@@ -107,11 +111,17 @@ func resourceRedisCloudTransitGatewayAttachmentRead(ctx context.Context, d *sche
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
-	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
+	subId, tgwId, err := transitgateway.ParseTransitGatewayAttachmentId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	tgwId := d.Get("tgw_id").(int)
+
+	if err := d.Set("subscription_id", strconv.Itoa(subId)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("tgw_id", tgwId); err != nil {
+		return diag.FromErr(err)
+	}
 
 	tgwTask, err := api.Client.TransitGatewayAttachments.Get(ctx, subId)
 	if err != nil {

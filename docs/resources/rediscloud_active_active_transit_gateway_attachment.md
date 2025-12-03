@@ -38,8 +38,8 @@ resource "rediscloud_active_active_transit_gateway_attachment" "attachment" {
 * `aws_account_id` - The Transit Gateway's AWS account id
 
 ## Import
-`rediscloud_active_active_transit_gateway_attachment` can be imported using the ID of the Active-Active subscription and the ID of the Transit Gateway in the format {subscription ID}/{tgw ID}, e.g.
+`rediscloud_active_active_transit_gateway_attachment` can be imported using the ID of the Active-Active subscription, region ID, and Transit Gateway ID in the format {subscription_id}/{region_id}/{tgw_id}, e.g.
 
 ```
-$ terraform import rediscloud_active_active_transit_gateway_attachment.tgwa-resource 123456/47
+$ terraform import rediscloud_active_active_transit_gateway_attachment.tgwa-resource 123456/1/47
 ```
