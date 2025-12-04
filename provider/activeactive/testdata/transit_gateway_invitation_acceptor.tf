@@ -16,6 +16,10 @@ data "rediscloud_cloud_account" "account" {
   name                     = local.cloud_account_name
 }
 
+data "rediscloud_regions" "aws" {
+  provider_name = "AWS"
+}
+
 resource "rediscloud_active_active_subscription" "test" {
   name              = local.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
@@ -39,8 +43,11 @@ resource "rediscloud_active_active_subscription" "test" {
   }
 }
 
-data "rediscloud_active_active_subscription_regions" "regions" {
-  subscription_name = rediscloud_active_active_subscription.test.name
+locals {
+  region_id = one([
+    for r in data.rediscloud_regions.aws.regions :
+    r.region_id if r.name == local.aws_region
+  ])
 }
 
 resource "aws_ec2_transit_gateway" "test" {
@@ -72,7 +79,7 @@ resource "time_sleep" "wait_for_invitation" {
 
 data "rediscloud_active_active_transit_gateway_invitations" "test" {
   subscription_id = rediscloud_active_active_subscription.test.id
-  region_id       = data.rediscloud_active_active_subscription_regions.regions.regions[0].region_id
+  region_id       = local.region_id
 
   depends_on = [time_sleep.wait_for_invitation]
 }
@@ -86,7 +93,7 @@ locals {
 
 resource "rediscloud_active_active_transit_gateway_invitation_acceptor" "test" {
   subscription_id   = rediscloud_active_active_subscription.test.id
-  region_id         = data.rediscloud_active_active_subscription_regions.regions.regions[0].region_id
+  region_id         = local.region_id
   tgw_invitation_id = local.matching_invitation.id
   action            = "accept"
 }
@@ -98,7 +105,7 @@ resource "time_sleep" "wait_for_acceptance" {
 
 data "rediscloud_active_active_transit_gateway" "test" {
   subscription_id = rediscloud_active_active_subscription.test.id
-  region_id       = data.rediscloud_active_active_subscription_regions.regions.regions[0].region_id
+  region_id       = local.region_id
   aws_tgw_uid     = aws_ec2_transit_gateway.test.id
 
   depends_on = [time_sleep.wait_for_acceptance]
@@ -106,6 +113,6 @@ data "rediscloud_active_active_transit_gateway" "test" {
 
 resource "rediscloud_active_active_transit_gateway_attachment" "test" {
   subscription_id = rediscloud_active_active_subscription.test.id
-  region_id       = data.rediscloud_active_active_subscription_regions.regions.regions[0].region_id
+  region_id       = local.region_id
   tgw_id          = data.rediscloud_active_active_transit_gateway.test.tgw_id
 }
