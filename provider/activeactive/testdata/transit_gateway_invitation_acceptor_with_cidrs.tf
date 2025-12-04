@@ -5,6 +5,10 @@ locals {
   rediscloud_aws_account_id = "%s"
 }
 
+provider "aws" {
+  region = local.aws_region
+}
+
 data "rediscloud_payment_method" "card" {
   card_type         = "Visa"
   last_four_numbers = "5556"

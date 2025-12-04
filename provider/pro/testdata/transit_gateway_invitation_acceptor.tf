@@ -1,8 +1,12 @@
 locals {
-  cloud_account_name       = "%s"
-  subscription_name        = "%s"
-  aws_region               = "%s"
+  cloud_account_name        = "%s"
+  subscription_name         = "%s"
+  aws_region                = "%s"
   rediscloud_aws_account_id = "%s"
+}
+
+provider "aws" {
+  region = local.aws_region
 }
 
 data "rediscloud_payment_method" "card" {
