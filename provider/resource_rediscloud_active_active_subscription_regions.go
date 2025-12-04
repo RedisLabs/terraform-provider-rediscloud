@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/regions"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -48,11 +49,6 @@ func resourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
 			"delete_regions": {
 				Description: "Delete regions flag has to be set for re-creating and deleting regions",
 				Type:        schema.TypeBool,
-				Optional:    true,
-			},
-			"dataset_size_in_gb": {
-				Description: "Maximum amount of data in the dataset for all databases in this subscription in GB. This is a global property that updates all databases. To avoid conflicts, either reference this value from the database resource (dataset_size_in_gb = rediscloud_active_active_subscription_regions.example.dataset_size_in_gb) or use depends_on to ensure proper ordering. Do not set different values in both resources.",
-				Type:        schema.TypeFloat,
 				Optional:    true,
 			},
 			"region": {
@@ -244,22 +240,6 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 		}
 	}
 
-	// Only use dataset_size_in_gb if it actually changed
-	var datasetSizeInGB *float64
-	if d.HasChange("dataset_size_in_gb") {
-		if v, ok := d.GetOk("dataset_size_in_gb"); ok {
-			datasetSizeInGB = redis.Float64(v.(float64))
-		}
-	}
-
-	// Handle global dataset_size_in_gb changes - cascade to explicitly configured databases only
-	if datasetSizeInGB != nil {
-		err = updateDatasetSize(ctx, subId, api, desiredRegions, datasetSizeInGB)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-	}
-
 	return resourceRedisCloudActiveActiveRegionRead(ctx, d, meta)
 }
 
@@ -323,23 +303,6 @@ func resourceRedisCloudActiveActiveRegionRead(ctx context.Context, d *schema.Res
 
 	if err := d.Set("region", newRegions); err != nil {
 		return diag.FromErr(err)
-	}
-
-	// If dataset_size_in_gb is configured, read its current value from the database
-	if _, ok := d.GetOk("dataset_size_in_gb"); ok && len(regionsFromAPI) > 0 && len(regionsFromAPI[0].Databases) > 0 {
-		// Get the first database ID to query for dataset_size_in_gb (it's a global property so any database will have the same value)
-		firstDBId := *regionsFromAPI[0].Databases[0].DatabaseId
-		db, err := api.Client.Database.Get(ctx, subId, firstDBId)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
-		// Set dataset_size_in_gb from the database response
-		if db.DatasetSizeInGB != nil {
-			if err := d.Set("dataset_size_in_gb", redis.Float64Value(db.DatasetSizeInGB)); err != nil {
-				return diag.FromErr(err)
-			}
-		}
 	}
 
 	return nil
@@ -453,49 +416,6 @@ func regionsUpdateDatabases(ctx context.Context, subId int, api *client.ApiClien
 			if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 				return err
 			}
-		}
-	}
-
-	return nil
-}
-
-func updateDatasetSize(ctx context.Context, subId int, api *client.ApiClient, desiredRegions map[string]*RequestedRegion, datasetSizeInGB *float64) error {
-	// Collect database IDs from explicitly configured regions only
-	dbIDs := make(map[int]bool)
-	for _, region := range desiredRegions {
-		for _, db := range region.Databases {
-			dbIDs[*db.DatabaseId] = true
-		}
-	}
-
-	if len(dbIDs) == 0 {
-		return nil
-	}
-
-	utils.SubscriptionMutex.Lock(subId)
-	defer utils.SubscriptionMutex.Unlock(subId)
-
-	for dbID := range dbIDs {
-		dbUpdate := databases.UpdateActiveActiveDatabase{
-			DatasetSizeInGB: datasetSizeInGB,
-		}
-
-		err := api.Client.Database.ActiveActiveUpdate(ctx, subId, dbID, dbUpdate)
-		if err != nil {
-			return err
-		}
-
-		if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbID, api); err != nil {
-			return err
-		}
-
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-			return err
-		}
-
-		time.Sleep(30 * time.Second) //lintignore:R018
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-			return err
 		}
 	}
 

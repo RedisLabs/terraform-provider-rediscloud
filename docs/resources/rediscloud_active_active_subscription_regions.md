@@ -13,15 +13,13 @@ This allows Redis Enterprise Cloud to efficiently provision your cluster within 
 
 ## Example Usage
 
-### Basic Usage
-
-```hcl
+```hcl  
 resource "rediscloud_active_active_subscription_regions" "regions-resource" {
 	subscription_id = rediscloud_active_active_subscription.subscription-resource.id
 	delete_regions = false
 	region {
 	  region = "us-east-1"
-	  networking_deployment_cidr = "192.168.0.0/24"
+	  networking_deployment_cidr = "192.168.0.0/24" 
 	  database {
 		  database_id = rediscloud_active_active_subscription_database.database-resource.db_id
       database_name = rediscloud_active_active_subscription_database.database-resource.name
@@ -42,20 +40,12 @@ resource "rediscloud_active_active_subscription_regions" "regions-resource" {
  }
 ```
 
-### Managing Dataset Size
-
-The `dataset_size_in_gb` field can be set on either the `rediscloud_active_active_subscription_regions` resource or the `rediscloud_active_active_subscription_database` resource. Setting it on the regions resource allows you to update both database sizing and per-region throughput in a single operation.
-
-Refer to [this guide](../guides/managing-regional-datasets.md) for more information.
-
 ## Argument Reference
 
 The following arguments are supported:
 
 * `subscription_id` - (Required) ID of the subscription that the regions belong to. **Modifying this attribute will force creation of a new resource.**
 * `delete_regions` - (Optional) Flag required to be set when one or more regions is to be deleted, if the flag is not set an error will be thrown
-* `dataset_size_in_gb` - (Optional) Maximum amount of data in the dataset for all regions in GB. Can also be managed via the `rediscloud_active_active_database` resource.  To avoid conflicts, either reference this value from the database resource or use depends_on to ensure proper ordering. Do not set different values in both resources. Refer to [this guide](../guides/managing-regional-datasets.md) for more information.
-
 * `region` - (Required) Cloud networking details, per region, documented below
 
 The `region` block supports:
