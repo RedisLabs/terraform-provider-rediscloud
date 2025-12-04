@@ -72,7 +72,7 @@ resource "aws_ram_principal_association" "test" {
 
 resource "time_sleep" "wait_for_invitation" {
   depends_on      = [aws_ram_principal_association.test]
-  create_duration = "60s"
+  create_duration = "120s"
 }
 
 data "rediscloud_transit_gateway_invitations" "test" {
