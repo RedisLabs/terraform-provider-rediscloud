@@ -14,6 +14,7 @@ import (
 func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
+	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	testAwsRegion := os.Getenv("AWS_REGION")
 	rediscloudAwsAccountId := os.Getenv("REDISCLOUD_AWS_ACCOUNT_ID")
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-tgw"
@@ -45,7 +46,7 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 			{
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./pro/testdata/transit_gateway_invitation_acceptor.tf"),
-					subscriptionName, testAwsRegion, rediscloudAwsAccountId),
+					testCloudAccountName, subscriptionName, testAwsRegion, rediscloudAwsAccountId),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Invitations data source checks
 					resource.TestCheckResourceAttrSet(invitationsDatasourceName, "subscription_id"),
@@ -83,7 +84,7 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 			{
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./pro/testdata/transit_gateway_invitation_acceptor_with_cidrs.tf"),
-					subscriptionName, testAwsRegion, rediscloudAwsAccountId),
+					testCloudAccountName, subscriptionName, testAwsRegion, rediscloudAwsAccountId),
 				ExpectError: regexp.MustCompile("Transit Gateway attachment is not active|SUBSCRIPTION_INVALID_REGION_ID"),
 			},
 		},
