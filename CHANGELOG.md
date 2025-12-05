@@ -4,11 +4,19 @@ All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 
-# Unreleased
+# 2.9.0 (December 2025)
+
+## Added
+- New `rediscloud_transit_gateway_invitations` data source to retrieve pending Transit Gateway attachment invitations for Pro subscriptions.
+- New `rediscloud_transit_gateway_invitation_acceptor` resource to accept Transit Gateway attachment invitations for Pro subscriptions.
 
 ## Fixed
-- `rediscloud_active_active_subscription_database`: Fixed drift detection for `enable_default_user` in region overrides. Regions now correctly inherit from `global_enable_default_user` when not explicitly set, eliminating spurious diffs.
-- `rediscloud_active_active_subscription_database`: Fixed drift detection for `global_data_persistence`. This field now correctly tracks API-returned values without causing unexpected diffs.
+- `rediscloud_subscription`: Fixed "Provider produced inconsistent final plan" error when `networking_deployment_cidr` is not known until apply time (e.g., when the CIDR comes from another resource).
+- `rediscloud_subscription` and `rediscloud_active_active_subscription_database`: Fixed default `source_ips` values to correctly use RFC1918 private ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) when public endpoint access is
+  disabled.
+- `rediscloud_subscription` and `rediscloud_active_active_subscription_database`: Fixed `source_ips` values now correctly migrate when toggling `enable_public_endpoint`.
+- `rediscloud_pro_database`: Fixed import behaviour for `redis_version` field to prevent post-import drift.
+- Improved reliability of subscription and database state transitions with additional wait conditions.
 
 # 2.8.0 (10th November 2025)
 
