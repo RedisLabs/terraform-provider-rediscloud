@@ -45,4 +45,4 @@ resource "rediscloud_transit_gateway_invitation_acceptor" "example" {
 $ terraform import rediscloud_transit_gateway_invitation_acceptor.example 123456/7890
 ```
 
-Note: The `action` attribute is not stored in the API and will not be populated during import.
+**Note:** After import, you must add the `action` attribute to your configuration (e.g., `action = "accept"`) as this value is not stored in the API.
