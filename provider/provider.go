@@ -108,10 +108,10 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_transit_gateway_attachment":                              resourceRedisCloudTransitGatewayAttachment(),
 				"rediscloud_active_active_transit_gateway_attachment":                resourceRedisCloudActiveActiveTransitGatewayAttachment(),
 				"rediscloud_transit_gateway_invitation_acceptor":                     transitgateway.ResourceRedisCloudTransitGatewayInvitationAcceptor(),
-				"rediscloud_active_active_transit_gateway_invitation_acceptor":       transitgateway.ResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor(),
-				"rediscloud_acl_rule":                                                resourceRedisCloudAclRule(),
-				"rediscloud_acl_role":                                                resourceRedisCloudAclRole(),
-				"rediscloud_acl_user":                                                resourceRedisCloudAclUser(),
+				//"rediscloud_active_active_transit_gateway_invitation_acceptor":       transitgateway.ResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor(),
+				"rediscloud_acl_rule": resourceRedisCloudAclRule(),
+				"rediscloud_acl_role": resourceRedisCloudAclRole(),
+				"rediscloud_acl_user": resourceRedisCloudAclUser(),
 			},
 		}
 
