@@ -168,10 +168,6 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 								m := v.(map[string]interface{})
 								buf.WriteString(fmt.Sprintf("%s-", m["region"].(string)))
 								buf.WriteString(fmt.Sprintf("%t-", m["multiple_availability_zones"].(bool)))
-								if v, ok := m["multiple_availability_zones"].(bool); ok && !v {
-									buf.WriteString(fmt.Sprintf("%s-", m["networking_deployment_cidr"].(string)))
-								}
-
 								return schema.HashString(buf.String())
 							},
 							Elem: &schema.Resource{
