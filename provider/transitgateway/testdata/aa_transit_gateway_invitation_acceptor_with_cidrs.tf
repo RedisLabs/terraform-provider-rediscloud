@@ -112,7 +112,7 @@ data "rediscloud_transit_gateway" "test" {
 data "aws_ec2_transit_gateway_vpc_attachments" "pending" {
   filter {
     name   = "state"
-    values = ["pendingAcceptance"]
+    values = ["pending-acceptance"]
   }
 
   filter {

@@ -42,7 +42,7 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./activeactive/testdata/transit_gateway_invitation_acceptor.tf"),
+					utils.GetTestConfig(t, "./transitgateway/testdata/aa_transit_gateway_invitation_acceptor.tf"),
 					subscriptionName, databaseName, databasePassword, testAwsRegion),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Invitations data source checks
@@ -81,7 +81,7 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 			},
 			{
 				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./activeactive/testdata/transit_gateway_invitation_acceptor_with_cidrs.tf"),
+					utils.GetTestConfig(t, "./transitgateway/testdata/aa_transit_gateway_invitation_acceptor_with_cidrs.tf"),
 					subscriptionName, databaseName, databasePassword, testAwsRegion),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(attachmentResourceName, "id"),
