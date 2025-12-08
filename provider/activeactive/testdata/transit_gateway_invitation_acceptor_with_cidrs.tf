@@ -1,5 +1,7 @@
 locals {
   subscription_name         = "%s"
+  database_name             = "%s"
+  database_password         = "%s"
   aws_region                = "%s"
   rediscloud_aws_account_id = "%s"
 }
@@ -37,6 +39,22 @@ resource "rediscloud_active_active_subscription" "test" {
       write_operations_per_second = 1000
       read_operations_per_second  = 1000
     }
+  }
+}
+
+resource "rediscloud_active_active_subscription_database" "test" {
+  subscription_id         = rediscloud_active_active_subscription.test.id
+  name                    = local.database_name
+  dataset_size_in_gb      = 1
+  global_data_persistence = "none"
+  global_password         = local.database_password
+
+  override_region {
+    name = local.aws_region
+  }
+
+  override_region {
+    name = "us-east-2"
   }
 }
 

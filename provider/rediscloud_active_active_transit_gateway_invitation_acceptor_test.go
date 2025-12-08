@@ -17,6 +17,8 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 	testAwsRegion := os.Getenv("AWS_REGION")
 	rediscloudAwsAccountId := os.Getenv("REDISCLOUD_AWS_ACCOUNT_ID")
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-aa-tgw"
+	databaseName := acctest.RandomWithPrefix(testResourcePrefix) + "-aa-tgw-db"
+	databasePassword := acctest.RandString(20)
 
 	const invitationsDatasourceName = "data.rediscloud_active_active_transit_gateway_invitations.test"
 	const acceptorResourceName = "rediscloud_active_active_transit_gateway_invitation_acceptor.test"
@@ -44,7 +46,7 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 			{
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/transit_gateway_invitation_acceptor.tf"),
-					subscriptionName, testAwsRegion, rediscloudAwsAccountId),
+					subscriptionName, databaseName, databasePassword, testAwsRegion, rediscloudAwsAccountId),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Invitations data source checks
 					resource.TestCheckResourceAttrSet(invitationsDatasourceName, "subscription_id"),
@@ -83,7 +85,7 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 			{
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/transit_gateway_invitation_acceptor_with_cidrs.tf"),
-					subscriptionName, testAwsRegion, rediscloudAwsAccountId),
+					subscriptionName, databaseName, databasePassword, testAwsRegion, rediscloudAwsAccountId),
 				ExpectError: regexp.MustCompile("Transit Gateway attachment is not active|SUBSCRIPTION_INVALID_REGION_ID"),
 			},
 		},
