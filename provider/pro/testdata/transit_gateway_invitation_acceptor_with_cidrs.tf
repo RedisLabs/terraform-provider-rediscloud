@@ -1,8 +1,7 @@
 locals {
-  cloud_account_name        = "%s"
-  subscription_name         = "%s"
-  aws_region                = "%s"
-  rediscloud_aws_account_id = "%s"
+  cloud_account_name = "%s"
+  subscription_name  = "%s"
+  aws_region         = "%s"
 }
 
 provider "aws" {
@@ -71,7 +70,7 @@ resource "aws_ram_resource_association" "test" {
 
 resource "aws_ram_principal_association" "test" {
   resource_share_arn = aws_ram_resource_share.test.arn
-  principal          = local.rediscloud_aws_account_id
+  principal          = rediscloud_subscription.example.cloud_provider[0].aws_account_id
 }
 
 resource "time_sleep" "wait_for_invitation" {
