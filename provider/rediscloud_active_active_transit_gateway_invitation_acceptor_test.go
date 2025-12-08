@@ -3,7 +3,6 @@ package provider
 import (
 	"fmt"
 	"os"
-	"regexp"
 	"testing"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
@@ -84,7 +83,13 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./activeactive/testdata/transit_gateway_invitation_acceptor_with_cidrs.tf"),
 					subscriptionName, databaseName, databasePassword, testAwsRegion),
-				ExpectError: regexp.MustCompile("Transit Gateway attachment is not active|SUBSCRIPTION_INVALID_REGION_ID"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(attachmentResourceName, "id"),
+					resource.TestCheckResourceAttr(attachmentResourceName, "status", "available"),
+					resource.TestCheckResourceAttr(attachmentResourceName, "attachment_status", "available"),
+					resource.TestCheckResourceAttr(attachmentResourceName, "cidrs.#", "1"),
+					resource.TestCheckResourceAttr(attachmentResourceName, "cidrs.0", "10.10.20.0/24"),
+				),
 			},
 		},
 	})

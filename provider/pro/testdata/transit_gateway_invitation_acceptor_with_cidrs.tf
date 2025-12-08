@@ -109,8 +109,32 @@ data "rediscloud_transit_gateway" "test" {
   depends_on = [time_sleep.wait_for_acceptance]
 }
 
+data "aws_ec2_transit_gateway_vpc_attachments" "pending" {
+  filter {
+    name   = "state"
+    values = ["pendingAcceptance"]
+  }
+
+  filter {
+    name   = "transit-gateway-id"
+    values = [aws_ec2_transit_gateway.test.id]
+  }
+
+  depends_on = [data.rediscloud_transit_gateway.test]
+}
+
+resource "aws_ec2_transit_gateway_vpc_attachment_accepter" "test" {
+  transit_gateway_attachment_id = data.aws_ec2_transit_gateway_vpc_attachments.pending.ids[0]
+
+  tags = {
+    Name = local.subscription_name
+  }
+}
+
 resource "rediscloud_transit_gateway_attachment" "test" {
   subscription_id = rediscloud_subscription.example.id
   tgw_id          = data.rediscloud_transit_gateway.test.tgw_id
   cidrs           = ["10.10.20.0/24"]
+
+  depends_on = [aws_ec2_transit_gateway_vpc_attachment_accepter.test]
 }

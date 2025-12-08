@@ -27,16 +27,16 @@ resource "rediscloud_active_active_subscription" "test" {
     dataset_size_in_gb = 1
     quantity           = 1
     region {
-      region                      = local.aws_region
-      networking_deployment_cidr  = "192.168.0.0/24"
-      write_operations_per_second = 1000
-      read_operations_per_second  = 1000
+      region                       = local.aws_region
+      networking_deployment_cidr   = "192.168.0.0/24"
+      write_operations_per_second  = 1000
+      read_operations_per_second   = 1000
     }
     region {
-      region                      = "us-east-2"
-      networking_deployment_cidr  = "10.0.1.0/24"
-      write_operations_per_second = 1000
-      read_operations_per_second  = 1000
+      region                       = "us-east-2"
+      networking_deployment_cidr   = "10.0.1.0/24"
+      write_operations_per_second  = 1000
+      read_operations_per_second   = 1000
     }
   }
 }
@@ -125,9 +125,33 @@ data "rediscloud_active_active_transit_gateway" "test" {
   depends_on = [time_sleep.wait_for_acceptance]
 }
 
+data "aws_ec2_transit_gateway_vpc_attachments" "pending" {
+  filter {
+    name   = "state"
+    values = ["pendingAcceptance"]
+  }
+
+  filter {
+    name   = "transit-gateway-id"
+    values = [aws_ec2_transit_gateway.test.id]
+  }
+
+  depends_on = [data.rediscloud_active_active_transit_gateway.test]
+}
+
+resource "aws_ec2_transit_gateway_vpc_attachment_accepter" "test" {
+  transit_gateway_attachment_id = data.aws_ec2_transit_gateway_vpc_attachments.pending.ids[0]
+
+  tags = {
+    Name = local.subscription_name
+  }
+}
+
 resource "rediscloud_active_active_transit_gateway_attachment" "test" {
   subscription_id = rediscloud_active_active_subscription.test.id
   region_id       = local.region_id
   tgw_id          = data.rediscloud_active_active_transit_gateway.test.tgw_id
   cidrs           = ["10.10.20.0/24"]
+
+  depends_on = [aws_ec2_transit_gateway_vpc_attachment_accepter.test]
 }
