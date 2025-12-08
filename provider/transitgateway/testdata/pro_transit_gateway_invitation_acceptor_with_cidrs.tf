@@ -109,6 +109,11 @@ data "rediscloud_transit_gateway" "test" {
   depends_on = [time_sleep.wait_for_acceptance]
 }
 
+resource "time_sleep" "wait_for_vpc_attachment" {
+  depends_on      = [data.rediscloud_transit_gateway.test]
+  create_duration = "30s"
+}
+
 data "aws_ec2_transit_gateway_vpc_attachments" "pending" {
   filter {
     name   = "state"
@@ -120,7 +125,7 @@ data "aws_ec2_transit_gateway_vpc_attachments" "pending" {
     values = [aws_ec2_transit_gateway.test.id]
   }
 
-  depends_on = [data.rediscloud_transit_gateway.test]
+  depends_on = [time_sleep.wait_for_vpc_attachment]
 }
 
 resource "aws_ec2_transit_gateway_vpc_attachment_accepter" "test" {
