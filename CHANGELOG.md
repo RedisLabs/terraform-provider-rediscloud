@@ -9,6 +9,8 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 ## Added
 - New `rediscloud_transit_gateway_invitations` data source to retrieve pending Transit Gateway attachment invitations for Pro subscriptions.
 - New `rediscloud_transit_gateway_invitation_acceptor` resource to accept Transit Gateway attachment invitations for Pro subscriptions.
+- New `rediscloud_active_active_transit_gateway_invitations` data source to retrieve pending Transit Gateway attachment invitations for Active-Active subscriptions.
+- New `rediscloud_active_active_transit_gateway_invitation_acceptor` resource to accept Transit Gateway attachment invitations for Active-Active subscriptions.
 
 ## Fixed
 - `rediscloud_subscription`: Fixed "Provider produced inconsistent final plan" error when `networking_deployment_cidr` is not known until apply time (e.g., when the CIDR comes from another resource).
