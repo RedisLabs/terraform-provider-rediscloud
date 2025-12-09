@@ -146,7 +146,8 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx context.Cont
 	tgws := filterTgwAttachments(tgwTask, filters)
 
 	if len(tgws) == 0 {
-		return diag.Errorf("No such Transit Gateway! subscription_id/tgw_id: %d/%d", subId, tgwId)
+		d.SetId("")
+		return diags
 	}
 
 	if len(tgws) > 1 {
