@@ -18,7 +18,7 @@ func init() {
 	// Create a fresh provider instance for each test
 	providerFactories = map[string]func() (*schema.Provider, error){
 		"rediscloud": func() (*schema.Provider, error) {
-			return New("dev")(), nil
+			return NewSdkProvider("dev")(), nil
 		},
 	}
 }
@@ -52,7 +52,7 @@ func getTestClient() (*client.ApiClient, error) {
 }
 
 func TestProvider(t *testing.T) {
-	if err := New("dev")().InternalValidate(); err != nil {
+	if err := NewSdkProvider("dev")().InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 }

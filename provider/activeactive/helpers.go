@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 )
 
 // Default RFC1918 private IP ranges used when public_endpoint_access is false.
@@ -318,93 +319,34 @@ func flattenBackupPlan(ctx context.Context, backup *databases.Backup, stateStora
 	return types.ListValue(types.ObjectType{AttrTypes: remoteBackupAttrTypes}, []attr.Value{obj})
 }
 
-// waitForDatabaseToBeActive waits for the database to reach an active state.
-func waitForDatabaseToBeActive(ctx context.Context, subId, dbId int, api *client.ApiClient) error {
-	return waitForDatabaseState(ctx, subId, dbId, api, databases.StatusActive)
-}
-
-// waitForDatabaseState waits for the database to reach the specified state.
-func waitForDatabaseState(ctx context.Context, subId, dbId int, api *client.ApiClient, targetState string) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-
-		db, err := api.Client.Database.GetActiveActive(ctx, subId, dbId)
-		if err != nil {
-			return err
-		}
-
-		status := redis.StringValue(db.Status)
-		if status == targetState {
-			return nil
-		}
-
-		if status == databases.StatusError {
-			return fmt.Errorf("database reached error state")
-		}
-
-		log.Printf("[DEBUG] Database %d status: %s, waiting for %s", dbId, status, targetState)
-		time.Sleep(30 * time.Second)
-	}
-}
-
-// waitForDatabaseToBeDeleted waits for the database to be deleted.
+// waitForDatabaseToBeDeleted waits for the database to be deleted using retry.StateChangeConf.
 func waitForDatabaseToBeDeleted(ctx context.Context, subId, dbId int, api *client.ApiClient) error {
-	timeout := 10 * time.Minute
-	deadline := time.Now().Add(timeout)
+	wait := &retry.StateChangeConf{
+		Delay:        30 * time.Second,
+		Pending:      []string{"pending"},
+		Target:       []string{"deleted"},
+		Timeout:      10 * time.Minute,
+		PollInterval: 30 * time.Second,
 
-	for time.Now().Before(deadline) {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for database %d to be deleted", dbId)
 
-		log.Printf("[DEBUG] Waiting for database %d to be deleted", dbId)
-
-		_, err := api.Client.Database.Get(ctx, subId, dbId)
-		if err != nil {
-			if _, ok := err.(*databases.NotFound); ok {
-				return nil
+			_, err = api.Client.Database.Get(ctx, subId, dbId)
+			if err != nil {
+				if _, ok := err.(*databases.NotFound); ok {
+					return "deleted", "deleted", nil
+				}
+				return nil, "", err
 			}
-			return err
-		}
 
-		time.Sleep(30 * time.Second)
+			return "pending", "pending", nil
+		},
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return err
 	}
 
-	return fmt.Errorf("timeout waiting for database %d to be deleted", dbId)
-}
-
-// waitForSubscriptionToBeActive waits for the subscription to reach an active state.
-func waitForSubscriptionToBeActive(ctx context.Context, subId int, api *client.ApiClient) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-
-		sub, err := api.Client.Subscription.Get(ctx, subId)
-		if err != nil {
-			return err
-		}
-
-		status := redis.StringValue(sub.Status)
-		if status == "active" {
-			return nil
-		}
-
-		if status == "error" {
-			return fmt.Errorf("subscription reached error state")
-		}
-
-		log.Printf("[DEBUG] Subscription %d status: %s, waiting for active", subId, status)
-		time.Sleep(30 * time.Second)
-	}
+	return nil
 }
 
 // stringPtrSlice converts a slice of strings to a slice of string pointers.
