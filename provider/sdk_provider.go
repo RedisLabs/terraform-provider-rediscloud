@@ -24,7 +24,9 @@ func init() {
 	schema.DescriptionKind = schema.StringMarkdown
 }
 
-func New(version string) func() *schema.Provider {
+// NewSdkProvider returns the SDK v2 provider. Resources served by the Plugin Framework
+// should be removed from this provider and registered in the framework provider instead.
+func NewSdkProvider(version string) func() *schema.Provider {
 	return func() *schema.Provider {
 		p := &schema.Provider{
 			Schema: map[string]*schema.Schema{
@@ -98,9 +100,7 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_active_active_private_link":                privatelink.ResourceRedisCloudActiveActivePrivateLink(),
 
 				"rediscloud_active_active_subscription": resourceRedisCloudActiveActiveSubscription(),
-				// Note the difference in public resource name and the file/method name.
-				// active_active_subscription_database == active_active_database
-				"rediscloud_active_active_subscription_database":                     resourceRedisCloudActiveActiveDatabase(),
+				// Note: rediscloud_active_active_subscription_database is served by the Plugin Framework provider
 				"rediscloud_active_active_subscription_regions":                      resourceRedisCloudActiveActiveSubscriptionRegions(),
 				"rediscloud_active_active_subscription_peering":                      resourceRedisCloudActiveActiveSubscriptionPeering(),
 				"rediscloud_active_active_private_service_connect":                   resourceRedisCloudActiveActivePrivateServiceConnect(),
