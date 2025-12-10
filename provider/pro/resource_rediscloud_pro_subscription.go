@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"reflect"
 	"regexp"
 	"strconv"
 	"time"
@@ -514,17 +513,9 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 // creation of a new resource based on whether it is a CMK pending state.
 func cloudRegionsForceNewDiff(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
 	if diff.Id() == "" {
-		return handleNewResourceRegionChange(diff)
+		return nil
 	}
 	return handleExistingResourceRegionChange(ctx, diff, meta)
-}
-
-func handleNewResourceRegionChange(diff *schema.ResourceDiff) error {
-	oldRegion, newRegion := diff.GetChange("cloud_provider.0.region")
-	if shouldForceNewRegion(oldRegion, newRegion) {
-		diff.ForceNew("cloud_provider.0.region")
-	}
-	return nil
 }
 
 func handleExistingResourceRegionChange(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
@@ -546,10 +537,6 @@ func handleExistingResourceRegionChange(ctx context.Context, diff *schema.Resour
 		}
 	}
 	return nil
-}
-
-func shouldForceNewRegion(oldRegion, newRegion interface{}) bool {
-	return oldRegion != nil && newRegion != nil && !reflect.DeepEqual(oldRegion, newRegion)
 }
 
 func getSubscription(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) (*subscriptions.Subscription, error) {

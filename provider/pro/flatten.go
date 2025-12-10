@@ -78,15 +78,15 @@ func FlattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource b
 		for _, currentRegion := range currentCloudDetail.Regions {
 
 			regionMapString := map[string]interface{}{
-				"region":                       currentRegion.Region,
-				"multiple_availability_zones":  currentRegion.MultipleAvailabilityZones,
+				"region":                       redis.StringValue(currentRegion.Region),
+				"multiple_availability_zones":  redis.BoolValue(currentRegion.MultipleAvailabilityZones),
 				"preferred_availability_zones": currentRegion.PreferredAvailabilityZones,
 				"networks":                     flattenNetworks(currentRegion.Networking),
 			}
 
 			if isResource {
 				if len(currentRegion.Networking) > 0 && !redis.BoolValue(currentRegion.MultipleAvailabilityZones) {
-					regionMapString["networking_deployment_cidr"] = currentRegion.Networking[0].DeploymentCIDR
+					regionMapString["networking_deployment_cidr"] = redis.StringValue(currentRegion.Networking[0].DeploymentCIDR)
 					regionMapString["networking_vpc_id"] = redis.StringValue(currentRegion.Networking[0].VPCId)
 				} else {
 					regionMapString["networking_deployment_cidr"] = ""
@@ -98,7 +98,7 @@ func FlattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource b
 		}
 
 		cdlMapString := map[string]interface{}{
-			"provider":         currentCloudDetail.Provider,
+			"provider":         redis.StringValue(currentCloudDetail.Provider),
 			"cloud_account_id": strconv.Itoa(redis.IntValue(currentCloudDetail.CloudAccountID)),
 			"region":           regions,
 		}
@@ -119,9 +119,9 @@ func flattenNetworks(networks []*subscriptions.Networking) []map[string]interfac
 	for _, currentNetwork := range networks {
 
 		networkMapString := map[string]interface{}{
-			"networking_deployment_cidr": currentNetwork.DeploymentCIDR,
-			"networking_vpc_id":          currentNetwork.VPCId,
-			"networking_subnet_id":       currentNetwork.SubnetID,
+			"networking_deployment_cidr": redis.StringValue(currentNetwork.DeploymentCIDR),
+			"networking_vpc_id":          redis.StringValue(currentNetwork.VPCId),
+			"networking_subnet_id":       redis.StringValue(currentNetwork.SubnetID),
 		}
 
 		cdl = append(cdl, networkMapString)
