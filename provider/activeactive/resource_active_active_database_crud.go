@@ -112,7 +112,7 @@ func (r *activeActiveDatabaseResource) createDatabase(ctx context.Context, plan 
 	}
 
 	// Wait for subscription to be active before creating database
-	if err := waitForSubscriptionToBeActive(ctx, subId, r.client); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, r.client); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		diagnostics.AddError("Subscription not active", err.Error())
 		return
@@ -131,14 +131,14 @@ func (r *activeActiveDatabaseResource) createDatabase(ctx context.Context, plan 
 	plan.DbID = types.Int64Value(int64(dbId))
 
 	// Wait for database to be active
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, r.client); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, r.client); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		diagnostics.AddError("Database failed to become active", err.Error())
 		return
 	}
 
 	// Wait for subscription to be active
-	if err := waitForSubscriptionToBeActive(ctx, subId, r.client); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, r.client); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		diagnostics.AddError("Subscription failed to become active", err.Error())
 		return
@@ -220,7 +220,7 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 		globalSourceIPs = currentSourceIPs
 	} else {
 		// No custom value - compute default based on subscription's public_endpoint_access
-		if err := waitForSubscriptionToBeActive(ctx, subId, r.client); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, r.client); err != nil {
 			diagnostics.AddError("Failed to wait for subscription", err.Error())
 			return false
 		}
@@ -440,13 +440,13 @@ func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan 
 	}
 
 	// Wait for database to be active
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, r.client); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, r.client); err != nil {
 		diagnostics.AddError("Database failed to become active after update", err.Error())
 		return
 	}
 
 	// Wait for subscription to be active
-	if err := waitForSubscriptionToBeActive(ctx, subId, r.client); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, r.client); err != nil {
 		diagnostics.AddError("Subscription failed to become active after update", err.Error())
 		return
 	}
@@ -487,7 +487,7 @@ func (r *activeActiveDatabaseResource) deleteDatabase(ctx context.Context, state
 	defer utils.SubscriptionMutex.Unlock(subId)
 
 	// Wait for database to be active before deletion
-	if err := waitForDatabaseToBeActive(ctx, subId, dbId, r.client); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, r.client); err != nil {
 		diagnostics.AddError("Database not active", err.Error())
 		return
 	}
