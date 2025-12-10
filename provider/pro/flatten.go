@@ -87,8 +87,10 @@ func FlattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource b
 			if isResource {
 				if len(currentRegion.Networking) > 0 && !redis.BoolValue(currentRegion.MultipleAvailabilityZones) {
 					regionMapString["networking_deployment_cidr"] = currentRegion.Networking[0].DeploymentCIDR
+					regionMapString["networking_vpc_id"] = redis.StringValue(currentRegion.Networking[0].VPCId)
 				} else {
 					regionMapString["networking_deployment_cidr"] = ""
+					regionMapString["networking_vpc_id"] = ""
 				}
 			}
 
