@@ -48,22 +48,21 @@ func (p *redisCloudFrameworkProvider) Metadata(_ context.Context, _ provider.Met
 }
 
 // Schema defines the provider-level schema for configuration data.
+// IMPORTANT: This schema must EXACTLY match the SDK v2 provider schema for muxing to work.
 func (p *redisCloudFrameworkProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Terraform provider for Redis Enterprise Cloud.",
 		Attributes: map[string]schema.Attribute{
 			"url": schema.StringAttribute{
-				Description: fmt.Sprintf("This is the URL of Redis Cloud and will default to `https://api.redislabs.com/v1`. This can also be set by the `%s` environment variable.", RedisCloudUrlEnvVar),
-				Optional:    true,
+				MarkdownDescription: fmt.Sprintf("This is the URL of Redis Cloud and will default to `https://api.redislabs.com/v1`. This can also be set by the `%s` environment variable.", RedisCloudUrlEnvVar),
+				Optional:            true,
 			},
 			"api_key": schema.StringAttribute{
-				Description: fmt.Sprintf("This is the Redis Cloud API key. It must be provided but can also be set by the `%s` environment variable.", rediscloudApi.AccessKeyEnvVar),
-				Optional:    true,
+				MarkdownDescription: fmt.Sprintf("This is the Redis Cloud API key. It must be provided but can also be set by the `%s` environment variable.", rediscloudApi.AccessKeyEnvVar),
+				Optional:            true,
 			},
 			"secret_key": schema.StringAttribute{
-				Description: fmt.Sprintf("This is the Redis Cloud API secret key. It must be provided but can also be set by the `%s` environment variable.", rediscloudApi.SecretKeyEnvVar),
-				Optional:    true,
-				Sensitive:   true,
+				MarkdownDescription: fmt.Sprintf("This is the Redis Cloud API secret key. It must be provided but can also be set by the `%s` environment variable.", rediscloudApi.SecretKeyEnvVar),
+				Optional:            true,
 			},
 		},
 	}
