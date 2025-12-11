@@ -75,10 +75,11 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachment() *schema.Resource {
 				Computed:    true,
 			},
 			"cidrs": {
-				Description: "A list of consumer Cidr blocks.",
+				Description: "Deprecated: Use the rediscloud_active_active_transit_gateway_route resource instead. A list of consumer CIDR blocks.",
 				Type:        schema.TypeList,
 				Optional:    true,
 				Computed:    true,
+				Deprecated:  "This attribute is deprecated. Use the rediscloud_active_active_transit_gateway_route resource to manage CIDRs.",
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -95,12 +96,6 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentCreate(ctx context.Co
 	tgwId := d.Get("tgw_id").(int)
 	if err != nil {
 		return diag.FromErr(err)
-	}
-
-	// At this point, cidrs has to be empty. We cannot honour the user's configuration until the invitation has been accepted
-	cidrs := utils.InterfaceToStringSlice(d.Get("cidrs").([]interface{}))
-	if len(cidrs) > 0 {
-		return diag.Errorf("Attachment cannot be created with Cidrs provided, it must be accepted first. This resource may then be updated with Cidrs.")
 	}
 
 	_, err = api.Client.TransitGatewayAttachments.CreateActiveActive(ctx, subscriptionId, regionId, tgwId)
@@ -179,23 +174,8 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx context.Cont
 }
 
 func resourceRedisCloudActiveActiveTransitGatewayAttachmentUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	api := meta.(*client.ApiClient)
-
-	subId, regionId, tgwId, err := transitgateway.ParseActiveActiveTransitGatewayAttachmentId(d.Id())
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	cidrs := utils.InterfaceToStringSlice(d.Get("cidrs").([]interface{}))
-	if len(cidrs) == 0 {
-		cidrs = make([]*string, 0)
-	}
-
-	err = api.Client.TransitGatewayAttachments.UpdateActiveActive(ctx, subId, regionId, tgwId, cidrs)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
+	// cidrs attribute is deprecated - use rediscloud_active_active_transit_gateway_route resource instead
+	// This function is kept for backwards compatibility but performs no updates
 	return resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx, d, meta)
 }
 

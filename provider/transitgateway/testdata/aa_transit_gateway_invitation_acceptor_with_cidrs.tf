@@ -137,6 +137,14 @@ resource "rediscloud_active_active_transit_gateway_attachment" "test" {
   subscription_id = rediscloud_active_active_subscription.test.id
   region_id       = local.region_id
   tgw_id          = data.rediscloud_active_active_transit_gateway.test.tgw_id
+
+  depends_on = [aws_ec2_transit_gateway_vpc_attachment_accepter.test]
+}
+
+resource "rediscloud_active_active_transit_gateway_route" "test" {
+  subscription_id = rediscloud_active_active_subscription.test.id
+  region_id       = local.region_id
+  tgw_id          = data.rediscloud_active_active_transit_gateway.test.tgw_id
   cidrs           = ["10.10.20.0/24"]
 
   depends_on = [aws_ec2_transit_gateway_vpc_attachment_accepter.test]

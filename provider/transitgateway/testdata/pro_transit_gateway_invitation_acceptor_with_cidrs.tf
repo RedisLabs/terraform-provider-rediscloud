@@ -120,6 +120,13 @@ resource "aws_ec2_transit_gateway_vpc_attachment_accepter" "test" {
 resource "rediscloud_transit_gateway_attachment" "test" {
   subscription_id = rediscloud_subscription.example.id
   tgw_id          = data.rediscloud_transit_gateway.test.tgw_id
+
+  depends_on = [aws_ec2_transit_gateway_vpc_attachment_accepter.test]
+}
+
+resource "rediscloud_transit_gateway_route" "test" {
+  subscription_id = rediscloud_subscription.example.id
+  tgw_id          = data.rediscloud_transit_gateway.test.tgw_id
   cidrs           = ["10.10.20.0/24"]
 
   depends_on = [aws_ec2_transit_gateway_vpc_attachment_accepter.test]
