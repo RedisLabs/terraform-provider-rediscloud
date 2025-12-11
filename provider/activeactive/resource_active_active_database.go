@@ -22,7 +22,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Ensure the implementation satisfies the expected interfaces.
 var (
 	_ resource.Resource                = &activeActiveDatabaseResource{}
 	_ resource.ResourceWithConfigure   = &activeActiveDatabaseResource{}
@@ -388,7 +387,7 @@ func (r *activeActiveDatabaseResource) ModifyPlan(ctx context.Context, req resou
 		}
 	}
 
-	// Suppress diff for global_modules after creation (it's only used on create)
+	// Suppress diff for global_modules after creation (only used on create)
 	if !plan.ID.IsUnknown() && !plan.ID.IsNull() {
 		var state ActiveActiveDatabaseModel
 		diags := req.State.Get(ctx, &state)
