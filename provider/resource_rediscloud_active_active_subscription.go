@@ -472,6 +472,12 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 		}
 	}
 
+	if redisVersion != "" {
+		if err := d.Set("redis_version", redisVersion); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	return resourceRedisCloudActiveActiveSubscriptionRead(ctx, d, meta)
 }
 
@@ -482,6 +488,11 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 
 	subId, err := strconv.Atoi(d.Id())
 	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	// Wait for subscription to be active before reading to ensure cloud details are available
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -618,6 +629,14 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
+	}
+
+	// Verify public_endpoint_access has propagated if it was changed
+	if d.HasChange("public_endpoint_access") {
+		expected := d.Get("public_endpoint_access").(bool)
+		if err := utils.WaitForSubscriptionPublicEndpointAccess(ctx, subId, api, expected); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if d.HasChange("maintenance_windows") {

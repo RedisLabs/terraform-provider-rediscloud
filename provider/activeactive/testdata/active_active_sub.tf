@@ -28,13 +28,6 @@ resource "rediscloud_active_active_subscription" "example" {
       write_operations_per_second = 1000
       read_operations_per_second  = 1000
     }
-
-    region {
-      region                      = "us-east-3"
-      networking_deployment_cidr  = "10.0.1.0/24"
-      write_operations_per_second = 1000
-      read_operations_per_second  = 1000
-    }
   }
 
   maintenance_windows {

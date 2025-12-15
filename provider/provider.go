@@ -6,9 +6,10 @@ import (
 	"log"
 	"strings"
 
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/privatelink"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/transitgateway"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -74,6 +75,8 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_active_active_private_service_connect_endpoints": dataSourceActiveActivePrivateServiceConnectEndpoints(),
 				"rediscloud_transit_gateway":                                 dataSourceTransitGateway(),
 				"rediscloud_active_active_transit_gateway":                   dataSourceActiveActiveTransitGateway(),
+				"rediscloud_transit_gateway_invitations":                     transitgateway.DataSourceRedisCloudTransitGatewayInvitations(),
+				"rediscloud_active_active_transit_gateway_invitations":       transitgateway.DataSourceRedisCloudActiveActiveTransitGatewayInvitations(),
 				"rediscloud_acl_rule":                                        dataSourceRedisCloudAclRule(),
 				"rediscloud_acl_role":                                        dataSourceRedisCloudAclRole(),
 				"rediscloud_acl_user":                                        dataSourceRedisCloudAclUser(),
@@ -104,6 +107,8 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_active_active_private_service_connect_endpoint_accepter": resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter(),
 				"rediscloud_transit_gateway_attachment":                              resourceRedisCloudTransitGatewayAttachment(),
 				"rediscloud_active_active_transit_gateway_attachment":                resourceRedisCloudActiveActiveTransitGatewayAttachment(),
+				"rediscloud_transit_gateway_invitation_acceptor":                     transitgateway.ResourceRedisCloudTransitGatewayInvitationAcceptor(),
+				"rediscloud_active_active_transit_gateway_invitation_acceptor":       transitgateway.ResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor(),
 				"rediscloud_acl_rule":                                                resourceRedisCloudAclRule(),
 				"rediscloud_acl_role":                                                resourceRedisCloudAclRole(),
 				"rediscloud_acl_user":                                                resourceRedisCloudAclUser(),
@@ -139,13 +144,13 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 
 		config = append(config, rediscloudApi.Logger(&debugLogger{}))
 
-		client, err := rediscloudApi.NewClient(config...)
+		apiClient, err := rediscloudApi.NewClient(config...)
 		if err != nil {
 			return nil, diag.FromErr(err)
 		}
 
-		return &client2.ApiClient{
-			Client: client,
+		return &client.ApiClient{
+			Client: apiClient,
 		}, nil
 	}
 }

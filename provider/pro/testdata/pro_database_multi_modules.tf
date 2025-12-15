@@ -19,6 +19,7 @@ resource "rediscloud_subscription" "example" {
   name              = local.rediscloud_subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage    = "ram"
+  redis_version     = "7.4"
   allowlist {
     cidrs = ["192.168.0.0/16"]
     security_group_ids = []

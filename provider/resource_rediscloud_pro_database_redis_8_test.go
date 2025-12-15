@@ -56,7 +56,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "1"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
-					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.0"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.2"),
 
 					resource.TestCheckResourceAttr(resourceName, "tags.market", "emea"),
 					resource.TestCheckResourceAttr(resourceName, "tags.material", "cardboard"),
@@ -179,7 +179,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 			{
 				Config: getRedis8DatabaseConfig(t, testCloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.0"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.2"),
 				),
 			},
 		},

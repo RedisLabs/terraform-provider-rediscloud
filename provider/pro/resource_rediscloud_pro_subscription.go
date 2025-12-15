@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"reflect"
 	"regexp"
 	"strconv"
 	"time"
@@ -25,15 +24,6 @@ import (
 
 const CMK_ENABLED_STRING = "customer-managed-key"
 
-func containsModule(modules []interface{}, requiredModule string) bool {
-	for _, m := range modules {
-		if mod, ok := m.(string); ok && mod == requiredModule {
-			return true
-		}
-	}
-	return false
-}
-
 func ResourceRedisCloudProSubscription() *schema.Resource {
 	return &schema.Resource{
 
@@ -46,28 +36,6 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 					return fmt.Errorf(`the "creation_plan" block is required`)
 				}
 				return nil
-			}
-
-			// Validate "query_performance_factor" dependency on "modules"
-			creationPlan := diff.Get("creation_plan").([]interface{})
-			if len(creationPlan) > 0 {
-				plan := creationPlan[0].(map[string]interface{})
-
-				qpf, qpfExists := plan["query_performance_factor"].(string)
-
-				// Ensure "modules" key is explicitly defined in HCL
-				_, modulesExists := diff.GetOkExists("creation_plan.0.modules")
-
-				if qpfExists && qpf != "" {
-					if !modulesExists {
-						return fmt.Errorf(`"query_performance_factor" requires the "modules" key to be explicitly defined in HCL`)
-					}
-
-					modules, _ := plan["modules"].([]interface{})
-					if !containsModule(modules, "RediSearch") {
-						return fmt.Errorf(`"query_performance_factor" requires the "modules" list to contain "RediSearch"`)
-					}
-				}
 			}
 
 			err := cloudRegionsForceNewDiff(ctx, diff, meta)
@@ -199,10 +167,6 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 								m := v.(map[string]interface{})
 								buf.WriteString(fmt.Sprintf("%s-", m["region"].(string)))
 								buf.WriteString(fmt.Sprintf("%t-", m["multiple_availability_zones"].(bool)))
-								if v, ok := m["multiple_availability_zones"].(bool); ok && !v {
-									buf.WriteString(fmt.Sprintf("%s-", m["networking_deployment_cidr"].(string)))
-								}
-
 								return schema.HashString(buf.String())
 							},
 							Elem: &schema.Resource{
@@ -549,17 +513,9 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 // creation of a new resource based on whether it is a CMK pending state.
 func cloudRegionsForceNewDiff(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
 	if diff.Id() == "" {
-		return handleNewResourceRegionChange(diff)
+		return nil
 	}
 	return handleExistingResourceRegionChange(ctx, diff, meta)
-}
-
-func handleNewResourceRegionChange(diff *schema.ResourceDiff) error {
-	oldRegion, newRegion := diff.GetChange("cloud_provider.0.region")
-	if shouldForceNewRegion(oldRegion, newRegion) {
-		diff.ForceNew("cloud_provider.0.region")
-	}
-	return nil
 }
 
 func handleExistingResourceRegionChange(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
@@ -581,10 +537,6 @@ func handleExistingResourceRegionChange(ctx context.Context, diff *schema.Resour
 		}
 	}
 	return nil
-}
-
-func shouldForceNewRegion(oldRegion, newRegion interface{}) bool {
-	return oldRegion != nil && newRegion != nil && !reflect.DeepEqual(oldRegion, newRegion)
 }
 
 func getSubscription(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) (*subscriptions.Subscription, error) {
@@ -697,6 +649,12 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 	}
 	if dbList.Err() != nil {
 		return append(diags, diag.FromErr(dbList.Err())...)
+	}
+
+	if redisVersion != "" {
+		if err := d.Set("redis_version", redisVersion); err != nil {
+			return append(diags, diag.FromErr(err)...)
+		}
 	}
 
 	// Some attributes on a database are not accessible by the subscription creation API.
@@ -867,6 +825,14 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
+	}
+
+	// Verify public_endpoint_access has propagated if it was changed
+	if d.HasChange("public_endpoint_access") {
+		expected := d.Get("public_endpoint_access").(bool)
+		if err := utils.WaitForSubscriptionPublicEndpointAccess(ctx, subId, api, expected); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if d.HasChange("maintenance_windows") {

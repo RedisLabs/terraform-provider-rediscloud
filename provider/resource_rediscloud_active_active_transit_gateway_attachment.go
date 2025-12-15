@@ -2,14 +2,16 @@ package provider
 
 import (
 	"context"
+	"strconv"
+	"time"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/transitgateway"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"strconv"
-	"time"
 )
 
 func resourceRedisCloudActiveActiveTransitGatewayAttachment() *schema.Resource {
@@ -106,6 +108,8 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentCreate(ctx context.Co
 		return diag.FromErr(err)
 	}
 
+	d.SetId(transitgateway.BuildActiveActiveTransitGatewayAttachmentId(subscriptionId, regionId, tgwId))
+
 	return resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx, d, meta)
 }
 
@@ -113,15 +117,20 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx context.Cont
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
-	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
+	subId, regionId, tgwId, err := transitgateway.ParseActiveActiveTransitGatewayAttachmentId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	regionId, err := strconv.Atoi(d.Get("region_id").(string))
-	if err != nil {
+
+	if err := d.Set("subscription_id", strconv.Itoa(subId)); err != nil {
 		return diag.FromErr(err)
 	}
-	tgwId := d.Get("tgw_id").(int)
+	if err := d.Set("region_id", strconv.Itoa(regionId)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("tgw_id", tgwId); err != nil {
+		return diag.FromErr(err)
+	}
 
 	// Wait for Transit Gateway resource to become available (handles subscription provisioning delays)
 	tgwTask, err := utils.WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx, subId, regionId, api)
@@ -137,7 +146,8 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx context.Cont
 	tgws := filterTgwAttachments(tgwTask, filters)
 
 	if len(tgws) == 0 {
-		return diag.Errorf("No such Transit Gateway! subscription_id/tgw_id: %d/%d", subId, tgwId)
+		d.SetId("")
+		return diags
 	}
 
 	if len(tgws) > 1 {
@@ -145,7 +155,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx context.Cont
 	}
 
 	tgw := tgws[0]
-	d.SetId(utils.BuildResourceId(subId, tgwId))
+	d.SetId(transitgateway.BuildActiveActiveTransitGatewayAttachmentId(subId, regionId, tgwId))
 	if err := d.Set("aws_tgw_uid", redis.StringValue(tgw.AwsTgwUid)); err != nil {
 		return diag.FromErr(err)
 	}
@@ -171,9 +181,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx context.Cont
 func resourceRedisCloudActiveActiveTransitGatewayAttachmentUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
 
-	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
-	regionId, err := strconv.Atoi(d.Get("region_id").(string))
-	tgwId := d.Get("tgw_id").(int)
+	subId, regionId, tgwId, err := transitgateway.ParseActiveActiveTransitGatewayAttachmentId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -195,14 +203,12 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentDelete(ctx context.Co
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
-	subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
+	subId, regionId, tgwId, err := transitgateway.ParseActiveActiveTransitGatewayAttachmentId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	regionId := d.Get("region_id").(int)
-	tgwId := d.Get("tgw_id").(int)
 
-	err = api.Client.TransitGatewayAttachments.DeleteActiveActive(ctx, subscriptionId, regionId, tgwId)
+	err = api.Client.TransitGatewayAttachments.DeleteActiveActive(ctx, subId, regionId, tgwId)
 	if err != nil {
 		return diag.FromErr(err)
 	}

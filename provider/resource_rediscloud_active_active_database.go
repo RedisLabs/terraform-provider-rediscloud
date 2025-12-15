@@ -18,6 +18,40 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
+// Default RFC1918 private IP ranges used when public_endpoint_access is false
+var defaultPrivateIPRanges = []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10"}
+
+// isDefaultGlobalSourceIPs checks if the given source IPs match one of the default patterns:
+// - RFC1918 private ranges (when public_endpoint_access is false)
+// - Public access "0.0.0.0/0" (when public_endpoint_access is true)
+// This is used to determine if global_source_ips should be re-computed when public_endpoint_access changes.
+func isDefaultGlobalSourceIPs(sourceIPs []*string) bool {
+	if len(sourceIPs) == 0 {
+		return true
+	}
+
+	// Check if it's the default public access pattern
+	if len(sourceIPs) == 1 && redis.StringValue(sourceIPs[0]) == "0.0.0.0/0" {
+		return true
+	}
+
+	// Check if it matches the RFC1918 private ranges
+	if len(sourceIPs) == len(defaultPrivateIPRanges) {
+		privateIPSet := make(map[string]bool)
+		for _, ip := range defaultPrivateIPRanges {
+			privateIPSet[ip] = true
+		}
+		for _, ip := range sourceIPs {
+			if !privateIPSet[redis.StringValue(ip)] {
+				return false
+			}
+		}
+		return true
+	}
+
+	return false
+}
+
 func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates database resource within an active-active subscription in your Redis Enterprise Cloud Account.",
@@ -195,6 +229,7 @@ func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 				Description: "Set of CIDR addresses to allow access to the database",
 				Type:        schema.TypeSet,
 				Optional:    true,
+				Computed:    true,
 				MinItems:    1,
 				Elem: &schema.Schema{
 					Type:             schema.TypeString,
@@ -449,7 +484,6 @@ func resourceRedisCloudActiveActiveDatabaseCreate(ctx context.Context, d *schema
 		createDatabase.RedisVersion = s
 	})
 
-
 	// Confirm Subscription Active status before creating database
 	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
 	if err != nil {
@@ -531,6 +565,35 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		if err := d.Set("global_password", redis.StringValue(db.GlobalPassword)); err != nil {
 			return diag.FromErr(err)
 		}
+	}
+
+	// Handle global_source_ips - we don't rely on API-returned defaults as they can be inconsistent.
+	// Instead, we preserve user's custom value or compute defaults based on public_endpoint_access.
+	var globalSourceIPs []string
+	currentStateSourceIPs := utils.SetToStringSlice(d.Get("global_source_ips").(*schema.Set))
+
+	if !isDefaultGlobalSourceIPs(currentStateSourceIPs) {
+		// User has a custom value - preserve it
+		globalSourceIPs = redis.StringSliceValue(currentStateSourceIPs...)
+	} else {
+		// No custom value - compute default based on subscription's public_endpoint_access
+		// Wait for subscription to be fully active to ensure we have the latest state
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+			return diag.FromErr(err)
+		}
+		subscription, err := api.Client.Subscription.Get(ctx, subId)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
+			globalSourceIPs = defaultPrivateIPRanges
+		} else {
+			globalSourceIPs = []string{"0.0.0.0/0"}
+		}
+	}
+	if err := d.Set("global_source_ips", globalSourceIPs); err != nil {
+		return diag.FromErr(err)
 	}
 
 	if err := d.Set("support_oss_cluster_api", redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {
@@ -659,7 +722,6 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
 		return diag.FromErr(err)
 	}
-
 
 	// Read global_enable_default_user from API response
 	if db.GlobalEnableDefaultUser != nil {
@@ -807,9 +869,29 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		update.MemoryLimitInGB = redis.Float64(v.(float64))
 	}
 
-	// The below fields are optional and will only be sent in the request if they are present in the Terraform configuration
-	if len(globalSourceIps) == 0 {
-		update.GlobalSourceIP = []*string{redis.String("0.0.0.0/0")}
+	// Handle global_source_ips defaults based on subscription's public_endpoint_access setting:
+	// - When public_endpoint_access=true and global_source_ips is default: set to ["0.0.0.0/0"]
+	// - When public_endpoint_access=false and global_source_ips is default: set to RFC1918 private ranges
+	// This ensures that when public_endpoint_access changes, the global_source_ips are updated accordingly
+	// (unless the user has explicitly set custom global_source_ips)
+	if isDefaultGlobalSourceIPs(globalSourceIps) {
+		// Fetch subscription to check public_endpoint_access setting
+		subscription, err := api.Client.Subscription.Get(ctx, subId)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		// Set defaults based on public_endpoint_access
+		if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
+			// Public access blocked: default to RFC1918 private ranges
+			update.GlobalSourceIP = make([]*string, len(defaultPrivateIPRanges))
+			for i, cidr := range defaultPrivateIPRanges {
+				update.GlobalSourceIP[i] = redis.String(cidr)
+			}
+		} else {
+			// Public access allowed: default to public access
+			update.GlobalSourceIP = []*string{redis.String("0.0.0.0/0")}
+		}
 	}
 
 	if d.Get("global_password").(string) != "" {
@@ -823,7 +905,6 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 	if v, ok := d.GetOkExists("global_enable_default_user"); ok {
 		update.GlobalEnableDefaultUser = redis.Bool(v.(bool))
 	}
-
 
 	if v, ok := d.GetOk("support_oss_cluster_api"); ok {
 		update.SupportOSSClusterAPI = redis.Bool(v.(bool))

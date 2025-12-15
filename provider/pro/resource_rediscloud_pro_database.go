@@ -21,6 +21,37 @@ import (
 // Default RFC1918 private IP ranges used when public_endpoint_access is false
 var defaultPrivateIPRanges = []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10"}
 
+// isDefaultSourceIPs checks if the given source IPs match one of the default patterns:
+// - RFC1918 private ranges (when public_endpoint_access is false)
+// - Public access "0.0.0.0/0" (when public_endpoint_access is true)
+// This is used to determine if source_ips should be re-computed when public_endpoint_access changes.
+func isDefaultSourceIPs(sourceIPs []*string) bool {
+	if len(sourceIPs) == 0 {
+		return true
+	}
+
+	// Check if it's the default public access pattern
+	if len(sourceIPs) == 1 && redis.StringValue(sourceIPs[0]) == "0.0.0.0/0" {
+		return true
+	}
+
+	// Check if it matches the RFC1918 private ranges
+	if len(sourceIPs) == len(defaultPrivateIPRanges) {
+		privateIPSet := make(map[string]bool)
+		for _, ip := range defaultPrivateIPRanges {
+			privateIPSet[ip] = true
+		}
+		for _, ip := range sourceIPs {
+			if !privateIPSet[redis.StringValue(ip)] {
+				return false
+			}
+		}
+		return true
+	}
+
+	return false
+}
+
 func ResourceRedisCloudProDatabase() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates database resource within a pro subscription in your Redis Enterprise Cloud Account.",
@@ -268,6 +299,7 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Description: "Set of CIDR addresses to allow access to the database",
 				Type:        schema.TypeSet,
 				Optional:    true,
+				Computed:    true,
 				MinItems:    1,
 				Elem: &schema.Schema{
 					Type:             schema.TypeString,
@@ -447,7 +479,6 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		createDatabase.RespVersion = s
 	})
 
-
 	// Confirm sub is ready to accept a db request
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
@@ -614,29 +645,39 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	// Handle source_ips defaults to avoid Terraform drift:
-	// - When public_endpoint_access=true and source_ips empty: API returns ["0.0.0.0/0"]
-	// - When public_endpoint_access=false and source_ips empty: API returns RFC1918 private ranges
-	// Only set source_ips in state if explicitly configured by user (not provider defaults)
-	var sourceIPs []string
+	// Handle source_ips - read from API but apply defaults based on public_endpoint_access
+	// when API returns empty or default values
+	sourceIPs := redis.StringSliceValue(db.Security.SourceIPs...)
 
-	// Check if returned source_ips matches default public access ["0.0.0.0/0"]
-	isDefaultPublicAccess := len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0"
-
-	// Check if returned source_ips matches default RFC1918 private ranges
-	isDefaultPrivateRanges := len(db.Security.SourceIPs) == len(defaultPrivateIPRanges)
-	if isDefaultPrivateRanges {
-		for i, ip := range db.Security.SourceIPs {
-			if redis.StringValue(ip) != defaultPrivateIPRanges[i] {
-				isDefaultPrivateRanges = false
-				break
-			}
-		}
+	// Convert to []*string to use with isDefaultSourceIPs helper
+	sourceIPsPtrs := make([]*string, len(sourceIPs))
+	for i, ip := range sourceIPs {
+		sourceIPsPtrs[i] = redis.String(ip)
 	}
 
-	// Only set source_ips in state if explicitly configured by user (not defaults)
-	if !isDefaultPublicAccess && !isDefaultPrivateRanges {
-		sourceIPs = redis.StringSliceValue(db.Security.SourceIPs...)
+	// Check if user has configured a custom (non-default) value in state
+	currentStateSourceIPs := utils.SetToStringSlice(d.Get("source_ips").(*schema.Set))
+	stateHasCustomValue := !isDefaultSourceIPs(currentStateSourceIPs)
+
+	// If API returned empty or defaults, but user has a custom value configured, preserve it
+	if (len(sourceIPs) == 0 || isDefaultSourceIPs(sourceIPsPtrs)) && stateHasCustomValue {
+		sourceIPs = redis.StringSliceValue(currentStateSourceIPs...)
+	} else if len(sourceIPs) == 0 || isDefaultSourceIPs(sourceIPsPtrs) {
+		// No custom value - ensure defaults match current public_endpoint_access setting
+		// Wait for subscription to be fully active to ensure we have the latest state
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+			return diag.FromErr(err)
+		}
+		subscription, err := api.Client.Subscription.Get(ctx, subId)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
+			sourceIPs = defaultPrivateIPRanges
+		} else {
+			sourceIPs = []string{"0.0.0.0/0"}
+		}
 	}
 
 	if err := d.Set("source_ips", sourceIPs); err != nil {
@@ -669,7 +710,6 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 			return diag.FromErr(err)
 		}
 	}
-
 
 	if err := ReadTags(ctx, api, subId, dbId, d); err != nil {
 		return diag.FromErr(err)
@@ -747,12 +787,12 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 			Value: utils.GetInt(d, "throughput_measurement_value"),
 		},
 
-		DataPersistence:         utils.GetString(d, "data_persistence"),
-		DataEvictionPolicy:      utils.GetString(d, "data_eviction"),
-		SourceIP:                utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
-		Alerts:                  &alerts,
-		RemoteBackup:            BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
-		EnableDefaultUser:       utils.GetBool(d, "enable_default_user"),
+		DataPersistence:    utils.GetString(d, "data_persistence"),
+		DataEvictionPolicy: utils.GetString(d, "data_eviction"),
+		SourceIP:           utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
+		Alerts:             &alerts,
+		RemoteBackup:       BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		EnableDefaultUser:  utils.GetBool(d, "enable_default_user"),
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)
@@ -765,9 +805,12 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	// Handle source_ips defaults based on subscription's public_endpoint_access setting:
-	// - When public_endpoint_access=true and source_ips empty: default to ["0.0.0.0/0"]
-	// - When public_endpoint_access=false and source_ips empty: default to RFC1918 private ranges
-	if len(utils.SetToStringSlice(d.Get("source_ips").(*schema.Set))) == 0 {
+	// - When public_endpoint_access=true and source_ips is default: set to ["0.0.0.0/0"]
+	// - When public_endpoint_access=false and source_ips is default: set to RFC1918 private ranges
+	// This ensures that when public_endpoint_access changes, the source_ips are updated accordingly
+	// (unless the user has explicitly set custom source_ips)
+	sourceIPs := utils.SetToStringSlice(d.Get("source_ips").(*schema.Set))
+	if isDefaultSourceIPs(sourceIPs) {
 		// Fetch subscription to check public_endpoint_access setting
 		subscription, err := api.Client.Subscription.Get(ctx, subId)
 		if err != nil {
