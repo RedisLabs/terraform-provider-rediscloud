@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -157,6 +158,10 @@ func resourceRedisCloudTransitGatewayRouteDelete(ctx context.Context, d *schema.
 	emptyCidrs := make([]*string, 0)
 	err = api.Client.TransitGatewayAttachments.Update(ctx, subId, tgwId, emptyCidrs)
 	if err != nil {
+		if strings.Contains(err.Error(), "TGW_ATTACHMENT_DOES_NOT_EXIST") {
+			d.SetId("")
+			return diags
+		}
 		return diag.FromErr(err)
 	}
 
