@@ -18,7 +18,6 @@ import (
 func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	testAwsRegion := os.Getenv("AWS_REGION")
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-tgw"
 
@@ -30,7 +29,6 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccAwsPreExistingCloudAccountPreCheck(t)
 			testAccAwsCredentialsPreCheck(t)
 		},
 		ProviderFactories: providerFactories,
@@ -49,7 +47,10 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 			{
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./transitgateway/testdata/pro_transit_gateway_invitation_acceptor.tf"),
-					testCloudAccountName, subscriptionName, testAwsRegion),
+					subscriptionName, testAwsRegion),
+			},
+			{
+				RefreshState: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(invitationsDatasourceName, "subscription_id"),
 					resource.TestCheckResourceAttrSet(invitationsDatasourceName, "invitations.#"),
@@ -78,7 +79,7 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 			{
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./transitgateway/testdata/pro_transit_gateway_route_update.tf"),
-					testCloudAccountName, subscriptionName, testAwsRegion),
+					subscriptionName, testAwsRegion),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(routeResourceName, "cidrs.#", "2"),
 					resource.TestCheckResourceAttr(routeResourceName, "cidrs.0", "10.10.20.0/24"),

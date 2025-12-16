@@ -1,7 +1,6 @@
 locals {
-  cloud_account_name = "%s"
-  subscription_name  = "%s"
-  aws_region         = "%s"
+  subscription_name = "%s"
+  aws_region        = "%s"
 }
 
 provider "aws" {
@@ -13,30 +12,18 @@ data "rediscloud_payment_method" "card" {
   last_four_numbers = "5556"
 }
 
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type            = "AWS"
-  name                     = local.cloud_account_name
-}
-
 resource "rediscloud_subscription" "example" {
   name              = local.subscription_name
   payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage    = "ram"
 
-  allowlist {
-    cidrs              = ["192.168.0.0/16"]
-    security_group_ids = []
-  }
-
   cloud_provider {
-    provider         = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
+    provider         = "AWS"
+    cloud_account_id = "1"
     region {
-      region                       = local.aws_region
-      networking_deployment_cidr   = "10.0.0.0/24"
-      preferred_availability_zones = ["${local.aws_region}a"]
+      region                     = local.aws_region
+      networking_deployment_cidr = "10.0.0.0/24"
     }
   }
 
