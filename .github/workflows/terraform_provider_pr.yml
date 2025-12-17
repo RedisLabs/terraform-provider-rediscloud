@@ -34,6 +34,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  golangci-lint:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        with:
+          go-version-file: go.mod
+      - uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423571aac5d6f47a # v6.5.0
+        with:
+          version: v1.62.2
+
+  go-mod-tidy:
+    name: go mod tidy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        with:
+          go-version-file: go.mod
+      - run: go mod tidy
+      - name: Check for changes
+        run: |
+          if ! git diff --exit-code go.mod go.sum; then
+            echo "::error::go.mod or go.sum is not tidy. Run 'go mod tidy' and commit the changes."
+            exit 1
+          fi
+
+  terraform-fmt:
+    name: terraform fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+      - name: Check Terraform formatting
+        run: |
+          if ! terraform fmt -check -recursive; then
+            echo "::error::Terraform files are not formatted. Run 'terraform fmt -recursive' and commit the changes."
+            exit 1
+          fi
+
   govulncheck:
     name: govulncheck
     runs-on: ubuntu-latest
@@ -265,3 +309,22 @@ jobs:
         with:
           go-version-file: go.mod
       - run: make tfproviderlint
+
+  docs-validation:
+    name: docs validation
+    needs: [go_build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        with:
+          go-version-file: go.mod
+      - name: Install tfplugindocs
+        run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs@latest
+      - name: Validate documentation
+        run: |
+          tfplugindocs validate
+          if [ $? -ne 0 ]; then
+            echo "::error::Documentation validation failed. Run 'tfplugindocs generate' and commit the changes."
+            exit 1
+          fi
