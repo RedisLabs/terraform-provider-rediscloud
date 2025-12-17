@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_private_link"
 description: |-
   PrivateLink data source for Pro Subscription in the Redis Cloud Terraform provider.

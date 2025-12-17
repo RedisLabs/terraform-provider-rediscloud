@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_data_persistence"
 description: |-
   Data Persistence data source in the Redis Cloud Terraform provider.

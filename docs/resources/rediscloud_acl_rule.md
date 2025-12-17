@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_acl_rule"
 description: |-
   ACL Rule resource in the Redis Cloud Terraform provider.

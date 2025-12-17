@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_private_link_endpoint_script"
 description: |-
   PrivateLink endpoint script data source for Pro subscriptions in the Redis Cloud Terraform provider.

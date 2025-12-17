@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_transit_gateway_attachment"
 description: |-
   Transit Gateway Attachment resource in the Redis Cloud Terraform provider.

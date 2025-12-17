@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_active_active_private_link"
 description: |-
   PrivateLink data source for Active-Active subscriptions in the Redis Cloud Terraform provider.

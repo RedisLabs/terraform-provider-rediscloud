@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_private_service_connect_endpoints"
 description: |-
   Private Service Connect Endpoints data source in the Redis Cloud Terraform provider.

@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_active_active_transit_gateway_route"
 description: |-
   Active-Active Transit Gateway Route resource in the Redis Cloud Terraform provider.

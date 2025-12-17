@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_payment_method"
 description: |-
   Payment method data source in the Redis Cloud Terraform provider.
