@@ -27,8 +27,8 @@ linters:
 
   settings:
     errcheck:
-      # Report about not checking errors in type assertions: `a := b.(MyStruct)`
-      check-type-assertions: true
+      # Don't report type assertions - Terraform providers always pass correct client type
+      check-type-assertions: false
 
     govet:
       # Enable all analyzers except noisy ones
@@ -49,11 +49,15 @@ linters:
           correction: "center"
 
     staticcheck:
-      # Enable all checks except noisy naming conventions
+      # Enable all checks except noisy ones
       checks:
         - "all"
+        - "-S1007"   # Raw strings in regexp - style preference, both forms work
         - "-ST1000"  # Package comments - low value for internal packages
         - "-ST1003"  # Naming conventions (Acl vs ACL, Id vs ID) - would require massive refactor
+        - "-ST1020"  # Comment format on exported functions - pedantic
+        - "-ST1022"  # Comment format on exported vars/consts - pedantic
+        - "-ST1023"  # Redundant type in var declaration - style preference
 
   exclusions:
     # Maximum count of issues with the same text (0 = unlimited)

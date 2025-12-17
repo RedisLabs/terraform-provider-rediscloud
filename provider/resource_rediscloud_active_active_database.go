@@ -905,6 +905,7 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		update.GlobalDataPersistence = redis.String(d.Get("global_data_persistence").(string))
 	}
 
+	//nolint:staticcheck // SA1019: GetOkExists is required to detect false vs unset for bool fields
 	if v, ok := d.GetOkExists("global_enable_default_user"); ok {
 		update.GlobalEnableDefaultUser = redis.Bool(v.(bool))
 	}
