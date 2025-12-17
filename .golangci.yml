@@ -1,27 +1,23 @@
 # golangci-lint configuration for terraform-provider-rediscloud
 # https://golangci-lint.run/usage/configuration/
+version: "2"
 
 run:
   timeout: 10m
   modules-download-mode: readonly
 
 linters:
+  default: none
   enable:
     # Default linters
     - errcheck      # Check for unchecked errors
-    - gosimple      # Simplify code
     - govet         # Report suspicious constructs
-    - ineffassign   # Detect ineffectual assignments
-    - staticcheck   # Advanced static analysis
-    - unused        # Check for unused code
+    - staticcheck   # Static analysis
 
     # Additional recommended linters
     - bodyclose     # Check HTTP response body is closed
     - durationcheck # Check for duration multiplication issues
     - errorlint     # Find code that will cause problems with Go 1.13 error wrapping
-    - exportloopref # Check for pointers to loop variables
-    - gofmt         # Check code is formatted
-    - goimports     # Check imports are organised
     - misspell      # Find commonly misspelled English words
     - nilerr        # Find code that returns nil even if error is not nil
     - noctx         # Find HTTP requests without context.Context
@@ -30,38 +26,44 @@ linters:
     - unparam       # Find unused function parameters
     - wastedassign  # Find wasted assignment statements
 
-linters-settings:
-  errcheck:
-    # Report about not checking errors in type assertions: `a := b.(MyStruct)`
-    check-type-assertions: true
+  settings:
+    errcheck:
+      # Report about not checking errors in type assertions: `a := b.(MyStruct)`
+      check-type-assertions: true
 
-  govet:
-    # Enable all analyzers
-    enable-all: true
-    disable:
-      - fieldalignment  # Too noisy for existing codebase
+    govet:
+      # Enable all analyzers
+      enable-all: true
+      disable:
+        - fieldalignment  # Too noisy for existing codebase
 
-  goimports:
-    # Put local imports after 3rd-party packages
-    local-prefixes: github.com/RedisLabs/terraform-provider-rediscloud
+    misspell:
+      locale: UK
 
-  misspell:
-    locale: UK
+    staticcheck:
+      # Enable all checks
+      checks: ["all"]
 
-  staticcheck:
-    # Enable all checks
-    checks: ["all"]
+  exclusions:
+    # Maximum count of issues with the same text (0 = unlimited)
+    max-same-issues: 0
 
-issues:
-  # Maximum count of issues with the same text (0 = unlimited)
-  max-same-issues: 0
+    rules:
+      # Ignore some checks in test files
+      - path: _test\.go
+        linters:
+          - unparam  # Test functions often have unused parameters for consistency
 
-  exclude-rules:
-    # Ignore long lines in generated files
-    - path: _test\.go
-      linters:
-        - unparam  # Test functions often have unused parameters for consistency
+      - path: _test\.go
+        text: "fieldalignment:"
 
-    # Ignore some checks in test files
-    - path: _test\.go
-      text: "fieldalignment:"
+formatters:
+  enable:
+    - gofmt         # Check code is formatted
+    - goimports     # Check imports are organised
+
+  settings:
+    goimports:
+      # Put local imports after 3rd-party packages
+      local-prefixes:
+        - github.com/RedisLabs/terraform-provider-rediscloud
