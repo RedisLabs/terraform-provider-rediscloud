@@ -535,7 +535,7 @@ func handleExistingResourceRegionChange(ctx context.Context, diff *schema.Resour
 		// Check if any differences between old and new region sets
 		if !oldSet.Equal(newSet) {
 			// Force new for the entire region configuration
-			diff.ForceNew("cloud_provider.0.region")
+			_ = diff.ForceNew("cloud_provider.0.region") //nolint:errcheck // return value not needed in CustomizeDiff
 		}
 	}
 	return nil
@@ -1101,7 +1101,7 @@ func BuildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 	return createDatabases, diags
 }
 
-// createDatabase returns a CreateDatabase struct with the given parameters
+//nolint:unparam
 func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModules, throughputMeasurementBy string, throughputMeasurementValue int, memoryLimitInGB float64, datasetSizeInGB float64, averageItemSizeInBytes int, supportOSSClusterAPI bool, replication bool, numDatabases int, queryPerformanceFactor string) []*subscriptions.CreateDatabase {
 	createThroughput := &subscriptions.CreateThroughput{
 		By:    redis.String(throughputMeasurementBy),

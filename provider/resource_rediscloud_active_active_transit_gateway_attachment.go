@@ -93,11 +93,16 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentCreate(ctx context.Co
 	api := meta.(*client.ApiClient)
 
 	subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
-	regionId, err := strconv.Atoi(d.Get("region_id").(string))
-	tgwId := d.Get("tgw_id").(int)
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
+	regionId, err := strconv.Atoi(d.Get("region_id").(string))
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	tgwId := d.Get("tgw_id").(int)
 
 	// At this point, cidrs has to be empty. We cannot honour the user's configuration until the invitation has been accepted
 	cidrs := utils.InterfaceToStringSlice(d.Get("cidrs").([]interface{}))

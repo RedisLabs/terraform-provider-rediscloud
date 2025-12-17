@@ -52,6 +52,7 @@ linters:
       # Enable all checks except noisy ones
       checks:
         - "all"
+        - "-QF1011"  # Type can be inferred - style preference
         - "-S1007"   # Raw strings in regexp - style preference, both forms work
         - "-ST1000"  # Package comments - low value for internal packages
         - "-ST1003"  # Naming conventions (Acl vs ACL, Id vs ID) - would require massive refactor

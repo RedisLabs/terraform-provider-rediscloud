@@ -770,6 +770,7 @@ func newCreateSubscription(name string, paymentMethodID *int, paymentMethod stri
 	return req
 }
 
+//nolint:unparam
 func buildCreateActiveActiveCloudProviders(provider string, creationPlan map[string]interface{}) ([]*subscriptions.CreateCloudProvider, error) {
 	createRegions := make([]*subscriptions.CreateRegion, 0)
 	if regions := creationPlan["region"].(*schema.Set).List(); len(regions) != 0 {

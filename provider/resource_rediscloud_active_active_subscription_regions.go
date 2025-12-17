@@ -248,6 +248,10 @@ func resourceRedisCloudActiveActiveRegionRead(ctx context.Context, d *schema.Res
 	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	existingRegions, err := api.Client.Regions.List(ctx, subId)
 	if err != nil {
 		notFound := &subscriptions.NotFound{}
