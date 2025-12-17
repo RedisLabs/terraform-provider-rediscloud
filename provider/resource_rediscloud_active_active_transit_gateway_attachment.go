@@ -76,11 +76,10 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachment() *schema.Resource {
 				Computed:    true,
 			},
 			"cidrs": {
-				Description: "Deprecated: Use the rediscloud_active_active_transit_gateway_route resource instead. A list of consumer CIDR blocks.",
+				Description: "A list of consumer CIDR blocks. It is recommended to use the rediscloud_active_active_transit_gateway_route resource instead for managing CIDRs.",
 				Type:        schema.TypeList,
 				Optional:    true,
 				Computed:    true,
-				Deprecated:  "This attribute is deprecated. Use the rediscloud_active_active_transit_gateway_route resource to manage CIDRs.",
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
