@@ -40,7 +40,7 @@ resource "rediscloud_active_active_transit_gateway_route" "route" {
 * `subscription_id` - (Required) The ID of the Active-Active subscription to attach
 * `region_id` - (Required) The ID of the AWS region
 * `tgw_id` - (Required) The ID of the Transit Gateway to attach to
-* `cidrs` - (Deprecated) Use the [`rediscloud_active_active_transit_gateway_route`](rediscloud_active_active_transit_gateway_route.md) resource instead to manage CIDRs.
+* `cidrs` - (Optional) A list of consumer CIDR blocks. It is recommended to use the [`rediscloud_active_active_transit_gateway_route`](rediscloud_active_active_transit_gateway_route.md) resource instead for managing CIDRs.
 
 ## Attribute Reference
 
@@ -49,7 +49,7 @@ resource "rediscloud_active_active_transit_gateway_route" "route" {
 * `status` - The status of the Transit Gateway
 * `attachment_status` - The status of the Subscription/Transit Gateway attachment, if established
 * `aws_account_id` - The Transit Gateway's AWS account ID
-* `cidrs` - A list of consumer CIDR blocks (read-only, managed by `rediscloud_active_active_transit_gateway_route`)
+* `cidrs` - A list of consumer CIDR blocks
 
 ## Import
 
