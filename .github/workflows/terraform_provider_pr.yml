@@ -47,8 +47,8 @@ jobs:
     name: go build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         continue-on-error: true
         id: cache-terraform-plugin-dir
         timeout-minutes: 2
@@ -71,8 +71,8 @@ jobs:
     needs: [go_build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         continue-on-error: true
         id: cache-terraform-providers-schema
         timeout-minutes: 2
