@@ -3,13 +3,15 @@ package provider
 import (
 	"context"
 	"errors"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"log"
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	fixedSubscriptions "github.com/RedisLabs/rediscloud-go-api/service/fixed/subscriptions"
@@ -133,7 +135,8 @@ func resourceRedisCloudEssentialsSubscriptionRead(ctx context.Context, d *schema
 
 	subscription, err := api.Client.FixedSubscriptions.Get(ctx, subId)
 	if err != nil {
-		if _, ok := err.(*fixedSubscriptions.NotFound); ok {
+		notFound := &fixedSubscriptions.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return diags
 		}
@@ -271,7 +274,8 @@ func waitForEssentialsSubscriptionToBeDeleted(ctx context.Context, id int, api *
 
 			subscription, err := api.Client.FixedSubscriptions.Get(ctx, id)
 			if err != nil {
-				if _, ok := err.(*fixedSubscriptions.NotFound); ok {
+				notFound := &fixedSubscriptions.NotFound{}
+				if errors.As(err, &notFound) {
 					return "deleted", "deleted", nil
 				}
 				return nil, "", err

@@ -2,6 +2,7 @@ package pro
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -11,11 +12,12 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 // Default RFC1918 private IP ranges used when public_endpoint_access is false
@@ -265,7 +267,7 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 					v := val.(string)
 					matched, err := regexp.MatchString(`^([2468])x$`, v)
 					if err != nil {
-						errs = append(errs, fmt.Errorf("regex match failed: %s", err))
+						errs = append(errs, fmt.Errorf("regex match failed: %w", err))
 						return
 					}
 					if !matched {
@@ -527,7 +529,8 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 
 	db, err := api.Client.Database.Get(ctx, subId, dbId)
 	if err != nil {
-		if _, ok := err.(*databases.NotFound); ok {
+		notFound := &databases.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return diags
 		}

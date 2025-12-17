@@ -11,14 +11,15 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 var contractFlag = flag.Bool("contract", false,

@@ -21,9 +21,9 @@ $(BIN)/%:
 	@echo "Installing tools from tools/tools.go"
 	@cat tools/tools.go | grep _ | awk -F '"' '{print $$2}' | GOBIN=$(BIN) xargs -tI {} go install {}
 
-.PHONY: build clean testacc generate_coverage install_local website website-test tfproviderlint
+.PHONY: build clean fmt fmtcheck testacc testacc-essentials generate_coverage install_local sweep tfproviderlint tfproviderlintx
 
-build: bin
+build: bin fmtcheck
 	@echo "Building local provider binary"
 	go build -o $(BIN)/terraform-provider-rediscloud_v$(PROVIDER_VERSION)
 	@sh -c "'$(CURDIR)/scripts/generate-dev-overrides.sh'"
@@ -31,6 +31,20 @@ build: bin
 clean:
 	@echo "Deleting local provider binary"
 	rm -rf $(BIN)
+
+fmt:
+	@echo "Formatting Go files"
+	goimports -w -local github.com/RedisLabs/terraform-provider-rediscloud .
+
+fmtcheck:
+	@echo "Checking Go file formatting"
+	@BADFILES=$$(goimports -l -local github.com/RedisLabs/terraform-provider-rediscloud .); \
+	if [ -n "$$BADFILES" ]; then \
+		echo "The following files are not formatted correctly:"; \
+		echo "$$BADFILES"; \
+		echo "Run 'make fmt' to fix."; \
+		exit 1; \
+	fi
 
 # `-p=1` added to avoid testing packages in parallel which causes `go test` to not stream logs as they are written
 testacc: bin

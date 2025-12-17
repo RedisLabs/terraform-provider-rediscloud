@@ -3,6 +3,7 @@ package provider
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -377,9 +378,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 	}
 
 	// Create databases
-	var dbs []*subscriptions.CreateDatabase
-
-	dbs = buildSubscriptionCreatePlanAADatabases(planMap)
+	var dbs []*subscriptions.CreateDatabase = buildSubscriptionCreatePlanAADatabases(planMap)
 
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
 	publicEndpointAccess := d.Get("public_endpoint_access").(bool)
@@ -498,7 +497,8 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 
 	subscription, err := api.Client.Subscription.Get(ctx, subId)
 	if err != nil {
-		if _, ok := err.(*subscriptions.NotFound); ok {
+		notFound := &subscriptions.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return diags
 		}

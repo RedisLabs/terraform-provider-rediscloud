@@ -2,12 +2,14 @@ package provider
 
 import (
 	"fmt"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"os"
 	"regexp"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) {

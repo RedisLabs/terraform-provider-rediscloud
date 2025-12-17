@@ -9,11 +9,12 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 // checks that a redis 8 database can be provisioned
@@ -83,7 +84,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8(t *testing.T) {
 
 						listDb := apiClient.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
-							return fmt.Errorf("no database found: %s", listDb.Err())
+							return fmt.Errorf("no database found: %w", listDb.Err())
 						}
 						if listDb.Err() != nil {
 							return listDb.Err()
@@ -165,7 +166,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 
 						listDb := apiClient.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
-							return fmt.Errorf("no database found: %s", listDb.Err())
+							return fmt.Errorf("no database found: %w", listDb.Err())
 						}
 						if listDb.Err() != nil {
 							return listDb.Err()

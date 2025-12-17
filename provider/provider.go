@@ -6,13 +6,14 @@ import (
 	"log"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/privatelink"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/transitgateway"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 )

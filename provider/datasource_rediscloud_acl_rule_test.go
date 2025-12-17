@@ -5,8 +5,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func TestAccDataSourceRedisCloudAclRule_ForDefaultRule(t *testing.T) {

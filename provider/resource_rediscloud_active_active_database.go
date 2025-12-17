@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"log"
 	"regexp"
 	"strings"
@@ -9,13 +10,14 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 // Default RFC1918 private IP ranges used when public_endpoint_access is false
@@ -534,7 +536,8 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 
 	db, err := api.Client.Database.GetActiveActive(ctx, subId, dbId)
 	if err != nil {
-		if _, ok := err.(*databases.NotFound); ok {
+		notFound := &databases.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return diags
 		}
@@ -1017,7 +1020,8 @@ func waitForDatabaseToBeDeleted(ctx context.Context, subId int, dbId int, api *c
 
 			_, err = api.Client.Database.Get(ctx, subId, dbId)
 			if err != nil {
-				if _, ok := err.(*databases.NotFound); ok {
+				notFound := &databases.NotFound{}
+				if errors.As(err, &notFound) {
 					return "deleted", "deleted", nil
 				}
 				return nil, "", err

@@ -1,9 +1,10 @@
 package provider
 
 import (
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
 	"fmt"
 	"regexp"
@@ -512,4 +513,3 @@ func getEssentialsDatabaseConfigWithVersionUpdated(t *testing.T, subscriptionNam
 	content := utils.GetTestConfig(t, "./essentials/testdata/essentials_database_updated_version.tf")
 	return fmt.Sprintf(content, subscriptionName, databaseName, redisVersion, password)
 }
-

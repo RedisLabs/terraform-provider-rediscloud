@@ -43,8 +43,6 @@ linters:
       extra-words:
         - typo: "organization"
           correction: "organization"
-        - typo: "organization_unit"
-          correction: "organization_unit"
         - typo: "initialized"
           correction: "initialized"
         - typo: "center"

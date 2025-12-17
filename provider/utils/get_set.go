@@ -1,9 +1,10 @@
 package utils
 
 import (
+	"time"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"time"
 )
 
 // This timeout is an absolute maximum used in some of the waitForStatus operations concerning creation and updating

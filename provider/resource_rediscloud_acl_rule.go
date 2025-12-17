@@ -2,16 +2,19 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/redis_rules"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/redis_rules"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
 func resourceRedisCloudAclRule() *schema.Resource {
@@ -85,7 +88,8 @@ func resourceRedisCloudAclRuleRead(ctx context.Context, d *schema.ResourceData, 
 
 	rule, err := api.Client.RedisRules.Get(ctx, id)
 	if err != nil {
-		if _, ok := err.(*redis_rules.NotFound); ok {
+		notFound := &redis_rules.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return diags
 		}
@@ -157,12 +161,13 @@ func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData
 		rule, err := api.Client.RedisRules.Get(ctx, id)
 
 		if err != nil {
-			if _, ok := err.(*redis_rules.NotFound); ok {
+			notFound := &redis_rules.NotFound{}
+			if errors.As(err, &notFound) {
 				// All good, the resource is gone
 				return nil
 			}
 			// This was an unexpected error
-			return retry.NonRetryableError(fmt.Errorf("error getting rule: %s", err))
+			return retry.NonRetryableError(fmt.Errorf("error getting rule: %w", err))
 		}
 
 		if rule != nil {

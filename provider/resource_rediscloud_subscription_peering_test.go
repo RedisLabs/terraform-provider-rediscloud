@@ -2,11 +2,12 @@ package provider
 
 import (
 	"fmt"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"net"
 	"os"
 	"regexp"
 	"testing"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"

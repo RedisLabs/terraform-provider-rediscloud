@@ -3,12 +3,13 @@ package provider
 import (
 	"context"
 	"fmt"
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"os"
 	"regexp"
 	"strconv"
 	"testing"
+
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
@@ -72,7 +73,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 
 						listDb := client.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
-							return fmt.Errorf("no database found: %s", listDb.Err())
+							return fmt.Errorf("no database found: %w", listDb.Err())
 						}
 
 						if listDb.Err() != nil {
@@ -176,7 +177,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 
 						listDb := client.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
-							return fmt.Errorf("no database found: %s", listDb.Err())
+							return fmt.Errorf("no database found: %w", listDb.Err())
 						}
 
 						if listDb.Err() != nil {
@@ -357,7 +358,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 
 						listDb := client.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
-							return fmt.Errorf("no database found: %s", listDb.Err())
+							return fmt.Errorf("no database found: %w", listDb.Err())
 						}
 
 						if listDb.Err() != nil {

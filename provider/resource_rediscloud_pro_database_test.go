@@ -9,11 +9,12 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 // Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the database resource.
@@ -92,7 +93,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 
 						listDb := client.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
-							return fmt.Errorf("no database found: %s", listDb.Err())
+							return fmt.Errorf("no database found: %w", listDb.Err())
 						}
 						if listDb.Err() != nil {
 							return listDb.Err()
