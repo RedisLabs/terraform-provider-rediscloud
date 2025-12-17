@@ -21,7 +21,7 @@ $(BIN)/%:
 	@echo "Installing tools from tools/tools.go"
 	@cat tools/tools.go | grep _ | awk -F '"' '{print $$2}' | GOBIN=$(BIN) xargs -tI {} go install {}
 
-.PHONY: build clean fmt fmtcheck testacc testacc-essentials generate_coverage install_local sweep tfproviderlint tfproviderlintx
+.PHONY: build clean fmt fmtcheck lint testacc testacc-essentials generate_coverage install_local sweep tfproviderlint tfproviderlintx
 
 build: bin fmtcheck
 	@echo "Building local provider binary"
@@ -45,6 +45,10 @@ fmtcheck:
 		echo "Run 'make fmt' to fix."; \
 		exit 1; \
 	fi
+
+lint:
+	@echo "Running golangci-lint"
+	golangci-lint run
 
 # `-p=1` added to avoid testing packages in parallel which causes `go test` to not stream logs as they are written
 testacc: bin
