@@ -98,6 +98,12 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentCreate(ctx context.Co
 		return diag.FromErr(err)
 	}
 
+	// At this point, cidrs has to be empty. We cannot honour the user's configuration until the invitation has been accepted
+	cidrs := utils.InterfaceToStringSlice(d.Get("cidrs").([]interface{}))
+	if len(cidrs) > 0 {
+		return diag.Errorf("Attachment cannot be created with Cidrs provided, it must be accepted first. This resource may then be updated with Cidrs.")
+	}
+
 	_, err = api.Client.TransitGatewayAttachments.CreateActiveActive(ctx, subscriptionId, regionId, tgwId)
 	if err != nil {
 		return diag.FromErr(err)
@@ -174,8 +180,23 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx context.Cont
 }
 
 func resourceRedisCloudActiveActiveTransitGatewayAttachmentUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	// cidrs attribute is deprecated - use rediscloud_active_active_transit_gateway_route resource instead
-	// This function is kept for backwards compatibility but performs no updates
+	api := meta.(*client.ApiClient)
+
+	subId, regionId, tgwId, err := transitgateway.ParseActiveActiveTransitGatewayAttachmentId(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	cidrs := utils.InterfaceToStringSlice(d.Get("cidrs").([]interface{}))
+	if len(cidrs) == 0 {
+		cidrs = make([]*string, 0)
+	}
+
+	err = api.Client.TransitGatewayAttachments.UpdateActiveActive(ctx, subId, regionId, tgwId, cidrs)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	return resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx, d, meta)
 }
 
