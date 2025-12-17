@@ -36,7 +36,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachment() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
-				Description: "The id of the Pro/Flexible subscription to attach",
+				Description: "The ID of the Active-Active subscription to attach",
 				Type:        schema.TypeString,
 				Required:    true,
 			},

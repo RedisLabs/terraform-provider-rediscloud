@@ -7,7 +7,7 @@ description: |-
 
 # Resource: rediscloud_transit_gateway_route
 
-Manages Transit Gateway routing (CIDRs) for a Pro/Flexible Subscription in your Redis Enterprise Cloud Account.
+Manages Transit Gateway routing (CIDRs) for a Pro subscription in your Redis Enterprise Cloud Account.
 
 This resource should be used after the Transit Gateway attachment has been accepted on both the Redis Cloud and AWS sides. Use `depends_on` to ensure proper ordering.
 
@@ -44,7 +44,7 @@ resource "rediscloud_transit_gateway_route" "example" {
 
 ## Argument Reference
 
-* `subscription_id` - (Required) The ID of the Pro/Flexible subscription
+* `subscription_id` - (Required) The ID of the Pro subscription
 * `tgw_id` - (Required) The ID of the Transit Gateway
 * `cidrs` - (Required) A list of consumer CIDR blocks
 
@@ -54,7 +54,7 @@ No additional attributes are exported.
 
 ## Import
 
-`rediscloud_transit_gateway_route` can be imported using the ID of the Pro/Flexible subscription and the ID of the Transit Gateway in the format {subscription_id}/{tgw_id}, e.g.
+`rediscloud_transit_gateway_route` can be imported using the ID of the Pro subscription and the ID of the Transit Gateway in the format {subscription_id}/{tgw_id}, e.g.
 
 ```
 $ terraform import rediscloud_transit_gateway_route.example 123456/47

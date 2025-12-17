@@ -17,7 +17,7 @@ import (
 
 func resourceRedisCloudTransitGatewayAttachment() *schema.Resource {
 	return &schema.Resource{
-		Description:   "Manages a Transit Gateway Attachment to a Pro/Flexible Subscription in your Redis Enterprise Cloud Account.",
+		Description:   "Manages a Transit Gateway Attachment to a Pro subscription in your Redis Enterprise Cloud Account.",
 		CreateContext: resourceRedisCloudTransitGatewayAttachmentCreate,
 		ReadContext:   resourceRedisCloudTransitGatewayAttachmentRead,
 		UpdateContext: resourceRedisCloudTransitGatewayAttachmentUpdate,
@@ -36,7 +36,7 @@ func resourceRedisCloudTransitGatewayAttachment() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
-				Description: "The id of the Pro/Flexible subscription to attach",
+				Description: "The ID of the Pro subscription to attach",
 				Type:        schema.TypeString,
 				Required:    true,
 			},

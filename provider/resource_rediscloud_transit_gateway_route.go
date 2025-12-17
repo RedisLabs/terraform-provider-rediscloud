@@ -17,7 +17,7 @@ import (
 
 func resourceRedisCloudTransitGatewayRoute() *schema.Resource {
 	return &schema.Resource{
-		Description:   "Manages Transit Gateway routing (CIDRs) for a Pro/Flexible Subscription in your Redis Enterprise Cloud Account.",
+		Description:   "Manages Transit Gateway routing (CIDRs) for a Pro subscription in your Redis Enterprise Cloud Account.",
 		CreateContext: resourceRedisCloudTransitGatewayRouteCreate,
 		ReadContext:   resourceRedisCloudTransitGatewayRouteRead,
 		UpdateContext: resourceRedisCloudTransitGatewayRouteUpdate,
@@ -36,7 +36,7 @@ func resourceRedisCloudTransitGatewayRoute() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
-				Description: "The ID of the Pro/Flexible subscription",
+				Description: "The ID of the Pro subscription",
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    true,

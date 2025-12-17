@@ -7,7 +7,7 @@ description: |-
 
 # Resource: rediscloud_transit_gateway_attachment
 
-Manages a Transit Gateway Attachment to a Pro/Flexible Subscription in your Redis Enterprise Cloud Account.
+Manages a Transit Gateway Attachment to a Pro subscription in your Redis Enterprise Cloud Account.
 
 ## Example Usage
 
@@ -34,7 +34,7 @@ resource "rediscloud_transit_gateway_route" "route" {
 
 ## Argument Reference
 
-* `subscription_id` - (Required) The ID of the Pro/Flexible subscription to attach
+* `subscription_id` - (Required) The ID of the Pro subscription to attach
 * `tgw_id` - (Required) The ID of the Transit Gateway to attach to
 * `cidrs` - (Optional) A list of consumer CIDR blocks. It is recommended to use the [`rediscloud_transit_gateway_route`](rediscloud_transit_gateway_route.md) resource instead for managing CIDRs.
 
@@ -49,7 +49,7 @@ resource "rediscloud_transit_gateway_route" "route" {
 
 ## Import
 
-`rediscloud_transit_gateway_attachment` can be imported using the ID of the Pro/Flexible subscription and the ID of the Transit Gateway in the format {subscription_id}/{tgw_id}, e.g.
+`rediscloud_transit_gateway_attachment` can be imported using the ID of the Pro subscription and the ID of the Transit Gateway in the format {subscription_id}/{tgw_id}, e.g.
 
 ```
 $ terraform import rediscloud_transit_gateway_attachment.tgwa-resource 123456/47
