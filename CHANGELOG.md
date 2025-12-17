@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 
+# 2.10.0 (Unreleased)
+
+## Added
+- New `rediscloud_transit_gateway_route` resource to manage Transit Gateway routing (CIDRs) separately from the attachment for Pro subscriptions. This is the preferred way to manage CIDRs.
+- New `rediscloud_active_active_transit_gateway_route` resource to manage Transit Gateway routing (CIDRs) separately from the attachment for Active-Active subscriptions. This is the preferred way to manage CIDRs.
+
+## Fixed
+- `rediscloud_transit_gateway_attachment`: Delete operation now handles "TGW_ATTACHMENT_DOES_NOT_EXIST" error gracefully, making destroy idempotent.
+- `rediscloud_active_active_transit_gateway_attachment`: Delete operation now handles "TGW_ATTACHMENT_DOES_NOT_EXIST" error gracefully, making destroy idempotent.
+
 # 2.9.0 (December 2025)
 
 ## Added
