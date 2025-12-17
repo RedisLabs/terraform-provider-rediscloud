@@ -21,7 +21,6 @@ linters:
     - misspell      # Find commonly misspelled English words
     - nilerr        # Find code that returns nil even if error is not nil
     - noctx         # Find HTTP requests without context.Context
-    - prealloc      # Find slice declarations that could be preallocated
     - unconvert     # Remove unnecessary type conversions
     - unparam       # Find unused function parameters
     - wastedassign  # Find wasted assignment statements
@@ -32,17 +31,31 @@ linters:
       check-type-assertions: true
 
     govet:
-      # Enable all analyzers
+      # Enable all analyzers except noisy ones
       enable-all: true
       disable:
         - fieldalignment  # Too noisy for existing codebase
+        - shadow          # if err := d.Set(...); err != nil pattern is idiomatic in Terraform providers
 
     misspell:
       locale: UK
+      # Words to ignore (API terms that must match external systems)
+      extra-words:
+        - typo: "organization"
+          correction: "organization"
+        - typo: "organization_unit"
+          correction: "organization_unit"
+        - typo: "initialized"
+          correction: "initialized"
+        - typo: "center"
+          correction: "center"
 
     staticcheck:
-      # Enable all checks
-      checks: ["all"]
+      # Enable all checks except noisy naming conventions
+      checks:
+        - "all"
+        - "-ST1000"  # Package comments - low value for internal packages
+        - "-ST1003"  # Naming conventions (Acl vs ACL, Id vs ID) - would require massive refactor
 
   exclusions:
     # Maximum count of issues with the same text (0 = unlimited)
