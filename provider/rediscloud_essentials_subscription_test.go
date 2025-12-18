@@ -36,7 +36,7 @@ func testAccPreCheckEssentialsSubscription(t *testing.T) {
 	}
 
 	if len(subs) > 0 {
-		t.Skipf("Essentials subscription already exists (ID: %d). Redis Cloud allows only 1 essentials subscription per account. Please delete the existing subscription before running this test.", redis.IntValue(subs[0].ID))
+		t.Fatalf("Essentials subscription already exists (ID: %d). Redis Cloud allows only 1 essentials subscription per account. Please delete the existing subscription before running this test.", redis.IntValue(subs[0].ID))
 	}
 }
 
