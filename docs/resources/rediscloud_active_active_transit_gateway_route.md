@@ -30,7 +30,7 @@ resource "rediscloud_active_active_transit_gateway_attachment" "example" {
 
 # Accept on AWS side
 resource "aws_ec2_transit_gateway_vpc_attachment_accepter" "example" {
-  transit_gateway_attachment_id = data.rediscloud_active_active_transit_gateway.example.attachment_uid
+  transit_gateway_attachment_id = rediscloud_active_active_transit_gateway_attachment.example.attachment_uid
 }
 
 # Configure CIDRs (depends on AWS acceptance)
