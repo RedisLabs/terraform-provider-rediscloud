@@ -166,9 +166,17 @@ jobs:
           go-version-file: go.mod
       - run: go test ./... -run="^TestUnit"  # Runs tests starting with TestUnit
 
+  # Gate job: All linting/validation must pass before smoke tests run
+  lint-complete:
+    name: lint complete
+    needs: [golangci-lint, go-mod-tidy, terraform-fmt, govulncheck, go_unit_test, tfproviderlint, terraform_providers_schema, docs-validation]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "All linting and validation checks passed"
+
   go_test_smoke_aa_sub:
     name: go test smoke aa sub
-    needs: [go_unit_test, tfproviderlint, terraform_providers_schema]
+    needs: [lint-complete]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -207,7 +215,7 @@ jobs:
 
   go_test_smoke_pro_sub:
     name: go test smoke pro sub
-    needs: [go_unit_test, tfproviderlint, terraform_providers_schema]
+    needs: [lint-complete]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -233,7 +241,7 @@ jobs:
 
   go_test_smoke_essentials_sub:
     name: go test smoke essentials sub
-    needs: [go_unit_test, tfproviderlint, terraform_providers_schema]
+    needs: [lint-complete]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -260,7 +268,7 @@ jobs:
 
   go_test_smoke_misc:
     name: go test smoke misc
-    needs: [go_unit_test, tfproviderlint, terraform_providers_schema]
+    needs: [lint-complete]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -286,7 +294,7 @@ jobs:
 
   go_test_block_public_endpoints:
     name: go test smoke public endpoints
-    needs: [go_unit_test, tfproviderlint, terraform_providers_schema]
+    needs: [lint-complete]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
