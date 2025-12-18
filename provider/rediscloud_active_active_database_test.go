@@ -521,7 +521,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 	t.Skip("auto_minor_version_upgrade feature temporarily removed")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
-	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
 	const resourceName = "rediscloud_active_active_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
