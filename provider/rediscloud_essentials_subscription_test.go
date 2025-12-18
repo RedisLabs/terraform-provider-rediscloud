@@ -437,7 +437,10 @@ data "rediscloud_essentials_subscription" "example" {
 `
 
 func testAccCheckEssentialsSubscriptionDestroy(s *terraform.State) error {
-	apiClient := testProvider.Meta().(*client.ApiClient)
+	apiClient, err := getTestClient()
+	if err != nil {
+		return err
+	}
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_essentials_subscription" {

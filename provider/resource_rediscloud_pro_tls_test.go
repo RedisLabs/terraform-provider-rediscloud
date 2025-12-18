@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"testing"
 
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -61,7 +60,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return err
 						}
 
-						client := testProvider.Meta().(*client2.ApiClient)
+						client := sharedTestClient(t)
 						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
@@ -165,7 +164,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return err
 						}
 
-						client := testProvider.Meta().(*client2.ApiClient)
+						client := sharedTestClient(t)
 						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
@@ -346,7 +345,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return err
 						}
 
-						client := testProvider.Meta().(*client2.ApiClient)
+						client := sharedTestClient(t)
 						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err

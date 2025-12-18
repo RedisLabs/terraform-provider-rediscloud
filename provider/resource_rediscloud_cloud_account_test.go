@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
@@ -62,7 +61,10 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 }
 
 func testAccCheckCloudAccountDestroy(s *terraform.State) error {
-	client := testProvider.Meta().(*client2.ApiClient)
+	client, err := getTestClient()
+	if err != nil {
+		return err
+	}
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_cloud_account" {

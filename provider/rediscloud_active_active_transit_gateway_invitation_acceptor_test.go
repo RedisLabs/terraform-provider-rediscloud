@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
@@ -131,7 +130,10 @@ func testAccCheckActiveActiveTransitGatewayInvitationOnApi(resourceName string, 
 			return err
 		}
 
-		apiClient := testProvider.Meta().(*client.ApiClient)
+		apiClient, err := getTestClient()
+		if err != nil {
+			return err
+		}
 		invitations, err := apiClient.Client.TransitGatewayAttachments.ListInvitationsActiveActive(context.TODO(), subId, regionId)
 		if err != nil {
 			return err
@@ -170,7 +172,10 @@ func testAccCheckActiveActiveTransitGatewayAttachmentOnApi(resourceName string, 
 			return err
 		}
 
-		apiClient := testProvider.Meta().(*client.ApiClient)
+		apiClient, err := getTestClient()
+		if err != nil {
+			return err
+		}
 		tgwTask, err := apiClient.Client.TransitGatewayAttachments.GetActiveActive(context.TODO(), subId, regionId)
 		if err != nil {
 			return err
@@ -219,7 +224,10 @@ func testAccCheckActiveActiveTransitGatewayRouteCidrsOnApi(resourceName string, 
 			return err
 		}
 
-		apiClient := testProvider.Meta().(*client.ApiClient)
+		apiClient, err := getTestClient()
+		if err != nil {
+			return err
+		}
 		tgwTask, err := apiClient.Client.TransitGatewayAttachments.GetActiveActive(context.TODO(), subId, regionId)
 		if err != nil {
 			return err
