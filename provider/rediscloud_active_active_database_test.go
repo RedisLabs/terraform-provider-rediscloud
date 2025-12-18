@@ -532,7 +532,11 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 		Steps: []resource.TestStep{
 			// Test database creation with auto_minor_version_upgrade set to false
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./activeactive/testdata/auto_minor_version_upgrade.tf"), testCloudAccountName, subscriptionName, name, "false"),
+				Config: utils.RenderTestConfig(t, "./activeactive/testdata/auto_minor_version_upgrade.tf", map[string]string{
+					"__CLOUD_ACCOUNT__":              testCloudAccountName,
+					"__SUBSCRIPTION_NAME__":          subscriptionName,
+					"__AUTO_MINOR_VERSION_UPGRADE__": "false",
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "auto-minor-version-upgrade-test"),
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "false"),
@@ -540,7 +544,11 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 			},
 			// Test database update with auto_minor_version_upgrade set to true
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./activeactive/testdata/auto_minor_version_upgrade.tf"), testCloudAccountName, subscriptionName, name, "true"),
+				Config: utils.RenderTestConfig(t, "./activeactive/testdata/auto_minor_version_upgrade.tf", map[string]string{
+					"__CLOUD_ACCOUNT__":              testCloudAccountName,
+					"__SUBSCRIPTION_NAME__":          subscriptionName,
+					"__AUTO_MINOR_VERSION_UPGRADE__": "true",
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "true"),
 				),

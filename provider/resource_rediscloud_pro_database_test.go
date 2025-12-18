@@ -176,7 +176,11 @@ func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_optional_attributes.tf"), testCloudAccountName, name, portNumber),
+				Config: utils.RenderTestConfig(t, "./pro/testdata/pro_database_optional_attributes.tf", map[string]string{
+					"__CLOUD_ACCOUNT__":     testCloudAccountName,
+					"__SUBSCRIPTION_NAME__": name,
+					"__PORT_NUMBER__":       strconv.Itoa(portNumber),
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
 					resource.TestCheckResourceAttr(resourceName, "port", strconv.Itoa(portNumber)),
@@ -255,19 +259,34 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_resp_versions.tf"), testCloudAccountName, name, portNumber, "resp2"),
+				Config: utils.RenderTestConfig(t, "./pro/testdata/pro_database_resp_versions.tf", map[string]string{
+					"__CLOUD_ACCOUNT__":     testCloudAccountName,
+					"__SUBSCRIPTION_NAME__": name,
+					"__PORT_NUMBER__":       strconv.Itoa(portNumber),
+					"__RESP_VERSION__":      "resp2",
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp2"),
 				),
 			},
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_resp_versions.tf"), testCloudAccountName, name, portNumber, "resp3"),
+				Config: utils.RenderTestConfig(t, "./pro/testdata/pro_database_resp_versions.tf", map[string]string{
+					"__CLOUD_ACCOUNT__":     testCloudAccountName,
+					"__SUBSCRIPTION_NAME__": name,
+					"__PORT_NUMBER__":       strconv.Itoa(portNumber),
+					"__RESP_VERSION__":      "resp3",
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
 				),
 			},
 			{
-				Config:      fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_resp_versions.tf"), testCloudAccountName, name, portNumber, "best_resp_100"),
+				Config: utils.RenderTestConfig(t, "./pro/testdata/pro_database_resp_versions.tf", map[string]string{
+					"__CLOUD_ACCOUNT__":     testCloudAccountName,
+					"__SUBSCRIPTION_NAME__": name,
+					"__PORT_NUMBER__":       strconv.Itoa(portNumber),
+					"__RESP_VERSION__":      "best_resp_100",
+				}),
 				ExpectError: regexp.MustCompile("Bad Request: JSON parameter contains unsupported fields / values. JSON parse error: Cannot deserialize value of type `mappings.RespVersion` from String \"best_resp_100\": not one of the values accepted for Enum class: \\[resp2, resp3]"),
 			},
 		},
@@ -290,7 +309,11 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 		Steps: []resource.TestStep{
 			// Test database creation with auto_minor_version_upgrade set to false
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_auto_minor_version_upgrade.tf"), testCloudAccountName, name, "false"),
+				Config: utils.RenderTestConfig(t, "./pro/testdata/pro_database_auto_minor_version_upgrade.tf", map[string]string{
+					"__CLOUD_ACCOUNT__":              testCloudAccountName,
+					"__SUBSCRIPTION_NAME__":          name,
+					"__AUTO_MINOR_VERSION_UPGRADE__": "false",
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "auto-minor-version-upgrade-test"),
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "false"),
@@ -298,7 +321,11 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 			},
 			// Test database update with auto_minor_version_upgrade set to true
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_auto_minor_version_upgrade.tf"), testCloudAccountName, name, "true"),
+				Config: utils.RenderTestConfig(t, "./pro/testdata/pro_database_auto_minor_version_upgrade.tf", map[string]string{
+					"__CLOUD_ACCOUNT__":              testCloudAccountName,
+					"__SUBSCRIPTION_NAME__":          name,
+					"__AUTO_MINOR_VERSION_UPGRADE__": "true",
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "true"),
 				),
