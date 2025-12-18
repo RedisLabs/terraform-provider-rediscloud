@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+      - 'release/*'
 env:
   TERRAFORM_VERSION: "1.2.6"
   REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_STAGING }}

@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -35,7 +36,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachment() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
-				Description: "The id of the Pro/Flexible subscription to attach",
+				Description: "The ID of the Active-Active subscription to attach",
 				Type:        schema.TypeString,
 				Required:    true,
 			},
@@ -75,7 +76,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachment() *schema.Resource {
 				Computed:    true,
 			},
 			"cidrs": {
-				Description: "A list of consumer Cidr blocks.",
+				Description: "A list of consumer CIDR blocks. It is recommended to use the rediscloud_active_active_transit_gateway_route resource instead for managing CIDRs.",
 				Type:        schema.TypeList,
 				Optional:    true,
 				Computed:    true,
@@ -210,6 +211,10 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentDelete(ctx context.Co
 
 	err = api.Client.TransitGatewayAttachments.DeleteActiveActive(ctx, subId, regionId, tgwId)
 	if err != nil {
+		if strings.Contains(err.Error(), "TGW_ATTACHMENT_DOES_NOT_EXIST") {
+			d.SetId("")
+			return diags
+		}
 		return diag.FromErr(err)
 	}
 

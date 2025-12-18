@@ -107,6 +107,8 @@ func New(version string) func() *schema.Provider {
 				"rediscloud_active_active_private_service_connect_endpoint_accepter": resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter(),
 				"rediscloud_transit_gateway_attachment":                              resourceRedisCloudTransitGatewayAttachment(),
 				"rediscloud_active_active_transit_gateway_attachment":                resourceRedisCloudActiveActiveTransitGatewayAttachment(),
+				"rediscloud_transit_gateway_route":                                   resourceRedisCloudTransitGatewayRoute(),
+				"rediscloud_active_active_transit_gateway_route":                     resourceRedisCloudActiveActiveTransitGatewayRoute(),
 				"rediscloud_transit_gateway_invitation_acceptor":                     transitgateway.ResourceRedisCloudTransitGatewayInvitationAcceptor(),
 				"rediscloud_active_active_transit_gateway_invitation_acceptor":       transitgateway.ResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor(),
 				"rediscloud_acl_rule":                                                resourceRedisCloudAclRule(),
