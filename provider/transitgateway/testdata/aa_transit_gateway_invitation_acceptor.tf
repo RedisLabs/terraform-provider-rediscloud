@@ -27,16 +27,16 @@ resource "rediscloud_active_active_subscription" "test" {
     dataset_size_in_gb = 1
     quantity           = 1
     region {
-      region                       = local.aws_region
-      networking_deployment_cidr   = "192.168.0.0/24"
-      write_operations_per_second  = 1000
-      read_operations_per_second   = 1000
+      region                      = local.aws_region
+      networking_deployment_cidr  = "192.168.0.0/24"
+      write_operations_per_second = 1000
+      read_operations_per_second  = 1000
     }
     region {
-      region                       = "us-east-2"
-      networking_deployment_cidr   = "10.0.1.0/24"
-      write_operations_per_second  = 1000
-      read_operations_per_second   = 1000
+      region                      = "us-east-2"
+      networking_deployment_cidr  = "10.0.1.0/24"
+      write_operations_per_second = 1000
+      read_operations_per_second  = 1000
     }
   }
 }

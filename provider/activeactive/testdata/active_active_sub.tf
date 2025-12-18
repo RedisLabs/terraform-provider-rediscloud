@@ -14,7 +14,7 @@ resource "rediscloud_active_active_subscription" "example" {
 
   creation_plan {
     memory_limit_in_gb = 1
-    modules = ["RedisJSON"]
+    modules            = ["RedisJSON"]
     quantity           = 1
     region {
       region                      = "us-east-1"
@@ -35,12 +35,12 @@ resource "rediscloud_active_active_subscription" "example" {
     window {
       start_hour        = 22
       duration_in_hours = 8
-      days = ["Monday", "Thursday"]
+      days              = ["Monday", "Thursday"]
     }
     window {
       start_hour        = 12
       duration_in_hours = 6
-      days = ["Friday", "Saturday", "Sunday"]
+      days              = ["Friday", "Saturday", "Sunday"]
     }
   }
 }
@@ -51,7 +51,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
   dataset_size_in_gb      = 1
   global_data_persistence = "aof-every-1-second"
   global_password         = "some-random-pass-2"
-  global_source_ips = ["192.168.0.0/16"]
+  global_source_ips       = ["192.168.0.0/16"]
   global_alert {
     name  = "dataset-size"
     value = 40
@@ -60,8 +60,8 @@ resource "rediscloud_active_active_subscription_database" "example" {
   global_modules = ["RedisJSON"]
 
   override_region {
-    name                = "us-east-2"
-    enable_default_user = true
+    name                       = "us-east-2"
+    enable_default_user        = true
     override_global_source_ips = ["192.10.0.0/16"]
   }
 

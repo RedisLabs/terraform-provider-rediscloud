@@ -1,8 +1,8 @@
 locals {
-  rediscloud_subscription_name = "%s"
-  rediscloud_cloud_account = "%s"
+  rediscloud_subscription_name       = "%s"
+  rediscloud_cloud_account           = "%s"
   rediscloud_private_link_share_name = "%s"
-  rediscloud_database_password = "%s"
+  rediscloud_database_password       = "%s"
 }
 
 data "rediscloud_payment_method" "card" {
@@ -12,8 +12,8 @@ data "rediscloud_payment_method" "card" {
 
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
-  provider_type = "AWS"
-  name = local.rediscloud_cloud_account
+  provider_type            = "AWS"
+  name                     = local.rediscloud_cloud_account
 }
 
 resource "rediscloud_subscription" "pro_subscription" {
@@ -21,11 +21,11 @@ resource "rediscloud_subscription" "pro_subscription" {
   payment_method_id = data.rediscloud_payment_method.card.id
 
   cloud_provider {
-    provider = data.rediscloud_cloud_account.account.provider_type
+    provider         = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
     region {
-      region = "eu-west-1"
-      networking_deployment_cidr = "10.0.0.0/24"
+      region                       = "eu-west-1"
+      networking_deployment_cidr   = "10.0.0.0/24"
       preferred_availability_zones = ["eu-west-1a"]
     }
   }
@@ -41,30 +41,30 @@ resource "rediscloud_subscription" "pro_subscription" {
 
 ## this will give some connections and databases in the output
 resource "rediscloud_subscription_database" "pro_database" {
-  subscription_id         = rediscloud_subscription.pro_subscription.id
-  name                    = "db"
-  memory_limit_in_gb      = 1
-  password         = local.rediscloud_database_password
-  protocol = "redis"
-  data_persistence = "none"
-  throughput_measurement_by = "operations-per-second"
+  subscription_id              = rediscloud_subscription.pro_subscription.id
+  name                         = "db"
+  memory_limit_in_gb           = 1
+  password                     = local.rediscloud_database_password
+  protocol                     = "redis"
+  data_persistence             = "none"
+  throughput_measurement_by    = "operations-per-second"
   throughput_measurement_value = 10000
 }
 
 
 resource "rediscloud_private_link" "pro_private_link" {
   subscription_id = rediscloud_subscription.pro_subscription.id
-  share_name = local.rediscloud_private_link_share_name
+  share_name      = local.rediscloud_private_link_share_name
 
   principal {
-    principal = "123456789012"
-    principal_type = "aws_account"
+    principal       = "123456789012"
+    principal_type  = "aws_account"
     principal_alias = "principal 1"
   }
 
   principal {
-    principal = "234567890123"
-    principal_type = "aws_account"
+    principal       = "234567890123"
+    principal_type  = "aws_account"
     principal_alias = "principal 2"
   }
 

@@ -56,5 +56,5 @@ resource "rediscloud_subscription_database" "example" {
 
 data "rediscloud_database" "example" {
   subscription_id = rediscloud_subscription.example.id
-  name           = rediscloud_subscription_database.example.name
+  name            = rediscloud_subscription_database.example.name
 }
