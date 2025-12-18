@@ -7,8 +7,9 @@ import (
 
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
 var providerFactories map[string]func() (*schema.Provider, error)
