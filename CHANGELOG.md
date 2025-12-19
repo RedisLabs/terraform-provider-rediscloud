@@ -5,17 +5,10 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 # 2.10.1 (Unreleased)
 
-## Added
-- Added missing documentation for `rediscloud_private_link_endpoint_script` and `rediscloud_active_active_private_link_endpoint_script` data sources.
-
 ## Fixed
-- Fixed incorrect usage of data sources in example documentation.
+- `rediscloud_active_active_subscription`: Removing the deprecated `redis_version` attribute no longer forces subscription replacement.
 
-## Changed
-- Improved CI/CD pipeline with additional validation checks and security scanning.
-- Improved test infrastructure and parallel resource cleanup.
-
-# 2.10.0 (December 2025)
+# 2.10.0 (22nd December 2025)
 
 ## Added
 - New `rediscloud_transit_gateway_route` resource to manage Transit Gateway routing (CIDRs) separately from the attachment for Pro subscriptions. This is the preferred way to manage CIDRs.
