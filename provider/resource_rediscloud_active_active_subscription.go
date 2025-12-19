@@ -181,18 +181,25 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
+				Deprecated:  "This attribute is deprecated on Active-Active subscriptions. Please specify `redis_version` on databases directly instead.",
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if d.Id() == "" {
 						// Consider the property if the resource is about to be created.
 						return false
 					}
 
-					if old != new {
-						// The user is requesting a change
-						return false
+					// Suppress diff if user removes the deprecated attribute
+					if new == "" {
+						return true
 					}
 
-					return true
+					// Suppress diff if no actual change
+					if old == new {
+						return true
+					}
+
+					// User is requesting a change - don't suppress
+					return false
 				},
 			},
 			"maintenance_windows": {
