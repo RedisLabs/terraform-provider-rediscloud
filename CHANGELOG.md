@@ -9,6 +9,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 - `rediscloud_active_active_subscription`: Removing the deprecated `redis_version` attribute no longer forces subscription replacement.
 - Fixed incorrect usage of data sources in example documentation.
 - `rediscloud_active_active_subscription_peering`: Fixed import for AWS peerings.
+- Fixed nil pointer dereference crashes in `rediscloud_database` and `rediscloud_active_active_subscription_database` data sources/resources when optional fields are missing from API response.
 
 ## Changed
 - Improved CI/CD pipeline with additional validation checks and security scanning.
