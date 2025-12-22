@@ -309,15 +309,21 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 	if err := d.Set("name", redis.StringValue(db.Name)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("memory_limit_in_gb", redis.Float64Value(db.CrdbDatabases[0].MemoryLimitInGB)); err != nil {
-		return diag.FromErr(err)
+	if len(db.CrdbDatabases) > 0 && db.CrdbDatabases[0].MemoryLimitInGB != nil {
+		if err := d.Set("memory_limit_in_gb", redis.Float64Value(db.CrdbDatabases[0].MemoryLimitInGB)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
-	if err := d.Set("dataset_size_in_gb", redis.Float64Value(db.CrdbDatabases[0].DatasetSizeInGB)); err != nil {
-		return diag.FromErr(err)
+	if len(db.CrdbDatabases) > 0 && db.CrdbDatabases[0].DatasetSizeInGB != nil {
+		if err := d.Set("dataset_size_in_gb", redis.Float64Value(db.CrdbDatabases[0].DatasetSizeInGB)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
-	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
-		return diag.FromErr(err)
+	if db.RedisVersion != nil {
+		if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if err := d.Set("support_oss_cluster_api", redis.BoolValue(db.SupportOSSClusterAPI)); err != nil {
@@ -326,8 +332,10 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 	if err := d.Set("external_endpoint_for_oss_cluster_api", redis.BoolValue(db.UseExternalEndpointForOSSClusterAPI)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("enable_tls", redis.BoolValue(db.CrdbDatabases[0].Security.EnableTls)); err != nil {
-		return diag.FromErr(err)
+	if len(db.CrdbDatabases) > 0 && db.CrdbDatabases[0].Security != nil {
+		if err := d.Set("enable_tls", redis.BoolValue(db.CrdbDatabases[0].Security.EnableTls)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 	if err := d.Set("data_eviction", redis.StringValue(db.DataEvictionPolicy)); err != nil {
 		return diag.FromErr(err)
