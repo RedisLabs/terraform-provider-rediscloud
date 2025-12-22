@@ -130,3 +130,27 @@ resource "rediscloud_active_active_transit_gateway_attachment" "test" {
   region_id       = local.region_id
   tgw_id          = data.rediscloud_active_active_transit_gateway.test.tgw_id
 }
+
+resource "time_sleep" "wait_for_attachment" {
+  depends_on      = [rediscloud_active_active_transit_gateway_attachment.test]
+  create_duration = "120s"
+}
+
+resource "aws_ec2_transit_gateway_vpc_attachment_accepter" "test" {
+  transit_gateway_attachment_id = rediscloud_active_active_transit_gateway_attachment.test.attachment_uid
+
+  tags = {
+    Name = local.subscription_name
+  }
+
+  depends_on = [time_sleep.wait_for_attachment]
+}
+
+resource "rediscloud_active_active_transit_gateway_route" "test" {
+  subscription_id = rediscloud_active_active_subscription.test.id
+  region_id       = local.region_id
+  tgw_id          = data.rediscloud_active_active_transit_gateway.test.tgw_id
+  cidrs           = ["10.10.20.0/24"]
+
+  depends_on = [aws_ec2_transit_gateway_vpc_attachment_accepter.test]
+}

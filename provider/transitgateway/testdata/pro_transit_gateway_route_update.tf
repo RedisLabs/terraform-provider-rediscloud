@@ -1,7 +1,6 @@
 locals {
-  cloud_account_name = "%s"
-  subscription_name  = "%s"
-  aws_region         = "%s"
+  subscription_name = "%s"
+  aws_region        = "%s"
 }
 
 provider "aws" {
@@ -13,30 +12,18 @@ data "rediscloud_payment_method" "card" {
   last_four_numbers = "5556"
 }
 
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type            = "AWS"
-  name                     = local.cloud_account_name
-}
-
 resource "rediscloud_subscription" "example" {
   name              = local.subscription_name
   payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage    = "ram"
 
-  allowlist {
-    cidrs              = ["192.168.0.0/16"]
-    security_group_ids = []
-  }
-
   cloud_provider {
-    provider         = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
+    provider         = "AWS"
+    cloud_account_id = "1"
     region {
-      region                       = local.aws_region
-      networking_deployment_cidr   = "10.0.0.0/24"
-      preferred_availability_zones = ["${local.aws_region}a"]
+      region                     = local.aws_region
+      networking_deployment_cidr = "10.0.0.0/24"
     }
   }
 
@@ -109,18 +96,30 @@ data "rediscloud_transit_gateway" "test" {
   depends_on = [time_sleep.wait_for_acceptance]
 }
 
+resource "rediscloud_transit_gateway_attachment" "test" {
+  subscription_id = rediscloud_subscription.example.id
+  tgw_id          = data.rediscloud_transit_gateway.test.tgw_id
+}
+
+resource "time_sleep" "wait_for_attachment" {
+  depends_on      = [rediscloud_transit_gateway_attachment.test]
+  create_duration = "120s"
+}
+
 resource "aws_ec2_transit_gateway_vpc_attachment_accepter" "test" {
-  transit_gateway_attachment_id = data.rediscloud_transit_gateway.test.attachment_uid
+  transit_gateway_attachment_id = rediscloud_transit_gateway_attachment.test.attachment_uid
 
   tags = {
     Name = local.subscription_name
   }
+
+  depends_on = [time_sleep.wait_for_attachment]
 }
 
-resource "rediscloud_transit_gateway_attachment" "test" {
+resource "rediscloud_transit_gateway_route" "test" {
   subscription_id = rediscloud_subscription.example.id
   tgw_id          = data.rediscloud_transit_gateway.test.tgw_id
-  cidrs           = ["10.10.20.0/24"]
+  cidrs           = ["10.10.20.0/24", "10.10.21.0/24"]
 
   depends_on = [aws_ec2_transit_gateway_vpc_attachment_accepter.test]
 }
