@@ -1,15 +1,18 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"testing"
 
+	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) {
@@ -39,14 +42,6 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 	vpcId := os.Getenv("AWS_VPC_ID")
 	matchesRegex(t, vpcId, "^vpc-[a-z\\d]+$")
 
-	tf := fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionPeeringAWS,
-		name,
-		subCidrRange,
-		peeringRegion,
-		accountId,
-		vpcId,
-		cidrRange,
-	)
 	const resourceName = "rediscloud_active_active_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -55,11 +50,19 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: tf,
+				Config: utils.RenderTestConfig(t, "./peering/testdata/active_active_peering_aws.tf", map[string]string{
+					"__SUBSCRIPTION_NAME__":     name,
+					"__SUBSCRIPTION_CIDR__":     subCidrRange,
+					"__PEERING_SOURCE_REGION__": "us-east-2",
+					"__PEERING_DEST_REGION__":   peeringRegion,
+					"__AWS_ACCOUNT_ID__":        accountId,
+					"__VPC_ID__":                vpcId,
+					"__VPC_CIDR__":              cidrRange,
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d*/\\d*$")),
 					resource.TestCheckResourceAttrSet(resourceName, "status"),
-					resource.TestCheckResourceAttrSet(resourceName, "provider_name"),
+					resource.TestCheckResourceAttr(resourceName, "provider_name", "AWS"),
 					resource.TestCheckResourceAttrSet(resourceName, "aws_account_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
 					resource.TestCheckResourceAttr(resourceName, "vpc_cidr", cidrRange),
@@ -68,7 +71,13 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 					resource.TestCheckResourceAttrSet(resourceName, "source_region"),
 					resource.TestCheckResourceAttrSet(resourceName, "destination_region"),
 					resource.TestCheckResourceAttrSet(resourceName, "aws_peering_id"),
+					testAccCheckActiveActivePeeringAwsAttributesMatchApi(resourceName),
 				),
+			},
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -113,45 +122,73 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_gcp(t *testing.T) 
 	})
 }
 
-const testAccResourceRedisCloudActiveActiveSubscriptionPeeringAWS = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
+// testAccCheckActiveActivePeeringAwsAttributesMatchApi verifies that the Terraform state
+// for an AWS Active-Active peering matches what the API returns. This is particularly
+// important for testing import functionality - if the Read function doesn't properly
+// populate AWS attributes during import, this check will fail.
+func testAccCheckActiveActivePeeringAwsAttributesMatchApi(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource not found: %s", resourceName)
+		}
 
-resource "rediscloud_active_active_subscription" "example" {
-    name = "%s"
-    payment_method_id = data.rediscloud_payment_method.card.id
-    cloud_provider = "AWS"
+		subId, err := strconv.Atoi(rs.Primary.Attributes["subscription_id"])
+		if err != nil {
+			return fmt.Errorf("failed to parse subscription_id: %w", err)
+		}
 
-    creation_plan {
-        memory_limit_in_gb = 1
-        quantity = 1
-        region {
-            region = "us-east-1"
-            networking_deployment_cidr = "192.168.0.0/24"
-            write_operations_per_second = 1000
-            read_operations_per_second = 1000
-        }
-        region {
-            region = "us-east-2"
-            networking_deployment_cidr = "%s"
-            write_operations_per_second = 1000
-            read_operations_per_second = 1000
-        }
-    }
-}
+		peeringIdStr := rs.Primary.ID
+		// ID format is "subId/peeringId"
+		var peeringId int
+		if _, err := fmt.Sscanf(peeringIdStr, "%d/%d", &subId, &peeringId); err != nil {
+			return fmt.Errorf("failed to parse peering ID from %s: %w", peeringIdStr, err)
+		}
 
-resource "rediscloud_active_active_subscription_peering" "test" {
-  subscription_id = rediscloud_active_active_subscription.example.id
-  provider_name = "AWS"
-  source_region = "us-east-2"
-  destination_region = "%s"
-  aws_account_id = "%s"
-  vpc_id = "%s"
-  vpc_cidr = "%s"
+		apiClient, err := getTestClient()
+		if err != nil {
+			return fmt.Errorf("failed to get API client: %w", err)
+		}
+
+		peerings, err := apiClient.Client.Subscription.ListActiveActiveVPCPeering(context.TODO(), subId)
+		if err != nil {
+			return fmt.Errorf("failed to list peerings: %w", err)
+		}
+
+		// Find the peering by ID
+		for _, region := range peerings {
+			for _, peering := range region.VPCPeerings {
+				if redis.IntValue(peering.ID) == peeringId {
+					// Verify AWS-specific attributes match API
+					if stateAwsAccountId := rs.Primary.Attributes["aws_account_id"]; stateAwsAccountId != redis.StringValue(peering.AWSAccountID) {
+						return fmt.Errorf("aws_account_id mismatch: state=%q, api=%q", stateAwsAccountId, redis.StringValue(peering.AWSAccountID))
+					}
+					if stateVpcId := rs.Primary.Attributes["vpc_id"]; stateVpcId != redis.StringValue(peering.VPCId) {
+						return fmt.Errorf("vpc_id mismatch: state=%q, api=%q", stateVpcId, redis.StringValue(peering.VPCId))
+					}
+					if stateAwsPeeringId := rs.Primary.Attributes["aws_peering_id"]; stateAwsPeeringId != redis.StringValue(peering.AWSPeeringID) {
+						return fmt.Errorf("aws_peering_id mismatch: state=%q, api=%q", stateAwsPeeringId, redis.StringValue(peering.AWSPeeringID))
+					}
+					if stateSourceRegion := rs.Primary.Attributes["source_region"]; stateSourceRegion != redis.StringValue(region.SourceRegion) {
+						return fmt.Errorf("source_region mismatch: state=%q, api=%q", stateSourceRegion, redis.StringValue(region.SourceRegion))
+					}
+					if stateDestRegion := rs.Primary.Attributes["destination_region"]; stateDestRegion != redis.StringValue(peering.RegionName) {
+						return fmt.Errorf("destination_region mismatch: state=%q, api=%q", stateDestRegion, redis.StringValue(peering.RegionName))
+					}
+
+					// Verify provider_name is "AWS"
+					if stateProviderName := rs.Primary.Attributes["provider_name"]; stateProviderName != "AWS" {
+						return fmt.Errorf("provider_name mismatch: state=%q, expected=%q", stateProviderName, "AWS")
+					}
+
+					return nil
+				}
+			}
+		}
+
+		return fmt.Errorf("peering %d not found in API response for subscription %d", peeringId, subId)
+	}
 }
-`
 
 const testAccResourceRedisCloudActiveActiveSubscriptionPeeringGCP = `
 data "rediscloud_payment_method" "card" {
