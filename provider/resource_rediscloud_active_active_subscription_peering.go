@@ -273,8 +273,7 @@ func resourceRedisCloudSubscriptionActiveActivePeeringRead(ctx context.Context, 
 		return diag.FromErr(err)
 	}
 
-	providerName := d.Get("provider_name").(string)
-
+	providerName := "AWS"
 	if redis.StringValue(peering.GCPProjectUID) != "" {
 		providerName = "GCP"
 	}
