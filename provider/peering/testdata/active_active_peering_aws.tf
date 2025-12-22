@@ -1,11 +1,22 @@
 locals {
-  subscription_name     = "__SUBSCRIPTION_NAME__"
-  subscription_cidr     = "__SUBSCRIPTION_CIDR__"
-  peering_source_region = "__PEERING_SOURCE_REGION__"
-  peering_dest_region   = "__PEERING_DEST_REGION__"
-  aws_account_id        = "__AWS_ACCOUNT_ID__"
-  vpc_id                = "__VPC_ID__"
-  vpc_cidr              = "__VPC_CIDR__"
+  subscription_name = "__SUBSCRIPTION_NAME__"
+  aws_region        = "__AWS_REGION__"
+}
+
+provider "aws" {
+  region = local.aws_region
+}
+
+data "aws_caller_identity" "current" {}
+
+resource "aws_vpc" "peering_target" {
+  cidr_block           = "172.31.0.0/24" # use a CIDR that won't overlap with the subscription
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = {
+    Name = "${local.subscription_name}-peering-vpc"
+  }
 }
 
 data "rediscloud_payment_method" "card" {
@@ -28,8 +39,8 @@ resource "rediscloud_active_active_subscription" "example" {
       read_operations_per_second  = 1000
     }
     region {
-      region                      = local.peering_source_region
-      networking_deployment_cidr  = local.subscription_cidr
+      region                      = local.aws_region
+      networking_deployment_cidr  = "10.0.0.0/24"
       write_operations_per_second = 1000
       read_operations_per_second  = 1000
     }
@@ -39,9 +50,9 @@ resource "rediscloud_active_active_subscription" "example" {
 resource "rediscloud_active_active_subscription_peering" "test" {
   subscription_id    = rediscloud_active_active_subscription.example.id
   provider_name      = "AWS"
-  source_region      = local.peering_source_region
-  destination_region = local.peering_dest_region
-  aws_account_id     = local.aws_account_id
-  vpc_id             = local.vpc_id
-  vpc_cidr           = local.vpc_cidr
+  source_region      = local.aws_region
+  destination_region = local.aws_region
+  aws_account_id     = data.aws_caller_identity.current.account_id
+  vpc_id             = aws_vpc.peering_target.id
+  vpc_cidr           = aws_vpc.peering_target.cidr_block
 }

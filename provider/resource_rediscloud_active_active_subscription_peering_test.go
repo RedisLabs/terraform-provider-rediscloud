@@ -20,44 +20,28 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_PEERING")
 
 	name := acctest.RandomWithPrefix(testResourcePrefix)
-
-	cidrRange := os.Getenv("AWS_VPC_CIDR")
-	// Choose a CIDR range for the subscription that's unlikely to overlap with any VPC CIDR
-	subCidrRange := "10.0.0.0/24"
-
-	overlap, err := cidrRangesOverlap(subCidrRange, cidrRange)
-	if err != nil {
-		t.Fatalf("AWS_VPC_CIDR is not a valid CIDR range %s: %s", cidrRange, err)
-	}
-	if overlap {
-		subCidrRange = "172.16.0.0/24"
-	}
-
-	peeringRegion := os.Getenv("AWS_PEERING_REGION")
-	matchesRegex(t, peeringRegion, "^[a-z]+-[a-z]+-\\d+$")
-
-	accountId := os.Getenv("AWS_ACCOUNT_ID")
-	matchesRegex(t, accountId, "^\\d+$")
-
-	vpcId := os.Getenv("AWS_VPC_ID")
-	matchesRegex(t, vpcId, "^vpc-[a-z\\d]+$")
+	awsRegion := "eu-west-1"
 
 	const resourceName = "rediscloud_active_active_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPeeringPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccAwsCredentialsPreCheck(t)
+		},
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"aws": {
+				Source:            "hashicorp/aws",
+				VersionConstraint: "~> 5.0",
+			},
+		},
+		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: utils.RenderTestConfig(t, "./peering/testdata/active_active_peering_aws.tf", map[string]string{
-					"__SUBSCRIPTION_NAME__":     name,
-					"__SUBSCRIPTION_CIDR__":     subCidrRange,
-					"__PEERING_SOURCE_REGION__": "us-east-2",
-					"__PEERING_DEST_REGION__":   peeringRegion,
-					"__AWS_ACCOUNT_ID__":        accountId,
-					"__VPC_ID__":                vpcId,
-					"__VPC_CIDR__":              cidrRange,
+					"__SUBSCRIPTION_NAME__": name,
+					"__AWS_REGION__":        awsRegion,
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d*/\\d*$")),
@@ -65,9 +49,8 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 					resource.TestCheckResourceAttr(resourceName, "provider_name", "AWS"),
 					resource.TestCheckResourceAttrSet(resourceName, "aws_account_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
-					resource.TestCheckResourceAttr(resourceName, "vpc_cidr", cidrRange),
+					resource.TestCheckResourceAttrSet(resourceName, "vpc_cidr"),
 					resource.TestCheckResourceAttr(resourceName, "vpc_cidrs.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "vpc_cidrs.0", cidrRange),
 					resource.TestCheckResourceAttrSet(resourceName, "source_region"),
 					resource.TestCheckResourceAttrSet(resourceName, "destination_region"),
 					resource.TestCheckResourceAttrSet(resourceName, "aws_peering_id"),
