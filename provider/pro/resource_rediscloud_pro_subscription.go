@@ -3,6 +3,7 @@ package pro
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -14,12 +15,13 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/maintenance"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 const CMK_ENABLED_STRING = "customer-managed-key"
@@ -271,7 +273,7 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 								v := val.(string)
 								matched, err := regexp.MatchString(`^([2468])x$`, v)
 								if err != nil {
-									errs = append(errs, fmt.Errorf("regex match failed: %s", err))
+									errs = append(errs, fmt.Errorf("regex match failed: %w", err))
 									return
 								}
 								if !matched {
@@ -533,7 +535,7 @@ func handleExistingResourceRegionChange(ctx context.Context, diff *schema.Resour
 		// Check if any differences between old and new region sets
 		if !oldSet.Equal(newSet) {
 			// Force new for the entire region configuration
-			diff.ForceNew("cloud_provider.0.region")
+			_ = diff.ForceNew("cloud_provider.0.region") //nolint:errcheck // return value not needed in CustomizeDiff
 		}
 	}
 	return nil
@@ -674,7 +676,8 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 
 	subscription, err := api.Client.Subscription.Get(ctx, subId)
 	if err != nil {
-		if _, ok := err.(*subscriptions.NotFound); ok {
+		notFound := &subscriptions.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return diags
 		}
@@ -1098,7 +1101,7 @@ func BuildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 	return createDatabases, diags
 }
 
-// createDatabase returns a CreateDatabase struct with the given parameters
+//nolint:unparam
 func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModules, throughputMeasurementBy string, throughputMeasurementValue int, memoryLimitInGB float64, datasetSizeInGB float64, averageItemSizeInBytes int, supportOSSClusterAPI bool, replication bool, numDatabases int, queryPerformanceFactor string) []*subscriptions.CreateDatabase {
 	createThroughput := &subscriptions.CreateThroughput{
 		By:    redis.String(throughputMeasurementBy),
@@ -1188,7 +1191,8 @@ func WaitForSubscriptionToBeDeleted(ctx context.Context, id int, api *client.Api
 
 			subscription, err := api.Client.Subscription.Get(ctx, id)
 			if err != nil {
-				if _, ok := err.(*subscriptions.NotFound); ok {
+				notFound := &subscriptions.NotFound{}
+				if errors.As(err, &notFound) {
 					return "deleted", "deleted", nil
 				} // TODO: update this with deleted field in SDK
 				return nil, "", err

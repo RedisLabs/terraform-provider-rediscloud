@@ -2,23 +2,53 @@ package provider
 
 import (
 	"os"
+	"sync"
 	"testing"
 
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
-var testProvider *schema.Provider
 var providerFactories map[string]func() (*schema.Provider, error)
 
 func init() {
-	testProvider = New("dev")()
+	// Create a fresh provider instance for each test
 	providerFactories = map[string]func() (*schema.Provider, error){
 		"rediscloud": func() (*schema.Provider, error) {
-			return testProvider, nil
+			return New("dev")(), nil
 		},
 	}
+}
+
+// sharedTestClient returns an API client for use in test check functions.
+// The client is lazily initialised and shared across all tests.
+var (
+	sharedClient     *client.ApiClient
+	sharedClientOnce sync.Once
+	sharedClientErr  error
+)
+
+func sharedTestClient(t *testing.T) *client.ApiClient {
+	sharedClientOnce.Do(func() {
+		sharedClient, sharedClientErr = client.NewClient()
+	})
+	if sharedClientErr != nil {
+		t.Fatalf("Failed to create test API client: %s", sharedClientErr)
+	}
+	return sharedClient
+}
+
+// getTestClient returns an API client for use in CheckDestroy and other
+// functions that don't have access to *testing.T. Returns an error if the
+// client cannot be created.
+func getTestClient() (*client.ApiClient, error) {
+	sharedClientOnce.Do(func() {
+		sharedClient, sharedClientErr = client.NewClient()
+	})
+	return sharedClient, sharedClientErr
 }
 
 func TestProvider(t *testing.T) {

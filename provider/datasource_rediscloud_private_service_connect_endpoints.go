@@ -2,8 +2,9 @@ package provider
 
 import (
 	"context"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"strconv"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/psc"

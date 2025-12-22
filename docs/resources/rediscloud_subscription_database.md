@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_subscription_database"
 description: |-
   Database resource in the Redis Cloud Terraform provider

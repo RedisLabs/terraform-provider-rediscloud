@@ -9,11 +9,11 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
@@ -84,7 +84,7 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the role ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						apiClient := testProvider.Meta().(*client.ApiClient)
+						apiClient := sharedTestClient(t)
 						user, err := apiClient.Client.Users.Get(context.TODO(), id)
 						if err != nil {
 							return err
@@ -196,7 +196,10 @@ data "rediscloud_acl_user" "test" {
 `
 
 func testAccCheckAclUserDestroy(s *terraform.State) error {
-	apiClient := testProvider.Meta().(*client.ApiClient)
+	apiClient, err := getTestClient()
+	if err != nil {
+		return err
+	}
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_acl_user" {

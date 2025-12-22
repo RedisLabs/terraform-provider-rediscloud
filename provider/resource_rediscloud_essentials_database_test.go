@@ -1,9 +1,10 @@
 package provider
 
 import (
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
 	"fmt"
 	"regexp"
@@ -22,7 +23,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -279,7 +280,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -345,7 +346,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -379,7 +380,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.
 	const resourceName = "rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
 		ProviderFactories: providerFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -512,4 +513,3 @@ func getEssentialsDatabaseConfigWithVersionUpdated(t *testing.T, subscriptionNam
 	content := utils.GetTestConfig(t, "./essentials/testdata/essentials_database_updated_version.tf")
 	return fmt.Sprintf(content, subscriptionName, databaseName, redisVersion, password)
 }
-

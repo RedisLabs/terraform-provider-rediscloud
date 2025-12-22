@@ -2,10 +2,12 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -20,7 +22,31 @@ import (
 
 const testResourcePrefix = "tf-test"
 
+// maxSweepConcurrency limits parallel sweep operations to avoid API rate limits
+const maxSweepConcurrency = 5
+
 var sweeperClients map[string]*rediscloudApi.Client
+
+// sweepErrorCollector collects errors from concurrent sweep operations
+type sweepErrorCollector struct {
+	mu     sync.Mutex
+	errors []error
+}
+
+func (c *sweepErrorCollector) add(err error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.errors = append(c.errors, err)
+}
+
+func (c *sweepErrorCollector) result() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if len(c.errors) == 0 {
+		return nil
+	}
+	return errors.Join(c.errors...)
+}
 
 func TestMain(m *testing.M) {
 	sweeperClients = make(map[string]*rediscloudApi.Client)
@@ -81,22 +107,50 @@ func testSweepCloudAccounts(region string) error {
 		return err
 	}
 
+	// Filter accounts to sweep
+	var toSweep []*cloud_accounts.CloudAccount
 	for _, account := range list {
 		if redis.StringValue(account.Status) != cloud_accounts.StatusActive {
 			continue
 		}
-
 		if !strings.HasPrefix(redis.StringValue(account.Name), testResourcePrefix) {
 			continue
 		}
-
-		err := client.CloudAccount.Delete(context.TODO(), redis.IntValue(account.ID))
-		if err != nil {
-			return err
-		}
+		toSweep = append(toSweep, account)
 	}
 
-	return nil
+	if len(toSweep) == 0 {
+		return nil
+	}
+
+	log.Printf("[INFO] Sweeping %d cloud accounts in parallel (max %d concurrent)", len(toSweep), maxSweepConcurrency)
+
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, maxSweepConcurrency)
+	errCollector := &sweepErrorCollector{}
+
+	for _, account := range toSweep {
+		wg.Add(1)
+		go func(account *cloud_accounts.CloudAccount) {
+			defer wg.Done()
+			sem <- struct{}{}        // Acquire semaphore
+			defer func() { <-sem }() // Release semaphore
+
+			accountId := redis.IntValue(account.ID)
+			accountName := redis.StringValue(account.Name)
+
+			if err := client.CloudAccount.Delete(context.TODO(), accountId); err != nil {
+				log.Printf("[ERROR] Failed to delete cloud account %d (%s): %v", accountId, accountName, err)
+				errCollector.add(fmt.Errorf("cloud account %d (%s): %w", accountId, accountName, err))
+				return
+			}
+
+			log.Printf("[INFO] Successfully swept cloud account %d (%s)", accountId, accountName)
+		}(account)
+	}
+
+	wg.Wait()
+	return errCollector.result()
 }
 
 func testSweepProSubscriptions(region string) error {
@@ -110,43 +164,74 @@ func testSweepProSubscriptions(region string) error {
 		return err
 	}
 
+	// Filter subscriptions to sweep
+	var toSweep []*subscriptions.Subscription
 	for _, sub := range list {
 		if redis.StringValue(sub.Status) != subscriptions.SubscriptionStatusActive {
 			continue
 		}
-
 		if !strings.HasPrefix(redis.StringValue(sub.Name), testResourcePrefix) {
 			continue
 		}
-
 		if redis.StringValue(sub.DeploymentType) != subscriptions.SubscriptionDeploymentTypeSingleRegion {
 			continue
 		}
-
-		subId := redis.IntValue(sub.ID)
-		sweepSub, dbIds, err := testSweepReadDatabases(client, subId)
-		if err != nil {
-			return err
-		}
-
-		if !sweepSub {
-			continue
-		}
-
-		for _, db := range dbIds {
-			err := client.Database.Delete(context.TODO(), subId, db)
-			if err != nil {
-				return err
-			}
-		}
-
-		err = client.Subscription.Delete(context.TODO(), subId)
-		if err != nil {
-			return err
-		}
+		toSweep = append(toSweep, sub)
 	}
 
-	return nil
+	if len(toSweep) == 0 {
+		return nil
+	}
+
+	log.Printf("[INFO] Sweeping %d Pro subscriptions in parallel (max %d concurrent)", len(toSweep), maxSweepConcurrency)
+
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, maxSweepConcurrency)
+	errCollector := &sweepErrorCollector{}
+
+	for _, sub := range toSweep {
+		wg.Add(1)
+		go func(sub *subscriptions.Subscription) {
+			defer wg.Done()
+			sem <- struct{}{}        // Acquire semaphore
+			defer func() { <-sem }() // Release semaphore
+
+			subId := redis.IntValue(sub.ID)
+			subName := redis.StringValue(sub.Name)
+
+			sweepSub, dbIds, err := testSweepReadDatabases(client, subId)
+			if err != nil {
+				log.Printf("[ERROR] Failed to read databases for Pro subscription %d (%s): %v", subId, subName, err)
+				errCollector.add(fmt.Errorf("subscription %d (%s): %w", subId, subName, err))
+				return
+			}
+
+			if !sweepSub {
+				log.Printf("[INFO] Skipping Pro subscription %d (%s) - databases too recent", subId, subName)
+				return
+			}
+
+			// Delete databases sequentially within this subscription
+			for _, db := range dbIds {
+				if err := client.Database.Delete(context.TODO(), subId, db); err != nil {
+					log.Printf("[ERROR] Failed to delete database %d in Pro subscription %d (%s): %v", db, subId, subName, err)
+					errCollector.add(fmt.Errorf("subscription %d (%s) database %d: %w", subId, subName, db, err))
+					return
+				}
+			}
+
+			if err := client.Subscription.Delete(context.TODO(), subId); err != nil {
+				log.Printf("[ERROR] Failed to delete Pro subscription %d (%s): %v", subId, subName, err)
+				errCollector.add(fmt.Errorf("subscription %d (%s): %w", subId, subName, err))
+				return
+			}
+
+			log.Printf("[INFO] Successfully swept Pro subscription %d (%s)", subId, subName)
+		}(sub)
+	}
+
+	wg.Wait()
+	return errCollector.result()
 }
 
 func testSweepReadDatabases(client *rediscloudApi.Client, subId int) (bool, []int, error) {
@@ -226,43 +311,74 @@ func testSweepActiveActiveSubscriptions(region string) error {
 		return err
 	}
 
+	// Filter subscriptions to sweep
+	var toSweep []*subscriptions.Subscription
 	for _, sub := range list {
 		if redis.StringValue(sub.Status) != subscriptions.SubscriptionStatusActive {
 			continue
 		}
-
 		if !strings.HasPrefix(redis.StringValue(sub.Name), testResourcePrefix) {
 			continue
 		}
-
 		if redis.StringValue(sub.DeploymentType) != subscriptions.SubscriptionDeploymentTypeActiveActive {
 			continue
 		}
-
-		subId := redis.IntValue(sub.ID)
-		sweepSub, dbIds, err := testSweepReadDatabases(client, subId)
-		if err != nil {
-			return err
-		}
-
-		if !sweepSub {
-			continue
-		}
-
-		for _, db := range dbIds {
-			err := client.Database.Delete(context.TODO(), subId, db)
-			if err != nil {
-				return err
-			}
-		}
-
-		err = client.Subscription.Delete(context.TODO(), subId)
-		if err != nil {
-			return err
-		}
+		toSweep = append(toSweep, sub)
 	}
 
-	return nil
+	if len(toSweep) == 0 {
+		return nil
+	}
+
+	log.Printf("[INFO] Sweeping %d Active-Active subscriptions in parallel (max %d concurrent)", len(toSweep), maxSweepConcurrency)
+
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, maxSweepConcurrency)
+	errCollector := &sweepErrorCollector{}
+
+	for _, sub := range toSweep {
+		wg.Add(1)
+		go func(sub *subscriptions.Subscription) {
+			defer wg.Done()
+			sem <- struct{}{}        // Acquire semaphore
+			defer func() { <-sem }() // Release semaphore
+
+			subId := redis.IntValue(sub.ID)
+			subName := redis.StringValue(sub.Name)
+
+			sweepSub, dbIds, err := testSweepReadDatabases(client, subId)
+			if err != nil {
+				log.Printf("[ERROR] Failed to read databases for Active-Active subscription %d (%s): %v", subId, subName, err)
+				errCollector.add(fmt.Errorf("subscription %d (%s): %w", subId, subName, err))
+				return
+			}
+
+			if !sweepSub {
+				log.Printf("[INFO] Skipping Active-Active subscription %d (%s) - databases too recent", subId, subName)
+				return
+			}
+
+			// Delete databases sequentially within this subscription
+			for _, db := range dbIds {
+				if err := client.Database.Delete(context.TODO(), subId, db); err != nil {
+					log.Printf("[ERROR] Failed to delete database %d in Active-Active subscription %d (%s): %v", db, subId, subName, err)
+					errCollector.add(fmt.Errorf("subscription %d (%s) database %d: %w", subId, subName, db, err))
+					return
+				}
+			}
+
+			if err := client.Subscription.Delete(context.TODO(), subId); err != nil {
+				log.Printf("[ERROR] Failed to delete Active-Active subscription %d (%s): %v", subId, subName, err)
+				errCollector.add(fmt.Errorf("subscription %d (%s): %w", subId, subName, err))
+				return
+			}
+
+			log.Printf("[INFO] Successfully swept Active-Active subscription %d (%s)", subId, subName)
+		}(sub)
+	}
+
+	wg.Wait()
+	return errCollector.result()
 }
 
 func testSweepEssentialsSubscriptions(region string) error {
@@ -276,6 +392,10 @@ func testSweepEssentialsSubscriptions(region string) error {
 		return err
 	}
 
+	// Note: Only one Essentials subscription can exist per account, so no parallelisation needed.
+	// We still collect errors to report all failures at the end.
+	errCollector := &sweepErrorCollector{}
+
 	for _, sub := range list {
 		if redis.StringValue(sub.Status) != fixedSubscriptions.FixedSubscriptionStatusActive {
 			continue
@@ -286,29 +406,45 @@ func testSweepEssentialsSubscriptions(region string) error {
 		}
 
 		subId := redis.IntValue(sub.ID)
+		subName := redis.StringValue(sub.Name)
+
 		sweepSub, dbIds, err := testSweepReadEssentialsDatabases(client, subId)
 		if err != nil {
-			return err
-		}
-
-		if !sweepSub {
+			log.Printf("[ERROR] Failed to read databases for Essentials subscription %d (%s): %v", subId, subName, err)
+			errCollector.add(fmt.Errorf("essentials subscription %d (%s): %w", subId, subName, err))
 			continue
 		}
 
+		if !sweepSub {
+			log.Printf("[INFO] Skipping Essentials subscription %d (%s) - databases too recent", subId, subName)
+			continue
+		}
+
+		// Delete databases sequentially
+		dbDeleteFailed := false
 		for _, db := range dbIds {
-			err := client.FixedDatabases.Delete(context.TODO(), subId, db)
-			if err != nil {
-				return err
+			if err := client.FixedDatabases.Delete(context.TODO(), subId, db); err != nil {
+				log.Printf("[ERROR] Failed to delete database %d in Essentials subscription %d (%s): %v", db, subId, subName, err)
+				errCollector.add(fmt.Errorf("essentials subscription %d (%s) database %d: %w", subId, subName, db, err))
+				dbDeleteFailed = true
+				break
 			}
 		}
 
-		err = client.FixedSubscriptions.Delete(context.TODO(), subId)
-		if err != nil {
-			return err
+		if dbDeleteFailed {
+			continue
 		}
+
+		if err := client.FixedSubscriptions.Delete(context.TODO(), subId); err != nil {
+			log.Printf("[ERROR] Failed to delete Essentials subscription %d (%s): %v", subId, subName, err)
+			errCollector.add(fmt.Errorf("essentials subscription %d (%s): %w", subId, subName, err))
+			continue
+		}
+
+		log.Printf("[INFO] Successfully swept Essentials subscription %d (%s)", subId, subName)
 	}
 
-	return nil
+	return errCollector.result()
 }
 
 func testSweepAcl(region string) error {
@@ -318,7 +454,9 @@ func testSweepAcl(region string) error {
 	}
 
 	ctx := context.TODO()
+	errCollector := &sweepErrorCollector{}
 
+	// Delete users first (users depend on roles)
 	users, err := client.Users.List(ctx)
 	if err != nil {
 		return err
@@ -329,11 +467,18 @@ func testSweepAcl(region string) error {
 			continue
 		}
 
-		if client.Users.Delete(ctx, redis.IntValue(user.ID)) != nil {
-			return err
+		userId := redis.IntValue(user.ID)
+		userName := redis.StringValue(user.Name)
+
+		if err := client.Users.Delete(ctx, userId); err != nil {
+			log.Printf("[ERROR] Failed to delete ACL user %d (%s): %v", userId, userName, err)
+			errCollector.add(fmt.Errorf("ACL user %d (%s): %w", userId, userName, err))
+			continue
 		}
+		log.Printf("[INFO] Successfully swept ACL user %d (%s)", userId, userName)
 	}
 
+	// Delete roles (roles depend on rules)
 	roles, err := client.Roles.List(ctx)
 	if err != nil {
 		return err
@@ -344,11 +489,18 @@ func testSweepAcl(region string) error {
 			continue
 		}
 
-		if client.Roles.Delete(ctx, redis.IntValue(role.ID)) != nil {
-			return err
+		roleId := redis.IntValue(role.ID)
+		roleName := redis.StringValue(role.Name)
+
+		if err := client.Roles.Delete(ctx, roleId); err != nil {
+			log.Printf("[ERROR] Failed to delete ACL role %d (%s): %v", roleId, roleName, err)
+			errCollector.add(fmt.Errorf("ACL role %d (%s): %w", roleId, roleName, err))
+			continue
 		}
+		log.Printf("[INFO] Successfully swept ACL role %d (%s)", roleId, roleName)
 	}
 
+	// Delete rules last
 	rules, err := client.RedisRules.List(ctx)
 	if err != nil {
 		return err
@@ -364,10 +516,16 @@ func testSweepAcl(region string) error {
 			continue
 		}
 
-		if client.RedisRules.Delete(ctx, redis.IntValue(rule.ID)) != nil {
-			return err
+		ruleId := redis.IntValue(rule.ID)
+		ruleName := redis.StringValue(rule.Name)
+
+		if err := client.RedisRules.Delete(ctx, ruleId); err != nil {
+			log.Printf("[ERROR] Failed to delete ACL rule %d (%s): %v", ruleId, ruleName, err)
+			errCollector.add(fmt.Errorf("ACL rule %d (%s): %w", ruleId, ruleName, err))
+			continue
 		}
+		log.Printf("[INFO] Successfully swept ACL rule %d (%s)", ruleId, ruleName)
 	}
 
-	return nil
+	return errCollector.result()
 }

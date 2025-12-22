@@ -1,12 +1,12 @@
 locals {
-  rediscloud_cloud_account = "%s"
+  rediscloud_cloud_account     = "%s"
   rediscloud_subscription_name = "%s"
-  database_name = "%s"
+  database_name                = "%s"
 }
 
 data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
+  card_type         = "Visa"
+  last_four_numbers = "5556"
 }
 
 data "rediscloud_cloud_account" "account" {
@@ -21,7 +21,7 @@ resource "rediscloud_subscription" "example" {
   memory_storage    = "ram"
   redis_version     = "7.4"
   allowlist {
-    cidrs = ["192.168.0.0/16"]
+    cidrs              = ["192.168.0.0/16"]
     security_group_ids = []
   }
   cloud_provider {
@@ -45,23 +45,23 @@ resource "rediscloud_subscription" "example" {
 }
 
 resource "rediscloud_subscription_database" "example" {
-    subscription_id              = rediscloud_subscription.example.id
-    name                         = local.database_name
-    protocol                     = "redis"
-    dataset_size_in_gb           = 1
-    data_persistence             = "none"
-    throughput_measurement_by    = "operations-per-second"
-    throughput_measurement_value = 1000
-    modules = [
-        {
-          name = "RedisJSON"
-        },
-        {
-          name = "RedisBloom"
-        }
-    ]
-    alert {
-      name  = "latency"
-      value = 11
+  subscription_id              = rediscloud_subscription.example.id
+  name                         = local.database_name
+  protocol                     = "redis"
+  dataset_size_in_gb           = 1
+  data_persistence             = "none"
+  throughput_measurement_by    = "operations-per-second"
+  throughput_measurement_value = 1000
+  modules = [
+    {
+      name = "RedisJSON"
+    },
+    {
+      name = "RedisBloom"
     }
+  ]
+  alert {
+    name  = "latency"
+    value = 11
+  }
 }

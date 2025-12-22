@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 // NOTE: We do not test transitioning from public_endpoint_access=false to public_endpoint_access=true

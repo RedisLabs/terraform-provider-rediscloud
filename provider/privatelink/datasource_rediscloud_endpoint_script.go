@@ -2,12 +2,14 @@ package privatelink
 
 import (
 	"context"
-	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"strconv"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/rediscloud-go-api/redis"
+
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
 func DataSourcePrivateLinkEndpointScript() *schema.Resource {

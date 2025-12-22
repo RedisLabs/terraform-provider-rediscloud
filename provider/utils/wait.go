@@ -3,15 +3,17 @@ package utils
 import (
 	"context"
 	"fmt"
-	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
 	"log"
 	"time"
 
+	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
 func WaitForSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiClient) error {

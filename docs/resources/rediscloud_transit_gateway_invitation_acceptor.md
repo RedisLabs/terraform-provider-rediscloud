@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_transit_gateway_invitation_acceptor"
 description: |-
   Transit Gateway Invitation Acceptor resource for a Pro Subscription in the Redis Cloud Terraform provider.

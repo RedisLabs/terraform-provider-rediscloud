@@ -6,9 +6,10 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
 func DataSourceRedisCloudTransitGatewayInvitations() *schema.Resource {

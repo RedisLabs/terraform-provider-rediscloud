@@ -6,10 +6,11 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	redisTags "github.com/RedisLabs/rediscloud-go-api/service/tags"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
 func ReadTags(ctx context.Context, api *client.ApiClient, subId int, databaseId int, d *schema.ResourceData) error {

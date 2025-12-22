@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
@@ -9,13 +10,14 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	fixedDatabases "github.com/RedisLabs/rediscloud-go-api/service/fixed/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/tags"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func resourceRedisCloudEssentialsDatabase() *schema.Resource {
@@ -458,7 +460,8 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 
 	db, err := api.Client.FixedDatabases.Get(ctx, subId, databaseId)
 	if err != nil {
-		if _, ok := err.(*fixedDatabases.NotFound); ok {
+		notFound := &fixedDatabases.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return diags
 		}
@@ -522,7 +525,7 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 		}
 	} else {
 		var sourceIPs []string
-		if !(len(db.Security.SourceIPs) == 1 && redis.StringValue(db.Security.SourceIPs[0]) == "0.0.0.0/0") {
+		if len(db.Security.SourceIPs) != 1 || redis.StringValue(db.Security.SourceIPs[0]) != "0.0.0.0/0" {
 			// The API handles an empty list as ["0.0.0.0/0"] but need to be careful to match the input to avoid Terraform detecting drift
 			sourceIPs = redis.StringSliceValue(db.Security.SourceIPs...)
 		}
@@ -821,7 +824,6 @@ func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api
 
 	return nil
 }
-
 
 func writeReplica(replica fixedDatabases.ReplicaOf) []map[string]interface{} {
 	tf := map[string]interface{}{}

@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Provider: Redis Enterprise Cloud"
 description: |-
    The Redis Enterprise Cloud provider is used to interact with the resources supported by Redis Enterprise Cloud. The provider needs to be configured with the proper credentials before it can be used..

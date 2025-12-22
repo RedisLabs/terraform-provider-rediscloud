@@ -9,11 +9,11 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 // Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the database resource.
@@ -85,7 +85,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the subscription ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						apiClient := testProvider.Meta().(*client.ApiClient)
+						apiClient := sharedTestClient(t)
 						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
@@ -97,7 +97,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
 						listDb := apiClient.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
-							return fmt.Errorf("no database found: %s", listDb.Err())
+							return fmt.Errorf("no database found: %w", listDb.Err())
 						}
 						if listDb.Err() != nil {
 							return listDb.Err()
@@ -520,7 +520,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 	t.Skip("auto_minor_version_upgrade feature temporarily removed")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
-	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
 	const resourceName = "rediscloud_active_active_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -531,7 +530,11 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 		Steps: []resource.TestStep{
 			// Test database creation with auto_minor_version_upgrade set to false
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./activeactive/testdata/auto_minor_version_upgrade.tf"), testCloudAccountName, subscriptionName, name, "false"),
+				Config: utils.RenderTestConfig(t, "./activeactive/testdata/auto_minor_version_upgrade.tf", map[string]string{
+					"__CLOUD_ACCOUNT__":              testCloudAccountName,
+					"__SUBSCRIPTION_NAME__":          subscriptionName,
+					"__AUTO_MINOR_VERSION_UPGRADE__": "false",
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "auto-minor-version-upgrade-test"),
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "false"),
@@ -539,7 +542,11 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 			},
 			// Test database update with auto_minor_version_upgrade set to true
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./activeactive/testdata/auto_minor_version_upgrade.tf"), testCloudAccountName, subscriptionName, name, "true"),
+				Config: utils.RenderTestConfig(t, "./activeactive/testdata/auto_minor_version_upgrade.tf", map[string]string{
+					"__CLOUD_ACCOUNT__":              testCloudAccountName,
+					"__SUBSCRIPTION_NAME__":          subscriptionName,
+					"__AUTO_MINOR_VERSION_UPGRADE__": "true",
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "true"),
 				),

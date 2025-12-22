@@ -40,13 +40,13 @@ data "rediscloud_active_active_subscription" "example" {
 }
 
 resource "rediscloud_active_active_subscription_database" "example" {
-  subscription_id            = rediscloud_active_active_subscription.example.id
-  name                       = local.rediscloud_subscription_name
-  redis_version              = "8.2"
-  dataset_size_in_gb         = 1
-  global_data_persistence    = "aof-every-1-second"
-  global_password            = "some-random-pass-2"
-  global_source_ips          = ["192.168.0.0/16"]
+  subscription_id         = rediscloud_active_active_subscription.example.id
+  name                    = local.rediscloud_subscription_name
+  redis_version           = "8.2"
+  dataset_size_in_gb      = 1
+  global_data_persistence = "aof-every-1-second"
+  global_password         = "some-random-pass-2"
+  global_source_ips       = ["192.168.0.0/16"]
   global_alert {
     name  = "dataset-size"
     value = 40

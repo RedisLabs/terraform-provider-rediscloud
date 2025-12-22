@@ -1,5 +1,5 @@
 locals {
-  rediscloud_cloud_account = "%s"
+  rediscloud_cloud_account     = "%s"
   rediscloud_subscription_name = "%s"
 }
 
