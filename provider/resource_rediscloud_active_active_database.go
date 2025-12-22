@@ -614,14 +614,14 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 	// To prevent both fields being included in API requests, only one of these two fields should be set in the state
 	// Only add `dataset_size_in_gb` to the state if `memory_limit_in_gb` is not already in the state
 	if _, inState := d.GetOk("memory_limit_in_gb"); !inState {
-		if err := d.Set("dataset_size_in_gb", redis.Float64(*db.CrdbDatabases[0].DatasetSizeInGB)); err != nil {
+		if err := d.Set("dataset_size_in_gb", redis.Float64Value(db.CrdbDatabases[0].DatasetSizeInGB)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
 	// Likewise, only add `memory_limit_in_gb` to the state if `dataset_size_in_gb` is not already in the state
 	if _, inState := d.GetOk("dataset_size_in_gb"); !inState {
-		if err := d.Set("memory_limit_in_gb", redis.Float64(*db.CrdbDatabases[0].MemoryLimitInGB)); err != nil {
+		if err := d.Set("memory_limit_in_gb", redis.Float64Value(db.CrdbDatabases[0].MemoryLimitInGB)); err != nil {
 			return diag.FromErr(err)
 		}
 	}

@@ -309,14 +309,14 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 	if err := d.Set("name", redis.StringValue(db.Name)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("memory_limit_in_gb", redis.Float64(*db.CrdbDatabases[0].MemoryLimitInGB)); err != nil {
+	if err := d.Set("memory_limit_in_gb", redis.Float64Value(db.CrdbDatabases[0].MemoryLimitInGB)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("dataset_size_in_gb", redis.Float64(*db.CrdbDatabases[0].DatasetSizeInGB)); err != nil {
+	if err := d.Set("dataset_size_in_gb", redis.Float64Value(db.CrdbDatabases[0].DatasetSizeInGB)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("redis_version", redis.String(*db.RedisVersion)); err != nil {
+	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
 		return diag.FromErr(err)
 	}
 

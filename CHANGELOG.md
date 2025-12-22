@@ -10,6 +10,10 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 - Fixed incorrect usage of data sources in example documentation.
 - `rediscloud_active_active_subscription_peering`: Fixed import for AWS peerings.
 
+## Changed
+- Improved CI/CD pipeline with additional validation checks and security scanning.
+- Improved test infrastructure and parallel resource cleanup.
+
 # 2.10.0 (22nd December 2025)
 
 ## Added
