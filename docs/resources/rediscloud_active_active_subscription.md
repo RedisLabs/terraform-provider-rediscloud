@@ -136,3 +136,5 @@ $ terraform import rediscloud_active_active_subscription.subscription-resource 1
 
 ~> **Note:** when importing an existing Subscription, upon providing a `redis_version`, Terraform will always try to
 recreate the resource. The API doesn't return this value, so we can't detect changes between states.
+
+~> **Note:** The `redis_version` attribute is deprecated on the subscription level. Please specify `redis_version` on the `rediscloud_active_active_subscription_database` resource instead.
