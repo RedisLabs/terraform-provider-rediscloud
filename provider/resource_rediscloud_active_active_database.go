@@ -54,6 +54,7 @@ func isDefaultGlobalSourceIPs(sourceIPs []*string) bool {
 	return false
 }
 
+// DEPRECATED - but kept around whilst still testing new plugin framework code
 func resourceRedisCloudActiveActiveDatabase() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates database resource within an active-active subscription in your Redis Enterprise Cloud Account.",

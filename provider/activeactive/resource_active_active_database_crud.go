@@ -228,7 +228,7 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 		if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
 			globalSourceIPs = defaultPrivateIPRanges
 		} else {
-			globalSourceIPs = []string{"0.0.0.0/0"}
+			globalSourceIPs = []string{defaultPublicSourceIP}
 		}
 	}
 
@@ -407,7 +407,7 @@ func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan 
 		if subscription.PublicEndpointAccess != nil && !*subscription.PublicEndpointAccess {
 			update.GlobalSourceIP = stringPtrSlice(defaultPrivateIPRanges)
 		} else {
-			update.GlobalSourceIP = []*string{redis.String("0.0.0.0/0")}
+			update.GlobalSourceIP = []*string{redis.String(defaultPublicSourceIP)}
 		}
 	}
 
