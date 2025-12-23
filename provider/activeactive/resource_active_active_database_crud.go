@@ -286,10 +286,15 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 	diagnostics.Append(diags...)
 	state.PrivateEndpoint = privateEndpointMap
 
-	// Set modules
-	modulesList, diags := stringSliceToList(ctx, flattenModulesToNames(db.Modules))
-	diagnostics.Append(diags...)
-	state.GlobalModules = modulesList
+	// Set modules - preserve null if user didn't configure and API returns empty
+	apiModules := flattenModulesToNames(db.Modules)
+	if !utils.IsConfigured(state.GlobalModules) && len(apiModules) == 0 {
+		state.GlobalModules = types.ListNull(types.StringType)
+	} else {
+		modulesList, diags := stringSliceToList(ctx, apiModules)
+		diagnostics.Append(diags...)
+		state.GlobalModules = modulesList
+	}
 
 	// Build override_region from API response, but only for regions that are in state
 	overrideRegionConfigs, diags := r.buildOverrideRegionFromAPI(ctx, db, state)
