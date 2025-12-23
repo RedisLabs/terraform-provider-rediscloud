@@ -10,12 +10,13 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
 // Default RFC1918 private IP ranges used when public_endpoint_access is false.
@@ -222,13 +223,13 @@ func getOverrideRegionAttrTypes() map[string]attr.Type {
 	}
 
 	return map[string]attr.Type{
-		"name":                            types.StringType,
-		"override_global_alert":           types.SetType{ElemType: types.ObjectType{AttrTypes: alertAttrTypes}},
-		"override_global_password":        types.StringType,
-		"override_global_source_ips":      types.SetType{ElemType: types.StringType},
+		"name":                             types.StringType,
+		"override_global_alert":            types.SetType{ElemType: types.ObjectType{AttrTypes: alertAttrTypes}},
+		"override_global_password":         types.StringType,
+		"override_global_source_ips":       types.SetType{ElemType: types.StringType},
 		"override_global_data_persistence": types.StringType,
-		"enable_default_user":             types.BoolType,
-		"remote_backup":                   types.ListType{ElemType: types.ObjectType{AttrTypes: remoteBackupAttrTypes}},
+		"enable_default_user":              types.BoolType,
+		"remote_backup":                    types.ListType{ElemType: types.ObjectType{AttrTypes: remoteBackupAttrTypes}},
 	}
 }
 

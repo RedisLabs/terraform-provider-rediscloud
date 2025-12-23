@@ -7,10 +7,11 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	redisTags "github.com/RedisLabs/rediscloud-go-api/service/tags"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 // createDatabase implements the Create operation for the active-active database resource.
