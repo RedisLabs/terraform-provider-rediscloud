@@ -19,6 +19,9 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
+// Default source IP for public access (when public_endpoint_access is true).
+const defaultPublicSourceIP = "0.0.0.0/0"
+
 // Default RFC1918 private IP ranges used when public_endpoint_access is false.
 var defaultPrivateIPRanges = []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10"}
 
@@ -54,7 +57,7 @@ func isDefaultGlobalSourceIPs(sourceIPs []string) bool {
 	}
 
 	// Check if it's the default public access pattern
-	if len(sourceIPs) == 1 && sourceIPs[0] == "0.0.0.0/0" {
+	if len(sourceIPs) == 1 && sourceIPs[0] == defaultPublicSourceIP {
 		return true
 	}
 
