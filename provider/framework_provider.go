@@ -6,8 +6,6 @@ import (
 	"os"
 
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/activeactive"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -15,6 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/activeactive"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
