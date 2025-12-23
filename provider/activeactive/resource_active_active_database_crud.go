@@ -250,21 +250,22 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 		state.EnableTLS = types.BoolValue(redis.BoolValue(db.CrdbDatabases[0].Security.EnableTls))
 	}
 
-	// Handle memory/dataset size - only set one based on what's in state
+	// Handle memory/dataset size - only set one based on what's in config
+	// Must explicitly set unused field to Null (not Unknown) after apply
 	if len(db.CrdbDatabases) > 0 {
-		if !state.MemoryLimitInGB.IsNull() && state.MemoryLimitInGB.ValueFloat64() > 0 {
+		memorySetInConfig := utils.IsConfigured(state.MemoryLimitInGB) && state.MemoryLimitInGB.ValueFloat64() > 0
+		datasetSetInConfig := utils.IsConfigured(state.DatasetSizeInGB) && state.DatasetSizeInGB.ValueFloat64() > 0
+
+		if memorySetInConfig {
 			if db.CrdbDatabases[0].MemoryLimitInGB != nil {
 				state.MemoryLimitInGB = types.Float64Value(redis.Float64Value(db.CrdbDatabases[0].MemoryLimitInGB))
 			}
-		} else if !state.DatasetSizeInGB.IsNull() && state.DatasetSizeInGB.ValueFloat64() > 0 {
+			state.DatasetSizeInGB = types.Float64Null()
+		} else if datasetSetInConfig || (!memorySetInConfig && !datasetSetInConfig) {
 			if db.CrdbDatabases[0].DatasetSizeInGB != nil {
 				state.DatasetSizeInGB = types.Float64Value(redis.Float64Value(db.CrdbDatabases[0].DatasetSizeInGB))
 			}
-		} else {
-			// Neither is set in state, default to dataset_size_in_gb
-			if db.CrdbDatabases[0].DatasetSizeInGB != nil {
-				state.DatasetSizeInGB = types.Float64Value(redis.Float64Value(db.CrdbDatabases[0].DatasetSizeInGB))
-			}
+			state.MemoryLimitInGB = types.Float64Null()
 		}
 	}
 
