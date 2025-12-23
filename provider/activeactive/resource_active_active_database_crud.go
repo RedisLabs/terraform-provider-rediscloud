@@ -193,28 +193,14 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 	state.ExternalEndpointForOssClusterAPI = types.BoolValue(redis.BoolValue(db.UseExternalEndpointForOSSClusterAPI))
 	state.RedisVersion = types.StringValue(redis.StringValue(db.RedisVersion))
 
-	// Set global_data_persistence - preserve config value for Optional-only field
-	if utils.IsConfigured(state.GlobalDataPersistence) {
-		// Keep user's configured value
-	} else if db.GlobalDataPersistence != nil {
-		state.GlobalDataPersistence = types.StringValue(redis.StringValue(db.GlobalDataPersistence))
-	} else {
-		state.GlobalDataPersistence = types.StringNull()
-	}
+	// Set global_data_persistence - Optional-only, preserve config if set
+	utils.SetStringPreserveConfig(&state.GlobalDataPersistence, db.GlobalDataPersistence)
 
-	// Set global_password
-	if db.GlobalPassword != nil {
-		state.GlobalPassword = types.StringValue(redis.StringValue(db.GlobalPassword))
-	} else {
-		state.GlobalPassword = types.StringNull()
-	}
+	// Set global_password - Optional+Computed, always from API
+	utils.SetStringFromAPI(&state.GlobalPassword, db.GlobalPassword)
 
-	// Set global_enable_default_user
-	if db.GlobalEnableDefaultUser != nil {
-		state.GlobalEnableDefaultUser = types.BoolValue(redis.BoolValue(db.GlobalEnableDefaultUser))
-	} else {
-		state.GlobalEnableDefaultUser = types.BoolValue(true) // default
-	}
+	// Set global_enable_default_user - Optional+Computed with default
+	utils.SetBoolFromAPI(&state.GlobalEnableDefaultUser, db.GlobalEnableDefaultUser, true)
 
 	// Handle global_source_ips - preserve user's custom value or compute defaults
 	currentSourceIPs, diags := setToStringSlice(ctx, state.GlobalSourceIPs)
@@ -686,7 +672,7 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 		if stateRegion != nil && !stateRegion.OverrideGlobalSourceIPs.IsNull() && len(stateRegion.OverrideGlobalSourceIPs.Elements()) > 0 {
 			sourceIPs := stringSliceValue(regionDb.Security.SourceIPs)
 			// Filter out default source IPs
-			if !isDefaultSourceIPsForRegion(sourceIPs) {
+			if !isDefaultGlobalSourceIPs(sourceIPs) {
 				sourceIPSet, diags := stringSliceToSet(ctx, sourceIPs)
 				allDiags.Append(diags...)
 				regionConfig["override_global_source_ips"] = sourceIPSet
@@ -769,28 +755,4 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 	}
 
 	return types.SetValue(types.ObjectType{AttrTypes: overrideRegionAttrTypes}, regionConfigs)
-}
-
-// isDefaultSourceIPsForRegion checks if the source IPs are default values.
-func isDefaultSourceIPsForRegion(sourceIPs []string) bool {
-	// Check for default public access
-	if len(sourceIPs) == 1 && sourceIPs[0] == "0.0.0.0/0" {
-		return true
-	}
-
-	// Check for RFC1918 private ranges
-	if len(sourceIPs) == len(defaultPrivateIPRanges) {
-		privateIPSet := make(map[string]bool)
-		for _, ip := range defaultPrivateIPRanges {
-			privateIPSet[ip] = true
-		}
-		for _, ip := range sourceIPs {
-			if !privateIPSet[ip] {
-				return false
-			}
-		}
-		return true
-	}
-
-	return false
 }
