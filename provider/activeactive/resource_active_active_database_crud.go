@@ -193,19 +193,27 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 	state.ExternalEndpointForOssClusterAPI = types.BoolValue(redis.BoolValue(db.UseExternalEndpointForOSSClusterAPI))
 	state.RedisVersion = types.StringValue(redis.StringValue(db.RedisVersion))
 
-	// Set global_data_persistence if present
-	if db.GlobalDataPersistence != nil {
+	// Set global_data_persistence - preserve config value for Optional-only field
+	if utils.IsConfigured(state.GlobalDataPersistence) {
+		// Keep user's configured value
+	} else if db.GlobalDataPersistence != nil {
 		state.GlobalDataPersistence = types.StringValue(redis.StringValue(db.GlobalDataPersistence))
+	} else {
+		state.GlobalDataPersistence = types.StringNull()
 	}
 
-	// Set global_password if present
+	// Set global_password
 	if db.GlobalPassword != nil {
 		state.GlobalPassword = types.StringValue(redis.StringValue(db.GlobalPassword))
+	} else {
+		state.GlobalPassword = types.StringNull()
 	}
 
-	// Set global_enable_default_user if present
+	// Set global_enable_default_user
 	if db.GlobalEnableDefaultUser != nil {
 		state.GlobalEnableDefaultUser = types.BoolValue(redis.BoolValue(db.GlobalEnableDefaultUser))
+	} else {
+		state.GlobalEnableDefaultUser = types.BoolValue(true) // default
 	}
 
 	// Handle global_source_ips - preserve user's custom value or compute defaults
@@ -245,9 +253,11 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 	}
 	state.GlobalSourceIPs = sourceIPSet
 
-	// Set enable_tls from first region database
+	// Set enable_tls from first region database - Optional only, preserve config or set from API
 	if len(db.CrdbDatabases) > 0 && db.CrdbDatabases[0].Security != nil {
 		state.EnableTLS = types.BoolValue(redis.BoolValue(db.CrdbDatabases[0].Security.EnableTls))
+	} else if state.EnableTLS.IsUnknown() {
+		state.EnableTLS = types.BoolNull()
 	}
 
 	// Handle memory/dataset size - only set one based on what's in config
@@ -309,7 +319,10 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 	if err != nil {
 		// Tags might not be available, log but don't fail
 		log.Printf("[DEBUG] Failed to get tags for database %d: %v", dbId, err)
-	} else if tagResponse != nil && tagResponse.Tags != nil {
+		if state.Tags.IsUnknown() {
+			state.Tags = types.MapNull(types.StringType)
+		}
+	} else if tagResponse != nil && tagResponse.Tags != nil && len(*tagResponse.Tags) > 0 {
 		tagMap := make(map[string]string)
 		for _, tag := range *tagResponse.Tags {
 			tagMap[redis.StringValue(tag.Key)] = redis.StringValue(tag.Value)
@@ -317,6 +330,31 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 		tagsValue, diags := stringMapToMap(ctx, tagMap)
 		diagnostics.Append(diags...)
 		state.Tags = tagsValue
+	} else if !utils.IsConfigured(state.Tags) {
+		state.Tags = types.MapNull(types.StringType)
+	}
+
+	// Handle Optional-only fields - preserve config values, ensure not Unknown
+	if state.Port.IsUnknown() {
+		state.Port = types.Int64Null()
+	}
+	if state.GlobalRespVersion.IsUnknown() {
+		state.GlobalRespVersion = types.StringNull()
+	}
+	if state.ClientSSLCertificate.IsUnknown() {
+		state.ClientSSLCertificate = types.StringNull()
+	}
+	if state.ClientTLSCertificates.IsUnknown() {
+		state.ClientTLSCertificates = types.ListNull(types.StringType)
+	}
+
+	// Handle global_alert - preserve config value, ensure not Unknown
+	if state.GlobalAlert.IsUnknown() {
+		alertAttrTypes := map[string]attr.Type{
+			"name":  types.StringType,
+			"value": types.Int64Type,
+		}
+		state.GlobalAlert = types.SetNull(types.ObjectType{AttrTypes: alertAttrTypes})
 	}
 
 	return false
