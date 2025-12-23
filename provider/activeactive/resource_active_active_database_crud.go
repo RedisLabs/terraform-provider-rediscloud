@@ -334,7 +334,16 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 		state.Tags = types.MapNull(types.StringType)
 	}
 
-	// Handle Optional-only fields - preserve config values, ensure not Unknown
+	ensureNoUnknownFields(state)
+
+	return false
+}
+
+// ensureNoUnknownFields converts Unknown values to Null for Optional-only fields.
+// These fields are not read from the API, so if the user didn't provide them in config
+// they remain Unknown after Create. Plugin Framework requires all fields to be Known
+// or Null after apply - Unknown values cause errors.
+func ensureNoUnknownFields(state *ActiveActiveDatabaseModel) {
 	if state.Port.IsUnknown() {
 		state.Port = types.Int64Null()
 	}
@@ -347,17 +356,9 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 	if state.ClientTLSCertificates.IsUnknown() {
 		state.ClientTLSCertificates = types.ListNull(types.StringType)
 	}
-
-	// Handle global_alert - preserve config value, ensure not Unknown
 	if state.GlobalAlert.IsUnknown() {
-		alertAttrTypes := map[string]attr.Type{
-			"name":  types.StringType,
-			"value": types.Int64Type,
-		}
-		state.GlobalAlert = types.SetNull(types.ObjectType{AttrTypes: alertAttrTypes})
+		state.GlobalAlert = types.SetNull(types.ObjectType{AttrTypes: getAlertAttrTypes()})
 	}
-
-	return false
 }
 
 // updateDatabase implements the Update operation for the active-active database resource.
