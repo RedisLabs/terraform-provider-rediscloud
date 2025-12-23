@@ -30,9 +30,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database creation
 			{
@@ -230,9 +230,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing
 	portNumber := 10101
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseOptionalAttributes, subscriptionName, name, password, portNumber),
@@ -254,9 +254,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_timeUtcRequiresValidInterval(
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseInvalidTimeUtc, testCloudAccountName, name, password),
@@ -524,9 +524,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database creation with auto_minor_version_upgrade set to false
 			{
