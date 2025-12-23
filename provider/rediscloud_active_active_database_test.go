@@ -18,16 +18,16 @@ import (
 
 // Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the database resource.
 func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
-
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
 	databaseName := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
 	password := acctest.RandString(20)
+
 	const databaseResourceName = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
 	const datasourceRegionName = "data.rediscloud_active_active_subscription_regions.example"
 	const subscriptionResourceName = "rediscloud_active_active_subscription.example"
 
-	var subId int
+	var subId, dbId int
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
@@ -36,9 +36,13 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Test database creation
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabase, subscriptionName, databaseName, password),
+				Config: utils.RenderTestConfig(t, "./activeactive/testdata/database_crudi_create.tf", map[string]string{
+					"__SUBSCRIPTION_NAME__": subscriptionName,
+					"__DATABASE_NAME__":     databaseName,
+					"__PASSWORD__":          password,
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// Test resource
+					// Test resource attributes
 					resource.TestCheckResourceAttr(databaseResourceName, "name", databaseName),
 					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "false"),
@@ -54,59 +58,70 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "global_source_ips.#", "2"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "true"),
 
+					// Check override_region for us-east-1 (with overrides)
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "2"),
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.name", "us-east-1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_data_persistence", "aof-every-write"),
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_password", "region-specific-password"),
-					// check override region alert block
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.#", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.0.value", "42"),
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_source_ips.#", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_source_ips.0", "192.175.0.0/16"),
 
-					// Check that global values are used for the second region where no override is set
+					// Check override_region for us-east-2 (no overrides - fields should be null)
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.1.name", "us-east-2"),
-					resource.TestCheckResourceAttr(databaseResourceName, "override_region.1.override_global_data_persistence", ""),
-					resource.TestCheckResourceAttr(databaseResourceName, "override_region.1.override_global_password", ""),
+					resource.TestCheckNoResourceAttr(databaseResourceName, "override_region.1.override_global_data_persistence"),
+					resource.TestCheckNoResourceAttr(databaseResourceName, "override_region.1.override_global_password"),
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.1.override_global_alert.#", "0"),
-					resource.TestCheckResourceAttr(databaseResourceName, "override_region.1.override_source_ips.#", "0"),
+					resource.TestCheckNoResourceAttr(databaseResourceName, "override_region.1.override_source_ips"),
 
+					// Check tags
 					resource.TestCheckResourceAttr(databaseResourceName, "tags.deployment_family", "blue"),
 					resource.TestCheckResourceAttr(databaseResourceName, "tags.priority", "code-2"),
 
-					// Test databases exist
+					// API check: verify database was created correctly
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[subscriptionResourceName]
-
 						var err error
 						subId, err = strconv.Atoi(r.Primary.ID)
 						if err != nil {
-							return fmt.Errorf("couldn't parse the subscription ID: %s", redis.StringValue(&r.Primary.ID))
+							return fmt.Errorf("couldn't parse subscription ID: %s", r.Primary.ID)
+						}
+
+						dbResource := s.RootModule().Resources[databaseResourceName]
+						dbId, err = strconv.Atoi(dbResource.Primary.Attributes["db_id"])
+						if err != nil {
+							return fmt.Errorf("couldn't parse database ID: %s", dbResource.Primary.Attributes["db_id"])
 						}
 
 						apiClient := sharedTestClient(t)
+
+						// Verify subscription
 						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
-							return err
+							return fmt.Errorf("failed to get subscription: %w", err)
 						}
-
 						if redis.StringValue(sub.Name) != subscriptionName {
-							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
+							return fmt.Errorf("expected subscription name %q, got %q", subscriptionName, redis.StringValue(sub.Name))
 						}
 
-						listDb := apiClient.Client.Database.List(context.TODO(), subId)
-						if listDb.Next() != true {
-							return fmt.Errorf("no database found: %w", listDb.Err())
+						// Verify database via API
+						db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
+						if err != nil {
+							return fmt.Errorf("failed to get database: %w", err)
 						}
-						if listDb.Err() != nil {
-							return listDb.Err()
+						if redis.StringValue(db.Name) != databaseName {
+							return fmt.Errorf("expected database name %q, got %q", databaseName, redis.StringValue(db.Name))
+						}
+						if redis.StringValue(db.GlobalDataPersistence) != "none" {
+							return fmt.Errorf("expected global_data_persistence %q, got %q", "none", redis.StringValue(db.GlobalDataPersistence))
 						}
 
 						return nil
 					},
 
-					// Test subscription datasource
+					// Test data sources
 					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "db_id"),
 					resource.TestCheckResourceAttr(datasourceName, "name", databaseName),
@@ -115,16 +130,11 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(datasourceName, "enable_tls", "false"),
 					resource.TestCheckResourceAttrSet(datasourceName, "tls_certificate"),
-
 					resource.TestCheckResourceAttr(datasourceName, "data_eviction", "volatile-lru"),
-					// TODO: Clarify expected behaviour for Redis 8.0+ bundled modules in data sources
-					// Redis 8.0+ bundles modules by default; data source returns them but resource suppresses them from state
-					// resource.TestCheckResourceAttr(datasourceName, "global_modules.#", "0"),
-
 					resource.TestCheckResourceAttr(datasourceName, "tags.deployment_family", "blue"),
 					resource.TestCheckResourceAttr(datasourceName, "tags.priority", "code-2"),
 
-					// Test the db region datasource
+					// Test regions data source
 					resource.TestCheckResourceAttr(datasourceRegionName, "subscription_name", subscriptionName),
 					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.0.vpc_id"),
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.0.region", "us-east-1"),
@@ -134,11 +144,13 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.networking_deployment_cidr", "10.0.1.0/24"),
 				),
 			},
-			// Test database is updated successfully, including updates to both global and local alerts and clearing modules
+			// Test database update: change global and local alerts, enable OSS cluster API
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseUpdate, subscriptionName, databaseName),
+				Config: utils.RenderTestConfig(t, "./activeactive/testdata/database_crudi_update.tf", map[string]string{
+					"__SUBSCRIPTION_NAME__": subscriptionName,
+					"__DATABASE_NAME__":     databaseName,
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// Test resource
 					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(databaseResourceName, "external_endpoint_for_oss_cluster_api", "true"),
@@ -149,8 +161,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.value", "60"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "false"),
 					resource.TestCheckResourceAttr(databaseResourceName, "redis_version", "8.2"),
-
-					// Changes are ignored after creation
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "0"),
 
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "1"),
@@ -162,16 +172,35 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.0.value", "41"),
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_source_ips.#", "0"),
 
-					// Test datasource
+					// API check: verify updates applied
+					func(s *terraform.State) error {
+						apiClient := sharedTestClient(t)
+						db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
+						if err != nil {
+							return fmt.Errorf("failed to get database: %w", err)
+						}
+						if redis.StringValue(db.GlobalDataPersistence) != "aof-every-1-second" {
+							return fmt.Errorf("expected global_data_persistence %q, got %q", "aof-every-1-second", redis.StringValue(db.GlobalDataPersistence))
+						}
+						if redis.BoolValue(db.SupportOSSClusterAPI) != true {
+							return fmt.Errorf("expected support_oss_cluster_api true, got false")
+						}
+						return nil
+					},
+
+					// Test data source reflects updates
 					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(datasourceName, "redis_version", "8.2"),
 					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "true"),
 				),
 			},
-			// Test database is updated, including deletion of global and local alerts and replacing modules
+			// Test database update: remove alerts, restore default user
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlertsDefaultUser, subscriptionName, databaseName),
+				Config: utils.RenderTestConfig(t, "./activeactive/testdata/database_crudi_update_no_alerts.tf", map[string]string{
+					"__SUBSCRIPTION_NAME__": subscriptionName,
+					"__DATABASE_NAME__":     databaseName,
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "true"),
@@ -190,13 +219,15 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_source_ips.#", "0"),
 				),
 			},
-			// Test that that database is imported successfully
+			// Test import
 			{
-				Config:            fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseImport, subscriptionName, databaseName),
-				ResourceName:      "rediscloud_active_active_subscription_database.example",
+				Config: utils.RenderTestConfig(t, "./activeactive/testdata/database_crudi_import.tf", map[string]string{
+					"__SUBSCRIPTION_NAME__": subscriptionName,
+					"__DATABASE_NAME__":     databaseName,
+				}),
+				ResourceName:      databaseResourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
-				// global and override attributes not supported as part of import
 				ImportStateVerifyIgnore: []string{
 					"global_data_persistence",
 					"global_password",
@@ -294,124 +325,6 @@ const activeActiveSubscriptionBoilerplate = `
 			}
 		}
 	}
-`
-
-// Create and Read tests
-// TF config for provisioning a new database
-const testAccResourceRedisCloudActiveActiveDatabase = activeActiveSubscriptionBoilerplate + `
-resource "rediscloud_active_active_subscription_database" "example" {
-    subscription_id = rediscloud_active_active_subscription.example.id
-    name = "%s"
-    dataset_size_in_gb = 1
-    support_oss_cluster_api = false 
-    external_endpoint_for_oss_cluster_api = false
-	enable_tls = false
-	redis_version = "8.2"
-
-    global_data_persistence = "none"
-    global_password = "%s" 
-    global_source_ips = ["192.168.0.0/16", "192.170.0.0/16"]
-    global_alert {
-		name = "dataset-size"
-		value = 1
-	}
-	global_enable_default_user = true
-	override_region {
-		name = "us-east-1"
-		override_global_data_persistence = "aof-every-write"
-		override_global_source_ips = ["192.175.0.0/16"]
-		override_global_password = "region-specific-password"
-		override_global_alert {
-			name = "dataset-size"
-			value = 42
-		}
-	}
-	override_region {
-		name = "us-east-2"
-	}
-
-	tags = {
-		"deployment_family" = "blue"
-		"priority" = "code-2"
-	}
-
-} 
-
-data "rediscloud_active_active_subscription_database" "example" {
-	subscription_id = rediscloud_active_active_subscription.example.id
-	name = rediscloud_active_active_subscription_database.example.name
-}
-
-data "rediscloud_active_active_subscription_regions" "example" {
-	subscription_name = rediscloud_active_active_subscription.example.name
-}
-`
-
-// TF config for updating a database
-const testAccResourceRedisCloudActiveActiveDatabaseUpdate = activeActiveSubscriptionBoilerplate + `
-resource "rediscloud_active_active_subscription_database" "example" {
-    subscription_id = rediscloud_active_active_subscription.example.id
-    name = "%s"
-    dataset_size_in_gb = 1
-    support_oss_cluster_api = true 
-    external_endpoint_for_oss_cluster_api = true
-    
-    global_data_persistence = "aof-every-1-second"
-    global_password = "updated-password" 
-    global_source_ips = ["192.170.0.0/16"]
-	global_alert {
-		name = "dataset-size"
-		value = 60
-	}
-	global_enable_default_user = false
-	global_modules = []
-
-	override_region {
-		name = "us-east-1"
-		override_global_data_persistence = "none"
-		override_global_password = "password-updated"
-		override_global_alert {
-			name = "dataset-size"
-			value = 41
-		}
-	}
-}
-
-data "rediscloud_active_active_subscription_database" "example" {
-	subscription_id = rediscloud_active_active_subscription.example.id
-	name = rediscloud_active_active_subscription_database.example.name
-}
-`
-
-const testAccResourceRedisCloudActiveActiveDatabaseUpdateNoAlertsDefaultUser = activeActiveSubscriptionBoilerplate + `
-resource "rediscloud_active_active_subscription_database" "example" {
-    subscription_id = rediscloud_active_active_subscription.example.id
-    name = "%s"
-    dataset_size_in_gb = 1
-    support_oss_cluster_api = true 
-    external_endpoint_for_oss_cluster_api = true
-
-    global_data_persistence = "aof-every-1-second"
-    global_password = "updated-password" 
-    global_source_ips = ["192.170.0.0/16"]
-
-	global_modules = ["RedisJSON"]
-
-	override_region {
-		name = "us-east-1"
-		override_global_data_persistence = "none"
-		override_global_password = "password-updated"
-	}
-}
-`
-
-// TF config for updating a database
-const testAccResourceRedisCloudActiveActiveDatabaseImport = activeActiveSubscriptionBoilerplate + `
-resource "rediscloud_active_active_subscription_database" "example" {
-    subscription_id = rediscloud_active_active_subscription.example.id
-    name = "%s"
-    dataset_size_in_gb = 1
-}
 `
 
 const testAccResourceRedisCloudActiveActiveDatabaseOptionalAttributes = `
