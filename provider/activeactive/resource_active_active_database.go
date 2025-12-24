@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -193,6 +195,9 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 				Optional:    true,
 				ElementType: types.StringType,
 				Sensitive:   true,
+				Validators: []validator.List{
+					listvalidator.ConflictsWith(path.MatchRoot("client_ssl_certificate")),
+				},
 			},
 			"data_eviction": schema.StringAttribute{
 				Description: "Data eviction items policy",
@@ -215,6 +220,9 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 				Optional:    true,
 				Computed:    true,
 				ElementType: types.StringType,
+				Validators: []validator.Set{
+					setvalidator.SizeAtLeast(1),
+				},
 			},
 			"global_enable_default_user": schema.BoolAttribute{
 				Description: "When 'true', enables connecting to the database with the 'default' user across all regions. Default: 'true'",
@@ -282,6 +290,9 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 							Description: "Set of CIDR addresses to allow access to the database",
 							Optional:    true,
 							ElementType: types.StringType,
+							Validators: []validator.Set{
+								setvalidator.SizeAtLeast(1),
+							},
 						},
 						"override_global_data_persistence": schema.StringAttribute{
 							Description: "Rate of database data persistence (in persistent storage)",
