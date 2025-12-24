@@ -180,6 +180,8 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 			"enable_tls": schema.BoolAttribute{
 				Description: "Use TLS for authentication.",
 				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
 			},
 			"client_ssl_certificate": schema.StringAttribute{
 				Description: "SSL certificate to authenticate user connections.",

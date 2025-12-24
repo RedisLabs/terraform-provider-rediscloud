@@ -239,11 +239,9 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 	}
 	state.GlobalSourceIPs = sourceIPSet
 
-	// Set enable_tls from first region database - Optional only, preserve config or set from API
+	// Set enable_tls from first region database (Optional+Computed with default false)
 	if len(db.CrdbDatabases) > 0 && db.CrdbDatabases[0].Security != nil {
 		state.EnableTLS = types.BoolValue(redis.BoolValue(db.CrdbDatabases[0].Security.EnableTls))
-	} else if state.EnableTLS.IsUnknown() {
-		state.EnableTLS = types.BoolNull()
 	}
 
 	// Handle memory/dataset size - only set one based on what's in config
