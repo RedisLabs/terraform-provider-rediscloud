@@ -567,8 +567,13 @@ func (r *activeActiveDatabaseResource) buildRegionsFromPlan(ctx context.Context,
 			Region: redis.String(region.Name.ValueString()),
 		}
 
-		// Set enable_default_user
-		regionProps.EnableDefaultUser = redis.Bool(region.EnableDefaultUser.ValueBool())
+		// Set enable_default_user: explicit value or inherit from global
+		if !region.EnableDefaultUser.IsNull() {
+			regionProps.EnableDefaultUser = redis.Bool(region.EnableDefaultUser.ValueBool())
+		} else {
+			// Inherit from global (which has Default: true if not set by user)
+			regionProps.EnableDefaultUser = redis.Bool(plan.GlobalEnableDefaultUser.ValueBool())
+		}
 
 		// Build override alerts or use global alerts
 		overrideAlerts, diags := buildAlertsFromSet(ctx, region.OverrideGlobalAlert)
@@ -719,10 +724,21 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 		}
 
 		// Handle enable_default_user
+		// Only set if explicitly configured in state OR API value differs from global
+		globalEnableDefaultUser := state.GlobalEnableDefaultUser.ValueBool()
+		regionEnableDefaultUser := true
 		if regionDb.Security != nil && regionDb.Security.EnableDefaultUser != nil {
-			regionConfig["enable_default_user"] = types.BoolValue(redis.BoolValue(regionDb.Security.EnableDefaultUser))
+			regionEnableDefaultUser = redis.BoolValue(regionDb.Security.EnableDefaultUser)
+		}
+
+		wasExplicitlyConfigured := stateRegion != nil && !stateRegion.EnableDefaultUser.IsNull()
+		differsFromGlobal := regionEnableDefaultUser != globalEnableDefaultUser
+
+		if wasExplicitlyConfigured || differsFromGlobal {
+			regionConfig["enable_default_user"] = types.BoolValue(regionEnableDefaultUser)
 		} else {
-			regionConfig["enable_default_user"] = types.BoolValue(true) // Default value
+			// Inheriting from global - don't include in state
+			regionConfig["enable_default_user"] = types.BoolNull()
 		}
 
 		// Handle remote_backup
