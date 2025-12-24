@@ -299,10 +299,8 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 							Optional:    true,
 						},
 						"enable_default_user": schema.BoolAttribute{
-							Description: "When 'true', enables connecting to the database with the 'default' user. Default: 'true'",
+							Description: "When 'true', enables connecting to the database with the 'default' user. If not set, inherits from global_enable_default_user.",
 							Optional:    true,
-							Computed:    true,
-							Default:     booldefault.StaticBool(true),
 						},
 					},
 					Blocks: map[string]schema.Block{
