@@ -15,8 +15,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -153,11 +156,17 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 				Description: "(Deprecated) Maximum memory usage for this specific database",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.Float64{
+					float64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"dataset_size_in_gb": schema.Float64Attribute{
 				Description: "Maximum amount of data in the dataset for this specific database in GB",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.Float64{
+					float64planmodifier.UseStateForUnknown(),
+				},
 			},
 			"redis_version": schema.StringAttribute{
 				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
@@ -165,6 +174,7 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"support_oss_cluster_api": schema.BoolAttribute{
@@ -214,6 +224,9 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 				Optional:    true,
 				Computed:    true,
 				Sensitive:   true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"global_source_ips": schema.SetAttribute{
 				Description: "Set of CIDR addresses to allow access to the database",
@@ -222,6 +235,9 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 				ElementType: types.StringType,
 				Validators: []validator.Set{
 					setvalidator.SizeAtLeast(1),
+				},
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"global_enable_default_user": schema.BoolAttribute{
@@ -246,11 +262,17 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 				Description: "Region public endpoints to access the database",
 				Computed:    true,
 				ElementType: types.StringType,
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"private_endpoint": schema.MapAttribute{
 				Description: "Region private endpoints to access the database",
 				Computed:    true,
 				ElementType: types.StringType,
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"port": schema.Int64Attribute{
 				Description: "TCP port on which the database is available",
