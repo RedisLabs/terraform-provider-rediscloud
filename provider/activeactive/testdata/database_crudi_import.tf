@@ -35,4 +35,5 @@ resource "rediscloud_active_active_subscription_database" "example" {
   subscription_id    = rediscloud_active_active_subscription.example.id
   name               = local.database_name
   dataset_size_in_gb = 1
+  redis_version      = "8.2"
 }
