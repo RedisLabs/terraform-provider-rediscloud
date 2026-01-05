@@ -482,6 +482,8 @@ func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan 
 	}
 
 	// Update tags using the tags service
+	// When tags is null (not in config), delete all tags by sending empty list
+	tagList := make([]*redisTags.Tag, 0)
 	if !plan.Tags.IsNull() {
 		tags, diags := mapToStringMap(ctx, plan.Tags)
 		diagnostics.Append(diags...)
@@ -489,18 +491,17 @@ func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan 
 			return
 		}
 
-		var tagList []*redisTags.Tag
 		for k, v := range tags {
 			tagList = append(tagList, &redisTags.Tag{
 				Key:   redis.String(k),
 				Value: redis.String(v),
 			})
 		}
+	}
 
-		if err := r.client.Client.Tags.Put(ctx, subId, dbId, redisTags.AllTags{Tags: &tagList}); err != nil {
-			diagnostics.AddError("Failed to update tags", err.Error())
-			return
-		}
+	if err := r.client.Client.Tags.Put(ctx, subId, dbId, redisTags.AllTags{Tags: &tagList}); err != nil {
+		diagnostics.AddError("Failed to update tags", err.Error())
+		return
 	}
 }
 
