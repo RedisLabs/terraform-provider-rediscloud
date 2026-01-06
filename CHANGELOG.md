@@ -9,10 +9,10 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 - Added missing documentation for `rediscloud_private_link_endpoint_script` and `rediscloud_active_active_private_link_endpoint_script` data sources.
 
 ## Fixed
-- Fixed incorrect usage of data sources in example documentation.
 - Fixed nil pointer dereference crashes in `rediscloud_database` and `rediscloud_active_active_subscription_database` data sources/resources when optional fields are missing from API response.
-- `rediscloud_active_active_subscription`: Fixed spurious resource replacement when removing the deprecated redis_version field.
+- `rediscloud_active_active_subscription`: Fixed spurious resource replacement when removing the deprecated `redis_version` field.
 - `rediscloud_active_active_subscription_peering`: Fixed import failure when provider_name was not explicitly set.
+- Fixed incorrect usage of data sources in example documentation.
 
 ## Changed
 - Improved CI/CD pipeline with additional validation checks and security scanning.
