@@ -501,12 +501,16 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("query_performance_factor", redis.String(*db.QueryPerformanceFactor)); err != nil {
-		return diag.FromErr(err)
+	if db.QueryPerformanceFactor != nil {
+		if err := d.Set("query_performance_factor", redis.StringValue(db.QueryPerformanceFactor)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
-	if err := d.Set("redis_version", redis.String(*db.RedisVersion)); err != nil {
-		return diag.FromErr(err)
+	if db.RedisVersion != nil {
+		if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return diags
