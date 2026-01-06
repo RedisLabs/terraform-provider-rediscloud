@@ -229,7 +229,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
-					"global_data_persistence",
 					"global_password",
 					"global_source_ips.#",
 					"global_source_ips.0",
