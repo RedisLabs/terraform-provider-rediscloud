@@ -218,6 +218,10 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 			"global_data_persistence": schema.StringAttribute{
 				Description: "Rate of database data persistence (in persistent storage)",
 				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"global_password": schema.StringAttribute{
 				Description: "Password used to access the database. If left empty, the password will be generated automatically",
