@@ -193,8 +193,8 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 	state.ExternalEndpointForOssClusterAPI = types.BoolValue(redis.BoolValue(db.UseExternalEndpointForOSSClusterAPI))
 	state.RedisVersion = types.StringValue(redis.StringValue(db.RedisVersion))
 
-	// Set global_data_persistence - Optional-only, preserve config if set
-	utils.SetStringPreserveConfig(&state.GlobalDataPersistence, db.GlobalDataPersistence)
+	// Set global_data_persistence - Optional+Computed, always from API
+	utils.SetStringFromAPI(&state.GlobalDataPersistence, db.GlobalDataPersistence)
 
 	// Set global_password - Optional+Computed, always from API
 	utils.SetStringFromAPI(&state.GlobalPassword, db.GlobalPassword)
