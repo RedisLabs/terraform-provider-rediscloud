@@ -13,7 +13,7 @@ The Transit Gateway data source allows access to an available Transit Gateway wi
 ```hcl
 data "rediscloud_transit_gateway" "example" {
   subscription_id = "113991"
-  aws_tgw_id = "tgw-1c55bfdoe20pdsad2"
+  aws_tgw_uid = "tgw-1c55bfdoe20pdsad2"
 }
 
 output "rediscloud_transit_gateway" {
@@ -26,7 +26,7 @@ output "rediscloud_transit_gateway" {
 * `subscription_id` - (Required) The id of a Pro/Flexible subscription
 * `tgw_id` - (Optional) The id of the Transit Gateway relative to the associated subscription. You would likely
 reference this value when creating a `rediscloud_transit_gateway_attachment`.
-* `aws_tgw_id` - (Optional) The id of the Transit Gateway as known to AWS
+* `aws_tgw_uid` - (Optional) The id of the Transit Gateway as known to AWS
 
 ## Attribute Reference
 
