@@ -7,6 +7,8 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ## Fixed
 - `rediscloud_active_active_subscription`: Removing the deprecated `redis_version` attribute no longer forces subscription replacement.
+- Fixed incorrect usage of data sources in example documentation.
+- `rediscloud_active_active_subscription_peering`: Fixed import for AWS peerings.
 
 # 2.10.0 (22nd December 2025)
 
