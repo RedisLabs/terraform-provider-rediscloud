@@ -51,9 +51,9 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudFreeEssentialsSubscription, subscriptionName),
@@ -116,9 +116,9 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudPaidCreditCardEssentialsSubscription, subscriptionName),
@@ -182,9 +182,9 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudPaidNoPaymentTypeEssentialsSubscription, subscriptionName),
@@ -253,9 +253,9 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudPaidMarketplaceEssentialsSubscription, subscriptionName),
@@ -315,8 +315,8 @@ func TestAccResourceRedisCloudEssentialsSubscription_Incorrect_PaymentIdForType(
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		Steps: []resource.TestStep{
 			{

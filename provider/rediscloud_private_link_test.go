@@ -27,9 +27,9 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 	terraformConfig := getRedisPrivateLinkConfig(t, shareName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
+		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:      testAccCheckProSubscriptionDestroy,
+		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: terraformConfig,

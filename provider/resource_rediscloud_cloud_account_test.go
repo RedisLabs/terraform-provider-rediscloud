@@ -37,9 +37,9 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 	const resourceName = "rediscloud_cloud_account.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsCloudAccountPreCheck(t) },
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsCloudAccountPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:      testAccCheckCloudAccountDestroy,
+		CheckDestroy:             testAccCheckCloudAccountDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: tf,
