@@ -137,14 +137,18 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) 
 					resource.TestCheckTypeSetElemAttr(databaseResource, "global_source_ips.*", "192.168.0.0/16"),
 					resource.TestCheckResourceAttr(databaseResource, "global_enable_default_user", "true"),
 
-					// Override region 0 (us-east-1) has explicit override of source_ips
-					resource.TestCheckResourceAttr(databaseResource, "override_region.0.override_global_source_ips.#", "1"),
-					resource.TestCheckTypeSetElemAttr(databaseResource, "override_region.0.override_global_source_ips.*", "172.16.0.0/16"),
-					resource.TestCheckResourceAttr(databaseResource, "override_region.0.enable_default_user", "true"),
+					// us-east-1 has explicit override of source_ips
+					resource.TestCheckTypeSetElemNestedAttrs(databaseResource, "override_region.*", map[string]string{
+						"name":                         "us-east-1",
+						"override_global_source_ips.#": "1",
+					}),
+					resource.TestCheckTypeSetElemAttr(databaseResource, "override_region.*.override_global_source_ips.*", "172.16.0.0/16"),
 
-					// Override region 1 (us-east-2) has no override, inherits global
-					resource.TestCheckResourceAttr(databaseResource, "override_region.1.override_global_source_ips.#", "0"),
-					resource.TestCheckResourceAttr(databaseResource, "override_region.1.enable_default_user", "true"),
+					// us-east-2 has no source_ips override, inherits global
+					resource.TestCheckTypeSetElemNestedAttrs(databaseResource, "override_region.*", map[string]string{
+						"name":                         "us-east-2",
+						"override_global_source_ips.#": "0",
+					}),
 
 					// Data source checks
 					resource.TestCheckResourceAttr(datasourceName, "name", subscriptionName),
@@ -167,10 +171,12 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) 
 					resource.TestCheckResourceAttr(databaseResource, "global_source_ips.#", "1"),
 					resource.TestCheckTypeSetElemAttr(databaseResource, "global_source_ips.*", "192.168.0.0/16"),
 					resource.TestCheckResourceAttr(databaseResource, "global_enable_default_user", "true"),
-					// Override regions should have the same overrides
-					resource.TestCheckResourceAttr(databaseResource, "override_region.0.override_global_source_ips.#", "1"),
-					resource.TestCheckTypeSetElemAttr(databaseResource, "override_region.0.override_global_source_ips.*", "172.16.0.0/16"),
-					resource.TestCheckResourceAttr(databaseResource, "override_region.0.enable_default_user", "true"),
+					// us-east-1 should still have the source_ips override
+					resource.TestCheckTypeSetElemNestedAttrs(databaseResource, "override_region.*", map[string]string{
+						"name":                         "us-east-1",
+						"override_global_source_ips.#": "1",
+					}),
+					resource.TestCheckTypeSetElemAttr(databaseResource, "override_region.*.override_global_source_ips.*", "172.16.0.0/16"),
 					// Data source checks after update
 					resource.TestCheckResourceAttr(datasourceName, "name", subscriptionName),
 					// TODO: Data source global_source_ips assertion removed - see TODO above.
