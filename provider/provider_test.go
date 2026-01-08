@@ -8,21 +8,13 @@ import (
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
-var providerFactories map[string]func() (*schema.Provider, error)
 var protoV5ProviderFactories map[string]func() (tfprotov5.ProviderServer, error)
 
 func init() {
-	providerFactories = map[string]func() (*schema.Provider, error){
-		"rediscloud": func() (*schema.Provider, error) {
-			return NewSdkProvider("dev")(), nil
-		},
-	}
-
 	protoV5ProviderFactories = map[string]func() (tfprotov5.ProviderServer, error){
 		"rediscloud": func() (tfprotov5.ProviderServer, error) {
 			muxServer, err := MuxProviderServerCreator(

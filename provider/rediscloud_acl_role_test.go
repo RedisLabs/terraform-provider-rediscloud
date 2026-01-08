@@ -45,7 +45,7 @@ func TestAccResourceRedisCloudAclRole_CRUDI(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		// Sometimes after deletion, the entity 'flickers'
 		CheckDestroy: nil,
 		Steps: []resource.TestStep{

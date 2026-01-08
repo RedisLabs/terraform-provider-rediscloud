@@ -22,7 +22,7 @@ func TestAccDataSourceRedisCloudAclRule_ForDefaultRule(t *testing.T) {
 	const AclRuleTest = "data.rediscloud_acl_rule.test"
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      nil, // test doesn't create a resource, so don't need to check anything
 		Steps: []resource.TestStep{
 			{
