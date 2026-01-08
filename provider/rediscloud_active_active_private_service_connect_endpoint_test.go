@@ -25,9 +25,9 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpoint_CRUDI(t 
 	gcpVPCSubnetName := fmt.Sprintf("%s-subnet", baseName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccGcpProjectPreCheck(t) },
+		PreCheck:                 func() { testAccPreCheck(t); testAccGcpProjectPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointProStep1, baseName, gcpProjectId, gcpVPCName, gcpVPCSubnetName),

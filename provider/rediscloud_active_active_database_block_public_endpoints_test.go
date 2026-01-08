@@ -30,9 +30,9 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PrivateAccess(t *t
 	configDisabled := fmt.Sprintf(contentDisabled, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: configDisabled,
@@ -76,9 +76,9 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PublicAccess(t *te
 	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: configEnabled,
@@ -119,9 +119,9 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) 
 	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: configDisabled,

@@ -23,9 +23,9 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseBasic, subscriptionName, databaseName),
@@ -280,9 +280,9 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseDisableDefaultUserCreate, subscriptionName, databaseName),
@@ -346,9 +346,9 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: getEssentialsDatabaseConfigRedisVersion(t, subscriptionName, databaseName),
@@ -380,9 +380,9 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.
 	const resourceName = "rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create database with Redis 7.2
 			{
