@@ -26,7 +26,7 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpoint_CRUDI(t 
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccGcpProjectPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{

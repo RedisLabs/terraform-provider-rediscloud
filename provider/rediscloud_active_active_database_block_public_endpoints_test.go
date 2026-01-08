@@ -31,7 +31,7 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PrivateAccess(t *t
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -77,7 +77,7 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PublicAccess(t *te
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -120,7 +120,7 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) 
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{

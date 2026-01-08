@@ -37,7 +37,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -285,7 +285,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -530,7 +530,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -570,7 +570,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -605,7 +605,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_PublicEndpointAccess(t *t
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -823,7 +823,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_RemoveRedisVersion(t *tes
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{

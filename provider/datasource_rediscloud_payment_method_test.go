@@ -15,7 +15,7 @@ func TestAccDataSourceRedisCloudPaymentMethod_basic(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      nil, // payment method isn't managed by this provider
 		Steps: []resource.TestStep{
 			{

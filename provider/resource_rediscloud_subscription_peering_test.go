@@ -55,7 +55,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPeeringPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -92,7 +92,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{

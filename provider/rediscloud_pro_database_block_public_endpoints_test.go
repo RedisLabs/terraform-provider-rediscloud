@@ -29,7 +29,7 @@ func TestAccRedisCloudProDatabase_DefaultSourceIPs_PrivateAccess(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -76,7 +76,7 @@ func TestAccRedisCloudProDatabase_DefaultSourceIPs_PublicAccess(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{

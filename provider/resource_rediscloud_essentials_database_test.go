@@ -24,7 +24,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -281,7 +281,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -347,7 +347,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -381,7 +381,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheckEssentialsSubscription(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create database with Redis 7.2

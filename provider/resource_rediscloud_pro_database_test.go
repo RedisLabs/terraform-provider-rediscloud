@@ -32,7 +32,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database and replica database creation
@@ -171,7 +171,7 @@ func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -198,7 +198,7 @@ func TestAccResourceRedisCloudProDatabase_timeUtcRequiresValidInterval(t *testin
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -221,7 +221,7 @@ func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -254,7 +254,7 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -303,7 +303,7 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database creation with auto_minor_version_upgrade set to false

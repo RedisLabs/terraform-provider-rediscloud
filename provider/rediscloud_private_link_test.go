@@ -28,7 +28,7 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:      testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
