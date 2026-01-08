@@ -2,6 +2,7 @@ package activeactive
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -176,7 +177,8 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 	// Get the database from API
 	db, err := r.client.Client.Database.GetActiveActive(ctx, subId, dbId)
 	if err != nil {
-		if _, ok := err.(*databases.NotFound); ok {
+		notFound := &databases.NotFound{}
+		if errors.As(err, &notFound) {
 			log.Printf("[DEBUG] Database %d not found, removing from state", dbId)
 			return true
 		}
@@ -232,7 +234,7 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 		}
 	}
 
-	sourceIPSet, diags := stringSliceToSet(ctx, globalSourceIPs)
+	sourceIPSet, diags := stringSliceToSet(globalSourceIPs)
 	diagnostics.Append(diags...)
 	if diagnostics.HasError() {
 		return false
@@ -272,11 +274,11 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 		privateEndpoints[region] = redis.StringValue(regionDb.PrivateEndpoint)
 	}
 
-	publicEndpointMap, diags := stringMapToMap(ctx, publicEndpoints)
+	publicEndpointMap, diags := stringMapToMap(publicEndpoints)
 	diagnostics.Append(diags...)
 	state.PublicEndpoint = publicEndpointMap
 
-	privateEndpointMap, diags := stringMapToMap(ctx, privateEndpoints)
+	privateEndpointMap, diags := stringMapToMap(privateEndpoints)
 	diagnostics.Append(diags...)
 	state.PrivateEndpoint = privateEndpointMap
 
@@ -285,7 +287,7 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 	if !utils.IsConfigured(state.GlobalModules) && len(apiModules) == 0 {
 		state.GlobalModules = types.ListNull(types.StringType)
 	} else {
-		modulesList, diags := stringSliceToList(ctx, apiModules)
+		modulesList, diags := stringSliceToList(apiModules)
 		diagnostics.Append(diags...)
 		state.GlobalModules = modulesList
 	}
@@ -311,7 +313,7 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 		for _, tag := range *tagResponse.Tags {
 			tagMap[redis.StringValue(tag.Key)] = redis.StringValue(tag.Value)
 		}
-		tagsValue, diags := stringMapToMap(ctx, tagMap)
+		tagsValue, diags := stringMapToMap(tagMap)
 		diagnostics.Append(diags...)
 		state.Tags = tagsValue
 	} else if !utils.IsConfigured(state.Tags) {
@@ -677,7 +679,7 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 			sourceIPs := stringSliceValue(regionDb.Security.SourceIPs)
 			// Filter out default source IPs
 			if !isDefaultGlobalSourceIPs(sourceIPs) {
-				sourceIPSet, diags := stringSliceToSet(ctx, sourceIPs)
+				sourceIPSet, diags := stringSliceToSet(sourceIPs)
 				allDiags.Append(diags...)
 				regionConfig["override_global_source_ips"] = sourceIPSet
 			} else {
@@ -717,7 +719,7 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 
 		// Handle override_global_alert
 		if stateRegion != nil && !stateRegion.OverrideGlobalAlert.IsNull() && len(stateRegion.OverrideGlobalAlert.Elements()) > 0 {
-			alertSet, diags := flattenAlertsToSet(ctx, regionDb.Alerts)
+			alertSet, diags := flattenAlertsToSet(regionDb.Alerts)
 			allDiags.Append(diags...)
 			regionConfig["override_global_alert"] = alertSet
 		} else {
@@ -753,7 +755,7 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 				stateStorageType = stateBackups[0].StorageType.ValueString()
 			}
 		}
-		backupList, diags := flattenBackupPlan(ctx, regionDb.Backup, stateStorageType)
+		backupList, diags := flattenBackupPlan(regionDb.Backup, stateStorageType)
 		allDiags.Append(diags...)
 		regionConfig["remote_backup"] = backupList
 

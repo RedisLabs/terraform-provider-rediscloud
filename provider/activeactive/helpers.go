@@ -2,6 +2,7 @@ package activeactive
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -110,7 +111,7 @@ func listToStringSlice(ctx context.Context, list types.List) ([]string, diag.Dia
 }
 
 // stringSliceToSet converts a slice of strings to a types.Set.
-func stringSliceToSet(ctx context.Context, slice []string) (types.Set, diag.Diagnostics) {
+func stringSliceToSet(slice []string) (types.Set, diag.Diagnostics) {
 	if slice == nil {
 		return types.SetNull(types.StringType), nil
 	}
@@ -124,7 +125,7 @@ func stringSliceToSet(ctx context.Context, slice []string) (types.Set, diag.Diag
 }
 
 // stringSliceToList converts a slice of strings to a types.List.
-func stringSliceToList(ctx context.Context, slice []string) (types.List, diag.Diagnostics) {
+func stringSliceToList(slice []string) (types.List, diag.Diagnostics) {
 	if slice == nil {
 		return types.ListNull(types.StringType), nil
 	}
@@ -138,7 +139,7 @@ func stringSliceToList(ctx context.Context, slice []string) (types.List, diag.Di
 }
 
 // stringMapToMap converts a map[string]string to a types.Map.
-func stringMapToMap(ctx context.Context, m map[string]string) (types.Map, diag.Diagnostics) {
+func stringMapToMap(m map[string]string) (types.Map, diag.Diagnostics) {
 	if m == nil {
 		return types.MapNull(types.StringType), nil
 	}
@@ -186,13 +187,13 @@ func buildAlertsFromSet(ctx context.Context, alertSet types.Set) ([]*databases.A
 }
 
 // flattenAlertsToSet converts API alert responses to a types.Set.
-func flattenAlertsToSet(ctx context.Context, alerts []*databases.Alert) (types.Set, diag.Diagnostics) {
+func flattenAlertsToSet(alerts []*databases.Alert) (types.Set, diag.Diagnostics) {
 	alertAttrTypes := map[string]attr.Type{
 		"name":  types.StringType,
 		"value": types.Int64Type,
 	}
 
-	if alerts == nil || len(alerts) == 0 {
+	if len(alerts) == 0 {
 		return types.SetNull(types.ObjectType{AttrTypes: alertAttrTypes}), nil
 	}
 
@@ -290,7 +291,7 @@ func buildBackupPlan(ctx context.Context, remoteBackupList types.List) (*databas
 
 // flattenBackupPlan converts API backup response to a types.List for remote_backup.
 // Note: The API doesn't return storage_type, so we preserve it from state if available.
-func flattenBackupPlan(ctx context.Context, backup *databases.Backup, stateStorageType string) (types.List, diag.Diagnostics) {
+func flattenBackupPlan(backup *databases.Backup, stateStorageType string) (types.List, diag.Diagnostics) {
 	remoteBackupAttrTypes := map[string]attr.Type{
 		"interval":     types.StringType,
 		"time_utc":     types.StringType,
@@ -337,7 +338,8 @@ func waitForDatabaseToBeDeleted(ctx context.Context, subId, dbId int, api *clien
 
 			_, err = api.Client.Database.Get(ctx, subId, dbId)
 			if err != nil {
-				if _, ok := err.(*databases.NotFound); ok {
+				notFound := &databases.NotFound{}
+				if errors.As(err, &notFound) {
 					return "deleted", "deleted", nil
 				}
 				return nil, "", err
