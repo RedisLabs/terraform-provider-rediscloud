@@ -42,7 +42,6 @@ resource "rediscloud_active_active_subscription_database" "example" {
   global_data_persistence = "aof-every-1-second"
   global_password         = "updated-password"
   global_source_ips       = ["192.170.0.0/16"]
-  global_modules          = ["RedisJSON"]
 
   override_region {
     name                             = "us-east-1"
