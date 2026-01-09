@@ -68,6 +68,37 @@ func (r *activeActiveDatabaseResource) Configure(_ context.Context, req resource
 	r.client = client
 }
 
+// useStateOnUpdateListModifier is a plan modifier that preserves the state value
+// for existing resources. This implements "create-only" field behaviour in the
+// Plugin Framework - the field can be set on create but changes are ignored after.
+type useStateOnUpdateListModifier struct{}
+
+var _ planmodifier.List = useStateOnUpdateListModifier{}
+
+func (m useStateOnUpdateListModifier) Description(_ context.Context) string {
+	return "Uses the prior state value for existing resources. Changes to this attribute are ignored after creation."
+}
+
+func (m useStateOnUpdateListModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m useStateOnUpdateListModifier) PlanModifyList(_ context.Context, req planmodifier.ListRequest, resp *planmodifier.ListResponse) {
+	// If this is a create operation (no prior state), allow config value through
+	if req.State.Raw.IsNull() {
+		return
+	}
+
+	// For existing resources, always use the state value (ignoring config changes)
+	resp.PlanValue = req.StateValue
+}
+
+// UseStateOnUpdate returns a plan modifier that uses state value for existing resources.
+// This is the Plugin Framework equivalent of SDK v2's DiffSuppressFunc for create-only fields.
+func UseStateOnUpdate() planmodifier.List {
+	return useStateOnUpdateListModifier{}
+}
+
 // Schema defines the schema for the resource.
 func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	// Alert block schema (used in global_alert and override_global_alert)
@@ -260,7 +291,11 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 			"global_modules": schema.ListAttribute{
 				Description: "List of modules to enable on the database. This information is only used when creating a new database and any changes will be ignored after this.",
 				Optional:    true,
+				Computed:    true,
 				ElementType: types.StringType,
+				PlanModifiers: []planmodifier.List{
+					UseStateOnUpdate(),
+				},
 			},
 			"public_endpoint": schema.MapAttribute{
 				Description: "Region public endpoints to access the database",
@@ -434,19 +469,63 @@ func (r *activeActiveDatabaseResource) ModifyPlan(ctx context.Context, req resou
 			return
 		}
 
-		// Keep the state value for global_modules (changes are ignored after creation)
-		if !state.GlobalModules.IsNull() {
-			plan.GlobalModules = state.GlobalModules
-			diags = resp.Plan.Set(ctx, &plan)
-			resp.Diagnostics.Append(diags...)
-		}
+		// Note: global_modules is handled by UseStateOnUpdate() plan modifier
 
 		// Keep the state value for global_resp_version (changes are ignored after creation)
 		if !state.GlobalRespVersion.IsNull() && !state.GlobalRespVersion.IsUnknown() {
 			plan.GlobalRespVersion = state.GlobalRespVersion
-			diags = resp.Plan.Set(ctx, &plan)
-			resp.Diagnostics.Append(diags...)
 		}
+
+		// Mark public_endpoint as unknown if:
+		// 1. Public endpoints are currently empty (public_endpoint_access was false), AND
+		// 2. User is making config changes (to avoid perpetual drift on re-plans)
+		//
+		// Note: Only mark public_endpoint, not private_endpoint, since private endpoints
+		// have real values even when public_endpoint_access=false.
+		if !state.PublicEndpoint.IsNull() {
+			var publicEndpoints map[string]string
+			diags = state.PublicEndpoint.ElementsAs(ctx, &publicEndpoints, false)
+			resp.Diagnostics.Append(diags...)
+			if resp.Diagnostics.HasError() {
+				return
+			}
+
+			hasEmptyPublicEndpoints := false
+			for _, v := range publicEndpoints {
+				if v == "" {
+					hasEmptyPublicEndpoints = true
+					break
+				}
+			}
+
+			if hasEmptyPublicEndpoints {
+				// Check if user is making config changes by comparing config to state
+				// for user-configurable fields. If config differs, this is a real update.
+				var config ActiveActiveDatabaseModel
+				diags = req.Config.Get(ctx, &config)
+				resp.Diagnostics.Append(diags...)
+				if resp.Diagnostics.HasError() {
+					return
+				}
+
+				// Detect config changes: check if global_modules in config differs from state
+				configHasModules := !config.GlobalModules.IsNull() && len(config.GlobalModules.Elements()) > 0
+				stateHasModules := !state.GlobalModules.IsNull() && len(state.GlobalModules.Elements()) > 0
+
+				// If config has modules but state doesn't (or vice versa), user is making changes
+				isConfigChange := configHasModules != stateHasModules
+
+				if isConfigChange {
+					// Real update - public endpoints might change, mark as unknown
+					plan.PublicEndpoint = types.MapUnknown(types.StringType)
+				}
+				// If no config change, keep the state values (UseStateForUnknown behaviour)
+			}
+		}
+
+		// Set the updated plan
+		diags = resp.Plan.Set(ctx, &plan)
+		resp.Diagnostics.Append(diags...)
 	}
 }
 

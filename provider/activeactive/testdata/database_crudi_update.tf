@@ -43,7 +43,6 @@ resource "rediscloud_active_active_subscription_database" "example" {
   global_password            = "updated-password"
   global_source_ips          = ["192.170.0.0/16"]
   global_enable_default_user = false
-  global_modules             = []
 
   global_alert {
     name  = "dataset-size"
