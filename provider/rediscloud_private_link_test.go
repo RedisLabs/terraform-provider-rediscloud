@@ -155,7 +155,7 @@ func testCheckPrivateLinkPortMatchesDatabaseEndpoint(databaseResourceName, priva
 
 		count, err := strconv.Atoi(databasesCount)
 		if err != nil {
-			return fmt.Errorf("could not parse databases count: %v", err)
+			return fmt.Errorf("could not parse databases count: %w", err)
 		}
 
 		// Iterate through the databases to find the matching one and check its port
@@ -164,12 +164,11 @@ func testCheckPrivateLinkPortMatchesDatabaseEndpoint(databaseResourceName, priva
 		var privateLinkPort string
 		var privateLinkDbId string
 
+		databaseIdKeyRegex := regexp.MustCompile(`^databases\.(\d+)\.database_id$`)
+
 		for key, value := range plResource.Primary.Attributes {
-			// Look for database_id attributes
-			if matched, _ := regexp.MatchString(`^databases\.\d+\.database_id$`, key); matched {
-				// Extract the hash from the key to find the corresponding port
-				hashRegex := regexp.MustCompile(`^databases\.(\d+)\.database_id$`)
-				hashMatches := hashRegex.FindStringSubmatch(key)
+			hashMatches := databaseIdKeyRegex.FindStringSubmatch(key)
+			if hashMatches != nil {
 				if len(hashMatches) == 2 {
 					hash := hashMatches[1]
 					portKey := fmt.Sprintf("databases.%s.port", hash)
