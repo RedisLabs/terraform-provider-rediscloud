@@ -3,8 +3,22 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.10.1 (Unreleased)
 
-# 2.10.0 (Unreleased)
+## Added
+- Added missing documentation for `rediscloud_private_link_endpoint_script` and `rediscloud_active_active_private_link_endpoint_script` data sources.
+
+## Fixed
+- Fixed nil pointer dereference crashes in `rediscloud_database` and `rediscloud_active_active_subscription_database` data sources/resources when optional fields are missing from API response.
+- `rediscloud_active_active_subscription`: Fixed spurious resource replacement when removing the deprecated `redis_version` field.
+- `rediscloud_active_active_subscription_peering`: Fixed import failure when provider_name was not explicitly set.
+- Fixed incorrect usage of data sources in example documentation.
+
+## Changed
+- Improved CI/CD pipeline with additional validation checks and security scanning.
+- Improved test infrastructure and parallel resource cleanup.
+
+# 2.10.0 (22nd December 2025)
 
 ## Added
 - New `rediscloud_transit_gateway_route` resource to manage Transit Gateway routing (CIDRs) separately from the attachment for Pro subscriptions. This is the preferred way to manage CIDRs.
@@ -14,7 +28,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 - `rediscloud_transit_gateway_attachment`: Delete operation now handles "TGW_ATTACHMENT_DOES_NOT_EXIST" error gracefully, making destroy idempotent.
 - `rediscloud_active_active_transit_gateway_attachment`: Delete operation now handles "TGW_ATTACHMENT_DOES_NOT_EXIST" error gracefully, making destroy idempotent.
 
-# 2.9.0 (December 2025)
+# 2.9.0 (15th December 2025)
 
 ## Added
 - New `rediscloud_transit_gateway_invitations` data source to retrieve pending Transit Gateway attachment invitations for Pro subscriptions.

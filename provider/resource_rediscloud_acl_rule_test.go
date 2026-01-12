@@ -3,15 +3,16 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/RedisLabs/rediscloud-go-api/redis"
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"regexp"
 	"strconv"
 	"testing"
+
+	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
@@ -55,7 +56,7 @@ func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the rule ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						client := testProvider.Meta().(*client2.ApiClient)
+						client := sharedTestClient(t)
 						rule, err := client.Client.RedisRules.Get(context.TODO(), id)
 						if err != nil {
 							return err
@@ -147,7 +148,10 @@ data "rediscloud_acl_rule" "test" {
 `
 
 func testAccCheckAclRuleDestroy(s *terraform.State) error {
-	client := testProvider.Meta().(*client2.ApiClient)
+	client, err := getTestClient()
+	if err != nil {
+		return err
+	}
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_acl_rule" {

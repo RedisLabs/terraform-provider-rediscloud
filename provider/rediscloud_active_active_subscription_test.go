@@ -9,11 +9,11 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 var activeActiveContractFlag = flag.Bool("activeActiveContract", false,
@@ -115,7 +115,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 							return err
 						}
 
-						client := testProvider.Meta().(*client2.ApiClient)
+						client := sharedTestClient(t)
 						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
@@ -362,7 +362,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 							return err
 						}
 
-						client := testProvider.Meta().(*client2.ApiClient)
+						client := sharedTestClient(t)
 						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
@@ -627,7 +627,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_PublicEndpointAccess(t *t
 }
 
 func testAccCheckActiveActiveSubscriptionDestroy(s *terraform.State) error {
-	client := testProvider.Meta().(*client2.ApiClient)
+	client, err := getTestClient()
+	if err != nil {
+		return err
+	}
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_active_active_subscription" {
@@ -804,5 +807,74 @@ func testAccResourceRedisCloudActiveActiveSubscriptionImportRedis7(t *testing.T,
 
 func testAccResourceRedisCloudActiveActiveSubscriptionImportRedis8(t *testing.T, subscriptionName string) string {
 	content := utils.GetTestConfig(t, "./activeactive/testdata/subscription_import_redis8.tf")
+	return fmt.Sprintf(content, subscriptionName)
+}
+
+// TestAccResourceRedisCloudActiveActiveSubscription_RemoveRedisVersion tests that removing
+// the redis_version attribute from an existing subscription does NOT force replacement.
+func TestAccResourceRedisCloudActiveActiveSubscription_RemoveRedisVersion(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	name := acctest.RandomWithPrefix(testResourcePrefix)
+	const resourceName = "rediscloud_active_active_subscription.example"
+
+	var subIdStep1 int
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:          func() { testAccPreCheck(t) },
+		ProviderFactories: providerFactories,
+		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Step 1: Create subscription WITH redis_version
+				Config: testAccResourceRedisCloudActiveActiveSubscriptionRedisVersionRemoveStep1(t, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
+					// Capture the subscription ID
+					func(s *terraform.State) error {
+						r := s.RootModule().Resources[resourceName]
+						var err error
+						subIdStep1, err = strconv.Atoi(r.Primary.ID)
+						if err != nil {
+							return err
+						}
+						return nil
+					},
+				),
+			},
+			{
+				// Step 2: Remove redis_version from subscription - should NOT force replacement
+				Config: testAccResourceRedisCloudActiveActiveSubscriptionRedisVersionRemoveStep2(t, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
+					// Verify subscription ID is the same (no replacement occurred)
+					func(s *terraform.State) error {
+						r := s.RootModule().Resources[resourceName]
+						subIdStep2, err := strconv.Atoi(r.Primary.ID)
+						if err != nil {
+							return err
+						}
+						if subIdStep1 != subIdStep2 {
+							return fmt.Errorf("subscription was replaced: ID changed from %d to %d. "+
+								"Removing redis_version should not force replacement", subIdStep1, subIdStep2)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func testAccResourceRedisCloudActiveActiveSubscriptionRedisVersionRemoveStep1(t *testing.T, subscriptionName string) string {
+	content := utils.GetTestConfig(t, "./activeactive/testdata/redis_version_remove_step1.tf")
+	return fmt.Sprintf(content, subscriptionName)
+}
+
+func testAccResourceRedisCloudActiveActiveSubscriptionRedisVersionRemoveStep2(t *testing.T, subscriptionName string) string {
+	content := utils.GetTestConfig(t, "./activeactive/testdata/redis_version_remove_step2.tf")
 	return fmt.Sprintf(content, subscriptionName)
 }

@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_private_service_connect"
 description: |-
   Private Service Connect resource for Pro Subscription in the Redis Cloud Terraform provider.

@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_active_active_private_service_connect"
 description: |-
   Active-Active Private Service Connect data source in the Redis Cloud Terraform provider.

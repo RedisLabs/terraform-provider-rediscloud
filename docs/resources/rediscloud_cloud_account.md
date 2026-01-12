@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_cloud_account"
 description: |-
   Cloud Account resource in the Redis Cloud Terraform provider.

@@ -8,11 +8,12 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func DataSourceRedisCloudProDatabase() *schema.Resource {
@@ -500,12 +501,16 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("query_performance_factor", redis.String(*db.QueryPerformanceFactor)); err != nil {
-		return diag.FromErr(err)
+	if db.QueryPerformanceFactor != nil {
+		if err := d.Set("query_performance_factor", redis.StringValue(db.QueryPerformanceFactor)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
-	if err := d.Set("redis_version", redis.String(*db.RedisVersion)); err != nil {
-		return diag.FromErr(err)
+	if db.RedisVersion != nil {
+		if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	return diags

@@ -2,17 +2,20 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/roles"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/roles"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func resourceRedisCloudAclRole() *schema.Resource {
@@ -135,7 +138,8 @@ func resourceRedisCloudAclRoleRead(ctx context.Context, d *schema.ResourceData, 
 
 	role, err := api.Client.Roles.Get(ctx, id)
 	if err != nil {
-		if _, ok := err.(*roles.NotFound); ok {
+		notFound := &roles.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return diags
 		}
@@ -221,12 +225,13 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 		role, err := api.Client.Roles.Get(ctx, id)
 
 		if err != nil {
-			if _, ok := err.(*roles.NotFound); ok {
+			notFound := &roles.NotFound{}
+			if errors.As(err, &notFound) {
 				// All good, the resource is gone
 				return nil
 			}
 			// This was an unexpected error
-			return retry.NonRetryableError(fmt.Errorf("error getting role: %s", err))
+			return retry.NonRetryableError(fmt.Errorf("error getting role: %w", err))
 		}
 
 		if role != nil {

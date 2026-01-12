@@ -1,8 +1,8 @@
 locals {
-  rediscloud_subscription_name = "%s"
-  rediscloud_cloud_account = "%s"
+  rediscloud_subscription_name       = "%s"
+  rediscloud_cloud_account           = "%s"
   rediscloud_private_link_share_name = "%s"
-  rediscloud_database_password = "%s"
+  rediscloud_database_password       = "%s"
 }
 
 data "rediscloud_payment_method" "card" {

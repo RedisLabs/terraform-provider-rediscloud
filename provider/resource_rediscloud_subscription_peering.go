@@ -2,14 +2,16 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"log"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
@@ -236,7 +238,8 @@ func resourceRedisCloudSubscriptionPeeringRead(ctx context.Context, d *schema.Re
 
 	peerings, err := api.Client.Subscription.ListVPCPeering(ctx, subId)
 	if err != nil {
-		if _, ok := err.(*subscriptions.NotFound); ok {
+		notFound := &subscriptions.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return diags
 		}
@@ -338,7 +341,8 @@ func resourceRedisCloudSubscriptionPeeringDelete(ctx context.Context, d *schema.
 
 	err = api.Client.Subscription.DeleteVPCPeering(ctx, subId, id)
 	if err != nil {
-		if _, ok := err.(*subscriptions.NotFound); ok {
+		notFound := &subscriptions.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return diags
 		}

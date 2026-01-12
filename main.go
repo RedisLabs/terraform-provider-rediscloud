@@ -4,8 +4,9 @@ import (
 	"flag"
 	"log"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
 )
 
 var (

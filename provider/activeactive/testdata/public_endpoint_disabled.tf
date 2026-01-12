@@ -38,15 +38,15 @@ resource "rediscloud_active_active_subscription_database" "example" {
   dataset_size_in_gb      = 1
   global_data_persistence = "aof-every-1-second"
   global_password         = local.rediscloud_database_password
-  global_source_ips = ["192.168.0.0/16"]
+  global_source_ips       = ["192.168.0.0/16"]
   global_alert {
     name  = "dataset-size"
     value = 40
   }
 
   override_region {
-    name                       = "us-east-2"
-    enable_default_user        = true
+    name                = "us-east-2"
+    enable_default_user = true
   }
 
   override_region {
@@ -68,5 +68,5 @@ resource "rediscloud_active_active_subscription_database" "example" {
 
 data "rediscloud_active_active_subscription_database" "example" {
   subscription_id = rediscloud_active_active_subscription.example.id
-  name           = rediscloud_active_active_subscription_database.example.name
+  name            = rediscloud_active_active_subscription_database.example.name
 }

@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_transit_gateway_invitations"
 description: |-
   Transit Gateway Invitations data source in the Redis Cloud Terraform provider.

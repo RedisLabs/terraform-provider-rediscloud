@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_essentials_database"
 description: |-
   Essentials Database resource in the Redis Cloud Terraform provider.

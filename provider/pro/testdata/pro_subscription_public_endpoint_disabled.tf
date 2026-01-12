@@ -9,23 +9,23 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_subscription" "example" {
-  name = local.rediscloud_subscription_name
-  payment_method_id = data.rediscloud_payment_method.card.id
+  name                   = local.rediscloud_subscription_name
+  payment_method_id      = data.rediscloud_payment_method.card.id
   public_endpoint_access = false
 
   cloud_provider {
     provider = "AWS"
     region {
-      region = "eu-west-1"
+      region                     = "eu-west-1"
       networking_deployment_cidr = "10.0.0.0/24"
     }
   }
 
   creation_plan {
-    dataset_size_in_gb = 1
-    quantity = 1
-    replication = false
-    throughput_measurement_by = "operations-per-second"
+    dataset_size_in_gb           = 1
+    quantity                     = 1
+    replication                  = false
+    throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 1000
   }
 }
@@ -57,5 +57,5 @@ resource "rediscloud_subscription_database" "example" {
 
 data "rediscloud_database" "example" {
   subscription_id = rediscloud_subscription.example.id
-  name           = rediscloud_subscription_database.example.name
+  name            = rediscloud_subscription_database.example.name
 }

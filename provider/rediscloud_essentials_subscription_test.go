@@ -9,11 +9,12 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 var essentialsMarketplaceFlag = flag.Bool("essentialsMarketplace", false,
@@ -35,7 +36,7 @@ func testAccPreCheckEssentialsSubscription(t *testing.T) {
 	}
 
 	if len(subs) > 0 {
-		t.Skipf("Essentials subscription already exists (ID: %d). Redis Cloud allows only 1 essentials subscription per account. Please delete the existing subscription before running this test.", redis.IntValue(subs[0].ID))
+		t.Fatalf("Essentials subscription already exists (ID: %d). Redis Cloud allows only 1 essentials subscription per account. Please delete the existing subscription before running this test.", redis.IntValue(subs[0].ID))
 	}
 }
 
@@ -436,7 +437,10 @@ data "rediscloud_essentials_subscription" "example" {
 `
 
 func testAccCheckEssentialsSubscriptionDestroy(s *terraform.State) error {
-	apiClient := testProvider.Meta().(*client.ApiClient)
+	apiClient, err := getTestClient()
+	if err != nil {
+		return err
+	}
 
 	for _, r := range s.RootModule().Resources {
 		if r.Type != "rediscloud_essentials_subscription" {

@@ -2,16 +2,19 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/users"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/users"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
 func resourceRedisCloudAclUser() *schema.Resource {
@@ -105,7 +108,8 @@ func resourceRedisCloudAclUserRead(ctx context.Context, d *schema.ResourceData, 
 
 	user, err := api.Client.Users.Get(ctx, id)
 	if err != nil {
-		if _, ok := err.(*users.NotFound); ok {
+		notFound := &users.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return diags
 		}
@@ -192,12 +196,13 @@ func resourceRedisCloudAclUserDelete(ctx context.Context, d *schema.ResourceData
 		user, err := api.Client.Users.Get(ctx, id)
 
 		if err != nil {
-			if _, ok := err.(*users.NotFound); ok {
+			notFound := &users.NotFound{}
+			if errors.As(err, &notFound) {
 				// All good, the resource is gone
 				return nil
 			}
 			// This was an unexpected error
-			return retry.NonRetryableError(fmt.Errorf("error getting user: %s", err))
+			return retry.NonRetryableError(fmt.Errorf("error getting user: %w", err))
 		}
 
 		if user != nil {

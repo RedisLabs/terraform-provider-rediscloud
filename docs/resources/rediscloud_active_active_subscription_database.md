@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_active_active_subscription_database"
 description: |-
   Database resource for Active-Active Subscriptions in the Redis Cloud Terraform provider.

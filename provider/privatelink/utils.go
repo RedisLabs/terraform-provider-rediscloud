@@ -10,10 +10,11 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	pl "github.com/RedisLabs/rediscloud-go-api/service/privatelink"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func waitForPrivateLinkToBeActive(ctx context.Context, client *client.ApiClient, subscriptionId int) error {

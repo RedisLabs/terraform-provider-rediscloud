@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_regions"
 description: |-
   Regions data source in the Redis Cloud Terraform provider.

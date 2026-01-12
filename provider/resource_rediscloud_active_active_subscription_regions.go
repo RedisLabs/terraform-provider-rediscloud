@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -247,9 +248,14 @@ func resourceRedisCloudActiveActiveRegionRead(ctx context.Context, d *schema.Res
 	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Id())
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	existingRegions, err := api.Client.Regions.List(ctx, subId)
 	if err != nil {
-		if _, ok := err.(*subscriptions.NotFound); ok {
+		notFound := &subscriptions.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return nil
 		}

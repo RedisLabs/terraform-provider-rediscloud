@@ -2,17 +2,19 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"log"
 	"strconv"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
-	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+
+	client2 "github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
 func resourceRedisCloudCloudAccount() *schema.Resource {
@@ -161,7 +163,8 @@ func resourceRedisCloudCloudAccountRead(ctx context.Context, d *schema.ResourceD
 
 	account, err := client.Client.CloudAccount.Get(ctx, id)
 	if err != nil {
-		if _, ok := err.(*cloud_accounts.NotFound); ok {
+		notFound := &cloud_accounts.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return diags
 		}

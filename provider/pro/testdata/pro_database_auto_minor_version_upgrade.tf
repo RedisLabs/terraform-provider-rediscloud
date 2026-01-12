@@ -1,7 +1,7 @@
 locals {
-  rediscloud_cloud_account     = "%s"
-  rediscloud_subscription_name = "%s"
-  auto_minor_version_upgrade = %s
+  rediscloud_cloud_account     = "__CLOUD_ACCOUNT__"
+  rediscloud_subscription_name = "__SUBSCRIPTION_NAME__"
+  auto_minor_version_upgrade   = "__AUTO_MINOR_VERSION_UPGRADE__" == "true"
 }
 
 data "rediscloud_payment_method" "card" {
@@ -23,8 +23,8 @@ resource "rediscloud_subscription" "example" {
     provider         = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
     region {
-      region                     = "eu-west-1"
-      networking_deployment_cidr = "10.0.0.0/24"
+      region                       = "eu-west-1"
+      networking_deployment_cidr   = "10.0.0.0/24"
       preferred_availability_zones = ["eu-west-1a"]
     }
   }

@@ -1,5 +1,4 @@
 ---
-layout: "rediscloud"
 page_title: "Redis Cloud: rediscloud_active_active_subscription_regions"
 description: |-
   Active-Active subscription regions data source in the Redis Cloud Terraform provider.

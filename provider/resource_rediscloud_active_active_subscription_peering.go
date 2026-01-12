@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"log"
 	"regexp"
 	"strconv"
@@ -11,12 +12,13 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func resourceRedisCloudActiveActiveSubscriptionPeering() *schema.Resource {
@@ -253,7 +255,8 @@ func resourceRedisCloudSubscriptionActiveActivePeeringRead(ctx context.Context, 
 
 	peerings, err := api.Client.Subscription.ListActiveActiveVPCPeering(ctx, subId)
 	if err != nil {
-		if _, ok := err.(*subscriptions.NotFound); ok {
+		notFound := &subscriptions.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return diags
 		}
@@ -270,8 +273,7 @@ func resourceRedisCloudSubscriptionActiveActivePeeringRead(ctx context.Context, 
 		return diag.FromErr(err)
 	}
 
-	providerName := d.Get("provider_name").(string)
-
+	providerName := "AWS"
 	if redis.StringValue(peering.GCPProjectUID) != "" {
 		providerName = "GCP"
 	}
@@ -362,7 +364,8 @@ func resourceRedisCloudSubscriptionActiveActivePeeringDelete(ctx context.Context
 
 	err = api.Client.Subscription.DeleteActiveActiveVPCPeering(ctx, subId, id)
 	if err != nil {
-		if _, ok := err.(*subscriptions.NotFound); ok {
+		notFound := &subscriptions.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return diags
 		}

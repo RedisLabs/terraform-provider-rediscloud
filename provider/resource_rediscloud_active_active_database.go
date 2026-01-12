@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"log"
 	"regexp"
 	"strings"
@@ -9,13 +10,14 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 // Default RFC1918 private IP ranges used when public_endpoint_access is false
@@ -534,7 +536,8 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 
 	db, err := api.Client.Database.GetActiveActive(ctx, subId, dbId)
 	if err != nil {
-		if _, ok := err.(*databases.NotFound); ok {
+		notFound := &databases.NotFound{}
+		if errors.As(err, &notFound) {
 			d.SetId("")
 			return diags
 		}
@@ -604,21 +607,23 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("enable_tls", redis.BoolValue(db.CrdbDatabases[0].Security.EnableTls)); err != nil {
-		return diag.FromErr(err)
+	if len(db.CrdbDatabases) > 0 && db.CrdbDatabases[0].Security != nil {
+		if err := d.Set("enable_tls", redis.BoolValue(db.CrdbDatabases[0].Security.EnableTls)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	// To prevent both fields being included in API requests, only one of these two fields should be set in the state
 	// Only add `dataset_size_in_gb` to the state if `memory_limit_in_gb` is not already in the state
-	if _, inState := d.GetOk("memory_limit_in_gb"); !inState {
-		if err := d.Set("dataset_size_in_gb", redis.Float64(*db.CrdbDatabases[0].DatasetSizeInGB)); err != nil {
+	if _, inState := d.GetOk("memory_limit_in_gb"); !inState && len(db.CrdbDatabases) > 0 && db.CrdbDatabases[0].DatasetSizeInGB != nil {
+		if err := d.Set("dataset_size_in_gb", redis.Float64Value(db.CrdbDatabases[0].DatasetSizeInGB)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
 	// Likewise, only add `memory_limit_in_gb` to the state if `dataset_size_in_gb` is not already in the state
-	if _, inState := d.GetOk("dataset_size_in_gb"); !inState {
-		if err := d.Set("memory_limit_in_gb", redis.Float64(*db.CrdbDatabases[0].MemoryLimitInGB)); err != nil {
+	if _, inState := d.GetOk("dataset_size_in_gb"); !inState && len(db.CrdbDatabases) > 0 && db.CrdbDatabases[0].MemoryLimitInGB != nil {
+		if err := d.Set("memory_limit_in_gb", redis.Float64Value(db.CrdbDatabases[0].MemoryLimitInGB)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -730,9 +735,11 @@ func resourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema.R
 		}
 	}
 
-	tlsAuthEnabled := *db.CrdbDatabases[0].Security.TLSClientAuthentication
-	if err := utils.ApplyCertificateHints(tlsAuthEnabled, d); err != nil {
-		return diag.FromErr(err)
+	if len(db.CrdbDatabases) > 0 && db.CrdbDatabases[0].Security != nil && db.CrdbDatabases[0].Security.TLSClientAuthentication != nil {
+		tlsAuthEnabled := *db.CrdbDatabases[0].Security.TLSClientAuthentication
+		if err := utils.ApplyCertificateHints(tlsAuthEnabled, d); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if err := pro.ReadTags(ctx, api, subId, dbId, d); err != nil {
@@ -902,6 +909,7 @@ func resourceRedisCloudActiveActiveDatabaseUpdate(ctx context.Context, d *schema
 		update.GlobalDataPersistence = redis.String(d.Get("global_data_persistence").(string))
 	}
 
+	//nolint:staticcheck // SA1019: GetOkExists is required to detect false vs unset for bool fields
 	if v, ok := d.GetOkExists("global_enable_default_user"); ok {
 		update.GlobalEnableDefaultUser = redis.Bool(v.(bool))
 	}
@@ -1017,7 +1025,8 @@ func waitForDatabaseToBeDeleted(ctx context.Context, subId int, dbId int, api *c
 
 			_, err = api.Client.Database.Get(ctx, subId, dbId)
 			if err != nil {
-				if _, ok := err.(*databases.NotFound); ok {
+				notFound := &databases.NotFound{}
+				if errors.As(err, &notFound) {
 					return "deleted", "deleted", nil
 				}
 				return nil, "", err
