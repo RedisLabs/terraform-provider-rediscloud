@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-# 2.10.1 (Unreleased)
+# 2.10.1 (12th January 2026)
 
 ## Added
 - Added missing documentation for `rediscloud_private_link_endpoint_script` and `rediscloud_active_active_private_link_endpoint_script` data sources.
