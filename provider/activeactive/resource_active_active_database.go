@@ -469,7 +469,8 @@ func (r *activeActiveDatabaseResource) ModifyPlan(ctx context.Context, req resou
 			return
 		}
 
-		// Note: global_modules is handled by UseStateOnUpdate() plan modifier
+		// Note: UseStateOnUpdate() plan modifier ensures state value is preserved in plan
+		// for global_modules - changes after creation are silently ignored as documented
 
 		// Keep the state value for global_resp_version (changes are ignored after creation)
 		if !state.GlobalRespVersion.IsNull() && !state.GlobalRespVersion.IsUnknown() {

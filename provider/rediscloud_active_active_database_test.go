@@ -466,3 +466,43 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 		},
 	})
 }
+
+func TestAccResourceRedisCloudActiveActiveDatabase_modulesImmutable(t *testing.T) {
+	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-modules-immutable"
+	databaseName := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
+	password := acctest.RandString(20)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: Create database with RedisJSON module
+			{
+				Config: utils.RenderTestConfig(t, "./activeactive/testdata/modules_immutable_create.tf", map[string]string{
+					"__SUBSCRIPTION_NAME__": subscriptionName,
+					"__DATABASE_NAME__":     databaseName,
+					"__PASSWORD__":          password,
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("rediscloud_active_active_subscription_database.example", "global_modules.#", "1"),
+					resource.TestCheckResourceAttr("rediscloud_active_active_subscription_database.example", "global_modules.0", "RedisJSON"),
+				),
+			},
+			// Step 2: Try to change modules - changes should be silently ignored
+			{
+				Config: utils.RenderTestConfig(t, "./activeactive/testdata/modules_immutable_change.tf", map[string]string{
+					"__SUBSCRIPTION_NAME__": subscriptionName,
+					"__DATABASE_NAME__":     databaseName,
+					"__PASSWORD__":          password,
+				}),
+				// No error expected - the change is silently ignored and state preserved
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Modules should still be RedisJSON, not RedisBloom
+					resource.TestCheckResourceAttr("rediscloud_active_active_subscription_database.example", "global_modules.#", "1"),
+					resource.TestCheckResourceAttr("rediscloud_active_active_subscription_database.example", "global_modules.0", "RedisJSON"),
+				),
+			},
+		},
+	})
+}
