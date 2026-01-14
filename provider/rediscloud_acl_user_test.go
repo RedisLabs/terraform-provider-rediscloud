@@ -56,9 +56,9 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 	const AclUserTestData = "data.rediscloud_acl_user.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckAclUserDestroy,
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             testAccCheckAclUserDestroy,
 		Steps: []resource.TestStep{
 			// Test user creation
 			{

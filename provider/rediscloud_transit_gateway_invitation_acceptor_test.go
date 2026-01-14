@@ -31,7 +31,7 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 			testAccPreCheck(t)
 			testAccAwsCredentialsPreCheck(t)
 		},
-		ProviderFactories: providerFactories,
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"aws": {
 				Source:            "hashicorp/aws",

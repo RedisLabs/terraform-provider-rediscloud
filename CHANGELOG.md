@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.10.2 (Unreleased)
+
+## Changed
+- Migrated `rediscloud_active_active_subscription_database` resource from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the resource schema or behaviour.
+- Provider now uses muxing to serve resources from both SDK v2 and Plugin Framework simultaneously, enabling incremental migration of resources.
+
+## Fixed
+- `rediscloud_active_active_subscription_database`: Improved handling of `enable_default_user` inheritance between global and regional overrides.
+- `rediscloud_active_active_subscription_database`: Fixed `global_data_persistence` to be computed, correctly reflecting API defaults when not explicitly configured.
+
 # 2.10.1 (12th January 2026)
 
 ## Added
