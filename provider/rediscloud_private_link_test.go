@@ -1,6 +1,8 @@
 package provider
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -11,10 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
+	pl "github.com/RedisLabs/rediscloud-go-api/service/privatelink"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 const testPrivateLinkConfigFile = "./privatelink/testdata/pro_private_link.tf"
+const testPrivateLinkConfigWithoutPrivateLinkFile = "./privatelink/testdata/pro_private_link_without_privatelink.tf"
 
 func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 
@@ -22,18 +26,23 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	const resourceName = "rediscloud_private_link.pro_private_link"
+	const subscriptionResourceName = "rediscloud_subscription.pro_subscription"
 	const datasourceName = "data.rediscloud_private_link.pro_private_link"
-	const datasourceScriptName = "data.rediscloud_private_link_endpoint_script.endpoint_script"
 
+	// Generate names reused across configs
+	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-private-link"
 	shareName := acctest.RandomWithPrefix(testResourcePrefix) + "-privatelink"
+	password := acctest.RandString(20)
 
-	terraformConfig := getRedisPrivateLinkConfig(t, shareName)
+	terraformConfig := getRedisPrivateLinkConfigWithNames(t, subName, shareName, password)
+	terraformConfigWithoutPrivateLink := getRedisPrivateLinkConfigWithoutPrivateLink(t, subName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
+			// Step 1: Create everything including privatelink
 			{
 				Config: terraformConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -50,22 +59,26 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(datasourceName, "id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
 					resource.TestCheckResourceAttr(datasourceName, "principals.#", "2"),
-
 					resource.TestCheckResourceAttrSet(datasourceName, "resource_configuration_id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "resource_configuration_arn"),
 					resource.TestCheckResourceAttrSet(datasourceName, "share_arn"),
 					resource.TestCheckResourceAttrSet(datasourceName, "connections.#"),
 					resource.TestCheckResourceAttrSet(datasourceName, "databases.#"),
-
-					//resource.TestCheckResourceAttrSet(datasourceScriptName, "id"),
-					//resource.TestCheckResourceAttrSet(datasourceScriptName, "subscription_id"),
-					//resource.TestCheckResourceAttrSet(datasourceScriptName, "endpoint_script"),
 				),
 			},
+			// Step 2: Import test
 			{
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+			// Step 3: Remove privatelink, verify deletion via API
+			{
+				Config: terraformConfigWithoutPrivateLink,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttrSet(subscriptionResourceName, "id"),
+					testAccCheckPrivateLinkDeleted(subscriptionResourceName),
+				),
 			},
 		},
 	})
@@ -78,6 +91,49 @@ func getRedisPrivateLinkConfig(t *testing.T, shareName string) string {
 	password := acctest.RandString(20)
 	content := utils.GetTestConfig(t, testPrivateLinkConfigFile)
 	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName, password)
+}
+
+func getRedisPrivateLinkConfigWithNames(t *testing.T, subName, shareName, password string) string {
+	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	content := utils.GetTestConfig(t, testPrivateLinkConfigFile)
+	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName, password)
+}
+
+func getRedisPrivateLinkConfigWithoutPrivateLink(t *testing.T, subName, password string) string {
+	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	content := utils.GetTestConfig(t, testPrivateLinkConfigWithoutPrivateLinkFile)
+	return fmt.Sprintf(content, subName, exampleCloudAccountName, password)
+}
+
+func testAccCheckPrivateLinkDeleted(subscriptionResourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		subResource, ok := s.RootModule().Resources[subscriptionResourceName]
+		if !ok {
+			return fmt.Errorf("subscription not found: %s", subscriptionResourceName)
+		}
+
+		subId, err := strconv.Atoi(subResource.Primary.ID)
+		if err != nil {
+			return err
+		}
+
+		apiClient, err := getTestClient()
+		if err != nil {
+			return err
+		}
+
+		_, err = apiClient.Client.PrivateLink.GetPrivateLink(context.TODO(), subId)
+		if err == nil {
+			return fmt.Errorf("privatelink for subscription %d still exists after deletion", subId)
+		}
+
+		var notFound *pl.NotFound
+		if !errors.As(err, &notFound) {
+			return fmt.Errorf("unexpected error checking privatelink: %v", err)
+		}
+
+		return nil
+	}
 }
 
 // TestAccResourceRedisCloudPrivateLink_PortConsistency verifies that the port returned
