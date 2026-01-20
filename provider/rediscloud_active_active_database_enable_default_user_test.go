@@ -76,6 +76,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 		"__PASSWORD__":          password,
 	}
 
+	// Track database ID to verify it's not recreated between steps
+	var initialDbId string
+
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
@@ -99,6 +102,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 						"us-east-1": true, // inherited from global
 						"us-east-2": true, // inherited from global
 					}),
+					// Capture the database ID for later verification
+					captureDbId(resourceName, &initialDbId),
 				),
 			},
 			// Step 2: global=true, us-east-1 overrides to false, us-east-2 inherits
@@ -120,6 +125,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 						"us-east-1": false, // explicit override
 						"us-east-2": true,  // inherited from global
 					}),
+					// Verify database was NOT recreated
+					verifyDbIdUnchanged(resourceName, &initialDbId),
 				),
 			},
 			// Step 3: global=false, us-east-1 overrides to true, us-east-2 inherits false
@@ -142,6 +149,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 						"us-east-1": true,  // explicit override
 						"us-east-2": false, // inherited from global=false
 					}),
+					// Verify database was NOT recreated
+					verifyDbIdUnchanged(resourceName, &initialDbId),
 				),
 			},
 			// Step 4: global=true, both regions explicit (us-east-1=true, us-east-2=false)
@@ -163,6 +172,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 						"us-east-1": true,  // explicit but matches global
 						"us-east-2": false, // explicit override
 					}),
+					// Verify database was NOT recreated
+					verifyDbIdUnchanged(resourceName, &initialDbId),
 				),
 			},
 		},
@@ -220,6 +231,41 @@ func checkEnableDefaultUserFromAPI(t *testing.T, subscriptionResourceName, datab
 			}
 		}
 
+		return nil
+	}
+}
+
+// captureDbId captures the database ID from the first test step for later verification.
+// This is used to ensure the database is not recreated between test steps.
+func captureDbId(resourceName string, dbId *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs := s.RootModule().Resources[resourceName]
+		if rs == nil {
+			return fmt.Errorf("resource %s not found", resourceName)
+		}
+		*dbId = rs.Primary.Attributes["db_id"]
+		if *dbId == "" {
+			return fmt.Errorf("db_id attribute is empty")
+		}
+		return nil
+	}
+}
+
+// verifyDbIdUnchanged verifies that the database ID has not changed from the initial value.
+// If the ID changed, the database was recreated, which indicates a bug (e.g., state drift).
+func verifyDbIdUnchanged(resourceName string, initialDbId *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs := s.RootModule().Resources[resourceName]
+		if rs == nil {
+			return fmt.Errorf("resource %s not found", resourceName)
+		}
+		currentDbId := rs.Primary.Attributes["db_id"]
+		if currentDbId != *initialDbId {
+			return fmt.Errorf(
+				"database was recreated! initial db_id=%s, current db_id=%s - this indicates state drift or unexpected replacement",
+				*initialDbId, currentDbId,
+			)
+		}
 		return nil
 	}
 }
