@@ -32,13 +32,10 @@ resource "rediscloud_active_active_subscription" "test" {
   }
 }
 
-# Test case from bug report:
 # - global_enable_default_user = false
 # - us-east-2: explicitly sets enable_default_user = false
 # - us-east-1: does NOT set enable_default_user (should inherit false from global)
-#
-# Bug behaviour: us-east-1 incorrectly got enable_default_user = true
-# Fixed behaviour: us-east-1 should inherit false from global
+
 resource "rediscloud_active_active_subscription_database" "test" {
   subscription_id            = rediscloud_active_active_subscription.test.id
   name                       = local.database_name
