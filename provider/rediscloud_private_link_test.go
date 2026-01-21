@@ -10,10 +10,11 @@ import (
 	"testing"
 
 	pl "github.com/RedisLabs/rediscloud-go-api/service/privatelink"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 const testPrivateLinkConfigFile = "./privatelink/testdata/pro_private_link.tf"
