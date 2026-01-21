@@ -570,12 +570,9 @@ func (r *activeActiveDatabaseResource) buildRegionsFromPlan(ctx context.Context,
 			Region: redis.String(region.Name.ValueString()),
 		}
 
-		// Set enable_default_user: explicit value or inherit from global
+		// Set enable_default_user only if explicitly configured in the region.
 		if !region.EnableDefaultUser.IsNull() {
 			regionProps.EnableDefaultUser = redis.Bool(region.EnableDefaultUser.ValueBool())
-		} else {
-			// Inherit from global (which has Default: true if not set by user)
-			regionProps.EnableDefaultUser = redis.Bool(plan.GlobalEnableDefaultUser.ValueBool())
 		}
 
 		// Build override alerts or use global alerts
