@@ -224,7 +224,7 @@ jobs:
           go-version-file: go.mod
       - uses: ./.github/actions/run-testacc
         with:
-          test_pattern: TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser$
+          test_pattern: TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser
 
   go_test_smoke_pro_sub:
     name: go test smoke pro sub
