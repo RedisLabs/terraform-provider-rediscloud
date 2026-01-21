@@ -9,12 +9,11 @@ import (
 	"strconv"
 	"testing"
 
+	pl "github.com/RedisLabs/rediscloud-go-api/service/privatelink"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-
-	pl "github.com/RedisLabs/rediscloud-go-api/service/privatelink"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 const testPrivateLinkConfigFile = "./privatelink/testdata/pro_private_link.tf"
@@ -129,7 +128,7 @@ func testAccCheckPrivateLinkDeleted(subscriptionResourceName string) resource.Te
 
 		var notFound *pl.NotFound
 		if !errors.As(err, &notFound) {
-			return fmt.Errorf("unexpected error checking privatelink: %v", err)
+			return fmt.Errorf("unexpected error checking privatelink: %w", err)
 		}
 
 		return nil

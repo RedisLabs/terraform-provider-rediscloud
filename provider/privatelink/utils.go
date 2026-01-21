@@ -32,7 +32,7 @@ func waitForPrivateLinkToBeActive(ctx context.Context, client *client.ApiClient,
 			privateLink, err := client.Client.PrivateLink.GetPrivateLink(ctx, subscriptionId)
 			if err != nil {
 				// NotFound during wait means the privatelink is still being provisioned
-				// (API returns empty response while initializing). Treat as retryable.
+				// (API returns empty response while initialising). Treat as retryable.
 				var notFound *pl.NotFound
 				if errors.As(err, &notFound) {
 					return nil, pl.PrivateLinkStatusInitializing, nil
@@ -63,7 +63,7 @@ func waitForActiveActivePrivateLinkToBeActive(ctx context.Context, client *clien
 			privateLink, err := client.Client.PrivateLink.GetActiveActivePrivateLink(ctx, subscriptionId, regionId)
 			if err != nil {
 				// NotFound during wait means the privatelink is still being provisioned
-				// (API returns empty response while initializing). Treat as retryable.
+				// (API returns empty response while initialising). Treat as retryable.
 				var notFound *pl.NotFoundActiveActive
 				if errors.As(err, &notFound) {
 					return nil, pl.PrivateLinkStatusInitializing, nil

@@ -125,7 +125,7 @@ func testAccCheckActiveActivePrivateLinkDeleted(subscriptionResourceName, region
 		regionIdStr := regionsResource.Primary.Attributes["regions.0.region_id"]
 		regionId, err := strconv.Atoi(regionIdStr)
 		if err != nil {
-			return fmt.Errorf("could not parse region_id: %v", err)
+			return fmt.Errorf("could not parse region_id: %w", err)
 		}
 
 		apiClient, err := getTestClient()
@@ -140,7 +140,7 @@ func testAccCheckActiveActivePrivateLinkDeleted(subscriptionResourceName, region
 
 		var notFound *pl.NotFoundActiveActive
 		if !errors.As(err, &notFound) {
-			return fmt.Errorf("unexpected error checking active-active privatelink: %v", err)
+			return fmt.Errorf("unexpected error checking active-active privatelink: %w", err)
 		}
 
 		return nil
