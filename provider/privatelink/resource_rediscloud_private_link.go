@@ -320,9 +320,7 @@ func resourceRedisCloudPrivateLinkDelete(ctx context.Context, d *schema.Resource
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
 
-	// direct delete doesn't exist on the API so delete each principal one by one
-	privateLink, err := api.Client.PrivateLink.GetPrivateLink(ctx, subId)
-
+	err = api.Client.PrivateLink.DeletePrivateLink(ctx, subId)
 	if err != nil {
 		var notFound *pl.NotFound
 		if errors.As(err, &notFound) {
@@ -330,13 +328,6 @@ func resourceRedisCloudPrivateLinkDelete(ctx context.Context, d *schema.Resource
 			return diags
 		}
 		return diag.FromErr(err)
-	}
-
-	for _, principal := range privateLink.Principals {
-		err := api.Client.PrivateLink.DeletePrincipal(ctx, subId, *principal.Principal)
-		if err != nil {
-			return diag.FromErr(err)
-		}
 	}
 
 	d.SetId("")
