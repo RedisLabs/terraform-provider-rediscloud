@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# Unreleased
+
+## Fixed
+- `rediscloud_subscription` and `rediscloud_active_active_subscription`: Fixed drift for `customer_managed_key_enabled` and `customer_managed_key_deletion_grace_period` when upgrading from older provider versions.
+
 # 2.10.4 (30th January 2026)
 
 ## Fixed
