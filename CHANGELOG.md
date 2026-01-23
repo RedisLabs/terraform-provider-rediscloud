@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.10.3 (January 2026)
+
+## Changed
+- `rediscloud_data_persistence` data source upgraded to the Plugin Framework.
+
 # 2.10.2 (27th January 2026)
 
 ## Changed
