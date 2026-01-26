@@ -294,12 +294,23 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 							Required:    true,
 						},
 						"average_item_size_in_bytes": {
-							Description:  "Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes) of the items stored in the database",
-							Type:         schema.TypeInt,
-							Optional:     true,
-							Computed:     true,
-							Default:      nil,
-							ValidateFunc: validation.IntAtLeast(1),
+							Description:   "(Deprecated) Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes) of the items stored in the database",
+							Type:          schema.TypeInt,
+							Optional:      true,
+							Computed:      true,
+							Default:       nil,
+							ValidateFunc:  validation.IntAtLeast(1),
+							ConflictsWith: []string{"creation_plan.0.ram_percentage"},
+							Deprecated:    "Configure ram_percentage instead. This attribute will be removed in the next major version of the provider.",
+						},
+						"ram_percentage": {
+							Description:   "Relevant only to ram-and-flash clusters. RAM percentage of a single instance of the database",
+							Type:          schema.TypeInt,
+							Optional:      true,
+							Computed:      true,
+							Default:       nil,
+							ValidateFunc:  validation.IntBetween(0, 100),
+							ConflictsWith: []string{"creation_plan.0.average_item_size_in_bytes"},
 						},
 						"quantity": {
 							Description:  "The planned number of databases",
@@ -1032,6 +1043,8 @@ func BuildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 	throughputMeasurementBy := planMap["throughput_measurement_by"].(string)
 	throughputMeasurementValue := planMap["throughput_measurement_value"].(int)
 	averageItemSizeInBytes := planMap["average_item_size_in_bytes"].(int)
+	ramPercentage := planMap["ram_percentage"].(int)
+
 	numDatabases := planMap["quantity"].(int)
 	supportOSSClusterAPI := planMap["support_oss_cluster_api"].(bool)
 	replication := planMap["replication"].(bool)
@@ -1064,6 +1077,16 @@ func BuildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 		}
 	}
 
+	if memoryStorage == databases.MemoryStorageRam && ramPercentage != 0 {
+		diags = diag.Diagnostics{
+			diag.Diagnostic{
+				Severity: diag.Warning,
+				Summary:  "`ram_percentage` not applicable for `ram` memory storage ",
+				Detail:   "`ram_percentage` is only applicable when `memory_storage` is `ram-and-flash`",
+			},
+		}
+	}
+
 	// Check if one of the modules is RedisGraph
 	containsGraph := false
 	for _, module := range planModules {
@@ -1078,7 +1101,7 @@ func BuildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 		for _, v := range planModules {
 			modules = append(modules, &subscriptions.CreateModules{Name: v})
 		}
-		createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules, throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases, queryPerformanceFactor)...)
+		createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules, throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, ramPercentage, supportOSSClusterAPI, replication, numDatabases, queryPerformanceFactor)...)
 	} else {
 		// make RedisGraph module the first module, then append the rest of the modules
 		var modules []*subscriptions.CreateModules
@@ -1089,20 +1112,20 @@ func BuildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 			}
 		}
 		// create a DB with the RedisGraph module
-		createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[:1], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1, queryPerformanceFactor)...)
+		createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[:1], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, ramPercentage, supportOSSClusterAPI, replication, 1, queryPerformanceFactor)...)
 		if numDatabases == 1 {
 			// create one extra DB with all other modules
-			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, 1, queryPerformanceFactor)...)
+			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, ramPercentage, supportOSSClusterAPI, replication, 1, queryPerformanceFactor)...)
 		} else if numDatabases > 1 {
 			// create the remaining DBs with all other modules
-			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, supportOSSClusterAPI, replication, numDatabases-1, queryPerformanceFactor)...)
+			createDatabases = append(createDatabases, createDatabase(dbName, &idx, modules[1:], throughputMeasurementBy, throughputMeasurementValue, memoryLimitInGB, datasetSizeInGB, averageItemSizeInBytes, ramPercentage, supportOSSClusterAPI, replication, numDatabases-1, queryPerformanceFactor)...)
 		}
 	}
 	return createDatabases, diags
 }
 
 //nolint:unparam
-func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModules, throughputMeasurementBy string, throughputMeasurementValue int, memoryLimitInGB float64, datasetSizeInGB float64, averageItemSizeInBytes int, supportOSSClusterAPI bool, replication bool, numDatabases int, queryPerformanceFactor string) []*subscriptions.CreateDatabase {
+func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModules, throughputMeasurementBy string, throughputMeasurementValue int, memoryLimitInGB float64, datasetSizeInGB float64, averageItemSizeInBytes int, ramPercentage int, supportOSSClusterAPI bool, replication bool, numDatabases int, queryPerformanceFactor string) []*subscriptions.CreateDatabase {
 	createThroughput := &subscriptions.CreateThroughput{
 		By:    redis.String(throughputMeasurementBy),
 		Value: redis.Int(throughputMeasurementValue),
@@ -1133,6 +1156,10 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 		}
 		if averageItemSizeInBytes > 0 {
 			createDatabase.AverageItemSizeInBytes = redis.Int(averageItemSizeInBytes)
+		}
+
+		if ramPercentage > 0 {
+			createDatabase.RamPercentage = redis.Int(ramPercentage)
 		}
 
 		if datasetSizeInGB > 0 {
