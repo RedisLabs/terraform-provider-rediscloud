@@ -452,3 +452,11 @@ func filterAADatabase(db *databases.ActiveActiveDatabase, filters []func(db *dat
 	}
 	return true
 }
+
+func flattenModulesToNames(modules []*databases.Module) []string {
+	var moduleNames = make([]string, 0)
+	for _, module := range modules {
+		moduleNames = append(moduleNames, redis.StringValue(module.Name))
+	}
+	return moduleNames
+}

@@ -23,9 +23,9 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 	gcpCmkResourceName := os.Getenv("GCP_CMK_RESOURCE_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckActiveActiveSubscriptionDestroy,
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:             fmt.Sprintf(activeActiveCmkStep1Config, name),

@@ -25,8 +25,8 @@ func TestAccResourceRedisCloudPrivateServiceConnectEndpointAccepter_Create(t *te
 	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t); testAccGcpProjectPreCheck(t); testAccGcpCredentialsPreCheck(t) },
-		ProviderFactories: providerFactories,
+		PreCheck:                 func() { testAccPreCheck(t); testAccGcpProjectPreCheck(t); testAccGcpCredentialsPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"google": {
 				Source:            "hashicorp/google",

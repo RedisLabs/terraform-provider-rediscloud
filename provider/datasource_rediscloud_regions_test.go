@@ -13,9 +13,9 @@ func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      nil, // regions isn't a 'real' resource
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             nil, // regions isn't a 'real' resource
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudRegions,
@@ -50,9 +50,9 @@ func TestAccDataSourceRedisCloudRegions_AWS(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      nil, // regions isn't a 'real' resource
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             nil, // regions isn't a 'real' resource
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudRegionsAWS,
@@ -78,9 +78,9 @@ func TestAccDataSourceRedisCloudRegions_GCP(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      nil, // regions isn't a 'real' resource
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             nil, // regions isn't a 'real' resource
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudRegionsGCP,
