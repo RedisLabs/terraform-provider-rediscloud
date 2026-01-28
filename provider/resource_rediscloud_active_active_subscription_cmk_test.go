@@ -52,7 +52,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 					fmt.Println("  - roles/cloudkms.viewer")
 					fmt.Println(strings.Repeat("=", 60))
 					fmt.Print("Press ENTER when ready to continue...")
-					bufio.NewReader(os.Stdin).ReadBytes('\n')
+					_, _ = bufio.NewReader(os.Stdin).ReadBytes('\n')
 				},
 				Config:             fmt.Sprintf(activeActiveCmkStep2Config, name, gcpCmkResourceName),
 				ExpectNonEmptyPlan: true,
