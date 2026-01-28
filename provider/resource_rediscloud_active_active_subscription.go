@@ -411,7 +411,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 
 	// If in a CMK flow, verify the pending state
 	if cmkEnabled {
-		err = pro.WaitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api)
+		err = utils.WaitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -497,11 +497,6 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		return diag.FromErr(err)
 	}
 
-	// Wait for subscription to be active before reading to ensure cloud details are available
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return diag.FromErr(err)
-	}
-
 	subscription, err := api.Client.Subscription.Get(ctx, subId)
 	if err != nil {
 		notFound := &subscriptions.NotFound{}
@@ -510,6 +505,24 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 			return diags
 		}
 		return diag.FromErr(err)
+	}
+
+	// Skip active wait when in CMK pending state
+	if *subscription.Status != subscriptions.SubscriptionStatusEncryptionKeyPending {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+			return diag.FromErr(err)
+		}
+
+		// Re-fetch subscription after waiting for it to become active
+		subscription, err = api.Client.Subscription.Get(ctx, subId)
+		if err != nil {
+			notFound := &subscriptions.NotFound{}
+			if errors.As(err, &notFound) {
+				d.SetId("")
+				return diags
+			}
+			return diag.FromErr(err)
+		}
 	}
 
 	if err := d.Set("name", redis.StringValue(subscription.Name)); err != nil {
