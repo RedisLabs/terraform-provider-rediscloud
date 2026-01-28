@@ -19,20 +19,16 @@ resource "google_kms_crypto_key" "cmk" {
   key_ring = google_kms_key_ring.cmk.id
 }
 
-data "rediscloud_active_active_subscription" "example" {
-  name = local.name
-}
-
 resource "google_kms_crypto_key_iam_member" "encrypter" {
   crypto_key_id = google_kms_crypto_key.cmk.id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${data.rediscloud_active_active_subscription.example.customer_managed_key_redis_service_account}"
+  member        = "serviceAccount:${rediscloud_active_active_subscription.example.customer_managed_key_redis_service_account}"
 }
 
 resource "google_kms_crypto_key_iam_member" "viewer" {
   crypto_key_id = google_kms_crypto_key.cmk.id
   role          = "roles/cloudkms.viewer"
-  member        = "serviceAccount:${data.rediscloud_active_active_subscription.example.customer_managed_key_redis_service_account}"
+  member        = "serviceAccount:${rediscloud_active_active_subscription.example.customer_managed_key_redis_service_account}"
 }
 
 resource "rediscloud_active_active_subscription" "example" {
@@ -40,6 +36,16 @@ resource "rediscloud_active_active_subscription" "example" {
   payment_method_id            = data.rediscloud_payment_method.card.id
   customer_managed_key_enabled = true
   cloud_provider               = "GCP"
+
+  customer_managed_key {
+    resource_name = google_kms_crypto_key.cmk.id
+    region        = "europe-west1"
+  }
+
+  customer_managed_key {
+    resource_name = google_kms_crypto_key.cmk.id
+    region        = "europe-west2"
+  }
 
   creation_plan {
     memory_limit_in_gb = 1

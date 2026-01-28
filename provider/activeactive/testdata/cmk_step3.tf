@@ -19,20 +19,16 @@ resource "google_kms_crypto_key" "cmk" {
   key_ring = google_kms_key_ring.cmk.id
 }
 
-data "rediscloud_active_active_subscription" "example" {
-  name = local.name
-}
-
 resource "google_kms_crypto_key_iam_member" "encrypter" {
   crypto_key_id = google_kms_crypto_key.cmk.id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${data.rediscloud_active_active_subscription.example.customer_managed_key_redis_service_account}"
+  member        = "serviceAccount:${rediscloud_active_active_subscription.example.customer_managed_key_redis_service_account}"
 }
 
 resource "google_kms_crypto_key_iam_member" "viewer" {
   crypto_key_id = google_kms_crypto_key.cmk.id
   role          = "roles/cloudkms.viewer"
-  member        = "serviceAccount:${data.rediscloud_active_active_subscription.example.customer_managed_key_redis_service_account}"
+  member        = "serviceAccount:${rediscloud_active_active_subscription.example.customer_managed_key_redis_service_account}"
 }
 
 resource "rediscloud_active_active_subscription" "example" {

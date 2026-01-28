@@ -6,11 +6,9 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
@@ -190,6 +188,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_Automated(t *testing.
 		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
+				// Step 1: Create subscription with CMK enabled (enters encryption_key_pending state)
 				Config:             utils.RenderTestConfig(t, "./activeactive/testdata/cmk_step1.tf", placeholders),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -202,17 +201,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_Automated(t *testing.
 				),
 			},
 			{
+				// Step 2: Grant IAM permissions AND add CMK blocks (must be done together)
 				Config:             utils.RenderTestConfig(t, "./activeactive/testdata/cmk_step2.tf", placeholders),
-				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					func(s *terraform.State) error {
-						time.Sleep(10 * time.Second)
-						return nil
-					},
-				),
-			},
-			{
-				Config:             utils.RenderTestConfig(t, "./activeactive/testdata/cmk_step3.tf", placeholders),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
