@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.10.3 (29th January 2026)
+
+## Fixed
+- `rediscloud_active_active_subscription`: Fixed CMK (Customer Managed Key) flow by properly handling the `encryption_key_pending` state during subscription creation and reads.
+
 # 2.10.2 (27th January 2026)
 
 ## Changed
