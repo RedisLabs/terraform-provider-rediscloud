@@ -107,17 +107,19 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 				),
 			},
 			// Step 2: global=true, us-east-1 overrides to false, us-east-2 inherits
+			// Also tests override_global_password matching global_password doesn't cause drift
 			{
 				Config: utils.RenderTestConfig(t, "./activeactive/testdata/enable_default_user_mixed_overrides.tf", placeholders),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "global_enable_default_user", "true"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.#", "2"),
-					// Explicitly false, differs from global, so IS in state
+					// Explicit override, differs from global - should be in state
 					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "override_region.*", map[string]string{
-						"name":                "us-east-1",
-						"enable_default_user": "false",
+						"name":                     "us-east-1",
+						"enable_default_user":      "false",
+						"override_global_password": password,
 					}),
-					// Inherits global, so enable_default_user should NOT be in state
+					// Inherits global - enable_default_user should not be in state
 					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "override_region.*", map[string]string{
 						"name": "us-east-2",
 					}),
@@ -125,7 +127,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 						"us-east-1": false, // explicit override
 						"us-east-2": true,  // inherited from global
 					}),
-					// Verify database was NOT recreated
 					verifyDbIdUnchanged(resourceName, &initialDbId),
 				),
 			},
