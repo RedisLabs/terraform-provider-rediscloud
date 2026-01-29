@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.10.4 (January 2026)
+
+## Fixed
+- `rediscloud_active_active_subscription_database`: Fixed "provider produced inconsistent result after apply" error when `override_global_password` is set to the same value as `global_password`.
+
 # 2.10.3 (29th January 2026)
 
 ## Fixed
