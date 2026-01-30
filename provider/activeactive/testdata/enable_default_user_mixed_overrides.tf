@@ -41,8 +41,9 @@ resource "rediscloud_active_active_subscription_database" "test" {
 
   # us-east-1: explicitly disable (override global)
   override_region {
-    name                = "us-east-1"
-    enable_default_user = false
+    name                     = "us-east-1"
+    enable_default_user      = false
+    override_global_password = local.password
   }
 
   # us-east-2: inherit global=true

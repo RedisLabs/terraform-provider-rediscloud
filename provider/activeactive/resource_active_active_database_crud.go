@@ -703,18 +703,11 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 		}
 
 		// Handle override_global_password
-		// BUG FIX: Add nil check for regionDb.Security.Password
+		// Preserve the user's configured value to avoid TypeSet hash mismatch.
+		// The API doesn't distinguish between "same as global" and "explicitly set to same value",
+		// so we must preserve whatever the user configured to ensure plan matches actual.
 		if stateRegion != nil && !stateRegion.OverrideGlobalPassword.IsNull() && stateRegion.OverrideGlobalPassword.ValueString() != "" {
-			if regionDb.Security != nil && regionDb.Security.Password != nil {
-				globalPassword := state.GlobalPassword.ValueString()
-				if *regionDb.Security.Password == globalPassword {
-					regionConfig["override_global_password"] = types.StringValue("")
-				} else {
-					regionConfig["override_global_password"] = types.StringValue(redis.StringValue(regionDb.Security.Password))
-				}
-			} else {
-				regionConfig["override_global_password"] = types.StringNull()
-			}
+			regionConfig["override_global_password"] = stateRegion.OverrideGlobalPassword
 		} else {
 			regionConfig["override_global_password"] = types.StringNull()
 		}
