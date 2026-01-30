@@ -17,6 +17,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/activeactive"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/datapersistence"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/paymentmethod"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -169,6 +170,7 @@ func (p *redisCloudFrameworkProvider) Resources(_ context.Context) []func() reso
 func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		datapersistence.NewDataPersistenceDataSource,
+		paymentmethod.NewDataSource,
 	}
 }
 

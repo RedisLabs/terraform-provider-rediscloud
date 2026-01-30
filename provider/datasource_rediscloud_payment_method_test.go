@@ -19,23 +19,19 @@ func TestAccDataSourceRedisCloudPaymentMethod_basic(t *testing.T) {
 		CheckDestroy:             nil, // payment method isn't managed by this provider
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDataSourceRedisCloudPaymentMethod,
+				Config: utils.RenderTestConfig(t, "./paymentmethod/testdata/datasource_basic.tf", map[string]string{
+					"__CARD_TYPE__":         "Visa",
+					"__LAST_FOUR_NUMBERS__": "5556",
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(
-						"data.rediscloud_payment_method.foo", "id", regexp.MustCompile("^\\d*$")),
+						"data.rediscloud_payment_method.card", "id", regexp.MustCompile(`^\d+$`)),
 					resource.TestMatchResourceAttr(
-						"data.rediscloud_payment_method.foo", "card_type", regexp.MustCompile("^\\w*$")),
+						"data.rediscloud_payment_method.card", "card_type", regexp.MustCompile(`^\w+$`)),
 					resource.TestMatchResourceAttr(
-						"data.rediscloud_payment_method.foo", "last_four_numbers", regexp.MustCompile("^\\d*$")),
+						"data.rediscloud_payment_method.card", "last_four_numbers", regexp.MustCompile(`^\d{4}$`)),
 				),
 			},
 		},
 	})
 }
-
-const testAccDataSourceRedisCloudPaymentMethod = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-`
