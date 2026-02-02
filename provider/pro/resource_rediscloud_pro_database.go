@@ -189,14 +189,15 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				// specified. SDK's catch-all issue around this: https://github.com/hashicorp/terraform-plugin-sdk/issues/261
 				Default:       0,
 				ConflictsWith: []string{"ram_percentage"},
-				Deprecated:    "Configure ram_percentage instead. This attribute will be removed in the next major version of the provider.",
+				Deprecated:    "Configure `ram_percentage` instead. This attribute will be removed in the next major version of the provider.",
 			},
 			"ram_percentage": {
-				Description:   "Relevant only to ram-and-flash clusters. Percentage of RAM allocated for the database",
+				Description:   "Relevant only to ram-and-flash subscriptions. The percentage of data to be stored in RAM",
 				Type:          schema.TypeInt,
 				Optional:      true,
-				Default:       nil,
 				Computed:      true,
+				Default:       nil,
+				ValidateFunc:  validation.IntBetween(0, 100),
 				ConflictsWith: []string{"average_item_size_in_bytes"},
 			},
 			"password": {
@@ -860,7 +861,9 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	if d.Get("password").(string) != "" {
 		update.Password = redis.String(d.Get("password").(string))
 	}
-
+	if d.Get("ram_percentage").(int) > 0 {
+		update.RamPercentage = redis.Int(d.Get("ram_percentage").(int))
+	}
 	update.ReplicaOf = utils.SetToStringSlice(d.Get("replica_of").(*schema.Set))
 	if update.ReplicaOf == nil {
 		update.ReplicaOf = make([]*string, 0)

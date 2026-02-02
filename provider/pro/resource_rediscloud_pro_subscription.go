@@ -301,10 +301,10 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 							Default:       nil,
 							ValidateFunc:  validation.IntAtLeast(1),
 							ConflictsWith: []string{"creation_plan.0.ram_percentage"},
-							Deprecated:    "Configure ram_percentage instead. This attribute will be removed in the next major version of the provider.",
+							Deprecated:    "Configure `ram_percentage` instead. This attribute will be removed in the next major version of the provider.",
 						},
 						"ram_percentage": {
-							Description:   "Relevant only to ram-and-flash clusters. RAM percentage of a single instance of the database",
+							Description:   "Relevant only to ram-and-flash subscriptions. The percentage of data to be stored in RAM",
 							Type:          schema.TypeInt,
 							Optional:      true,
 							Computed:      true,
