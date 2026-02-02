@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.10.4 (30th January 2026)
+
+## Fixed
+- `rediscloud_active_active_subscription_database`: Fixed "provider produced inconsistent result after apply" error when `override_global_password` is set to the same value as `global_password`.
+
+# 2.10.3 (29th January 2026)
+
+## Fixed
+- `rediscloud_active_active_subscription`: Fixed CMK (Customer Managed Key) flow by properly handling the `encryption_key_pending` state during subscription creation and reads.
+
+# 2.10.2 (27th January 2026)
+
+## Changed
+- Migrated `rediscloud_active_active_subscription_database` resource from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the resource schema or behaviour.
+- Provider now uses muxing to serve resources from both SDK v2 and Plugin Framework simultaneously, enabling incremental migration of resources. 
+- `rediscloud_private_link` and `rediscloud_active_active_private_link`: Delete now uses direct API endpoint instead of removing principals individually.
+- `rediscloud_private_link`: Updated documentation to use availability zone IDs instead of names, and added database resource.
+
+## Fixed
+- `rediscloud_active_active_subscription_database`: Improved handling of `enable_default_user` inheritance between global and regional overrides.
+- `rediscloud_active_active_subscription_database`: Fixed `global_data_persistence` to be computed, correctly reflecting API defaults when not explicitly configured.
+
 # 2.10.1 (12th January 2026)
 
 ## Added

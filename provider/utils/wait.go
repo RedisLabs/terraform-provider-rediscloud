@@ -151,3 +151,29 @@ func WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx context.Context,
 
 	return result.(*attachments.GetAttachmentsTask), nil
 }
+
+func WaitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, api *client.ApiClient) error {
+	wait := &retry.StateChangeConf{
+		Pending:      []string{subscriptions.SubscriptionStatusPending},
+		Target:       []string{subscriptions.SubscriptionStatusEncryptionKeyPending, subscriptions.SubscriptionStatusActive},
+		Timeout:      SafetyTimeout,
+		Delay:        10 * time.Second,
+		PollInterval: 30 * time.Second,
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for subscription %d to be %s", id, subscriptions.SubscriptionStatusEncryptionKeyPending)
+
+			subscription, err := api.Client.Subscription.Get(ctx, id)
+			if err != nil {
+				return nil, "", err
+			}
+
+			return redis.StringValue(subscription.Status), redis.StringValue(subscription.Status), nil
+		},
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}

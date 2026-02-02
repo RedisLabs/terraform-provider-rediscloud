@@ -7,18 +7,24 @@ import (
 
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
-var providerFactories map[string]func() (*schema.Provider, error)
+var protoV5ProviderFactories map[string]func() (tfprotov5.ProviderServer, error)
 
 func init() {
-	// Create a fresh provider instance for each test
-	providerFactories = map[string]func() (*schema.Provider, error){
-		"rediscloud": func() (*schema.Provider, error) {
-			return New("dev")(), nil
+	protoV5ProviderFactories = map[string]func() (tfprotov5.ProviderServer, error){
+		"rediscloud": func() (tfprotov5.ProviderServer, error) {
+			muxServer, err := MuxProviderServerCreator(
+				NewSdkProvider("dev")(),
+				NewFrameworkProvider("dev")(),
+			)
+			if err != nil {
+				return nil, err
+			}
+			return muxServer(), nil
 		},
 	}
 }
@@ -52,7 +58,7 @@ func getTestClient() (*client.ApiClient, error) {
 }
 
 func TestProvider(t *testing.T) {
-	if err := New("dev")().InternalValidate(); err != nil {
+	if err := NewSdkProvider("dev")().InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 }

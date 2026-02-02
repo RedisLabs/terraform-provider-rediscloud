@@ -34,9 +34,9 @@ func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 	const AclRuleTestData = "data.rediscloud_acl_rule.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckAclRuleDestroy,
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             testAccCheckAclRuleDestroy,
 		Steps: []resource.TestStep{
 			// Test rule creation
 			{

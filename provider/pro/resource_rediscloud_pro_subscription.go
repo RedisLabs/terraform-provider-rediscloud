@@ -624,7 +624,7 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 
 	// If in a CMK flow, verify the pending state
 	if cmkEnabled {
-		err = WaitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api)
+		err = utils.WaitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api)
 		if err != nil {
 			return append(diags, diag.FromErr(err)...)
 		}
@@ -1177,32 +1177,6 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 		dbs = append(dbs, &createDatabase)
 	}
 	return dbs
-}
-
-func WaitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, api *client.ApiClient) error {
-	wait := &retry.StateChangeConf{
-		Pending:      []string{subscriptions.SubscriptionStatusPending},
-		Target:       []string{subscriptions.SubscriptionStatusEncryptionKeyPending, subscriptions.SubscriptionStatusActive},
-		Timeout:      utils.SafetyTimeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
-
-		Refresh: func() (result interface{}, state string, err error) {
-			log.Printf("[DEBUG] Waiting for subscription %d to be %s", id, subscriptions.SubscriptionStatusEncryptionKeyPending)
-
-			subscription, err := api.Client.Subscription.Get(ctx, id)
-			if err != nil {
-				return nil, "", err
-			}
-
-			return redis.StringValue(subscription.Status), redis.StringValue(subscription.Status), nil
-		},
-	}
-	if _, err := wait.WaitForStateContext(ctx); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func WaitForSubscriptionToBeDeleted(ctx context.Context, id int, api *client.ApiClient) error {

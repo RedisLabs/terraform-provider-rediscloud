@@ -16,9 +16,9 @@ func TestAccDataSourceRedisCloudEssentialsPlan_basic(t *testing.T) {
 	const basicPlan = "data.rediscloud_essentials_plan.basic"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      nil, // Essentials Plans aren't managed by this provider
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             nil, // Essentials Plans aren't managed by this provider
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudEssentialsPlan,
@@ -58,9 +58,9 @@ func TestAccDataSourceRedisCloudEssentialsPlan_azure(t *testing.T) {
 	const azurePlan = "data.rediscloud_essentials_plan.azure"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      nil, // Essentials Plans aren't managed by this provider
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             nil, // Essentials Plans aren't managed by this provider
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDataSourceRedisCloudEssentialsPlanAzure,
@@ -100,9 +100,9 @@ func TestAccDataSourceRedisCloudEssentialsPlan_subscriptionId(t *testing.T) {
 	const examplePlan = "data.rediscloud_essentials_plan.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      nil, // Essentials Plans aren't managed by this provider
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             nil, // Essentials Plans aren't managed by this provider
 
 		Steps: []resource.TestStep{
 			{
@@ -142,9 +142,9 @@ func TestAccDataSourceRedisCloudEssentialsPlan_ambiguous(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      nil, // Essentials Plans aren't managed by this provider
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             nil, // Essentials Plans aren't managed by this provider
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccDataSourceRedisCloudEssentialsPlanAmbiguous,
@@ -159,9 +159,9 @@ func TestAccDataSourceRedisCloudEssentialsPlan_impossible(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:          func() { testAccPreCheck(t) },
-		ProviderFactories: providerFactories,
-		CheckDestroy:      nil, // Essentials Plans aren't managed by this provider
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             nil, // Essentials Plans aren't managed by this provider
 		Steps: []resource.TestStep{
 			{
 				Config:      testAccDataSourceRedisCloudEssentialsPlanImpossible,

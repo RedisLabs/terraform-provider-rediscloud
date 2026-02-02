@@ -44,8 +44,6 @@ resource "rediscloud_active_active_subscription_database" "example" {
     value = 40
   }
 
-  global_modules = ["RedisJSON"]
-
   override_region {
     name                = "us-east-2"
     enable_default_user = true
