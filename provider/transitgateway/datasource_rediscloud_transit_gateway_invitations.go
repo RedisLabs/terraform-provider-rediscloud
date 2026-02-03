@@ -118,7 +118,11 @@ func dataSourceRedisCloudTransitGatewayInvitationsRead(ctx context.Context, d *s
 		if err != nil {
 			return diag.Errorf("Timeout waiting for Transit Gateway invitations to appear for subscription %d: %s", subId, err)
 		}
-		invitations = result.([]*attachments.TransitGatewayInvitation)
+		var ok bool
+		invitations, ok = result.([]*attachments.TransitGatewayInvitation)
+		if !ok {
+			return diag.Errorf("Internal error: unexpected result type from wait operation for subscription %d", subId)
+		}
 	} else {
 		// No waiting - fetch once
 		invitations, err = api.Client.TransitGatewayAttachments.ListInvitations(ctx, subId)

@@ -104,7 +104,7 @@ func dataSourceTransitGatewayRead(ctx context.Context, d *schema.ResourceData, m
 
 	waitTimeoutSeconds := d.Get("wait_for_tgw_timeout").(int)
 
-	var tgws []*attachments.TransitGatewayAttachment
+	var filteredTgws []*attachments.TransitGatewayAttachment
 
 	if waitTimeoutSeconds > 0 {
 		// Wait for a matching TGW to appear
@@ -123,7 +123,6 @@ func dataSourceTransitGatewayRead(ctx context.Context, d *schema.ResourceData, m
 					return nil, "", err
 				}
 
-				// Check for nil response structure - keep waiting
 				if tgwTask == nil || tgwTask.Response == nil || tgwTask.Response.Resource == nil {
 					return nil, "waiting", nil
 				}
@@ -141,15 +140,17 @@ func dataSourceTransitGatewayRead(ctx context.Context, d *schema.ResourceData, m
 		if err != nil {
 			return diag.Errorf("Timeout waiting for Transit Gateway to appear for subscription %d: %s", subId, err)
 		}
-		tgws = result.([]*attachments.TransitGatewayAttachment)
+		var ok bool
+		filteredTgws, ok = result.([]*attachments.TransitGatewayAttachment)
+		if !ok {
+			return diag.Errorf("Internal error: unexpected result type from wait operation for subscription %d", subId)
+		}
 	} else {
-		// No waiting - fetch once
 		tgwTask, err := api.Client.TransitGatewayAttachments.Get(ctx, subId)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 
-		// Check for nil response structure
 		if tgwTask == nil {
 			return diag.Errorf("Transit Gateway API returned nil task for subscription %d", subId)
 		}
@@ -160,18 +161,18 @@ func dataSourceTransitGatewayRead(ctx context.Context, d *schema.ResourceData, m
 			return diag.Errorf("Transit Gateway API returned nil resource for subscription %d - subscription may not be fully provisioned yet", subId)
 		}
 
-		tgws = filterTgwAttachments(tgwTask, filters)
+		filteredTgws = filterTgwAttachments(tgwTask, filters)
 	}
 
-	if len(tgws) == 0 {
+	if len(filteredTgws) == 0 {
 		return diag.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
 
-	if len(tgws) > 1 {
+	if len(filteredTgws) > 1 {
 		return diag.Errorf("Your query returned more than one result. Please change try a more specific search criteria and try again.")
 	}
 
-	tgw := tgws[0]
+	tgw := filteredTgws[0]
 	tgwId := redis.IntValue(tgw.Id)
 	d.SetId(utils.BuildResourceId(subId, tgwId))
 	if err := d.Set("tgw_id", tgwId); err != nil {
