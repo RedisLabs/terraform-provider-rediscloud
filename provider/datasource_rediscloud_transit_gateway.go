@@ -2,11 +2,14 @@ package provider
 
 import (
 	"context"
+	"log"
 	"strconv"
+	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
@@ -35,6 +38,13 @@ func dataSourceTransitGateway() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Computed:    true,
+			},
+			"wait_for_tgw_timeout": {
+				Description: "When set, retry fetching until a Transit Gateway matching the filters is found or the specified timeout (in seconds) is reached. " +
+					"Useful when accepting a TGW invitation and querying the TGW in the same Terraform run.",
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  0,
 			},
 			"attachment_uid": {
 				Description: "A unique identifier for the Subscription/Transit Gateway attachment, if any",
@@ -76,22 +86,8 @@ func dataSourceTransitGatewayRead(ctx context.Context, d *schema.ResourceData, m
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	tgwTask, err := api.Client.TransitGatewayAttachments.Get(ctx, subId)
-	if err != nil {
-		return diag.FromErr(err)
-	}
 
-	// Check for nil response structure
-	if tgwTask == nil {
-		return diag.Errorf("Transit Gateway API returned nil task for subscription %d", subId)
-	}
-	if tgwTask.Response == nil {
-		return diag.Errorf("Transit Gateway API returned nil response for subscription %d", subId)
-	}
-	if tgwTask.Response.Resource == nil {
-		return diag.Errorf("Transit Gateway API returned nil resource for subscription %d - subscription may not be fully provisioned yet", subId)
-	}
-
+	// Build filters for matching TGWs
 	var filters []func(db *attachments.TransitGatewayAttachment) bool
 
 	if v, ok := d.GetOk("tgw_id"); ok {
@@ -106,7 +102,66 @@ func dataSourceTransitGatewayRead(ctx context.Context, d *schema.ResourceData, m
 		})
 	}
 
-	tgws := filterTgwAttachments(tgwTask, filters)
+	waitTimeoutSeconds := d.Get("wait_for_tgw_timeout").(int)
+
+	var tgws []*attachments.TransitGatewayAttachment
+
+	if waitTimeoutSeconds > 0 {
+		// Wait for a matching TGW to appear
+		wait := &retry.StateChangeConf{
+			Pending:      []string{"waiting"},
+			Target:       []string{"found"},
+			Timeout:      time.Duration(waitTimeoutSeconds) * time.Second,
+			Delay:        5 * time.Second,
+			PollInterval: 10 * time.Second,
+
+			Refresh: func() (result interface{}, state string, err error) {
+				log.Printf("[DEBUG] Waiting for Transit Gateway to appear for subscription %d", subId)
+
+				tgwTask, err := api.Client.TransitGatewayAttachments.Get(ctx, subId)
+				if err != nil {
+					return nil, "", err
+				}
+
+				// Check for nil response structure - keep waiting
+				if tgwTask == nil || tgwTask.Response == nil || tgwTask.Response.Resource == nil {
+					return nil, "waiting", nil
+				}
+
+				filtered := filterTgwAttachments(tgwTask, filters)
+				if len(filtered) == 0 {
+					return nil, "waiting", nil
+				}
+
+				return filtered, "found", nil
+			},
+		}
+
+		result, err := wait.WaitForStateContext(ctx)
+		if err != nil {
+			return diag.Errorf("Timeout waiting for Transit Gateway to appear for subscription %d: %s", subId, err)
+		}
+		tgws = result.([]*attachments.TransitGatewayAttachment)
+	} else {
+		// No waiting - fetch once
+		tgwTask, err := api.Client.TransitGatewayAttachments.Get(ctx, subId)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		// Check for nil response structure
+		if tgwTask == nil {
+			return diag.Errorf("Transit Gateway API returned nil task for subscription %d", subId)
+		}
+		if tgwTask.Response == nil {
+			return diag.Errorf("Transit Gateway API returned nil response for subscription %d", subId)
+		}
+		if tgwTask.Response.Resource == nil {
+			return diag.Errorf("Transit Gateway API returned nil resource for subscription %d - subscription may not be fully provisioned yet", subId)
+		}
+
+		tgws = filterTgwAttachments(tgwTask, filters)
+	}
 
 	if len(tgws) == 0 {
 		return diag.Errorf("Your query returned no results. Please change your search criteria and try again.")
