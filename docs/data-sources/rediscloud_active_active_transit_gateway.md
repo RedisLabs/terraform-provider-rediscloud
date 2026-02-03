@@ -14,7 +14,7 @@ The Active Active Transit Gateway data source allows access to an available Tran
 data "rediscloud_active_active_transit_gateway" "example" {
   subscription_id = "113991"
   region_id = 1
-  aws_tgw_id = "tgw-1c55bfdoe20pdsad2"
+  aws_tgw_uid = "tgw-1c55bfdoe20pdsad2"
 }
 
 output "rediscloud_transit_gateway" {

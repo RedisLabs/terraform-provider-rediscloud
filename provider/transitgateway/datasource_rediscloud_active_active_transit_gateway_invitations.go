@@ -124,7 +124,11 @@ func dataSourceRedisCloudActiveActiveTransitGatewayInvitationsRead(ctx context.C
 		if err != nil {
 			return diag.Errorf("Timeout waiting for Active-Active Transit Gateway invitations to appear for subscription %d, region %d: %s", subId, regionId, err)
 		}
-		invitations = result.([]*attachments.TransitGatewayInvitation)
+		var ok bool
+		invitations, ok = result.([]*attachments.TransitGatewayInvitation)
+		if !ok {
+			return diag.Errorf("Internal error: unexpected result type from wait operation for subscription %d, region %d", subId, regionId)
+		}
 	} else {
 		// No waiting - fetch once
 		invitations, err = api.Client.TransitGatewayAttachments.ListInvitationsActiveActive(ctx, subId, regionId)
