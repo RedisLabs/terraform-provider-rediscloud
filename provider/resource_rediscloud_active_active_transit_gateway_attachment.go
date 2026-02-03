@@ -115,6 +115,12 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentCreate(ctx context.Co
 		return diag.FromErr(err)
 	}
 
+	// Wait for attachment to become available
+	_, err = utils.WaitForActiveActiveTransitGatewayAttachmentToBeAvailable(ctx, subscriptionId, regionId, tgwId, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	d.SetId(transitgateway.BuildActiveActiveTransitGatewayAttachmentId(subscriptionId, regionId, tgwId))
 
 	return resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx, d, meta)
