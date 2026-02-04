@@ -170,7 +170,7 @@ func (p *redisCloudFrameworkProvider) Resources(_ context.Context) []func() reso
 func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		datapersistence.NewDataPersistenceDataSource,
-		paymentmethod.NewDataSource,
+		paymentmethod.NewPaymentMethodDataSource,
 	}
 }
 

@@ -24,8 +24,8 @@ type paymentMethodDataSource struct {
 	client *client.ApiClient
 }
 
-// NewDataSource returns a new data source instance.
-func NewDataSource() datasource.DataSource {
+// NewPaymentMethodDataSource returns a new data source instance.
+func NewPaymentMethodDataSource() datasource.DataSource {
 	return &paymentMethodDataSource{}
 }
 
