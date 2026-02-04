@@ -7,7 +7,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 # Unreleased
 
 ## Changed
-- `rediscloud_data_persistence` data source upgraded to the Plugin Framework.
+- Migrated `rediscloud_payment_method` and `rediscloud_data_persistence` data sources from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
 
 ## Fixed
 - `rediscloud_subscription` and `rediscloud_active_active_subscription`: Fixed drift for `customer_managed_key_enabled` and `customer_managed_key_deletion_grace_period` when upgrading from older provider versions.
