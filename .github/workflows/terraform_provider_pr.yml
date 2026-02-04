@@ -171,6 +171,7 @@ jobs:
     name: lint complete
     needs: [golangci-lint, go-mod-tidy, terraform-fmt, govulncheck, go_unit_test, tfproviderlint, terraform_providers_schema, docs-validation]
     runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
     steps:
       - run: echo "All linting and validation checks passed"
 
