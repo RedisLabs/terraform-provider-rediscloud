@@ -93,7 +93,9 @@ The following arguments are supported:
 * `password` - (Optional) Password to access the database. If omitted, a random 32 character long alphanumeric password will be automatically generated
 * `replication` - (Optional) Databases replication. Default: ‘true’
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes)
-  of the items stored in the database. Default: 1000
+  of the items stored in the database. Default: 1000.
+**Deprecated: This attribute is deprecated. Configure `ram_percentage` instead. This attribute will be removed in the next major version of the provider.**
+* `ram_percentage` - (Optional) Relevant only to ram-and-flash subscriptions. The percentage of data to be stored in RAM. Must be between 10 and 50 in steps of 10 (10, 20, 30, 40, 50). Default: 20
 * `source_ips` - (Optional) List of source IP addresses or subnet masks that are allowed to connect to the database (example: ['192.168.10.0/32', '192.168.12.0/24']). When not specified, the default behavior depends on the subscription's `public_endpoint_access` setting: if `false`, defaults to RFC1918 private IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10); if `true`, defaults to 0.0.0.0/0 (unrestricted public access)
 * `hashing_policy` - (Optional) List of regular expression rules to shard the database by. See
   [the documentation on clustering](https://docs.redislabs.com/latest/rc/concepts/clustering/) for more information on the
