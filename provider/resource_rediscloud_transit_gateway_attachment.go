@@ -104,6 +104,12 @@ func resourceRedisCloudTransitGatewayAttachmentCreate(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
+	// Wait for attachment to become available
+	_, err = utils.WaitForTransitGatewayAttachmentToBeAvailable(ctx, subscriptionId, tgwId, api)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	d.SetId(utils.BuildResourceId(subscriptionId, tgwId))
 
 	return resourceRedisCloudTransitGatewayAttachmentRead(ctx, d, meta)
