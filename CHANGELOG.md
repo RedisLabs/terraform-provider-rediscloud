@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 
+# Unreleased
+
+## Added
+- `rediscloud_subscription` and `rediscloud_active_active_subscription` data sources: Exposed `customer_managed_key_enabled`, `customer_managed_key_deletion_grace_period`, `customer_managed_key_redis_service_account`, and `public_endpoint_access` fields.
+
 # 2.10.5 (9th February 2026)
 
 ## Changed
