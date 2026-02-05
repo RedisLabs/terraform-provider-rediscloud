@@ -97,7 +97,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8(t *testing.T) {
 	})
 }
 
-func TestAccResourceRedisCloudProFlexDatabase_Redis8_CRUDI(t *testing.T) {
+func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
@@ -118,7 +118,7 @@ func TestAccResourceRedisCloudProFlexDatabase_Redis8_CRUDI(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Test database and replica database creation
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_flex_database_redis_8_with_replica.tf"), testCloudAccountName, name, password),
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_with_replica.tf"), testCloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -185,7 +185,7 @@ func TestAccResourceRedisCloudProFlexDatabase_Redis8_CRUDI(t *testing.T) {
 			},
 			// Test database is updated successfully
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_flex_database_redis_8_update.tf"), testCloudAccountName, name),
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_update.tf"), testCloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example-updated"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -212,14 +212,14 @@ func TestAccResourceRedisCloudProFlexDatabase_Redis8_CRUDI(t *testing.T) {
 			},
 			// Test that alerts are deleted
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_flex_database_redis_8_update_destroy_alerts.tf"), testCloudAccountName, name),
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_update_destroy_alerts.tf"), testCloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "alert.#", "0"),
 				),
 			},
 			// Test that a 32-character password is generated when no password is provided
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_flex_database_redis_8_no_password.tf"), testCloudAccountName, name),
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_no_password.tf"), testCloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "ram_percentage", "20"),
 					func(s *terraform.State) error {
