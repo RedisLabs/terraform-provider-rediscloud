@@ -25,6 +25,7 @@ type ActiveActiveDatabaseModel struct {
 	GlobalModules                    types.List    `tfsdk:"global_modules"`
 	GlobalSourceIPs                  types.Set     `tfsdk:"global_source_ips"`
 	GlobalEnableDefaultUser          types.Bool    `tfsdk:"global_enable_default_user"`
+	AutoMinorVersionUpgrade          types.Bool    `tfsdk:"auto_minor_version_upgrade"`
 	GlobalRespVersion                types.String  `tfsdk:"global_resp_version"`
 	OverrideRegion                   types.Set     `tfsdk:"override_region"`
 	PublicEndpoint                   types.Map     `tfsdk:"public_endpoint"`

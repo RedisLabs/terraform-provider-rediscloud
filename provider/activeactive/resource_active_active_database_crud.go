@@ -73,6 +73,7 @@ func (r *activeActiveDatabaseResource) createDatabase(ctx context.Context, plan 
 		DryRun:                              redis.Bool(false),
 		Name:                                redis.String(plan.Name.ValueString()),
 		SupportOSSClusterAPI:                redis.Bool(plan.SupportOssClusterAPI.ValueBool()),
+		AutoMinorVersionUpgrade:             redis.Bool(plan.AutoMinorVersionUpgrade.ValueBool()),
 		UseExternalEndpointForOSSClusterAPI: redis.Bool(plan.ExternalEndpointForOssClusterAPI.ValueBool()),
 		GlobalSourceIP:                      stringPtrSlice(sourceIPs),
 		GlobalAlerts:                        alerts,
@@ -203,6 +204,9 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 
 	// Set global_enable_default_user - Optional+Computed with default
 	utils.SetBoolFromAPI(&state.GlobalEnableDefaultUser, db.GlobalEnableDefaultUser, true)
+
+	// Set auto_minor_version_upgrade - Optional+Computed with default
+	utils.SetBoolFromAPI(&state.AutoMinorVersionUpgrade, db.AutoMinorVersionUpgrade, false)
 
 	// Handle global_source_ips - preserve user's custom value or compute defaults
 	currentSourceIPs, diags := setToStringSlice(ctx, state.GlobalSourceIPs)
@@ -424,6 +428,7 @@ func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan 
 	// BUG FIX: Use direct value access instead of deprecated GetOkExists
 	// Since the field has Default: true, we can safely use the value directly
 	update.GlobalEnableDefaultUser = redis.Bool(plan.GlobalEnableDefaultUser.ValueBool())
+	update.AutoMinorVersionUpgrade = redis.Bool(plan.AutoMinorVersionUpgrade.ValueBool())
 
 	// Set OSS cluster API fields
 	update.SupportOSSClusterAPI = redis.Bool(plan.SupportOssClusterAPI.ValueBool())

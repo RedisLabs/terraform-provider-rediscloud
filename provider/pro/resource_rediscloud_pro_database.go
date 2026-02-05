@@ -342,6 +342,13 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 			},
+			"auto_minor_version_upgrade": {
+				Description: "When set to 'true', the database automatically upgrades to the latest minor Redis version. Default: 'false'",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Computed:    true,
+				Default:     false,
+			},
 			"port": {
 				Description:      "TCP port on which the database is available",
 				Type:             schema.TypeInt,
@@ -494,6 +501,10 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 
 	utils.SetStringIfNotEmpty(d, "resp_version", func(s *string) {
 		createDatabase.RespVersion = s
+	})
+
+	utils.SetBool(d, "auto_minor_version_upgrade", func(b *bool) {
+		createDatabase.AutoMinorVersionUpgrade = b
 	})
 
 	// Confirm sub is ready to accept a db request
@@ -720,6 +731,10 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
+	if err := d.Set("auto_minor_version_upgrade", redis.BoolValue(db.AutoMinorVersionUpgrade)); err != nil {
+		return diag.FromErr(err)
+	}
+
 	tlsAuthEnabled := *db.Security.TLSClientAuthentication
 	if err := utils.ApplyCertificateHints(tlsAuthEnabled, d); err != nil {
 		return diag.FromErr(err)
@@ -803,20 +818,21 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	update := databases.UpdateDatabase{
-		Name:                 utils.GetString(d, "name"),
-		SupportOSSClusterAPI: utils.GetBool(d, "support_oss_cluster_api"),
-		Replication:          utils.GetBool(d, "replication"),
+		Name:                    utils.GetString(d, "name"),
+		SupportOSSClusterAPI:    utils.GetBool(d, "support_oss_cluster_api"),
+		Replication:             utils.GetBool(d, "replication"),
 		ThroughputMeasurement: &databases.UpdateThroughputMeasurement{
 			By:    utils.GetString(d, "throughput_measurement_by"),
 			Value: utils.GetInt(d, "throughput_measurement_value"),
 		},
 
-		DataPersistence:    utils.GetString(d, "data_persistence"),
-		DataEvictionPolicy: utils.GetString(d, "data_eviction"),
-		SourceIP:           utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
-		Alerts:             &alerts,
-		RemoteBackup:       BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
-		EnableDefaultUser:  utils.GetBool(d, "enable_default_user"),
+		DataPersistence:         utils.GetString(d, "data_persistence"),
+		DataEvictionPolicy:      utils.GetString(d, "data_eviction"),
+		SourceIP:                utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
+		Alerts:                  &alerts,
+		RemoteBackup:            BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		EnableDefaultUser:       utils.GetBool(d, "enable_default_user"),
+		AutoMinorVersionUpgrade: utils.GetBool(d, "auto_minor_version_upgrade"),
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)
