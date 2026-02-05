@@ -190,7 +190,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 					resource.TestCheckResourceAttr(resourceName, "name", "example-updated"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
 					resource.TestCheckResourceAttr(resourceName, "dataset_size_in_gb", "1"),
-					resource.TestCheckResourceAttr(resourceName, "replication", "false"),
+					resource.TestCheckResourceAttr(resourceName, "replication", "true"),
 					resource.TestCheckResourceAttr(resourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
 					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_by", "operations-per-second"),
@@ -212,7 +212,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 			},
 			// Test that alerts are deleted
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_update_destroy_alerts.tf"), testCloudAccountName, name),
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_update_destroy_alerts.tf"), testCloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "alert.#", "0"),
 				),
@@ -221,7 +221,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 			{
 				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_no_password.tf"), testCloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "ram_percentage", "20"),
+					resource.TestCheckResourceAttr("rediscloud_subscription_database.no_password_database", "ram_percentage", "20"),
 					func(s *terraform.State) error {
 						is := s.RootModule().Resources["rediscloud_subscription_database.no_password_database"].Primary
 						if len(is.Attributes["password"]) != 32 {

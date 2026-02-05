@@ -1080,23 +1080,19 @@ func BuildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 	var diags diag.Diagnostics
 	if memoryStorage == databases.MemoryStorageRam && averageItemSizeInBytes != 0 {
 		// TODO This should be changed to an error when releasing 2.0 of the provider
-		diags = diag.Diagnostics{
-			diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  "`average_item_size_in_bytes` not applicable for `ram` memory storage ",
-				Detail:   "`average_item_size_in_bytes` is only applicable when `memory_storage` is `ram-and-flash`. This will be an error in a future release of the provider",
-			},
-		}
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Warning,
+			Summary:  "`average_item_size_in_bytes` not applicable for `ram` memory storage ",
+			Detail:   "`average_item_size_in_bytes` is only applicable when `memory_storage` is `ram-and-flash`. This will be an error in a future release of the provider",
+		})
 	}
 
 	if memoryStorage == databases.MemoryStorageRam && ramPercentage != 0 {
-		diags = diag.Diagnostics{
-			diag.Diagnostic{
-				Severity: diag.Warning,
-				Summary:  "`ram_percentage` not applicable for `ram` memory storage ",
-				Detail:   "`ram_percentage` is only applicable when `memory_storage` is `ram-and-flash`",
-			},
-		}
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Warning,
+			Summary:  "`ram_percentage` not applicable for `ram` memory storage ",
+			Detail:   "`ram_percentage` is only applicable when `memory_storage` is `ram-and-flash`",
+		})
 	}
 
 	// Check if one of the modules is RedisGraph

@@ -633,8 +633,10 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("ram_percentage", redis.IntValue(db.RamPercentage)); err != nil {
-		return diag.FromErr(err)
+	if db.RamPercentage != nil {
+		if err := d.Set("ram_percentage", redis.IntValue(db.RamPercentage)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if err := d.Set("external_endpoint_for_oss_cluster_api",
@@ -861,9 +863,9 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	if d.Get("password").(string) != "" {
 		update.Password = redis.String(d.Get("password").(string))
 	}
-	if d.Get("ram_percentage").(int) > 0 {
-		update.RamPercentage = redis.Int(d.Get("ram_percentage").(int))
-	}
+	utils.SetIntIfPositive(d, "ram_percentage", func(i *int) {
+		update.RamPercentage = i
+	})
 	update.ReplicaOf = utils.SetToStringSlice(d.Get("replica_of").(*schema.Set))
 	if update.ReplicaOf == nil {
 		update.ReplicaOf = make([]*string, 0)
