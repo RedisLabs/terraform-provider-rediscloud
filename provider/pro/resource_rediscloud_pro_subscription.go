@@ -755,6 +755,18 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 
+	cmkEnabledFromAPI := subscription.PersistentStorageEncryptionType != nil &&
+		redis.StringValue(subscription.PersistentStorageEncryptionType) == CMK_ENABLED_STRING
+	if err := d.Set("customer_managed_key_enabled", cmkEnabledFromAPI); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if subscription.DeletionGracePeriod != nil {
+		if err := d.Set("customer_managed_key_deletion_grace_period", redis.StringValue(subscription.DeletionGracePeriod)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	return diags
 }
 
