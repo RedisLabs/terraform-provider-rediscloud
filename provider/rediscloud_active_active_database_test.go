@@ -429,7 +429,6 @@ resource "rediscloud_active_active_subscription_database" "example" {
 func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-	t.Skip("auto_minor_version_upgrade feature temporarily removed")
 
 	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
 	const resourceName = "rediscloud_active_active_subscription_database.example"
