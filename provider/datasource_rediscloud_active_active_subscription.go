@@ -44,6 +44,26 @@ func dataSourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
+			"customer_managed_key_enabled": {
+				Description: "Whether customer managed key encryption is enabled for the subscription",
+				Type:        schema.TypeBool,
+				Computed:    true,
+			},
+			"customer_managed_key_deletion_grace_period": {
+				Description: "The deletion grace period for the customer managed key",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"customer_managed_key_redis_service_account": {
+				Description: "The Redis service account used for customer managed key encryption",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"public_endpoint_access": {
+				Description: "Whether public endpoint access is enabled for databases in the subscription",
+				Type:        schema.TypeBool,
+				Computed:    true,
+			},
 			"cloud_provider": {
 				Description: "A cloud provider string either GCP or AWS",
 				Type:        schema.TypeString,
@@ -205,6 +225,32 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 	if err := d.Set("status", redis.StringValue(sub.Status)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	cmkEnabled := sub.PersistentStorageEncryptionType != nil &&
+		redis.StringValue(sub.PersistentStorageEncryptionType) == pro.CMK_ENABLED_STRING
+	if err := d.Set("customer_managed_key_enabled", cmkEnabled); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if sub.CustomerManagedKeyAccessDetails != nil && sub.CustomerManagedKeyAccessDetails.RedisServiceAccount != nil {
+		if err := d.Set("customer_managed_key_redis_service_account", sub.CustomerManagedKeyAccessDetails.RedisServiceAccount); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if sub.DeletionGracePeriod != nil {
+		if err := d.Set("customer_managed_key_deletion_grace_period", redis.StringValue(sub.DeletionGracePeriod)); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	publicEndpointAccess := true
+	if sub.PublicEndpointAccess != nil {
+		publicEndpointAccess = redis.BoolValue(sub.PublicEndpointAccess)
+	}
+	if err := d.Set("public_endpoint_access", publicEndpointAccess); err != nil {
 		return diag.FromErr(err)
 	}
 

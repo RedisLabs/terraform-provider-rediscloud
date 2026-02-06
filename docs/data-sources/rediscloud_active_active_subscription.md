@@ -19,6 +19,7 @@ Cloud account.
 data "rediscloud_active_active_subscription" "example" {
   name = "My AA Subscription"
 }
+
 output "rediscloud_active_active_subscription" {
   value = data.rediscloud_active_active_subscription.example.id
 }
@@ -40,6 +41,10 @@ output "rediscloud_active_active_subscription" {
 * `cloud_provider` - The cloud provider used with the subscription, (either `AWS` or `GCP`).
 * `number_of_databases` - The number of databases that are linked to this subscription.
 * `status` - Current status of the subscription
+* `customer_managed_key_enabled` - Whether customer managed key encryption is enabled for the subscription
+* `customer_managed_key_deletion_grace_period` - The deletion grace period for the customer managed key
+* `customer_managed_key_redis_service_account` - The Redis service account used for customer managed key encryption. This is useful for automating the CMEK workflow.
+* `public_endpoint_access` - Whether public endpoint access is enabled for databases in the subscription
 * `maintenance_windows` - Details about the subscription's maintenance window specification, documented below
 * `pricing` - A list of pricing objects, documented below
 
