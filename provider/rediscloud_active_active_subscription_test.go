@@ -135,6 +135,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 					resource.TestCheckResourceAttrSet(datasourceSubscriptionName, "aws_account_id"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "number_of_databases", "0"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "status", "active"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "customer_managed_key_enabled", "false"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "public_endpoint_access", "true"),
 
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.mode", "manual"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.#", "2"),
@@ -382,6 +384,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 					resource.TestCheckResourceAttrSet(datasourceSubscriptionName, "aws_account_id"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "number_of_databases", "0"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "status", "active"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "customer_managed_key_enabled", "false"),
+					resource.TestCheckResourceAttr(datasourceSubscriptionName, "public_endpoint_access", "true"),
 
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.mode", "manual"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.#", "2"),
