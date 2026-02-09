@@ -48,15 +48,13 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				},
 			},
 			DataSourcesMap: map[string]*schema.Resource{
-				"rediscloud_cloud_account":    dataSourceRedisCloudCloudAccount(),
-				"rediscloud_data_persistence": dataSourceRedisCloudDataPersistence(),
+				"rediscloud_cloud_account": dataSourceRedisCloudCloudAccount(),
 				// Note the difference in public data-source name and the file/method name.
 				// This is to help the developer relate their changes to what they would see happening in the Redis Console.
 				// <default> == flexible == pro
 				"rediscloud_subscription":                               pro.DataSourceRedisCloudProSubscription(),
 				"rediscloud_database":                                   pro.DataSourceRedisCloudProDatabase(),
 				"rediscloud_database_modules":                           dataSourceRedisCloudDatabaseModules(),
-				"rediscloud_payment_method":                             dataSourceRedisCloudPaymentMethod(),
 				"rediscloud_regions":                                    dataSourceRedisCloudRegions(),
 				"rediscloud_essentials_plan":                            dataSourceRedisCloudEssentialsPlan(),
 				"rediscloud_essentials_subscription":                    dataSourceRedisCloudEssentialsSubscription(),
