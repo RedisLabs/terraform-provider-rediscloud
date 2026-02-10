@@ -21,7 +21,7 @@ $(BIN)/%:
 	@echo "Installing tools from tools/tools.go"
 	@cat tools/tools.go | grep _ | awk -F '"' '{print $$2}' | GOBIN=$(BIN) xargs -tI {} go install {}
 
-.PHONY: build clean fmt fmtcheck lint testacc testacc-essentials generate_coverage install_local sweep tfproviderlint tfproviderlintx
+.PHONY: build clean fmt fmtcheck lint testacc testacc-essentials generate_coverage install_local sweep sweep-prefix tfproviderlint tfproviderlintx
 
 build: bin fmtcheck
 	@echo "Building local provider binary"
@@ -69,6 +69,13 @@ install_local: build
 sweep:
 	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
 	go test ./provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
+
+sweep-prefix:
+ifndef TEST_RESOURCE_PREFIX
+	$(error TEST_RESOURCE_PREFIX is not set. Usage: TEST_RESOURCE_PREFIX=tf-ci-12345 make sweep-prefix)
+endif
+	@echo "WARNING: This will destroy infrastructure matching prefix '$(TEST_RESOURCE_PREFIX)'. Use only in development accounts."
+	TEST_RESOURCE_PREFIX=$(TEST_RESOURCE_PREFIX) SWEEP_AGE_THRESHOLD=0s go test ./provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
 
 tfproviderlintx: $(BIN)/tfproviderlintx
 	$(BIN)/tfproviderlintx $(TFPROVIDERLINT_ARGS) ./...

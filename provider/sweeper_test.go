@@ -17,10 +17,54 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	fixedSubscriptions "github.com/RedisLabs/rediscloud-go-api/service/fixed/subscriptions"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-const testResourcePrefix = "tf-test"
+// testResourcePrefix is the prefix used for all test resource names.
+// Set TEST_RESOURCE_PREFIX env var to override (e.g. "tf-ci-<run_id>" in CI).
+// This also controls which resources the sweeper targets.
+var testResourcePrefix = getTestResourcePrefix()
+
+func getTestResourcePrefix() string {
+	if prefix := os.Getenv("TEST_RESOURCE_PREFIX"); prefix != "" {
+		return prefix
+	}
+	return "tf-test"
+}
+
+// testRandomWithPrefix is like acctest.RandomWithPrefix but uses a shorter
+// random component to stay within the API's 40-char name limit.
+// Defaults to 6 chars; pass an explicit length to override.
+func testRandomWithPrefix(n ...int) string {
+	length := 6
+	if len(n) > 0 {
+		length = n[0]
+	}
+	return testResourcePrefix + "-" + acctest.RandString(length)
+}
+
+// sweepAgeThreshold returns the minimum age a database must exceed before
+// the sweeper will consider it for deletion. Controlled by SWEEP_AGE_THRESHOLD:
+//
+//	Not set  → 24h (local dev safety — assume someone is running tests)
+//	"2h"     → 2 hours (CI pre-sweep with broad prefix — protects concurrent runs)
+//	"0s"     → immediate (cleanup of a cancelled run's unique prefix)
+//
+// Any value accepted by time.ParseDuration is valid.
+func sweepAgeThreshold() time.Duration {
+	raw := os.Getenv("SWEEP_AGE_THRESHOLD")
+	if raw == "" {
+		return 24 * time.Hour
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		log.Printf("[WARN] Invalid SWEEP_AGE_THRESHOLD %q, falling back to 24h: %v", raw, err)
+		return 24 * time.Hour
+	}
+	log.Printf("[INFO] Sweep age threshold set to %s via SWEEP_AGE_THRESHOLD", d)
+	return d
+}
 
 // maxSweepConcurrency limits parallel sweep operations to avoid API rate limits
 const maxSweepConcurrency = 5
@@ -241,9 +285,8 @@ func testSweepReadDatabases(client *rediscloudApi.Client, subId int) (bool, []in
 	for list.Next() {
 		db := list.Value()
 
-		if !redis.TimeValue(db.ActivatedOn).Add(24 * -1 * time.Hour).Before(time.Now()) {
-			// Subscription _probably_ created within the last day, so assume someone might be
-			// currently running the tests
+		if !redis.TimeValue(db.ActivatedOn).Add(-sweepAgeThreshold()).Before(time.Now()) {
+			// Database not old enough to sweep (controlled by SWEEP_AGE_THRESHOLD)
 			return false, nil, nil
 		}
 
@@ -274,9 +317,8 @@ func testSweepReadEssentialsDatabases(client *rediscloudApi.Client, subId int) (
 	for list.Next() {
 		db := list.Value()
 
-		if !redis.TimeValue(db.ActivatedOn).Add(24 * -1 * time.Hour).Before(time.Now()) {
-			// Subscription _probably_ created within the last day, so assume someone might be
-			// currently running the tests
+		if !redis.TimeValue(db.ActivatedOn).Add(-sweepAgeThreshold()).Before(time.Now()) {
+			// Database not old enough to sweep
 			return false, nil, nil
 		}
 

@@ -19,8 +19,8 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	testAwsRegion := os.Getenv("AWS_REGION")
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-aa-tgw"
-	databaseName := acctest.RandomWithPrefix(testResourcePrefix) + "-aa-tgw-db"
+	subscriptionName := testRandomWithPrefix() + "-aa-tgw"
+	databaseName := testRandomWithPrefix() + "-aa-tgw-db"
 	databasePassword := acctest.RandString(20)
 
 	const invitationsDatasourceName = "data.rediscloud_active_active_transit_gateway_invitations.test"

@@ -1,0 +1,27 @@
+name: 'Run Resource Sweep'
+description: 'Sweep orphaned test resources from Redis Cloud'
+inputs:
+  sweep_prefix:
+    description: 'Resource name prefix to target (e.g. tf-ci or tf-ci-pr42-12345678)'
+    required: true
+    default: 'tf-ci'
+  age_threshold:
+    description: 'Minimum age before a resource is swept (Go duration, e.g. 2h, 0s). Default: 2h'
+    required: false
+    default: '2h'
+runs:
+  using: 'composite'
+  steps:
+    - name: Sweep resources
+      shell: bash
+      env:
+        TEST_RESOURCE_PREFIX: ${{ inputs.sweep_prefix }}
+        SWEEP_AGE_THRESHOLD: ${{ inputs.age_threshold }}
+      run: |
+        echo "Sweeping resources with prefix: $TEST_RESOURCE_PREFIX (age threshold: $SWEEP_AGE_THRESHOLD)"
+        # Sweep errors are intentionally non-fatal: a sweep failure should not
+        # block the test pipeline. The warning annotation ensures failures are
+        # visible in the GitHub Actions summary.
+        if ! go test ./provider -v -sweep=ALL -timeout 30m 2>&1; then
+          echo "::warning::Sweep completed with errors - some resources may not have been cleaned up"
+        fi

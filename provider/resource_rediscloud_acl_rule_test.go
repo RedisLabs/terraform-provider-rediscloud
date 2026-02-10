@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
@@ -19,7 +18,7 @@ func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	prefix := acctest.RandomWithPrefix(testResourcePrefix)
+	prefix := testRandomWithPrefix()
 	testName := prefix + "-test-rule"
 	const testRule = "+@all"
 

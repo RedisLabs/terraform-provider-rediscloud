@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# Unreleased
+
+
+## Changed
+
+- CI: Isolated test resources per workflow run and added automatic cleanup sweeps to prevent orphaned cloud resources.
+
 # 2.11.0 (16th February 2026)
 
 ## Added

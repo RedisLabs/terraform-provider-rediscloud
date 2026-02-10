@@ -109,7 +109,7 @@ func testErrorCase(t *testing.T, config string, expectedError *regexp.Regexp) {
 }
 
 func TestAccResourceRedisCloudProDatabase_qpf(t *testing.T) {
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -143,7 +143,7 @@ func TestAccResourceRedisCloudProDatabase_qpf(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudProDatabase_qpf_missingModule(t *testing.T) {
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -153,7 +153,7 @@ func TestAccResourceRedisCloudProDatabase_qpf_missingModule(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudProDatabase_qpf_missingRediSearchModule(t *testing.T) {
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -163,7 +163,7 @@ func TestAccResourceRedisCloudProDatabase_qpf_missingRediSearchModule(t *testing
 }
 
 func TestAccResourceRedisCloudProDatabase_qpf_invalidQueryPerformanceFactors(t *testing.T) {
-	name := acctest.RandomWithPrefix("tf-test")
+	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -173,7 +173,7 @@ func TestAccResourceRedisCloudProDatabase_qpf_invalidQueryPerformanceFactors(t *
 }
 
 func TestAccResourceRedisCloudProDatabase_qpf_invalidQueryPerformanceFactors_outOfRange(t *testing.T) {
-	name := acctest.RandomWithPrefix("tf-test")
+	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
