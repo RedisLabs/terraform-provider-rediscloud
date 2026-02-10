@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
@@ -44,7 +43,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	subscriptionName := testRandomWithPrefix()
 	subscriptionNameUpdated := subscriptionName + "-updated"
 
 	const resourceName = "rediscloud_essentials_subscription.example"
@@ -109,7 +108,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	subscriptionName := testRandomWithPrefix()
 	subscriptionNameUpdated := subscriptionName + "-updated"
 
 	const resourceName = "rediscloud_essentials_subscription.example"
@@ -175,7 +174,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	subscriptionName := testRandomWithPrefix()
 	subscriptionNameUpdated := subscriptionName + "-updated"
 
 	const resourceName = "rediscloud_essentials_subscription.example"
@@ -246,7 +245,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 		t.Skip("The '-essentialsMarketplace' parameter wasn't provided in the test command.")
 	}
 
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	subscriptionName := testRandomWithPrefix()
 	subscriptionNameUpdated := subscriptionName + "-updated"
 
 	const resourceName = "rediscloud_essentials_subscription.example"
@@ -312,7 +311,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 func TestAccResourceRedisCloudEssentialsSubscription_Incorrect_PaymentIdForType(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	subscriptionName := testRandomWithPrefix()
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },

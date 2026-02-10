@@ -74,7 +74,7 @@ func testSubErrorCase(t *testing.T, config string, expectedError *regexp.Regexp)
 }
 
 func TestAccResourceRedisCloudProSubscription_qpf(t *testing.T) {
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	const resourceName = "rediscloud_subscription.example"
 
