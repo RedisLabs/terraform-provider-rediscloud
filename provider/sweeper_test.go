@@ -20,7 +20,32 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-const testResourcePrefix = "tf-test"
+// testResourcePrefix is the prefix used for all test resource names.
+// Set TEST_RESOURCE_PREFIX env var to override (e.g. "tf-ci-<run_id>" in CI).
+// This also controls which resources the sweeper targets.
+var testResourcePrefix = getTestResourcePrefix()
+
+func getTestResourcePrefix() string {
+	if prefix := os.Getenv("TEST_RESOURCE_PREFIX"); prefix != "" {
+		return prefix
+	}
+	return "tf-test"
+}
+
+var ageCheckSkipLogged sync.Once
+
+// shouldSkipAgeCheck returns true when the SWEEP_SKIP_AGE_CHECK env var is set.
+// In CI, orphaned resources from cancelled runs may be only minutes old, so the
+// default 24-hour database activation age safety check would prevent cleanup.
+func shouldSkipAgeCheck() bool {
+	skip := os.Getenv("SWEEP_SKIP_AGE_CHECK") != ""
+	if skip {
+		ageCheckSkipLogged.Do(func() {
+			log.Println("[WARN] SWEEP_SKIP_AGE_CHECK is set - bypassing 24-hour age safety check")
+		})
+	}
+	return skip
+}
 
 // maxSweepConcurrency limits parallel sweep operations to avoid API rate limits
 const maxSweepConcurrency = 5
@@ -241,8 +266,8 @@ func testSweepReadDatabases(client *rediscloudApi.Client, subId int) (bool, []in
 	for list.Next() {
 		db := list.Value()
 
-		if !redis.TimeValue(db.ActivatedOn).Add(24 * -1 * time.Hour).Before(time.Now()) {
-			// Subscription _probably_ created within the last day, so assume someone might be
+		if !shouldSkipAgeCheck() && !redis.TimeValue(db.ActivatedOn).Add(24*-1*time.Hour).Before(time.Now()) {
+			// Database activated within the last 24 hours - assume someone might be
 			// currently running the tests
 			return false, nil, nil
 		}
@@ -274,8 +299,8 @@ func testSweepReadEssentialsDatabases(client *rediscloudApi.Client, subId int) (
 	for list.Next() {
 		db := list.Value()
 
-		if !redis.TimeValue(db.ActivatedOn).Add(24 * -1 * time.Hour).Before(time.Now()) {
-			// Subscription _probably_ created within the last day, so assume someone might be
+		if !shouldSkipAgeCheck() && !redis.TimeValue(db.ActivatedOn).Add(24*-1*time.Hour).Before(time.Now()) {
+			// Database activated within the last 24 hours - assume someone might be
 			// currently running the tests
 			return false, nil, nil
 		}
