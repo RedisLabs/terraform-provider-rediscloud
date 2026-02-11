@@ -27,6 +27,7 @@ output "rediscloud_transit_gateway" {
 * `tgw_id` - (Optional) The id of the Transit Gateway relative to the associated subscription. You would likely
 reference this value when creating a `rediscloud_transit_gateway_attachment`.
 * `aws_tgw_uid` - (Optional) The id of the Transit Gateway as known to AWS
+* `wait_for_tgw_timeout` - (Optional) When set, retry fetching until a Transit Gateway matching the filters is found or the specified timeout (in seconds) is reached. Useful when accepting a TGW invitation and querying the TGW in the same Terraform run. Defaults to `0` (no waiting).
 
 ## Attribute Reference
 
