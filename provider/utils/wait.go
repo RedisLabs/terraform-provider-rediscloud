@@ -149,7 +149,159 @@ func WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx context.Context,
 			"Original error: %w", subId, regionId, err)
 	}
 
-	return result.(*attachments.GetAttachmentsTask), nil
+	task, ok := result.(*attachments.GetAttachmentsTask)
+	if !ok {
+		return nil, fmt.Errorf("internal error: unexpected result type from wait operation for subscription %d, region %d", subId, regionId)
+	}
+
+	return task, nil
+}
+
+// TransitGatewayAttachmentStatusAvailable is the status indicating an attachment is ready for use.
+const TransitGatewayAttachmentStatusAvailable = "available"
+
+// transitGatewayAttachmentPendingStates are states that indicate the attachment is still being
+// provisioned or modified. The waiter will continue polling while in these states.
+var transitGatewayAttachmentPendingStates = []string{
+	"initiating-request",
+	"pending",
+	"pendingAcceptance",
+	"modifying",
+	"deleting",
+	"rejecting",
+	"failing",
+	"rollingBack",
+}
+
+var transitGatewayAttachmentTerminalStates = map[string]bool{
+	"failed":   true,
+	"rejected": true,
+	"deleted":  true,
+}
+
+// WaitForTransitGatewayAttachmentToBeAvailable waits for a Pro Transit Gateway attachment to reach
+// the "available" status. This handles the delay between creating an attachment and AWS completing
+// the VPC attachment process.
+func WaitForTransitGatewayAttachmentToBeAvailable(
+	ctx context.Context,
+	subId int,
+	tgwId int,
+	api *client.ApiClient,
+) (*attachments.TransitGatewayAttachment, error) {
+	wait := &retry.StateChangeConf{
+		Pending:      transitGatewayAttachmentPendingStates,
+		Target:       []string{TransitGatewayAttachmentStatusAvailable},
+		Timeout:      TransitGatewayProvisioningTimeout,
+		Delay:        10 * time.Second,
+		PollInterval: 30 * time.Second,
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for Transit Gateway attachment to be available for subscription %d, tgw %d", subId, tgwId)
+
+			tgwTask, err := api.Client.TransitGatewayAttachments.Get(ctx, subId)
+			if err != nil {
+				return nil, "", err
+			}
+
+			// Check for nil response structure
+			if tgwTask == nil || tgwTask.Response == nil || tgwTask.Response.Resource == nil {
+				return nil, "pending", nil
+			}
+
+			// Find the specific attachment by tgwId
+			for _, tgw := range tgwTask.Response.Resource.TransitGatewayAttachment {
+				if redis.IntValue(tgw.Id) == tgwId {
+					status := redis.StringValue(tgw.Status)
+					log.Printf("[DEBUG] Transit Gateway attachment status: %s", status)
+
+					if transitGatewayAttachmentTerminalStates[status] {
+						return nil, status, fmt.Errorf("transit gateway attachment reached terminal state: %s", status)
+					}
+
+					return tgw, status, nil
+				}
+			}
+
+			// Attachment not found yet
+			return nil, "pending", nil
+		},
+	}
+
+	result, err := wait.WaitForStateContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("timeout waiting for Transit Gateway attachment to become available for subscription %d, tgw %d. "+
+			"Original error: %w", subId, tgwId, err)
+	}
+
+	tgw, ok := result.(*attachments.TransitGatewayAttachment)
+	if !ok {
+		return nil, fmt.Errorf("internal error: unexpected result type from wait operation for subscription %d, tgw %d", subId, tgwId)
+	}
+
+	return tgw, nil
+}
+
+// WaitForActiveActiveTransitGatewayAttachmentToBeAvailable waits for an Active-Active Transit Gateway
+// attachment to reach the "available" status. This handles the delay between creating an attachment
+// and AWS completing the VPC attachment process.
+func WaitForActiveActiveTransitGatewayAttachmentToBeAvailable(
+	ctx context.Context,
+	subId int,
+	regionId int,
+	tgwId int,
+	api *client.ApiClient,
+) (*attachments.TransitGatewayAttachment, error) {
+	wait := &retry.StateChangeConf{
+		Pending:      transitGatewayAttachmentPendingStates,
+		Target:       []string{TransitGatewayAttachmentStatusAvailable},
+		Timeout:      TransitGatewayProvisioningTimeout,
+		Delay:        10 * time.Second,
+		PollInterval: 30 * time.Second,
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for Active-Active Transit Gateway attachment to be available for subscription %d, region %d, tgw %d", subId, regionId, tgwId)
+
+			tgwTask, err := api.Client.TransitGatewayAttachments.GetActiveActive(ctx, subId, regionId)
+			if err != nil {
+				return nil, "", err
+			}
+
+			// Check for nil response structure
+			if tgwTask == nil || tgwTask.Response == nil || tgwTask.Response.Resource == nil {
+				return nil, "pending", nil
+			}
+
+			// Find the specific attachment by tgwId
+			for _, tgw := range tgwTask.Response.Resource.TransitGatewayAttachment {
+				if redis.IntValue(tgw.Id) == tgwId {
+					status := redis.StringValue(tgw.Status)
+					log.Printf("[DEBUG] Active-Active Transit Gateway attachment status: %s", status)
+
+					if transitGatewayAttachmentTerminalStates[status] {
+						return nil, status, fmt.Errorf("Active-Active Transit Gateway attachment reached terminal state: %s", status)
+					}
+
+					return tgw, status, nil
+				}
+			}
+
+			// Attachment not found yet
+			return nil, "pending", nil
+		},
+	}
+
+	result, err := wait.WaitForStateContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("timeout waiting for Active-Active Transit Gateway attachment to become available for subscription %d, region %d, tgw %d. "+
+			"Original error: %w", subId, regionId, tgwId, err)
+	}
+
+	tgw, ok := result.(*attachments.TransitGatewayAttachment)
+	if !ok {
+		return nil, fmt.Errorf("internal error: unexpected result type from wait operation for subscription %d, region %d, tgw %d", subId, regionId, tgwId)
+	}
+
+	return tgw, nil
 }
 
 func WaitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, api *client.ApiClient) error {

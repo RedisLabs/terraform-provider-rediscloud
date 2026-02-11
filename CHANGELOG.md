@@ -16,6 +16,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ## Fixed
 - `rediscloud_subscription` and `rediscloud_active_active_subscription`: Fixed drift for `customer_managed_key_enabled` and `customer_managed_key_deletion_grace_period` when upgrading from older provider versions.
+- `rediscloud_transit_gateway`, `rediscloud_active_active_transit_gateway`, and related attachment/invitation resources: Improved wait logic for state transitions, removing the need for manual workarounds.
 
 # 2.10.4 (30th January 2026)
 
@@ -31,7 +32,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ## Changed
 - Migrated `rediscloud_active_active_subscription_database` resource from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the resource schema or behaviour.
-- Provider now uses muxing to serve resources from both SDK v2 and Plugin Framework simultaneously, enabling incremental migration of resources. 
+- Provider now uses muxing to serve resources from both SDK v2 and Plugin Framework simultaneously, enabling incremental migration of resources.
 - `rediscloud_private_link` and `rediscloud_active_active_private_link`: Delete now uses direct API endpoint instead of removing principals individually.
 - `rediscloud_private_link`: Updated documentation to use availability zone IDs instead of names, and added database resource.
 
@@ -157,7 +158,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 # 2.5.0 (13th October 2025)
 
 ## Added:
-- Support for Redis 8 databases and upgrading. Redis 8 does not have modules so the provider should handle these gracefully. 
+- Support for Redis 8 databases and upgrading. Redis 8 does not have modules so the provider should handle these gracefully.
 - Support for `query_performance_factor` on Redis 8.0 - Updated validation logic to allow QPF on Redis 8.0+ databases since RediSearch is bundled by default.
 
 ## Fixed:
@@ -222,7 +223,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 - AWS PrivateLink support for Pro Subscriptions.
 - New resource: `rediscloud_private_link` which allows users to manage peering between Redis Subscriptions and AWS resources.
-- New data source: `rediscloud_private_link` 
+- New data source: `rediscloud_private_link`
 - New data source: `rediscloud_private_link_endpoint_script`
 
 # 2.3.0 (19th August 2025)
@@ -288,11 +289,11 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 ### Added
 
 - Added resources for provisioning Private Service Connect in GCP on Active-Active and Pro subscriptions.
-`rediscloud_private_service_connect`, `rediscloud_private_service_connect_endpoint`, `rediscloud_private_service_connect_endpoint_accepter`,
-`rediscloud_active_active_private_service_connect`, `rediscloud_active_active_private_service_connect_endpoint` and
-`rediscloud_active_active_private_service_connect_endpoint_accepter` as well as the respective data sources
-`rediscloud_private_service_connect`, `rediscloud_private_service_connect_endpoints`, `rediscloud_active_active_private_service_connect`
-and `rediscloud_active_active_private_service_connect_endpoints`
+  `rediscloud_private_service_connect`, `rediscloud_private_service_connect_endpoint`, `rediscloud_private_service_connect_endpoint_accepter`,
+  `rediscloud_active_active_private_service_connect`, `rediscloud_active_active_private_service_connect_endpoint` and
+  `rediscloud_active_active_private_service_connect_endpoint_accepter` as well as the respective data sources
+  `rediscloud_private_service_connect`, `rediscloud_private_service_connect_endpoints`, `rediscloud_active_active_private_service_connect`
+  and `rediscloud_active_active_private_service_connect_endpoints`
 
 ### Changed
 
@@ -316,7 +317,7 @@ and `rediscloud_active_active_private_service_connect_endpoints`
 
 - Tags as key/value pairs on Pro and ActiveActive databases
 - The facility for users to upgrade from memorySizeInGb to datasetSizeInGb
-(please note that changing back may have unexpected results and is not supported)
+  (please note that changing back may have unexpected results and is not supported)
 
 # 1.8.1 (3rd Sept 2024)
 

@@ -25,6 +25,7 @@ output "pending_invitations" {
 
 * `subscription_id` - (Required) The ID of an Active-Active subscription
 * `region_id` - (Required) The ID of the region within the Active-Active subscription
+* `wait_for_invitations_timeout` - (Optional) When set, retry fetching invitations until at least one is found or the specified timeout (in seconds) is reached. Useful when creating AWS RAM share and Redis Cloud resources in the same Terraform run. Defaults to `0` (no waiting).
 
 ## Attribute Reference
 
