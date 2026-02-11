@@ -18,6 +18,7 @@ The following example shows how to use the name attribute to locate a subscripti
 data "rediscloud_subscription" "example" {
   name = "My Example Subscription"
 }
+
 output "rediscloud_subscription" {
   value = data.rediscloud_subscription.example.id
 }
@@ -36,6 +37,10 @@ output "rediscloud_subscription" {
 * `cloud_provider` - A cloud provider object, documented below
 * `number_of_databases` - The number of databases that are linked to this subscription.
 * `status` - Current status of the subscription
+* `customer_managed_key_enabled` - Whether customer managed key encryption is enabled for the subscription
+* `customer_managed_key_deletion_grace_period` - The deletion grace period for the customer managed key (e.g. 'immediate', '15-minutes')
+* `customer_managed_key_redis_service_account` - The Redis service account principal associated with the subscription. This is used to grant access to the customer managed encryption key.
+* `public_endpoint_access` - Whether public endpoint access is enabled for databases in the subscription
 * `maintenance_windows` - Details about the subscription's maintenance window specification, documented below
 * `pricing` - A list of pricing objects, documented below
 
