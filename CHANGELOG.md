@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.11.0 (February 2026)
+
+## Added
+- Added `ram_percentage` attribute to `rediscloud_subscription` resources.
+
+## Changed
+- Migrated `rediscloud_cloud_account` data sources from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
+- Deprecated `average_item_size_in_bytes` attribute on `rediscloud_subscription` resources.
+
 
 # 2.10.5 (9th February 2026)
 
