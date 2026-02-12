@@ -6,10 +6,12 @@ import (
 	"testing"
 
 	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 var protoV5ProviderFactories = map[string]func() (tfprotov5.ProviderServer, error){
