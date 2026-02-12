@@ -3,20 +3,18 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-# 2.11.0 (February 2026)
+# 2.11.0 (16th February 2026)
 
 ## Added
-- Added `ram_percentage` attribute to `rediscloud_subscription` resources.
+- Added `ram_percentage` attribute to `rediscloud_subscription` and `rediscloud_subscription_database` resources.
+- `rediscloud_subscription` and `rediscloud_active_active_subscription` data sources: Exposed `customer_managed_key_enabled`, `customer_managed_key_deletion_grace_period`, `customer_managed_key_redis_service_account`, and `public_endpoint_access` fields.
 
 ## Changed
 - Migrated `rediscloud_cloud_account` data sources from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
-- Deprecated `average_item_size_in_bytes` attribute on `rediscloud_subscription` resources.
+- Deprecated `average_item_size_in_bytes` attribute on `rediscloud_subscription` resources. Configure `ram_percentage` instead.
 
-
-# 2.10.5 (9th February 2026)
-
-## Added
-- `rediscloud_subscription` and `rediscloud_active_active_subscription` data sources: Exposed `customer_managed_key_enabled`, `customer_managed_key_deletion_grace_period`, `customer_managed_key_redis_service_account`, and `public_endpoint_access` fields.
+## Fixed
+- `rediscloud_transit_gateway`, `rediscloud_active_active_transit_gateway`, and related attachment/invitation resources: Improved wait logic for state transitions, removing the need for manual workarounds.
 
 # 2.10.5 (9th February 2026)
 
@@ -25,7 +23,6 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ## Fixed
 - `rediscloud_subscription` and `rediscloud_active_active_subscription`: Fixed drift for `customer_managed_key_enabled` and `customer_managed_key_deletion_grace_period` when upgrading from older provider versions.
-- `rediscloud_transit_gateway`, `rediscloud_active_active_transit_gateway`, and related attachment/invitation resources: Improved wait logic for state transitions, removing the need for manual workarounds.
 
 # 2.10.4 (30th January 2026)
 
