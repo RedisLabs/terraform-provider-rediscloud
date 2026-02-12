@@ -187,7 +187,18 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Optional:    true,
 				// Setting default to 0 so that the hash func produces the same hash when this field is not
 				// specified. SDK's catch-all issue around this: https://github.com/hashicorp/terraform-plugin-sdk/issues/261
-				Default: 0,
+				Default:       0,
+				ConflictsWith: []string{"ram_percentage"},
+				Deprecated:    "Configure `ram_percentage` instead. This attribute will be removed in the next major version of the provider.",
+			},
+			"ram_percentage": {
+				Description:   "Relevant only to ram-and-flash subscriptions. The percentage of data to be stored in RAM",
+				Type:          schema.TypeInt,
+				Optional:      true,
+				Computed:      true,
+				Default:       nil,
+				ValidateFunc:  validation.IntBetween(0, 100),
+				ConflictsWith: []string{"average_item_size_in_bytes"},
 			},
 			"password": {
 				Description: "Password used to access the database. If left empty, the password will be generated automatically",
@@ -465,6 +476,10 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		createDatabase.AverageItemSizeInBytes = i
 	})
 
+	utils.SetIntIfPositive(d, "ram_percentage", func(i *int) {
+		createDatabase.RamPercentage = i
+	})
+
 	utils.SetFloat64(d, "dataset_size_in_gb", func(f *float64) {
 		createDatabase.DatasetSizeInGB = f
 	})
@@ -616,6 +631,12 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 
 	if err := d.Set("average_item_size_in_bytes", d.Get("average_item_size_in_bytes").(int)); err != nil {
 		return diag.FromErr(err)
+	}
+
+	if db.RamPercentage != nil {
+		if err := d.Set("ram_percentage", redis.IntValue(db.RamPercentage)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if err := d.Set("external_endpoint_for_oss_cluster_api",
@@ -842,7 +863,9 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	if d.Get("password").(string) != "" {
 		update.Password = redis.String(d.Get("password").(string))
 	}
-
+	utils.SetIntIfPositive(d, "ram_percentage", func(i *int) {
+		update.RamPercentage = i
+	})
 	update.ReplicaOf = utils.SetToStringSlice(d.Get("replica_of").(*schema.Set))
 	if update.ReplicaOf == nil {
 		update.ReplicaOf = make([]*string, 0)

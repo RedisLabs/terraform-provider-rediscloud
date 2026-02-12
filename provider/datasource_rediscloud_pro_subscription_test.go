@@ -59,6 +59,10 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.region.0.region", "eu-west-1"),
 					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.region.0.networks.0.networking_deployment_cidr", "10.0.0.0/24"),
 					resource.TestCheckResourceAttr(dataSourceName, "status", "active"),
+					resource.TestCheckResourceAttr(dataSourceName, "customer_managed_key_enabled", "false"),
+					resource.TestCheckResourceAttr(dataSourceName, "customer_managed_key_deletion_grace_period", ""),
+					resource.TestCheckResourceAttr(dataSourceName, "customer_managed_key_redis_service_account", ""),
+					resource.TestCheckResourceAttr(dataSourceName, "public_endpoint_access", "true"),
 
 					resource.TestCheckResourceAttr(dataSourceName, "pricing.#", "1"),
 					resource.TestCheckResourceAttr(dataSourceName, "pricing.0.type", "Shards"),

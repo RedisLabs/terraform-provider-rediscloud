@@ -23,6 +23,7 @@ output "pending_invitations" {
 ## Argument Reference
 
 * `subscription_id` - (Required) The ID of a Pro subscription
+* `wait_for_invitations_timeout` - (Optional) When set, retry fetching invitations until at least one is found or the specified timeout (in seconds) is reached. Useful when creating AWS RAM share and Redis Cloud resources in the same Terraform run. Defaults to `0` (no waiting).
 
 ## Attribute Reference
 

@@ -49,6 +49,26 @@ func DataSourceRedisCloudProSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
+			"customer_managed_key_enabled": {
+				Description: "Whether customer managed key encryption is enabled for the subscription",
+				Type:        schema.TypeBool,
+				Computed:    true,
+			},
+			"customer_managed_key_deletion_grace_period": {
+				Description: "The deletion grace period for the customer managed key (e.g. 'immediate', '15-minutes')",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"customer_managed_key_redis_service_account": {
+				Description: "The Redis service account principal associated with the subscription. This is used to grant access to the customer managed encryption key",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"public_endpoint_access": {
+				Description: "Whether public endpoint access is enabled for databases in the subscription",
+				Type:        schema.TypeBool,
+				Computed:    true,
+			},
 			"cloud_provider": {
 				Description: "A cloud provider object",
 				Type:        schema.TypeList,
@@ -285,6 +305,37 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 		return diag.FromErr(err)
 	}
 	if err := d.Set("status", redis.StringValue(sub.Status)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	cmkEnabled := sub.PersistentStorageEncryptionType != nil &&
+		redis.StringValue(sub.PersistentStorageEncryptionType) == CMK_ENABLED_STRING
+	if err := d.Set("customer_managed_key_enabled", cmkEnabled); err != nil {
+		return diag.FromErr(err)
+	}
+
+	cmkServiceAccount := ""
+	if sub.CustomerManagedKeyAccessDetails != nil && sub.CustomerManagedKeyAccessDetails.RedisServiceAccount != nil {
+		cmkServiceAccount = redis.StringValue(sub.CustomerManagedKeyAccessDetails.RedisServiceAccount)
+	}
+	if err := d.Set("customer_managed_key_redis_service_account", cmkServiceAccount); err != nil {
+		return diag.FromErr(err)
+	}
+
+	cmkDeletionGracePeriod := ""
+	if sub.DeletionGracePeriod != nil {
+		cmkDeletionGracePeriod = redis.StringValue(sub.DeletionGracePeriod)
+	}
+	if err := d.Set("customer_managed_key_deletion_grace_period", cmkDeletionGracePeriod); err != nil {
+		return diag.FromErr(err)
+	}
+
+	// Default to true if not set by API, matching Redis Cloud's default behaviour
+	publicEndpointAccess := true
+	if sub.PublicEndpointAccess != nil {
+		publicEndpointAccess = redis.BoolValue(sub.PublicEndpointAccess)
+	}
+	if err := d.Set("public_endpoint_access", publicEndpointAccess); err != nil {
 		return diag.FromErr(err)
 	}
 
