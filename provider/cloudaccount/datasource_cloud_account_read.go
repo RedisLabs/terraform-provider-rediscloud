@@ -3,6 +3,7 @@ package cloudaccount
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
@@ -40,7 +41,7 @@ func (d *cloudAccountDataSource) Read(ctx context.Context, req datasource.ReadRe
 	// Build filters based on configuration
 	var filters []func(cloudAccount *cloud_accounts.CloudAccount) bool
 
-	// Handle exclude_internal_account filter
+	// Handle exclude_internal_account filter - default to false if not set
 	if !state.ExcludeInternalAccount.IsNull() && state.ExcludeInternalAccount.ValueBool() {
 		filters = append(filters, func(cloudAccount *cloud_accounts.CloudAccount) bool {
 			return redis.IntValue(cloudAccount.ID) != 1
@@ -79,7 +80,7 @@ func (d *cloudAccountDataSource) Read(ctx context.Context, req datasource.ReadRe
 
 	// Map the result to state
 	cloudAccount := cloudAccounts[0]
-	state.ID = types.Int64Value(int64(redis.IntValue(cloudAccount.ID)))
+	state.ID = types.StringValue(strconv.Itoa(redis.IntValue(cloudAccount.ID)))
 	state.Name = types.StringValue(redis.StringValue(cloudAccount.Name))
 	state.AccessKeyID = types.StringValue(redis.StringValue(cloudAccount.AccessKeyID))
 	state.ExcludeInternalAccount = types.BoolValue(state.ExcludeInternalAccount.ValueBool())

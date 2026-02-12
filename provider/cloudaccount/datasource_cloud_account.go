@@ -57,7 +57,7 @@ func (d *cloudAccountDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 	resp.Schema = schema.Schema{
 		Description: "The Cloud Account data source allows access to the ID of a Cloud Account configuration.  This ID can be used when creating Subscription resources.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.Int64Attribute{
+			"id": schema.StringAttribute{
 				Description: "The ID of the cloud account",
 				Computed:    true,
 			},
@@ -73,7 +73,6 @@ func (d *cloudAccountDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 			"exclude_internal_account": schema.BoolAttribute{
 				Description: "Whether to exclude the Redis Labs internal cloud account.",
 				Optional:    true,
-				Computed:    true,
 			},
 			"provider_type": schema.StringAttribute{
 				Description: "The cloud provider of the cloud account, (either `AWS` or `GCP`)",
