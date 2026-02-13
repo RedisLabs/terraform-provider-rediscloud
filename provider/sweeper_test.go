@@ -17,6 +17,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	fixedSubscriptions "github.com/RedisLabs/rediscloud-go-api/service/fixed/subscriptions"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
@@ -30,6 +31,12 @@ func getTestResourcePrefix() string {
 		return prefix
 	}
 	return "tf-test"
+}
+
+// testRandomWithPrefix is like acctest.RandomWithPrefix but uses a shorter
+// alphanumeric random component to stay within the API's 40-char name limit.
+func testRandomWithPrefix() string {
+	return testResourcePrefix + "-" + acctest.RandString(6)
 }
 
 // sweepAgeThreshold returns the minimum age a database must exceed before

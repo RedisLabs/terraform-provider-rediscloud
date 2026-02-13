@@ -82,7 +82,7 @@ func TestAccDataSourceRedisCloudProSubscription_ignoresAA(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 
 	config := utils.GetTestConfig(t, AADatabaseProDatasourceConfigPath)

@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
@@ -19,7 +18,7 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	testAwsRegion := os.Getenv("AWS_REGION")
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-tgw"
+	subscriptionName := testRandomWithPrefix() + "-pro-tgw"
 
 	const invitationsDatasourceName = "data.rediscloud_transit_gateway_invitations.test"
 	const acceptorResourceName = "rediscloud_transit_gateway_invitation_acceptor.test"

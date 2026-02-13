@@ -18,8 +18,8 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUB_ACTIVE_ACTIVE")
 
-	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-regions-test"
-	dbName := acctest.RandomWithPrefix(testResourcePrefix) + "-regions" + "-db"
+	subName := testRandomWithPrefix() + "-regions-test"
+	dbName := testRandomWithPrefix() + "-regions" + "-db"
 	dbPass := acctest.RandString(20)
 	const resourceName = "rediscloud_active_active_subscription_regions.example"
 	const datasourceRegionName = "data.rediscloud_active_active_subscription_regions.example"

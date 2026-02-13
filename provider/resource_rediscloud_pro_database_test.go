@@ -21,7 +21,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	const resourceName = "rediscloud_subscription_database.example"
 	const subscriptionResourceName = "rediscloud_subscription.example"
@@ -164,7 +164,7 @@ func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	portNumber := 10101
@@ -193,7 +193,7 @@ func TestAccResourceRedisCloudProDatabase_timeUtcRequiresValidInterval(t *testin
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -214,7 +214,7 @@ func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	dbName := "db-multi-modules"
 	const resourceName = "rediscloud_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -247,7 +247,7 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	portNumber := 10101
@@ -297,7 +297,7 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 	t.Skip("auto_minor_version_upgrade feature temporarily removed")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
