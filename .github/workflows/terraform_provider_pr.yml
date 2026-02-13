@@ -28,7 +28,7 @@ env:
   GCP_VPC_ID: ${{ secrets.GCP_VPC_ID }}
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-  TEST_RESOURCE_PREFIX: "tf-ci-pr${{ github.event.pull_request.number }}-${{ github.run_id }}"
+  TEST_RESOURCE_PREFIX: "tf-ci-pr${{ github.event.pull_request.number }}-${{ github.run_number }}"
 
 concurrency:
   group: <span class="math-inline">\{\{ github\.workflow \}\}\-</span>{{ github.ref }}
@@ -384,5 +384,5 @@ jobs:
           go-version-file: go.mod
       - uses: ./.github/actions/run-sweep
         with:
-          sweep_prefix: "tf-ci-pr${{ github.event.pull_request.number }}-${{ github.run_id }}"
+          sweep_prefix: "tf-ci-pr${{ github.event.pull_request.number }}-${{ github.run_number }}"
           age_threshold: '0s'
