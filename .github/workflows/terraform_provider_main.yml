@@ -231,3 +231,4 @@ jobs:
       - uses: ./.github/actions/run-sweep
         with:
           sweep_prefix: "tf-ci-main-${{ github.run_id }}"
+          age_threshold: '0s'

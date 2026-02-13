@@ -32,34 +32,26 @@ func getTestResourcePrefix() string {
 	return "tf-test"
 }
 
-var ageCheckSkipLogged sync.Once
-
-// shouldSkipAgeCheck returns true when the SWEEP_SKIP_AGE_CHECK env var is set.
-// In CI, orphaned resources from cancelled runs may be only minutes old, so the
-// default 24-hour database activation age safety check would prevent cleanup.
-// Used by the essentials sweeper for a full bypass (one-per-account, always safe).
-// Pro/AA sweeper uses sweepAgeThreshold() for a reduced-but-nonzero guard instead.
-func shouldSkipAgeCheck() bool {
-	skip := os.Getenv("SWEEP_SKIP_AGE_CHECK") != ""
-	if skip {
-		ageCheckSkipLogged.Do(func() {
-			log.Println("[WARN] SWEEP_SKIP_AGE_CHECK is set - essentials: full age bypass, pro/AA: reduced to 2h threshold")
-		})
-	}
-	return skip
-}
-
-// sweepAgeThreshold returns the age a pro/AA database must exceed before
-// the sweeper will consider it for deletion.
-// Default: 24 hours (local dev safety — assume someone is running tests).
-// With SWEEP_SKIP_AGE_CHECK: 2 hours (still protects concurrent CI runs
-// from different concurrency groups, while cleaning up genuinely orphaned
-// resources from cancelled runs).
+// sweepAgeThreshold returns the minimum age a database must exceed before
+// the sweeper will consider it for deletion. Controlled by SWEEP_AGE_THRESHOLD:
+//
+//	Not set  → 24h (local dev safety — assume someone is running tests)
+//	"2h"     → 2 hours (CI pre-sweep with broad prefix — protects concurrent runs)
+//	"0s"     → immediate (cleanup of a cancelled run's unique prefix)
+//
+// Any value accepted by time.ParseDuration is valid.
 func sweepAgeThreshold() time.Duration {
-	if shouldSkipAgeCheck() {
-		return 2 * time.Hour
+	raw := os.Getenv("SWEEP_AGE_THRESHOLD")
+	if raw == "" {
+		return 24 * time.Hour
 	}
-	return 24 * time.Hour
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		log.Printf("[WARN] Invalid SWEEP_AGE_THRESHOLD %q, falling back to 24h: %v", raw, err)
+		return 24 * time.Hour
+	}
+	log.Printf("[INFO] Sweep age threshold set to %s via SWEEP_AGE_THRESHOLD", d)
+	return d
 }
 
 // maxSweepConcurrency limits parallel sweep operations to avoid API rate limits
@@ -282,7 +274,7 @@ func testSweepReadDatabases(client *rediscloudApi.Client, subId int) (bool, []in
 		db := list.Value()
 
 		if !redis.TimeValue(db.ActivatedOn).Add(-sweepAgeThreshold()).Before(time.Now()) {
-			// Database not old enough to sweep (24h locally, 2h in CI)
+			// Database not old enough to sweep (controlled by SWEEP_AGE_THRESHOLD)
 			return false, nil, nil
 		}
 
@@ -313,9 +305,8 @@ func testSweepReadEssentialsDatabases(client *rediscloudApi.Client, subId int) (
 	for list.Next() {
 		db := list.Value()
 
-		if !shouldSkipAgeCheck() && !redis.TimeValue(db.ActivatedOn).Add(24*-1*time.Hour).Before(time.Now()) {
-			// Database activated within the last 24 hours - assume someone might be
-			// currently running the tests
+		if !redis.TimeValue(db.ActivatedOn).Add(-sweepAgeThreshold()).Before(time.Now()) {
+			// Database not old enough to sweep
 			return false, nil, nil
 		}
 
