@@ -24,7 +24,7 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PrivateAccess(t *t
 	const databaseResource = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
 	password := acctest.RandString(20)
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	subscriptionName := testRandomWithPrefix()
 
 	contentDisabled := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_disabled_default_source_ips.tf")
 	configDisabled := fmt.Sprintf(contentDisabled, subscriptionName, password)
@@ -70,7 +70,7 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PublicAccess(t *te
 	const databaseResource = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
 	password := acctest.RandString(20)
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	subscriptionName := testRandomWithPrefix()
 
 	contentEnabled := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_enabled_default_source_ips.tf")
 	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
@@ -110,7 +110,7 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) 
 	const databaseResource = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
 	password := acctest.RandString(20)
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	subscriptionName := testRandomWithPrefix()
 
 	contentDisabled := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_disabled.tf")
 	configDisabled := fmt.Sprintf(contentDisabled, subscriptionName, password)

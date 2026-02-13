@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# Unreleased
+
+
+## Changed
+
+- CI: Test resources now use run-scoped name prefixes (`tf-ci-pr<N>-<run_number>` / `tf-ci-main-<run_number>`) to isolate parallel and retried workflow runs from each other.
+- CI: Added pre-test and post-test resource sweeps to both PR and main workflows, preventing orphaned cloud resources from accumulating across runs.
+- CI: Added automatic cleanup workflow that sweeps resources when a CI run is cancelled (e.g. by a new push with `cancel-in-progress`).
+- Added `sweep-prefix` Makefile target and `TEST_RESOURCE_PREFIX` / `SWEEP_AGE_THRESHOLD` environment variables to support targeted resource cleanup in CI.
+
 # 2.11.0 (16th February 2026)
 
 ## Added

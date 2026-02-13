@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
@@ -20,7 +19,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_PEERING")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	awsRegion := "eu-west-1"
 
 	const resourceName = "rediscloud_active_active_subscription_peering.test"
@@ -71,7 +70,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_gcp(t *testing.T) 
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_PEERING")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionPeeringGCP,
 		name,
