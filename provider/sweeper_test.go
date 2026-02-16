@@ -22,7 +22,7 @@ import (
 )
 
 // testResourcePrefix is the prefix used for all test resource names.
-// Set TEST_RESOURCE_PREFIX env var to override (e.g. "tf-ci-<run_id>" in CI).
+// Set TEST_RESOURCE_PREFIX env var to override (e.g. "tf-ci-pr7-42" in CI).
 // This also controls which resources the sweeper targets.
 var testResourcePrefix = getTestResourcePrefix()
 
@@ -59,8 +59,7 @@ func sweepAgeThreshold() time.Duration {
 	}
 	d, err := time.ParseDuration(raw)
 	if err != nil {
-		log.Printf("[WARN] Invalid SWEEP_AGE_THRESHOLD %q, falling back to 24h: %v", raw, err)
-		return 24 * time.Hour
+		log.Fatalf("[ERROR] Invalid SWEEP_AGE_THRESHOLD %q: %v (expected Go duration like '2h', '30m', '0s')", raw, err)
 	}
 	log.Printf("[INFO] Sweep age threshold set to %s via SWEEP_AGE_THRESHOLD", d)
 	return d

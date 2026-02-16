@@ -216,7 +216,7 @@ jobs:
 
   post_sweep:
     name: post-test sweep
-    if: always()
+    if: ${{ always() && !cancelled() }}
     # go_test_transit_payment is the terminal node of a strictly linear chain
     # (databases -> subscriptions -> ... -> transit_payment). If the chain gains
     # parallel branches in future, list all terminal jobs here explicitly

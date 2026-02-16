@@ -47,7 +47,15 @@ jobs:
       - name: Check for code changes
         id: filter
         run: |
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | \
+          set -euo pipefail
+          BASE="origin/${{ github.base_ref }}"
+          if ! git rev-parse --verify "$BASE" >/dev/null 2>&1; then
+            echo "::error::Could not resolve $BASE - defaulting to code=true"
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$BASE...HEAD")
+          if echo "$CHANGED" | \
              grep -qE '\.go$|^go\.(mod|sum)$|^GNUmakefile$|provider/.*/testdata/|^\.github/|^scripts/'; then
             echo "code=true" >> "$GITHUB_OUTPUT"
           else
