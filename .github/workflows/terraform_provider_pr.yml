@@ -35,6 +35,25 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  detect-changes:
+    name: detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Check for code changes
+        id: filter
+        run: |
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | \
+             grep -qE '\.go$|^go\.(mod|sum)$|^GNUmakefile$|provider/.*/testdata/|^\.github/|^scripts/'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   golangci-lint:
     name: golangci-lint
     runs-on: ubuntu-latest
@@ -178,8 +197,8 @@ jobs:
 
   pre_sweep:
     name: pre-test sweep
-    needs: [lint-complete]
-    if: github.event.pull_request.draft == false
+    needs: [lint-complete, detect-changes]
+    if: github.event.pull_request.draft == false && needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -366,8 +385,9 @@ jobs:
 
   post_sweep:
     name: post-test sweep
-    if: ${{ always() && github.event.pull_request.draft == false }}
+    if: ${{ always() && github.event.pull_request.draft == false && needs.detect-changes.outputs.code == 'true' }}
     needs:
+      - detect-changes
       - go_test_smoke_aa_db
       - go_test_smoke_aa_regions
       - go_test_smoke_aa_enable_default_user
