@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# Unreleased
+
+## Fixed
+- `rediscloud_subscription_database`: Fixed inconsistent handling of `query_performance_factor` and `redis_version` when not set, ensuring nil values are not written to state as empty strings.
+
 # 2.11.0 (16th February 2026)
 
 ## Added
