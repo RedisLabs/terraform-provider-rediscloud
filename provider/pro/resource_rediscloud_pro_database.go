@@ -600,12 +600,16 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("query_performance_factor", redis.StringValue(db.QueryPerformanceFactor)); err != nil {
-		return diag.FromErr(err)
+	if db.QueryPerformanceFactor != nil {
+		if err := d.Set("query_performance_factor", redis.StringValue(db.QueryPerformanceFactor)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
-	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
-		return diag.FromErr(err)
+	if db.RedisVersion != nil {
+		if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	// For Redis 8.0+, modules are bundled by default and returned by the API
@@ -730,7 +734,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	}
 
 	if db.QueryPerformanceFactor != nil {
-		if err := d.Set("query_performance_factor", redis.String(*db.QueryPerformanceFactor)); err != nil {
+		if err := d.Set("query_performance_factor", redis.StringValue(db.QueryPerformanceFactor)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
