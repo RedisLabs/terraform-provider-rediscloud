@@ -6,13 +6,13 @@ description: |-
 
 # Data Source: rediscloud_essentials_subscription
 
-This data source allows access to the details of an existing subscription within your Redis Enterprise Cloud account.
+This data source allows access to the details of an existing Essentials subscription within your Redis Enterprise Cloud account.
 
--> **Note:** This is referring to Essentials Subscriptions only. See also `rediscloud_subscription` (Pro) and `rediscloud_active_active_subscription`. 
+-> **Note:** This is referring to Essentials subscriptions only. See also `rediscloud_subscription` (Pro) and `rediscloud_active_active_subscription`.
 
 ## Example Usage
 
-The following example shows how to use the name attribute to locate an essentials subscription within your Redis Enterprise Cloud account.
+The following example shows how to use the name attribute to locate an Essentials subscription within your Redis Enterprise Cloud account.
 
 ```hcl
 data "rediscloud_essentials_subscription" "example" {
@@ -25,13 +25,15 @@ output "rediscloud_essentials_subscription" {
 
 ## Argument Reference
 
-* `id` - (Optional) The subscription's id
-* `name` - (Optional) A convenient name for the plan.
+* `subscription_id` - (Optional) The ID of the Essentials subscription to look up.
+* `name` - (Optional) A meaningful name to identify the subscription.
 
 ## Attributes Reference
 
+* `id` - The ID of the Essentials subscription
+* `subscription_id` - The ID of the Essentials subscription
+* `name` - The name of the subscription
 * `status` - The current status of the subscription
-* `plan_id` - The plan to which this subscription belongs
-* `payment_method` - Payment method for the requested subscription. If `credit-card` is specified, the payment method id must be defined. This information is only used when creating a new subscription and any changes will be ignored after this.
-* `payment_method_id` - A valid payment method pre-defined in the current account
+* `plan_id` - The ID of the plan to which this subscription belongs
+* `payment_method_id` - The ID of the payment method pre-defined in the current account
 * `creation_date` - When the subscription was created
