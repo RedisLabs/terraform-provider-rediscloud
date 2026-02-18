@@ -20,7 +20,7 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 	password := acctest.RandString(20)
 
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	subscriptionName := testRandomWithPrefix()
 
 	content := utils.GetTestConfig(t, "./pro/testdata/pro_database_data_source.tf")
 	config := fmt.Sprintf(content, testCloudAccountName, subscriptionName, password)

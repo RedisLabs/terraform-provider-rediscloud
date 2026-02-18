@@ -22,7 +22,7 @@ func TestAccRedisCloudProDatabase_DefaultSourceIPs_PrivateAccess(t *testing.T) {
 	const databaseResource = "rediscloud_subscription_database.example"
 	const datasourceName = "data.rediscloud_database.example"
 	password := acctest.RandString(20)
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	subscriptionName := testRandomWithPrefix()
 
 	contentDisabled := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_public_endpoint_disabled.tf")
 	configDisabled := fmt.Sprintf(contentDisabled, subscriptionName, password)
@@ -69,7 +69,7 @@ func TestAccRedisCloudProDatabase_DefaultSourceIPs_PublicAccess(t *testing.T) {
 	const databaseResource = "rediscloud_subscription_database.example"
 	const datasourceName = "data.rediscloud_database.example"
 	password := acctest.RandString(20)
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	subscriptionName := testRandomWithPrefix()
 
 	contentEnabled := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_public_endpoint_enabled.tf")
 	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
