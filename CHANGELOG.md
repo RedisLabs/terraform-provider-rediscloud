@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# Unreleased
+
+## Breaking Changes
+- **`rediscloud_essentials_subscription` data source:** Migrated from Terraform SDK v2 to the Terraform Plugin Framework. The `id` attribute type has changed from integer to string. Users who referenced `id` as an integer input filter (e.g., `id = 12345`) should switch to `subscription_id = 12345`. Users who referenced `data.rediscloud_essentials_subscription.*.id` as a number in expressions may need to wrap it with `tonumber()`.
+
+## Changed
+- Migrated `rediscloud_essentials_subscription` data source from Terraform SDK v2 to the Terraform Plugin Framework. The `id` attribute is deprecated as an input filter in favour of the new `subscription_id` attribute.
+
 # 2.11.0 (16th February 2026)
 
 ## Added

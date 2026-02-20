@@ -39,6 +39,15 @@ func (d *essentialsSubscriptionDataSource) Read(ctx context.Context, req datasou
 
 	var filters []func(sub *fs.FixedSubscriptionResponse) bool
 
+	// Prevent confusing results if both the deprecated id and subscription_id are provided
+	if !state.SubscriptionID.IsNull() && !state.ID.IsNull() && state.ID.ValueString() != "" {
+		resp.Diagnostics.AddError(
+			"Conflicting Filters",
+			"Cannot specify both 'id' (deprecated) and 'subscription_id'. Please use 'subscription_id' only.",
+		)
+		return
+	}
+
 	if !state.SubscriptionID.IsNull() {
 		subID := int(state.SubscriptionID.ValueInt64())
 		filters = append(filters, func(sub *fs.FixedSubscriptionResponse) bool {
