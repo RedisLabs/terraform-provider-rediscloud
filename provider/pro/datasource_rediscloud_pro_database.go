@@ -178,7 +178,7 @@ func DataSourceRedisCloudProDatabase() *schema.Resource {
 				Computed:    true,
 			},
 			"auto_minor_version_upgrade": {
-				Description: "When set to 'true', the database automatically upgrades to the latest minor Redis version. Default: 'true'",
+				Description: "Whether the database automatically upgrades to the latest minor Redis version",
 				Type:        schema.TypeBool,
 				Computed:    true,
 			},
