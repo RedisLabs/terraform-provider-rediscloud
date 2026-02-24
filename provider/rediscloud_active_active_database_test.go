@@ -431,6 +431,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := testRandomWithPrefix() + "-subscription"
+	databaseName := testRandomWithPrefix() + "-database"
 	const resourceName = "rediscloud_active_active_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -444,10 +445,11 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 				Config: utils.RenderTestConfig(t, "./activeactive/testdata/auto_minor_version_upgrade.tf", map[string]string{
 					"__CLOUD_ACCOUNT__":              testCloudAccountName,
 					"__SUBSCRIPTION_NAME__":          subscriptionName,
+					"__DATABASE_NAME__":              databaseName,
 					"__AUTO_MINOR_VERSION_UPGRADE__": "false",
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "auto-minor-version-upgrade-test"),
+					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "false"),
 				),
 			},
@@ -456,6 +458,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 				Config: utils.RenderTestConfig(t, "./activeactive/testdata/auto_minor_version_upgrade.tf", map[string]string{
 					"__CLOUD_ACCOUNT__":              testCloudAccountName,
 					"__SUBSCRIPTION_NAME__":          subscriptionName,
+					"__DATABASE_NAME__":              databaseName,
 					"__AUTO_MINOR_VERSION_UPGRADE__": "true",
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
