@@ -343,11 +343,10 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Default:     true,
 			},
 			"auto_minor_version_upgrade": {
-				Description: "When set to 'true', the database automatically upgrades to the latest minor Redis version. Default: 'false'",
+				Description: "When set to 'true', the database automatically upgrades to the latest minor Redis version. Default: 'true'",
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Computed:    true,
-				Default:     false,
+				Default:     true,
 			},
 			"port": {
 				Description:      "TCP port on which the database is available",
@@ -503,9 +502,7 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		createDatabase.RespVersion = s
 	})
 
-	utils.SetBool(d, "auto_minor_version_upgrade", func(b *bool) {
-		createDatabase.AutoMinorVersionUpgrade = b
-	})
+	createDatabase.AutoMinorVersionUpgrade = redis.Bool(d.Get("auto_minor_version_upgrade").(bool))
 
 	// Confirm sub is ready to accept a db request
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {

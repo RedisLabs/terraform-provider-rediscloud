@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.12.0 (5th March 2026)
+
+## Added
+
+- Added `auto_minor_version_upgrade` attribute to `rediscloud_subscription_database` and `rediscloud_active_active_subscription_database` resources. When set to `true` (the default), the database automatically upgrades to the latest minor Redis version.
+
+
 # 2.11.1 (2nd March 2026)
 
 ## Changed
