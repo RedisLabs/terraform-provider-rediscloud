@@ -817,9 +817,9 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	update := databases.UpdateDatabase{
-		Name:                    utils.GetString(d, "name"),
-		SupportOSSClusterAPI:    utils.GetBool(d, "support_oss_cluster_api"),
-		Replication:             utils.GetBool(d, "replication"),
+		Name:                 utils.GetString(d, "name"),
+		SupportOSSClusterAPI: utils.GetBool(d, "support_oss_cluster_api"),
+		Replication:          utils.GetBool(d, "replication"),
 		ThroughputMeasurement: &databases.UpdateThroughputMeasurement{
 			By:    utils.GetString(d, "throughput_measurement_by"),
 			Value: utils.GetInt(d, "throughput_measurement_value"),
