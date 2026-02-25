@@ -33,8 +33,8 @@ resource "rediscloud_active_active_subscription" "example" {
 }
 
 resource "rediscloud_active_active_subscription_database" "example" {
-  subscription_id              = rediscloud_active_active_subscription.example.id
-  name                         = local.database_name
+  subscription_id            = rediscloud_active_active_subscription.example.id
+  name                       = local.database_name
   dataset_size_in_gb         = 1
   data_eviction              = "allkeys-random"
   auto_minor_version_upgrade = local.auto_minor_version_upgrade
