@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/acluser"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/activeactive"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/cloudaccount"
@@ -170,6 +171,7 @@ func (p *redisCloudFrameworkProvider) Resources(_ context.Context) []func() reso
 // DataSources defines the data sources implemented in the provider.
 func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		acluser.NewAclUserDataSource,
 		datapersistence.NewDataPersistenceDataSource,
 		paymentmethod.NewPaymentMethodDataSource,
 		cloudaccount.NewCloudAccountDataSource,
