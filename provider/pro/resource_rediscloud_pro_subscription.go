@@ -167,8 +167,8 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 							Set: func(v interface{}) int {
 								var buf bytes.Buffer
 								m := v.(map[string]interface{})
-								buf.WriteString(fmt.Sprintf("%s-", m["region"].(string)))
-								buf.WriteString(fmt.Sprintf("%t-", m["multiple_availability_zones"].(bool)))
+								fmt.Fprintf(&buf, "%s-", m["region"].(string))
+								fmt.Fprintf(&buf, "%t-", m["multiple_availability_zones"].(bool))
 								return schema.HashString(buf.String())
 							},
 							Elem: &schema.Resource{
