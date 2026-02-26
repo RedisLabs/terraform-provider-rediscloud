@@ -205,10 +205,7 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 	// Set global_enable_default_user - Optional+Computed with default
 	utils.SetBoolFromAPI(&state.GlobalEnableDefaultUser, db.GlobalEnableDefaultUser, true)
 
-	// Set auto_minor_version_upgrade - only update from API if returned, otherwise preserve config
-	if db.AutoMinorVersionUpgrade != nil {
-		state.AutoMinorVersionUpgrade = types.BoolValue(*db.AutoMinorVersionUpgrade)
-	}
+	utils.SetBoolFromAPI(&state.AutoMinorVersionUpgrade, db.AutoMinorVersionUpgrade, true)
 
 	// Handle global_source_ips - preserve user's custom value or compute defaults
 	currentSourceIPs, diags := setToStringSlice(ctx, state.GlobalSourceIPs)
