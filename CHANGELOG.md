@@ -3,8 +3,7 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-# Unreleased
-
+# 2.11.1 (2nd March 2026)
 
 ## Changed
 
