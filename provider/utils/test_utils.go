@@ -1,10 +1,11 @@
 package utils
 
 import (
-	"math/rand"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func AccRequiresEnvVar(t *testing.T, envVarName string) string {
@@ -55,16 +56,5 @@ func RandomWithPrefix(n ...int) string {
 	if len(n) > 0 {
 		length = n[0]
 	}
-	return TestResourcePrefix() + "-" + randString(length)
-}
-
-// randString generates a random alphanumeric string of the given length.
-// Uses math/rand (non-crypto) which is fine for test resource names.
-func randString(length int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
-	}
-	return string(b)
+	return TestResourcePrefix() + "-" + acctest.RandString(length)
 }

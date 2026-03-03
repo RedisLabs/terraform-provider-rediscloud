@@ -672,17 +672,17 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	}
 
 	password := d.Get("password").(string)
-	if redis.StringValue(db.Protocol) == "redis" {
+	passwordless := false
+	if db.Security != nil && redis.StringValue(db.Protocol) == "redis" {
 		// Only db with the "redis" protocol returns the password.
 		password = redis.StringValue(db.Security.Password)
+		// Detect passwordless: API returns empty password for passwordless databases
+		passwordless = db.Security.Password != nil && *db.Security.Password == ""
 	}
 
 	if err := d.Set("password", password); err != nil {
 		return diag.FromErr(err)
 	}
-
-	// Detect passwordless: API returns empty password for passwordless databases
-	passwordless := redis.StringValue(db.Protocol) == "redis" && redis.StringValue(db.Security.Password) == ""
 	if err := d.Set("enable_passwordless", passwordless); err != nil {
 		return diag.FromErr(err)
 	}
@@ -882,6 +882,11 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		update.Password = redis.String("")
 	} else if d.Get("password").(string) != "" {
 		update.Password = redis.String(d.Get("password").(string))
+	} else if d.HasChange("enable_passwordless") {
+		// Transitioning from passwordless to password-protected without providing a password.
+		// The user must provide a password explicitly since the API cannot auto-generate one during update.
+		utils.SubscriptionMutex.Unlock(subId)
+		return append(diags, diag.Errorf("when disabling passwordless mode, you must provide a 'password'")...)
 	}
 	utils.SetIntIfPositive(d, "ram_percentage", func(i *int) {
 		update.RamPercentage = i
