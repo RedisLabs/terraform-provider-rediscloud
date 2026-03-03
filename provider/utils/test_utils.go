@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"math/rand"
 	"os"
 	"strings"
 	"testing"
@@ -35,4 +36,35 @@ func RenderTestConfig(t *testing.T, testFile string, vars map[string]string) str
 		config = strings.ReplaceAll(config, placeholder, value)
 	}
 	return config
+}
+
+// TestResourcePrefix returns the prefix used for all test resource names.
+// Reads TEST_RESOURCE_PREFIX env var; defaults to "tf-test".
+func TestResourcePrefix() string {
+	if prefix := os.Getenv("TEST_RESOURCE_PREFIX"); prefix != "" {
+		return prefix
+	}
+	return "tf-test"
+}
+
+// RandomWithPrefix generates a unique name with the test resource prefix
+// and a random suffix. Defaults to 6-char suffix to stay within the API's
+// 40-char name limit; pass an explicit length to override.
+func RandomWithPrefix(n ...int) string {
+	length := 6
+	if len(n) > 0 {
+		length = n[0]
+	}
+	return TestResourcePrefix() + "-" + randString(length)
+}
+
+// randString generates a random alphanumeric string of the given length.
+// Uses math/rand (non-crypto) which is fine for test resource names.
+func randString(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(b)
 }

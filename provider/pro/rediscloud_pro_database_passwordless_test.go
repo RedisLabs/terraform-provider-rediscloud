@@ -1,4 +1,4 @@
-package provider
+package pro_test
 
 import (
 	"testing"
@@ -15,7 +15,7 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 
 	const databaseResource = "rediscloud_subscription_database.example"
 	const datasourceName = "data.rediscloud_database.example"
-	subscriptionName := testRandomWithPrefix()
+	subscriptionName := utils.RandomWithPrefix()
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -23,7 +23,7 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 		CheckDestroy:             checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigFile: config.StaticFile("pro/testdata/pro_database_passwordless.tf"),
+				ConfigFile: config.StaticFile("testdata/pro_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
