@@ -1,10 +1,10 @@
 package provider
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
@@ -17,16 +17,16 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 	const datasourceName = "data.rediscloud_database.example"
 	subscriptionName := testRandomWithPrefix()
 
-	content := utils.GetTestConfig(t, "./pro/testdata/pro_database_passwordless.tf")
-	config := fmt.Sprintf(content, subscriptionName)
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:             testAccCheckProSubscriptionDestroy,
+		CheckDestroy:             checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: config,
+				ConfigFile: config.StaticFile("pro/testdata/pro_database_passwordless.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Subscription checks
 					resource.TestCheckResourceAttr("rediscloud_subscription.example", "public_endpoint_access", "false"),
