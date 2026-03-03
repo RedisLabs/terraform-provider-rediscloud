@@ -144,7 +144,7 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 							Set: func(v interface{}) int {
 								var buf bytes.Buffer
 								m := v.(map[string]interface{})
-								buf.WriteString(fmt.Sprintf("%s-", m["region"].(string)))
+								fmt.Fprintf(&buf, "%s-", m["region"].(string))
 								return schema.HashString(buf.String())
 							},
 							Elem: &schema.Resource{

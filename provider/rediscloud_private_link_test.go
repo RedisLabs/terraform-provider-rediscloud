@@ -30,8 +30,8 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 	const datasourceName = "data.rediscloud_private_link.pro_private_link"
 
 	// Generate names reused across configs
-	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-private-link"
-	shareName := acctest.RandomWithPrefix(testResourcePrefix) + "-privatelink"
+	subName := testRandomWithPrefix() + "-pro-private-link"
+	shareName := testRandomWithPrefix() + "-privatelink"
 	password := acctest.RandString(20)
 
 	terraformConfig := getRedisPrivateLinkConfigWithNames(t, subName, shareName, password)
@@ -85,7 +85,7 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 }
 
 func getRedisPrivateLinkConfig(t *testing.T, shareName string) string {
-	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-private-link"
+	subName := testRandomWithPrefix() + "-pro-private-link"
 	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	password := acctest.RandString(20)
@@ -147,7 +147,7 @@ func TestAccResourceRedisCloudPrivateLink_PortConsistency(t *testing.T) {
 	const databaseResourceName = "rediscloud_subscription_database.pro_database"
 	const privateLinkResourceName = "rediscloud_private_link.pro_private_link"
 
-	shareName := acctest.RandomWithPrefix(testResourcePrefix) + "-port-test"
+	shareName := testRandomWithPrefix() + "-port-test"
 	terraformConfig := getRedisPrivateLinkConfig(t, shareName)
 
 	resource.ParallelTest(t, resource.TestCase{

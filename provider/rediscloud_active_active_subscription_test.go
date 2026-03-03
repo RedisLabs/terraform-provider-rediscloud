@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
@@ -28,7 +27,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceSubscriptionName = "data.rediscloud_active_active_subscription.example"
 	const datasourceRegionName = "data.rediscloud_active_active_subscription_regions.example"
@@ -280,7 +279,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceSubscriptionName = "data.rediscloud_active_active_subscription.example"
 	const datasourceRegionName = "data.rediscloud_active_active_subscription_regions.example"
@@ -532,7 +531,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 		t.Skip("The '-activeActiveContract' parameter wasn't provided in the test command.")
 	}
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	updatedName := fmt.Sprintf("%v-updatedName", name)
 	const resourceName = "rediscloud_active_active_subscription.example"
 
@@ -572,7 +571,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 		t.Skip("The '-activeActiveMarketplace' parameter wasn't provided in the test command.")
 	}
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	updatedName := fmt.Sprintf("%v-updatedName", name)
 	const resourceName = "rediscloud_active_active_subscription.example"
 
@@ -608,7 +607,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_PublicEndpointAccess(t *t
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -824,7 +823,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_RemoveRedisVersion(t *tes
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
 
 	var subIdStep1 int

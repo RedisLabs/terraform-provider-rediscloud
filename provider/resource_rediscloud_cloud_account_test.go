@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
@@ -24,7 +23,7 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 		t.Skip("Required environment variables currently not available under CI")
 	}
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudCloudAccount,
 		os.Getenv("AWS_ACCESS_KEY_ID"),

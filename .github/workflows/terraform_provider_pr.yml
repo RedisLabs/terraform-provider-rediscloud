@@ -28,12 +28,40 @@ env:
   GCP_VPC_ID: ${{ secrets.GCP_VPC_ID }}
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+  TEST_RESOURCE_PREFIX: "tf-ci-pr${{ github.event.pull_request.number }}-${{ github.run_number }}"
 
 concurrency:
   group: <span class="math-inline">\{\{ github\.workflow \}\}\-</span>{{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  detect-changes:
+    name: detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Check for code changes
+        id: filter
+        run: |
+          set -euo pipefail
+          BASE="origin/${{ github.base_ref }}"
+          if ! git rev-parse --verify "$BASE" >/dev/null 2>&1; then
+            echo "::error::Could not resolve $BASE - defaulting to code=true"
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$BASE...HEAD")
+          if echo "$CHANGED" | \
+             grep -qE '\.go$|^go\.(mod|sum)$|^GNUmakefile$|provider/.*/testdata/|^\.github/|^scripts/'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   golangci-lint:
     name: golangci-lint
     runs-on: ubuntu-latest
@@ -175,9 +203,23 @@ jobs:
     steps:
       - run: echo "All linting and validation checks passed"
 
+  pre_sweep:
+    name: pre-test sweep
+    needs: [lint-complete, detect-changes]
+    if: github.event.pull_request.draft == false && needs.detect-changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: go.mod
+      - uses: ./.github/actions/run-sweep
+        with:
+          sweep_prefix: 'tf-ci'
+
   go_test_smoke_aa_sub:
     name: go test smoke aa sub
-    needs: [lint-complete]
+    needs: [pre_sweep]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -229,7 +271,7 @@ jobs:
 
   go_test_smoke_pro_sub:
     name: go test smoke pro sub
-    needs: [lint-complete]
+    needs: [pre_sweep]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -255,7 +297,7 @@ jobs:
 
   go_test_smoke_essentials_sub:
     name: go test smoke essentials sub
-    needs: [lint-complete]
+    needs: [pre_sweep]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -282,7 +324,7 @@ jobs:
 
   go_test_smoke_misc:
     name: go test smoke misc
-    needs: [lint-complete]
+    needs: [pre_sweep]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -308,7 +350,7 @@ jobs:
 
   go_test_block_public_endpoints:
     name: go test smoke public endpoints
-    needs: [lint-complete]
+    needs: [pre_sweep]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -348,3 +390,27 @@ jobs:
             echo "::error::Documentation validation failed. Run 'tfplugindocs generate' and commit the changes."
             exit 1
           fi
+
+  post_sweep:
+    name: post-test sweep
+    if: ${{ always() && github.event.pull_request.draft == false && needs.detect-changes.outputs.code == 'true' }}
+    needs:
+      - detect-changes
+      - go_test_smoke_aa_db
+      - go_test_smoke_aa_regions
+      - go_test_smoke_aa_enable_default_user
+      - go_test_smoke_pro_db
+      - go_test_smoke_essentials_db
+      - go_test_smoke_misc
+      - go_test_pro_db_upgrade
+      - go_test_block_public_endpoints
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: go.mod
+      - uses: ./.github/actions/run-sweep
+        with:
+          sweep_prefix: "tf-ci-pr${{ github.event.pull_request.number }}-${{ github.run_number }}"
+          age_threshold: '0s'

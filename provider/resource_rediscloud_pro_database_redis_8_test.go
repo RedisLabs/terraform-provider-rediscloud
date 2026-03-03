@@ -21,7 +21,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	const resourceName = "rediscloud_subscription_database.example"
 	const subscriptionResourceName = "rediscloud_subscription.example"
@@ -101,7 +101,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	const resourceName = "rediscloud_subscription_database.example"
 	const subscriptionResourceName = "rediscloud_subscription.example"
@@ -247,7 +247,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	const resourceName = "rediscloud_subscription_database.example"
 	const subscriptionResourceName = "rediscloud_subscription.example"
@@ -335,7 +335,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 func TestAccResourceRedisCloudProDatabase_Redis8_ModulesBlocked(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 

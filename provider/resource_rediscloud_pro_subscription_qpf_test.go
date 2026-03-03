@@ -74,7 +74,7 @@ func testSubErrorCase(t *testing.T, config string, expectedError *regexp.Regexp)
 }
 
 func TestAccResourceRedisCloudProSubscription_qpf(t *testing.T) {
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	const resourceName = "rediscloud_subscription.example"
 
@@ -110,7 +110,7 @@ func TestAccResourceRedisCloudProSubscription_qpf(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudProSubscription_invalidQueryPerformanceFactors(t *testing.T) {
-	name := acctest.RandomWithPrefix("tf-test")
+	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -120,7 +120,7 @@ func TestAccResourceRedisCloudProSubscription_invalidQueryPerformanceFactors(t *
 }
 
 func TestAccResourceRedisCloudProSubscription_invalidQueryPerformanceFactors_outOfRange(t *testing.T) {
-	name := acctest.RandomWithPrefix("tf-test")
+	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 

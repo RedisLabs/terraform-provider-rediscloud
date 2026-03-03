@@ -29,8 +29,8 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 	const datasourceName = "data.rediscloud_active_active_private_link.aa_private_link"
 
 	// Generate names reused across configs
-	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-aa-private-link"
-	shareName := acctest.RandomWithPrefix(testResourcePrefix) + "-privatelink-aa"
+	subName := testRandomWithPrefix() + "-aa-private-link"
+	shareName := testRandomWithPrefix() + "-privatelink-aa"
 	password := acctest.RandString(20)
 
 	terraformConfig := getRedisActiveActivePrivateLinkConfigWithNames(t, subName, shareName, password)
@@ -86,7 +86,7 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 }
 
 func getRedisActiveActivePrivateLinkConfig(t *testing.T, testFile, shareName, password string) string {
-	subName := acctest.RandomWithPrefix(testResourcePrefix) + "-aa-private-link"
+	subName := testRandomWithPrefix() + "-aa-private-link"
 	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	content := utils.GetTestConfig(t, testFile)
 	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName, password)

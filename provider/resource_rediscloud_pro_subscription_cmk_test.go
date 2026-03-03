@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
@@ -19,7 +18,7 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 	utils.AccRequiresEnvVar(t, "GCP_CMK_RESOURCE_NAME")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
 	gcpCmkResourceName := os.Getenv("GCP_CMK_RESOURCE_NAME")
 

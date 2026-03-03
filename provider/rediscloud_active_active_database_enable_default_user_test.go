@@ -26,8 +26,8 @@ import (
 // Bug behaviour: us-east-1 incorrectly got enable_default_user = true
 // Fixed behaviour: us-east-1 should inherit false from global
 func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserInheritance(t *testing.T) {
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-inherit-test"
-	databaseName := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
+	subscriptionName := testRandomWithPrefix() + "-inherit-test"
+	databaseName := testRandomWithPrefix() + "-database"
 	password := acctest.RandString(20)
 
 	const resourceName = "rediscloud_active_active_subscription_database.test"
@@ -63,8 +63,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserInheritance(
 }
 
 func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.T) {
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-enable-default-user"
-	databaseName := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
+	subscriptionName := testRandomWithPrefix() + "-enable-default-user"
+	databaseName := testRandomWithPrefix() + "-database"
 	password := acctest.RandString(20)
 
 	const resourceName = "rediscloud_active_active_subscription_database.test"

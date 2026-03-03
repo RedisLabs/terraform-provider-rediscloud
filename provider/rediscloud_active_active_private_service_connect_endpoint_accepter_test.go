@@ -10,7 +10,6 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/psc"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
@@ -19,7 +18,7 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter_
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	baseName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-pscea"
+	baseName := testRandomWithPrefix() + "-pro-pscea"
 
 	const resourceName = "rediscloud_active_active_private_service_connect_endpoint_accepter.accepter"
 	gcpProjectId := os.Getenv("GCP_PROJECT_ID")

@@ -1,21 +1,20 @@
 package provider
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-
 	"fmt"
 	"regexp"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	subscriptionName := testRandomWithPrefix()
 	databaseName := subscriptionName + "-db"
 	databaseNameUpdated := databaseName + "-updated"
 
@@ -272,7 +271,7 @@ data "rediscloud_essentials_database" "example" {
 func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	subscriptionName := testRandomWithPrefix()
 	databaseName := subscriptionName + "-db"
 	databaseNameUpdated := databaseName + "-updated"
 
@@ -339,7 +338,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	subscriptionName := testRandomWithPrefix()
 	databaseName := subscriptionName + "-db"
 
 	const resourceName = "rediscloud_essentials_database.example"
@@ -373,7 +372,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
 func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix)
+	subscriptionName := testRandomWithPrefix()
 	databaseName := subscriptionName + "-db"
 	password := "test-password-123!"
 

@@ -8,7 +8,6 @@ import (
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
@@ -16,7 +15,7 @@ func TestAccResourceRedisCloudPrivateServiceConnectEndpoint_CRUDI(t *testing.T) 
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	baseName := acctest.RandomWithPrefix(testResourcePrefix) + "-pro-psce"
+	baseName := testRandomWithPrefix() + "-pro-psce"
 
 	const resourceName = "rediscloud_private_service_connect_endpoint.psce"
 	const datasourceName = "data.rediscloud_private_service_connect_endpoints.psce"

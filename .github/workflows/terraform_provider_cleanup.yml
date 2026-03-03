@@ -1,0 +1,56 @@
+name: Cleanup cancelled CI runs
+
+# Triggers after the PR or main workflow finishes. Runs as an independent
+# workflow, so it is NOT killed by cancel-in-progress on the original run.
+on:
+  workflow_run:
+    workflows:
+      - "Terraform Provider Checks - PR workflow"
+      - "Terraform Provider Checks - main branch"
+    types: [completed]
+
+env:
+  REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_STAGING }}
+  REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_STAGING }}
+  REDISCLOUD_URL: ${{ secrets.REDISCLOUD_URL_STAGING }}
+
+jobs:
+  sweep:
+    name: sweep cancelled run
+    if: ${{ github.event.workflow_run.conclusion == 'cancelled' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version-file: go.mod
+      - name: Determine sweep prefix
+        id: prefix
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_NUMBER="${{ github.event.workflow_run.run_number }}"
+
+          if [ "${{ github.event.workflow_run.event }}" = "pull_request" ]; then
+            PR_NUMBER="${{ github.event.workflow_run.pull_requests[0].number }}"
+
+            # Fallback: look up PR number from the head branch if not available
+            if [ -z "$PR_NUMBER" ]; then
+              PR_NUMBER=$(gh pr list --head "${{ github.event.workflow_run.head_branch }}" --json number -q '.[0].number')
+            fi
+
+            if [ -z "$PR_NUMBER" ]; then
+              echo "::warning::Could not determine PR number — skipping cleanup"
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "value=tf-ci-pr${PR_NUMBER}-${RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "value=tf-ci-main-${RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Sweep resources
+        if: ${{ steps.prefix.outputs.skip != 'true' }}
+        uses: ./.github/actions/run-sweep
+        with:
+          sweep_prefix: ${{ steps.prefix.outputs.value }}
+          age_threshold: '0s'

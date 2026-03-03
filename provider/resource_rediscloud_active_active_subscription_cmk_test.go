@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
@@ -20,7 +19,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 	utils.AccRequiresEnvVar(t, "GCP_CMK_RESOURCE_NAME")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
 	gcpCmkResourceName := os.Getenv("GCP_CMK_RESOURCE_NAME")
 
@@ -163,7 +162,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_Automated(t *testing.
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
 	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
 

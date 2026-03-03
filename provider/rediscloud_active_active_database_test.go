@@ -18,8 +18,8 @@ import (
 
 // Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the database resource.
 func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
-	databaseName := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
+	subscriptionName := testRandomWithPrefix() + "-subscription"
+	databaseName := testRandomWithPrefix() + "-database"
 	password := acctest.RandString(20)
 
 	const databaseResourceName = "rediscloud_active_active_subscription_database.example"
@@ -253,8 +253,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
-	name := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
+	subscriptionName := testRandomWithPrefix() + "-subscription"
+	name := testRandomWithPrefix() + "-database"
 	password := acctest.RandString(20)
 	const resourceName = "rediscloud_active_active_subscription_database.example"
 	portNumber := 10101
@@ -279,7 +279,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_timeUtcRequiresValidInterval(
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := acctest.RandomWithPrefix(testResourcePrefix)
+	name := testRandomWithPrefix()
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	password := acctest.RandString(20)
 
@@ -431,7 +431,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 	t.Skip("auto_minor_version_upgrade feature temporarily removed")
 
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-subscription"
+	subscriptionName := testRandomWithPrefix() + "-subscription"
 	const resourceName = "rediscloud_active_active_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -468,8 +468,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 }
 
 func TestAccResourceRedisCloudActiveActiveDatabase_modulesImmutable(t *testing.T) {
-	subscriptionName := acctest.RandomWithPrefix(testResourcePrefix) + "-modules-immutable"
-	databaseName := acctest.RandomWithPrefix(testResourcePrefix) + "-database"
+	subscriptionName := testRandomWithPrefix() + "-modules-immutable"
+	databaseName := testRandomWithPrefix() + "-database"
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{

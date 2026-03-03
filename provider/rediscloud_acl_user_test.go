@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
@@ -20,7 +19,7 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	prefix := acctest.RandomWithPrefix(testResourcePrefix)
+	prefix := testRandomWithPrefix()
 	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	exampleSubscriptionName := prefix + "-subscription"
 	exampleDatabasePassword := prefix + "aA.1"
