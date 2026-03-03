@@ -113,6 +113,11 @@ func DataSourceRedisCloudProDatabase() *schema.Resource {
 				Computed:    true,
 				Sensitive:   true,
 			},
+			"enable_passwordless": {
+				Description: "Whether the database is configured without a password",
+				Type:        schema.TypeBool,
+				Computed:    true,
+			},
 			"public_endpoint": {
 				Description: "Public endpoint to access the database",
 				Type:        schema.TypeString,
@@ -440,6 +445,10 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 			if err := d.Set("password", v); err != nil {
 				return diag.FromErr(err)
 			}
+		}
+		passwordless := redis.StringValue(db.Security.Password) == ""
+		if err := d.Set("enable_passwordless", passwordless); err != nil {
+			return diag.FromErr(err)
 		}
 	}
 	if err := d.Set("public_endpoint", redis.StringValue(db.PublicEndpoint)); err != nil {

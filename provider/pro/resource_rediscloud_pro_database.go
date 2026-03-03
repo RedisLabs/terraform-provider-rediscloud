@@ -201,11 +201,19 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				ConflictsWith: []string{"average_item_size_in_bytes"},
 			},
 			"password": {
-				Description: "Password used to access the database. If left empty, the password will be generated automatically",
-				Type:        schema.TypeString,
-				Optional:    true,
-				Sensitive:   true,
-				Computed:    true,
+				Description:   "Password used to access the database. If left empty, the password will be generated automatically",
+				Type:          schema.TypeString,
+				Optional:      true,
+				Sensitive:     true,
+				Computed:      true,
+				ConflictsWith: []string{"enable_passwordless"},
+			},
+			"enable_passwordless": {
+				Description:   "When 'true', the database is configured without a password. Only valid when the subscription has public_endpoint_access disabled. Default: 'false'",
+				Type:          schema.TypeBool,
+				Optional:      true,
+				Default:       false,
+				ConflictsWith: []string{"password"},
 			},
 			"public_endpoint": {
 				Description: "Public endpoint to access the database",
@@ -477,6 +485,10 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	utils.SetStringIfNotEmpty(d, "password", func(s *string) {
 		createDatabase.Password = s
 	})
+	// If passwordless is enabled, explicitly send empty password
+	if d.Get("enable_passwordless").(bool) {
+		createDatabase.Password = redis.String("")
+	}
 
 	utils.SetIntIfPositive(d, "average_item_size_in_bytes", func(i *int) {
 		createDatabase.AverageItemSizeInBytes = i
@@ -675,6 +687,13 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 
 	if err := d.Set("password", password); err != nil {
 		return diag.FromErr(err)
+	}
+
+	// Detect passwordless: API returns empty password for passwordless databases
+	if redis.StringValue(db.Protocol) == "redis" && redis.StringValue(db.Security.Password) == "" {
+		if err := d.Set("enable_passwordless", true); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	// Handle source_ips - read from API but apply defaults based on public_endpoint_access
@@ -877,7 +896,9 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		update.QueryPerformanceFactor = redis.String(queryPerformanceFactor)
 	}
 
-	if d.Get("password").(string) != "" {
+	if d.Get("enable_passwordless").(bool) {
+		update.Password = redis.String("")
+	} else if d.Get("password").(string) != "" {
 		update.Password = redis.String(d.Get("password").(string))
 	}
 	utils.SetIntIfPositive(d, "ram_percentage", func(i *int) {
