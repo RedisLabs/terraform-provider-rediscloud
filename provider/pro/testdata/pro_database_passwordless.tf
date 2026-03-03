@@ -1,5 +1,5 @@
-locals {
-  rediscloud_subscription_name = "%s"
+variable "subscription_name" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
@@ -8,7 +8,7 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_subscription" "example" {
-  name                   = local.rediscloud_subscription_name
+  name                   = var.subscription_name
   payment_method_id      = data.rediscloud_payment_method.card.id
   public_endpoint_access = false
 
@@ -31,7 +31,7 @@ resource "rediscloud_subscription" "example" {
 
 resource "rediscloud_subscription_database" "example" {
   subscription_id              = rediscloud_subscription.example.id
-  name                         = local.rediscloud_subscription_name
+  name                         = var.subscription_name
   protocol                     = "redis"
   dataset_size_in_gb           = 1
   data_persistence             = "none"
