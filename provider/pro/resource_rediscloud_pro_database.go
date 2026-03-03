@@ -468,7 +468,7 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	// Warn if modules are explicitly configured for Redis 8.0+
 	var diags diag.Diagnostics
 	redisVersion := d.Get("redis_version").(string)
-	if shouldWarnRedis8Modules(redisVersion, len(createModules) > 0) {
+	if ShouldWarnRedis8Modules(redisVersion, len(createModules) > 0) {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  "Modules are bundled by default in Redis 8.0+",
@@ -623,7 +623,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	// For Redis 8.0+, modules are bundled by default and returned by the API
 	// Only set modules in state if they were explicitly defined in the config
 	redisVersion := redis.StringValue(db.RedisVersion)
-	if shouldSuppressModuleDiffsForRedis8(redisVersion) {
+	if ShouldSuppressModuleDiffsForRedis8(redisVersion) {
 		// Only set modules if they were explicitly configured by the user
 		if _, ok := d.GetOk("modules"); ok {
 			if err := d.Set("modules", FlattenModules(db.Modules)); err != nil {
@@ -937,7 +937,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	// Warn if modules are explicitly configured for Redis 8.0+
 	redisVersion := d.Get("redis_version").(string)
 	modules := d.Get("modules").(*schema.Set)
-	if shouldWarnRedis8Modules(redisVersion, modules.Len() > 0) {
+	if ShouldWarnRedis8Modules(redisVersion, modules.Len() > 0) {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  "Modules are bundled by default in Redis 8.0+",
@@ -1154,8 +1154,8 @@ func containsDBModule(modules []map[string]interface{}, moduleName string) bool 
 	return false
 }
 
-// shouldWarnRedis8Modules checks if a warning should be issued for modules in Redis 8.0 or higher
-func shouldWarnRedis8Modules(version string, hasModules bool) bool {
+// ShouldWarnRedis8Modules checks if a warning should be issued for modules in Redis 8.0 or higher
+func ShouldWarnRedis8Modules(version string, hasModules bool) bool {
 	if !hasModules {
 		return false
 	}
@@ -1169,9 +1169,9 @@ func shouldWarnRedis8Modules(version string, hasModules bool) bool {
 	return false
 }
 
-// shouldSuppressModuleDiffsForRedis8 checks if module diffs should be suppressed for Redis 8.0 or higher
+// ShouldSuppressModuleDiffsForRedis8 checks if module diffs should be suppressed for Redis 8.0 or higher
 // In Redis 8.0+, modules are bundled by default, so we should ignore changes to explicitly configured modules
-func shouldSuppressModuleDiffsForRedis8(version string) bool {
+func ShouldSuppressModuleDiffsForRedis8(version string) bool {
 	if len(version) == 0 {
 		return false
 	}
@@ -1190,7 +1190,7 @@ func modulesDiffSuppressFunc(k, oldValue, newValue string, d *schema.ResourceDat
 		return false
 	}
 	version := redisVersion.(string)
-	return shouldSuppressModuleDiffsForRedis8(version)
+	return ShouldSuppressModuleDiffsForRedis8(version)
 }
 
 func validateModulesForRedis8() schema.CustomizeDiffFunc {
@@ -1208,7 +1208,7 @@ func validateModulesForRedis8() schema.CustomizeDiffFunc {
 		}
 		modules := modulesRaw.(*schema.Set)
 
-		if shouldWarnRedis8Modules(redisVersion, modules.Len() > 0) {
+		if ShouldWarnRedis8Modules(redisVersion, modules.Len() > 0) {
 			log.Printf("[WARN] Modules are bundled by default in Redis %s and later versions. The 'modules' block is deprecated for Redis 8.0+ as modules (RediSearch, RedisJSON, RedisBloom, RedisTimeSeries) are bundled by default. You should remove the 'modules' block from your configuration.", redisVersion)
 		}
 
