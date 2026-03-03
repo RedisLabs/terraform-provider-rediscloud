@@ -690,10 +690,9 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	}
 
 	// Detect passwordless: API returns empty password for passwordless databases
-	if redis.StringValue(db.Protocol) == "redis" && redis.StringValue(db.Security.Password) == "" {
-		if err := d.Set("enable_passwordless", true); err != nil {
-			return diag.FromErr(err)
-		}
+	passwordless := redis.StringValue(db.Protocol) == "redis" && redis.StringValue(db.Security.Password) == ""
+	if err := d.Set("enable_passwordless", passwordless); err != nil {
+		return diag.FromErr(err)
 	}
 
 	// Handle source_ips - read from API but apply defaults based on public_endpoint_access
