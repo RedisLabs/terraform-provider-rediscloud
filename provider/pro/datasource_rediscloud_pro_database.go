@@ -445,8 +445,12 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 			if err := d.Set("password", v); err != nil {
 				return diag.FromErr(err)
 			}
+		} else {
+			if err := d.Set("password", ""); err != nil {
+				return diag.FromErr(err)
+			}
 		}
-		passwordless := redis.StringValue(db.Security.Password) == ""
+		passwordless := redis.StringValue(db.Protocol) == "redis" && redis.StringValue(db.Security.Password) == ""
 		if err := d.Set("enable_passwordless", passwordless); err != nil {
 			return diag.FromErr(err)
 		}

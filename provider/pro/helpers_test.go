@@ -31,7 +31,7 @@ var protoV5ProviderFactories = map[string]func() (tfprotov5.ProviderServer, erro
 }
 
 func testAccPreCheck(t *testing.T) {
-	for _, name := range []string{provider.RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar} {
+	for _, name := range []string{rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar} {
 		if _, ok := os.LookupEnv(name); !ok {
 			t.Fatalf("Missing `%s` environment variable", name)
 		}
