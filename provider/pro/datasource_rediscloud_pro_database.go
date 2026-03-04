@@ -474,10 +474,12 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 		}
 	}
 
+	autoMinorVersionUpgrade := true
 	if db.AutoMinorVersionUpgrade != nil {
-		if err := d.Set("auto_minor_version_upgrade", redis.BoolValue(db.AutoMinorVersionUpgrade)); err != nil {
-			return diag.FromErr(err)
-		}
+		autoMinorVersionUpgrade = redis.BoolValue(db.AutoMinorVersionUpgrade)
+	}
+	if err := d.Set("auto_minor_version_upgrade", autoMinorVersionUpgrade); err != nil {
+		return diag.FromErr(err)
 	}
 
 	var parsedLatestBackupStatus []map[string]interface{}
