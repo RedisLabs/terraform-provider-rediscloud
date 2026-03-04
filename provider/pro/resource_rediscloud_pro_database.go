@@ -343,7 +343,7 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Default:     true,
 			},
 			"auto_minor_version_upgrade": {
-				Description: "When set to 'true', the database automatically upgrades to the latest minor Redis version. Default: 'true'",
+				Description: "Automatically upgrades the database to newer minor versions within the same major release. Applies to version 8.4 and above. Default: 'true'",
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     true,

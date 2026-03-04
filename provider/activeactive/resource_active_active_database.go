@@ -282,7 +282,7 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 				Default:     booldefault.StaticBool(true),
 			},
 			"auto_minor_version_upgrade": schema.BoolAttribute{
-				Description: "When set to 'true', the database automatically upgrades to the latest minor Redis version. Default: 'true'",
+				Description: "Automatically upgrades the database to newer minor versions within the same major release. Applies to version 8.4 and above. Default: 'true'",
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
