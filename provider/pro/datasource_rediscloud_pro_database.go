@@ -177,6 +177,11 @@ func DataSourceRedisCloudProDatabase() *schema.Resource {
 				Type:        schema.TypeBool,
 				Computed:    true,
 			},
+			"auto_minor_version_upgrade": {
+				Description: "Automatically upgrades the database to newer minor versions within the same major release. Applies to version 8.4 and above.",
+				Type:        schema.TypeBool,
+				Computed:    true,
+			},
 			"latest_backup_status": {
 				Description: "Details about the last backup that took place for this database",
 				Computed:    true,
@@ -467,6 +472,14 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 		if err := d.Set("source_ips", redis.StringSliceValue(db.Security.SourceIPs...)); err != nil {
 			return diag.FromErr(err)
 		}
+	}
+
+	autoMinorVersionUpgrade := true
+	if db.AutoMinorVersionUpgrade != nil {
+		autoMinorVersionUpgrade = redis.BoolValue(db.AutoMinorVersionUpgrade)
+	}
+	if err := d.Set("auto_minor_version_upgrade", autoMinorVersionUpgrade); err != nil {
+		return diag.FromErr(err)
 	}
 
 	var parsedLatestBackupStatus []map[string]interface{}

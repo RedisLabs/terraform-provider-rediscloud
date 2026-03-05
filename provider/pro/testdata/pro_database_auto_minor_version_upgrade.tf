@@ -1,6 +1,7 @@
 locals {
   rediscloud_cloud_account     = "__CLOUD_ACCOUNT__"
   rediscloud_subscription_name = "__SUBSCRIPTION_NAME__"
+  rediscloud_database_name     = "__DATABASE_NAME__"
   auto_minor_version_upgrade   = "__AUTO_MINOR_VERSION_UPGRADE__" == "true"
 }
 
@@ -40,7 +41,7 @@ resource "rediscloud_subscription" "example" {
 
 resource "rediscloud_subscription_database" "example" {
   subscription_id              = rediscloud_subscription.example.id
-  name                         = "auto-minor-version-upgrade-test"
+  name                         = local.rediscloud_database_name
   protocol                     = "redis"
   memory_limit_in_gb           = 1
   data_persistence             = "none"

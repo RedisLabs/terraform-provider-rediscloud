@@ -281,6 +281,12 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 			},
+			"auto_minor_version_upgrade": schema.BoolAttribute{
+				Description: "Automatically upgrades the database to newer minor versions within the same major release. Applies to version 8.4 and above. Default: 'true'",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(true),
+			},
 			"global_resp_version": schema.StringAttribute{
 				Description: "The initial RESP version for all databases provisioned under this AA database. This information is only used when creating a new database and any changes will be ignored after this.",
 				Optional:    true,

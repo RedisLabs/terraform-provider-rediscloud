@@ -342,6 +342,12 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 			},
+			"auto_minor_version_upgrade": {
+				Description: "Automatically upgrades the database to newer minor versions within the same major release. Applies to version 8.4 and above. Default: 'true'",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+			},
 			"port": {
 				Description:      "TCP port on which the database is available",
 				Type:             schema.TypeInt,
@@ -495,6 +501,8 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	utils.SetStringIfNotEmpty(d, "resp_version", func(s *string) {
 		createDatabase.RespVersion = s
 	})
+
+	createDatabase.AutoMinorVersionUpgrade = redis.Bool(d.Get("auto_minor_version_upgrade").(bool))
 
 	// Confirm sub is ready to accept a db request
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
@@ -720,6 +728,14 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
+	autoMinorVersionUpgrade := true
+	if db.AutoMinorVersionUpgrade != nil {
+		autoMinorVersionUpgrade = redis.BoolValue(db.AutoMinorVersionUpgrade)
+	}
+	if err := d.Set("auto_minor_version_upgrade", autoMinorVersionUpgrade); err != nil {
+		return diag.FromErr(err)
+	}
+
 	tlsAuthEnabled := *db.Security.TLSClientAuthentication
 	if err := utils.ApplyCertificateHints(tlsAuthEnabled, d); err != nil {
 		return diag.FromErr(err)
@@ -811,12 +827,13 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 			Value: utils.GetInt(d, "throughput_measurement_value"),
 		},
 
-		DataPersistence:    utils.GetString(d, "data_persistence"),
-		DataEvictionPolicy: utils.GetString(d, "data_eviction"),
-		SourceIP:           utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
-		Alerts:             &alerts,
-		RemoteBackup:       BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
-		EnableDefaultUser:  utils.GetBool(d, "enable_default_user"),
+		DataPersistence:         utils.GetString(d, "data_persistence"),
+		DataEvictionPolicy:      utils.GetString(d, "data_eviction"),
+		SourceIP:                utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
+		Alerts:                  &alerts,
+		RemoteBackup:            BuildBackupPlan(d.Get("remote_backup").([]interface{}), d.Get("periodic_backup_path")),
+		EnableDefaultUser:       utils.GetBool(d, "enable_default_user"),
+		AutoMinorVersionUpgrade: utils.GetBool(d, "auto_minor_version_upgrade"),
 	}
 
 	// One of the following fields must be set, validation is handled in the schema (ExactlyOneOf)

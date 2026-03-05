@@ -429,34 +429,33 @@ resource "rediscloud_active_active_subscription_database" "example" {
 func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-	t.Skip("auto_minor_version_upgrade feature temporarily removed")
 
 	subscriptionName := testRandomWithPrefix() + "-subscription"
+	databaseName := testRandomWithPrefix() + "-database"
 	const resourceName = "rediscloud_active_active_subscription_database.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database creation with auto_minor_version_upgrade set to false
 			{
 				Config: utils.RenderTestConfig(t, "./activeactive/testdata/auto_minor_version_upgrade.tf", map[string]string{
-					"__CLOUD_ACCOUNT__":              testCloudAccountName,
 					"__SUBSCRIPTION_NAME__":          subscriptionName,
+					"__DATABASE_NAME__":              databaseName,
 					"__AUTO_MINOR_VERSION_UPGRADE__": "false",
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "auto-minor-version-upgrade-test"),
+					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "false"),
 				),
 			},
 			// Test database update with auto_minor_version_upgrade set to true
 			{
 				Config: utils.RenderTestConfig(t, "./activeactive/testdata/auto_minor_version_upgrade.tf", map[string]string{
-					"__CLOUD_ACCOUNT__":              testCloudAccountName,
 					"__SUBSCRIPTION_NAME__":          subscriptionName,
+					"__DATABASE_NAME__":              databaseName,
 					"__AUTO_MINOR_VERSION_UPGRADE__": "true",
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(

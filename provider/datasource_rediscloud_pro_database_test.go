@@ -50,6 +50,7 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet(dataSourceById, "private_endpoint"),
 					resource.TestCheckResourceAttr(dataSourceById, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(dataSourceById, "query_performance_factor", "2x"),
+					resource.TestCheckResourceAttr(dataSourceById, "auto_minor_version_upgrade", "true"),
 
 					resource.TestCheckResourceAttrSet(dataSourceByName, "db_id"),
 					resource.TestCheckResourceAttr(dataSourceByName, "name", "tf-database"),
@@ -68,6 +69,7 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 					resource.TestCheckResourceAttrSet(dataSourceByName, "private_endpoint"),
 					resource.TestCheckResourceAttr(dataSourceByName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(dataSourceByName, "query_performance_factor", "2x"),
+					resource.TestCheckResourceAttr(dataSourceByName, "auto_minor_version_upgrade", "true"),
 					resource.TestCheckResourceAttr(dataSourceByName, "redis_version", "7.4"),
 				),
 			},
