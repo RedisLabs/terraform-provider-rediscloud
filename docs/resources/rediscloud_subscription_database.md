@@ -104,6 +104,7 @@ The following arguments are supported:
 * `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999. **Modifying this attribute will force creation of a new resource.**
 * `remote_backup` (Optional) Specifies the backup options for the database, documented below
 * `enable_default_user` (Optional) When `true` enables connecting to the database with the default user. Default `true`.
+* `auto_minor_version_upgrade` - (Optional) Automatically upgrades the database to newer minor versions within the same major release. Applies to version 8.4 and above. Default: `true`.
 * `tags` - (Optional) A string/string map of Tags to associate with this database. Note that all keys and values must be lowercase.
 
 The `alert` block supports:

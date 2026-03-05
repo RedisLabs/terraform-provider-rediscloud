@@ -59,6 +59,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "alert.0.value", "1"),
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
+					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "true"),
 					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.2"),
 
 					resource.TestCheckResourceAttr(resourceName, "tags.market", "emea"),
@@ -295,9 +296,9 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-	t.Skip("auto_minor_version_upgrade feature temporarily removed")
 
 	name := testRandomWithPrefix()
+	databaseName := testRandomWithPrefix() + "-database"
 	const resourceName = "rediscloud_subscription_database.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -311,10 +312,11 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 				Config: utils.RenderTestConfig(t, "./pro/testdata/pro_database_auto_minor_version_upgrade.tf", map[string]string{
 					"__CLOUD_ACCOUNT__":              testCloudAccountName,
 					"__SUBSCRIPTION_NAME__":          name,
+					"__DATABASE_NAME__":              databaseName,
 					"__AUTO_MINOR_VERSION_UPGRADE__": "false",
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", "auto-minor-version-upgrade-test"),
+					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "false"),
 				),
 			},
@@ -323,6 +325,7 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 				Config: utils.RenderTestConfig(t, "./pro/testdata/pro_database_auto_minor_version_upgrade.tf", map[string]string{
 					"__CLOUD_ACCOUNT__":              testCloudAccountName,
 					"__SUBSCRIPTION_NAME__":          name,
+					"__DATABASE_NAME__":              databaseName,
 					"__AUTO_MINOR_VERSION_UPGRADE__": "true",
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(

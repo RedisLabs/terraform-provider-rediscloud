@@ -41,3 +41,5 @@ CLAUDE.md
 # Keep windows files with windows line endings
 *.winfile eol=crlf
 .claude
+.mcp.json
+.serena/
