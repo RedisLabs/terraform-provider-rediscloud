@@ -392,7 +392,7 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 	dbId := redis.IntValue(dbs[0].ID)
 	db, err := api.Client.Database.Get(ctx, subId, dbId)
 	if err != nil {
-		return diag.FromErr(list.Err())
+		return diag.FromErr(err)
 	}
 
 	d.SetId(fmt.Sprintf("%d/%d", subId, dbId))
