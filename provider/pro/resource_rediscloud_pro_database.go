@@ -201,7 +201,7 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				ConflictsWith: []string{"average_item_size_in_bytes"},
 			},
 			"password": {
-				Description:   "Password used to access the database. If left empty, the password will be generated automatically",
+				Description:   "Password used to access the database. If omitted (and enable_passwordless is false), a random password will be generated automatically",
 				Type:          schema.TypeString,
 				Optional:      true,
 				Sensitive:     true,

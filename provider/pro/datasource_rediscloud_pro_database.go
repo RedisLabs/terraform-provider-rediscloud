@@ -243,7 +243,7 @@ func DataSourceRedisCloudProDatabase() *schema.Resource {
 				},
 			},
 			"latest_import_status": {
-				Description: "Details about the last import that took place for this active-active database",
+				Description: "Details about the last import that took place for this database",
 				Computed:    true,
 				Type:        schema.TypeSet,
 				Elem: &schema.Resource{
@@ -440,6 +440,7 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 		}
 	}
 
+	passwordless := false
 	if db.Security != nil {
 		if v := redis.StringValue(db.Security.Password); v != "" {
 			if err := d.Set("password", v); err != nil {
@@ -450,10 +451,12 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 				return diag.FromErr(err)
 			}
 		}
-		passwordless := redis.StringValue(db.Protocol) == "redis" && redis.StringValue(db.Security.Password) == ""
-		if err := d.Set("enable_passwordless", passwordless); err != nil {
-			return diag.FromErr(err)
-		}
+		// Detect passwordless: an explicitly empty (non-nil) password on a redis-protocol
+		// database indicates passwordless mode. A nil password means "not applicable".
+		passwordless = redis.StringValue(db.Protocol) == "redis" && db.Security.Password != nil && *db.Security.Password == ""
+	}
+	if err := d.Set("enable_passwordless", passwordless); err != nil {
+		return diag.FromErr(err)
 	}
 	if err := d.Set("public_endpoint", redis.StringValue(db.PublicEndpoint)); err != nil {
 		return diag.FromErr(err)
