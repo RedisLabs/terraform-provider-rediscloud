@@ -20,6 +20,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/cloudaccount"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/datapersistence"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/paymentmethod"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/regions"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -175,6 +176,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 		datapersistence.NewDataPersistenceDataSource,
 		paymentmethod.NewPaymentMethodDataSource,
 		cloudaccount.NewCloudAccountDataSource,
+		regions.NewRegionsDataSource,
 	}
 }
 
