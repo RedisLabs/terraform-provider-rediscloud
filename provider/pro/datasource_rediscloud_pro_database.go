@@ -113,6 +113,11 @@ func DataSourceRedisCloudProDatabase() *schema.Resource {
 				Computed:    true,
 				Sensitive:   true,
 			},
+			"enable_passwordless": {
+				Description: "Whether the database is configured without a password",
+				Type:        schema.TypeBool,
+				Computed:    true,
+			},
 			"public_endpoint": {
 				Description: "Public endpoint to access the database",
 				Type:        schema.TypeString,
@@ -238,7 +243,7 @@ func DataSourceRedisCloudProDatabase() *schema.Resource {
 				},
 			},
 			"latest_import_status": {
-				Description: "Details about the last import that took place for this active-active database",
+				Description: "Details about the last import that took place for this database",
 				Computed:    true,
 				Type:        schema.TypeSet,
 				Elem: &schema.Resource{
@@ -387,7 +392,7 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 	dbId := redis.IntValue(dbs[0].ID)
 	db, err := api.Client.Database.Get(ctx, subId, dbId)
 	if err != nil {
-		return diag.FromErr(list.Err())
+		return diag.FromErr(err)
 	}
 
 	d.SetId(fmt.Sprintf("%d/%d", subId, dbId))
@@ -435,12 +440,23 @@ func dataSourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.Resource
 		}
 	}
 
+	passwordless := false
 	if db.Security != nil {
 		if v := redis.StringValue(db.Security.Password); v != "" {
 			if err := d.Set("password", v); err != nil {
 				return diag.FromErr(err)
 			}
+		} else {
+			if err := d.Set("password", ""); err != nil {
+				return diag.FromErr(err)
+			}
 		}
+		// Detect passwordless: an explicitly empty (non-nil) password on a redis-protocol
+		// database indicates passwordless mode. A nil password means "not applicable".
+		passwordless = redis.StringValue(db.Protocol) == "redis" && db.Security.Password != nil && *db.Security.Password == ""
+	}
+	if err := d.Set("enable_passwordless", passwordless); err != nil {
+		return diag.FromErr(err)
 	}
 	if err := d.Set("public_endpoint", redis.StringValue(db.PublicEndpoint)); err != nil {
 		return diag.FromErr(err)

@@ -54,6 +54,7 @@ data "rediscloud_database" "example" {
 * `data_persistence` - The rate of database data persistence (in persistent storage).
 * `data_eviction` - The data items eviction policy.
 * `password` - The password used to access the database - not present on `memcached` protocol databases.
+* `enable_passwordless` - Whether the database is configured without a password.
 * `replication` - Database replication.
 * `throughput_measurement_by` - The throughput measurement method.
 * `throughput_measurement_value` - The throughput value.

@@ -90,7 +90,8 @@ The following arguments are supported:
 * `alert` - (Optional) A block defining Redis database alert, documented below, can be specified multiple times
 * `data_persistence` - (Optional) Rate of database's storage data persistence (either: 'none', 'aof-every-1-second', 'aof-every-write', 'snapshot-every-1-hour', 'snapshot-every-6-hours' or 'snapshot-every-12-hours'). Default: ‘none’
 * `data_eviction` - (Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'). Default: 'volatile-lru'
-* `password` - (Optional) Password to access the database. If omitted, a random 32 character long alphanumeric password will be automatically generated
+* `password` - (Optional) Password to access the database. If omitted (and `enable_passwordless` is false), a random 32 character long alphanumeric password will be automatically generated. Conflicts with `enable_passwordless`
+* `enable_passwordless` - (Optional) When `true`, the database is configured without a password. Only valid when the subscription has `public_endpoint_access` disabled. Conflicts with `password`. Default: `false`
 * `replication` - (Optional) Databases replication. Default: ‘true’
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes)
   of the items stored in the database. Default: 1000.
