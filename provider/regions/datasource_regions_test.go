@@ -1,38 +1,14 @@
 package regions_test
 
 import (
-	"os"
 	"testing"
 
-	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
-
-var protoV5ProviderFactories = map[string]func() (tfprotov5.ProviderServer, error){
-	"rediscloud": func() (tfprotov5.ProviderServer, error) {
-		muxServer, err := provider.MuxProviderServerCreator(
-			provider.NewSdkProvider("dev")(),
-			provider.NewFrameworkProvider("dev")(),
-		)
-		if err != nil {
-			return nil, err
-		}
-		return muxServer(), nil
-	},
-}
-
-func testAccPreCheck(t *testing.T) {
-	for _, name := range []string{rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar} {
-		if _, ok := os.LookupEnv(name); !ok {
-			t.Fatalf("Missing `%s` environment variable", name)
-		}
-	}
-}
 
 const regionsDataSource = "data.rediscloud_regions.example"
 
@@ -41,8 +17,8 @@ func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
@@ -78,8 +54,8 @@ func TestAccDataSourceRedisCloudRegions_AWS(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
@@ -109,8 +85,8 @@ func TestAccDataSourceRedisCloudRegions_GCP(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
 			{
