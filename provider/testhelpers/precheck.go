@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
 )
 
 // RequireEnvVars skips or fails the test if any of the named environment
@@ -18,9 +20,10 @@ func RequireEnvVars(t *testing.T, names ...string) {
 	}
 }
 
-// BasicPreCheck checks that the minimum credentials (access key and secret key)
-// are present. Use RequireEnvVars directly when additional variables are needed.
+// BasicPreCheck checks that the minimum provider configuration (URL, access key
+// and secret key) are present. Use RequireEnvVars directly when additional
+// variables are needed.
 func BasicPreCheck(t *testing.T) {
 	t.Helper()
-	RequireEnvVars(t, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
+	RequireEnvVars(t, provider.RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
 }

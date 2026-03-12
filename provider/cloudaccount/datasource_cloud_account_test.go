@@ -5,17 +5,16 @@ import (
 	"regexp"
 	"testing"
 
-	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func testAccPreCheck(t *testing.T) {
 	t.Helper()
-	testhelpers.RequireEnvVars(t, provider.RedisCloudUrlEnvVar, rediscloudapi.AccessKeyEnvVar, rediscloudapi.SecretKeyEnvVar, "AWS_TEST_CLOUD_ACCOUNT_NAME")
+	testhelpers.BasicPreCheck(t)
+	testhelpers.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
 }
 
 func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {

@@ -4,24 +4,17 @@ import (
 	"regexp"
 	"testing"
 
-	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
-
-func testAccPreCheck(t *testing.T) {
-	t.Helper()
-	testhelpers.RequireEnvVars(t, provider.RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
-}
 
 func TestAccDataSourceRedisCloudPaymentMethod_basic(t *testing.T) {
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil, // payment method isn't managed by this provider
 		Steps: []resource.TestStep{
