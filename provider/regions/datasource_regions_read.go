@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // regionAttrTypes defines the attribute types for a single region object.
@@ -66,7 +67,7 @@ func (d *regionsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 
 	// Apply filters
-	regions = filterRegions(regions, filters)
+	regions = filterRegions(ctx, regions, filters)
 
 	if len(regions) == 0 {
 		resp.Diagnostics.AddError(
@@ -107,6 +108,7 @@ func flattenRegions(ctx context.Context, regions []*account.Region) (types.Set, 
 	var elements []attr.Value
 	for _, region := range regions {
 		if region == nil {
+			tflog.Warn(ctx, "Skipping nil region entry in API response — this may indicate an upstream API issue")
 			continue
 		}
 
@@ -130,10 +132,11 @@ func flattenRegions(ctx context.Context, regions []*account.Region) (types.Set, 
 }
 
 // filterRegions applies all filters to the list of regions.
-func filterRegions(regions []*account.Region, filters []func(region *account.Region) bool) []*account.Region {
+func filterRegions(ctx context.Context, regions []*account.Region, filters []func(region *account.Region) bool) []*account.Region {
 	var filtered []*account.Region
 	for _, region := range regions {
 		if region == nil {
+			tflog.Warn(ctx, "Skipping nil region entry in API response — this may indicate an upstream API issue")
 			continue
 		}
 		if filterRegion(region, filters) {

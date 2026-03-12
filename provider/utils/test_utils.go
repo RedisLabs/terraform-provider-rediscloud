@@ -53,7 +53,7 @@ func TestResourcePrefix() string {
 // 40-char name limit; pass an explicit length to override.
 func RandomWithPrefix(n ...int) string {
 	length := 6
-	if len(n) > 0 {
+	if len(n) > 0 && n[0] > 0 {
 		length = n[0]
 	}
 	return TestResourcePrefix() + "-" + acctest.RandString(length)
