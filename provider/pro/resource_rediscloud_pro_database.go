@@ -206,14 +206,12 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Optional:      true,
 				Sensitive:     true,
 				Computed:      true,
-				ConflictsWith: []string{"enable_passwordless"},
 			},
 			"enable_passwordless": {
 				Description:   "When 'true', the database is configured without a password. Only valid when the subscription has public_endpoint_access disabled. Default: 'false'",
 				Type:          schema.TypeBool,
 				Optional:      true,
 				Default:       false,
-				ConflictsWith: []string{"password"},
 			},
 			"public_endpoint": {
 				Description: "Public endpoint to access the database",
@@ -1156,11 +1154,25 @@ func skipDiffIfIntervalIs12And12HourTimeDiff(k, oldValue, newValue string, d *sc
 
 func customizeDiff() schema.CustomizeDiffFunc {
 	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+		if err := validatePasswordlessNotConflicting()(ctx, diff, meta); err != nil {
+			return err
+		}
 		if err := validateModulesForRedis8()(ctx, diff, meta); err != nil {
 			return err
 		}
 		if err := RemoteBackupIntervalSetCorrectly("remote_backup")(ctx, diff, meta); err != nil {
 			return err
+		}
+		return nil
+	}
+}
+
+func validatePasswordlessNotConflicting() schema.CustomizeDiffFunc {
+	return func(_ context.Context, diff *schema.ResourceDiff, _ interface{}) error {
+		enablePasswordless := diff.Get("enable_passwordless").(bool)
+		password := diff.Get("password").(string)
+		if enablePasswordless && password != "" {
+			return fmt.Errorf(`"enable_passwordless" cannot be true when "password" is set`)
 		}
 		return nil
 	}
