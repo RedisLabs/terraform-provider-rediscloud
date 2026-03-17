@@ -201,19 +201,17 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				ConflictsWith: []string{"average_item_size_in_bytes"},
 			},
 			"password": {
-				Description:   "Password used to access the database. If omitted (and enable_passwordless is false), a random password will be generated automatically",
-				Type:          schema.TypeString,
-				Optional:      true,
-				Sensitive:     true,
-				Computed:      true,
-				ConflictsWith: []string{"enable_passwordless"},
+				Description: "Password used to access the database. If omitted (and enable_passwordless is false), a random password will be generated automatically",
+				Type:        schema.TypeString,
+				Optional:    true,
+				Sensitive:   true,
+				Computed:    true,
 			},
 			"enable_passwordless": {
-				Description:   "When 'true', the database is configured without a password. Only valid when the subscription has public_endpoint_access disabled. Default: 'false'",
-				Type:          schema.TypeBool,
-				Optional:      true,
-				Default:       false,
-				ConflictsWith: []string{"password"},
+				Description: "When 'true', the database is configured without a password. Only valid when the subscription has public_endpoint_access disabled. Default: 'false'",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
 			},
 			"public_endpoint": {
 				Description: "Public endpoint to access the database",
@@ -1156,11 +1154,25 @@ func skipDiffIfIntervalIs12And12HourTimeDiff(k, oldValue, newValue string, d *sc
 
 func customizeDiff() schema.CustomizeDiffFunc {
 	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+		if err := validatePasswordlessNotConflicting()(ctx, diff, meta); err != nil {
+			return err
+		}
 		if err := validateModulesForRedis8()(ctx, diff, meta); err != nil {
 			return err
 		}
 		if err := RemoteBackupIntervalSetCorrectly("remote_backup")(ctx, diff, meta); err != nil {
 			return err
+		}
+		return nil
+	}
+}
+
+func validatePasswordlessNotConflicting() schema.CustomizeDiffFunc {
+	return func(_ context.Context, diff *schema.ResourceDiff, _ interface{}) error {
+		enablePasswordless := diff.Get("enable_passwordless").(bool)
+		password := diff.Get("password").(string)
+		if enablePasswordless && password != "" {
+			return fmt.Errorf(`"enable_passwordless" cannot be true when "password" is set`)
 		}
 		return nil
 	}
