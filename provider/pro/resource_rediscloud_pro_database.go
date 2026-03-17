@@ -200,14 +200,14 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				ConflictsWith: []string{"average_item_size_in_bytes"},
 			},
 			"password": {
-				Description: "Password used to access the database. If omitted (and enable_passwordless is false), a random password will be generated automatically",
+				Description: "Password used to access the database. If omitted (and enable_passwordless is false), a random password will be generated automatically. Cannot be used together with enable_passwordless",
 				Type:        schema.TypeString,
 				Optional:    true,
 				Sensitive:   true,
 				Computed:    true,
 			},
 			"enable_passwordless": {
-				Description: "When 'true', the database is configured without a password. Only valid when the subscription has public_endpoint_access disabled. Default: 'false'",
+				Description: "When 'true', the database is configured without a password. Only valid when the subscription has public_endpoint_access disabled. Cannot be used together with password. Default: 'false'",
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     false,
@@ -1145,7 +1145,7 @@ func skipDiffIfIntervalIs12And12HourTimeDiff(k, oldValue, newValue string, d *sc
 
 func customizeDiff() schema.CustomizeDiffFunc {
 	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-		if err := validatePasswordlessNotConflicting()(ctx, diff, meta); err != nil {
+		if err := ValidatePasswordlessNotConflicting()(ctx, diff, meta); err != nil {
 			return err
 		}
 		if err := validateModulesForRedis8()(ctx, diff, meta); err != nil {
@@ -1158,13 +1158,41 @@ func customizeDiff() schema.CustomizeDiffFunc {
 	}
 }
 
-func validatePasswordlessNotConflicting() schema.CustomizeDiffFunc {
+// ShouldRejectPasswordlessWithPassword errors if passwordless is enabled and a non-empty password
+// is actively being set (passwordChanged=true means it's in the config, not carried from state).
+func ShouldRejectPasswordlessWithPassword(enablePasswordless bool, passwordChanged bool, newPassword string) error {
+	if !enablePasswordless {
+		return nil
+	}
+	if passwordChanged && newPassword != "" {
+		return fmt.Errorf(`"enable_passwordless" cannot be true when "password" is set`)
+	}
+	return nil
+}
+
+// ValidatePasswordlessNotConflicting is a CustomizeDiff that rejects enable_passwordless=true with a
+// non-empty password, and clears the planned password when going passwordless.
+func ValidatePasswordlessNotConflicting() schema.CustomizeDiffFunc {
 	return func(_ context.Context, diff *schema.ResourceDiff, _ interface{}) error {
 		enablePasswordless := diff.Get("enable_passwordless").(bool)
-		password := diff.Get("password").(string)
-		if enablePasswordless && password != "" {
-			return fmt.Errorf(`"enable_passwordless" cannot be true when "password" is set`)
+		passwordChanged := diff.HasChange("password")
+		newPassword := ""
+		if passwordChanged {
+			_, np := diff.GetChange("password")
+			newPassword = np.(string)
 		}
+
+		if err := ShouldRejectPasswordlessWithPassword(enablePasswordless, passwordChanged, newPassword); err != nil {
+			return err
+		}
+
+		// Clear the planned password so the diff shows it being removed.
+		if enablePasswordless {
+			if err := diff.SetNew("password", ""); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	}
 }

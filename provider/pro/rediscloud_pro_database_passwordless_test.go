@@ -80,6 +80,92 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 	})
 }
 
+func TestAccRedisCloudProDatabase_ExplicitPasswordFalseWithPassword(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	const databaseResource = "rediscloud_subscription_database.example"
+	const datasourceName = "data.rediscloud_database.example"
+	subscriptionName := utils.RandomWithPrefix()
+	password := acctest.RandString(20)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             checkProSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: Create with enable_passwordless=false and password set explicitly
+			{
+				ConfigFile: config.StaticFile("testdata/pro_database_explicit_password.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"password":          config.StringVariable(password),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(databaseResource, "enable_passwordless", "false"),
+					resource.TestCheckResourceAttr(databaseResource, "password", password),
+					resource.TestCheckResourceAttr(datasourceName, "enable_passwordless", "false"),
+				),
+			},
+			// Step 2: Transition to passwordless (omitting password from config)
+			{
+				ConfigFile: config.StaticFile("testdata/pro_database_passwordless.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(databaseResource, "enable_passwordless", "true"),
+					resource.TestCheckResourceAttr(databaseResource, "password", ""),
+					resource.TestCheckResourceAttr(datasourceName, "enable_passwordless", "true"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRedisCloudProDatabase_PasswordToPasswordless(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	const databaseResource = "rediscloud_subscription_database.example"
+	const datasourceName = "data.rediscloud_database.example"
+	subscriptionName := utils.RandomWithPrefix()
+	password := acctest.RandString(20)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             checkProSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: Create with password only (no enable_passwordless field)
+			{
+				ConfigFile: config.StaticFile("testdata/pro_database_passwordless_to_password.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"password":          config.StringVariable(password),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(databaseResource, "enable_passwordless", "false"),
+					resource.TestCheckResourceAttr(databaseResource, "password", password),
+					resource.TestCheckResourceAttr(datasourceName, "enable_passwordless", "false"),
+				),
+			},
+			// Step 2: Transition to passwordless (omitting password, setting enable_passwordless=true)
+			{
+				ConfigFile: config.StaticFile("testdata/pro_database_passwordless.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(databaseResource, "enable_passwordless", "true"),
+					resource.TestCheckResourceAttr(databaseResource, "password", ""),
+					resource.TestCheckResourceAttr(datasourceName, "enable_passwordless", "true"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccRedisCloudProDatabase_PasswordlessDisableWithoutPassword(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
@@ -105,6 +191,31 @@ func TestAccRedisCloudProDatabase_PasswordlessDisableWithoutPassword(t *testing.
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
 				ExpectError: regexp.MustCompile(`when disabling passwordless mode, you must provide a 'password'`),
+			},
+		},
+	})
+}
+
+func TestAccRedisCloudProDatabase_PasswordlessWithPasswordConflict(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	subscriptionName := utils.RandomWithPrefix()
+	password := acctest.RandString(20)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             checkProSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			// Try to create with both enable_passwordless=true and password — expect error at plan time
+			{
+				ConfigFile: config.StaticFile("testdata/pro_database_passwordless_with_password.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"password":          config.StringVariable(password),
+				},
+				ExpectError: regexp.MustCompile(`"enable_passwordless" cannot be true when "password" is set`),
 			},
 		},
 	})
