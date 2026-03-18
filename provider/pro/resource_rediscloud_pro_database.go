@@ -281,10 +281,7 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Computed:    true,
 				//Default: "Standard", Todo add in 3.0.0 release, as it is a breaking change. Previously not set by default when removed from .tf file, only default value given on creation, by API
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if strings.EqualFold(old, new) {
-						return true
-					}
-					return false
+					return strings.EqualFold(old, new)
 				},
 			},
 			"modules": {
