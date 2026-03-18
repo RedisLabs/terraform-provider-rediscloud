@@ -14,6 +14,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ## Fixed
 - CI: Fixed `govulncheck` step in PR workflow.
+- Exposed `query_performance_factor` attribute in `rediscloud_subscription_database` resource documentation. Corrected validation, to allow higher values and resetting to `Standard`.
 
 
 # 2.12.0 (5th March 2026)
