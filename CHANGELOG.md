@@ -3,10 +3,10 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-# 2.12.1 (Unreleased)
+# 2.13.0 (Unreleased)
 
 ## Added
-- Added `enable_passwordless` attribute to `rediscloud_subscription_database` resource. When set to `true`, the database is configured without a password. Only valid when the subscription has `public_endpoint_access` disabled. Conflicts with `password`.
+- Added `enable_passwordless` attribute to `rediscloud_subscription_database` resource. When set to `true`, the database is configured without a password. Only valid when the subscription has `public_endpoint_access` disabled. Cannot be used together with `password`.
 - Exposed `enable_passwordless` attribute on the `rediscloud_database` data source.
 
 ## Changed
