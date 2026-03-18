@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -280,17 +279,12 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Computed:    true,
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(string)
-					matched, err := regexp.MatchString(`^([2468])x$`, v)
-					if err != nil {
-						errs = append(errs, fmt.Errorf("regex match failed: %w", err))
-						return
+				//Default: "Standard", Todo add in 3.0.0 release, as it is a breaking change. Previously not set by default when removed from .tf file, only default value given on creation, by API
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if strings.EqualFold(old, new) {
+						return true
 					}
-					if !matched {
-						errs = append(errs, fmt.Errorf("%q must be an even value between 2x and 8x (inclusive), got: %s", key, v))
-					}
-					return
+					return false
 				},
 			},
 			"modules": {
