@@ -894,6 +894,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		utils.SubscriptionMutex.Unlock(subId)
 		return append(diags, diag.Errorf("when disabling passwordless mode, you must provide a 'password'")...)
 	}
+	// else: neither field changed — leave update.Password nil so the API keeps the existing value.
 	utils.SetIntIfPositive(d, "ram_percentage", func(i *int) {
 		update.RamPercentage = i
 	})

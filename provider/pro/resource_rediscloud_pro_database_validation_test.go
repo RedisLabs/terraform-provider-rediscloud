@@ -97,3 +97,22 @@ func TestUnitShouldSuppressModuleDiffsForRedis8_Redis6(t *testing.T) {
 	result := pro.ShouldSuppressModuleDiffsForRedis8("6.2")
 	assert.False(t, result, "should not suppress module diffs for Redis 6.2")
 }
+
+func TestUnitShouldRejectPasswordlessWithPassword_PasswordlessFalse(t *testing.T) {
+	assert.NoError(t, pro.ShouldRejectPasswordlessWithPassword(false, false, ""))
+	assert.NoError(t, pro.ShouldRejectPasswordlessWithPassword(false, true, "somepassword"))
+}
+
+func TestUnitShouldRejectPasswordlessWithPassword_PasswordlessTrueNoChange(t *testing.T) {
+	assert.NoError(t, pro.ShouldRejectPasswordlessWithPassword(true, false, ""))
+}
+
+func TestUnitShouldRejectPasswordlessWithPassword_PasswordlessTrueEmptyPassword(t *testing.T) {
+	assert.NoError(t, pro.ShouldRejectPasswordlessWithPassword(true, true, ""))
+}
+
+func TestUnitShouldRejectPasswordlessWithPassword_PasswordlessTrueWithPassword(t *testing.T) {
+	err := pro.ShouldRejectPasswordlessWithPassword(true, true, "somepassword")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `"enable_passwordless" cannot be true when "password" is set`)
+}
