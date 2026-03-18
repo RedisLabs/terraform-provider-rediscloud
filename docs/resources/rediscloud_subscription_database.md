@@ -107,6 +107,7 @@ The following arguments are supported:
 * `enable_default_user` (Optional) When `true` enables connecting to the database with the default user. Default `true`.
 * `auto_minor_version_upgrade` - (Optional) Automatically upgrades the database to newer minor versions within the same major release. Applies to version 8.4 and above. Default: `true`.
 * `tags` - (Optional) A string/string map of Tags to associate with this database. Note that all keys and values must be lowercase.
+* `query_performance_factor` - (Optional) The query performance factor adds extra compute power specifically for search and query databases. You can increase your queries per second by the selected factor. Valid values are "Standard" or multiples of 2, e.g. 2x, 4x, 6x, 8x.
 
 The `alert` block supports:
 
