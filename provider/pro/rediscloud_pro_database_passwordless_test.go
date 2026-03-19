@@ -42,7 +42,7 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 			},
 			// Step 2: Update from passwordless to password-protected
 			{
-				ConfigFile: config.StaticFile("testdata/pro_database_passwordless_to_password.tf"),
+				ConfigFile: config.StaticFile("testdata/pro_database_password_only.tf"),
 				ConfigVariables: config.Variables{
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
@@ -139,7 +139,7 @@ func TestAccRedisCloudProDatabase_PasswordToPasswordless(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Step 1: Create with password only (no enable_passwordless field)
 			{
-				ConfigFile: config.StaticFile("testdata/pro_database_passwordless_to_password.tf"),
+				ConfigFile: config.StaticFile("testdata/pro_database_password_only.tf"),
 				ConfigVariables: config.Variables{
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
