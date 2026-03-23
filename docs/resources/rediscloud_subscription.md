@@ -112,6 +112,7 @@ The `creation_plan` block supports:
   be the maximum average item size defined in one of your databases.  Default: 1000.
  **Deprecated: This attribute is deprecated. Configure `ram_percentage` instead. This attribute will be removed in the next major version of the provider.**
 * `ram_percentage` - (Optional) Relevant only to ram-and-flash subscriptions. The percentage of data to be stored in RAM. Must be between 10 and 50 in steps of 10 (10, 20, 30, 40, 50). Default: 20
+* `query_performance_factor` - (Optional) The query performance factor adds extra compute power specifically for search and query databases. You can increase your queries per second by the selected factor. Valid values are "Standard" or multiples of 2, e.g. 2x, 4x, 6x, 8x.
 
 ~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `memory_storage` or `cloud_provider`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
 
