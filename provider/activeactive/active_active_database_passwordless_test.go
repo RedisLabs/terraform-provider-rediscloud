@@ -124,9 +124,76 @@ func TestAccActiveActiveDatabase_PasswordlessRegionOverride(t *testing.T) {
 					// Global is NOT passwordless (has a password)
 					resource.TestCheckResourceAttr(databaseResource, "global_enable_passwordless", "false"),
 					resource.TestCheckResourceAttr(databaseResource, "global_password", password),
+					// Verify per-region passwordless override is read back
+					resource.TestCheckTypeSetElemNestedAttrs(databaseResource, "override_region.*", map[string]string{
+						"name":                                "us-east-1",
+						"override_global_enable_passwordless": "true",
+					}),
 					// Data source shows not passwordless globally
 					resource.TestCheckResourceAttr(datasourceName, "global_enable_passwordless", "false"),
 				),
+			},
+		},
+	})
+}
+
+// TestAccActiveActiveDatabase_PasswordlessDisableWithoutPassword verifies that
+// transitioning from passwordless to password-protected without providing a password produces an error.
+func TestAccActiveActiveDatabase_PasswordlessDisableWithoutPassword(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	subscriptionName := testRandomWithPrefix()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             checkAASubscriptionDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: Create passwordless AA database
+			{
+				ConfigFile: config.StaticFile("testdata/aa_database_passwordless.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("rediscloud_active_active_subscription_database.example", "global_enable_passwordless", "true"),
+				),
+			},
+			// Step 2: Disable passwordless without providing a password — should error
+			{
+				ConfigFile: config.StaticFile("testdata/aa_database_passwordless_disabled_no_password.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+				},
+				ExpectError: regexp.MustCompile(`When disabling passwordless mode, you must provide a 'global_password'`),
+			},
+		},
+	})
+}
+
+// TestAccActiveActiveDatabase_PasswordlessRegionOverrideWithPasswordConflict verifies that
+// setting both override_global_enable_passwordless=true and override_global_password in the
+// same region produces a plan error.
+func TestAccActiveActiveDatabase_PasswordlessRegionOverrideWithPasswordConflict(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	subscriptionName := testRandomWithPrefix()
+	password := acctest.RandString(20)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             checkAASubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				ConfigFile: config.StaticFile("testdata/aa_database_passwordless_override_with_password.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"password":          config.StringVariable(password),
+				},
+				ExpectError: regexp.MustCompile(`'override_global_enable_passwordless' cannot be true when 'override_global_password' is set`),
 			},
 		},
 	})

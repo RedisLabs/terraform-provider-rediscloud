@@ -261,7 +261,7 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 				Sensitive:   true,
 			},
 			"global_enable_passwordless": schema.BoolAttribute{
-				Description: "When 'true', the database is configured without a password. Only valid when the subscription has public_endpoint_access disabled. Cannot be 'true' when 'global_password' is set. Default: 'false'",
+				Description: "When 'true', the database is configured without a password. The API requires that the subscription has 'public_endpoint_access' disabled. Cannot be 'true' when 'global_password' is set. Default: 'false'",
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
@@ -439,8 +439,8 @@ func (r *activeActiveDatabaseResource) ModifyPlan(ctx context.Context, req resou
 	}
 
 	// Validate that global_enable_passwordless and global_password are not both set in config.
-	// We check config (not plan) because the plan's global_password may be set by our
-	// ModifyPlan logic below — the config reflects what the user actually wrote.
+	// We check config (not plan) because config reflects what the user actually wrote,
+	// while the plan may contain values set by our ModifyPlan logic (e.g., preserving prior state for global_password).
 	var config ActiveActiveDatabaseModel
 	diags = req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
@@ -493,7 +493,8 @@ func (r *activeActiveDatabaseResource) ModifyPlan(ctx context.Context, req resou
 		}
 	}
 
-	// Validate backup interval and time_utc combinations (using plan values is fine here)
+	// Validate backup interval and time_utc combinations.
+	// Plan values are fine here because backup fields are not modified by ModifyPlan.
 	if !plan.OverrideRegion.IsNull() && !plan.OverrideRegion.IsUnknown() {
 		var regions []OverrideRegionModel
 		diags := plan.OverrideRegion.ElementsAs(ctx, &regions, false)
@@ -746,6 +747,9 @@ func overrideRegionHasConfig(region OverrideRegionModel) bool {
 		return true
 	}
 	if !region.OverrideGlobalPassword.IsNull() && region.OverrideGlobalPassword.ValueString() != "" {
+		return true
+	}
+	if !region.OverrideGlobalEnablePasswordless.IsNull() && region.OverrideGlobalEnablePasswordless.ValueBool() {
 		return true
 	}
 	if !region.OverrideGlobalSourceIPs.IsNull() && len(region.OverrideGlobalSourceIPs.Elements()) > 0 {

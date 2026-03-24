@@ -93,7 +93,8 @@ func (r *activeActiveDatabaseResource) createDatabase(ctx context.Context, plan 
 	if !plan.GlobalPassword.IsNull() && plan.GlobalPassword.ValueString() != "" {
 		createDatabase.GlobalPassword = redis.String(plan.GlobalPassword.ValueString())
 	}
-	// If passwordless is enabled, explicitly send empty password (takes priority over password)
+	// If passwordless is enabled, send empty password to the API. The ModifyPlan validation
+	// prevents both from being set simultaneously; this ordering is a defensive measure.
 	if plan.GlobalEnablePasswordless.ValueBool() {
 		createDatabase.GlobalPassword = redis.String("")
 	}
@@ -627,7 +628,8 @@ func (r *activeActiveDatabaseResource) buildRegionsFromPlan(ctx context.Context,
 			regionProps.DataPersistence = redis.String(plan.GlobalDataPersistence.ValueString())
 		}
 
-		// Set password — priority: region override passwordless > region override password > global passwordless > global password
+		// Set password — priority: region override passwordless > region override password > global passwordless > global password.
+		// This priority order must match the global-level handling in updateDatabase.
 		if region.OverrideGlobalEnablePasswordless.ValueBool() {
 			regionProps.Password = redis.String("")
 		} else if !region.OverrideGlobalPassword.IsNull() && region.OverrideGlobalPassword.ValueString() != "" {
@@ -704,7 +706,7 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 
 		// Handle override_global_source_ips
 		// Only set if the state had source IPs configured
-		if stateRegion != nil && !stateRegion.OverrideGlobalSourceIPs.IsNull() && len(stateRegion.OverrideGlobalSourceIPs.Elements()) > 0 {
+		if stateRegion != nil && !stateRegion.OverrideGlobalSourceIPs.IsNull() && len(stateRegion.OverrideGlobalSourceIPs.Elements()) > 0 && regionDb.Security != nil {
 			sourceIPs := stringSliceValue(regionDb.Security.SourceIPs)
 			// Filter out default source IPs
 			if !isDefaultGlobalSourceIPs(sourceIPs) {
