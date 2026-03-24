@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -201,11 +200,17 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				ConflictsWith: []string{"average_item_size_in_bytes"},
 			},
 			"password": {
-				Description: "Password used to access the database. If left empty, the password will be generated automatically",
+				Description: "Password used to access the database. If omitted (and enable_passwordless is false), a random password will be generated automatically. Cannot be used together with enable_passwordless",
 				Type:        schema.TypeString,
 				Optional:    true,
 				Sensitive:   true,
 				Computed:    true,
+			},
+			"enable_passwordless": {
+				Description: "When 'true', the database is configured without a password. Only valid when the subscription has public_endpoint_access disabled. Cannot be used together with password. Default: 'false'",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
 			},
 			"public_endpoint": {
 				Description: "Public endpoint to access the database",
@@ -274,17 +279,9 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Computed:    true,
-				ValidateFunc: func(val interface{}, key string) (warns []string, errs []error) {
-					v := val.(string)
-					matched, err := regexp.MatchString(`^([2468])x$`, v)
-					if err != nil {
-						errs = append(errs, fmt.Errorf("regex match failed: %w", err))
-						return
-					}
-					if !matched {
-						errs = append(errs, fmt.Errorf("%q must be an even value between 2x and 8x (inclusive), got: %s", key, v))
-					}
-					return
+				//Default: "Standard", Todo add in 3.0.0 release, as it is a breaking change. Previously not set by default when removed from .tf file, only default value given on creation, by API
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return strings.EqualFold(old, new)
 				},
 			},
 			"modules": {
@@ -466,7 +463,7 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	// Warn if modules are explicitly configured for Redis 8.0+
 	var diags diag.Diagnostics
 	redisVersion := d.Get("redis_version").(string)
-	if shouldWarnRedis8Modules(redisVersion, len(createModules) > 0) {
+	if ShouldWarnRedis8Modules(redisVersion, len(createModules) > 0) {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  "Modules are bundled by default in Redis 8.0+",
@@ -477,6 +474,10 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	utils.SetStringIfNotEmpty(d, "password", func(s *string) {
 		createDatabase.Password = s
 	})
+	// If passwordless is enabled, explicitly send empty password
+	if d.Get("enable_passwordless").(bool) {
+		createDatabase.Password = redis.String("")
+	}
 
 	utils.SetIntIfPositive(d, "average_item_size_in_bytes", func(i *int) {
 		createDatabase.AverageItemSizeInBytes = i
@@ -619,7 +620,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	// For Redis 8.0+, modules are bundled by default and returned by the API
 	// Only set modules in state if they were explicitly defined in the config
 	redisVersion := redis.StringValue(db.RedisVersion)
-	if shouldSuppressModuleDiffsForRedis8(redisVersion) {
+	if ShouldSuppressModuleDiffsForRedis8(redisVersion) {
 		// Only set modules if they were explicitly configured by the user
 		if _, ok := d.GetOk("modules"); ok {
 			if err := d.Set("modules", FlattenModules(db.Modules)); err != nil {
@@ -668,12 +669,18 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	}
 
 	password := d.Get("password").(string)
-	if redis.StringValue(db.Protocol) == "redis" {
+	passwordless := false
+	if db.Security != nil && redis.StringValue(db.Protocol) == "redis" {
 		// Only db with the "redis" protocol returns the password.
 		password = redis.StringValue(db.Security.Password)
+		// Detect passwordless: API returns empty password for passwordless databases
+		passwordless = db.Security.Password != nil && *db.Security.Password == ""
 	}
 
 	if err := d.Set("password", password); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("enable_passwordless", passwordless); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -877,9 +884,17 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		update.QueryPerformanceFactor = redis.String(queryPerformanceFactor)
 	}
 
-	if d.Get("password").(string) != "" {
+	if d.Get("enable_passwordless").(bool) {
+		update.Password = redis.String("")
+	} else if d.Get("password").(string) != "" {
 		update.Password = redis.String(d.Get("password").(string))
+	} else if d.HasChange("enable_passwordless") {
+		// Transitioning from passwordless to password-protected without providing a password.
+		// The user must provide a password explicitly since the API cannot auto-generate one during update.
+		utils.SubscriptionMutex.Unlock(subId)
+		return append(diags, diag.Errorf("when disabling passwordless mode, you must provide a 'password'")...)
 	}
+	// else: neither field changed — leave update.Password nil so the API keeps the existing value.
 	utils.SetIntIfPositive(d, "ram_percentage", func(i *int) {
 		update.RamPercentage = i
 	})
@@ -934,7 +949,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	// Warn if modules are explicitly configured for Redis 8.0+
 	redisVersion := d.Get("redis_version").(string)
 	modules := d.Get("modules").(*schema.Set)
-	if shouldWarnRedis8Modules(redisVersion, modules.Len() > 0) {
+	if ShouldWarnRedis8Modules(redisVersion, modules.Len() > 0) {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Warning,
 			Summary:  "Modules are bundled by default in Redis 8.0+",
@@ -1131,12 +1146,54 @@ func skipDiffIfIntervalIs12And12HourTimeDiff(k, oldValue, newValue string, d *sc
 
 func customizeDiff() schema.CustomizeDiffFunc {
 	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+		if err := ValidatePasswordlessNotConflicting()(ctx, diff, meta); err != nil {
+			return err
+		}
 		if err := validateModulesForRedis8()(ctx, diff, meta); err != nil {
 			return err
 		}
 		if err := RemoteBackupIntervalSetCorrectly("remote_backup")(ctx, diff, meta); err != nil {
 			return err
 		}
+		return nil
+	}
+}
+
+// ShouldRejectPasswordlessWithPassword errors if passwordless is enabled and a non-empty password
+// is actively being set (passwordChanged=true means it's in the config, not carried from state).
+func ShouldRejectPasswordlessWithPassword(enablePasswordless bool, passwordChanged bool, newPassword string) error {
+	if !enablePasswordless {
+		return nil
+	}
+	if passwordChanged && newPassword != "" {
+		return fmt.Errorf(`"enable_passwordless" cannot be true when "password" is set`)
+	}
+	return nil
+}
+
+// ValidatePasswordlessNotConflicting is a CustomizeDiff that rejects enable_passwordless=true with a
+// non-empty password, and clears the planned password when going passwordless.
+func ValidatePasswordlessNotConflicting() schema.CustomizeDiffFunc {
+	return func(_ context.Context, diff *schema.ResourceDiff, _ interface{}) error {
+		enablePasswordless := diff.Get("enable_passwordless").(bool)
+		passwordChanged := diff.HasChange("password")
+		newPassword := ""
+		if passwordChanged {
+			_, np := diff.GetChange("password")
+			newPassword = np.(string)
+		}
+
+		if err := ShouldRejectPasswordlessWithPassword(enablePasswordless, passwordChanged, newPassword); err != nil {
+			return err
+		}
+
+		// Clear the planned password so the diff shows it being removed.
+		if enablePasswordless {
+			if err := diff.SetNew("password", ""); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	}
 }
@@ -1151,8 +1208,8 @@ func containsDBModule(modules []map[string]interface{}, moduleName string) bool 
 	return false
 }
 
-// shouldWarnRedis8Modules checks if a warning should be issued for modules in Redis 8.0 or higher
-func shouldWarnRedis8Modules(version string, hasModules bool) bool {
+// ShouldWarnRedis8Modules checks if a warning should be issued for modules in Redis 8.0 or higher
+func ShouldWarnRedis8Modules(version string, hasModules bool) bool {
 	if !hasModules {
 		return false
 	}
@@ -1166,9 +1223,9 @@ func shouldWarnRedis8Modules(version string, hasModules bool) bool {
 	return false
 }
 
-// shouldSuppressModuleDiffsForRedis8 checks if module diffs should be suppressed for Redis 8.0 or higher
+// ShouldSuppressModuleDiffsForRedis8 checks if module diffs should be suppressed for Redis 8.0 or higher
 // In Redis 8.0+, modules are bundled by default, so we should ignore changes to explicitly configured modules
-func shouldSuppressModuleDiffsForRedis8(version string) bool {
+func ShouldSuppressModuleDiffsForRedis8(version string) bool {
 	if len(version) == 0 {
 		return false
 	}
@@ -1187,7 +1244,7 @@ func modulesDiffSuppressFunc(k, oldValue, newValue string, d *schema.ResourceDat
 		return false
 	}
 	version := redisVersion.(string)
-	return shouldSuppressModuleDiffsForRedis8(version)
+	return ShouldSuppressModuleDiffsForRedis8(version)
 }
 
 func validateModulesForRedis8() schema.CustomizeDiffFunc {
@@ -1205,7 +1262,7 @@ func validateModulesForRedis8() schema.CustomizeDiffFunc {
 		}
 		modules := modulesRaw.(*schema.Set)
 
-		if shouldWarnRedis8Modules(redisVersion, modules.Len() > 0) {
+		if ShouldWarnRedis8Modules(redisVersion, modules.Len() > 0) {
 			log.Printf("[WARN] Modules are bundled by default in Redis %s and later versions. The 'modules' block is deprecated for Redis 8.0+ as modules (RediSearch, RedisJSON, RedisBloom, RedisTimeSeries) are bundled by default. You should remove the 'modules' block from your configuration.", redisVersion)
 		}
 

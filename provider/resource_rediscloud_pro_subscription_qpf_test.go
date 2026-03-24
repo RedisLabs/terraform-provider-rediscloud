@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
@@ -107,24 +106,4 @@ func TestAccResourceRedisCloudProSubscription_qpf(t *testing.T) {
 			},
 		},
 	})
-}
-
-func TestAccResourceRedisCloudProSubscription_invalidQueryPerformanceFactors(t *testing.T) {
-	name := testRandomWithPrefix()
-	password := acctest.RandString(20)
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-
-	config := formatDatabaseConfig(name, testCloudAccountName, password, "5x", `modules = [{ name = "RediSearch" }]`)
-
-	testSubErrorCase(t, config, regexp.MustCompile(`"creation_plan\.0\.query_performance_factor" must be an even value between 2x and 8x \(inclusive\), got: 5x`))
-}
-
-func TestAccResourceRedisCloudProSubscription_invalidQueryPerformanceFactors_outOfRange(t *testing.T) {
-	name := testRandomWithPrefix()
-	password := acctest.RandString(20)
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-
-	config := formatDatabaseConfig(name, testCloudAccountName, password, "30x", `modules = [{ name = "RediSearch" }]`)
-
-	testSubErrorCase(t, config, regexp.MustCompile(`"creation_plan\.0\.query_performance_factor" must be an even value between 2x and 8x \(inclusive\), got: 30x`))
 }

@@ -90,7 +90,8 @@ The following arguments are supported:
 * `alert` - (Optional) A block defining Redis database alert, documented below, can be specified multiple times
 * `data_persistence` - (Optional) Rate of database's storage data persistence (either: 'none', 'aof-every-1-second', 'aof-every-write', 'snapshot-every-1-hour', 'snapshot-every-6-hours' or 'snapshot-every-12-hours'). Default: ‘none’
 * `data_eviction` - (Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'). Default: 'volatile-lru'
-* `password` - (Optional) Password to access the database. If omitted, a random 32 character long alphanumeric password will be automatically generated
+* `password` - (Optional) Password to access the database. If omitted (and `enable_passwordless` is false), a random 32 character long alphanumeric password will be automatically generated. Cannot be set when `enable_passwordless` is `true`
+* `enable_passwordless` - (Optional) When `true`, the database is configured without a password. Only valid when the subscription has `public_endpoint_access` disabled. Cannot be `true` when `password` is set. Default: `false`
 * `replication` - (Optional) Databases replication. Default: ‘true’
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes)
   of the items stored in the database. Default: 1000.
@@ -106,6 +107,7 @@ The following arguments are supported:
 * `enable_default_user` (Optional) When `true` enables connecting to the database with the default user. Default `true`.
 * `auto_minor_version_upgrade` - (Optional) Automatically upgrades the database to newer minor versions within the same major release. Applies to version 8.4 and above. Default: `true`.
 * `tags` - (Optional) A string/string map of Tags to associate with this database. Note that all keys and values must be lowercase.
+* `query_performance_factor` - (Optional) The query performance factor adds extra compute power specifically for search and query databases. You can increase your queries per second by the selected factor. Valid values are "Standard" or multiples of 2, e.g. 2x, 4x, 6x, 8x.
 
 The `alert` block supports:
 

@@ -3,12 +3,25 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.13.0 (Unreleased)
+
+## Added
+- Added `enable_passwordless` attribute to `rediscloud_subscription_database` resource. When set to `true`, the database is configured without a password. Only valid when the subscription has `public_endpoint_access` disabled. Cannot be used together with `password`.
+- Exposed `enable_passwordless` attribute on the `rediscloud_database` data source.
+
+## Changed
+- Upgraded Go dependencies and CI workflow actions.
+
+## Fixed
+- CI: Fixed `govulncheck` step in PR workflow.
+- Exposed `query_performance_factor` attribute in `rediscloud_subscription` and `rediscloud_subscription_database` resources documentation. Corrected validation, to allow higher values and resetting to `Standard`.
+
+
 # 2.12.0 (5th March 2026)
 
 ## Added
 
 - Added `auto_minor_version_upgrade` attribute to `rediscloud_subscription_database` and `rediscloud_active_active_subscription_database` resources and `rediscloud_database` data source. When set to `true` (the default), the database automatically upgrades to the latest minor Redis version.
-
 
 # 2.11.1 (2nd March 2026)
 
