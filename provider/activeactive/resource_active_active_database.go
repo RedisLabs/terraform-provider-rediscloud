@@ -255,13 +255,16 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 				},
 			},
 			"global_password": schema.StringAttribute{
-				Description: "Password used to access the database. If left empty, the password will be generated automatically",
+				Description: "Password used to access the database. If left empty, the password will be generated automatically. Cannot be set when 'global_enable_passwordless' is 'true'",
 				Optional:    true,
 				Computed:    true,
 				Sensitive:   true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+			},
+			"global_enable_passwordless": schema.BoolAttribute{
+				Description: "When 'true', the database is configured without a password. Only valid when the subscription has public_endpoint_access disabled. Cannot be 'true' when 'global_password' is set. Default: 'false'",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
 			},
 			"global_source_ips": schema.SetAttribute{
 				Description: "Set of CIDR addresses to allow access to the database",
@@ -353,6 +356,10 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 							Optional:    true,
 							Sensitive:   true,
 						},
+						"override_global_enable_passwordless": schema.BoolAttribute{
+							Description: "When 'true', the database in this region is configured without a password, overriding the global setting. Cannot be 'true' when 'override_global_password' is set",
+							Optional:    true,
+						},
 						"override_global_source_ips": schema.SetAttribute{
 							Description: "Set of CIDR addresses to allow access to the database",
 							Optional:    true,
@@ -431,7 +438,62 @@ func (r *activeActiveDatabaseResource) ModifyPlan(ctx context.Context, req resou
 		)
 	}
 
-	// Validate backup interval and time_utc combinations in override_region blocks
+	// Validate that global_enable_passwordless and global_password are not both set in config.
+	// We check config (not plan) because the plan's global_password may be set by our
+	// ModifyPlan logic below — the config reflects what the user actually wrote.
+	var config ActiveActiveDatabaseModel
+	diags = req.Config.Get(ctx, &config)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if config.GlobalEnablePasswordless.ValueBool() && !config.GlobalPassword.IsNull() && config.GlobalPassword.ValueString() != "" {
+		resp.Diagnostics.AddError(
+			"Conflicting attributes",
+			"'global_enable_passwordless' cannot be true when 'global_password' is set",
+		)
+	}
+
+	// Handle global_password plan value explicitly instead of using UseStateForUnknown.
+	// UseStateForUnknown + Sensitive + the framework's semantic equality logic causes
+	// "inconsistent values for sensitive attribute" errors during passwordless transitions,
+	// because the framework swaps the read value back to the prior state value after apply.
+	if plan.GlobalEnablePasswordless.ValueBool() {
+		// Passwordless: password will be empty after apply
+		resp.Plan.SetAttribute(ctx, path.Root("global_password"), types.StringValue(""))
+	} else if config.GlobalPassword.IsNull() && !req.State.Raw.IsNull() {
+		// Not in config, not passwordless, existing resource: preserve prior state value
+		var state ActiveActiveDatabaseModel
+		diags = req.State.Get(ctx, &state)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		resp.Plan.SetAttribute(ctx, path.Root("global_password"), state.GlobalPassword)
+	}
+
+	// Validate override_region blocks (use config for passwordless check, plan for backup check)
+	if !config.OverrideRegion.IsNull() && !config.OverrideRegion.IsUnknown() {
+		var configRegions []OverrideRegionModel
+		diags := config.OverrideRegion.ElementsAs(ctx, &configRegions, false)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		for _, region := range configRegions {
+			// Validate that override_global_enable_passwordless and override_global_password are not both set
+			if region.OverrideGlobalEnablePasswordless.ValueBool() && !region.OverrideGlobalPassword.IsNull() && region.OverrideGlobalPassword.ValueString() != "" {
+				resp.Diagnostics.AddError(
+					"Conflicting attributes",
+					fmt.Sprintf("'override_global_enable_passwordless' cannot be true when 'override_global_password' is set in region %s", region.Name.ValueString()),
+				)
+			}
+		}
+	}
+
+	// Validate backup interval and time_utc combinations (using plan values is fine here)
 	if !plan.OverrideRegion.IsNull() && !plan.OverrideRegion.IsUnknown() {
 		var regions []OverrideRegionModel
 		diags := plan.OverrideRegion.ElementsAs(ctx, &regions, false)
@@ -620,7 +682,7 @@ func (r *activeActiveDatabaseResource) Update(ctx context.Context, req resource.
 	plan.DbID = state.DbID
 
 	// Call the CRUD implementation
-	r.updateDatabase(ctx, &plan, &resp.Diagnostics)
+	r.updateDatabase(ctx, &plan, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
