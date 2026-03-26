@@ -93,6 +93,11 @@ func (r *activeActiveDatabaseResource) createDatabase(ctx context.Context, plan 
 	if !plan.GlobalPassword.IsNull() && plan.GlobalPassword.ValueString() != "" {
 		createDatabase.GlobalPassword = redis.String(plan.GlobalPassword.ValueString())
 	}
+	// If passwordless is enabled, send empty password to the API. The ModifyPlan validation
+	// prevents both from being set simultaneously; this ordering is a defensive measure.
+	if plan.GlobalEnablePasswordless.ValueBool() {
+		createDatabase.GlobalPassword = redis.String("")
+	}
 
 	if !plan.DatasetSizeInGB.IsNull() && plan.DatasetSizeInGB.ValueFloat64() > 0 {
 		createDatabase.DatasetSizeInGB = redis.Float64(plan.DatasetSizeInGB.ValueFloat64())
@@ -152,7 +157,7 @@ func (r *activeActiveDatabaseResource) createDatabase(ctx context.Context, plan 
 
 	// Some attributes on a database are not accessible by the create API.
 	// Run the update function to apply any additional changes.
-	r.updateDatabase(ctx, plan, diagnostics)
+	r.updateDatabase(ctx, plan, nil, diagnostics)
 	if diagnostics.HasError() {
 		return
 	}
@@ -201,6 +206,11 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 
 	// Set global_password - Optional+Computed, always from API
 	utils.SetStringFromAPI(&state.GlobalPassword, db.GlobalPassword)
+
+	// Derive global_enable_passwordless from API response
+	// The API returns an empty password string for passwordless databases
+	globalPasswordless := db.GlobalPassword != nil && redis.StringValue(db.GlobalPassword) == ""
+	state.GlobalEnablePasswordless = types.BoolValue(globalPasswordless)
 
 	// Set global_enable_default_user - Optional+Computed with default
 	utils.SetBoolFromAPI(&state.GlobalEnableDefaultUser, db.GlobalEnableDefaultUser, true)
@@ -351,7 +361,7 @@ func ensureNoUnknownFields(state *ActiveActiveDatabaseModel) {
 }
 
 // updateDatabase implements the Update operation for the active-active database resource.
-func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan *ActiveActiveDatabaseModel, diagnostics *diag.Diagnostics) {
+func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan *ActiveActiveDatabaseModel, state *ActiveActiveDatabaseModel, diagnostics *diag.Diagnostics) {
 	subId, dbId, err := parseResourceId(plan.ID.ValueString())
 	if err != nil {
 		diagnostics.AddError("Invalid resource ID", err.Error())
@@ -414,9 +424,18 @@ func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan 
 		}
 	}
 
-	// Set global password
-	if !plan.GlobalPassword.IsNull() && plan.GlobalPassword.ValueString() != "" {
+	// Set global password — passwordless takes priority
+	if plan.GlobalEnablePasswordless.ValueBool() {
+		update.GlobalPassword = redis.String("")
+	} else if !plan.GlobalPassword.IsNull() && plan.GlobalPassword.ValueString() != "" {
 		update.GlobalPassword = redis.String(plan.GlobalPassword.ValueString())
+	} else if state != nil && !state.GlobalEnablePasswordless.IsNull() && state.GlobalEnablePasswordless.ValueBool() && !plan.GlobalEnablePasswordless.ValueBool() {
+		// Transitioning from passwordless to password-protected without providing a password
+		diagnostics.AddError(
+			"Password required",
+			"When disabling passwordless mode, you must provide a 'global_password'",
+		)
+		return
 	}
 
 	// Set global data persistence
@@ -609,9 +628,14 @@ func (r *activeActiveDatabaseResource) buildRegionsFromPlan(ctx context.Context,
 			regionProps.DataPersistence = redis.String(plan.GlobalDataPersistence.ValueString())
 		}
 
-		// Set password
-		if !region.OverrideGlobalPassword.IsNull() && region.OverrideGlobalPassword.ValueString() != "" {
+		// Set password — priority: region override passwordless > region override password > global passwordless > global password.
+		// This priority order must match the global-level handling in updateDatabase.
+		if region.OverrideGlobalEnablePasswordless.ValueBool() {
+			regionProps.Password = redis.String("")
+		} else if !region.OverrideGlobalPassword.IsNull() && region.OverrideGlobalPassword.ValueString() != "" {
 			regionProps.Password = redis.String(region.OverrideGlobalPassword.ValueString())
+		} else if plan.GlobalEnablePasswordless.ValueBool() {
+			regionProps.Password = redis.String("")
 		} else if !plan.GlobalPassword.IsNull() && plan.GlobalPassword.ValueString() != "" {
 			regionProps.Password = redis.String(plan.GlobalPassword.ValueString())
 		}
@@ -636,13 +660,14 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 	alertAttrTypes := getAlertAttrTypes()
 	remoteBackupAttrTypes := getRemoteBackupAttrTypes()
 	overrideRegionAttrTypes := map[string]attr.Type{
-		"name":                             types.StringType,
-		"override_global_alert":            types.SetType{ElemType: types.ObjectType{AttrTypes: alertAttrTypes}},
-		"override_global_password":         types.StringType,
-		"override_global_source_ips":       types.SetType{ElemType: types.StringType},
-		"override_global_data_persistence": types.StringType,
-		"enable_default_user":              types.BoolType,
-		"remote_backup":                    types.ListType{ElemType: types.ObjectType{AttrTypes: remoteBackupAttrTypes}},
+		"name":                                types.StringType,
+		"override_global_alert":               types.SetType{ElemType: types.ObjectType{AttrTypes: alertAttrTypes}},
+		"override_global_password":            types.StringType,
+		"override_global_enable_passwordless": types.BoolType,
+		"override_global_source_ips":          types.SetType{ElemType: types.StringType},
+		"override_global_data_persistence":    types.StringType,
+		"enable_default_user":                 types.BoolType,
+		"remote_backup":                       types.ListType{ElemType: types.ObjectType{AttrTypes: remoteBackupAttrTypes}},
 	}
 
 	// If no override_region in state, return null set
@@ -681,7 +706,7 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 
 		// Handle override_global_source_ips
 		// Only set if the state had source IPs configured
-		if stateRegion != nil && !stateRegion.OverrideGlobalSourceIPs.IsNull() && len(stateRegion.OverrideGlobalSourceIPs.Elements()) > 0 {
+		if stateRegion != nil && !stateRegion.OverrideGlobalSourceIPs.IsNull() && len(stateRegion.OverrideGlobalSourceIPs.Elements()) > 0 && regionDb.Security != nil {
 			sourceIPs := stringSliceValue(regionDb.Security.SourceIPs)
 			// Filter out default source IPs
 			if !isDefaultGlobalSourceIPs(sourceIPs) {
@@ -706,11 +731,27 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 			regionConfig["override_global_data_persistence"] = types.StringNull()
 		}
 
+		// Handle override_global_enable_passwordless
+		// Only set if user explicitly configured it — prevents TypeSet hash changes for users not using this feature
+		regionPasswordless := false
+		if stateRegion != nil && !stateRegion.OverrideGlobalEnablePasswordless.IsNull() && stateRegion.OverrideGlobalEnablePasswordless.ValueBool() {
+			// User configured passwordless override — check if API confirms it
+			regionPassword := ""
+			if regionDb.Security != nil && regionDb.Security.Password != nil {
+				regionPassword = redis.StringValue(regionDb.Security.Password)
+			}
+			regionPasswordless = regionPassword == ""
+			regionConfig["override_global_enable_passwordless"] = types.BoolValue(regionPasswordless)
+		} else {
+			regionConfig["override_global_enable_passwordless"] = types.BoolNull()
+		}
+
 		// Handle override_global_password
 		// Preserve the user's configured value to avoid TypeSet hash mismatch.
-		// The API doesn't distinguish between "same as global" and "explicitly set to same value",
-		// so we must preserve whatever the user configured to ensure plan matches actual.
-		if stateRegion != nil && !stateRegion.OverrideGlobalPassword.IsNull() && stateRegion.OverrideGlobalPassword.ValueString() != "" {
+		// If region is passwordless, password should be null regardless of state.
+		if regionPasswordless {
+			regionConfig["override_global_password"] = types.StringNull()
+		} else if stateRegion != nil && !stateRegion.OverrideGlobalPassword.IsNull() && stateRegion.OverrideGlobalPassword.ValueString() != "" {
 			regionConfig["override_global_password"] = stateRegion.OverrideGlobalPassword
 		} else {
 			regionConfig["override_global_password"] = types.StringNull()

@@ -98,7 +98,8 @@ The following arguments are supported:
 * `client_tls_certificates` - (Optional) A list of TLS certificates to authenticate user connections, conflicts with `client_ssl_certificate`
 * `data_eviction` - (Optional) The data items eviction policy (either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru')
 * `global_data_persistence` - (Optional) Global rate of database data persistence (in persistent storage) of regions that dont override global settings. Default: 'none'
-* `global_password` - (Optional) Password to access the database of regions that don't override global settings. If left empty, the password will be generated automatically
+* `global_password` - (Optional) Password to access the database of regions that don't override global settings. If left empty, the password will be generated automatically. Cannot be set when `global_enable_passwordless` is `true`
+* `global_enable_passwordless` - (Optional) When `true`, the database is configured without a password. The API requires that the subscription has `public_endpoint_access` disabled. Cannot be `true` when `global_password` is set. Default: `false`
 * `global_alert` - (Optional) A block defining Redis database alert of regions that don't override global settings, documented below, can be specified multiple times. (either: 'dataset-size', 'datasets-size', 'throughput-higher-than', 'throughput-lower-than', 'latency', 'syncsource-error', 'syncsource-lag' or 'connections-limit')
 * `global_modules` - (Optional) A list of modules to be enabled on all deployments of this database. Supported modules: `RedisJSON`, `RediSearch`. **This attribute is only used when creating a new database - any changes after creation are ignored.** **Don't specify modules for DB versions 8 and above. All capabilities are bundled in the DB by default.**
 * `global_source_ips` - (Optional) List of source IP addresses or subnet masks that are allowed to connect to the database across all regions that don't override this setting (example: ['192.168.10.0/32', '192.168.12.0/24']). If specified, must contain at least one item. When not specified, the default behaviour depends on the subscription's `public_endpoint_access` setting: if `false`, defaults to RFC1918 private IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10); if `true`, defaults to 0.0.0.0/0 (unrestricted public access)
@@ -113,7 +114,8 @@ The `override_region` block supports:
 
 * `name` - (Required) Region name.
 * `override_global_alert` - (Optional) A block defining Redis regional instance of an Active-Active database alert, documented below, can be specified multiple times
-* `override_global_password` - (Optional) If specified, this regional instance of an Active-Active database password will be used to access the database
+* `override_global_password` - (Optional) If specified, this regional instance of an Active-Active database password will be used to access the database. Cannot be set when `override_global_enable_passwordless` is `true`
+* `override_global_enable_passwordless` - (Optional) When `true`, the database in this region is configured without a password, overriding the global setting. Cannot be `true` when `override_global_password` is set
 * `override_global_source_ips` - (Optional) List of source IP addresses or subnet masks that are allowed to connect to the database in this specific region, overriding the global `global_source_ips` setting (example: ['192.168.10.0/32', '192.168.12.0/24']). If specified, must contain at least one item. If not specified, the global `global_source_ips` setting applies to this region
 * `override_global_data_persistence` - (Optional) Regional instance of an Active-Active database data persistence rate (in persistent storage)
 * `remote_backup` - (Optional) Specifies the backup options for the database in this region, documented below
