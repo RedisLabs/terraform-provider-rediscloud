@@ -634,6 +634,11 @@ func (r *activeActiveDatabaseResource) buildRegionsFromPlan(ctx context.Context,
 			regionProps.Password = redis.String("")
 		} else if !region.OverrideGlobalPassword.IsNull() && region.OverrideGlobalPassword.ValueString() != "" {
 			regionProps.Password = redis.String(region.OverrideGlobalPassword.ValueString())
+		} else if !region.OverrideGlobalEnablePasswordless.IsNull() && !region.OverrideGlobalEnablePasswordless.ValueBool() {
+			allDiags.AddError(
+				"Password required",
+				"When disabling passwordless mode, you must provide a 'override_global_password'",
+			)
 		} else if plan.GlobalEnablePasswordless.ValueBool() {
 			regionProps.Password = redis.String("")
 		} else if !plan.GlobalPassword.IsNull() && plan.GlobalPassword.ValueString() != "" {
@@ -734,8 +739,7 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 		// Handle override_global_enable_passwordless
 		// Only set if user explicitly configured it — prevents TypeSet hash changes for users not using this feature
 		regionPasswordless := false
-		if stateRegion != nil && !stateRegion.OverrideGlobalEnablePasswordless.IsNull() && stateRegion.OverrideGlobalEnablePasswordless.ValueBool() {
-			// User configured passwordless override — check if API confirms it
+		if stateRegion != nil && !stateRegion.OverrideGlobalEnablePasswordless.IsNull() {
 			regionPassword := ""
 			if regionDb.Security != nil && regionDb.Security.Password != nil {
 				regionPassword = redis.StringValue(regionDb.Security.Password)

@@ -114,7 +114,7 @@ func TestAccActiveActiveDatabase_PasswordlessRegionOverride(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create with global password + one region overriding to passwordless
 			{
-				ConfigFile: config.StaticFile("testdata/aa_database_passwordless_override.tf"),
+				ConfigFile: config.StaticFile("testdata/aa_database_passwordless_override_region.tf"),
 				ConfigVariables: config.Variables{
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
