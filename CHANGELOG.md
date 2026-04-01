@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# Unreleased
+- Migrated `regions` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
+
+
 # 2.14.0 (1st April 2026)
 
 ## Added
@@ -17,8 +21,6 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ## Changed
 - Upgraded Go dependencies and CI workflow actions.
-- Migrated `regions` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
-
 ## Fixed
 - CI: Fixed `govulncheck` step in PR workflow.
 - Exposed `query_performance_factor` attribute in `rediscloud_subscription` and `rediscloud_subscription_database` resources documentation. Corrected validation, to allow higher values and resetting to `Standard`.
