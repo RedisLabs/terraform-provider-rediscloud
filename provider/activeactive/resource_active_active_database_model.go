@@ -21,6 +21,7 @@ type ActiveActiveDatabaseModel struct {
 	DataEviction                     types.String  `tfsdk:"data_eviction"`
 	GlobalDataPersistence            types.String  `tfsdk:"global_data_persistence"`
 	GlobalPassword                   types.String  `tfsdk:"global_password"`
+	GlobalEnablePasswordless         types.Bool    `tfsdk:"global_enable_passwordless"`
 	GlobalAlert                      types.Set     `tfsdk:"global_alert"`
 	GlobalModules                    types.List    `tfsdk:"global_modules"`
 	GlobalSourceIPs                  types.Set     `tfsdk:"global_source_ips"`
@@ -42,13 +43,14 @@ type AlertModel struct {
 
 // OverrideRegionModel describes the override_region nested block.
 type OverrideRegionModel struct {
-	Name                          types.String `tfsdk:"name"`
-	OverrideGlobalAlert           types.Set    `tfsdk:"override_global_alert"`
-	OverrideGlobalPassword        types.String `tfsdk:"override_global_password"`
-	OverrideGlobalSourceIPs       types.Set    `tfsdk:"override_global_source_ips"`
-	OverrideGlobalDataPersistence types.String `tfsdk:"override_global_data_persistence"`
-	EnableDefaultUser             types.Bool   `tfsdk:"enable_default_user"`
-	RemoteBackup                  types.List   `tfsdk:"remote_backup"`
+	Name                             types.String `tfsdk:"name"`
+	OverrideGlobalAlert              types.Set    `tfsdk:"override_global_alert"`
+	OverrideGlobalPassword           types.String `tfsdk:"override_global_password"`
+	OverrideGlobalEnablePasswordless types.Bool   `tfsdk:"override_global_enable_passwordless"`
+	OverrideGlobalSourceIPs          types.Set    `tfsdk:"override_global_source_ips"`
+	OverrideGlobalDataPersistence    types.String `tfsdk:"override_global_data_persistence"`
+	EnableDefaultUser                types.Bool   `tfsdk:"enable_default_user"`
+	RemoteBackup                     types.List   `tfsdk:"remote_backup"`
 }
 
 // RemoteBackupModel describes the remote_backup nested block within override_region.

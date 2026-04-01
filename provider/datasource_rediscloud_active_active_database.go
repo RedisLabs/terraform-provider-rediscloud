@@ -250,6 +250,11 @@ func dataSourceRedisCloudActiveActiveDatabase() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"global_enable_passwordless": {
+				Description: "When 'true', the database is configured without a password",
+				Type:        schema.TypeBool,
+				Computed:    true,
+			},
 		},
 	}
 }
@@ -412,6 +417,12 @@ func dataSourceRedisCloudActiveActiveDatabaseRead(ctx context.Context, d *schema
 		if err := d.Set("global_source_ips", redis.StringSliceValue(db.CrdbDatabases[0].Security.SourceIPs...)); err != nil {
 			return diag.FromErr(err)
 		}
+	}
+
+	// Derive global_enable_passwordless from API response
+	globalPasswordless := db.GlobalPassword != nil && redis.StringValue(db.GlobalPassword) == ""
+	if err := d.Set("global_enable_passwordless", globalPasswordless); err != nil {
+		return diag.FromErr(err)
 	}
 
 	return diags

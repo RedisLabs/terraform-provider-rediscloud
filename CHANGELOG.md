@@ -3,7 +3,13 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-# 2.13.0 (Unreleased)
+# 2.14.0 (1st April 2026)
+
+## Added
+- Added `global_enable_passwordless` and `override_global_enable_passwordless` attributes to `rediscloud_active_active_subscription_database` resource. When set to `true`, the database is configured without a password. Only valid when the subscription has `public_endpoint_access` disabled. Conflicts with `password`.
+- Exposed `global_enable_passwordless` attribute on the `rediscloud_active_active_subscription_database` data source.
+
+# 2.13.0 (24th March 2026)
 
 ## Added
 - Added `enable_passwordless` attribute to `rediscloud_subscription_database` resource. When set to `true`, the database is configured without a password. Only valid when the subscription has `public_endpoint_access` disabled. Cannot be used together with `password`.
