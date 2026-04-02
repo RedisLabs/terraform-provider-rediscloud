@@ -91,8 +91,8 @@ func TestAccRedisCloudProDatabase_ExplicitPasswordFalseWithPassword(t *testing.T
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create with enable_passwordless=false and password set explicitly
@@ -134,8 +134,8 @@ func TestAccRedisCloudProDatabase_PasswordToPasswordless(t *testing.T) {
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create with password only (no enable_passwordless field)
@@ -205,8 +205,8 @@ func TestAccRedisCloudProDatabase_PasswordlessWithPasswordConflict(t *testing.T)
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Try to create with both enable_passwordless=true and password — expect error at plan time
