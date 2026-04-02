@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -114,13 +115,23 @@ func NewSdkProvider(version string) func() *schema.Provider {
 			},
 		}
 
-		p.ConfigureContextFunc = configure(version, p)
+		p.ConfigureContextFunc = configure(version, p, nil)
 
 		return p
 	}
 }
 
-func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
+// NewSdkProviderWithTransport returns an SDK v2 provider with a custom HTTP transport.
+// Used by VCR tests to inject a recording/replaying transport.
+func NewSdkProviderWithTransport(version string, transport http.RoundTripper) func() *schema.Provider {
+	return func() *schema.Provider {
+		p := NewSdkProvider(version)()
+		p.ConfigureContextFunc = configure(version, p, transport)
+		return p
+	}
+}
+
+func configure(version string, p *schema.Provider, transport http.RoundTripper) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	return func(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 		var config []rediscloudApi.Option
 		config = append(config, rediscloudApi.AdditionalUserAgent(p.UserAgent("terraform-provider-rediscloud", version)))
@@ -142,6 +153,10 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 		}
 
 		config = append(config, rediscloudApi.Logger(&debugLogger{}))
+
+		if transport != nil {
+			config = append(config, rediscloudApi.Transporter(transport))
+		}
 
 		apiClient, err := rediscloudApi.NewClient(config...)
 		if err != nil {

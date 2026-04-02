@@ -4,11 +4,12 @@ import (
 	"regexp"
 	"testing"
 
+	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testvcr"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
@@ -22,9 +23,9 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
-		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             checkProSubscriptionDestroy,
+		PreCheck:                 func() { testvcr.PreCheck(t, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar) },
+		ProtoV5ProviderFactories: testvcr.TestProviderFactories(t),
+		CheckDestroy:             testvcr.SkipCheckDestroyOnReplay(checkProSubscriptionDestroy),
 		Steps: []resource.TestStep{
 			// Step 1: Create a passwordless database
 			{
@@ -91,9 +92,9 @@ func TestAccRedisCloudProDatabase_ExplicitPasswordFalseWithPassword(t *testing.T
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
-		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             checkProSubscriptionDestroy,
+		PreCheck:                 func() { testvcr.PreCheck(t, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar) },
+		ProtoV5ProviderFactories: testvcr.TestProviderFactories(t),
+		CheckDestroy:             testvcr.SkipCheckDestroyOnReplay(checkProSubscriptionDestroy),
 		Steps: []resource.TestStep{
 			// Step 1: Create with enable_passwordless=false and password set explicitly
 			{
@@ -134,9 +135,9 @@ func TestAccRedisCloudProDatabase_PasswordToPasswordless(t *testing.T) {
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
-		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             checkProSubscriptionDestroy,
+		PreCheck:                 func() { testvcr.PreCheck(t, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar) },
+		ProtoV5ProviderFactories: testvcr.TestProviderFactories(t),
+		CheckDestroy:             testvcr.SkipCheckDestroyOnReplay(checkProSubscriptionDestroy),
 		Steps: []resource.TestStep{
 			// Step 1: Create with password only (no enable_passwordless field)
 			{
@@ -174,9 +175,9 @@ func TestAccRedisCloudProDatabase_PasswordlessDisableWithoutPassword(t *testing.
 	subscriptionName := utils.RandomWithPrefix()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
-		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             checkProSubscriptionDestroy,
+		PreCheck:                 func() { testvcr.PreCheck(t, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar) },
+		ProtoV5ProviderFactories: testvcr.TestProviderFactories(t),
+		CheckDestroy:             testvcr.SkipCheckDestroyOnReplay(checkProSubscriptionDestroy),
 		Steps: []resource.TestStep{
 			// Step 1: Create a passwordless database
 			{
@@ -205,9 +206,9 @@ func TestAccRedisCloudProDatabase_PasswordlessWithPasswordConflict(t *testing.T)
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
-		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             checkProSubscriptionDestroy,
+		PreCheck:                 func() { testvcr.PreCheck(t, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar) },
+		ProtoV5ProviderFactories: testvcr.TestProviderFactories(t),
+		CheckDestroy:             testvcr.SkipCheckDestroyOnReplay(checkProSubscriptionDestroy),
 		Steps: []resource.TestStep{
 			// Try to create with both enable_passwordless=true and password — expect error at plan time
 			{

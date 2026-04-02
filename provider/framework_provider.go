@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
@@ -28,7 +29,8 @@ var _ provider.Provider = &redisCloudFrameworkProvider{}
 
 // redisCloudFrameworkProvider is the Plugin Framework implementation of the provider.
 type redisCloudFrameworkProvider struct {
-	version string
+	version   string
+	transport http.RoundTripper
 }
 
 // redisCloudProviderModel describes the provider data model.
@@ -43,6 +45,17 @@ func NewFrameworkProvider(version string) func() provider.Provider {
 	return func() provider.Provider {
 		return &redisCloudFrameworkProvider{
 			version: version,
+		}
+	}
+}
+
+// NewFrameworkProviderWithTransport returns a provider instance with a custom HTTP transport.
+// Used by VCR tests to inject a recording/replaying transport.
+func NewFrameworkProviderWithTransport(version string, transport http.RoundTripper) func() provider.Provider {
+	return func() provider.Provider {
+		return &redisCloudFrameworkProvider{
+			version:   version,
+			transport: transport,
 		}
 	}
 }
@@ -137,6 +150,11 @@ func (p *redisCloudFrameworkProvider) Configure(ctx context.Context, req provide
 	// Enable request logging in debug mode
 	clientConfig = append(clientConfig, rediscloudApi.LogRequests(true))
 	clientConfig = append(clientConfig, rediscloudApi.Logger(&frameworkDebugLogger{}))
+
+	// Inject custom transport if provided (used by VCR tests)
+	if p.transport != nil {
+		clientConfig = append(clientConfig, rediscloudApi.Transporter(p.transport))
+	}
 
 	// Create the API client
 	apiClient, err := rediscloudApi.NewClient(clientConfig...)

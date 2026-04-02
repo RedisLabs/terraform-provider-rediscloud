@@ -13,6 +13,13 @@ import (
 // Unfortunately there's no "time-remaining-before-timeout" utility, or we could use that in the wait blocks.
 const SafetyTimeout = 6 * time.Hour
 
+// PollDelay and PollInterval control the timing of wait loops (WaitForSubscriptionToBeActive, etc.).
+// Tests can override these to speed up VCR replay where HTTP responses are instant.
+var (
+	PollDelay    = 10 * time.Second
+	PollInterval = 30 * time.Second
+)
+
 // TransitGatewayProvisioningTimeout is used when waiting for Transit Gateway resources to become available during
 // subscription provisioning. This is shorter than SafetyTimeout as tests typically complete within 45 minutes.
 const TransitGatewayProvisioningTimeout = 40 * time.Minute
