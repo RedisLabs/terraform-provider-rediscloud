@@ -4,8 +4,12 @@ All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 # Unreleased
+
+# Changed
 - Migrated `regions` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
 
+## Fixed
+- `rediscloud_subscription_database`: Fixed inconsistent handling of `query_performance_factor` and `redis_version` when not set, ensuring nil values are not written to state as empty strings.
 
 # 2.14.0 (1st April 2026)
 
@@ -21,6 +25,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ## Changed
 - Upgraded Go dependencies and CI workflow actions.
+
 ## Fixed
 - CI: Fixed `govulncheck` step in PR workflow.
 - Exposed `query_performance_factor` attribute in `rediscloud_subscription` and `rediscloud_subscription_database` resources documentation. Corrected validation, to allow higher values and resetting to `Standard`.
