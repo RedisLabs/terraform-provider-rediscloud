@@ -424,35 +424,9 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
-	// There is a timing issue where the subscription is marked as active before the creation-plan databases are listed.
-	// This additional wait ensures that the databases will be listed before calling api.client.Database.List()
-	time.Sleep(30 * time.Second) //lintignore:R018
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return diag.FromErr(err)
-	}
-
-	// Locate Databases to confirm Active status
-	dbList := api.Client.Database.List(ctx, subId)
-
-	for dbList.Next() {
-		dbId := *dbList.Value().ID
-
-		if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-			return diag.FromErr(err)
-		}
-		// Delete each creation-plan database
-		dbErr := api.Client.Database.Delete(ctx, subId, dbId)
-		if dbErr != nil {
-			diag.FromErr(dbErr)
-		}
-	}
-	if dbList.Err() != nil {
-		return diag.FromErr(dbList.Err())
-	}
-
-	// Check that the subscription is in an active state before calling the read function
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return diag.FromErr(err)
+	// Delete creation-plan databases
+	if cleanupDiags := utils.DeleteCreationPlanDatabases(ctx, subId, api); cleanupDiags != nil {
+		return cleanupDiags
 	}
 
 	if m, ok := d.GetOk("maintenance_windows"); ok {
@@ -732,6 +706,11 @@ func resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx context.Context, d 
 		return diag.FromErr(err)
 	}
 
+	// After CMK activation, delete creation-plan databases that were skipped during Create
+	if cleanupDiags := utils.DeleteCreationPlanDatabases(ctx, subId, api); cleanupDiags != nil {
+		return cleanupDiags
+	}
+
 	return nil
 }
 
@@ -760,13 +739,10 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 			return diag.FromErr(err)
 		}
 
-		// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
-		// This additional wait ensures that the databases are deleted before the subscription is deleted.
-		time.Sleep(30 * time.Second) //lintignore:R018
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-			return diag.FromErr(err)
+		// Defensively delete any remaining databases (e.g. orphaned creation-plan DBs)
+		if cleanupDiags := utils.DeleteCreationPlanDatabases(ctx, subId, api); cleanupDiags != nil {
+			return cleanupDiags
 		}
-		// Delete subscription once all databases are deleted
 	}
 	err = api.Client.Subscription.Delete(ctx, subId)
 	if err != nil {
