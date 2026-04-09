@@ -97,20 +97,6 @@ func checkNoCreationPlanDatabases(resourceName string) resource.TestCheckFunc {
 			return err
 		}
 
-		dbList := apiClient.Client.Database.List(context.TODO(), subId)
-
-		var dbIds []int
-		for dbList.Next() {
-			dbIds = append(dbIds, *dbList.Value().ID)
-		}
-		if dbList.Err() != nil {
-			return fmt.Errorf("failed to list databases in subscription %d: %w", subId, dbList.Err())
-		}
-
-		if len(dbIds) > 0 {
-			return fmt.Errorf("expected no databases in subscription %d after CMK activation, but found %d: %v", subId, len(dbIds), dbIds)
-		}
-
-		return nil
+		return utils.CheckNoDatabasesInSubscription(context.TODO(), subId, apiClient)
 	}
 }

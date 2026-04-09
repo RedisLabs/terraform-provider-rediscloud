@@ -1,11 +1,15 @@
 package utils
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
 func AccRequiresEnvVar(t *testing.T, envVarName string) string {
@@ -46,6 +50,23 @@ func TestResourcePrefix() string {
 		return prefix
 	}
 	return "tf-test"
+}
+
+// CheckNoDatabasesInSubscription verifies that no databases exist in a subscription.
+// Used by CMK tests to confirm creation-plan databases were cleaned up after activation.
+func CheckNoDatabasesInSubscription(ctx context.Context, subId int, api *client.ApiClient) error {
+	dbList := api.Client.Database.List(ctx, subId)
+	var dbIds []int
+	for dbList.Next() {
+		dbIds = append(dbIds, *dbList.Value().ID)
+	}
+	if dbList.Err() != nil {
+		return fmt.Errorf("failed to list databases in subscription %d: %w", subId, dbList.Err())
+	}
+	if len(dbIds) > 0 {
+		return fmt.Errorf("expected no databases in subscription %d, but found %d: %v", subId, len(dbIds), dbIds)
+	}
+	return nil
 }
 
 // RandomWithPrefix generates a unique name with the test resource prefix
