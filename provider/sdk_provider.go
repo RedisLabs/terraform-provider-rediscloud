@@ -51,10 +51,10 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				// Note the difference in public data-source name and the file/method name.
 				// This is to help the developer relate their changes to what they would see happening in the Redis Console.
 				// <default> == flexible == pro
-				"rediscloud_subscription":                               pro.DataSourceRedisCloudProSubscription(),
-				"rediscloud_database":                                   pro.DataSourceRedisCloudProDatabase(),
-				"rediscloud_database_modules":                           dataSourceRedisCloudDatabaseModules(),
-				"rediscloud_regions":                                    dataSourceRedisCloudRegions(),
+				"rediscloud_subscription":     pro.DataSourceRedisCloudProSubscription(),
+				"rediscloud_database":         pro.DataSourceRedisCloudProDatabase(),
+				"rediscloud_database_modules": dataSourceRedisCloudDatabaseModules(),
+				// Note: rediscloud_regions is served by the Plugin Framework provider
 				"rediscloud_essentials_plan":                            dataSourceRedisCloudEssentialsPlan(),
 				"rediscloud_essentials_subscription":                    dataSourceRedisCloudEssentialsSubscription(),
 				"rediscloud_essentials_database":                        dataSourceRedisCloudEssentialsDatabase(),

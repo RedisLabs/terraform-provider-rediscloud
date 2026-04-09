@@ -5,34 +5,16 @@ import (
 	"regexp"
 	"testing"
 
-	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
-
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
-var protoV5ProviderFactories = map[string]func() (tfprotov5.ProviderServer, error){
-	"rediscloud": func() (tfprotov5.ProviderServer, error) {
-		muxServer, err := provider.MuxProviderServerCreator(
-			provider.NewSdkProvider("dev")(),
-			provider.NewFrameworkProvider("dev")(),
-		)
-		if err != nil {
-			return nil, err
-		}
-		return muxServer(), nil
-	},
-}
-
 func testAccPreCheck(t *testing.T) {
-	for _, name := range []string{provider.RedisCloudUrlEnvVar, rediscloudapi.AccessKeyEnvVar, rediscloudapi.SecretKeyEnvVar, "AWS_TEST_CLOUD_ACCOUNT_NAME"} {
-		if _, ok := os.LookupEnv(name); !ok {
-			t.Fatalf("Missing `%s` environment variable", name)
-		}
-	}
+	t.Helper()
+	testhelpers.BasicPreCheck(t)
+	testhelpers.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
 }
 
 func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
@@ -45,7 +27,7 @@ func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil, // test doesn't create a resource at the moment, so don't need to check anything
 		Steps: []resource.TestStep{
 			{

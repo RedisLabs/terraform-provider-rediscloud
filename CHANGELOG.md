@@ -5,9 +5,11 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 # Unreleased
 
+# Changed
+- Migrated `regions` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
+
 ## Fixed
 - `rediscloud_subscription_database`: Fixed inconsistent handling of `query_performance_factor` and `redis_version` when not set, ensuring nil values are not written to state as empty strings.
-
 
 # 2.14.0 (1st April 2026)
 
