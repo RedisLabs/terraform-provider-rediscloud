@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         continue-on-error: true
         id: cache-terraform-plugin-dir
         timeout-minutes: 2
@@ -75,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         continue-on-error: true
         id: cache-terraform-providers-schema
         timeout-minutes: 2
@@ -83,7 +83,7 @@ jobs:
           path: terraform-providers-schema
           key: ${{ runner.os }}-terraform-providers-schema-${{ hashFiles('go.sum') }}-${{ hashFiles('provider/**') }}
       - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         timeout-minutes: 2
         with:
           path: terraform-plugin-dir
