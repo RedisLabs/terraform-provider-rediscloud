@@ -5,12 +5,19 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
+
+func testAccPreCheck(t *testing.T) {
+	t.Helper()
+	testhelpers.BasicPreCheck(t)
+}
 
 var (
 	sharedClient     *client.ApiClient
