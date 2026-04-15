@@ -233,6 +233,14 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 								},
 							},
 						},
+						"resource_tags": {
+							Description:      "A map of tags to associate with this subscription. All keys and values must be lowercase. Only supported for BYOC (Bring Your Own Cloud) subscriptions.",
+							Type:             schema.TypeMap,
+							Optional:         true,
+							ForceNew:         false,
+							Elem:             &schema.Schema{Type: schema.TypeString},
+							ValidateDiagFunc: validateResourceTagsFunc,
+						},
 					},
 				},
 			},
@@ -684,7 +692,18 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("cloud_provider", FlattenCloudDetails(subscription.CloudDetails, true)); err != nil {
+	// Capture resource_tags from current state before overwriting (no read API yet).
+	// Use d.Get (not d.GetOk) so that an empty map is preserved after tag clearing.
+	existingResourceTags := d.Get("cloud_provider.0.resource_tags")
+
+	flattenedCP := FlattenCloudDetails(subscription.CloudDetails, true)
+
+	// Merge existing resource_tags back into flattened result
+	if len(flattenedCP) > 0 {
+		flattenedCP[0]["resource_tags"] = existingResourceTags
+	}
+
+	if err := d.Set("cloud_provider", flattenedCP); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -816,6 +835,23 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 		}
 
 		err = api.Client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if d.HasChange("cloud_provider.0.resource_tags") {
+		tagsMap := d.Get("cloud_provider.0.resource_tags").(map[string]interface{})
+		resourceTags := make([]*subscriptions.ResourceTag, 0, len(tagsMap))
+		for k, val := range tagsMap {
+			resourceTags = append(resourceTags, &subscriptions.ResourceTag{
+				Key:   redis.String(k),
+				Value: redis.String(val.(string)),
+			})
+		}
+		err := api.Client.Subscription.UpdateResourceTags(ctx, subId, subscriptions.UpdateResourceTags{
+			ResourceTags: resourceTags,
+		})
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -1015,6 +1051,20 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 			Provider:       redis.String(providerStr),
 			CloudAccountID: redis.Int(cloudAccountID),
 			Regions:        createRegions,
+		}
+
+		if v, ok := providerMap["resource_tags"]; ok {
+			tagsMap := v.(map[string]interface{})
+			if len(tagsMap) > 0 {
+				resourceTags := make([]*subscriptions.ResourceTag, 0, len(tagsMap))
+				for k, val := range tagsMap {
+					resourceTags = append(resourceTags, &subscriptions.ResourceTag{
+						Key:   redis.String(k),
+						Value: redis.String(val.(string)),
+					})
+				}
+				createCloudProvider.ResourceTags = resourceTags
+			}
 		}
 
 		createCloudProviders = append(createCloudProviders, createCloudProvider)

@@ -39,6 +39,16 @@ func WriteTags(ctx context.Context, api *client.ApiClient, subId int, databaseId
 	return api.Client.Tags.Put(ctx, subId, databaseId, redisTags.AllTags{Tags: &tags})
 }
 
+func validateResourceTagsFunc(tagsRaw interface{}, path cty.Path) diag.Diagnostics {
+	tags := tagsRaw.(map[string]interface{})
+
+	if len(tags) > 30 {
+		return diag.Errorf("resource_tags supports a maximum of 30 tags, got %d", len(tags))
+	}
+
+	return ValidateTagsfunc(tagsRaw, path)
+}
+
 func ValidateTagsfunc(tagsRaw interface{}, _ cty.Path) diag.Diagnostics {
 	tags := tagsRaw.(map[string]interface{})
 	invalid := make([]string, 0)
