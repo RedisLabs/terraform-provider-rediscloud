@@ -5,12 +5,38 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
+
+var (
+	sharedTestClient     *client.ApiClient
+	sharedTestClientOnce sync.Once
+	sharedTestClientErr  error
+)
+
+// GetTestClient returns a shared API client for acceptance tests.
+// The client is created once and reused across all calls within a test binary.
+func GetTestClient() (*client.ApiClient, error) {
+	sharedTestClientOnce.Do(func() {
+		sharedTestClient, sharedTestClientErr = client.NewClient()
+	})
+	return sharedTestClient, sharedTestClientErr
+}
+
+// CheckNoDatabasesForSubscription verifies that no databases exist in a subscription.
+// Combines GetTestClient with CheckNoDatabasesInSubscription for convenience in test check functions.
+func CheckNoDatabasesForSubscription(ctx context.Context, subId int) error {
+	api, err := GetTestClient()
+	if err != nil {
+		return err
+	}
+	return CheckNoDatabasesInSubscription(ctx, subId, api)
+}
 
 func AccRequiresEnvVar(t *testing.T, envVarName string) string {
 	envVarValue := os.Getenv(envVarName)

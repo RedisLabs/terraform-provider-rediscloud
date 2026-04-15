@@ -16,8 +16,7 @@ import (
 // separate resources. This function cleans up those creation-plan databases after the subscription
 // becomes active.
 //
-// It is called from Create (normal flow), UpdateCmk (after CMK activation), and Delete (defensive
-// cleanup for orphaned creation-plan databases).
+// It is called from Create (normal flow) and UpdateCmk (after CMK activation).
 func DeleteCreationPlanDatabases(ctx context.Context, subId int, api *client.ApiClient) diag.Diagnostics {
 	// There is a timing issue where the subscription is marked as active before the creation-plan
 	// databases are visible via the List API. This sleep works around it.

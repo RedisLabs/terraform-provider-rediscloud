@@ -86,11 +86,6 @@ func testAccCheckNoCreationPlanDatabases(resourceName string) resource.TestCheck
 			return fmt.Errorf("could not parse subscription ID: %s", r.Primary.ID)
 		}
 
-		apiClient, err := getTestClient()
-		if err != nil {
-			return err
-		}
-
-		return utils.CheckNoDatabasesInSubscription(context.TODO(), subId, apiClient)
+		return utils.CheckNoDatabasesForSubscription(context.TODO(), subId)
 	}
 }

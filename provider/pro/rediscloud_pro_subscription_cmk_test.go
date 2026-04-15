@@ -18,9 +18,7 @@ import (
 // to create KMS keys and grant IAM permissions automatically.
 func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-	utils.AccRequiresEnvVar(t, "GCP_PROJECT_ID")
-	utils.AccRequiresEnvVar(t, "GOOGLE_CREDENTIALS")
+	testhelpers.RequireEnvVars(t, "EXECUTE_TESTS", "GCP_PROJECT_ID", "GOOGLE_CREDENTIALS")
 
 	name := utils.RandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
@@ -32,7 +30,7 @@ func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"google": {
@@ -93,11 +91,6 @@ func checkNoCreationPlanDatabases(resourceName string) resource.TestCheckFunc {
 			return fmt.Errorf("could not parse subscription ID: %s", r.Primary.ID)
 		}
 
-		apiClient, err := getTestClient()
-		if err != nil {
-			return err
-		}
-
-		return utils.CheckNoDatabasesInSubscription(context.TODO(), subId, apiClient)
+		return utils.CheckNoDatabasesForSubscription(context.TODO(), subId)
 	}
 }

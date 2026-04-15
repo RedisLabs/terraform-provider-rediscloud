@@ -739,9 +739,11 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 			return diag.FromErr(err)
 		}
 
-		// Defensively delete any remaining databases (e.g. orphaned creation-plan DBs)
-		if cleanupDiags := utils.DeleteCreationPlanDatabases(ctx, subId, api); cleanupDiags != nil {
-			return cleanupDiags
+		// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
+		// This additional wait ensures that the databases are deleted before the subscription is deleted.
+		time.Sleep(30 * time.Second) //lintignore:R018
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+			return diag.FromErr(err)
 		}
 	}
 	err = api.Client.Subscription.Delete(ctx, subId)
