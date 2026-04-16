@@ -424,8 +424,8 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
-	// Delete creation-plan databases
-	if cleanupDiags := utils.DeleteCreationPlanDatabases(ctx, subId, api); cleanupDiags != nil {
+	// Delete databases created by the subscription creation plan
+	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api); cleanupDiags != nil {
 		return cleanupDiags
 	}
 
@@ -706,8 +706,8 @@ func resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx context.Context, d 
 		return diag.FromErr(err)
 	}
 
-	// After CMK activation, delete creation-plan databases that were skipped during Create
-	if cleanupDiags := utils.DeleteCreationPlanDatabases(ctx, subId, api); cleanupDiags != nil {
+	// After CMK activation, delete databases that were not cleaned up during Create
+	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api); cleanupDiags != nil {
 		return cleanupDiags
 	}
 
