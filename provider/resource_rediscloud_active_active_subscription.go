@@ -746,6 +746,8 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 			return diag.FromErr(err)
 		}
 	}
+
+	// Delete subscription once all databases are deleted
 	err = api.Client.Subscription.Delete(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
