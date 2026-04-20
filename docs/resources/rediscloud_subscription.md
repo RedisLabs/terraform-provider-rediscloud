@@ -101,7 +101,7 @@ The `cloud_provider` block supports:
 * `cloud_account_id` - (Optional) Cloud account identifier. Default: Redis Labs internal cloud account. **Modifying this attribute will force creation of a new resource.**
   (using Cloud Account ID = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created
   only with Redis Labs internal cloud account
-* `resource_tags` - (Optional) A string/string map of tags to associate with this subscription's cloud resources. All keys and values must be lowercase. Maximum of 30 tags. Only supported for BYOC (Bring Your Own Cloud) subscriptions. This attribute is write-only: its value is taken from configuration and not read back from the API. After a `terraform import`, this attribute will be empty in state and a subsequent apply is required to reapply tag values.
+* `resource_tags` - (Optional) A string/string map of tags to associate with this subscription's cloud resources. All keys and values must be lowercase. Maximum of 30 tags. Only supported for BYOC (Bring Your Own Cloud) subscriptions.
 * `region` - (Required) A region object, documented below. **Modifying this attribute will force creation of a new resource.**
 
 The `creation_plan` block supports:

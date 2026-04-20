@@ -692,18 +692,7 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 
-	// Capture resource_tags from current state before overwriting (no read API yet).
-	// Use d.Get (not d.GetOk) so that an empty map is preserved after tag clearing.
-	existingResourceTags := d.Get("cloud_provider.0.resource_tags")
-
-	flattenedCP := FlattenCloudDetails(subscription.CloudDetails, true)
-
-	// Merge existing resource_tags back into flattened result
-	if len(flattenedCP) > 0 {
-		flattenedCP[0]["resource_tags"] = existingResourceTags
-	}
-
-	if err := d.Set("cloud_provider", flattenedCP); err != nil {
+	if err := d.Set("cloud_provider", FlattenCloudDetails(subscription.CloudDetails, true)); err != nil {
 		return diag.FromErr(err)
 	}
 

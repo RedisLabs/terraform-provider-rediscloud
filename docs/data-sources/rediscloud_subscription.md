@@ -50,6 +50,7 @@ The `cloud_provider` block supports:
 * `cloud_account_id` - Cloud account identifier, (A Cloud Account Id = 1 implies using Redis Labs internal cloud account)
 * `aws_account_id` - AWS account ID that the subscription is deployed in (AWS subscriptions only).
 * `region` - Cloud networking details, per region (single region or multiple regions for Active-Active cluster only), documented below
+* `resource_tags` - A string/string map of tags associated with this subscription's cloud resources. Only populated for BYOC (Bring Your Own Cloud) subscriptions.
 
 The cloud_provider `region` block supports:
 

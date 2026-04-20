@@ -61,7 +61,23 @@ func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 				),
 			},
 			{
-				// Step 3: Remove all tags
+				// Step 3: Refresh-only step to prove the GET path now returns tags directly
+				// from the API (no drift after the update in Step 2).
+				ConfigFile: config.StaticFile("testdata/pro_subscription_resource_tags.tf"),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(byocCloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+					"resource_tags": config.MapVariable(map[string]config.Variable{
+						"environment": config.StringVariable("production"),
+						"team":        config.StringVariable("platform"),
+						"cost-centre": config.StringVariable("engineering"),
+					}),
+				},
+				RefreshState:       true,
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				// Step 4: Remove all tags
 				ConfigFile: config.StaticFile("testdata/pro_subscription_resource_tags.tf"),
 				ConfigVariables: config.Variables{
 					"cloud_account_name": config.StringVariable(byocCloudAccountName),
@@ -71,6 +87,35 @@ func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.resource_tags.%", "0"),
 				),
+			},
+			{
+				// Step 5: Import — with the GET path, tags survive a round-trip through import.
+				// Re-apply tags first so there's something to verify.
+				ConfigFile: config.StaticFile("testdata/pro_subscription_resource_tags.tf"),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(byocCloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+					"resource_tags": config.MapVariable(map[string]config.Variable{
+						"environment": config.StringVariable("staging"),
+					}),
+				},
+			},
+			{
+				ConfigFile: config.StaticFile("testdata/pro_subscription_resource_tags.tf"),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(byocCloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+					"resource_tags": config.MapVariable(map[string]config.Variable{
+						"environment": config.StringVariable("staging"),
+					}),
+				},
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{
+					"creation_plan",
+					"redis_version",
+				},
 			},
 		},
 	})
