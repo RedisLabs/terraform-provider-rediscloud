@@ -62,10 +62,28 @@ The following arguments are supported:
 * `cloud_provider` - (Optional) The cloud provider to use with the subscription, (either `AWS` or `GCP`). Default: ‘AWS’. **Modifying this attribute will force creation of a new resource.**
 * `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default. **Deprecated: This attribute is deprecated on the subscription level. Please specify `redis_version` on databases directly instead.**
 * `creation_plan` - (Required) A creation plan object, documented below. Ignored after creation.
+* `cloud_account_id` - (Optional) The ID of the cloud account to use with the subscription. If omitted, the default cloud account will be used. **Modifying this attribute will force creation of a new resource.**   
+ (using Cloud Account ID = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created only with Redis Labs internal cloud account
+* `prevent_destroy_regions` - (Optional) Prevent regions from being destroyed when they are removed from `regions` block. Default: 'true'.
+* `regions` - (Optional) Cloud networking details, per region (multiple regions for Active-Active cluster), documented below.
 * `maintenance_windows` - (Optional) The subscription's maintenance window specification, documented below.
 * `customer_managed_key_enabled` - (Optional) Whether to enable the CMK flow.
 * `customer_managed_key_deletion_grace_period` - (Optional) The grace period for deleting the subscription. If not set, will default to immediate deletion grace period.
 * `customer_managed_key` - (Optional) The customer managed keys (CMK) to use for this subscription. In an active-active subscription, you must set a key for each region.
+
+The `regions` block supports:
+
+* `region` - (Required) Deployment region as defined by the cloud provider
+* `preferred_availability_zones` - (Optional) List of availability zones used
+* `write_operations_per_second` - (Optional) Write operations per second for databases in this region. Used only on database creation in region. Default: 1000. 
+* `read_operations_per_second` - (Optional) Read operations per second for databases in this region. Used only on database creation in region. Default: 1000.
+* `networking` - (Required) Networking details for the region, documented below
+
+The `networking` block supports:
+* `deployment_cidr` - (Optional) Deployment CIDR mask. The total number of bits must be 24 (x.x.x.x/24). Should not be set if `subnet_ids` or `security_group_id` is set.
+* `vpc_id` - (Optional) Either an existing VPC Id (already exists in the specific region) or create a new VPC (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4986384ad’) and exist within the hosting account. **Modifying this attribute will force creation of a new resource.**
+* `subnet_ids` - (Optional) List of existing subnets Ids (already exists in the specific region). Subnet Identifier must be in a valid format (for example: ‘subnet-0125be68a4986384ad’) and exist within the hosting account. **Modifying this attribute will force creation of a new resource.**
+* `security_group_id` - (Optional) The security group ID to use for the subscription. **Modifying this attribute will force creation of a new resource.**
 
 The `creation_plan` block supports:
 
@@ -115,6 +133,10 @@ The `pricing` object has these attributes:
 * `priceCurrency` - The price currency
 * `pricePeriod` - Price period. E.g. 'hour'.
 * `region` - Specify if the cost is associated with a particular region.
+
+The `regions` object has these attributes:
+
+* `multiple_availability_zones` - Support deployment on multiple availability zones within the selected region. Always `true` for active-active subscriptions.
 
 ### Timeouts
 
