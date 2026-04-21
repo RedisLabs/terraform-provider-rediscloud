@@ -47,6 +47,7 @@ output "rediscloud_active_active_subscription" {
 * `public_endpoint_access` - Whether public endpoint access is enabled for databases in the subscription
 * `maintenance_windows` - Details about the subscription's maintenance window specification, documented below
 * `pricing` - A list of pricing objects, documented below
+* `resource_tags` - A string/string map of tags to assign to the cloud resources created by this subscription.
 
 The `maintenance_windows` object has these attributes:
 
