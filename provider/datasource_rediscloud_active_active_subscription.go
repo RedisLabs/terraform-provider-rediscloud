@@ -169,6 +169,14 @@ func dataSourceRedisCloudActiveActiveSubscription() *schema.Resource {
 					},
 				},
 			},
+			"resource_tags": {
+				Description: "A string/string map of tags assigned to the cloud resources created by this subscription.",
+				Type:        schema.TypeMap,
+				Computed:    true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -273,6 +281,15 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 
 		if cloudDetails[0].AWSAccountID != nil {
 			if err := d.Set("aws_account_id", redis.StringValue(cloudDetails[0].AWSAccountID)); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+		if cloudDetails[0].ResourceTags != nil {
+			resourceTags := make(map[string]string)
+			for _, tag := range cloudDetails[0].ResourceTags {
+				resourceTags[redis.StringValue(tag.Key)] = redis.StringValue(tag.Value)
+			}
+			if err := d.Set("resource_tags", resourceTags); err != nil {
 				return diag.FromErr(err)
 			}
 		}
