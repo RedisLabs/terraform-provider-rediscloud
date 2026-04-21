@@ -66,6 +66,7 @@ The following arguments are supported:
 * `customer_managed_key_enabled` - (Optional) Whether to enable the CMK flow.
 * `customer_managed_key_deletion_grace_period` - (Optional) The grace period for deleting the subscription. If not set, will default to immediate deletion grace period.
 * `customer_managed_key` - (Optional) The customer managed keys (CMK) to use for this subscription. In an active-active subscription, you must set a key for each region.
+* `resource_tags` - (Optional) A string/string map of tags to assign to the cloud resources created by this subscription.
 
 The `creation_plan` block supports:
 
