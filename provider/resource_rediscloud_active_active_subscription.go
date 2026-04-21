@@ -102,7 +102,6 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
-				Computed:         true,
 				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
 				Default:          "1",
 			},
