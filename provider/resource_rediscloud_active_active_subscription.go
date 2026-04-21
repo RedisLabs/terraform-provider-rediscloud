@@ -357,6 +357,14 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 			},
+			"resource_tags": {
+				Description: "A string/string map of tags to assign to the cloud resources created by this subscription.",
+				Type:        schema.TypeMap,
+				Optional:    true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -366,11 +374,13 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 
 	plan := d.Get("creation_plan").([]interface{})
 
+	resourceTags := d.Get("resource_tags").(map[string]interface{})
+
 	// Create creation-plan databases
 	planMap := plan[0].(map[string]interface{})
 
 	// Create CloudProviders
-	providers, err := buildCreateActiveActiveCloudProviders(d.Get("cloud_provider").(string), planMap)
+	providers, err := buildCreateActiveActiveCloudProviders(d.Get("cloud_provider").(string), planMap, resourceTags)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -528,6 +538,16 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		}
 	}
 
+	if cloudDetails[0].ResourceTags != nil {
+		resourceTags := make(map[string]string)
+		for _, tag := range cloudDetails[0].ResourceTags {
+			resourceTags[redis.StringValue(tag.Key)] = redis.StringValue(tag.Value)
+		}
+		if err := d.Set("resource_tags", resourceTags); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
 
 	if !cmkEnabled {
@@ -629,6 +649,30 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 
 		err = api.Client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
 		if err != nil {
+			return diag.FromErr(err)
+		}
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if d.HasChange("resource_tags") {
+		resourceTags := d.Get("resource_tags").(map[string]interface{})
+		resourceTagsList := make([]*subscriptions.ResourceTag, 0)
+		for k, v := range resourceTags {
+			resourceTagsList = append(resourceTagsList, &subscriptions.ResourceTag{
+				Key:   redis.String(k),
+				Value: redis.String(v.(string)),
+			})
+		}
+		updateResourceTagsRequest := subscriptions.UpdateResourceTags{
+			ResourceTags: resourceTagsList,
+		}
+		err = api.Client.Subscription.UpdateResourceTags(ctx, subId, updateResourceTagsRequest)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -783,7 +827,7 @@ func newCreateSubscription(name string, paymentMethodID *int, paymentMethod stri
 }
 
 //nolint:unparam
-func buildCreateActiveActiveCloudProviders(provider string, creationPlan map[string]interface{}) ([]*subscriptions.CreateCloudProvider, error) {
+func buildCreateActiveActiveCloudProviders(provider string, creationPlan map[string]interface{}, resourceTags map[string]interface{}) ([]*subscriptions.CreateCloudProvider, error) {
 	createRegions := make([]*subscriptions.CreateRegion, 0)
 	if regions := creationPlan["region"].(*schema.Set).List(); len(regions) != 0 {
 
@@ -813,11 +857,21 @@ func buildCreateActiveActiveCloudProviders(provider string, creationPlan map[str
 		}
 	}
 
+	resourceTagsList := make([]*subscriptions.ResourceTag, 0)
+	if resourceTags != nil && len(resourceTags) != 0 {
+		for k, v := range resourceTags {
+			resourceTagsList = append(resourceTagsList, &subscriptions.ResourceTag{
+				Key:   redis.String(k),
+				Value: redis.String(v.(string)),
+			})
+		}
+	}
 	createCloudProviders := make([]*subscriptions.CreateCloudProvider, 0)
 	createCloudProvider := &subscriptions.CreateCloudProvider{
 		Provider:       redis.String(provider),
 		CloudAccountID: redis.Int(1), // Active-Active subscriptions are created with Redis internal resources
 		Regions:        createRegions,
+		ResourceTags:   resourceTagsList,
 	}
 
 	createCloudProviders = append(createCloudProviders, createCloudProvider)
