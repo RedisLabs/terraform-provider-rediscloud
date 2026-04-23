@@ -101,7 +101,7 @@ The `cloud_provider` block supports:
 * `cloud_account_id` - (Optional) Cloud account identifier. Default: Redis Labs internal cloud account. **Modifying this attribute will force creation of a new resource.**
   (using Cloud Account ID = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created
   only with Redis Labs internal cloud account
-* `resource_tags` - (Optional) A string/string map of tags to associate with this subscription's cloud resources. Maximum of 30 tags.
+* `resource_tags` - (Optional) A string/string map of tags to associate with this subscription's cloud resources.
 * `region` - (Required) A region object, documented below. **Modifying this attribute will force creation of a new resource.**
 
 The `creation_plan` block supports:
