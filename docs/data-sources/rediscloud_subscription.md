@@ -39,7 +39,8 @@ output "rediscloud_subscription" {
 * `status` - Current status of the subscription
 * `customer_managed_key_enabled` - Whether customer managed key encryption is enabled for the subscription
 * `customer_managed_key_deletion_grace_period` - The deletion grace period for the customer managed key (e.g. 'immediate', '15-minutes')
-* `customer_managed_key_redis_service_account` - The Redis service account principal associated with the subscription. This is used to grant access to the customer managed encryption key.
+* `customer_managed_key_redis_service_account` - The Redis service account principal associated with the subscription. This is used to grant access to the customer managed encryption key (GCP subscriptions).
+* `customer_managed_key_aws_role_arn` - The ARN of the IAM role used by the subscription to access the AWS KMS customer managed key. Grant this role access to your KMS key via key policy (AWS subscriptions).
 * `public_endpoint_access` - Whether public endpoint access is enabled for databases in the subscription
 * `prometheus_endpoint` - The Prometheus scrape endpoint for databases in this subscription. Use this to configure your Prometheus server to scrape metrics from your Redis Cloud databases.
 * `maintenance_windows` - Details about the subscription's maintenance window specification, documented below
