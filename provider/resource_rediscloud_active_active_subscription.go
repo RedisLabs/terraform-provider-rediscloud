@@ -537,15 +537,14 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 			return diag.FromErr(err)
 		}
 	}
-
-	if cloudDetails[0].ResourceTags != nil {
-		resourceTags := make(map[string]string)
+	resourceTags := map[string]string{}
+	if len(cloudDetails[0].ResourceTags) > 0 {
 		for _, tag := range cloudDetails[0].ResourceTags {
 			resourceTags[redis.StringValue(tag.Key)] = redis.StringValue(tag.Value)
 		}
-		if err := d.Set("resource_tags", resourceTags); err != nil {
-			return diag.FromErr(err)
-		}
+	}
+	if err := d.Set("resource_tags", resourceTags); err != nil {
+		return diag.FromErr(err)
 	}
 
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
@@ -858,7 +857,7 @@ func buildCreateActiveActiveCloudProviders(provider string, creationPlan map[str
 	}
 
 	resourceTagsList := make([]*subscriptions.ResourceTag, 0)
-	if len(resourceTags) != 0 {
+	if len(resourceTags) > 0 {
 		for k, v := range resourceTags {
 			resourceTagsList = append(resourceTagsList, &subscriptions.ResourceTag{
 				Key:   redis.String(k),
