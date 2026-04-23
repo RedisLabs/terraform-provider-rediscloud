@@ -1,5 +1,5 @@
 variable "rediscloud_subscription_name" {
-  type    = string
+  type = string
 }
 
 
