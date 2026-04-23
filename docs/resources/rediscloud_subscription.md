@@ -160,8 +160,8 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Attribute reference
 
-* `customer_managed_key_redis_service_account` - Outputs the id of the service account associated with the subscription. Useful as part of the CMK flow.
-* `prometheus_endpoint` - The Prometheus scrape endpoint for databases in this subscription. Use this to configure your Prometheus server to scrape metrics from your Redis Cloud databases.
+* `customer_managed_key_redis_service_account` - Outputs the ID of the GCP service account associated with the subscription. Useful as part of the CMK flow for GCP subscriptions.
+* `customer_managed_key_aws_role_arn` - The ARN of the IAM role used by the subscription to access the AWS KMS customer managed key. Grant this role access to your KMS key via key policy. Only set for AWS subscriptions with CMK enabled.
 
 The `cloud_provider` block has these attributes:
 
