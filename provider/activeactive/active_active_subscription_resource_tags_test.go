@@ -75,13 +75,22 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionResourceTagsOnCreate_CRUDI
 				},
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("name"), knownvalue.StringExact(subscriptionName)),
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("resource_tags"), knownvalue.MapExact(make(map[string]knownvalue.Check))),
 					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("resource_tags"), knownvalue.MapSizeExact(0)),
-					statecheck.ExpectKnownValue(datasourceName, tfjsonpath.New("resource_tags"), knownvalue.Null()),
+					statecheck.ExpectKnownValue(datasourceName, tfjsonpath.New("resource_tags"), knownvalue.MapExact(make(map[string]knownvalue.Check))),
+					statecheck.ExpectKnownValue(datasourceName, tfjsonpath.New("resource_tags"), knownvalue.MapSizeExact(0)),
+				},
+			},
+			{
+				ConfigFile: config.StaticFile("./testdata/aa_basic_subscription_with_resource_tags.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_subscription_name":          config.StringVariable(subscriptionName),
+					"rediscloud_subscription_resource_tags": config.MapVariable(resourceTags),
 				},
 			},
 			// Step 4: Import subscription and verify resource tags are imported
 			{
-				ConfigFile: config.StaticFile("./testdata/aa_basic_subscription_no_resource_tags.tf"),
+				ConfigFile: config.StaticFile("./testdata/aa_basic_subscription_with_resource_tags.tf"),
 				ConfigVariables: config.Variables{
 					"rediscloud_subscription_name": config.StringVariable(subscriptionName),
 				},
@@ -124,8 +133,10 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionResourceTags_CRUDI(t *test
 				},
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("name"), knownvalue.StringExact(subscriptionName)),
-					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("resource_tags"), knownvalue.Null()),
-					statecheck.ExpectKnownValue(datasourceName, tfjsonpath.New("resource_tags"), knownvalue.Null()),
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("resource_tags"), knownvalue.MapExact(make(map[string]knownvalue.Check))),
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("resource_tags"), knownvalue.MapSizeExact(0)),
+					statecheck.ExpectKnownValue(datasourceName, tfjsonpath.New("resource_tags"), knownvalue.MapExact(make(map[string]knownvalue.Check))),
+					statecheck.ExpectKnownValue(datasourceName, tfjsonpath.New("resource_tags"), knownvalue.MapSizeExact(0)),
 				},
 			},
 			// Step 2: Update resource tags
@@ -149,13 +160,22 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionResourceTags_CRUDI(t *test
 				},
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("name"), knownvalue.StringExact(subscriptionName)),
+					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("resource_tags"), knownvalue.MapExact(make(map[string]knownvalue.Check))),
 					statecheck.ExpectKnownValue(resourceName, tfjsonpath.New("resource_tags"), knownvalue.MapSizeExact(0)),
-					statecheck.ExpectKnownValue(datasourceName, tfjsonpath.New("resource_tags"), knownvalue.Null()),
+					statecheck.ExpectKnownValue(datasourceName, tfjsonpath.New("resource_tags"), knownvalue.MapExact(make(map[string]knownvalue.Check))),
+					statecheck.ExpectKnownValue(datasourceName, tfjsonpath.New("resource_tags"), knownvalue.MapSizeExact(0)),
+				},
+			},
+			{
+				ConfigFile: config.StaticFile("./testdata/aa_basic_subscription_with_resource_tags.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_subscription_name":          config.StringVariable(subscriptionName),
+					"rediscloud_subscription_resource_tags": config.MapVariable(resourceTags),
 				},
 			},
 			// Step 4: Import subscription and verify resource tags are imported
 			{
-				ConfigFile: config.StaticFile("./testdata/aa_basic_subscription_no_resource_tags.tf"),
+				ConfigFile: config.StaticFile("./testdata/aa_basic_subscription_with_resource_tags.tf"),
 				ConfigVariables: config.Variables{
 					"rediscloud_subscription_name": config.StringVariable(subscriptionName),
 				},
