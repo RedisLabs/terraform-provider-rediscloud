@@ -249,6 +249,10 @@ func waitForEssentialsSubscriptionToBeActive(ctx context.Context, id int, api *c
 
 			subscription, err := api.Client.FixedSubscriptions.Get(ctx, id)
 			if err != nil {
+				if utils.IsTransientSubscriptionGetError(err) {
+					log.Printf("[WARN] Transient 5xx while polling fixed subscription %d, will continue polling: %s", id, err)
+					return nil, subscriptions.SubscriptionStatusPending, nil
+				}
 				return nil, "", err
 			}
 
