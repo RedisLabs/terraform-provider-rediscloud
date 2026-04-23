@@ -1,9 +1,9 @@
 variable "rediscloud_subscription_name" {
-  type    = string
+  type = string
 }
 
 variable "rediscloud_subscription_resource_tags" {
-  type    = map(string)
+  type = map(string)
 }
 
 data "rediscloud_payment_method" "card" {
