@@ -858,7 +858,7 @@ func buildCreateActiveActiveCloudProviders(provider string, creationPlan map[str
 	}
 
 	resourceTagsList := make([]*subscriptions.ResourceTag, 0)
-	if resourceTags != nil && len(resourceTags) != 0 {
+	if len(resourceTags) != 0 {
 		for k, v := range resourceTags {
 			resourceTagsList = append(resourceTagsList, &subscriptions.ResourceTag{
 				Key:   redis.String(k),
