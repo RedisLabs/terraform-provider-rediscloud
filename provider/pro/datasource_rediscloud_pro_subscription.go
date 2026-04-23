@@ -147,7 +147,7 @@ func DataSourceRedisCloudProSubscription() *schema.Resource {
 							},
 						},
 						"resource_tags": {
-							Description: "A map of resource tags associated with this subscription. Only populated for BYOC (Bring Your Own Cloud) subscriptions.",
+							Description: "A map of resource tags associated with this subscription.",
 							Type:        schema.TypeMap,
 							Computed:    true,
 							Elem:        &schema.Schema{Type: schema.TypeString},

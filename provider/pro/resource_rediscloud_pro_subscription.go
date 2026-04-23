@@ -234,7 +234,7 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 							},
 						},
 						"resource_tags": {
-							Description:      "A map of tags to associate with this subscription. All keys and values must be lowercase. Only supported for BYOC (Bring Your Own Cloud) subscriptions.",
+							Description:      "A map of tags to associate with this subscription.",
 							Type:             schema.TypeMap,
 							Optional:         true,
 							ForceNew:         false,
@@ -825,6 +825,10 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 
 		err = api.Client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
 		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 			return diag.FromErr(err)
 		}
 	}
