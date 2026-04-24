@@ -233,6 +233,13 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 								},
 							},
 						},
+						"resource_tags": {
+							Description: "A map of tags to associate with this subscription.",
+							Type:        schema.TypeMap,
+							Optional:    true,
+							ForceNew:    false,
+							Elem:        &schema.Schema{Type: schema.TypeString},
+						},
 					},
 				},
 			},
@@ -819,6 +826,27 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 		if err != nil {
 			return diag.FromErr(err)
 		}
+
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if d.HasChange("cloud_provider.0.resource_tags") {
+		tagsMap := d.Get("cloud_provider.0.resource_tags").(map[string]interface{})
+		resourceTags := make([]*subscriptions.ResourceTag, 0, len(tagsMap))
+		for k, val := range tagsMap {
+			resourceTags = append(resourceTags, &subscriptions.ResourceTag{
+				Key:   redis.String(k),
+				Value: redis.String(val.(string)),
+			})
+		}
+		err := api.Client.Subscription.UpdateResourceTags(ctx, subId, subscriptions.UpdateResourceTags{
+			ResourceTags: resourceTags,
+		})
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
@@ -1015,6 +1043,20 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 			Provider:       redis.String(providerStr),
 			CloudAccountID: redis.Int(cloudAccountID),
 			Regions:        createRegions,
+		}
+
+		if v, ok := providerMap["resource_tags"]; ok {
+			tagsMap := v.(map[string]interface{})
+			if len(tagsMap) > 0 {
+				resourceTags := make([]*subscriptions.ResourceTag, 0, len(tagsMap))
+				for k, val := range tagsMap {
+					resourceTags = append(resourceTags, &subscriptions.ResourceTag{
+						Key:   redis.String(k),
+						Value: redis.String(val.(string)),
+					})
+				}
+				createCloudProvider.ResourceTags = resourceTags
+			}
 		}
 
 		createCloudProviders = append(createCloudProviders, createCloudProvider)

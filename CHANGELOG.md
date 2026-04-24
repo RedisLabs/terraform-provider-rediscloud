@@ -6,6 +6,12 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 # Unreleased
 
+## Added
+- Added `resource_tags` attribute to the `rediscloud_subscription` resource (Pro tier). A string/string map of tags applied to the subscription's cloud infrastructure at creation time and updatable thereafter. Only supported for BYOC (Bring Your Own Cloud) subscriptions. Maximum of 30 tags; all keys and values must be lowercase.
+- Exposed `resource_tags` attribute on the `rediscloud_subscription` data source.
+
+# 2.14.1 (20th April 2026)
+
 ## Changed
 - Migrated `regions` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
 

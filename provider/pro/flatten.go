@@ -101,6 +101,7 @@ func FlattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource b
 			"provider":         redis.StringValue(currentCloudDetail.Provider),
 			"cloud_account_id": strconv.Itoa(redis.IntValue(currentCloudDetail.CloudAccountID)),
 			"region":           regions,
+			"resource_tags":    flattenResourceTags(currentCloudDetail.ResourceTags),
 		}
 
 		if currentCloudDetail.AWSAccountID != nil {
@@ -111,6 +112,17 @@ func FlattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource b
 	}
 
 	return cdl
+}
+
+// flattenResourceTags converts the API's key/value slice into a string map for
+// Terraform state. Always returns a non-nil map so Terraform records an empty
+// TypeMap rather than no attribute, which keeps "tags cleared" scenarios clean.
+func flattenResourceTags(tags []*subscriptions.ResourceTag) map[string]string {
+	result := make(map[string]string, len(tags))
+	for _, t := range tags {
+		result[redis.StringValue(t.Key)] = redis.StringValue(t.Value)
+	}
+	return result
 }
 
 func flattenNetworks(networks []*subscriptions.Networking) []map[string]interface{} {
