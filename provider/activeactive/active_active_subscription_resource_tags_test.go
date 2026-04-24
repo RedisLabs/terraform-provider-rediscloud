@@ -12,7 +12,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
-func TestAccResourceRedisCloudActiveActiveSubscriptionResourceTagsOnCreate_CRUDI(t *testing.T) {
+func TestActiveActiveSubscriptionResourceTags_OnCreate_CRUDI(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
@@ -103,7 +103,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionResourceTagsOnCreate_CRUDI
 	})
 }
 
-func TestAccResourceRedisCloudActiveActiveSubscriptionResourceTags_CRUDI(t *testing.T) {
+func TestActiveActiveSubscriptionResourceTags_CRUDI(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
