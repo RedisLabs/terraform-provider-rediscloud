@@ -537,7 +537,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 			return diag.FromErr(err)
 		}
 	}
-	resourceTags := map[string]string{}
+	resourceTags := make(map[string]string)
 	if len(cloudDetails[0].ResourceTags) > 0 {
 		for _, tag := range cloudDetails[0].ResourceTags {
 			resourceTags[redis.StringValue(tag.Key)] = redis.StringValue(tag.Value)

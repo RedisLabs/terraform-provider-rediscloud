@@ -284,7 +284,7 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 				return diag.FromErr(err)
 			}
 		}
-		resourceTags := map[string]string{}
+		resourceTags := make(map[string]string)
 		if cloudDetails[0].ResourceTags != nil {
 			for _, tag := range cloudDetails[0].ResourceTags {
 				resourceTags[redis.StringValue(tag.Key)] = redis.StringValue(tag.Value)

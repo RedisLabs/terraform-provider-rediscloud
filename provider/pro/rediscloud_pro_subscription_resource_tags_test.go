@@ -62,16 +62,6 @@ func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 			{
 				// Step 3: Refresh-only step to prove the GET path now returns tags directly
 				// from the API (no drift after the update in Step 2).
-				ConfigFile: config.StaticFile("testdata/pro_subscription_resource_tags.tf"),
-				ConfigVariables: config.Variables{
-					"cloud_account_name": config.StringVariable(byocCloudAccountName),
-					"subscription_name":  config.StringVariable(name),
-					"resource_tags": config.MapVariable(map[string]config.Variable{
-						"environment": config.StringVariable("production"),
-						"team":        config.StringVariable("platform"),
-						"cost-centre": config.StringVariable("engineering"),
-					}),
-				},
 				RefreshState:       true,
 				ExpectNonEmptyPlan: false,
 			},
