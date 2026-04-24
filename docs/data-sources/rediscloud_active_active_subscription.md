@@ -39,6 +39,8 @@ output "rediscloud_active_active_subscription" {
   Changes to) this attribute are ignored after creation.**
 * `payment_method_id` - A valid payment method pre-defined in the current account
 * `cloud_provider` - The cloud provider used with the subscription, (either `AWS` or `GCP`).
+* `cloud_account_id` - Cloud account identifier, (A Cloud Account Id = 1 implies using Redis Labs internal cloud account)
+* `regions` - A list of regions associated with the subscription, documented below
 * `number_of_databases` - The number of databases that are linked to this subscription.
 * `status` - Current status of the subscription
 * `customer_managed_key_enabled` - Whether customer managed key encryption is enabled for the subscription
@@ -70,3 +72,13 @@ The `pricing` object has these attributes:
 * `priceCurrency` - Self-explanatory e.g. 'USD'.
 * `pricePeriod` - Self-explanatory e.g. 'hour'.
 * `region` - Self-explanatory, if the cost is associated with a particular region.
+
+The `regions` object has these attributes:
+
+* `region` - Deployment region as defined by the cloud provider
+* `networking` - Networking details for the region, documented below
+
+The `networking` object has these attributes:
+
+* `deployment_cidr` - Deployment CIDR mask
+* `vpc_id` - VPC ID for the region

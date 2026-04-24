@@ -74,6 +74,44 @@ func dataSourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
+			"cloud_account_id": {
+				Description: "Cloud account identifier. Default: Redis Labs internal cloud account (using Cloud Account Id = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created only with Redis Labs internal cloud account",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
+			"regions": {
+				Description: "Cloud networking details, per region (multiple regions for Active-Active cluster)",
+				Type:        schema.TypeList,
+				Computed:    true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"region": {
+							Description: "Deployment region as defined by cloud provider",
+							Type:        schema.TypeString,
+							Computed:    true,
+						},
+						"networking": {
+							Description: "Networking details for the region",
+							Type:        schema.TypeList,
+							Computed:    true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"deployment_cidr": {
+										Description: "Deployment CIDR mask",
+										Type:        schema.TypeString,
+										Computed:    true,
+									},
+									"vpc_id": {
+										Description: "Identifier of the VPC to be peered, set by the API",
+										Type:        schema.TypeString,
+										Computed:    true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"maintenance_windows": {
 				Description: "Details about the subscription's maintenance window specification",
 				Type:        schema.TypeList,
@@ -177,25 +215,25 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
-	subs, err := api.Client.Subscription.List(ctx)
+	subs, err := api.Client.Subscription.ListActiveActive(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	var filters []func(method *subscriptions.Subscription) bool
+	var filters []func(method *subscriptions.ActiveActiveSubscription) bool
 
 	// Filter to AA subscriptions only (pro subs come from the same endpoint)
-	filters = append(filters, func(sub *subscriptions.Subscription) bool {
+	filters = append(filters, func(sub *subscriptions.ActiveActiveSubscription) bool {
 		return redis.StringValue(sub.DeploymentType) == "active-active"
 	})
 
 	if name, ok := d.GetOk("name"); ok {
-		filters = append(filters, func(sub *subscriptions.Subscription) bool {
+		filters = append(filters, func(sub *subscriptions.ActiveActiveSubscription) bool {
 			return redis.StringValue(sub.Name) == name
 		})
 	}
 
-	subs = pro.FilterSubscriptions(subs, filters)
+	subs = filterSubscriptions(subs, filters)
 
 	if len(subs) == 0 {
 		return diag.Errorf("Your query returned no results. Please change your search criteria and try again.")
@@ -276,6 +314,24 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 				return diag.FromErr(err)
 			}
 		}
+		if cloudDetails[0].CloudAccountID != nil {
+			if err := d.Set("cloud_account_id", strconv.Itoa(redis.IntValue(cloudDetails[0].CloudAccountID))); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+		if cloudDetails[0].Regions != nil && len(cloudDetails[0].Regions) > 0 {
+			regions := make([]map[string]interface{}, 0)
+			for _, region := range cloudDetails[0].Regions {
+				regionMap := make(map[string]interface{})
+				regionMap["region"] = redis.StringValue(region.Region)
+				regionMap["deployment_cidr"] = redis.StringValue(region.DeploymentCIDR)
+				regionMap["vpc_id"] = redis.StringValue(region.VpcId)
+				regions = append(regions, regionMap)
+			}
+			if err := d.Set("regions", regions); err != nil {
+				return diag.FromErr(err)
+			}
+		}
 	}
 
 	subId := redis.IntValue(sub.ID)
@@ -299,4 +355,24 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 	d.SetId(strconv.Itoa(subId))
 
 	return diags
+}
+
+func filterSubscriptions(subs []*subscriptions.ActiveActiveSubscription, filters []func(sub *subscriptions.ActiveActiveSubscription) bool) []*subscriptions.ActiveActiveSubscription {
+	var filteredSubs []*subscriptions.ActiveActiveSubscription
+	for _, sub := range subs {
+		if filterSub(sub, filters) {
+			filteredSubs = append(filteredSubs, sub)
+		}
+	}
+
+	return filteredSubs
+}
+
+func filterSub(method *subscriptions.ActiveActiveSubscription, filters []func(method *subscriptions.ActiveActiveSubscription) bool) bool {
+	for _, f := range filters {
+		if !f(method) {
+			return false
+		}
+	}
+	return true
 }

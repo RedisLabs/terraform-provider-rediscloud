@@ -5,9 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
+	"slices"
 	"strconv"
 	"time"
+
+	"github.com/RedisLabs/rediscloud-go-api/service/regions"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
@@ -93,6 +97,104 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
+			"cloud_account_id": {
+				Description:      "Cloud account identifier. Default: Redis Labs internal cloud account (using Cloud Account Id = 1 implies using Redis Labs internal cloud account). Note that a GCP subscription can be created only with Redis Labs internal cloud account",
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				ValidateDiagFunc: validation.ToDiagFunc(validation.StringMatch(regexp.MustCompile("^\\d+$"), "must be a number")),
+				Default:          "1",
+			},
+			"prevent_destroy_regions": {
+				Description: "Prevent regions from being destroyed when they are removed from `regions` block.",
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     true,
+			},
+			"regions": {
+				Description:  "Cloud networking details, per region (multiple regions for Active-Active cluster)",
+				Type:         schema.TypeList,
+				Optional:     true,
+				ExactlyOneOf: []string{"regions", "creation_plan.0.region"},
+				MinItems:     1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"region": {
+							Description: "Deployment region as defined by cloud provider",
+							Type:        schema.TypeString,
+							Required:    true,
+						},
+						"multiple_availability_zones": {
+							Description: "Support deployment on multiple availability zones within the selected region",
+							Type:        schema.TypeBool,
+							Computed:    true,
+						},
+						"preferred_availability_zones": {
+							Description: "List of availability zones used",
+							Type:        schema.TypeList,
+							Optional:    true,
+							Computed:    true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
+						"write_operations_per_second": {
+							Description: "Default write operations per second for databases in the region. Used only on region creation",
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Default:     1000,
+						},
+						"read_operations_per_second": {
+							Description: "Default read operations per second for databases in the region. Used only on region creation",
+							Type:        schema.TypeInt,
+							Optional:    true,
+							Default:     1000,
+						},
+						"networking": {
+							Description: "Networking details for the region",
+							Type:        schema.TypeList,
+							Required:    true,
+							MinItems:    1,
+							MaxItems:    1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"deployment_cidr": {
+										Description:      "Deployment CIDR mask",
+										Type:             schema.TypeString,
+										Optional:         true,
+										Computed:         true,
+										ValidateDiagFunc: validation.ToDiagFunc(validation.IsCIDR),
+									},
+									"vpc_id": {
+										Description: "Either an existing VPC Id (already exists in the specific region) or create a new VPC (if no VPC is specified)",
+										Type:        schema.TypeString,
+										Optional:    true,
+										ForceNew:    true,
+										Computed:    true,
+									},
+									"subnet_ids": {
+										Description: "List of subnet IDs used",
+										Type:        schema.TypeList,
+										Optional:    true,
+										Computed:    true,
+										ForceNew:    true,
+										Elem: &schema.Schema{
+											Type: schema.TypeString,
+										},
+									},
+									"security_group_id": {
+										Description: "Security group ID used",
+										Type:        schema.TypeString,
+										Optional:    true,
+										Computed:    true,
+										ForceNew:    true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"creation_plan": {
 				Description: "Information about the planned databases used to optimise the database infrastructure. This information is only used when creating a new subscription and any changes will be ignored after this.",
 				Type:        schema.TypeList,
@@ -100,7 +202,7 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				// The block is required when the user provisions a new subscription.
 				// The block is ignored in the UPDATE operation or after IMPORTing the resource.
 				// Custom validation is handled in CustomizeDiff.
-				Optional: true,
+				Required: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if d.Id() == "" {
 						// We don't want to ignore the block if the resource is about to be created.
@@ -137,10 +239,11 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 							},
 						},
 						"region": {
-							Description: "Cloud networking details, per region (multiple regions for Active-Active cluster)",
-							Type:        schema.TypeSet,
-							Required:    true,
-							MinItems:    1,
+							Description:  "Cloud networking details, per region (multiple regions for Active-Active cluster)",
+							Type:         schema.TypeSet,
+							Optional:     true,
+							ExactlyOneOf: []string{"regions", "creation_plan.0.region"},
+							MinItems:     1,
 							Set: func(v interface{}) int {
 								var buf bytes.Buffer
 								m := v.(map[string]interface{})
@@ -364,13 +467,20 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
 
-	plan := d.Get("creation_plan").([]interface{})
+	var regions []map[string]interface{}
+	planMap := d.Get("creation_plan").([]interface{})[0].(map[string]interface{})
 
-	// Create creation-plan databases
-	planMap := plan[0].(map[string]interface{})
-
+	if creationPlanRegions := planMap["region"]; creationPlanRegions != nil && len(creationPlanRegions.(*schema.Set).List()) > 0 {
+		regions = creationPlanRegions.([]map[string]interface{})
+	} else {
+		schemaRegions := d.Get("regions").([]interface{})
+		for _, region := range schemaRegions {
+			regions = append(regions, region.(map[string]interface{}))
+		}
+	}
+	cloudAccountId, _ := strconv.Atoi(d.Get("cloud_account_id").(string))
 	// Create CloudProviders
-	providers, err := buildCreateActiveActiveCloudProviders(d.Get("cloud_provider").(string), planMap)
+	providers, err := buildCreateActiveActiveCloudProviders(d.Get("cloud_provider").(string), cloudAccountId, regions)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -385,7 +495,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 	}
 
 	// Create databases
-	var dbs []*subscriptions.CreateDatabase = buildSubscriptionCreatePlanAADatabases(planMap)
+	var dbs = buildSubscriptionCreatePlanAADatabases(planMap, regions)
 
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
 	publicEndpointAccess := d.Get("public_endpoint_access").(bool)
@@ -471,7 +581,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		return diag.FromErr(err)
 	}
 
-	subscription, err := api.Client.Subscription.Get(ctx, subId)
+	subscription, err := api.Client.Subscription.GetActiveActive(ctx, subId)
 	if err != nil {
 		notFound := &subscriptions.NotFound{}
 		if errors.As(err, &notFound) {
@@ -488,7 +598,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		}
 
 		// Re-fetch subscription after waiting for it to become active
-		subscription, err = api.Client.Subscription.Get(ctx, subId)
+		subscription, err = api.Client.Subscription.GetActiveActive(ctx, subId)
 		if err != nil {
 			notFound := &subscriptions.NotFound{}
 			if errors.As(err, &notFound) {
@@ -526,6 +636,20 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		if err := d.Set("aws_account_id", redis.StringValue(cloudDetails[0].AWSAccountID)); err != nil {
 			return diag.FromErr(err)
 		}
+	}
+
+	if cloudDetails[0].CloudAccountID != nil {
+		if err := d.Set("cloud_account_id", strconv.Itoa(redis.IntValue(cloudDetails[0].CloudAccountID))); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	regions, regionDiags := readActiveActiveRegions(cloudDetails[0].Regions, d)
+	if regionDiags.HasError() {
+		return regionDiags
+	}
+	if err := d.Set("regions", regions); err != nil {
+		return diag.FromErr(err)
 	}
 
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
@@ -589,7 +713,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
 
-	subscription, err := api.Client.Subscription.Get(ctx, subId)
+	subscription, err := api.Client.Subscription.GetActiveActive(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -605,7 +729,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 		}
 	}
 
-	if d.HasChanges("name", "payment_method_id", "public_endpoint_access") {
+	if d.HasChanges("name", "payment_method_id", "public_endpoint_access", "regions") {
 		updateSubscriptionRequest := subscriptions.UpdateSubscription{}
 
 		if d.HasChange("name") {
@@ -627,9 +751,105 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 			updateSubscriptionRequest.PublicEndpointAccess = redis.Bool(publicEndpointAccess)
 		}
 
-		err = api.Client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
-		if err != nil {
-			return diag.FromErr(err)
+		if d.HasChange("regions") {
+			original, changed := d.GetChange("regions")
+			originalRegions := original.([]interface{})
+			changedRegions := changed.([]interface{})
+			hasRealChange := !reflect.DeepEqual(originalRegions, changedRegions)
+			if hasRealChange {
+				apiRegions, err := api.Client.Subscription.ListActiveActiveRegions(ctx, subId)
+				regionDBs := apiRegions[0].Databases
+
+				if err != nil {
+					return diag.FromErr(err)
+				}
+
+				originalRegionNames := make([]string, 0)
+				changedRegionNames := make([]string, 0)
+				apiRegionNames := make([]string, 0)
+				for _, originalRegion := range originalRegions {
+					originalRegionNames = append(originalRegionNames, originalRegion.(map[string]interface{})["region"].(string))
+				}
+				for _, changedRegion := range changedRegions {
+					changedRegionNames = append(changedRegionNames, changedRegion.(map[string]interface{})["region"].(string))
+				}
+				for _, apiRegion := range apiRegions {
+					apiRegionNames = append(apiRegionNames, redis.StringValue(apiRegion.Region))
+				}
+				removedRegions := make([]string, 0)
+				for _, originalRegionName := range originalRegionNames {
+					if !slices.Contains(changedRegionNames, originalRegionName) {
+						removedRegions = append(removedRegions, originalRegionName)
+						break
+					}
+				}
+				if len(removedRegions) > 0 {
+					if d.Get("prevent_destroy_regions").(bool) {
+						return diag.Errorf("prevent_destroy_regions is set to true, but regions are being removed")
+					} else {
+						deleteRegions := regions.DeleteRegions{}
+						for _, region := range removedRegions {
+							deleteRegion := regions.DeleteRegion{
+								Region: redis.String(region),
+							}
+							deleteRegions.Regions = append(deleteRegions.Regions, &deleteRegion)
+						}
+
+						if err := api.Client.Regions.DeleteWithQuery(ctx, subId, deleteRegions); err != nil {
+							return diag.FromErr(err)
+						}
+						if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+							return diag.FromErr(err)
+						}
+
+					}
+				}
+
+				newRegionNames := make([]string, 0)
+				for _, changedRegionName := range changedRegionNames {
+					if !slices.Contains(originalRegionNames, changedRegionName) && !slices.Contains(apiRegionNames, changedRegionName) {
+						newRegionNames = append(newRegionNames, changedRegionName)
+					}
+				}
+
+				for _, changedRegion := range changedRegions {
+					if slices.Contains(newRegionNames, changedRegion.(map[string]interface{})["region"].(string)) {
+						networking := changedRegion.(map[string]interface{})["networking"].([]interface{})[0].(map[string]interface{})
+						createRegionDatabases := make([]*regions.CreateDatabase, 0)
+						for _, regionDB := range regionDBs {
+							createRegionDatabases = append(createRegionDatabases, &regions.CreateDatabase{
+								Name: regionDB.DatabaseName,
+								LocalThroughputMeasurement: &regions.CreateLocalThroughput{
+									Region:                   redis.String(changedRegion.(map[string]interface{})["region"].(string)),
+									WriteOperationsPerSecond: redis.Int(changedRegion.(map[string]interface{})["write_operations_per_second"].(int)),
+									ReadOperationsPerSecond:  redis.Int(changedRegion.(map[string]interface{})["read_operations_per_second"].(int)),
+								},
+							})
+						}
+						createRegion := regions.CreateRegion{
+							Region:          redis.String(changedRegion.(map[string]interface{})["region"].(string)),
+							DeploymentCIDR:  redis.String(networking["deployment_cidr"].(string)),
+							VpcId:           redis.String(networking["vpc_id"].(string)),
+							SubnetIds:       utils.InterfaceToStringSlice(networking["subnet_ids"].([]interface{})),
+							SecurityGroupId: redis.String(networking["security_group_id"].(string)),
+							Databases:       createRegionDatabases,
+						}
+
+						if _, err := api.Client.Regions.Create(ctx, subId, createRegion); err != nil {
+							return diag.FromErr(err)
+						}
+
+						if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+							return diag.FromErr(err)
+						}
+					}
+				}
+			}
+
+			err = api.Client.Subscription.Update(ctx, subId, updateSubscriptionRequest)
+			if err != nil {
+				return diag.FromErr(err)
+			}
 		}
 	}
 
@@ -728,7 +948,7 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
 
-	subscription, err := api.Client.Subscription.Get(ctx, subId)
+	subscription, err := api.Client.Subscription.GetActiveActive(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -783,40 +1003,53 @@ func newCreateSubscription(name string, paymentMethodID *int, paymentMethod stri
 }
 
 //nolint:unparam
-func buildCreateActiveActiveCloudProviders(provider string, creationPlan map[string]interface{}) ([]*subscriptions.CreateCloudProvider, error) {
+func buildCreateActiveActiveCloudProviders(provider string, cloudAccountId int, regions []map[string]interface{}) ([]*subscriptions.CreateCloudProvider, error) {
 	createRegions := make([]*subscriptions.CreateRegion, 0)
-	if regions := creationPlan["region"].(*schema.Set).List(); len(regions) != 0 {
+	for _, region := range regions {
 
-		for _, region := range regions {
-			regionMap := region.(map[string]interface{})
+		regionStr := region["region"].(string)
 
-			regionStr := regionMap["region"].(string)
+		createRegion := subscriptions.CreateRegion{
+			Region: redis.String(regionStr),
+		}
+		createRegion.Networking = &subscriptions.CreateNetworking{}
 
-			createRegion := subscriptions.CreateRegion{
-				Region: redis.String(regionStr),
+		if v, ok := region["networking_deployment_cidr"]; ok && v != "" {
+			createRegion.Networking.DeploymentCIDR = redis.String(v.(string))
+		}
+
+		if v, ok := region["networking_vpc_id"]; ok && v != "" {
+			createRegion.Networking.VPCId = redis.String(v.(string))
+		}
+		if v, ok := region["multiple_availability_zones"]; ok && v != "" {
+			createRegion.MultipleAvailabilityZones = redis.Bool(v.(bool))
+		}
+		if v, ok := region["preferred_availability_zones"]; ok && v != nil && len(v.([]interface{})) > 0 {
+			createRegion.PreferredAvailabilityZones = utils.InterfaceToStringSlice(v.([]interface{}))
+		}
+		if v, ok := region["networking"]; ok && v != nil && len(v.([]interface{})) > 0 {
+			networking := v.([]interface{})[0].(map[string]interface{})
+			if v, ok := networking["subnet_ids"]; ok && v != nil && len(v.([]interface{})) > 0 {
+				createRegion.Networking.SubnetIds = utils.InterfaceToStringSlice(v.([]interface{}))
 			}
-
-			if v, ok := regionMap["networking_deployment_cidr"]; ok && v != "" {
-				createRegion.Networking = &subscriptions.CreateNetworking{
-					DeploymentCIDR: redis.String(v.(string)),
-				}
+			if v, ok := networking["security_group_id"]; ok && v != "" {
+				createRegion.Networking.SecurityGroupId = redis.String(v.(string))
 			}
-
-			if v, ok := regionMap["networking_vpc_id"]; ok && v != "" {
-				if createRegion.Networking == nil {
-					createRegion.Networking = &subscriptions.CreateNetworking{}
-				}
+			if v, ok := networking["deployment_cidr"]; ok && v != "" {
+				createRegion.Networking.DeploymentCIDR = redis.String(v.(string))
+			}
+			if v, ok := networking["vpc_id"]; ok && v != "" {
 				createRegion.Networking.VPCId = redis.String(v.(string))
 			}
-
-			createRegions = append(createRegions, &createRegion)
 		}
+
+		createRegions = append(createRegions, &createRegion)
 	}
 
 	createCloudProviders := make([]*subscriptions.CreateCloudProvider, 0)
 	createCloudProvider := &subscriptions.CreateCloudProvider{
 		Provider:       redis.String(provider),
-		CloudAccountID: redis.Int(1), // Active-Active subscriptions are created with Redis internal resources
+		CloudAccountID: redis.Int(cloudAccountId),
 		Regions:        createRegions,
 	}
 
@@ -825,7 +1058,7 @@ func buildCreateActiveActiveCloudProviders(provider string, creationPlan map[str
 	return createCloudProviders, nil
 }
 
-func buildSubscriptionCreatePlanAADatabases(planMap map[string]interface{}) []*subscriptions.CreateDatabase {
+func buildSubscriptionCreatePlanAADatabases(planMap map[string]interface{}, regions []map[string]interface{}) []*subscriptions.CreateDatabase {
 	createDatabases := make([]*subscriptions.CreateDatabase, 0)
 
 	dbName := "creation-plan-db-"
@@ -833,10 +1066,8 @@ func buildSubscriptionCreatePlanAADatabases(planMap map[string]interface{}) []*s
 	numDatabases := planMap["quantity"].(int)
 	memoryLimitInGB := planMap["memory_limit_in_gb"].(float64)
 	datasetSizeInGB := planMap["dataset_size_in_gb"].(float64)
-	regions := planMap["region"]
 	var localThroughputs []*subscriptions.CreateLocalThroughput
-	for _, v := range regions.(*schema.Set).List() {
-		region := v.(map[string]interface{})
+	for _, region := range regions {
 		localThroughputs = append(localThroughputs, &subscriptions.CreateLocalThroughput{
 			Region:                   redis.String(region["region"].(string)),
 			WriteOperationsPerSecond: redis.Int(region["write_operations_per_second"].(int)),
@@ -896,4 +1127,72 @@ func buildAACmks(cmkResources []interface{}) []subscriptions.CustomerManagedKey 
 	}
 
 	return cmks
+}
+
+func readActiveActiveRegions(regions []*subscriptions.ActiveActiveRegion, d *schema.ResourceData) ([]map[string]interface{}, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	flattenedRegions := make([]map[string]interface{}, 0)
+	missingRegions := make([]map[string]interface{}, 0)
+	stateRegions := d.Get("regions").([]interface{})
+	for _, region := range regions {
+		var filteredStateRegion map[string]interface{}
+		for _, stateRegion := range stateRegions {
+			mapStateRegion := stateRegion.(map[string]interface{})
+			if mapStateRegion["region"] == redis.StringValue(region.Region) {
+				filteredStateRegion = mapStateRegion
+				break
+			}
+		}
+		//needed when importing a missing region, while API still doesn't return all information
+		if filteredStateRegion == nil {
+			filteredStateRegion = map[string]interface{}{
+				"subnet_ids":                   []string{},
+				"preferred_availability_zones": []string{},
+				"write_operations_per_second":  1000,
+				"read_operations_per_second":   1000,
+				"networking": []interface{}{map[string]interface{}{
+					"subnet_ids":        []string{},
+					"security_group_id": "",
+				}},
+			}
+
+		}
+		filteredNetworking := filteredStateRegion["networking"].([]interface{})
+		filteredNetworkingMap := filteredNetworking[0].(map[string]interface{})
+		networking := map[string]interface{}{
+			"deployment_cidr":   redis.StringValue(region.DeploymentCIDR),
+			"vpc_id":            redis.StringValue(region.VpcId),
+			"subnet_ids":        filteredNetworkingMap["subnet_ids"],        // Currently not returned by the API
+			"security_group_id": filteredNetworkingMap["security_group_id"], // Currently not returned by the API
+		}
+		regionMapString := map[string]interface{}{
+			"region":                       redis.StringValue(region.Region),
+			"multiple_availability_zones":  true,                                                // Currently not returned by the API
+			"preferred_availability_zones": filteredStateRegion["preferred_availability_zones"], // Currently not returned by the API
+			"write_operations_per_second":  filteredStateRegion["write_operations_per_second"],  // Currently not returned by the API
+			"read_operations_per_second":   filteredStateRegion["read_operations_per_second"],   // Currently not returned by the API
+			"networking":                   []interface{}{networking},
+		}
+		if filteredStateRegion["region"] == nil {
+			missingRegions = append(missingRegions, regionMapString)
+		}
+		flattenedRegions = append(flattenedRegions, regionMapString)
+	}
+
+	orderedRegions := make([]map[string]interface{}, 0)
+	for _, stateRegion := range stateRegions {
+		for _, region := range flattenedRegions {
+			if stateRegion.(map[string]interface{})["region"] == region["region"] {
+				orderedRegions = append(orderedRegions, region)
+				break
+			}
+		}
+	}
+
+	//needed for import
+	if len(missingRegions) > 0 {
+		orderedRegions = append(orderedRegions, missingRegions...)
+	}
+
+	return orderedRegions, diags
 }
