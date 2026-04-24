@@ -119,4 +119,3 @@ func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 		},
 	})
 }
-
