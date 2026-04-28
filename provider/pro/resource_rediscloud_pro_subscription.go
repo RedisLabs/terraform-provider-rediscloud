@@ -233,6 +233,13 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 								},
 							},
 						},
+						"resource_tags": {
+							Description: "A map of tags to associate with this subscription.",
+							Type:        schema.TypeMap,
+							Optional:    true,
+							ForceNew:    false,
+							Elem:        &schema.Schema{Type: schema.TypeString},
+						},
 					},
 				},
 			},
@@ -631,30 +638,9 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 		return append(diags, diag.FromErr(err)...)
 	}
 
-	// There is a timing issue where the subscription is marked as active before the creation-plan databases are listed.
-	// This additional wait ensures that the databases will be listed before calling api.client.Database.List()
-	time.Sleep(30 * time.Second) //lintignore:R018
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return append(diags, diag.FromErr(err)...)
-	}
-
-	// Locate Databases to confirm Active status
-	dbList := api.Client.Database.List(ctx, subId)
-
-	for dbList.Next() {
-		dbId := *dbList.Value().ID
-
-		if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-			return append(diags, diag.FromErr(err)...)
-		}
-		// Delete each creation-plan database
-		dbErr := api.Client.Database.Delete(ctx, subId, dbId)
-		if dbErr != nil {
-			diag.FromErr(dbErr)
-		}
-	}
-	if dbList.Err() != nil {
-		return append(diags, diag.FromErr(dbList.Err())...)
+	// Delete databases created by the subscription creation plan
+	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api); cleanupDiags != nil {
+		return append(diags, cleanupDiags...)
 	}
 
 	if redisVersion != "" {
@@ -840,6 +826,27 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 		if err != nil {
 			return diag.FromErr(err)
 		}
+
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if d.HasChange("cloud_provider.0.resource_tags") {
+		tagsMap := d.Get("cloud_provider.0.resource_tags").(map[string]interface{})
+		resourceTags := make([]*subscriptions.ResourceTag, 0, len(tagsMap))
+		for k, val := range tagsMap {
+			resourceTags = append(resourceTags, &subscriptions.ResourceTag{
+				Key:   redis.String(k),
+				Value: redis.String(val.(string)),
+			})
+		}
+		err := api.Client.Subscription.UpdateResourceTags(ctx, subId, subscriptions.UpdateResourceTags{
+			ResourceTags: resourceTags,
+		})
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
@@ -913,6 +920,11 @@ func resourceRedisCloudProSubscriptionUpdateCmk(ctx context.Context, d *schema.R
 
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 		return diag.FromErr(err)
+	}
+
+	// After CMK activation, delete databases that were not cleaned up during Create
+	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api); cleanupDiags != nil {
+		return cleanupDiags
 	}
 
 	return nil
@@ -1031,6 +1043,20 @@ func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCl
 			Provider:       redis.String(providerStr),
 			CloudAccountID: redis.Int(cloudAccountID),
 			Regions:        createRegions,
+		}
+
+		if v, ok := providerMap["resource_tags"]; ok {
+			tagsMap := v.(map[string]interface{})
+			if len(tagsMap) > 0 {
+				resourceTags := make([]*subscriptions.ResourceTag, 0, len(tagsMap))
+				for k, val := range tagsMap {
+					resourceTags = append(resourceTags, &subscriptions.ResourceTag{
+						Key:   redis.String(k),
+						Value: redis.String(val.(string)),
+					})
+				}
+				createCloudProvider.ResourceTags = resourceTags
+			}
 		}
 
 		createCloudProviders = append(createCloudProviders, createCloudProvider)

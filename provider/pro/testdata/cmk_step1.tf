@@ -26,27 +26,28 @@ resource "google_kms_crypto_key" "cmk" {
 }
 
 # Create subscription (enters encryption_key_pending state)
-resource "rediscloud_active_active_subscription" "example" {
+resource "rediscloud_subscription" "example" {
   name                         = local.name
+  payment_method               = "credit-card"
   payment_method_id            = data.rediscloud_payment_method.card.id
+  memory_storage               = "ram"
   customer_managed_key_enabled = true
-  cloud_provider               = "GCP"
+
+  cloud_provider {
+    provider = "GCP"
+    region {
+      region                     = "europe-west2"
+      networking_deployment_cidr = "10.0.1.0/24"
+    }
+  }
 
   creation_plan {
-    memory_limit_in_gb = 1
-    quantity           = 1
-    region {
-      region                      = "europe-west1"
-      networking_deployment_cidr  = "192.168.0.0/24"
-      write_operations_per_second = 1000
-      read_operations_per_second  = 1000
-    }
-    region {
-      region                      = "europe-west2"
-      networking_deployment_cidr  = "10.0.1.0/24"
-      write_operations_per_second = 1000
-      read_operations_per_second  = 1000
-    }
+    dataset_size_in_gb           = 1
+    quantity                     = 1
+    replication                  = false
+    support_oss_cluster_api      = false
+    throughput_measurement_by    = "operations-per-second"
+    throughput_measurement_value = 10000
   }
 }
 
@@ -55,11 +56,11 @@ resource "rediscloud_active_active_subscription" "example" {
 resource "google_kms_crypto_key_iam_member" "encrypter" {
   crypto_key_id = google_kms_crypto_key.cmk.id
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${rediscloud_active_active_subscription.example.customer_managed_key_redis_service_account}"
+  member        = "serviceAccount:${rediscloud_subscription.example.customer_managed_key_redis_service_account}"
 }
 
 resource "google_kms_crypto_key_iam_member" "viewer" {
   crypto_key_id = google_kms_crypto_key.cmk.id
   role          = "roles/cloudkms.viewer"
-  member        = "serviceAccount:${rediscloud_active_active_subscription.example.customer_managed_key_redis_service_account}"
+  member        = "serviceAccount:${rediscloud_subscription.example.customer_managed_key_redis_service_account}"
 }

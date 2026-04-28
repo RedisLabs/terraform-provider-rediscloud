@@ -357,6 +357,14 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 			},
+			"resource_tags": {
+				Description: "A string/string map of tags to assign to the cloud resources created by this subscription.",
+				Type:        schema.TypeMap,
+				Optional:    true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -366,11 +374,13 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 
 	plan := d.Get("creation_plan").([]interface{})
 
+	resourceTags := d.Get("resource_tags").(map[string]interface{})
+
 	// Create creation-plan databases
 	planMap := plan[0].(map[string]interface{})
 
 	// Create CloudProviders
-	providers, err := buildCreateActiveActiveCloudProviders(d.Get("cloud_provider").(string), planMap)
+	providers, err := buildCreateActiveActiveCloudProviders(d.Get("cloud_provider").(string), planMap, resourceTags)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -424,35 +434,9 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
-	// There is a timing issue where the subscription is marked as active before the creation-plan databases are listed.
-	// This additional wait ensures that the databases will be listed before calling api.client.Database.List()
-	time.Sleep(30 * time.Second) //lintignore:R018
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return diag.FromErr(err)
-	}
-
-	// Locate Databases to confirm Active status
-	dbList := api.Client.Database.List(ctx, subId)
-
-	for dbList.Next() {
-		dbId := *dbList.Value().ID
-
-		if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
-			return diag.FromErr(err)
-		}
-		// Delete each creation-plan database
-		dbErr := api.Client.Database.Delete(ctx, subId, dbId)
-		if dbErr != nil {
-			diag.FromErr(dbErr)
-		}
-	}
-	if dbList.Err() != nil {
-		return diag.FromErr(dbList.Err())
-	}
-
-	// Check that the subscription is in an active state before calling the read function
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
-		return diag.FromErr(err)
+	// Delete databases created by the subscription creation plan
+	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api); cleanupDiags != nil {
+		return cleanupDiags
 	}
 
 	if m, ok := d.GetOk("maintenance_windows"); ok {
@@ -552,6 +536,15 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		if err := d.Set("aws_account_id", redis.StringValue(cloudDetails[0].AWSAccountID)); err != nil {
 			return diag.FromErr(err)
 		}
+	}
+	resourceTags := make(map[string]string)
+	if len(cloudDetails[0].ResourceTags) > 0 {
+		for _, tag := range cloudDetails[0].ResourceTags {
+			resourceTags[redis.StringValue(tag.Key)] = redis.StringValue(tag.Value)
+		}
+	}
+	if err := d.Set("resource_tags", resourceTags); err != nil {
+		return diag.FromErr(err)
 	}
 
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
@@ -657,6 +650,30 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 		if err != nil {
 			return diag.FromErr(err)
 		}
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	if d.HasChange("resource_tags") {
+		resourceTags := d.Get("resource_tags").(map[string]interface{})
+		resourceTagsList := make([]*subscriptions.ResourceTag, 0)
+		for k, v := range resourceTags {
+			resourceTagsList = append(resourceTagsList, &subscriptions.ResourceTag{
+				Key:   redis.String(k),
+				Value: redis.String(v.(string)),
+			})
+		}
+		updateResourceTagsRequest := subscriptions.UpdateResourceTags{
+			ResourceTags: resourceTagsList,
+		}
+		err = api.Client.Subscription.UpdateResourceTags(ctx, subId, updateResourceTagsRequest)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
@@ -732,6 +749,11 @@ func resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx context.Context, d 
 		return diag.FromErr(err)
 	}
 
+	// After CMK activation, delete databases that were not cleaned up during Create
+	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api); cleanupDiags != nil {
+		return cleanupDiags
+	}
+
 	return nil
 }
 
@@ -766,8 +788,9 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
 			return diag.FromErr(err)
 		}
-		// Delete subscription once all databases are deleted
 	}
+
+	// Delete subscription once all databases are deleted
 	err = api.Client.Subscription.Delete(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
@@ -803,7 +826,7 @@ func newCreateSubscription(name string, paymentMethodID *int, paymentMethod stri
 }
 
 //nolint:unparam
-func buildCreateActiveActiveCloudProviders(provider string, creationPlan map[string]interface{}) ([]*subscriptions.CreateCloudProvider, error) {
+func buildCreateActiveActiveCloudProviders(provider string, creationPlan map[string]interface{}, resourceTags map[string]interface{}) ([]*subscriptions.CreateCloudProvider, error) {
 	createRegions := make([]*subscriptions.CreateRegion, 0)
 	if regions := creationPlan["region"].(*schema.Set).List(); len(regions) != 0 {
 
@@ -833,11 +856,21 @@ func buildCreateActiveActiveCloudProviders(provider string, creationPlan map[str
 		}
 	}
 
+	resourceTagsList := make([]*subscriptions.ResourceTag, 0)
+	if len(resourceTags) > 0 {
+		for k, v := range resourceTags {
+			resourceTagsList = append(resourceTagsList, &subscriptions.ResourceTag{
+				Key:   redis.String(k),
+				Value: redis.String(v.(string)),
+			})
+		}
+	}
 	createCloudProviders := make([]*subscriptions.CreateCloudProvider, 0)
 	createCloudProvider := &subscriptions.CreateCloudProvider{
 		Provider:       redis.String(provider),
 		CloudAccountID: redis.Int(1), // Active-Active subscriptions are created with Redis internal resources
 		Regions:        createRegions,
+		ResourceTags:   resourceTagsList,
 	}
 
 	createCloudProviders = append(createCloudProviders, createCloudProvider)

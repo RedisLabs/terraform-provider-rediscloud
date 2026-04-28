@@ -17,6 +17,11 @@ resource "google_kms_key_ring" "cmk" {
 resource "google_kms_crypto_key" "cmk" {
   name     = "${local.name}-key"
   key_ring = google_kms_key_ring.cmk.id
+
+  labels = {
+    managed-by = "terraform"
+    purpose    = "rediscloud-cmk-test"
+  }
 }
 
 resource "google_kms_crypto_key_iam_member" "encrypter" {
