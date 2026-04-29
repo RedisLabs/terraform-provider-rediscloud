@@ -41,7 +41,7 @@ output "rediscloud_subscription" {
 * `customer_managed_key_deletion_grace_period` - The deletion grace period for the customer managed key (e.g. 'immediate', '15-minutes')
 * `customer_managed_key_redis_service_account` - The Redis service account principal associated with the subscription. This is used to grant access to the customer managed encryption key.
 * `public_endpoint_access` - Whether public endpoint access is enabled for databases in the subscription
-* `prometheus_endpoint` - The Prometheus scrape endpoint for databases in this subscription
+* `prometheus_endpoint` - The Prometheus scrape endpoint for databases in this subscription. Use this to configure your Prometheus server to scrape metrics from your Redis Cloud databases.
 * `maintenance_windows` - Details about the subscription's maintenance window specification, documented below
 * `pricing` - A list of pricing objects, documented below
 
