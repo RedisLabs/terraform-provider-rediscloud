@@ -1,12 +1,12 @@
-package provider
+package aclrule_test
 
 import (
-	"fmt"
 	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
@@ -17,16 +17,17 @@ func TestAccDataSourceRedisCloudAclRule_ForDefaultRule(t *testing.T) {
 	// This rule already exists
 	const testName = "Read-Write"
 	const testRule = "+@all -@dangerous ~*"
-	getRuleTerraform := fmt.Sprintf(getDefaultDatasourceAclRuleDataSource, testName)
 
 	const AclRuleTest = "data.rediscloud_acl_rule.test"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil, // test doesn't create a resource, so don't need to check anything
 		Steps: []resource.TestStep{
 			{
-				Config: getRuleTerraform,
+				Config: utils.RenderTestConfig(t, "./testdata/datasource_basic.tf", map[string]string{
+					"__NAME__": testName,
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(
 						AclRuleTest, "id", regexp.MustCompile("^\\d*$")),
@@ -37,9 +38,3 @@ func TestAccDataSourceRedisCloudAclRule_ForDefaultRule(t *testing.T) {
 		},
 	})
 }
-
-const getDefaultDatasourceAclRuleDataSource = `
-data "rediscloud_acl_rule" "test" {
-	name = "%s"
-}
-`
