@@ -5,14 +5,15 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 # Unreleased
 
+## Added
+- Pro subscription: expose new computed `prometheus_endpoint` attribute on the resource and data source.
+
 ## Changed
 - Upgraded Go dependencies and CI workflow actions.
+- Migrated `acl_rule` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
 
 ## Fixed
 - `rediscloud_active_active_subscription_database`: Changing the database `name` attribute no longer causes the resource to be destroyed and recreated.
-
-## Changed
-- Migrated `acl_rule` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
 
 # 2.15.0 (28th April 2026)
 
