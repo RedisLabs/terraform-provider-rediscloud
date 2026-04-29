@@ -46,6 +46,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
+					resource.TestCheckResourceAttrSet(resourceName, "prometheus_endpoint"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
 					resource.TestCheckResourceAttrSet(resourceName, "aws_account_id"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
@@ -138,6 +139,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "customer_managed_key_deletion_grace_period", ""),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "customer_managed_key_redis_service_account", ""),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "public_endpoint_access", "true"),
+					resource.TestCheckResourceAttrSet(datasourceSubscriptionName, "prometheus_endpoint"),
 
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.mode", "manual"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.#", "2"),
@@ -298,6 +300,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
+					resource.TestCheckResourceAttrSet(resourceName, "prometheus_endpoint"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
 					resource.TestCheckResourceAttrSet(resourceName, "aws_account_id"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
@@ -389,6 +392,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "customer_managed_key_deletion_grace_period", ""),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "customer_managed_key_redis_service_account", ""),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "public_endpoint_access", "true"),
+					resource.TestCheckResourceAttrSet(datasourceSubscriptionName, "prometheus_endpoint"),
 
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.mode", "manual"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.window.#", "2"),
@@ -627,6 +631,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_PublicEndpointAccess(t *t
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
+					resource.TestCheckResourceAttrSet(resourceName, "prometheus_endpoint"),
 				),
 			},
 		},
