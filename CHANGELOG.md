@@ -6,7 +6,8 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 # Unreleased
 
 ## Added
-- Expose new computed `prometheus_endpoint` attribute on the Pro and Active-Active subscription resources and data sources.
+- Added `prometheus_endpoint` attribute to the `rediscloud_subscription` and `rediscloud_active_active_subscription` resources.
+- Exposed `prometheus_endpoint` attribute on the `rediscloud_subscription` and `rediscloud_active_active_subscription` data sources.
 
 ## Changed
 - Upgraded Go dependencies and CI workflow actions.
