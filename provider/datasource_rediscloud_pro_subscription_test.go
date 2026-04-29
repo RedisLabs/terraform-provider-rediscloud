@@ -63,6 +63,7 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "customer_managed_key_deletion_grace_period", ""),
 					resource.TestCheckResourceAttr(dataSourceName, "customer_managed_key_redis_service_account", ""),
 					resource.TestCheckResourceAttr(dataSourceName, "public_endpoint_access", "true"),
+					resource.TestCheckResourceAttrSet(dataSourceName, "prometheus_endpoint"),
 
 					resource.TestCheckResourceAttr(dataSourceName, "pricing.#", "1"),
 					resource.TestCheckResourceAttr(dataSourceName, "pricing.0.type", "Shards"),
