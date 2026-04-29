@@ -587,10 +587,8 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		return diag.FromErr(err)
 	}
 
-	if subscription.PrometheusEndpoint != nil {
-		if err := d.Set("prometheus_endpoint", redis.StringValue(subscription.PrometheusEndpoint)); err != nil {
-			return diag.FromErr(err)
-		}
+	if err := d.Set("prometheus_endpoint", redis.StringValue(subscription.PrometheusEndpoint)); err != nil {
+		return diag.FromErr(err)
 	}
 
 	cmkEnabledFromAPI := subscription.PersistentStorageEncryptionType != nil &&
