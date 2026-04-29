@@ -272,11 +272,7 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
-	prometheusEndpoint := ""
-	if sub.PrometheusEndpoint != nil {
-		prometheusEndpoint = redis.StringValue(sub.PrometheusEndpoint)
-	}
-	if err := d.Set("prometheus_endpoint", prometheusEndpoint); err != nil {
+	if err := d.Set("prometheus_endpoint", redis.StringValue(sub.PrometheusEndpoint)); err != nil {
 		return diag.FromErr(err)
 	}
 
