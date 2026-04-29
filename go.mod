@@ -76,3 +76,5 @@ require (
 
 // for local development, uncomment this
 // replace github.com/RedisLabs/rediscloud-go-api => ../rediscloud-go-api
+
+replace github.com/RedisLabs/rediscloud-go-api => ../rediscloud-go-api

@@ -357,6 +357,11 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Optional:    true,
 				Default:     true,
 			},
+			"prometheus_endpoint": {
+				Description: "The Prometheus scrape endpoint for databases in this subscription. Use this to configure your Prometheus server to scrape metrics from your Redis Cloud databases.",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"resource_tags": {
 				Description: "A string/string map of tags to assign to the cloud resources created by this subscription.",
 				Type:        schema.TypeMap,
@@ -580,6 +585,12 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 	}
 	if err := d.Set("public_endpoint_access", publicEndpointAccess); err != nil {
 		return diag.FromErr(err)
+	}
+
+	if subscription.PrometheusEndpoint != nil {
+		if err := d.Set("prometheus_endpoint", redis.StringValue(subscription.PrometheusEndpoint)); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	cmkEnabledFromAPI := subscription.PersistentStorageEncryptionType != nil &&
