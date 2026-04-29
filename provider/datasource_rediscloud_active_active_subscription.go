@@ -65,7 +65,7 @@ func dataSourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Computed:    true,
 			},
 			"prometheus_endpoint": {
-				Description: "The Prometheus scrape endpoint for databases in this subscription",
+				Description: "The Prometheus scrape endpoint for databases in this subscription. Use this to configure your Prometheus server to scrape metrics from your Redis Cloud databases.",
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
