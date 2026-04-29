@@ -69,6 +69,11 @@ func DataSourceRedisCloudProSubscription() *schema.Resource {
 				Type:        schema.TypeBool,
 				Computed:    true,
 			},
+			"prometheus_endpoint": {
+				Description: "The Prometheus scrape endpoint for databases in this subscription",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"cloud_provider": {
 				Description: "A cloud provider object",
 				Type:        schema.TypeList,
@@ -342,6 +347,14 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 		publicEndpointAccess = redis.BoolValue(sub.PublicEndpointAccess)
 	}
 	if err := d.Set("public_endpoint_access", publicEndpointAccess); err != nil {
+		return diag.FromErr(err)
+	}
+
+	prometheusEndpoint := ""
+	if sub.PrometheusEndpoint != nil {
+		prometheusEndpoint = redis.StringValue(sub.PrometheusEndpoint)
+	}
+	if err := d.Set("prometheus_endpoint", prometheusEndpoint); err != nil {
 		return diag.FromErr(err)
 	}
 
