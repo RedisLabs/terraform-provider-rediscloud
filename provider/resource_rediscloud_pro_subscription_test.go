@@ -48,6 +48,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
+					resource.TestCheckResourceAttrSet(resourceName, "prometheus_endpoint"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
 					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
@@ -159,6 +160,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
+					resource.TestCheckResourceAttrSet(resourceName, "prometheus_endpoint"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
 					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.0.networks.0.networking_subnet_id"),
@@ -571,6 +573,7 @@ func TestAccResourceRedisCloudProSubscription_PublicEndpointAccess(t *testing.T)
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
+					resource.TestCheckResourceAttrSet(resourceName, "prometheus_endpoint"),
 				),
 			},
 		},
