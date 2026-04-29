@@ -6,7 +6,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 # Unreleased
 
 ## Added
-- Pro subscription: expose new computed `prometheus_endpoint` attribute on the resource and data source.
+- Expose new computed `prometheus_endpoint` attribute on the Pro and Active-Active subscription resources and data sources.
 
 ## Changed
 - Upgraded Go dependencies and CI workflow actions.
