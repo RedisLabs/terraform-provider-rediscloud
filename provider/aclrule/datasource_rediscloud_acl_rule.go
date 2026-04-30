@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 
@@ -68,4 +67,3 @@ func (d *aclRuleDataSource) Configure(_ context.Context, req datasource.Configur
 
 	d.client = client
 }
-
