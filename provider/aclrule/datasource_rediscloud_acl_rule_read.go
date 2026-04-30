@@ -31,7 +31,7 @@ func (d *aclRuleDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	var filters []func(rule *redis_rules.GetRedisRuleResponse) bool
 	filters = append(filters, func(rule *redis_rules.GetRedisRuleResponse) bool {
-		return types.StringValue(redis.StringValue(rule.Name)) == data.Name
+		return redis.StringValue(rule.Name) == data.Name.ValueString()
 	})
 
 	list, err := d.client.Client.RedisRules.List(ctx)
