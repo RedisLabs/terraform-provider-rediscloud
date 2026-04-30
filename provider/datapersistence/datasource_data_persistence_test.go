@@ -16,7 +16,9 @@ func TestAccDataSourceRedisCloudDataPersistence_basic(t *testing.T) {
 
 	const dataPersistenceFoo = "data.rediscloud_data_persistence.foo"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testvcr.PreCheck(t, "REDISCLOUD_URL", rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar) },
+		PreCheck: func() {
+			testvcr.PreCheck(t, "REDISCLOUD_URL", rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
+		},
 		ProtoV5ProviderFactories: testvcr.TestProviderFactories(t),
 		CheckDestroy:             nil, // data persistence isn't a 'real' resource
 		Steps: []resource.TestStep{
