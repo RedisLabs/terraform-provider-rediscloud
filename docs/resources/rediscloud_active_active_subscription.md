@@ -104,7 +104,6 @@ The `window` object has these attributes:
 
 * `aws_account_id` - AWS account ID that the subscription is deployed in (AWS subscriptions only).
 * `customer_managed_key_redis_service_account` - Outputs the id of the service account associated with the subscription. Useful as part of the CMK flow.
-* `prometheus_endpoint` - The Prometheus scrape endpoint for databases in this subscription. Use this to configure your Prometheus server to scrape metrics from your Redis Cloud databases.
 * `pricing` - A list of pricing objects, documented below
 
 The `pricing` object has these attributes:
