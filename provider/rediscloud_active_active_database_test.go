@@ -20,6 +20,7 @@ import (
 func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 	subscriptionName := testRandomWithPrefix() + "-subscription"
 	databaseName := testRandomWithPrefix() + "-database"
+	databaseNameUpdated := databaseName + "-updated"
 	password := acctest.RandString(20)
 
 	const databaseResourceName = "rediscloud_active_active_subscription_database.example"
@@ -144,13 +145,14 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceRegionName, "regions.1.networking_deployment_cidr", "10.0.1.0/24"),
 				),
 			},
-			// Test database update: change global and local alerts, enable OSS cluster API
+			// Test database update: change global and local alerts, enable OSS cluster API, update DB name
 			{
 				Config: utils.RenderTestConfig(t, "./activeactive/testdata/database_crudi_update.tf", map[string]string{
 					"__SUBSCRIPTION_NAME__": subscriptionName,
-					"__DATABASE_NAME__":     databaseName,
+					"__DATABASE_NAME__":     databaseNameUpdated,
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(databaseResourceName, "name", databaseNameUpdated),
 					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(databaseResourceName, "external_endpoint_for_oss_cluster_api", "true"),
@@ -189,6 +191,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					},
 
 					// Test data source reflects updates
+					resource.TestCheckResourceAttr(datasourceName, "name", databaseNameUpdated),
 					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(datasourceName, "redis_version", "8.2"),
@@ -199,7 +202,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			{
 				Config: utils.RenderTestConfig(t, "./activeactive/testdata/database_crudi_update_no_alerts.tf", map[string]string{
 					"__SUBSCRIPTION_NAME__": subscriptionName,
-					"__DATABASE_NAME__":     databaseName,
+					"__DATABASE_NAME__":     databaseNameUpdated,
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
@@ -223,7 +226,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			{
 				Config: utils.RenderTestConfig(t, "./activeactive/testdata/database_crudi_import.tf", map[string]string{
 					"__SUBSCRIPTION_NAME__": subscriptionName,
-					"__DATABASE_NAME__":     databaseName,
+					"__DATABASE_NAME__":     databaseNameUpdated,
 				}),
 				ResourceName:      databaseResourceName,
 				ImportState:       true,
