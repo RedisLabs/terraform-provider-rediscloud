@@ -23,8 +23,7 @@ func (d *aclRuleDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 
 	var data AclRuleModel
-	diags := req.Config.Get(ctx, &data)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -45,7 +44,7 @@ func (d *aclRuleDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	list = filterRules(list, filters)
 	if len(list) == 0 {
-		diags.AddError(
+		resp.Diagnostics.AddError(
 			"No ACL Rules Found",
 			"Your query returned no results. Please change your search criteria and try again.",
 		)
@@ -53,7 +52,7 @@ func (d *aclRuleDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 
 	if len(list) > 1 {
-		diags.AddError(
+		resp.Diagnostics.AddError(
 			"Multiple ACL Rules Found",
 			"Your query returned more than one result. Please change try a more specific search criteria and try again.",
 		)
@@ -65,6 +64,5 @@ func (d *aclRuleDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	data.ID = types.StringValue(strconv.Itoa(redis.IntValue(rule.ID)))
 	data.Rule = types.StringValue(redis.StringValue(rule.ACL))
 
-	diags = resp.State.Set(ctx, &data)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
