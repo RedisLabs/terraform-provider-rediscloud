@@ -64,11 +64,6 @@ func dataSourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:        schema.TypeBool,
 				Computed:    true,
 			},
-			"prometheus_endpoint": {
-				Description: "The Prometheus scrape endpoint for databases in this subscription. Use this to configure your Prometheus server to scrape metrics from your Redis Cloud databases.",
-				Type:        schema.TypeString,
-				Computed:    true,
-			},
 			"cloud_provider": {
 				Description: "A cloud provider string either GCP or AWS",
 				Type:        schema.TypeString,
@@ -269,10 +264,6 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 		publicEndpointAccess = redis.BoolValue(sub.PublicEndpointAccess)
 	}
 	if err := d.Set("public_endpoint_access", publicEndpointAccess); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("prometheus_endpoint", redis.StringValue(sub.PrometheusEndpoint)); err != nil {
 		return diag.FromErr(err)
 	}
 
