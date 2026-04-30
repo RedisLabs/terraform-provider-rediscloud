@@ -1,7 +1,7 @@
-locals {
-  name = "__NAME__"
+variable "name" {
+  type = string
 }
 
 data "rediscloud_acl_rule" "test" {
-  name = local.name
+  name = var.name
 }

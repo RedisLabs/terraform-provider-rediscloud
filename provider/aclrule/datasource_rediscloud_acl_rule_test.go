@@ -4,7 +4,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
@@ -25,9 +26,10 @@ func TestAccDataSourceRedisCloudAclRule_ForDefaultRule(t *testing.T) {
 		CheckDestroy:             nil, // test doesn't create a resource, so don't need to check anything
 		Steps: []resource.TestStep{
 			{
-				Config: utils.RenderTestConfig(t, "./testdata/datasource_basic.tf", map[string]string{
-					"__NAME__": testName,
-				}),
+				ConfigFile: config.StaticFile("./testdata/datasource_basic.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(testName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(
 						AclRuleTest, "id", regexp.MustCompile("^\\d*$")),
