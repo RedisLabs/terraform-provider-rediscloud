@@ -66,3 +66,22 @@ func (d *aclRuleDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
+
+func filterRules(list []*redis_rules.GetRedisRuleResponse, filters []func(*redis_rules.GetRedisRuleResponse) bool) []*redis_rules.GetRedisRuleResponse {
+	var filtered []*redis_rules.GetRedisRuleResponse
+	for _, rule := range list {
+		if filterRule(rule, filters) {
+			filtered = append(filtered, rule)
+		}
+	}
+	return filtered
+}
+
+func filterRule(rule *redis_rules.GetRedisRuleResponse, filters []func(*redis_rules.GetRedisRuleResponse) bool) bool {
+	for _, filter := range filters {
+		if !filter(rule) {
+			return false
+		}
+	}
+	return true
+}
