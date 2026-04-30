@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func (d *aclRuleDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
@@ -42,7 +43,7 @@ func (d *aclRuleDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	list = filterRules(list, filters)
+	list = filterRules(ctx, list, filters)
 	if len(list) == 0 {
 		resp.Diagnostics.AddError(
 			"No ACL Rules Found",
@@ -67,9 +68,14 @@ func (d *aclRuleDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func filterRules(list []*redis_rules.GetRedisRuleResponse, filters []func(*redis_rules.GetRedisRuleResponse) bool) []*redis_rules.GetRedisRuleResponse {
+func filterRules(ctx context.Context, list []*redis_rules.GetRedisRuleResponse, filters []func(*redis_rules.GetRedisRuleResponse) bool) []*redis_rules.GetRedisRuleResponse {
 	var filtered []*redis_rules.GetRedisRuleResponse
 	for _, rule := range list {
+		if rule == nil {
+			tflog.Warn(ctx, "Skipping nil rule entry in API response — this may indicate an upstream API issue")
+			continue
+		}
+
 		if filterRule(rule, filters) {
 			filtered = append(filtered, rule)
 		}
