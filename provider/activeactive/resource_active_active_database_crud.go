@@ -400,6 +400,10 @@ func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan 
 		Regions:        regions,
 	}
 
+	if !plan.Name.IsNull() && state != nil && !state.Name.IsNull() && plan.Name.ValueString() != state.Name.ValueString() {
+		update.Name = redis.String(plan.Name.ValueString())
+	}
+
 	// Set size fields (one must be set)
 	if !plan.DatasetSizeInGB.IsNull() && plan.DatasetSizeInGB.ValueFloat64() > 0 {
 		update.DatasetSizeInGB = redis.Float64(plan.DatasetSizeInGB.ValueFloat64())

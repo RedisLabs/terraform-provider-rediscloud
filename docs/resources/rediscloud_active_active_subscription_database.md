@@ -86,7 +86,7 @@ output "us-east-2-private-endpoints" {
 
 The following arguments are supported:
 * `subscription_id`: (Required) The ID of the Active-Active subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
-* `name` - (Required) A meaningful name to identify the database (maximum 40 characters). **Modifying this attribute will force creation of a new resource.**
+* `name` - (Required) A meaningful name to identify the database (maximum 40 characters).
 * `redis_version` - (Optional) The Redis version of the database. If omitted, the Redis version will be the default.  **Modifying this attribute will force creation of a new resource.**
 * `memory_limit_in_gb` - (Optional - **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favor of `dataset_size_in_gb` - not possible to import databases with this attribute set**
 * `dataset_size_in_gb` - (Optional - **Required if `memory_limit_in_gb` is unset**) The maximum amount of data in the dataset for this specific database is in GB

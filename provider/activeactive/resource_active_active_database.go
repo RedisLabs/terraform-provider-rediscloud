@@ -176,9 +176,6 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 			"name": schema.StringAttribute{
 				Description: "A meaningful name to identify the database",
 				Required:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 				Validators: []validator.String{
 					StringLengthBetween(0, 40),
 				},
