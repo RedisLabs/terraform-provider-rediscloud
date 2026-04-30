@@ -5,6 +5,9 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 # Unreleased
 
+## Changed
+- Upgraded Go dependencies and CI workflow actions.
+
 ## Fixed
 - `rediscloud_active_active_subscription_database`: Changing the database `name` attribute no longer causes the resource to be destroyed and recreated.
 
