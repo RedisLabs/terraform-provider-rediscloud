@@ -64,7 +64,7 @@ func (d *aclRuleDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	data.ID = types.StringValue(strconv.Itoa(redis.IntValue(rule.ID)))
 	data.Name = types.StringPointerValue(rule.Name)
-	data.Rule = types.StringValue(redis.StringValue(rule.ACL))
+	data.Rule = types.StringPointerValue(rule.ACL)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
