@@ -21,8 +21,8 @@ func (d *cloudAccountDataSource) Read(ctx context.Context, req datasource.ReadRe
 		)
 		return
 	}
-	var state CloudAccountDataSourceModel
-	diags := req.Config.Get(ctx, &state)
+	var config CloudAccountDataSourceModel
+	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -42,19 +42,19 @@ func (d *cloudAccountDataSource) Read(ctx context.Context, req datasource.ReadRe
 	var filters []func(cloudAccount *cloud_accounts.CloudAccount) bool
 
 	// Handle exclude_internal_account filter - default to false if not set
-	if !state.ExcludeInternalAccount.IsNull() && state.ExcludeInternalAccount.ValueBool() {
+	if !config.ExcludeInternalAccount.IsNull() && config.ExcludeInternalAccount.ValueBool() {
 		filters = append(filters, func(cloudAccount *cloud_accounts.CloudAccount) bool {
 			return redis.IntValue(cloudAccount.ID) != 1
 		})
 	}
-	if !state.ProviderType.IsNull() && state.ProviderType.ValueString() != "" {
+	if !config.ProviderType.IsNull() && config.ProviderType.ValueString() != "" {
 		filters = append(filters, func(cloudAccount *cloud_accounts.CloudAccount) bool {
-			return redis.StringValue(cloudAccount.Provider) == state.ProviderType.ValueString()
+			return redis.StringValue(cloudAccount.Provider) == config.ProviderType.ValueString()
 		})
 	}
-	if !state.Name.IsNull() && state.Name.ValueString() != "" {
+	if !config.Name.IsNull() && config.Name.ValueString() != "" {
 		filters = append(filters, func(cloudAccount *cloud_accounts.CloudAccount) bool {
-			return redis.StringValue(cloudAccount.Name) == state.Name.ValueString()
+			return redis.StringValue(cloudAccount.Name) == config.Name.ValueString()
 		})
 	}
 
@@ -80,14 +80,14 @@ func (d *cloudAccountDataSource) Read(ctx context.Context, req datasource.ReadRe
 
 	// Map the result to state
 	cloudAccount := cloudAccounts[0]
-	state.ID = types.StringValue(strconv.Itoa(redis.IntValue(cloudAccount.ID)))
-	state.Name = types.StringValue(redis.StringValue(cloudAccount.Name))
-	state.AccessKeyID = types.StringValue(redis.StringValue(cloudAccount.AccessKeyID))
-	state.ExcludeInternalAccount = types.BoolValue(state.ExcludeInternalAccount.ValueBool())
-	state.ProviderType = types.StringValue(redis.StringValue(cloudAccount.Provider))
+	config.ID = types.StringValue(strconv.Itoa(redis.IntValue(cloudAccount.ID)))
+	config.Name = types.StringValue(redis.StringValue(cloudAccount.Name))
+	config.AccessKeyID = types.StringValue(redis.StringValue(cloudAccount.AccessKeyID))
+	config.ExcludeInternalAccount = types.BoolValue(config.ExcludeInternalAccount.ValueBool())
+	config.ProviderType = types.StringValue(redis.StringValue(cloudAccount.Provider))
 
 	// Set state
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 }
 

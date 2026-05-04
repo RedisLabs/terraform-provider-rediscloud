@@ -23,8 +23,8 @@ func (d *paymentMethodDataSource) Read(ctx context.Context, req datasource.ReadR
 		return
 	}
 
-	var state PaymentMethodDataSourceModel
-	diags := req.Config.Get(ctx, &state)
+	var config PaymentMethodDataSourceModel
+	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -45,8 +45,8 @@ func (d *paymentMethodDataSource) Read(ctx context.Context, req datasource.ReadR
 
 	// Handle exclude_expired filter - default to true if not set
 	excludeExpired := true
-	if !state.ExcludeExpired.IsNull() {
-		excludeExpired = state.ExcludeExpired.ValueBool()
+	if !config.ExcludeExpired.IsNull() {
+		excludeExpired = config.ExcludeExpired.ValueBool()
 	}
 
 	if excludeExpired {
@@ -79,8 +79,8 @@ func (d *paymentMethodDataSource) Read(ctx context.Context, req datasource.ReadR
 	}
 
 	// Filter by card type if specified
-	if !state.CardType.IsNull() && state.CardType.ValueString() != "" {
-		cardType := state.CardType.ValueString()
+	if !config.CardType.IsNull() && config.CardType.ValueString() != "" {
+		cardType := config.CardType.ValueString()
 		filters = append(filters, func(method *account.PaymentMethod) bool {
 			if method == nil {
 				return false
@@ -90,8 +90,8 @@ func (d *paymentMethodDataSource) Read(ctx context.Context, req datasource.ReadR
 	}
 
 	// Filter by last four numbers if specified
-	if !state.LastFourNumbers.IsNull() && state.LastFourNumbers.ValueString() != "" {
-		lastFour := state.LastFourNumbers.ValueString()
+	if !config.LastFourNumbers.IsNull() && config.LastFourNumbers.ValueString() != "" {
+		lastFour := config.LastFourNumbers.ValueString()
 		filters = append(filters, func(method *account.PaymentMethod) bool {
 			if method == nil {
 				return false
@@ -122,12 +122,12 @@ func (d *paymentMethodDataSource) Read(ctx context.Context, req datasource.ReadR
 
 	// Map the result to state
 	method := methods[0]
-	state.ID = types.StringValue(strconv.Itoa(redis.IntValue(method.ID)))
-	state.CardType = types.StringValue(redis.StringValue(method.Type))
-	state.LastFourNumbers = types.StringValue(formattedCardNumber(method))
+	config.ID = types.StringValue(strconv.Itoa(redis.IntValue(method.ID)))
+	config.CardType = types.StringValue(redis.StringValue(method.Type))
+	config.LastFourNumbers = types.StringValue(formattedCardNumber(method))
 
 	// Set state
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 }
 
