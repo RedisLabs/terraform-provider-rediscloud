@@ -65,6 +65,9 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "tags.market", "emea"),
 					resource.TestCheckResourceAttr(resourceName, "tags.material", "cardboard"),
 
+					// Subscription-level prometheus endpoint is populated once the database exists
+					resource.TestCheckResourceAttrSet(subscriptionResourceName, "prometheus_endpoint"),
+
 					// Replica tests
 					resource.TestCheckResourceAttr(replicaResourceName, "name", "example-replica"),
 					// should be the value specified in the replica config, rather than the primary database
