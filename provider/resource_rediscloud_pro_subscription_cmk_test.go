@@ -129,24 +129,39 @@ resource "rediscloud_subscription" "example" {
 }
 `
 
-// TestAccResourceRedisCloudProSubscription_CMK_AWS is a semi-automated test for AWS CMK support.
-// It requires the user to grant KMS key policy permissions between steps.
+// TestAccResourceRedisCloudProSubscription_CMK_AWS is a fully automated AWS CMK test.
+// It uses the hashicorp/aws external provider to create the KMS key and key policy
+// in-fixture, removing the need for a pre-existing AWS_CMK_KEY_ARN.
 func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-	utils.AccRequiresEnvVar(t, "AWS_CMK_KEY_ARN")
 
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
-	awsCmkKeyArn := os.Getenv("AWS_CMK_KEY_ARN")
+
+	placeholders := map[string]string{
+		"__NAME__": name,
+	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccAwsPreExistingCloudAccountPreCheck(t)
+			testAccAwsApiCredsPreCheck(t)
+		},
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:             testAccCheckProSubscriptionDestroy,
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"aws": {
+				Source:            "hashicorp/aws",
+				VersionConstraint: "~> 5.0",
+			},
+		},
+		CheckDestroy: testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:             fmt.Sprintf(proCmkAwsStep1Config, name),
+				// Step 1: subscription enters encryption_key_pending; KMS key policy
+				// references the role ARN returned by the subscription.
+				Config:             utils.RenderTestConfig(t, "./pro/testdata/cmk_aws_step1.tf", placeholders),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -161,7 +176,8 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 				),
 			},
 			{
-				Config:             fmt.Sprintf(proCmkAwsStep2Config, name, awsCmkKeyArn),
+				// Step 2: subscription supplies the KMS key ARN and transitions to active.
+				Config:             utils.RenderTestConfig(t, "./pro/testdata/cmk_aws_step2.tf", placeholders),
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -178,71 +194,3 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 		},
 	})
 }
-
-const proCmkAwsStep1Config = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-resource "rediscloud_subscription" "example" {
-  name = "%s"
-  payment_method = "credit-card"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-  customer_managed_key_enabled = true
-
-  cloud_provider {
-    provider = "AWS"
-    region {
-      region                     = "us-east-1"
-      networking_deployment_cidr = "10.0.1.0/24"
-    }
-  }
-
-  creation_plan {
-    dataset_size_in_gb = 1
-    quantity = 1
-    replication = false
-    support_oss_cluster_api = false
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-  }
-}
-`
-
-const proCmkAwsStep2Config = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-resource "rediscloud_subscription" "example" {
-  name = "%s"
-  payment_method = "credit-card"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-  customer_managed_key_enabled = true
-
-  cloud_provider {
-    provider = "AWS"
-    region {
-      region                     = "us-east-1"
-      networking_deployment_cidr = "10.0.1.0/24"
-    }
-  }
-
-  creation_plan {
-    dataset_size_in_gb = 1
-    quantity = 1
-    replication = false
-    support_oss_cluster_api = false
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-  }
-
-  customer_managed_key {
-    resource_name = "%s"
-  }
-}
-`

@@ -71,6 +71,13 @@ func testAccAwsPreExistingCloudAccountPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
 }
 
+// testAccAwsApiCredsPreCheck requires only the AWS API credentials needed by the
+// hashicorp/aws external provider for tests that provision AWS resources directly
+// (e.g. the AWS CMK tests, which create KMS keys + key policies in-fixture).
+func testAccAwsApiCredsPreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY")
+}
+
 func testAccAwsCloudAccountPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_ACCESS_SECRET_KEY", "AWS_CONSOLE_USERNAME", "AWS_CONSOLE_PASSWORD", "AWS_SIGNIN_URL")
 }
