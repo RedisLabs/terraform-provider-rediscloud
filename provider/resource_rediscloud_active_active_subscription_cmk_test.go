@@ -75,6 +75,69 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 	})
 }
 
+// TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS is a fully automated AWS CMK test.
+// It uses the hashicorp/aws external provider to create a multi-region KMS key
+// (primary in us-east-1, replica in us-east-2) and key policies in-fixture,
+// removing the need for a pre-existing AWS_CMK_KEY_ARN.
+func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	name := testRandomWithPrefix()
+	const resourceName = "rediscloud_active_active_subscription.example"
+
+	placeholders := map[string]string{
+		"__NAME__": name,
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccAwsPreExistingCloudAccountPreCheck(t)
+			testAccAwsApiCredsPreCheck(t)
+		},
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"aws": {
+				Source:            "hashicorp/aws",
+				VersionConstraint: "~> 5.0",
+			},
+		},
+		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Step 1: subscription enters encryption_key_pending; both key policies
+				// (primary + replica) reference the role ARN returned by the subscription.
+				Config:             utils.RenderTestConfig(t, "./activeactive/testdata/cmk_aws_step1.tf", placeholders),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_aws_role_arn"),
+					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
+					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider"),
+					resource.TestCheckResourceAttr(resourceName, "customer_managed_key_enabled", "true"),
+				),
+			},
+			{
+				// Step 2: subscription supplies the per-region KMS ARNs (primary + replica)
+				// and transitions out of encryption_key_pending.
+				Config:             utils.RenderTestConfig(t, "./activeactive/testdata/cmk_aws_step2.tf", placeholders),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_aws_role_arn"),
+					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
+					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider"),
+					resource.TestCheckResourceAttr(resourceName, "customer_managed_key_enabled", "true"),
+					testAccCheckNoCreationPlanDatabases(resourceName),
+				),
+			},
+		},
+	})
+}
+
 // testAccCheckNoCreationPlanDatabases verifies that no databases remain in the subscription after
 // CMK activation. This confirms that the creation plan databases were properly cleaned up.
 func testAccCheckNoCreationPlanDatabases(resourceName string) resource.TestCheckFunc {

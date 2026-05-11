@@ -776,6 +776,15 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
+	// If already deleting (e.g. auto-deleted empty CMK subscription), wait for completion.
+	if *subscription.Status == subscriptions.SubscriptionStatusDeleting {
+		d.SetId("")
+		if err := pro.WaitForSubscriptionToBeDeleted(ctx, subId, api); err != nil {
+			return diag.FromErr(err)
+		}
+		return diags
+	}
+
 	if *subscription.Status != subscriptions.SubscriptionStatusEncryptionKeyPending {
 		// Wait for the subscription to be active before deleting it.
 		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
