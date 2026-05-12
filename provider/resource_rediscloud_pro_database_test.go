@@ -65,9 +65,6 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "tags.market", "emea"),
 					resource.TestCheckResourceAttr(resourceName, "tags.material", "cardboard"),
 
-					// Subscription-level prometheus endpoint is populated once the database exists
-					resource.TestCheckResourceAttrSet(subscriptionResourceName, "prometheus_endpoint"),
-
 					// Replica tests
 					resource.TestCheckResourceAttr(replicaResourceName, "name", "example-replica"),
 					// should be the value specified in the replica config, rather than the primary database
@@ -131,6 +128,9 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "0"),
 					resource.TestCheckResourceAttr(resourceName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.2"),
+
+					// Asserted in step 2: the step-1 subscription Read runs before any database exists, so the API hasn't populated this yet.
+					resource.TestCheckResourceAttrSet(subscriptionResourceName, "prometheus_endpoint"),
 				),
 			},
 			// Test that alerts are deleted
