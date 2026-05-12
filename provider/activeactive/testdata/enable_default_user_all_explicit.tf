@@ -1,7 +1,14 @@
-locals {
-  subscription_name = "__SUBSCRIPTION_NAME__"
-  database_name     = "__DATABASE_NAME__"
-  password          = "__PASSWORD__"
+variable "subscription_name" {
+  type = string
+}
+
+variable "database_name" {
+  type = string
+}
+
+variable "password" {
+  type      = string
+  sensitive = true
 }
 
 data "rediscloud_payment_method" "card" {

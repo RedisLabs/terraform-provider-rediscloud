@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -39,10 +40,11 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: utils.RenderTestConfig(t, "./peering/testdata/active_active_peering_aws.tf", map[string]string{
-					"__SUBSCRIPTION_NAME__": name,
-					"__AWS_REGION__":        awsRegion,
-				}),
+				ConfigFile: config.StaticFile("./peering/testdata/active_active_peering_aws.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+					"aws_region":        config.StringVariable(awsRegion),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d*/\\d*$")),
 					resource.TestCheckResourceAttrSet(resourceName, "status"),

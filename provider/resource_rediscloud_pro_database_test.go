@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -179,11 +180,12 @@ func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: utils.RenderTestConfig(t, "./pro/testdata/pro_database_optional_attributes.tf", map[string]string{
-					"__CLOUD_ACCOUNT__":     testCloudAccountName,
-					"__SUBSCRIPTION_NAME__": name,
-					"__PORT_NUMBER__":       strconv.Itoa(portNumber),
-				}),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_optional_attributes.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"port_number":                  config.IntegerVariable(portNumber),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
 					resource.TestCheckResourceAttr(resourceName, "port", strconv.Itoa(portNumber)),
@@ -262,34 +264,37 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: utils.RenderTestConfig(t, "./pro/testdata/pro_database_resp_versions.tf", map[string]string{
-					"__CLOUD_ACCOUNT__":     testCloudAccountName,
-					"__SUBSCRIPTION_NAME__": name,
-					"__PORT_NUMBER__":       strconv.Itoa(portNumber),
-					"__RESP_VERSION__":      "resp2",
-				}),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_resp_versions.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"port_number":                  config.IntegerVariable(portNumber),
+					"resp_version":                 config.StringVariable("resp2"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp2"),
 				),
 			},
 			{
-				Config: utils.RenderTestConfig(t, "./pro/testdata/pro_database_resp_versions.tf", map[string]string{
-					"__CLOUD_ACCOUNT__":     testCloudAccountName,
-					"__SUBSCRIPTION_NAME__": name,
-					"__PORT_NUMBER__":       strconv.Itoa(portNumber),
-					"__RESP_VERSION__":      "resp3",
-				}),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_resp_versions.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"port_number":                  config.IntegerVariable(portNumber),
+					"resp_version":                 config.StringVariable("resp3"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "resp_version", "resp3"),
 				),
 			},
 			{
-				Config: utils.RenderTestConfig(t, "./pro/testdata/pro_database_resp_versions.tf", map[string]string{
-					"__CLOUD_ACCOUNT__":     testCloudAccountName,
-					"__SUBSCRIPTION_NAME__": name,
-					"__PORT_NUMBER__":       strconv.Itoa(portNumber),
-					"__RESP_VERSION__":      "best_resp_100",
-				}),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_resp_versions.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"port_number":                  config.IntegerVariable(portNumber),
+					"resp_version":                 config.StringVariable("best_resp_100"),
+				},
 				ExpectError: regexp.MustCompile("Bad Request: JSON parameter contains unsupported fields / values. JSON parse error: Cannot deserialize value of type `mappings.RespVersion` from String \"best_resp_100\": not one of the values accepted for Enum class: \\[resp2, resp3]"),
 			},
 		},
@@ -312,12 +317,13 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 		Steps: []resource.TestStep{
 			// Test database creation with auto_minor_version_upgrade set to false
 			{
-				Config: utils.RenderTestConfig(t, "./pro/testdata/pro_database_auto_minor_version_upgrade.tf", map[string]string{
-					"__CLOUD_ACCOUNT__":              testCloudAccountName,
-					"__SUBSCRIPTION_NAME__":          name,
-					"__DATABASE_NAME__":              databaseName,
-					"__AUTO_MINOR_VERSION_UPGRADE__": "false",
-				}),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_auto_minor_version_upgrade.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"database_name":                config.StringVariable(databaseName),
+					"auto_minor_version_upgrade":   config.BoolVariable(false),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "false"),
@@ -325,12 +331,13 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 			},
 			// Test database update with auto_minor_version_upgrade set to true
 			{
-				Config: utils.RenderTestConfig(t, "./pro/testdata/pro_database_auto_minor_version_upgrade.tf", map[string]string{
-					"__CLOUD_ACCOUNT__":              testCloudAccountName,
-					"__SUBSCRIPTION_NAME__":          name,
-					"__DATABASE_NAME__":              databaseName,
-					"__AUTO_MINOR_VERSION_UPGRADE__": "true",
-				}),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_auto_minor_version_upgrade.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"database_name":                config.StringVariable(databaseName),
+					"auto_minor_version_upgrade":   config.BoolVariable(true),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "true"),
 				),

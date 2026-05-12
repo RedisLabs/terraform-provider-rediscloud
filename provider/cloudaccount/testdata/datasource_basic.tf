@@ -1,9 +1,9 @@
-locals {
-  name = "__NAME__"
+variable "name" {
+  type = string
 }
 
 data "rediscloud_cloud_account" "test" {
   exclude_internal_account = true
   provider_type            = "AWS"
-  name                     = local.name
+  name                     = var.name
 }
