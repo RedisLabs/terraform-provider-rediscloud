@@ -11,7 +11,6 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
@@ -830,7 +829,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.
 	}
 	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, diags, 1, "Warning should be reported when storage was ram and using `average_item_size_in_bytes`")
-	assert.Equal(t, diag.Warning, diags[0].Severity)
+	assert.False(t, diags.HasError(), "diagnostic should be a warning, not an error")
 	createDb := createDbs[0]
 	assert.Equal(t, "operations-per-second", *createDb.ThroughputMeasurement.By)
 	assert.Equal(t, 2*500, *createDb.ThroughputMeasurement.Value)
