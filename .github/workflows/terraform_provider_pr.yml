@@ -414,3 +414,27 @@ jobs:
         with:
           sweep_prefix: "tf-ci-pr${{ github.event.pull_request.number }}-${{ github.run_number }}"
           age_threshold: '0s'
+
+  status:
+    name: Status
+    runs-on: ubuntu-latest
+    needs:
+      - lint-complete
+      - tfproviderlint
+      - docs-validation
+      - go_test_smoke_aa_db
+      - go_test_smoke_aa_regions
+      - go_test_smoke_aa_enable_default_user
+      - go_test_smoke_pro_db
+      - go_test_smoke_essentials_db
+      - go_test_smoke_misc
+      - go_test_pro_db_upgrade
+      - go_test_block_public_endpoints
+    if: always()
+    steps:
+      - name: Check CI status
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: |
+          echo "One or more required jobs failed or were cancelled"
+          echo "Job results: ${{ toJSON(needs.*.result) }}"
+          exit 1
