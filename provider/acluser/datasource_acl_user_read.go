@@ -22,8 +22,8 @@ func (d *aclUserDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	var state AclUserDataSourceModel
-	diags := req.Config.Get(ctx, &state)
+	var config AclUserDataSourceModel
+	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -43,8 +43,8 @@ func (d *aclUserDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	var filters []func(user *users.GetUserResponse) bool
 
 	// Filter by name if specified
-	if !state.Name.IsNull() && state.Name.ValueString() != "" {
-		name := state.Name.ValueString()
+	if !config.Name.IsNull() && config.Name.ValueString() != "" {
+		name := config.Name.ValueString()
 		filters = append(filters, func(user *users.GetUserResponse) bool {
 			if user == nil {
 				return false
@@ -75,12 +75,12 @@ func (d *aclUserDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	// Map the result to state
 	user := userList[0]
-	state.ID = types.StringValue(strconv.Itoa(redis.IntValue(user.ID)))
-	state.Name = types.StringValue(redis.StringValue(user.Name))
-	state.Role = types.StringValue(redis.StringValue(user.Role))
+	config.ID = types.StringValue(strconv.Itoa(redis.IntValue(user.ID)))
+	config.Name = types.StringValue(redis.StringValue(user.Name))
+	config.Role = types.StringValue(redis.StringValue(user.Role))
 
 	// Set state
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 }
 
