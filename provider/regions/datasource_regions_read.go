@@ -33,8 +33,8 @@ func (d *regionsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	var state RegionsDataSourceModel
-	diags := req.Config.Get(ctx, &state)
+	var config RegionsDataSourceModel
+	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -55,8 +55,8 @@ func (d *regionsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	// Build the synthetic ID — either the provider filter or all providers joined
 	id := strings.Join(cloud_accounts.ProviderValues(), "-")
-	if !state.ProviderName.IsNull() && state.ProviderName.ValueString() != "" {
-		providerName := state.ProviderName.ValueString()
+	if !config.ProviderName.IsNull() && config.ProviderName.ValueString() != "" {
+		providerName := config.ProviderName.ValueString()
 		filters = append(filters, func(region *account.Region) bool {
 			if region == nil {
 				return false
@@ -78,7 +78,7 @@ func (d *regionsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 
 	// Set synthetic ID
-	state.ID = types.StringValue(id)
+	config.ID = types.StringValue(id)
 
 	// Flatten regions into the state model
 	regionsSet, flattenDiags := flattenRegions(ctx, regions)
@@ -86,10 +86,10 @@ func (d *regionsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	state.Regions = regionsSet
+	config.Regions = regionsSet
 
 	// Set state
-	diags = resp.State.Set(ctx, &state)
+	diags = resp.State.Set(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 }
 
