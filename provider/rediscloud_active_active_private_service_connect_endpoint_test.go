@@ -8,6 +8,7 @@ import (
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
@@ -29,14 +30,26 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpoint_CRUDI(t 
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointProStep1, baseName, gcpProjectId, gcpVPCName, gcpVPCSubnetName),
+				ConfigFile: config.StaticFile("./psc/testdata/aa_psce_step1.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name":   config.StringVariable(baseName),
+					"gcp_project_id":      config.StringVariable(gcpProjectId),
+					"gcp_vpc_name":        config.StringVariable(gcpVPCName),
+					"gcp_vpc_subnet_name": config.StringVariable(gcpVPCSubnetName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "private_service_connect_endpoint_id"),
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointProStep2, baseName, gcpProjectId, gcpVPCName, gcpVPCSubnetName),
+				ConfigFile: config.StaticFile("./psc/testdata/aa_psce_step2.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name":   config.StringVariable(baseName),
+					"gcp_project_id":      config.StringVariable(gcpProjectId),
+					"gcp_vpc_name":        config.StringVariable(gcpVPCName),
+					"gcp_vpc_subnet_name": config.StringVariable(gcpVPCSubnetName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(datasourceName, "id"),
 					resource.TestCheckResourceAttr(datasourceName, "endpoints.#", "1"),
@@ -60,90 +73,3 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpoint_CRUDI(t 
 		},
 	})
 }
-
-const testAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointProStep1 = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-resource "rediscloud_active_active_subscription" "subscription_resource" {
-  name = "%s"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  cloud_provider = "GCP"
-
-  creation_plan {
-    memory_limit_in_gb = 1
-    quantity = 1
-    region {
-      region = "us-central1"
-      networking_deployment_cidr = "192.168.0.0/24"
-      write_operations_per_second = 1000
-      read_operations_per_second = 1000
-    }
-    region {
-      region = "europe-west1"
-      networking_deployment_cidr = "10.0.1.0/24"
-      write_operations_per_second = 1000
-      read_operations_per_second = 1000
-    }
-  }
-}
-
-resource "rediscloud_active_active_subscription_database" "database_resource" {
-  subscription_id         = rediscloud_active_active_subscription.subscription_resource.id
-  name                    = "db"
-  memory_limit_in_gb      = 1
-  global_data_persistence = "aof-every-1-second"
-  global_password         = "some-password"
-}
-
-resource "rediscloud_active_active_subscription_regions" "regions_resource" {
-  subscription_id = rediscloud_active_active_subscription.subscription_resource.id
-
-  region {
-    region = "us-central1"
-    networking_deployment_cidr = "192.168.0.0/24"
-    database {
-      database_id                       = rediscloud_active_active_subscription_database.database_resource.db_id
-      database_name                     = rediscloud_active_active_subscription_database.database_resource.name
-      local_write_operations_per_second = 1000
-      local_read_operations_per_second  = 1000
-    }
-  }
-  
-  region {
-    region = "europe-west1"
-    networking_deployment_cidr = "10.0.1.0/24"
-    database {
-      database_id                       = rediscloud_active_active_subscription_database.database_resource.db_id
-      database_name                     = rediscloud_active_active_subscription_database.database_resource.name
-      local_write_operations_per_second = 1000
-      local_read_operations_per_second  = 1000
-    }
-  }  
-}
-
-resource "rediscloud_active_active_private_service_connect" "psc" {
-  subscription_id = rediscloud_active_active_subscription.subscription_resource.id
-  region_id = one([for r in rediscloud_active_active_subscription_regions.regions_resource.region : r.region_id if r.region == "us-central1"])
-}
-
-resource "rediscloud_active_active_private_service_connect_endpoint" "psce" {
-  subscription_id = rediscloud_active_active_subscription.subscription_resource.id
-  region_id = one([for r in rediscloud_active_active_subscription_regions.regions_resource.region : r.region_id if r.region == "us-central1"])
-  private_service_connect_service_id = rediscloud_active_active_private_service_connect.psc.private_service_connect_service_id
-  gcp_project_id = "%s"
-  gcp_vpc_name = "%s"
-  gcp_vpc_subnet_name = "%s"
-  endpoint_connection_name = "redis-${rediscloud_active_active_subscription.subscription_resource.id}"
-}
-`
-
-const testAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointProStep2 = testAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointProStep1 + `
-
-data "rediscloud_active_active_private_service_connect_endpoints" "psce" {
-  subscription_id = rediscloud_active_active_subscription.subscription_resource.id
-  region_id = one([for r in rediscloud_active_active_subscription_regions.regions_resource.region : r.region_id if r.region == "us-central1"])
-  private_service_connect_service_id = rediscloud_active_active_private_service_connect.psc.private_service_connect_service_id
-}
-`

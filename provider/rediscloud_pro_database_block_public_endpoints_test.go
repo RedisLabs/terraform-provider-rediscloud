@@ -1,9 +1,9 @@
 package provider
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
@@ -24,16 +24,17 @@ func TestAccRedisCloudProDatabase_DefaultSourceIPs_PrivateAccess(t *testing.T) {
 	password := acctest.RandString(20)
 	subscriptionName := testRandomWithPrefix()
 
-	contentDisabled := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_public_endpoint_disabled.tf")
-	configDisabled := fmt.Sprintf(contentDisabled, subscriptionName, password)
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: configDisabled,
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_public_endpoint_disabled.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_password": config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify subscription has public_endpoint_access disabled
 					resource.TestCheckResourceAttr("rediscloud_subscription.example", "public_endpoint_access", "false"),
@@ -71,16 +72,17 @@ func TestAccRedisCloudProDatabase_DefaultSourceIPs_PublicAccess(t *testing.T) {
 	password := acctest.RandString(20)
 	subscriptionName := testRandomWithPrefix()
 
-	contentEnabled := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_public_endpoint_enabled.tf")
-	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: configEnabled,
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_public_endpoint_enabled.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_password": config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify subscription has public_endpoint_access enabled
 					resource.TestCheckResourceAttr("rediscloud_subscription.example", "public_endpoint_access", "true"),

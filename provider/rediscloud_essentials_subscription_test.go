@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -55,7 +56,10 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudFreeEssentialsSubscription, subscriptionName),
+				ConfigFile: config.StaticFile("./essentials/testdata/free_subscription.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -75,7 +79,10 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudFreeEssentialsSubscription, subscriptionNameUpdated),
+				ConfigFile: config.StaticFile("./essentials/testdata/free_subscription.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionNameUpdated),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -95,7 +102,10 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 				),
 			},
 			{
-				Config:            fmt.Sprintf(testAccResourceRedisCloudFreeEssentialsSubscription, subscriptionNameUpdated),
+				ConfigFile: config.StaticFile("./essentials/testdata/free_subscription.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionNameUpdated),
+				},
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -120,7 +130,10 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudPaidCreditCardEssentialsSubscription, subscriptionName),
+				ConfigFile: config.StaticFile("./essentials/testdata/paid_credit_card_subscription.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -141,7 +154,10 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudPaidCreditCardEssentialsSubscription, subscriptionNameUpdated),
+				ConfigFile: config.StaticFile("./essentials/testdata/paid_credit_card_subscription.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionNameUpdated),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -161,7 +177,10 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 				),
 			},
 			{
-				Config:            fmt.Sprintf(testAccResourceRedisCloudPaidCreditCardEssentialsSubscription, subscriptionNameUpdated),
+				ConfigFile: config.StaticFile("./essentials/testdata/paid_credit_card_subscription.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionNameUpdated),
+				},
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -186,7 +205,10 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudPaidNoPaymentTypeEssentialsSubscription, subscriptionName),
+				ConfigFile: config.StaticFile("./essentials/testdata/paid_no_payment_type_subscription.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -207,7 +229,10 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudPaidNoPaymentTypeEssentialsSubscription, subscriptionNameUpdated),
+				ConfigFile: config.StaticFile("./essentials/testdata/paid_no_payment_type_subscription.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionNameUpdated),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -227,7 +252,10 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 				),
 			},
 			{
-				Config:            fmt.Sprintf(testAccResourceRedisCloudPaidNoPaymentTypeEssentialsSubscription, subscriptionNameUpdated),
+				ConfigFile: config.StaticFile("./essentials/testdata/paid_no_payment_type_subscription.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionNameUpdated),
+				},
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -257,7 +285,10 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudPaidMarketplaceEssentialsSubscription, subscriptionName),
+				ConfigFile: config.StaticFile("./essentials/testdata/paid_marketplace_subscription.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -278,7 +309,10 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudPaidMarketplaceEssentialsSubscription, subscriptionNameUpdated),
+				ConfigFile: config.StaticFile("./essentials/testdata/paid_marketplace_subscription.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionNameUpdated),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -299,7 +333,10 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 				),
 			},
 			{
-				Config:            fmt.Sprintf(testAccResourceRedisCloudPaidMarketplaceEssentialsSubscription, subscriptionNameUpdated),
+				ConfigFile: config.StaticFile("./essentials/testdata/paid_marketplace_subscription.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionNameUpdated),
+				},
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -325,96 +362,6 @@ func TestAccResourceRedisCloudEssentialsSubscription_Incorrect_PaymentIdForType(
 		},
 	})
 }
-
-const testAccResourceRedisCloudFreeEssentialsSubscription = `
-data "rediscloud_essentials_plan" "example" {
-	name = "30MB"
-	cloud_provider = "AWS"
-	region = "us-east-1"
-}
-
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-resource "rediscloud_essentials_subscription" "example" {
-	name = "%s"
-	plan_id = data.rediscloud_essentials_plan.example.id
-	# payment_method = "credit-card"
-	# payment_method_id = data.rediscloud_payment_method.card.id
-}
-
-data "rediscloud_essentials_subscription" "example" {
-	name = rediscloud_essentials_subscription.example.name
-}
-`
-
-const testAccResourceRedisCloudPaidMarketplaceEssentialsSubscription = `
-data "rediscloud_essentials_plan" "example" {
-	name = "250MB"
-	cloud_provider = "AWS"
-	region = "us-east-1"
-}
-
-resource "rediscloud_essentials_subscription" "example" {
-	name = "%s"
-	plan_id = data.rediscloud_essentials_plan.example.id
-	payment_method = "marketplace"
-}
-
-data "rediscloud_essentials_subscription" "example" {
-	name = rediscloud_essentials_subscription.example.name
-}
-`
-
-const testAccResourceRedisCloudPaidCreditCardEssentialsSubscription = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-data "rediscloud_essentials_plan" "example" {
-	name = "250MB"
-	cloud_provider = "AWS"
-	region = "us-east-1"
-}
-
-resource "rediscloud_essentials_subscription" "example" {
-	name = "%s"
-	plan_id = data.rediscloud_essentials_plan.example.id
-	payment_method_id = data.rediscloud_payment_method.card.id
-	payment_method = "credit-card"
-}
-
-data "rediscloud_essentials_subscription" "example" {
-	name = rediscloud_essentials_subscription.example.name
-}
-`
-
-// doesn't contain credit-card, tests for default
-const testAccResourceRedisCloudPaidNoPaymentTypeEssentialsSubscription = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-data "rediscloud_essentials_plan" "example" {
-	name = "250MB"
-	cloud_provider = "AWS"
-	region = "us-east-1"
-}
-
-resource "rediscloud_essentials_subscription" "example" {
-	name = "%s"
-	plan_id = data.rediscloud_essentials_plan.example.id
-	payment_method_id = data.rediscloud_payment_method.card.id
-}
-
-data "rediscloud_essentials_subscription" "example" {
-	name = rediscloud_essentials_subscription.example.name
-}
-`
 
 const testAccResourceRedisCloudPaidIncorrectPaymentTypeEssentialsSubscription = `
 data "rediscloud_essentials_plan" "example" {

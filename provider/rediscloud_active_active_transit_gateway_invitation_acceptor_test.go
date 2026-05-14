@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -47,9 +48,13 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./transitgateway/testdata/aa_transit_gateway_invitation_acceptor.tf"),
-					subscriptionName, databaseName, databasePassword, testAwsRegion),
+				ConfigFile: config.StaticFile("./transitgateway/testdata/aa_transit_gateway_invitation_acceptor.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_name":     config.StringVariable(databaseName),
+					"database_password": config.StringVariable(databasePassword),
+					"aws_region":        config.StringVariable(testAwsRegion),
+				},
 			},
 			{
 				RefreshState: true,
@@ -80,9 +85,13 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 				),
 			},
 			{
-				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./transitgateway/testdata/aa_transit_gateway_route_update.tf"),
-					subscriptionName, databaseName, databasePassword, testAwsRegion),
+				ConfigFile: config.StaticFile("./transitgateway/testdata/aa_transit_gateway_route_update.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_name":     config.StringVariable(databaseName),
+					"database_password": config.StringVariable(databasePassword),
+					"aws_region":        config.StringVariable(testAwsRegion),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(routeResourceName, "cidrs.#", "2"),
 					resource.TestCheckResourceAttr(routeResourceName, "cidrs.0", "10.10.20.0/24"),

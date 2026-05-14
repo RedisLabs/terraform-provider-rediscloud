@@ -1,6 +1,9 @@
-locals {
-  rediscloud_subscription_name = "%s"
-  rediscloud_database_password = "%s"
+variable "subscription_name" {
+  type = string
+}
+
+variable "database_password" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
@@ -9,7 +12,7 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_subscription" "example" {
-  name                   = local.rediscloud_subscription_name
+  name                   = var.subscription_name
   payment_method_id      = data.rediscloud_payment_method.card.id
   public_endpoint_access = true
 
@@ -32,14 +35,14 @@ resource "rediscloud_subscription" "example" {
 
 resource "rediscloud_subscription_database" "example" {
   subscription_id                       = rediscloud_subscription.example.id
-  name                                  = local.rediscloud_subscription_name
+  name                                  = var.subscription_name
   protocol                              = "redis"
   dataset_size_in_gb                    = 1
   data_persistence                      = "none"
   data_eviction                         = "allkeys-random"
   throughput_measurement_by             = "operations-per-second"
   throughput_measurement_value          = 1000
-  password                              = local.rediscloud_database_password
+  password                              = var.database_password
   support_oss_cluster_api               = false
   external_endpoint_for_oss_cluster_api = false
   replication                           = false

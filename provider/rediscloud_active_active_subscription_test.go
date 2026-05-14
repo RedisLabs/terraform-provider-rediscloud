@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -40,7 +41,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceRedisCloudActiveActiveSubscriptionRedis7(t, name),
+				ConfigFile: config.StaticFile("./activeactive/testdata/active_active_sub_redis7.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the subscription resource
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -201,7 +205,11 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 			},
 			{
 				// Checks if the changes in the creation plan are ignored.
-				Config: testAccResourceRedisCloudActiveActiveSubscriptionUpdateRedis7(t, name, "AWS"),
+				ConfigFile: config.StaticFile("./activeactive/testdata/subscription_update_redis7.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+					"cloud_provider":    config.StringVariable("AWS"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
@@ -241,14 +249,20 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 			},
 			{
 				// Checks if the changes to the payment_method are ignored.
-				Config: testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethodRedis7(t, name),
+				ConfigFile: config.StaticFile("./activeactive/testdata/subscription_changed_payment_method_redis7.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 				),
 			},
 			{
 				// Checks if the payment_method and creation_plan block are ignored after the IMPORT operation.
-				Config:       testAccResourceRedisCloudActiveActiveSubscriptionImportRedis7(t, name),
+				ConfigFile: config.StaticFile("./activeactive/testdata/subscription_import_redis7.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+				},
 				ResourceName: resourceName,
 				ImportState:  true,
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
@@ -265,7 +279,11 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 			},
 			{
 				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
-				Config:       fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan, name, "GCP"),
+				ConfigFile: config.StaticFile("./activeactive/testdata/aa_subscription_no_creation_plan.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+					"cloud_provider":    config.StringVariable("GCP"),
+				},
 				ResourceName: resourceName,
 				ExpectError:  regexp.MustCompile(`Error: the "creation_plan" block is required`),
 			},
@@ -292,7 +310,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceRedisCloudActiveActiveSubscriptionRedis8(t, name),
+				ConfigFile: config.StaticFile("./activeactive/testdata/active_active_sub_redis8.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the subscription resource
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -452,7 +473,11 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 			},
 			{
 				// Checks if the changes in the creation plan are ignored.
-				Config: testAccResourceRedisCloudActiveActiveSubscriptionUpdateRedis8(t, name, "AWS"),
+				ConfigFile: config.StaticFile("./activeactive/testdata/subscription_update_redis8.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+					"cloud_provider":    config.StringVariable("AWS"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
@@ -491,14 +516,20 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 			},
 			{
 				// Checks if the changes to the payment_method are ignored.
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethod, name),
+				ConfigFile: config.StaticFile("./activeactive/testdata/aa_subscription_changed_payment_method.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 				),
 			},
 			{
 				// Checks if the payment_method and creation_plan block are ignored after the IMPORT operation.
-				Config:       testAccResourceRedisCloudActiveActiveSubscriptionImportRedis8(t, name),
+				ConfigFile: config.StaticFile("./activeactive/testdata/subscription_import_redis8.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+				},
 				ResourceName: resourceName,
 				ImportState:  true,
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
@@ -515,7 +546,11 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 			},
 			{
 				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
-				Config:       fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan, name, "GCP"),
+				ConfigFile: config.StaticFile("./activeactive/testdata/aa_subscription_no_creation_plan.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+					"cloud_provider":    config.StringVariable("GCP"),
+				},
 				ResourceName: resourceName,
 				ExpectError:  regexp.MustCompile(`Error: the "creation_plan" block is required`),
 			},
@@ -541,7 +576,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionContractPayment, name),
+				ConfigFile: config.StaticFile("./activeactive/testdata/aa_subscription_contract_payment.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -553,7 +591,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionContractPayment, updatedName),
+				ConfigFile: config.StaticFile("./activeactive/testdata/aa_subscription_contract_payment.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(updatedName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
@@ -581,7 +622,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionMarketplacePayment, name),
+				ConfigFile: config.StaticFile("./activeactive/testdata/aa_subscription_marketplace_payment.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -594,7 +638,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionMarketplacePayment, updatedName),
+				ConfigFile: config.StaticFile("./activeactive/testdata/aa_subscription_marketplace_payment.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(updatedName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
 				),
@@ -616,14 +663,22 @@ func TestAccResourceRedisCloudActiveActiveSubscription_PublicEndpointAccess(t *t
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointDisabled(t, name),
+				ConfigFile: config.StaticFile("./activeactive/testdata/public_endpoint_disabled.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+					"database_password": config.StringVariable("some-random-pass"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "false"),
 				),
 			},
 			{
-				Config: testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointEnabled(t, name),
+				ConfigFile: config.StaticFile("./activeactive/testdata/public_endpoint_enabled.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+					"database_password": config.StringVariable("some-random-pass"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
@@ -664,149 +719,6 @@ func testAccCheckActiveActiveSubscriptionDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan = `
-  
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-resource "rediscloud_active_active_subscription" "example" {
-	name = "%s"
-	payment_method_id = data.rediscloud_payment_method.card.id
-	cloud_provider = "%s"
-
-	maintenance_windows {
-		mode = "automatic"
-	}
-}
-
-data "rediscloud_active_active_subscription" "example" {
-	name = rediscloud_active_active_subscription.example.name
-}
-`
-
-const testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethod = `
-resource "rediscloud_active_active_subscription" "example" {
-	name = "%s"
-    payment_method = "marketplace"
-	cloud_provider = "AWS"
-
-	creation_plan {
-		memory_limit_in_gb = 1
-		quantity = 1
-		region {
-			region = "us-east-1"
-			networking_deployment_cidr = "192.168.0.0/24"
-			write_operations_per_second = 1000
-			read_operations_per_second = 1000
-		}
-		region {
-			region = "us-east-2"
-			networking_deployment_cidr = "10.0.1.0/24"
-			write_operations_per_second = 1000
-			read_operations_per_second = 1000
-		}
-	}
-}
-`
-
-const testAccResourceRedisCloudActiveActiveSubscriptionContractPayment = `
-
-resource "rediscloud_active_active_subscription" "example" {
-  	name = "%s"
-	cloud_provider = "AWS"
-  
-	creation_plan {
-	  	memory_limit_in_gb = 2
-	  	quantity = 1
-	  	region {
-			region = "us-east-1"
-			networking_deployment_cidr = "192.168.0.0/24"
-			write_operations_per_second = 1000
-			read_operations_per_second = 1000
-		}
-		region {
-			region = "us-east-2"
-			networking_deployment_cidr = "10.0.1.0/24"
-			write_operations_per_second = 1000
-			read_operations_per_second = 1000
-		}
-	}
-}
-`
-
-const testAccResourceRedisCloudActiveActiveSubscriptionMarketplacePayment = `
-
-resource "rediscloud_active_active_subscription" "example" {
-  name = "%s"
-  payment_method = "marketplace"
-
-  cloud_provider = "AWS"
-  creation_plan {
-    memory_limit_in_gb = 2
-    quantity = 1
-    region {
-		region = "us-east-1"
-		networking_deployment_cidr = "192.168.0.0/24"
-		write_operations_per_second = 1000
-		read_operations_per_second = 1000
-	}
-	region {
-		region = "us-east-2"
-		networking_deployment_cidr = "10.0.1.0/24"
-		write_operations_per_second = 1000
-		read_operations_per_second = 1000
-	}
-	}
-  }
-`
-
-func testAccResourceRedisCloudActiveActiveSubscriptionRedis7(t *testing.T, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/active_active_sub_redis7.tf")
-	return fmt.Sprintf(content, subscriptionName)
-}
-
-func testAccResourceRedisCloudActiveActiveSubscriptionRedis8(t *testing.T, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/active_active_sub_redis8.tf")
-	return fmt.Sprintf(content, subscriptionName)
-}
-
-func testAccResourceRedisCloudActiveActiveSubscriptionUpdateRedis7(t *testing.T, subscriptionName string, cloudProvider string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/subscription_update_redis7.tf")
-	return fmt.Sprintf(content, subscriptionName, cloudProvider)
-}
-
-func testAccResourceRedisCloudActiveActiveSubscriptionUpdateRedis8(t *testing.T, subscriptionName string, cloudProvider string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/subscription_update_redis8.tf")
-	return fmt.Sprintf(content, subscriptionName, cloudProvider)
-}
-
-func testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethodRedis7(t *testing.T, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/subscription_changed_payment_method_redis7.tf")
-	return fmt.Sprintf(content, subscriptionName)
-}
-
-func testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointDisabled(t *testing.T, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_disabled.tf")
-	return fmt.Sprintf(content, subscriptionName)
-}
-
-func testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointEnabled(t *testing.T, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_enabled.tf")
-	return fmt.Sprintf(content, subscriptionName)
-}
-
-func testAccResourceRedisCloudActiveActiveSubscriptionImportRedis7(t *testing.T, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/subscription_import_redis7.tf")
-	return fmt.Sprintf(content, subscriptionName)
-}
-
-func testAccResourceRedisCloudActiveActiveSubscriptionImportRedis8(t *testing.T, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/subscription_import_redis8.tf")
-	return fmt.Sprintf(content, subscriptionName)
-}
-
 // TestAccResourceRedisCloudActiveActiveSubscription_RemoveRedisVersion tests that removing
 // the redis_version attribute from an existing subscription does NOT force replacement.
 func TestAccResourceRedisCloudActiveActiveSubscription_RemoveRedisVersion(t *testing.T) {
@@ -825,7 +737,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_RemoveRedisVersion(t *tes
 		Steps: []resource.TestStep{
 			{
 				// Step 1: Create subscription WITH redis_version
-				Config: testAccResourceRedisCloudActiveActiveSubscriptionRedisVersionRemoveStep1(t, name),
+				ConfigFile: config.StaticFile("./activeactive/testdata/redis_version_remove_step1.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
@@ -843,7 +758,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_RemoveRedisVersion(t *tes
 			},
 			{
 				// Step 2: Remove redis_version from subscription - should NOT force replacement
-				Config: testAccResourceRedisCloudActiveActiveSubscriptionRedisVersionRemoveStep2(t, name),
+				ConfigFile: config.StaticFile("./activeactive/testdata/redis_version_remove_step2.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider", "AWS"),
@@ -864,14 +782,4 @@ func TestAccResourceRedisCloudActiveActiveSubscription_RemoveRedisVersion(t *tes
 			},
 		},
 	})
-}
-
-func testAccResourceRedisCloudActiveActiveSubscriptionRedisVersionRemoveStep1(t *testing.T, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/redis_version_remove_step1.tf")
-	return fmt.Sprintf(content, subscriptionName)
-}
-
-func testAccResourceRedisCloudActiveActiveSubscriptionRedisVersionRemoveStep2(t *testing.T, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/redis_version_remove_step2.tf")
-	return fmt.Sprintf(content, subscriptionName)
 }

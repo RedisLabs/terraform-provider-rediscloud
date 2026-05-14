@@ -8,12 +8,13 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-
 	pl "github.com/RedisLabs/rediscloud-go-api/service/privatelink"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 const testActiveActivePrivateLinkConfigFile = "./privatelink/testdata/active_active_private_link.tf"
@@ -32,9 +33,7 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 	subName := testRandomWithPrefix() + "-aa-private-link"
 	shareName := testRandomWithPrefix() + "-privatelink-aa"
 	password := acctest.RandString(20)
-
-	terraformConfig := getRedisActiveActivePrivateLinkConfigWithNames(t, subName, shareName, password)
-	terraformConfigWithoutPrivateLink := getRedisActiveActivePrivateLinkConfigWithoutPrivateLink(t, subName, password)
+	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -43,7 +42,13 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Step 1: Create everything including privatelink
 			{
-				Config: terraformConfig,
+				ConfigFile: config.StaticFile(testActiveActivePrivateLinkConfigFile),
+				ConfigVariables: config.Variables{
+					"subscription_name":  config.StringVariable(subName),
+					"cloud_account_name": config.StringVariable(exampleCloudAccountName),
+					"share_name":         config.StringVariable(shareName),
+					"database_password":  config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "subscription_id"),
@@ -69,13 +74,25 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 			},
 			// Step 2: Import test
 			{
+				ConfigFile: config.StaticFile(testActiveActivePrivateLinkConfigFile),
+				ConfigVariables: config.Variables{
+					"subscription_name":  config.StringVariable(subName),
+					"cloud_account_name": config.StringVariable(exampleCloudAccountName),
+					"share_name":         config.StringVariable(shareName),
+					"database_password":  config.StringVariable(password),
+				},
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 			// Step 3: Remove privatelink, verify deletion via API
 			{
-				Config: terraformConfigWithoutPrivateLink,
+				ConfigFile: config.StaticFile(testActiveActivePrivateLinkConfigWithoutPrivateLinkFile),
+				ConfigVariables: config.Variables{
+					"subscription_name":  config.StringVariable(subName),
+					"cloud_account_name": config.StringVariable(exampleCloudAccountName),
+					"database_password":  config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(subscriptionResourceName, "id"),
 					testAccCheckActiveActivePrivateLinkDeleted(subscriptionResourceName, regionsDataSourceName),
@@ -83,18 +100,6 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 			},
 		},
 	})
-}
-
-func getRedisActiveActivePrivateLinkConfigWithNames(t *testing.T, subName, shareName, password string) string {
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-	content := utils.GetTestConfig(t, testActiveActivePrivateLinkConfigFile)
-	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName, password)
-}
-
-func getRedisActiveActivePrivateLinkConfigWithoutPrivateLink(t *testing.T, subName, password string) string {
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-	content := utils.GetTestConfig(t, testActiveActivePrivateLinkConfigWithoutPrivateLinkFile)
-	return fmt.Sprintf(content, subName, exampleCloudAccountName, password)
 }
 
 func testAccCheckActiveActivePrivateLinkDeleted(subscriptionResourceName, regionsDataSourceName string) resource.TestCheckFunc {

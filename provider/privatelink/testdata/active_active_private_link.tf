@@ -1,8 +1,17 @@
-locals {
-  rediscloud_subscription_name       = "%s"
-  rediscloud_cloud_account           = "%s"
-  rediscloud_private_link_share_name = "%s"
-  rediscloud_database_password       = "%s"
+variable "subscription_name" {
+  type = string
+}
+
+variable "cloud_account_name" {
+  type = string
+}
+
+variable "share_name" {
+  type = string
+}
+
+variable "database_password" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
@@ -12,7 +21,7 @@ data "rediscloud_payment_method" "card" {
 
 
 resource "rediscloud_active_active_subscription" "aa_subscription" {
-  name              = local.rediscloud_subscription_name
+  name              = var.subscription_name
   payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider    = "AWS"
@@ -40,7 +49,7 @@ resource "rediscloud_active_active_subscription_database" "aa_database" {
   name                    = "db"
   memory_limit_in_gb      = 1
   global_data_persistence = "aof-every-1-second"
-  global_password         = local.rediscloud_database_password
+  global_password         = var.database_password
 }
 
 data "rediscloud_active_active_subscription_regions" "aa_regions_info" {
@@ -52,7 +61,7 @@ data "rediscloud_active_active_subscription_regions" "aa_regions_info" {
 resource "rediscloud_active_active_private_link" "aa_private_link" {
   subscription_id = rediscloud_active_active_subscription.aa_subscription.id
   region_id       = data.rediscloud_active_active_subscription_regions.aa_regions_info.regions[0].region_id
-  share_name      = "private_link testing"
+  share_name      = var.share_name
 
   principal {
     principal       = "123456789012"
@@ -70,7 +79,3 @@ data "rediscloud_active_active_private_link" "aa_private_link" {
   subscription_id = rediscloud_active_active_private_link.aa_private_link.subscription_id
   region_id       = data.rediscloud_active_active_subscription_regions.aa_regions_info.regions[0].region_id
 }
-
-# data "rediscloud_private_link_endpoint_script" "endpoint_script" {
-#   subscription_id = rediscloud_private_link.private_link.subscription_id
-# }

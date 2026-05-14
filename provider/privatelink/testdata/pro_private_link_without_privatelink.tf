@@ -1,7 +1,13 @@
-locals {
-  rediscloud_subscription_name = "%s"
-  rediscloud_cloud_account     = "%s"
-  rediscloud_database_password = "%s"
+variable "subscription_name" {
+  type = string
+}
+
+variable "cloud_account_name" {
+  type = string
+}
+
+variable "database_password" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
@@ -12,11 +18,11 @@ data "rediscloud_payment_method" "card" {
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
   provider_type            = "AWS"
-  name                     = local.rediscloud_cloud_account
+  name                     = var.cloud_account_name
 }
 
 resource "rediscloud_subscription" "pro_subscription" {
-  name              = local.rediscloud_subscription_name
+  name              = var.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
 
   cloud_provider {
@@ -42,7 +48,7 @@ resource "rediscloud_subscription_database" "pro_database" {
   subscription_id              = rediscloud_subscription.pro_subscription.id
   name                         = "db"
   memory_limit_in_gb           = 1
-  password                     = local.rediscloud_database_password
+  password                     = var.database_password
   protocol                     = "redis"
   data_persistence             = "none"
   throughput_measurement_by    = "operations-per-second"

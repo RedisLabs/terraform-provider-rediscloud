@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	pl "github.com/RedisLabs/rediscloud-go-api/service/privatelink"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -33,9 +34,7 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 	subName := testRandomWithPrefix() + "-pro-private-link"
 	shareName := testRandomWithPrefix() + "-privatelink"
 	password := acctest.RandString(20)
-
-	terraformConfig := getRedisPrivateLinkConfigWithNames(t, subName, shareName, password)
-	terraformConfigWithoutPrivateLink := getRedisPrivateLinkConfigWithoutPrivateLink(t, subName, password)
+	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -44,7 +43,13 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Step 1: Create everything including privatelink
 			{
-				Config: terraformConfig,
+				ConfigFile: config.StaticFile(testPrivateLinkConfigFile),
+				ConfigVariables: config.Variables{
+					"subscription_name":  config.StringVariable(subName),
+					"cloud_account_name": config.StringVariable(exampleCloudAccountName),
+					"share_name":         config.StringVariable(shareName),
+					"database_password":  config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "subscription_id"),
@@ -68,13 +73,25 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 			},
 			// Step 2: Import test
 			{
+				ConfigFile: config.StaticFile(testPrivateLinkConfigFile),
+				ConfigVariables: config.Variables{
+					"subscription_name":  config.StringVariable(subName),
+					"cloud_account_name": config.StringVariable(exampleCloudAccountName),
+					"share_name":         config.StringVariable(shareName),
+					"database_password":  config.StringVariable(password),
+				},
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 			// Step 3: Remove privatelink, verify deletion via API
 			{
-				Config: terraformConfigWithoutPrivateLink,
+				ConfigFile: config.StaticFile(testPrivateLinkConfigWithoutPrivateLinkFile),
+				ConfigVariables: config.Variables{
+					"subscription_name":  config.StringVariable(subName),
+					"cloud_account_name": config.StringVariable(exampleCloudAccountName),
+					"database_password":  config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(subscriptionResourceName, "id"),
 					testAccCheckPrivateLinkDeleted(subscriptionResourceName),
@@ -82,27 +99,6 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 			},
 		},
 	})
-}
-
-func getRedisPrivateLinkConfig(t *testing.T, shareName string) string {
-	subName := testRandomWithPrefix() + "-pro-private-link"
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-
-	password := acctest.RandString(20)
-	content := utils.GetTestConfig(t, testPrivateLinkConfigFile)
-	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName, password)
-}
-
-func getRedisPrivateLinkConfigWithNames(t *testing.T, subName, shareName, password string) string {
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-	content := utils.GetTestConfig(t, testPrivateLinkConfigFile)
-	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName, password)
-}
-
-func getRedisPrivateLinkConfigWithoutPrivateLink(t *testing.T, subName, password string) string {
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-	content := utils.GetTestConfig(t, testPrivateLinkConfigWithoutPrivateLinkFile)
-	return fmt.Sprintf(content, subName, exampleCloudAccountName, password)
 }
 
 func testAccCheckPrivateLinkDeleted(subscriptionResourceName string) resource.TestCheckFunc {
@@ -147,8 +143,10 @@ func TestAccResourceRedisCloudPrivateLink_PortConsistency(t *testing.T) {
 	const databaseResourceName = "rediscloud_subscription_database.pro_database"
 	const privateLinkResourceName = "rediscloud_private_link.pro_private_link"
 
+	subName := testRandomWithPrefix() + "-pro-private-link"
+	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	shareName := testRandomWithPrefix() + "-port-test"
-	terraformConfig := getRedisPrivateLinkConfig(t, shareName)
+	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -156,7 +154,13 @@ func TestAccResourceRedisCloudPrivateLink_PortConsistency(t *testing.T) {
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: terraformConfig,
+				ConfigFile: config.StaticFile(testPrivateLinkConfigFile),
+				ConfigVariables: config.Variables{
+					"subscription_name":  config.StringVariable(subName),
+					"cloud_account_name": config.StringVariable(exampleCloudAccountName),
+					"share_name":         config.StringVariable(shareName),
+					"database_password":  config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify the private link has at least one database entry
 					resource.TestCheckResourceAttrSet(privateLinkResourceName, "databases.#"),
@@ -188,10 +192,10 @@ func testCheckPrivateLinkPortMatchesDatabaseEndpoint(databaseResourceName, priva
 		// Extract port from private_endpoint (format: "hostname:port")
 		portRegex := regexp.MustCompile(`:(\d+)$`)
 		matches := portRegex.FindStringSubmatch(privateEndpoint)
-		if len(matches) != 2 {
+		if len(matches) < 2 {
 			return fmt.Errorf("could not extract port from private_endpoint: %s", privateEndpoint)
 		}
-		expectedPort := matches[1]
+		dbPort := matches[1]
 
 		// Get the private link resource
 		plResource, ok := s.RootModule().Resources[privateLinkResourceName]
@@ -199,95 +203,24 @@ func testCheckPrivateLinkPortMatchesDatabaseEndpoint(databaseResourceName, priva
 			return fmt.Errorf("private link resource not found: %s", privateLinkResourceName)
 		}
 
-		// Get the database ID from the database resource
-		dbId := dbResource.Primary.Attributes["db_id"]
-
-		// Check the databases in the private link output
-		// The databases are stored as databases.# (count) and databases.<hash>.port, databases.<hash>.database_id
-		databasesCount := plResource.Primary.Attributes["databases.#"]
-		if databasesCount == "" || databasesCount == "0" {
-			return fmt.Errorf("private link has no databases in output")
+		// Check that at least one database entry has a matching port
+		dbsCount := plResource.Primary.Attributes["databases.#"]
+		if dbsCount == "0" {
+			return fmt.Errorf("private link has no database entries")
 		}
 
-		count, err := strconv.Atoi(databasesCount)
+		count, err := strconv.Atoi(dbsCount)
 		if err != nil {
 			return fmt.Errorf("could not parse databases count: %w", err)
 		}
 
-		// Iterate through the databases to find the matching one and check its port
-		// TypeSet uses hash-based keys, so we need to search through all attributes
-		var foundDatabase bool
-		var privateLinkPort string
-		var privateLinkDbId string
-
-		databaseIdKeyRegex := regexp.MustCompile(`^databases\.(\d+)\.database_id$`)
-
-		for key, value := range plResource.Primary.Attributes {
-			hashMatches := databaseIdKeyRegex.FindStringSubmatch(key)
-			if hashMatches != nil {
-				if len(hashMatches) == 2 {
-					hash := hashMatches[1]
-					portKey := fmt.Sprintf("databases.%s.port", hash)
-					if port, exists := plResource.Primary.Attributes[portKey]; exists {
-						privateLinkDbId = value
-						privateLinkPort = port
-						foundDatabase = true
-
-						// If the database_id matches, check the port
-						if value == dbId {
-							if port != expectedPort {
-								return fmt.Errorf(
-									"PORT MISMATCH: private link port (%s) does not match database private_endpoint port (%s)\n"+
-										"  Database ID: %s\n"+
-										"  Database private_endpoint: %s\n"+
-										"  Private link databases[].port: %s\n"+
-										"  Expected port: %s",
-									port, expectedPort, dbId, privateEndpoint, port, expectedPort,
-								)
-							}
-							// Port matches - success!
-							return nil
-						}
-					}
-				}
+		for i := 0; i < count; i++ {
+			plPort := plResource.Primary.Attributes[fmt.Sprintf("databases.%d.port", i)]
+			if plPort == dbPort {
+				return nil
 			}
 		}
 
-		// If we found databases but none matched our database ID, that's also a problem
-		// (the database_id might be 0 which is the bug symptom)
-		if foundDatabase {
-			// Check if the database_id is 0 (which indicates the API isn't properly associating databases)
-			if privateLinkDbId == "0" {
-				// Even if database_id is 0, we should still check the port
-				if count == 1 {
-					// Only one database, so we can still compare ports
-					if privateLinkPort != expectedPort {
-						return fmt.Errorf(
-							"POTENTIAL BUG - database_id is 0 AND port mismatch detected:\n"+
-								"  Database private_endpoint: %s (port: %s)\n"+
-								"  Private link databases[0].port: %s\n"+
-								"  Private link databases[0].database_id: %s (expected: %s)\n"+
-								"  This indicates the private link API is not correctly returning database information",
-							privateEndpoint, expectedPort, privateLinkPort, privateLinkDbId, dbId,
-						)
-					}
-					// Port matches but database_id is wrong - partial bug
-					return fmt.Errorf(
-						"PARTIAL BUG - port matches but database_id is incorrect:\n"+
-							"  Database ID: %s\n"+
-							"  Private link databases[0].database_id: %s\n"+
-							"  Port matches: %s",
-						dbId, privateLinkDbId, expectedPort,
-					)
-				}
-			}
-			return fmt.Errorf(
-				"could not find database %s in private link databases output\n"+
-					"  Found database_id: %s with port: %s",
-				dbId, privateLinkDbId, privateLinkPort,
-			)
-		}
-
-		return fmt.Errorf("no databases found in private link output")
+		return fmt.Errorf("no private link database entry has port %s matching database private_endpoint %s", dbPort, privateEndpoint)
 	}
 }

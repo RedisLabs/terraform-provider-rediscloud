@@ -1,5 +1,5 @@
-locals {
-  rediscloud_subscription_name = "%s"
+variable "subscription_name" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
@@ -8,7 +8,7 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_active_active_subscription" "example" {
-  name              = local.rediscloud_subscription_name
+  name              = var.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider    = "AWS"
   # redis_version removed - should NOT force replacement
@@ -33,7 +33,7 @@ resource "rediscloud_active_active_subscription" "example" {
 
 resource "rediscloud_active_active_subscription_database" "example" {
   subscription_id         = rediscloud_active_active_subscription.example.id
-  name                    = local.rediscloud_subscription_name
+  name                    = var.subscription_name
   redis_version           = "7.4"
   dataset_size_in_gb      = 1
   global_data_persistence = "aof-every-1-second"

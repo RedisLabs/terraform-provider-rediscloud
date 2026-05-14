@@ -1,6 +1,9 @@
-locals {
-  cloud_account_name = "%s"
-  subscription_name  = "%s"
+variable "cloud_account_name" {
+  type = string
+}
+
+variable "subscription_name" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
@@ -11,12 +14,12 @@ data "rediscloud_payment_method" "card" {
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
   provider_type            = "AWS"
-  name                     = local.cloud_account_name
+  name                     = var.cloud_account_name
 }
 
 resource "rediscloud_subscription" "example" {
 
-  name              = local.subscription_name
+  name              = var.subscription_name
   payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage    = "ram"

@@ -1,7 +1,13 @@
-locals {
-  rediscloud_subscription_name = "%s"
-  rediscloud_cloud_account     = "%s"
-  rediscloud_database_password = "%s"
+variable "subscription_name" {
+  type = string
+}
+
+variable "cloud_account_name" {
+  type = string
+}
+
+variable "database_password" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
@@ -10,7 +16,7 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_active_active_subscription" "aa_subscription" {
-  name              = local.rediscloud_subscription_name
+  name              = var.subscription_name
   payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider    = "AWS"
@@ -38,7 +44,7 @@ resource "rediscloud_active_active_subscription_database" "aa_database" {
   name                    = "db"
   memory_limit_in_gb      = 1
   global_data_persistence = "aof-every-1-second"
-  global_password         = local.rediscloud_database_password
+  global_password         = var.database_password
 }
 
 # Keep regions data source - needed for verification

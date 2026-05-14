@@ -11,6 +11,7 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
@@ -42,7 +43,11 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceRedisCloudProSubscriptionRedis7(t, testCloudAccountName, name),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_redis7.tf"),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(testCloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
@@ -91,7 +96,12 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 			},
 			{
 				// Checks if the changes in the creation plan are ignored.
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, testCloudAccountName, name, "ram"),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_no_creation_plan.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"memory_storage":               config.StringVariable("ram"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "0"),
@@ -105,7 +115,11 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 			},
 			{
 				// Checks if the changes to the payment_method are ignored.
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionChangedPaymentMethod, testCloudAccountName, name),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_changed_payment_method.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 				),
@@ -128,7 +142,12 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 			},
 			{
 				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
-				Config:       fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, testCloudAccountName, name, "ram-and-flash"),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_no_creation_plan.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"memory_storage":               config.StringVariable("ram-and-flash"),
+				},
 				ResourceName: resourceName,
 				ExpectError:  regexp.MustCompile(`Error: the "creation_plan" block is required`),
 			},
@@ -153,7 +172,11 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceRedisCloudProSubscriptionRedis8(t, testCloudAccountName, name),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_redis8.tf"),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(testCloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
@@ -199,7 +222,12 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 			},
 			{
 				// Checks if the changes in the creation plan are ignored.
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, testCloudAccountName, name, "ram"),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_no_creation_plan.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"memory_storage":               config.StringVariable("ram"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "0"),
@@ -213,7 +241,11 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 			},
 			{
 				// Checks if the changes to the payment_method are ignored.
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionChangedPaymentMethod, testCloudAccountName, name),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_changed_payment_method.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 				),
@@ -236,7 +268,12 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 			},
 			{
 				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
-				Config:       fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, testCloudAccountName, name, "ram-and-flash"),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_no_creation_plan.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"memory_storage":               config.StringVariable("ram-and-flash"),
+				},
 				ResourceName: resourceName,
 				ExpectError:  regexp.MustCompile(`Error: the "creation_plan" block is required`),
 			},
@@ -258,7 +295,11 @@ func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *tes
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPreferredAZsModulesOptional, testCloudAccountName, name),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_preferred_azs_modules_optional.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
@@ -287,7 +328,11 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionContractPayment, testCloudAccountName, name),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_contract_payment.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -297,7 +342,11 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionContractPayment, testCloudAccountName, updatedName),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_contract_payment.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(updatedName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
@@ -326,7 +375,11 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, testCloudAccountName, name),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_marketplace_payment.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -335,7 +388,11 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, testCloudAccountName, updatedName),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_marketplace_payment.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(updatedName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
 				),
@@ -359,7 +416,11 @@ func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionWithRedisVersion, testCloudAccountName, name, ""),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_no_redis_version.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Take a snapshot of the ID
 					func(s *terraform.State) error {
@@ -370,7 +431,11 @@ func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionWithRedisVersion, testCloudAccountName, name, "redis_version = \"latest\""),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_redis_version_latest.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Take a snapshot of the ID
 					func(s *terraform.State) error {
@@ -446,7 +511,11 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, defaultMW),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_maintenance_windows_default.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
@@ -458,7 +527,11 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, autoMw),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_maintenance_windows_auto.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
@@ -468,7 +541,11 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, manualMw),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_maintenance_windows_manual.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "1"),
@@ -488,15 +565,27 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 				),
 			},
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, errorManualMw),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_maintenance_windows_error_manual.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				ExpectError: regexp.MustCompile("Must provide at least one maintenance window with manual maintenance mode"),
 			},
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, errorAutoMw),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_maintenance_windows_error_auto.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				ExpectError: regexp.MustCompile("Automatic mode cannot be set with a manual maintenance window"),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, multipleManualMw),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_maintenance_windows_manual_multiple.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "2"),
@@ -532,7 +621,11 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, autoMw),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_maintenance_windows_auto.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
@@ -559,14 +652,22 @@ func TestAccResourceRedisCloudProSubscription_PublicEndpointAccess(t *testing.T)
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPublicEndpointDisabled, testCloudAccountName, name),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_access_disabled.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "false"),
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPublicEndpointEnabled, testCloudAccountName, name),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_subscription_access_enabled.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
@@ -864,400 +965,4 @@ func testAccCheckProSubscriptionDestroy(s *terraform.State) error {
 	}
 
 	return nil
-}
-
-const testAccResourceRedisCloudProSubscriptionWithRedisVersion = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS" 
-  name = "%s"
-}
-
-resource "rediscloud_subscription" "test" {
-
-  name = "%s"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-  # redis_version here
-  %s
-
-  allowlist {
-    cidrs = ["192.168.0.0/16"]
-    security_group_ids = []
-  }
-
-  cloud_provider {
-    provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region = "eu-west-1"
-      networking_deployment_cidr = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
-    }
-  }
-
-  creation_plan {
-    dataset_size_in_gb = 1
-    quantity = 1
-    replication=false
-    support_oss_cluster_api=false
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-    modules = []
-  }
-}
-`
-
-const testAccResourceRedisCloudProSubscriptionPreferredAZsModulesOptional = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS" 
-  name = "%s"
-}
-
-resource "rediscloud_subscription" "example" {
-
-  name = "%s"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-
-  allowlist {
-    cidrs = ["192.168.0.0/16"]
-    security_group_ids = []
-  }
-
-  cloud_provider {
-    provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region = "eu-west-1"
-      networking_deployment_cidr = "10.0.0.0/24"
-    }
-  }
-
-  creation_plan {
-    dataset_size_in_gb = 1
-    quantity = 1
-    replication=false
-    support_oss_cluster_api=false
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-  }
-}
-`
-
-// TF config for provisioning a subscription without the creation_plan block.
-const testAccResourceRedisCloudProSubscriptionNoCreationPlan = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS"
-  name = "%s"
-}
-
-resource "rediscloud_subscription" "example" {
-
-  name = "%s"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "%s"
-
-  allowlist {
-    cidrs = ["192.168.0.0/16"]
-    security_group_ids = []
-  }
-
-  cloud_provider {
-    provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region = "eu-west-1"
-      networking_deployment_cidr = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
-    }
-  }
-}
-`
-
-const testAccResourceRedisCloudSubscriptionChangedPaymentMethod = `
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS" 
-  name = "%s"
-}
-
-resource "rediscloud_subscription" "example" {
-
-  name = "%s"
-  payment_method = "marketplace"
-  memory_storage = "ram"
-
-  allowlist {
-    cidrs = ["192.168.0.0/16"]
-    security_group_ids = []
-  }
-
-  cloud_provider {
-    provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region = "eu-west-1"
-      networking_deployment_cidr = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
-    }
-  }
-
-  creation_plan {
-    dataset_size_in_gb = 1
-    quantity = 1
-    replication=false
-    support_oss_cluster_api=false
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-    modules = ["RedisJSON", "RedisBloom"]
-  }
-}
-`
-
-const testAccResourceRedisCloudProSubscriptionContractPayment = `
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS" 
-  name = "%s"
-}
-
-resource "rediscloud_subscription" "example" {
-
-  name = "%s"
-  memory_storage = "ram"
-
-  allowlist {
-    cidrs = ["192.168.0.0/16"]
-    security_group_ids = []
-  }
-
-  cloud_provider {
-    provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region = "eu-west-1"
-      networking_deployment_cidr = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
-    }
-  }
-
-  creation_plan {
-    dataset_size_in_gb = 2
-    quantity = 1
-    replication=false
-    support_oss_cluster_api=false
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-    modules = []
-  }
-}
-`
-
-const testAccResourceRedisCloudSubscriptionMarketplacePayment = `
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS" 
-  name = "%s"
-}
-
-resource "rediscloud_subscription" "example" {
-
-  name = "%s"
-  memory_storage = "ram"
-  payment_method = "marketplace"
-
-  allowlist {
-    cidrs = ["192.168.0.0/16"]
-    security_group_ids = []
-  }
-
-  cloud_provider {
-    provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region = "eu-west-1"
-      networking_deployment_cidr = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
-    }
-  }
-
-  creation_plan {
-    dataset_size_in_gb = 2
-    quantity = 1
-    replication=false
-    support_oss_cluster_api=false
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-    modules = []
-  }
-}
-`
-
-const testAccResourceRedisCloudProSubscriptionMaintenanceWindows = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS" 
-  name = "%s"
-}
-
-resource "rediscloud_subscription" "example" {
-
-  name = "%s"
-  payment_method = "credit-card"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-
-  cloud_provider {
-    provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region = "eu-west-1"
-      networking_deployment_cidr = "10.0.24.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
-    }
-  }
-
-  creation_plan {
-    dataset_size_in_gb = 1
-    quantity = 1
-    replication=false
-    support_oss_cluster_api=false
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-    modules = ["RedisJSON", "RedisBloom"]
-  }
-
-  %s
-}
-
-data "rediscloud_subscription" "example" {
-	name = rediscloud_subscription.example.name
-}
-`
-
-const testAccResourceRedisCloudProSubscriptionPublicEndpointDisabled = `
-data "rediscloud_payment_method" "card" {
-  card_type         = "Visa"
-  last_four_numbers = "5556"
-}
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type            = "AWS"
-  name                     = "%s"
-}
-
-resource "rediscloud_subscription" "example" {
-  name                   = "%s"
-  payment_method         = "credit-card"
-  payment_method_id      = data.rediscloud_payment_method.card.id
-  memory_storage         = "ram"
-  public_endpoint_access = false
-
-  allowlist {
-    cidrs              = ["192.168.0.0/16"]
-    security_group_ids = []
-  }
-
-  cloud_provider {
-    provider         = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region                       = "eu-west-1"
-      networking_deployment_cidr   = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
-    }
-  }
-
-  creation_plan {
-    dataset_size_in_gb           = 1
-    quantity                     = 1
-    replication                  = false
-    support_oss_cluster_api      = false
-    throughput_measurement_by    = "operations-per-second"
-    throughput_measurement_value = 10000
-    modules                      = ["RedisJSON"]
-  }
-}
-`
-
-const testAccResourceRedisCloudProSubscriptionPublicEndpointEnabled = `
-data "rediscloud_payment_method" "card" {
-  card_type         = "Visa"
-  last_four_numbers = "5556"
-}
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type            = "AWS"
-  name                     = "%s"
-}
-
-resource "rediscloud_subscription" "example" {
-  name                   = "%s"
-  payment_method         = "credit-card"
-  payment_method_id      = data.rediscloud_payment_method.card.id
-  memory_storage         = "ram"
-  public_endpoint_access = true
-
-  allowlist {
-    cidrs              = ["192.168.0.0/16"]
-    security_group_ids = []
-  }
-
-  cloud_provider {
-    provider         = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region                       = "eu-west-1"
-      networking_deployment_cidr   = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
-    }
-  }
-
-  creation_plan {
-    dataset_size_in_gb           = 1
-    quantity                     = 1
-    replication                  = false
-    support_oss_cluster_api      = false
-    throughput_measurement_by    = "operations-per-second"
-    throughput_measurement_value = 10000
-    modules                      = ["RedisJSON"]
-  }
-}
-`
-
-func testAccResourceRedisCloudProSubscriptionRedis7(t *testing.T, cloudAccountName string, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_redis7.tf")
-	return fmt.Sprintf(content, cloudAccountName, subscriptionName)
-}
-
-func testAccResourceRedisCloudProSubscriptionRedis8(t *testing.T, cloudAccountName string, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_redis8.tf")
-	return fmt.Sprintf(content, cloudAccountName, subscriptionName)
 }

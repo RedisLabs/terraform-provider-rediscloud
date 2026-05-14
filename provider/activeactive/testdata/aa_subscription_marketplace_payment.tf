@@ -1,0 +1,26 @@
+variable "subscription_name" {
+  type = string
+}
+
+resource "rediscloud_active_active_subscription" "example" {
+  name           = var.subscription_name
+  payment_method = "marketplace"
+  cloud_provider = "AWS"
+
+  creation_plan {
+    memory_limit_in_gb = 2
+    quantity           = 1
+    region {
+      region                      = "us-east-1"
+      networking_deployment_cidr  = "192.168.0.0/24"
+      write_operations_per_second = 1000
+      read_operations_per_second  = 1000
+    }
+    region {
+      region                      = "us-east-2"
+      networking_deployment_cidr  = "10.0.1.0/24"
+      write_operations_per_second = 1000
+      read_operations_per_second  = 1000
+    }
+  }
+}

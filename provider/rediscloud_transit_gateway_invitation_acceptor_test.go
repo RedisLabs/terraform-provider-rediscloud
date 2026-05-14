@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -44,9 +45,11 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 		CheckDestroy: testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./transitgateway/testdata/pro_transit_gateway_invitation_acceptor.tf"),
-					subscriptionName, testAwsRegion),
+				ConfigFile: config.StaticFile("./transitgateway/testdata/pro_transit_gateway_invitation_acceptor.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"aws_region":        config.StringVariable(testAwsRegion),
+				},
 			},
 			{
 				RefreshState: true,
@@ -76,9 +79,11 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 				),
 			},
 			{
-				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./transitgateway/testdata/pro_transit_gateway_route_update.tf"),
-					subscriptionName, testAwsRegion),
+				ConfigFile: config.StaticFile("./transitgateway/testdata/pro_transit_gateway_route_update.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"aws_region":        config.StringVariable(testAwsRegion),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(routeResourceName, "cidrs.#", "2"),
 					resource.TestCheckResourceAttr(routeResourceName, "cidrs.0", "10.10.20.0/24"),

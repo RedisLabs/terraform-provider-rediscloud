@@ -28,14 +28,11 @@ func TestAccResourceRedisCloudAclRole_CRUDI(t *testing.T) {
 	testRoleName := prefix + "-test-role"
 	testRoleNameUpdated := testRoleName + "-updated"
 
-	proSubBoilerPlate := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_boilerplate.tf")
-	proSubBoilerPlateFormatted := fmt.Sprintf(proSubBoilerPlate, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword)
-
-	testCreateTerraform := proSubBoilerPlateFormatted + testAccResourceRedisCloudProDatabaseAcl +
+	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabaseAcl, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRule, exampleRuleName) +
 		fmt.Sprintf(testRole, testRoleName)
 
-	testUpdateTerraform := proSubBoilerPlateFormatted + testAccResourceRedisCloudProDatabaseAcl +
+	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabaseAcl, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRule, exampleRuleName) +
 		fmt.Sprintf(testRole, testRoleNameUpdated)
 

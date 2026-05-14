@@ -1,10 +1,10 @@
 package provider
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
@@ -22,16 +22,18 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	subscriptionName := testRandomWithPrefix()
 
-	content := utils.GetTestConfig(t, "./pro/testdata/pro_database_data_source.tf")
-	config := fmt.Sprintf(content, testCloudAccountName, subscriptionName, password)
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: config,
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_data_source.tf"),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(testCloudAccountName),
+					"subscription_name":  config.StringVariable(subscriptionName),
+					"database_password":  config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(dataSourceById, "db_id"),
 					resource.TestCheckResourceAttr(dataSourceById, "name", "tf-database"),

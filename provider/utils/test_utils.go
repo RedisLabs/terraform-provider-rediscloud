@@ -45,15 +45,6 @@ func AccRequiresEnvVar(t *testing.T, envVarName string) string {
 	return envVarValue
 }
 
-func GetTestConfig(t *testing.T, testFile string) string {
-	content, err := os.ReadFile(testFile)
-	if err != nil {
-		t.Fatalf("failed to read file: %v", err)
-	}
-
-	return string(content)
-}
-
 // TestResourcePrefix returns the prefix used for all test resource names.
 // Reads TEST_RESOURCE_PREFIX env var; defaults to "tf-test".
 func TestResourcePrefix() string {

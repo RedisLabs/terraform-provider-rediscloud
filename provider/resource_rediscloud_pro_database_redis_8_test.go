@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -35,7 +36,12 @@ func TestAccResourceRedisCloudProDatabase_Redis8(t *testing.T) {
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: getRedis8DatabaseConfig(t, testCloudAccountName, name, password),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_redis_8.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"rediscloud_database_password": config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -118,7 +124,12 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 		Steps: []resource.TestStep{
 			// Test database and replica database creation
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_with_replica.tf"), testCloudAccountName, name, password),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_ram_and_flash_database_redis_8_with_replica.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"rediscloud_database_password": config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -185,7 +196,11 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 			},
 			// Test database is updated successfully
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_update.tf"), testCloudAccountName, name),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_ram_and_flash_database_redis_8_update.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example-updated"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -212,14 +227,23 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 			},
 			// Test that alerts are deleted
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_update_destroy_alerts.tf"), testCloudAccountName, name, password),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_ram_and_flash_database_redis_8_update_destroy_alerts.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"rediscloud_database_password": config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "alert.#", "0"),
 				),
 			},
 			// Test that a 32-character password is generated when no password is provided
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_no_password.tf"), testCloudAccountName, name),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_ram_and_flash_database_redis_8_no_password.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.no_password_database", "ram_percentage", "20"),
 					func(s *terraform.State) error {
@@ -262,7 +286,12 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Test database and replica database creation with Redis 7.2
 			{
-				Config: getRedis7DatabaseConfig(t, testCloudAccountName, name, password),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_redis_7.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"rediscloud_database_password": config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -322,7 +351,12 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 			},
 			// Test database is updated successfully to Redis 8.0
 			{
-				Config: getRedis8DatabaseConfig(t, testCloudAccountName, name, password),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_redis_8.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"rediscloud_database_password": config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.2"),
 				),
@@ -345,24 +379,14 @@ func TestAccResourceRedisCloudProDatabase_Redis8_ModulesBlocked(t *testing.T) {
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      getRedis8WithModulesConfig(t, testCloudAccountName, name, password),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_redis_8_with_modules.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"rediscloud_database_password": config.StringVariable(password),
+				},
 				ExpectError: regexp.MustCompile(`"modules" cannot be explicitly set for Redis version 8\.0 as modules are bundled by default`),
 			},
 		},
 	})
-}
-
-func getRedis7DatabaseConfig(t *testing.T, cloudAccountName, subscriptionName, password string) string {
-	content := utils.GetTestConfig(t, "./pro/testdata/pro_database_redis_7.tf")
-	return fmt.Sprintf(content, cloudAccountName, subscriptionName, password)
-}
-
-func getRedis8DatabaseConfig(t *testing.T, cloudAccountName, subscriptionName, password string) string {
-	content := utils.GetTestConfig(t, "./pro/testdata/pro_database_redis_8.tf")
-	return fmt.Sprintf(content, cloudAccountName, subscriptionName, password)
-}
-
-func getRedis8WithModulesConfig(t *testing.T, cloudAccountName, subscriptionName, password string) string {
-	content := utils.GetTestConfig(t, "./pro/testdata/pro_database_redis_8_with_modules.tf")
-	return fmt.Sprintf(content, cloudAccountName, subscriptionName, password)
 }

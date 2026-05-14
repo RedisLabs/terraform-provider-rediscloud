@@ -1,9 +1,9 @@
 package provider
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
@@ -26,16 +26,17 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PrivateAccess(t *t
 	password := acctest.RandString(20)
 	subscriptionName := testRandomWithPrefix()
 
-	contentDisabled := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_disabled_default_source_ips.tf")
-	configDisabled := fmt.Sprintf(contentDisabled, subscriptionName, password)
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: configDisabled,
+				ConfigFile: config.StaticFile("./activeactive/testdata/public_endpoint_disabled_default_source_ips.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_password": config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify the subscription has public_endpoint_access disabled
 					resource.TestCheckResourceAttr("rediscloud_active_active_subscription.example", "public_endpoint_access", "false"),
@@ -72,16 +73,17 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PublicAccess(t *te
 	password := acctest.RandString(20)
 	subscriptionName := testRandomWithPrefix()
 
-	contentEnabled := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_enabled_default_source_ips.tf")
-	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: configEnabled,
+				ConfigFile: config.StaticFile("./activeactive/testdata/public_endpoint_enabled_default_source_ips.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_password": config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify the subscription has public_endpoint_access enabled
 					resource.TestCheckResourceAttr("rediscloud_active_active_subscription.example", "public_endpoint_access", "true"),
@@ -112,19 +114,17 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) 
 	password := acctest.RandString(20)
 	subscriptionName := testRandomWithPrefix()
 
-	contentDisabled := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_disabled.tf")
-	configDisabled := fmt.Sprintf(contentDisabled, subscriptionName, password)
-
-	contentEnabled := utils.GetTestConfig(t, "./activeactive/testdata/public_endpoint_enabled.tf")
-	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: configDisabled,
+				ConfigFile: config.StaticFile("./activeactive/testdata/public_endpoint_disabled.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_password": config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify the subscription has public_endpoint_access disabled
 					resource.TestCheckResourceAttr("rediscloud_active_active_subscription.example", "public_endpoint_access", "false"),
@@ -161,7 +161,11 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) 
 				),
 			},
 			{
-				Config: configEnabled,
+				ConfigFile: config.StaticFile("./activeactive/testdata/public_endpoint_enabled.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_password": config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify the subscription has public_endpoint_access enabled
 					resource.TestCheckResourceAttr("rediscloud_active_active_subscription.example", "public_endpoint_access", "true"),

@@ -1,7 +1,13 @@
-locals {
-  rediscloud_cloud_account     = "%s"
-  rediscloud_subscription_name = "%s"
-  rediscloud_password          = "%s"
+variable "cloud_account_name" {
+  type = string
+}
+
+variable "subscription_name" {
+  type = string
+}
+
+variable "database_password" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
@@ -12,10 +18,11 @@ data "rediscloud_payment_method" "card" {
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
   provider_type            = "AWS"
-  name                     = local.rediscloud_cloud_account
+  name                     = var.cloud_account_name
 }
+
 resource "rediscloud_subscription" "example" {
-  name              = local.rediscloud_subscription_name
+  name              = var.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage    = "ram"
   cloud_provider {
@@ -37,6 +44,7 @@ resource "rediscloud_subscription" "example" {
     modules                      = ["RediSearch"]
   }
 }
+
 resource "rediscloud_subscription_database" "example" {
   subscription_id              = rediscloud_subscription.example.id
   name                         = "tf-database"
@@ -45,7 +53,7 @@ resource "rediscloud_subscription_database" "example" {
   data_persistence             = "none"
   throughput_measurement_by    = "operations-per-second"
   throughput_measurement_value = 1000
-  password                     = local.rediscloud_password
+  password                     = var.database_password
   support_oss_cluster_api      = true
   replication                  = false
   enable_default_user          = true

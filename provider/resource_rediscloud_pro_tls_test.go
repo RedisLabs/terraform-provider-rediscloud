@@ -11,6 +11,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -41,7 +42,14 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, testCloudAccountName, name, 1, password, sslCertificate),
+				ConfigFile: config.StaticFile("./pro/testdata/tls/tls_with_ssl_cert.tf"),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(testCloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+					"dataset_size_in_gb": config.IntegerVariable(1),
+					"password":           config.StringVariable(password),
+					"ssl_certificate":    config.StringVariable(sslCertificate),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(subscriptionName, "name", name),
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
@@ -90,7 +98,14 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 			},
 			// Ensure that SSL users can upgrade to TLS
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndTlsCert, testCloudAccountName, name, 1, password, sslCertificate),
+				ConfigFile: config.StaticFile("./pro/testdata/tls/tls_with_tls_cert.tf"),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(testCloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+					"dataset_size_in_gb": config.IntegerVariable(1),
+					"password":           config.StringVariable(password),
+					"ssl_certificate":    config.StringVariable(sslCertificate),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(subscriptionName, "name", name),
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
@@ -104,7 +119,13 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 			},
 			// And that mTLS can be switched off altogether
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndNoCert, testCloudAccountName, name, 1, password),
+				ConfigFile: config.StaticFile("./pro/testdata/tls/tls_no_cert.tf"),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(testCloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+					"dataset_size_in_gb": config.IntegerVariable(1),
+					"password":           config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(subscriptionName, "name", name),
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
@@ -145,7 +166,13 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndWithoutCert, testCloudAccountName, name, 1, password),
+				ConfigFile: config.StaticFile("./pro/testdata/tls/tls_enabled_without_cert.tf"),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(testCloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+					"dataset_size_in_gb": config.IntegerVariable(1),
+					"password":           config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(subscriptionName, "name", name),
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
@@ -223,7 +250,14 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, testCloudAccountName, name, 1, password, invalidSslCertificate),
+				ConfigFile: config.StaticFile("./pro/testdata/tls/tls_with_ssl_cert.tf"),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(testCloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+					"dataset_size_in_gb": config.IntegerVariable(1),
+					"password":           config.StringVariable(password),
+					"ssl_certificate":    config.StringVariable(invalidSslCertificate),
+				},
 				ExpectError: regexp.MustCompile("Error: 400 BAD_REQUEST - DATABASE_INVALID_CERT: Database certificate is invalid"),
 			},
 		},
@@ -248,7 +282,14 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseAndDisabledTlsAn
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithoutEnableTlsAndWithCert, testCloudAccountName, name, 1, password, invalidSslCertificate),
+				ConfigFile: config.StaticFile("./pro/testdata/tls/tls_disabled_with_cert.tf"),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(testCloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+					"dataset_size_in_gb": config.IntegerVariable(1),
+					"password":           config.StringVariable(password),
+					"ssl_certificate":    config.StringVariable(invalidSslCertificate),
+				},
 				ExpectError: regexp.MustCompile("Error: 400 BAD_REQUEST - DATABASE_INVALID_CERT: Database certificate is invalid"),
 			},
 		},
@@ -273,7 +314,14 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithoutEnableTlsAndTlsCert(t
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudWithoutEnableTlsAndWithTlsCert, testCloudAccountName, name, 1, password, sslCertificate),
+				ConfigFile: config.StaticFile("./pro/testdata/tls/tls_disabled_with_tls_cert.tf"),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(testCloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+					"dataset_size_in_gb": config.IntegerVariable(1),
+					"password":           config.StringVariable(password),
+					"ssl_certificate":    config.StringVariable(sslCertificate),
+				},
 				ExpectError: regexp.MustCompile("TLS certificates may not be provided while enable_tls is false"),
 			},
 		},
@@ -297,7 +345,15 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithSslCertAndTlsCert(t *tes
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(bothSslAndTls, testCloudAccountName, name, 1, password, sslCertificate, sslCertificate),
+				ConfigFile: config.StaticFile("./pro/testdata/tls/tls_both_ssl_and_tls.tf"),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(testCloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+					"dataset_size_in_gb": config.IntegerVariable(1),
+					"password":           config.StringVariable(password),
+					"ssl_certificate":    config.StringVariable(sslCertificate),
+					"tls_certificate":    config.StringVariable(sslCertificate),
+				},
 				ExpectError: regexp.MustCompile("Conflicting configuration arguments"),
 			},
 		},
@@ -326,7 +382,14 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndTlsCert, testCloudAccountName, name, 1, password, sslCertificate),
+				ConfigFile: config.StaticFile("./pro/testdata/tls/tls_with_tls_cert.tf"),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(testCloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+					"dataset_size_in_gb": config.IntegerVariable(1),
+					"password":           config.StringVariable(password),
+					"ssl_certificate":    config.StringVariable(sslCertificate),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(subscriptionName, "name", name),
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
@@ -382,179 +445,3 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 		},
 	})
 }
-
-const subscriptionBoilerplate = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS" 
-  name = "%s"
-}
-
-resource "rediscloud_subscription" "example" {
-
-  name = "%s"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-
-  allowlist {
-    cidrs = ["192.168.0.0/16"]
-	security_group_ids = []
-  }
-
-  cloud_provider {
-    provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region = "eu-west-1"
-      networking_deployment_cidr = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
-    }
-  }
-
-  creation_plan {
-    dataset_size_in_gb = 1
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 1000
-    quantity = 1
-    replication=false
-    support_oss_cluster_api=false
-    modules = []
-  }
-}
-`
-
-const testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert = subscriptionBoilerplate + `
-
-resource "rediscloud_subscription_database" "example" {
-  subscription_id = rediscloud_subscription.example.id
-  name = "tf-database"
-  protocol = "redis"
-  dataset_size_in_gb = %d
-  support_oss_cluster_api = true
-  data_persistence = "none"
-  replication = false
-  throughput_measurement_by = "operations-per-second"
-  password = "%s"
-  throughput_measurement_value = 10000
-  source_ips = ["10.0.0.0/8"]
-  enable_tls = true
-  client_ssl_certificate = "%s"
-}
-`
-
-const testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndWithoutCert = subscriptionBoilerplate + `
-
-resource "rediscloud_subscription_database" "example" {
-  subscription_id = rediscloud_subscription.example.id
-  name = "tf-database"
-  protocol = "redis"
-  dataset_size_in_gb = %d
-  support_oss_cluster_api = true
-  data_persistence = "none"
-  replication = false
-  throughput_measurement_by = "operations-per-second"
-  password = "%s"
-  throughput_measurement_value = 10000
-  source_ips = ["10.0.0.0/8"]
-  enable_tls = true
-}
-`
-
-const testAccResourceRedisCloudSubscriptionOneDbWithoutEnableTlsAndWithCert = subscriptionBoilerplate + `
-
-resource "rediscloud_subscription_database" "example" {
-  subscription_id = rediscloud_subscription.example.id
-  name = "tf-database"
-  protocol = "redis"
-  dataset_size_in_gb = %d
-  support_oss_cluster_api = true
-  data_persistence = "none"
-  replication = false
-  throughput_measurement_by = "operations-per-second"
-  password = "%s"
-  throughput_measurement_value = 10000
-  source_ips = ["10.0.0.0/8"]
-  client_ssl_certificate = "%s"
-}
-`
-
-const testAccResourceRedisCloudWithoutEnableTlsAndWithTlsCert = subscriptionBoilerplate + `
-
-resource "rediscloud_subscription_database" "example" {
-  subscription_id = rediscloud_subscription.example.id
-  name = "tf-database"
-  protocol = "redis"
-  dataset_size_in_gb = %d
-  support_oss_cluster_api = true
-  data_persistence = "none"
-  replication = false
-  throughput_measurement_by = "operations-per-second"
-  password = "%s"
-  throughput_measurement_value = 10000
-  source_ips = ["10.0.0.0/8"]
-  enable_tls = false
-  client_tls_certificates = ["%s"]
-}
-`
-
-const bothSslAndTls = subscriptionBoilerplate + `
-
-resource "rediscloud_subscription_database" "example" {
-  subscription_id = rediscloud_subscription.example.id
-  name = "tf-database"
-  protocol = "redis"
-  dataset_size_in_gb = %d
-  support_oss_cluster_api = true
-  data_persistence = "none"
-  replication = false
-  throughput_measurement_by = "operations-per-second"
-  password = "%s"
-  throughput_measurement_value = 10000
-  source_ips = ["10.0.0.0/8"]
-  enable_tls = true
-  client_ssl_certificate = "%s"
-  client_tls_certificates = ["%s"]
-}
-`
-
-const testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndTlsCert = subscriptionBoilerplate + `
-
-resource "rediscloud_subscription_database" "example" {
-  subscription_id = rediscloud_subscription.example.id
-  name = "tf-database"
-  protocol = "redis"
-  dataset_size_in_gb = %d
-  support_oss_cluster_api = true
-  data_persistence = "none"
-  replication = false
-  throughput_measurement_by = "operations-per-second"
-  password = "%s"
-  throughput_measurement_value = 10000
-  source_ips = ["10.0.0.0/8"]
-  enable_tls = true
-  client_tls_certificates = ["%s"]
-}
-`
-
-const testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndNoCert = subscriptionBoilerplate + `
-
-resource "rediscloud_subscription_database" "example" {
-  subscription_id = rediscloud_subscription.example.id
-  name = "tf-database"
-  protocol = "redis"
-  dataset_size_in_gb = %d
-  support_oss_cluster_api = true
-  data_persistence = "none"
-  replication = false
-  throughput_measurement_by = "operations-per-second"
-  password = "%s"
-  throughput_measurement_value = 10000
-  source_ips = ["10.0.0.0/8"]
-  enable_tls = true
-}
-`

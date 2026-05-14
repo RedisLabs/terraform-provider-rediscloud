@@ -1,9 +1,9 @@
-locals {
-  subscription_name = "%s"
+variable "subscription_name" {
+  type = string
 }
 
 resource "rediscloud_active_active_subscription" "example" {
-  name           = local.subscription_name
+  name           = var.subscription_name
   payment_method = "marketplace"
   cloud_provider = "AWS"
   redis_version  = "7.4"

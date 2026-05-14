@@ -38,7 +38,12 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Test database and replica database creation
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_with_replica.tf"), testCloudAccountName, name, password),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_with_replica.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"rediscloud_database_password": config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -106,7 +111,11 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 			},
 			// Test database is updated successfully
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_update.tf"), testCloudAccountName, name),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_update.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example-updated"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -136,14 +145,22 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 			},
 			// Test that alerts are deleted
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_update_destroy_alerts.tf"), testCloudAccountName, name),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_update_destroy_alerts.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "alert.#", "0"),
 				),
 			},
 			// Test that a 32-character password is generated when no password is provided
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_no_password.tf"), testCloudAccountName, name),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_no_password.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					func(s *terraform.State) error {
 						is := s.RootModule().Resources["rediscloud_subscription_database.no_password_database"].Primary
@@ -208,7 +225,11 @@ func TestAccResourceRedisCloudProDatabase_timeUtcRequiresValidInterval(t *testin
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_invalid_time_utc.tf"), testCloudAccountName, name),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_invalid_time_utc.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+				},
 				ExpectError: regexp.MustCompile("unexpected value at remote_backup\\.0\\.time_utc - time_utc can only be set when interval is either every-24-hours or every-12-hours"),
 			},
 		},
@@ -231,7 +252,12 @@ func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_multi_modules.tf"), testCloudAccountName, name, dbName),
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_multi_modules.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"database_name":                config.StringVariable(dbName),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", dbName),
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "2"),
