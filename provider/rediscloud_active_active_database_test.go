@@ -41,7 +41,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 				ConfigFile: config.StaticFile("./activeactive/testdata/database_crudi_create.tf"),
 				ConfigVariables: config.Variables{
 					"subscription_name": config.StringVariable(subscriptionName),
-					"databaes_name":     config.StringVariable(databaseName),
+					"database_name":     config.StringVariable(databaseName),
 					"password":          config.StringVariable(password),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
