@@ -36,6 +36,9 @@ vendor
 .claude/
 CLAUDE.md
 
+# VCR cassettes (contain staging URLs, recorded locally per developer)
+**/testvcr/cassettes/
+
 # Test exclusions
 !command/test-fixtures/**/*.tfstate
 !command/test-fixtures/**/.terraform/

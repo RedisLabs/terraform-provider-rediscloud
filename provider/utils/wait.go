@@ -21,8 +21,8 @@ func WaitForSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiC
 		Pending:      []string{subscriptions.SubscriptionStatusPending},
 		Target:       []string{subscriptions.SubscriptionStatusActive},
 		Timeout:      SafetyTimeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        PollDelay,
+		PollInterval: PollInterval,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for subscription %d to be %s", id, subscriptions.SubscriptionStatusActive)
@@ -94,8 +94,8 @@ func WaitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.A
 		},
 		Target:       []string{databases.StatusActive},
 		Timeout:      SafetyTimeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        PollDelay,
+		PollInterval: PollInterval,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for database %d to be active", id)
@@ -122,8 +122,8 @@ func WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx context.Context,
 		Pending:      []string{"provisioning"},
 		Target:       []string{"available"},
 		Timeout:      TransitGatewayProvisioningTimeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        PollDelay,
+		PollInterval: PollInterval,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for Active-Active Transit Gateway resource to be available for subscription %d, region %d", subId, regionId)
@@ -192,8 +192,8 @@ func WaitForTransitGatewayAttachmentToBeAvailable(
 		Pending:      transitGatewayAttachmentPendingStates,
 		Target:       []string{TransitGatewayAttachmentStatusAvailable},
 		Timeout:      TransitGatewayProvisioningTimeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        PollDelay,
+		PollInterval: PollInterval,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for Transit Gateway attachment to be available for subscription %d, tgw %d", subId, tgwId)
@@ -255,8 +255,8 @@ func WaitForActiveActiveTransitGatewayAttachmentToBeAvailable(
 		Pending:      transitGatewayAttachmentPendingStates,
 		Target:       []string{TransitGatewayAttachmentStatusAvailable},
 		Timeout:      TransitGatewayProvisioningTimeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        PollDelay,
+		PollInterval: PollInterval,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for Active-Active Transit Gateway attachment to be available for subscription %d, region %d, tgw %d", subId, regionId, tgwId)
@@ -309,8 +309,8 @@ func WaitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, ap
 		Pending:      []string{subscriptions.SubscriptionStatusPending},
 		Target:       []string{subscriptions.SubscriptionStatusEncryptionKeyPending, subscriptions.SubscriptionStatusActive},
 		Timeout:      SafetyTimeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        PollDelay,
+		PollInterval: PollInterval,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for subscription %d to be %s", id, subscriptions.SubscriptionStatusEncryptionKeyPending)

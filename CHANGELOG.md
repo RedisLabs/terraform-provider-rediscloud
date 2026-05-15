@@ -16,6 +16,12 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 ## Fixed
 - `rediscloud_active_active_subscription_database`: Changing the database `name` attribute no longer causes the resource to be destroyed and recreated.
 
+# Unreleased
+
+## Changed
+- CI: Added VCR support for recording and replaying API interactions in acceptance tests, with the passwordless Pro database tests as the first to use it.
+
+
 # 2.15.0 (28th April 2026)
 
 ## Added
