@@ -17,7 +17,7 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_active_active_subscription" "test" {
-  name              = local.subscription_name
+  name              = var.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider    = "AWS"
 
@@ -41,9 +41,9 @@ resource "rediscloud_active_active_subscription" "test" {
 
 resource "rediscloud_active_active_subscription_database" "test" {
   subscription_id            = rediscloud_active_active_subscription.test.id
-  name                       = local.database_name
+  name                       = var.database_name
   dataset_size_in_gb         = 1
-  global_password            = local.password
+  global_password            = var.password
   global_enable_default_user = true
 
   # us-east-1: explicitly true
