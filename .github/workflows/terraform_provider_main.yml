@@ -30,7 +30,7 @@ env:
   TEST_RESOURCE_PREFIX: "tf-ci-main-${{ github.run_number }}"
 
 concurrency:
-  group: <span class="math-inline">\{\{ github\.workflow \}\}\-</span>{{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
