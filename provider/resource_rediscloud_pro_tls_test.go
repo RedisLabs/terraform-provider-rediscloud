@@ -11,9 +11,9 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 var sslCertificate = "-----BEGIN CERTIFICATE-----\\nMIIFYzCCA0ugAwIBAgIUSy/xBxWLHmzVkfsC7GeF/fYzIaUwDQYJKoZIhvcNAQEL\\nBQAwQDELMAkGA1UEBhMCR0IxDzANBgNVBAgMBkxvbmRvbjEPMA0GA1UEBwwGTG9u\\nZG9uMQ8wDQYDVQQKDAZPQyBMdGQwIBcNMjQwNzAzMTQzMjI4WhgPMzAwNDA5MDQx\\nNDMyMjhaMEAxCzAJBgNVBAYTAkdCMQ8wDQYDVQQIDAZMb25kb24xDzANBgNVBAcM\\nBkxvbmRvbjEPMA0GA1UECgwGT0MgTHRkMIICIjANBgkqhkiG9w0BAQEFAAOCAg8A\\nMIICCgKCAgEAmxpumNhDKi74Q0HsJ/2/V1WlpMPwuiquYklw9MQmmvYDP1peQ6hu\\nH1dMAg/dw59r0r3S/AOWReJNT6WWQnlXbWXyHbAILJfeFXweZOh3A99ei7YKEtB1\\n4wLjWypIYmtcvFRgXTo6kayBy1pBBKPJ0sl+I8UQ+StRB/cHfMoQy07Cx0TMhJPd\\nZH3OTlyPgdIsZ+CNr5YK8T9MmyExzOuA3yFB03Gd2SZxD4M3hbQQefsX8v6HqJSp\\nDe7wEvC083K7FxpXFzckamUatuQ5TV6TQERaFCoMYXTJUchIc56boRUthOhU56Tl\\n8ozcxria0KB930tyjd6fIT97Yctzth+ZVCIzp0U16q2jBYPQhjHU3C4rtVInFaN2\\nl/NDTAt3sCo6pAxVAw6ovmdRRZWZaiDm5Gx45aNRpcz9UHw0kjkG2HPW+PiZoaeQ\\nRcUTLOfr+Z7SDIBlyBNwzNt8j6s88SDTin9tp5oNL/WnCtNLkjf9SjN+nj3nxopW\\n9s7ocjV3nbBwfODI/t0u5yVwmM/xvrI1lail7IXwqHV2v1DTnh5BELstw+8i9NI0\\nj1dhIVQhwzsu5tgwQig8iXQTg6/kVxNnMgcUQdEJckk3aonjECOCJjs9aDULAbA1\\n9mcZnx57WeugJj8eMBeixIoRzHJcYTx92Mcrr0hUHi+OmIxTpu7ydRMCAwEAAaNT\\nMFEwHQYDVR0OBBYEFNA3DgT/I4yju8Im0fKb9u08WiPUMB8GA1UdIwQYMBaAFNA3\\nDgT/I4yju8Im0fKb9u08WiPUMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQEL\\nBQADggIBAIIwf2fKxLpgh7kTmMRI7zHPlzwEMo2xzgjT1JifpMTHjv+xusdrYdRZ\\nN92vLy3BZ89XcdlVuYOQYdrrniWZ9hDk/lWP5PyAvyFkVAMijmwcySW5BioddDfc\\n7augJmaP2X8Qg0CwOAJazC9RSV6x31G9ah5x89Nsh0uQc5e4udLQsV68DOD9S7Go\\nQxFB8qK/Xx8Z0OytCch9Oh/yZZzL5xBZtla5TWFG8kgoaj7m91lddhX+px04l/fC\\n48zxHRMJSjr5O8SUX3AKx189D9aZEXWLVyfdDtJ7yJmbhOVMjB60+20Jqa1fgb0h\\n1Hh6E+TP5ObDFni3ocjcmnSwwBr9Ih6PlES/z77AK4KiA7S0A+MZQVshLN6n9GVw\\nK78HS19IAHO0A8BKdxphaGBKJzye8+/S6Meyemq2hysHczNFeYWU13UKu9daWOYS\\nPlmhjikHCOii7eipK0+GtTfmkgYmL6f7OykkZ+pVjYtiq7qTU5ZIlWlW2uoPh2Oq\\ngVf//6zduKBxxEcl0i0qDHclx144uCnDnibhlnXcngqexMqNZWEn2Ld/7/mm+jYN\\nMnA37eTHAJrJ+urvEmkdonF5FFUpZtet53abyd0eYzRrVXof6iroQcetgnJA+k+I\\n4HrYoxJnDrzHJ+ycJ457/tggup254bgeqmCzalLTUeVNr9H2/lbT\\n-----END CERTIFICATE-----"
