@@ -103,8 +103,7 @@ The `window` object has these attributes:
 ## Attribute reference
 
 * `aws_account_id` - AWS account ID that the subscription is deployed in (AWS subscriptions only).
-* `customer_managed_key_redis_service_account` - Outputs the ID of the GCP service account associated with the subscription. Useful as part of the CMK flow for GCP subscriptions.
-* `customer_managed_key_aws_role_arn` - The ARN of the IAM role used by the subscription to access the AWS KMS customer managed key. Grant this role access to your KMS key via key policy. Only set for AWS subscriptions with CMK enabled.
+* `customer_managed_key_redis_service_account` - Outputs the id of the service account associated with the subscription. Useful as part of the CMK flow.
 * `pricing` - A list of pricing objects, documented below
 
 The `pricing` object has these attributes:
