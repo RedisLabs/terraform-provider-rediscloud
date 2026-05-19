@@ -141,51 +141,6 @@ output "customer_managed_key_redis_service_account" {
 }
 ```
 
-## AWS Active-Active Subscription
-
-```hcl
-resource "rediscloud_active_active_subscription" "example" {
-  name                         = "..."
-  payment_method               = "credit-card"
-  payment_method_id            = "..."
-  customer_managed_key_enabled = true
-  cloud_provider               = "AWS"
-
-  # multiple keys required for active active subscriptions
-  customer_managed_key {
-    resource_name = "arn:aws:kms:us-east-1:123456789012:key/..."
-    region        = "us-east-1"
-  }
-
-  customer_managed_key {
-    resource_name = "arn:aws:kms:us-east-2:123456789012:key/..."
-    region        = "us-east-2"
-  }
-
-  creation_plan {
-    memory_limit_in_gb = 1
-    quantity           = 1
-    region {
-      region                      = "us-east-1"
-      networking_deployment_cidr  = "..."
-      write_operations_per_second = 1000
-      read_operations_per_second  = 1000
-    }
-    region {
-      region                      = "us-east-2"
-      networking_deployment_cidr  = "..."
-      write_operations_per_second = 1000
-      read_operations_per_second  = 1000
-    }
-  }
-}
-
-output "customer_managed_key_aws_role_arn" {
-  value = rediscloud_active_active_subscription.example.customer_managed_key_aws_role_arn
-}
-```
-
-
 ## How to activate CMK for your subscription
 
 ### 1. Create your CMK(s) in your cloud provider
