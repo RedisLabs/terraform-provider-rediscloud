@@ -1,5 +1,5 @@
-locals {
-  name = "__NAME__"
+variable "name" {
+  type = string
 }
 
 provider "aws" {
@@ -21,7 +21,7 @@ data "rediscloud_payment_method" "card" {
 # Multi-region KMS key — primary in us-east-1, replica in us-east-2.
 # Both have distinct ARNs but share key material.
 resource "aws_kms_key" "cmk_primary" {
-  description             = "rediscloud-cmk-test-${local.name}"
+  description             = "rediscloud-cmk-test-${var.name}"
   multi_region            = true
   deletion_window_in_days = 7
   enable_key_rotation     = false
@@ -34,7 +34,7 @@ resource "aws_kms_key" "cmk_primary" {
 
 resource "aws_kms_replica_key" "cmk_replica" {
   provider                = aws.use2
-  description             = "rediscloud-cmk-test-${local.name}-replica"
+  description             = "rediscloud-cmk-test-${var.name}-replica"
   primary_key_arn         = aws_kms_key.cmk_primary.arn
   deletion_window_in_days = 7
 
@@ -48,7 +48,7 @@ resource "aws_kms_replica_key" "cmk_replica" {
 # No customer_managed_key blocks yet, so the role ARN comes back in state
 # and key policies can reference it.
 resource "rediscloud_active_active_subscription" "example" {
-  name                         = local.name
+  name                         = var.name
   payment_method               = "credit-card"
   payment_method_id            = data.rediscloud_payment_method.card.id
   customer_managed_key_enabled = true

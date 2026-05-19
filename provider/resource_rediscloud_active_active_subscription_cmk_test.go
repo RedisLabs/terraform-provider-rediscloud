@@ -83,11 +83,11 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := testRandomWithPrefix()
+	name := testRandomWithPrefix() + "-aa-cmk-aws"
 	const resourceName = "rediscloud_active_active_subscription.example"
 
-	placeholders := map[string]string{
-		"__NAME__": name,
+	configVars := config.Variables{
+		"name": config.StringVariable(name),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -108,7 +108,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 			{
 				// Step 1: subscription enters encryption_key_pending; both key policies
 				// (primary + replica) reference the role ARN returned by the subscription.
-				Config:             utils.RenderTestConfig(t, "./activeactive/testdata/cmk_aws_step1.tf", placeholders),
+				ConfigFile:         config.StaticFile("./activeactive/testdata/cmk_aws_step1.tf"),
+				ConfigVariables:    configVars,
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -122,7 +123,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 			{
 				// Step 2: subscription supplies the per-region KMS ARNs (primary + replica)
 				// and transitions out of encryption_key_pending.
-				Config:             utils.RenderTestConfig(t, "./activeactive/testdata/cmk_aws_step2.tf", placeholders),
+				ConfigFile:         config.StaticFile("./activeactive/testdata/cmk_aws_step2.tf"),
+				ConfigVariables:    configVars,
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
