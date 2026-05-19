@@ -351,11 +351,6 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
-			"customer_managed_key_aws_role_arn": {
-				Description: "The ARN of the IAM role used by the subscription to access the AWS KMS customer managed key. Grant this role access to your KMS key via key policy",
-				Type:        schema.TypeString,
-				Computed:    true,
-			},
 			"public_endpoint_access": {
 				Description: "Whether databases in the subscription should have public endpoints. When set to false, databases will only have private endpoints. Defaults to true.",
 				Type:        schema.TypeBool,
@@ -578,12 +573,6 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		}
 	}
 
-	if subscription.CustomerManagedKeyAccessDetails != nil && subscription.CustomerManagedKeyAccessDetails.AwsRoleArn != nil {
-		if err := d.Set("customer_managed_key_aws_role_arn", redis.StringValue(subscription.CustomerManagedKeyAccessDetails.AwsRoleArn)); err != nil {
-			return diag.FromErr(err)
-		}
-	}
-
 	// Set public_endpoint_access, default to true if not set by API
 	publicEndpointAccess := true
 	if subscription.PublicEndpointAccess != nil {
@@ -785,15 +774,6 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 	subscription, err := api.Client.Subscription.Get(ctx, subId)
 	if err != nil {
 		return diag.FromErr(err)
-	}
-
-	// If already deleting (e.g. auto-deleted empty CMK subscription), wait for completion.
-	if *subscription.Status == subscriptions.SubscriptionStatusDeleting {
-		d.SetId("")
-		if err := pro.WaitForSubscriptionToBeDeleted(ctx, subId, api); err != nil {
-			return diag.FromErr(err)
-		}
-		return diags
 	}
 
 	if *subscription.Status != subscriptions.SubscriptionStatusEncryptionKeyPending {

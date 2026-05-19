@@ -59,11 +59,6 @@ func dataSourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
-			"customer_managed_key_aws_role_arn": {
-				Description: "The ARN of the IAM role used by the subscription to access the AWS KMS customer managed key. Grant this role access to your KMS key via key policy",
-				Type:        schema.TypeString,
-				Computed:    true,
-			},
 			"public_endpoint_access": {
 				Description: "Whether public endpoint access is enabled for databases in the subscription",
 				Type:        schema.TypeBool,
@@ -252,14 +247,6 @@ func dataSourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sc
 		cmkServiceAccount = redis.StringValue(sub.CustomerManagedKeyAccessDetails.RedisServiceAccount)
 	}
 	if err := d.Set("customer_managed_key_redis_service_account", cmkServiceAccount); err != nil {
-		return diag.FromErr(err)
-	}
-
-	cmkAwsRoleArn := ""
-	if sub.CustomerManagedKeyAccessDetails != nil && sub.CustomerManagedKeyAccessDetails.AwsRoleArn != nil {
-		cmkAwsRoleArn = redis.StringValue(sub.CustomerManagedKeyAccessDetails.AwsRoleArn)
-	}
-	if err := d.Set("customer_managed_key_aws_role_arn", cmkAwsRoleArn); err != nil {
 		return diag.FromErr(err)
 	}
 
