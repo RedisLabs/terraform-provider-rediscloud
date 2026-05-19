@@ -1,5 +1,5 @@
-locals {
-  name = "__NAME__"
+variable "name" {
+  type = string
 }
 
 provider "aws" {
@@ -15,7 +15,7 @@ data "rediscloud_payment_method" "card" {
 
 # Create KMS key in step 1
 resource "aws_kms_key" "cmk" {
-  description             = "rediscloud-cmk-test-${local.name}"
+  description             = "rediscloud-cmk-test-${var.name}"
   deletion_window_in_days = 7
   enable_key_rotation     = false
 
@@ -28,7 +28,7 @@ resource "aws_kms_key" "cmk" {
 # Create subscription (enters encryption_key_pending state)
 # No customer_managed_key blocks yet, so no circular dependency on KMS key ARN
 resource "rediscloud_subscription" "example" {
-  name                         = local.name
+  name                         = var.name
   payment_method               = "credit-card"
   payment_method_id            = data.rediscloud_payment_method.card.id
   memory_storage               = "ram"

@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
@@ -136,11 +137,11 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := testRandomWithPrefix()
+	name := testRandomWithPrefix() + "-pro-cmk-aws"
 	const resourceName = "rediscloud_subscription.example"
 
-	placeholders := map[string]string{
-		"__NAME__": name,
+	configVars := config.Variables{
+		"name": config.StringVariable(name),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -161,7 +162,8 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 			{
 				// Step 1: subscription enters encryption_key_pending; KMS key policy
 				// references the role ARN returned by the subscription.
-				Config:             utils.RenderTestConfig(t, "./pro/testdata/cmk_aws_step1.tf", placeholders),
+				ConfigFile:         config.StaticFile("./pro/testdata/cmk_aws_step1.tf"),
+				ConfigVariables:    configVars,
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -177,7 +179,8 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 			},
 			{
 				// Step 2: subscription supplies the KMS key ARN and transitions to active.
-				Config:             utils.RenderTestConfig(t, "./pro/testdata/cmk_aws_step2.tf", placeholders),
+				ConfigFile:         config.StaticFile("./pro/testdata/cmk_aws_step2.tf"),
+				ConfigVariables:    configVars,
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
