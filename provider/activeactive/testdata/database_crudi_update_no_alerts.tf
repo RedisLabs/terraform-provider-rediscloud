@@ -1,6 +1,9 @@
-locals {
-  subscription_name = "__SUBSCRIPTION_NAME__"
-  database_name     = "__DATABASE_NAME__"
+variable "subscription_name" {
+  type = string
+}
+
+variable "database_name" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
@@ -9,7 +12,7 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_active_active_subscription" "example" {
-  name              = local.subscription_name
+  name              = var.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider    = "AWS"
 
@@ -33,7 +36,7 @@ resource "rediscloud_active_active_subscription" "example" {
 
 resource "rediscloud_active_active_subscription_database" "example" {
   subscription_id                       = rediscloud_active_active_subscription.example.id
-  name                                  = local.database_name
+  name                                  = var.database_name
   dataset_size_in_gb                    = 1
   support_oss_cluster_api               = true
   external_endpoint_for_oss_cluster_api = true

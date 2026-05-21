@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -37,11 +38,12 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Test database creation
 			{
-				Config: utils.RenderTestConfig(t, "./activeactive/testdata/database_crudi_create.tf", map[string]string{
-					"__SUBSCRIPTION_NAME__": subscriptionName,
-					"__DATABASE_NAME__":     databaseName,
-					"__PASSWORD__":          password,
-				}),
+				ConfigFile: config.StaticFile("./activeactive/testdata/database_crudi_create.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_name":     config.StringVariable(databaseName),
+					"password":          config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test resource attributes
 					resource.TestCheckResourceAttr(databaseResourceName, "name", databaseName),
@@ -147,10 +149,11 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			},
 			// Test database update: change global and local alerts, enable OSS cluster API, update DB name
 			{
-				Config: utils.RenderTestConfig(t, "./activeactive/testdata/database_crudi_update.tf", map[string]string{
-					"__SUBSCRIPTION_NAME__": subscriptionName,
-					"__DATABASE_NAME__":     databaseNameUpdated,
-				}),
+				ConfigFile: config.StaticFile("./activeactive/testdata/database_crudi_update.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_name":     config.StringVariable(databaseNameUpdated),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(databaseResourceName, "name", databaseNameUpdated),
 					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
@@ -200,10 +203,11 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			},
 			// Test database update: remove alerts, restore default user
 			{
-				Config: utils.RenderTestConfig(t, "./activeactive/testdata/database_crudi_update_no_alerts.tf", map[string]string{
-					"__SUBSCRIPTION_NAME__": subscriptionName,
-					"__DATABASE_NAME__":     databaseNameUpdated,
-				}),
+				ConfigFile: config.StaticFile("./activeactive/testdata/database_crudi_update_no_alerts.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_name":     config.StringVariable(databaseNameUpdated),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "true"),
@@ -224,10 +228,11 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			},
 			// Test import
 			{
-				Config: utils.RenderTestConfig(t, "./activeactive/testdata/database_crudi_import.tf", map[string]string{
-					"__SUBSCRIPTION_NAME__": subscriptionName,
-					"__DATABASE_NAME__":     databaseNameUpdated,
-				}),
+				ConfigFile: config.StaticFile("./activeactive/testdata/database_crudi_import.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_name":     config.StringVariable(databaseNameUpdated),
+				},
 				ResourceName:      databaseResourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -444,11 +449,11 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 		Steps: []resource.TestStep{
 			// Test database creation with auto_minor_version_upgrade set to false
 			{
-				Config: utils.RenderTestConfig(t, "./activeactive/testdata/auto_minor_version_upgrade.tf", map[string]string{
-					"__SUBSCRIPTION_NAME__":          subscriptionName,
-					"__DATABASE_NAME__":              databaseName,
-					"__AUTO_MINOR_VERSION_UPGRADE__": "false",
-				}),
+				ConfigFile: config.StaticFile("./activeactive/testdata/auto_minor_version_upgrade.tf"), ConfigVariables: config.Variables{
+					"subscription_name":          config.StringVariable(subscriptionName),
+					"database_name":              config.StringVariable(databaseName),
+					"auto_minor_version_upgrade": config.BoolVariable(false),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "false"),
@@ -456,11 +461,12 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 			},
 			// Test database update with auto_minor_version_upgrade set to true
 			{
-				Config: utils.RenderTestConfig(t, "./activeactive/testdata/auto_minor_version_upgrade.tf", map[string]string{
-					"__SUBSCRIPTION_NAME__":          subscriptionName,
-					"__DATABASE_NAME__":              databaseName,
-					"__AUTO_MINOR_VERSION_UPGRADE__": "true",
-				}),
+				ConfigFile: config.StaticFile("./activeactive/testdata/auto_minor_version_upgrade.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name":          config.StringVariable(subscriptionName),
+					"database_name":              config.StringVariable(databaseName),
+					"auto_minor_version_upgrade": config.BoolVariable(true),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "true"),
 				),
@@ -481,11 +487,12 @@ func TestAccResourceRedisCloudActiveActiveDatabase_modulesImmutable(t *testing.T
 		Steps: []resource.TestStep{
 			// Step 1: Create database with RedisJSON module
 			{
-				Config: utils.RenderTestConfig(t, "./activeactive/testdata/modules_immutable_create.tf", map[string]string{
-					"__SUBSCRIPTION_NAME__": subscriptionName,
-					"__DATABASE_NAME__":     databaseName,
-					"__PASSWORD__":          password,
-				}),
+				ConfigFile: config.StaticFile("./activeactive/testdata/modules_immutable_create.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_name":     config.StringVariable(databaseName),
+					"password":          config.StringVariable(password),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_active_active_subscription_database.example", "global_modules.#", "1"),
 					resource.TestCheckResourceAttr("rediscloud_active_active_subscription_database.example", "global_modules.0", "RedisJSON"),
@@ -493,11 +500,12 @@ func TestAccResourceRedisCloudActiveActiveDatabase_modulesImmutable(t *testing.T
 			},
 			// Step 2: Try to change modules - changes should be silently ignored
 			{
-				Config: utils.RenderTestConfig(t, "./activeactive/testdata/modules_immutable_change.tf", map[string]string{
-					"__SUBSCRIPTION_NAME__": subscriptionName,
-					"__DATABASE_NAME__":     databaseName,
-					"__PASSWORD__":          password,
-				}),
+				ConfigFile: config.StaticFile("./activeactive/testdata/modules_immutable_change.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_name":     config.StringVariable(databaseName),
+					"password":          config.StringVariable(password),
+				},
 				// No error expected - the change is silently ignored and state preserved
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Modules should still be RedisJSON, not RedisBloom

@@ -1,10 +1,13 @@
-locals {
-  subscription_name = "__SUBSCRIPTION_NAME__"
-  aws_region        = "__AWS_REGION__"
+variable "subscription_name" {
+  type = string
+}
+
+variable "aws_region" {
+  type = string
 }
 
 provider "aws" {
-  region = local.aws_region
+  region = var.aws_region
 }
 
 data "aws_caller_identity" "current" {}
@@ -15,7 +18,7 @@ resource "aws_vpc" "peering_target" {
   enable_dns_support   = true
 
   tags = {
-    Name = "${local.subscription_name}-peering-vpc"
+    Name = "${var.subscription_name}-peering-vpc"
   }
 }
 
@@ -25,7 +28,7 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_active_active_subscription" "example" {
-  name              = local.subscription_name
+  name              = var.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider    = "AWS"
 
@@ -39,7 +42,7 @@ resource "rediscloud_active_active_subscription" "example" {
       read_operations_per_second  = 1000
     }
     region {
-      region                      = local.aws_region
+      region                      = var.aws_region
       networking_deployment_cidr  = "10.0.0.0/24"
       write_operations_per_second = 1000
       read_operations_per_second  = 1000
@@ -50,8 +53,8 @@ resource "rediscloud_active_active_subscription" "example" {
 resource "rediscloud_active_active_subscription_peering" "test" {
   subscription_id    = rediscloud_active_active_subscription.example.id
   provider_name      = "AWS"
-  source_region      = local.aws_region
-  destination_region = local.aws_region
+  source_region      = var.aws_region
+  destination_region = var.aws_region
   aws_account_id     = data.aws_caller_identity.current.account_id
   vpc_id             = aws_vpc.peering_target.id
   vpc_cidr           = aws_vpc.peering_target.cidr_block

@@ -1,6 +1,9 @@
-locals {
-  name           = "__NAME__"
-  gcp_project_id = "__GCP_PROJECT_ID__"
+variable "name" {
+  type = string
+}
+
+variable "gcp_project_id" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
@@ -9,13 +12,13 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "google_kms_key_ring" "cmk" {
-  project  = local.gcp_project_id
-  name     = "${local.name}-keyring"
+  project  = var.gcp_project_id
+  name     = "${var.name}-keyring"
   location = "europe"
 }
 
 resource "google_kms_crypto_key" "cmk" {
-  name     = "${local.name}-key"
+  name     = "${var.name}-key"
   key_ring = google_kms_key_ring.cmk.id
 
   labels = {
@@ -37,7 +40,7 @@ resource "google_kms_crypto_key_iam_member" "viewer" {
 }
 
 resource "rediscloud_active_active_subscription" "example" {
-  name                         = local.name
+  name                         = var.name
   payment_method_id            = data.rediscloud_payment_method.card.id
   customer_managed_key_enabled = true
   cloud_provider               = "GCP"
