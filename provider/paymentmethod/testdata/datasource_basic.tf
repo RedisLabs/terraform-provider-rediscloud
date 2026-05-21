@@ -1,9 +1,12 @@
-locals {
-  card_type         = "__CARD_TYPE__"
-  last_four_numbers = "__LAST_FOUR_NUMBERS__"
+variable "card_type" {
+  type = string
+}
+
+variable "last_four_numbers" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
-  card_type         = local.card_type
-  last_four_numbers = local.last_four_numbers
+  card_type         = var.card_type
+  last_four_numbers = var.last_four_numbers
 }
