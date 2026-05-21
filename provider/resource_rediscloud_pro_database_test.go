@@ -321,7 +321,7 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 				ConfigVariables: config.Variables{
 					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
-					"database_name":                config.StringVariable(databaseName),
+					"rediscloud_database_name":     config.StringVariable(databaseName),
 					"auto_minor_version_upgrade":   config.BoolVariable(false),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -335,7 +335,7 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 				ConfigVariables: config.Variables{
 					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
-					"database_name":                config.StringVariable(databaseName),
+					"rediscloud_database_name":     config.StringVariable(databaseName),
 					"auto_minor_version_upgrade":   config.BoolVariable(true),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(

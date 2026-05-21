@@ -6,8 +6,8 @@ variable "rediscloud_subscription_name" {
   type = string
 }
 
-variable "port_number" {
-  type = number
+variable "rediscloud_database_name" {
+  type = string
 }
 
 variable "auto_minor_version_upgrade" {
