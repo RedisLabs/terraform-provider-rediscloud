@@ -131,6 +131,12 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
 				Type:        schema.TypeString,
 				Optional:    true,
+				//TODO remove computed in 3.0.0 release, as it is a breaking change. Previously value could also be received from API, but should become write-only
+				Computed: true,
+			},
+			"current_redis_version": {
+				Description: "The current Redis database version",
+				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"support_oss_cluster_api": {
@@ -616,9 +622,17 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	}
 
 	if db.RedisVersion != nil {
-		if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
+		if err := d.Set("current_redis_version", redis.StringValue(db.RedisVersion)); err != nil {
 			return diag.FromErr(err)
 		}
+		_, inState := d.GetOk("redis_version")
+
+		if !inState {
+			if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+
 	}
 
 	// For Redis 8.0+, modules are bundled by default and returned by the API
@@ -970,7 +984,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		utils.SubscriptionMutex.Unlock(subId)
 		return append(diags, diag.FromErr(err)...)
 	}
-
+	currentRedisVersion := d.Get("current_redis_version")
 	// if redis_version has changed, then upgrade first
 	if d.HasChange("redis_version") {
 		// if we have just created the database, it will detect an upgrade unnecessarily
@@ -978,7 +992,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 
 		// if either version is blank, it could attempt to upgrade unnecessarily.
 		// only upgrade when a known version goes to another known version
-		if originalVersion.(string) != "" && newVersion.(string) != "" {
+		if originalVersion.(string) != "" && newVersion.(string) != "" && currentRedisVersion != newVersion.(string) {
 			if upgradeDiags, unlocked := upgradeRedisVersion(ctx, api, subId, dbId, newVersion.(string)); upgradeDiags != nil {
 				if !unlocked {
 					utils.SubscriptionMutex.Unlock(subId)
