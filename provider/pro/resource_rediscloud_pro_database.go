@@ -1202,16 +1202,6 @@ func ValidatePasswordlessNotConflicting() schema.CustomizeDiffFunc {
 	}
 }
 
-// Helper function to check if a module exists
-func containsDBModule(modules []map[string]interface{}, moduleName string) bool {
-	for _, module := range modules {
-		if name, ok := module["name"].(string); ok && name == moduleName {
-			return true
-		}
-	}
-	return false
-}
-
 // ShouldWarnRedis8Modules checks if a warning should be issued for modules in Redis 8.0 or higher
 func ShouldWarnRedis8Modules(version string, hasModules bool) bool {
 	if !hasModules {

@@ -3,8 +3,6 @@ package activeactive
 import (
 	"context"
 	"fmt"
-	"strings"
-	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -709,16 +707,6 @@ func (r *activeActiveDatabaseResource) Delete(ctx context.Context, req resource.
 	r.deleteDatabase(ctx, &state, &resp.Diagnostics)
 }
 
-// timeouts returns the resource timeouts.
-func (r *activeActiveDatabaseResource) timeouts() map[string]time.Duration {
-	return map[string]time.Duration{
-		"create": 30 * time.Minute,
-		"read":   10 * time.Minute,
-		"update": 30 * time.Minute,
-		"delete": 10 * time.Minute,
-	}
-}
-
 // getAlertAttrTypes returns the attribute types for alert objects.
 func getAlertAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
@@ -735,49 +723,4 @@ func getRemoteBackupAttrTypes() map[string]attr.Type {
 		"storage_type": types.StringType,
 		"storage_path": types.StringType,
 	}
-}
-
-// overrideRegionHasConfig checks if an override region block has any configuration set
-// beyond just the name (which is always required).
-func overrideRegionHasConfig(region OverrideRegionModel) bool {
-	if !region.OverrideGlobalAlert.IsNull() && len(region.OverrideGlobalAlert.Elements()) > 0 {
-		return true
-	}
-	if !region.OverrideGlobalPassword.IsNull() && region.OverrideGlobalPassword.ValueString() != "" {
-		return true
-	}
-	if !region.OverrideGlobalEnablePasswordless.IsNull() && region.OverrideGlobalEnablePasswordless.ValueBool() {
-		return true
-	}
-	if !region.OverrideGlobalSourceIPs.IsNull() && len(region.OverrideGlobalSourceIPs.Elements()) > 0 {
-		return true
-	}
-	if !region.OverrideGlobalDataPersistence.IsNull() && region.OverrideGlobalDataPersistence.ValueString() != "" {
-		return true
-	}
-	if !region.RemoteBackup.IsNull() && len(region.RemoteBackup.Elements()) > 0 {
-		return true
-	}
-	return false
-}
-
-// findOverrideRegion finds a region by name in the override_region set.
-func findOverrideRegion(ctx context.Context, overrideRegionSet types.Set, regionName string) (*OverrideRegionModel, error) {
-	if overrideRegionSet.IsNull() || overrideRegionSet.IsUnknown() {
-		return nil, nil
-	}
-
-	var regions []OverrideRegionModel
-	diags := overrideRegionSet.ElementsAs(ctx, &regions, false)
-	if diags.HasError() {
-		return nil, fmt.Errorf("error reading override_region: %v", diags)
-	}
-
-	for _, region := range regions {
-		if strings.EqualFold(region.Name.ValueString(), regionName) {
-			return &region, nil
-		}
-	}
-
-	return nil, nil
 }

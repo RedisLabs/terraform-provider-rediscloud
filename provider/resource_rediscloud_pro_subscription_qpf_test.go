@@ -3,7 +3,6 @@ package provider
 import (
 	"fmt"
 	"os"
-	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -55,21 +54,6 @@ resource "rediscloud_subscription" "example" {
 	%s
   }
 }`, cloudAccountName, name, qpf, extraConfig)
-}
-
-// Generic test helper for error cases
-func testSubErrorCase(t *testing.T, config string, expectedError *regexp.Regexp) {
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:             testAccCheckProSubscriptionDestroy,
-		Steps: []resource.TestStep{
-			{
-				Config:      config,
-				ExpectError: expectedError,
-			},
-		},
-	})
 }
 
 func TestAccResourceRedisCloudProSubscription_qpf(t *testing.T) {
