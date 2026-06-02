@@ -32,7 +32,7 @@ jobs:
       -
         name: Import GPG key
         id: import_gpg
-        uses: paultyng/ghaction-import-gpg@53deb67fe3b05af114ad9488a4da7b782455d588 # v2.1.0
+        uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           PASSPHRASE: ${{ secrets.PASSPHRASE }}
