@@ -129,12 +129,6 @@ func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 
 }
 
-const getDefaultAclRuleDataSource = `
-data "rediscloud_acl_rule" "test" {
-	name = "%s"
-}
-`
-
 const testRedisRule = `
 resource "rediscloud_acl_rule" "test" {
     name = "%s"

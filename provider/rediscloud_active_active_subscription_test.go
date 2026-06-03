@@ -762,11 +762,6 @@ resource "rediscloud_active_active_subscription" "example" {
   }
 `
 
-func testAccResourceRedisCloudActiveActiveSubscription(t *testing.T, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/active_active_sub.tf")
-	return fmt.Sprintf(content, subscriptionName)
-}
-
 func testAccResourceRedisCloudActiveActiveSubscriptionRedis7(t *testing.T, subscriptionName string) string {
 	content := utils.GetTestConfig(t, "./activeactive/testdata/active_active_sub_redis7.tf")
 	return fmt.Sprintf(content, subscriptionName)
@@ -775,11 +770,6 @@ func testAccResourceRedisCloudActiveActiveSubscriptionRedis7(t *testing.T, subsc
 func testAccResourceRedisCloudActiveActiveSubscriptionRedis8(t *testing.T, subscriptionName string) string {
 	content := utils.GetTestConfig(t, "./activeactive/testdata/active_active_sub_redis8.tf")
 	return fmt.Sprintf(content, subscriptionName)
-}
-
-func testAccResourceRedisCloudActiveActiveSubscriptionUpdate(t *testing.T, subscriptionName string, cloudProvider string) string {
-	content := utils.GetTestConfig(t, "./activeactive/testdata/subscription_update.tf")
-	return fmt.Sprintf(content, subscriptionName, cloudProvider)
 }
 
 func testAccResourceRedisCloudActiveActiveSubscriptionUpdateRedis7(t *testing.T, subscriptionName string, cloudProvider string) string {

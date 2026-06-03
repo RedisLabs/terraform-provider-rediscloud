@@ -871,19 +871,3 @@ func writeFixedTags(ctx context.Context, api *client.ApiClient, subId int, datab
 	}
 	return api.Client.Tags.PutFixed(ctx, subId, databaseId, tags.AllTags{Tags: &t})
 }
-
-func essentialsCustomizeDiff() schema.CustomizeDiffFunc {
-	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-		// Check if user is trying to specify modules
-		modules, modulesExists := diff.GetOkExists("modules")
-
-		if modulesExists {
-			moduleSet := modules.(*schema.Set)
-			if moduleSet.Len() > 0 {
-				// Warn, don't error
-				log.Printf("[WARN] Modules are explicitly configured. Note that some plans may use Redis 8.0+ where modules are bundled by default. The API will reject invalid configurations.")
-			}
-		}
-		return nil
-	}
-}
