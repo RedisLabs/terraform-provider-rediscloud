@@ -14,7 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
@@ -212,52 +211,6 @@ func flattenAlertsToSet(alerts []*databases.Alert) (types.Set, diag.Diagnostics)
 	return types.SetValue(types.ObjectType{AttrTypes: alertAttrTypes}, elements)
 }
 
-// getOverrideRegionAttrTypes returns the attribute types for the override_region block.
-func getOverrideRegionAttrTypes() map[string]attr.Type {
-	alertAttrTypes := map[string]attr.Type{
-		"name":  types.StringType,
-		"value": types.Int64Type,
-	}
-
-	remoteBackupAttrTypes := map[string]attr.Type{
-		"interval":     types.StringType,
-		"time_utc":     types.StringType,
-		"storage_type": types.StringType,
-		"storage_path": types.StringType,
-	}
-
-	return map[string]attr.Type{
-		"name":                             types.StringType,
-		"override_global_alert":            types.SetType{ElemType: types.ObjectType{AttrTypes: alertAttrTypes}},
-		"override_global_password":         types.StringType,
-		"override_global_source_ips":       types.SetType{ElemType: types.StringType},
-		"override_global_data_persistence": types.StringType,
-		"enable_default_user":              types.BoolType,
-		"remote_backup":                    types.ListType{ElemType: types.ObjectType{AttrTypes: remoteBackupAttrTypes}},
-	}
-}
-
-// getOverrideRegionFromSet finds a specific region by name from the override_region set.
-func getOverrideRegionFromSet(ctx context.Context, overrideRegionSet types.Set, regionName string) (*OverrideRegionModel, diag.Diagnostics) {
-	if overrideRegionSet.IsNull() || overrideRegionSet.IsUnknown() {
-		return nil, nil
-	}
-
-	var regions []OverrideRegionModel
-	diags := overrideRegionSet.ElementsAs(ctx, &regions, false)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	for _, region := range regions {
-		if region.Name.ValueString() == regionName {
-			return &region, nil
-		}
-	}
-
-	return nil, nil
-}
-
 // buildBackupPlan converts a RemoteBackupModel to the API request format.
 func buildBackupPlan(ctx context.Context, remoteBackupList types.List) (*databases.DatabaseBackupConfig, diag.Diagnostics) {
 	if remoteBackupList.IsNull() || remoteBackupList.IsUnknown() || len(remoteBackupList.Elements()) == 0 {
@@ -377,60 +330,4 @@ func stringSliceValue(slice []*string) []string {
 		result[i] = redis.StringValue(s)
 	}
 	return result
-}
-
-// getAlertsFromOverrideRegion extracts alerts from an override region model.
-func getAlertsFromOverrideRegion(ctx context.Context, region *OverrideRegionModel) ([]*databases.Alert, diag.Diagnostics) {
-	if region == nil || region.OverrideGlobalAlert.IsNull() || region.OverrideGlobalAlert.IsUnknown() {
-		return nil, nil
-	}
-
-	return buildAlertsFromSet(ctx, region.OverrideGlobalAlert)
-}
-
-// boolPtrValue safely gets a bool value from a pointer, returning the default if nil.
-func boolPtrValue(ptr *bool, defaultValue bool) bool {
-	if ptr == nil {
-		return defaultValue
-	}
-	return *ptr
-}
-
-// stringValue safely gets the value of a types.String, returning empty string if null/unknown.
-func stringValue(s types.String) string {
-	if s.IsNull() || s.IsUnknown() {
-		return ""
-	}
-	return s.ValueString()
-}
-
-// int64Value safely gets the value of a types.Int64, returning 0 if null/unknown.
-func int64Value(i types.Int64) int64 {
-	if i.IsNull() || i.IsUnknown() {
-		return 0
-	}
-	return i.ValueInt64()
-}
-
-// float64Value safely gets the value of a types.Float64, returning 0 if null/unknown.
-func float64Value(f types.Float64) float64 {
-	if f.IsNull() || f.IsUnknown() {
-		return 0
-	}
-	return f.ValueFloat64()
-}
-
-// boolValue safely gets the value of a types.Bool, returning false if null/unknown.
-func boolValue(b types.Bool) bool {
-	if b.IsNull() || b.IsUnknown() {
-		return false
-	}
-	return b.ValueBool()
-}
-
-// setStringIfNotEmpty sets the value in the model if the source string is not empty.
-func setStringIfNotEmpty(source string, target *basetypes.StringValue) {
-	if source != "" {
-		*target = types.StringValue(source)
-	}
 }

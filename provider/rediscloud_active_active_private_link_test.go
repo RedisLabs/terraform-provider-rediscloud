@@ -85,13 +85,6 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 	})
 }
 
-func getRedisActiveActivePrivateLinkConfig(t *testing.T, testFile, shareName, password string) string {
-	subName := testRandomWithPrefix() + "-aa-private-link"
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-	content := utils.GetTestConfig(t, testFile)
-	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName, password)
-}
-
 func getRedisActiveActivePrivateLinkConfigWithNames(t *testing.T, subName, shareName, password string) string {
 	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	content := utils.GetTestConfig(t, testActiveActivePrivateLinkConfigFile)

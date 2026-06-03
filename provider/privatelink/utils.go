@@ -3,7 +3,6 @@ package privatelink
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"sort"
 	"strconv"
@@ -80,38 +79,6 @@ func waitForActiveActivePrivateLinkToBeActive(ctx context.Context, client *clien
 	return nil
 }
 
-func waitForPrincipalToBeAssociated(ctx context.Context, client *client.ApiClient, id int, principal *string) error {
-	wait := &retry.StateChangeConf{
-		Pending: []string{
-			pl.PrivateLinkPrincipalStatusInitializing, pl.PrivateLinkPrincipalStatusAssociating},
-		Target:       []string{pl.PrivateLinkPrincipalStatusAssociated},
-		Timeout:      utils.SafetyTimeout,
-		Delay:        10 * time.Second,
-		PollInterval: 10 * time.Second,
-		Refresh: func() (result interface{}, state string, err error) {
-			log.Printf("[DEBUG] Waiting for private link principal %d to be associated", id)
-
-			privateLink, err := client.Client.PrivateLink.GetPrivateLink(ctx, id)
-			if err != nil {
-				return "", "", err
-			}
-
-			for _, p := range privateLink.Principals {
-				if *p.Principal == *principal {
-					return *p.Principal, *p.Status, nil
-				}
-			}
-
-			return nil, "", fmt.Errorf("principal %s not found", *principal)
-		}}
-
-	if _, err := wait.WaitForStateContext(ctx); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func principalsFromSet(principals *schema.Set) []pl.PrivateLinkPrincipal {
 	var createPrincipals []pl.PrivateLinkPrincipal
 	for _, principal := range principals.List() {
@@ -181,16 +148,6 @@ func flattenConnections(connections []*pl.PrivateLinkConnection) []map[string]in
 	}
 
 	return tfs
-}
-
-func waitForAllPrincipalsToBeAssociated(ctx context.Context, api *client.ApiClient, subId int, principals []pl.PrivateLinkPrincipal) error {
-	for _, principal := range principals {
-		err := waitForPrincipalToBeAssociated(ctx, api, subId, principal.Principal)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func makeActiveActivePrivateLinkId(subId int, regionId int) string {
