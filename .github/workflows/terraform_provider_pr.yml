@@ -111,6 +111,9 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - uses: golang/govulncheck-action@31f7c5463448f83528bd771c2d978d940080c9fd # master (fixes actions/setup-go resolution)
         with:
+          # Force usage of `go-version-file` as this sets "stable" by default which
+          # _MAY_ be different from the one defined in the `go.mod` file.
+          go-version-input: ''
           go-version-file: go.mod
           repo-checkout: false
 
