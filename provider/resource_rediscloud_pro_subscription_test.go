@@ -466,45 +466,6 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 	datasourceName := "data.rediscloud_subscription.example"
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
-	const defaultMW = ""
-	const autoMw = `maintenance_windows {
-		mode = "automatic"
-	}`
-	const manualMw = `maintenance_windows {
-		mode = "manual"
-		window {
-				start_hour = 22
-				duration_in_hours = 8
-				days = ["Monday", "Thursday"]
-		}
-	}`
-	const errorManualMw = `maintenance_windows {
-		mode = "manual"
-		# Should have windows
-	}`
-	const errorAutoMw = `maintenance_windows {
-		mode = "automatic"
-		# Should not have windows
-		window {
-				start_hour = 22
-				duration_in_hours = 8
-				days = ["Monday", "Thursday"]
-		}
-	}`
-	const multipleManualMw = `maintenance_windows {
-		mode = "manual"
-		window {
-				start_hour = 22
-				duration_in_hours = 8
-				days = ["Monday", "Thursday"]
-		}
-		window {
-				start_hour = 12
-				duration_in_hours = 6
-				days = ["Friday", "Saturday", "Sunday"]
-		}
-	}`
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
