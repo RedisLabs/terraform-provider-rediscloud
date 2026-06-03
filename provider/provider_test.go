@@ -18,8 +18,8 @@ func init() {
 	protoV5ProviderFactories = map[string]func() (tfprotov5.ProviderServer, error){
 		"rediscloud": func() (tfprotov5.ProviderServer, error) {
 			muxServer, err := MuxProviderServerCreator(
-				NewSdkProvider("dev")(),
-				NewFrameworkProvider("dev")(),
+				NewSdkProvider("99.99.99")(),
+				NewFrameworkProvider("99.99.99")(),
 			)
 			if err != nil {
 				return nil, err

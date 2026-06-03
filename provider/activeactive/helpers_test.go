@@ -21,8 +21,8 @@ import (
 var protoV5ProviderFactories = map[string]func() (tfprotov5.ProviderServer, error){
 	"rediscloud": func() (tfprotov5.ProviderServer, error) {
 		muxServer, err := provider.MuxProviderServerCreator(
-			provider.NewSdkProvider("dev")(),
-			provider.NewFrameworkProvider("dev")(),
+			provider.NewSdkProvider("99.99.99")(),
+			provider.NewFrameworkProvider("99.99.99")(),
 		)
 		if err != nil {
 			return nil, err
