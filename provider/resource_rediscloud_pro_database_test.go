@@ -348,7 +348,7 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 					resource.TestCheckResourceAttr(resourceName, "actual_redis_version", "8.4"),
 				),
 			},
-			//simulate that an auto_minor_version_upgrade happened, not throwing an error when receiving a `downgrade` request, is currently expected behavior
+			//simulate that an auto_minor_version_upgrade happened, not throwing an error when receiving a `downgrade` request, is currently expected behaviour
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_auto_minor_version_upgrade.tf"),
 				ConfigVariables: config.Variables{
