@@ -57,7 +57,7 @@ The following arguments are supported:
 * `subscription_id` - (Required) The ID of the subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
 * `name` - (Required) A meaningful name to identify the database.
 * `protocol` - (Optional) Database protocol. 'stack' is a suite of all Redis' data modules. Default: 'stack'. Either: 'redis', 'memcached' or 'stack'. **'redis' is only used with Pay-As-You-Go databases.**
-* `redis_version` - (Optional) Defines the Redis database version. If omitted, the Redis version will be set to the default version.
+* `redis_version` - (Optional) Defines the requested Redis database version. If omitted, the Redis version will be set to the default version. May differ if a minor version upgrade has been automatically applied. Use `redis_version_actual` to fetch the Redis version used by the database.
 * `resp_version` - (Optional) RESP version must be compatible with the Redis version.
 * `data_persistence` - (Required) Rate of database data persistence (in persistent storage). Either: 'none', 'aof-every-1-second', 'aof-every-write', 'snapshot-every-1-hour', 'snapshot-every-6-hours' or 'snapshot-every-12-hours'.
 * `data_eviction` - (Optional) Data items eviction method. Either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru'.
@@ -106,6 +106,7 @@ Each `modules` entry provides the following attributes:
 * `activated_on` - When this database was activated.
 * `public_endpoint` - Public endpoint to access the database.
 * `private_endpoint` - Private endpoint to access the database.
+* `redis_version_actual` - The Redis version of the database. Can differ from `redis_version` if a minor version upgrade has been automatically applied.
 
 ## Import
 `rediscloud_essentials_database` can be imported using the ID of the subscription and the ID of the database in the format {subscription ID}/{database ID}, e.g.
