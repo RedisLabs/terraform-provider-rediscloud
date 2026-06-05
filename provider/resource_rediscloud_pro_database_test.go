@@ -323,10 +323,13 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 					"rediscloud_subscription_name": config.StringVariable(name),
 					"rediscloud_database_name":     config.StringVariable(databaseName),
 					"auto_minor_version_upgrade":   config.BoolVariable(false),
+					"redis_version":                config.StringVariable("8.6"),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "false"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.6"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version_actual", "8.6"),
 				),
 			},
 			// Test database update with auto_minor_version_upgrade set to true
@@ -337,9 +340,28 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 					"rediscloud_subscription_name": config.StringVariable(name),
 					"rediscloud_database_name":     config.StringVariable(databaseName),
 					"auto_minor_version_upgrade":   config.BoolVariable(true),
+					"redis_version":                config.StringVariable("8.6"),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "true"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.6"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version_actual", "8.6"),
+				),
+			},
+			//simulate that an auto_minor_version_upgrade happened, not throwing an error when receiving a `downgrade` request, is currently expected behaviour
+			{
+				ConfigFile: config.StaticFile("./pro/testdata/pro_database_auto_minor_version_upgrade.tf"),
+				ConfigVariables: config.Variables{
+					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_subscription_name": config.StringVariable(name),
+					"rediscloud_database_name":     config.StringVariable(databaseName),
+					"auto_minor_version_upgrade":   config.BoolVariable(true),
+					"redis_version":                config.StringVariable("8.4"),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "true"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.4"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version_actual", "8.6"),
 				),
 			},
 		},

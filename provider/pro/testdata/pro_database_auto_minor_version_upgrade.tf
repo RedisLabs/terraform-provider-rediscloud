@@ -14,6 +14,10 @@ variable "auto_minor_version_upgrade" {
   type = bool
 }
 
+variable "redis_version" {
+  type = string
+}
+
 data "rediscloud_payment_method" "card" {
   card_type         = "Visa"
   last_four_numbers = "5556"
@@ -57,4 +61,5 @@ resource "rediscloud_subscription_database" "example" {
   throughput_measurement_by    = "operations-per-second"
   throughput_measurement_value = 1000
   auto_minor_version_upgrade   = var.auto_minor_version_upgrade
+  redis_version                = var.redis_version
 }
