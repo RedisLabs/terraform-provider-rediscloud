@@ -84,6 +84,11 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				Optional:    true,
 				Computed:    true,
 			},
+			"redis_version_actual": {
+				Description: "The actual Redis database version",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"cloud_provider": {
 				Description: "The Cloud Provider hosting this database",
 				Type:        schema.TypeString,
@@ -479,8 +484,18 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 	if err := d.Set("protocol", redis.StringValue(db.Protocol)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
-		return diag.FromErr(err)
+	if db.RedisVersion != nil {
+		if err := d.Set("redis_version_actual", redis.StringValue(db.RedisVersion)); err != nil {
+			return diag.FromErr(err)
+		}
+		_, inState := d.GetOk("redis_version")
+
+		if !inState {
+			if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+
 	}
 	if err := d.Set("cloud_provider", redis.StringValue(db.Provider)); err != nil {
 		return diag.FromErr(err)
@@ -618,9 +633,10 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 	// Handle redis_version upgrades before other updates
 	if d.HasChange("redis_version") {
 		originalVersion, newVersion := d.GetChange("redis_version")
+		actualRedisVersion := d.Get("redis_version_actual")
 
 		// Only perform upgrade if both versions are non-empty (prevents unnecessary upgrades on creation)
-		if originalVersion.(string) != "" && newVersion.(string) != "" {
+		if originalVersion.(string) != "" && newVersion.(string) != "" && actualRedisVersion.(string) != newVersion.(string) {
 			if upgradeDiags := upgradeRedisVersionEssentials(ctx, api, subId, databaseId, newVersion.(string)); upgradeDiags != nil {
 				return upgradeDiags
 			}
