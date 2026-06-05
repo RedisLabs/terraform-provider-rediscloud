@@ -257,8 +257,8 @@ func flattenBackupPlan(backup *databases.Backup, stateStorageType string) (types
 	}
 
 	timeUTC := types.StringNull()
-	if backup.TimeUTC != nil {
-		timeUTC = types.StringValue(redis.StringValue(backup.TimeUTC))
+	if v := redis.StringValue(backup.TimeUTC); v != "" {
+		timeUTC = types.StringValue(v)
 	}
 
 	// Storage type is not returned by API, preserve from state
