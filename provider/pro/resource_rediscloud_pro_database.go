@@ -128,13 +128,13 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				ExactlyOneOf: []string{"memory_limit_in_gb", "dataset_size_in_gb"},
 			},
 			"redis_version": {
-				Description: "Defines the requested Redis database version. If omitted, the Redis version will be set to the default version. Use `actual_redis_version` to get the version on which the database is running.",
+				Description: "Defines the requested Redis database version. If omitted, the Redis version will be set to the default version. Use `redis_version_actual` to get the version on which the database is running.",
 				Type:        schema.TypeString,
 				Optional:    true,
-				//TODO remove computed in 3.0.0 release, as it is a breaking change. Previously value could also be received from API, but should become write-only
+				//TODO(TF3.0) remove computed , as it is a breaking change. Previously value could also be received from API, but should become write-only
 				Computed: true,
 			},
-			"actual_redis_version": {
+			"redis_version_actual": {
 				Description: "The actual Redis database version",
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -622,7 +622,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	}
 
 	if db.RedisVersion != nil {
-		if err := d.Set("actual_redis_version", redis.StringValue(db.RedisVersion)); err != nil {
+		if err := d.Set("redis_version_actual", redis.StringValue(db.RedisVersion)); err != nil {
 			return diag.FromErr(err)
 		}
 		_, inState := d.GetOk("redis_version")
@@ -984,7 +984,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		utils.SubscriptionMutex.Unlock(subId)
 		return append(diags, diag.FromErr(err)...)
 	}
-	actualRedisVersion := d.Get("actual_redis_version")
+	actualRedisVersion := d.Get("redis_version_actual")
 	// if redis_version has changed, then upgrade first
 	if d.HasChange("redis_version") {
 		// if we have just created the database, it will detect an upgrade unnecessarily

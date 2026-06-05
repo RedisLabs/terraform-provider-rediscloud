@@ -71,7 +71,7 @@ The following arguments are supported:
 
 * `subscription_id` - (Required) The ID of the subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
 * `name` - (Required) A meaningful name to identify the database
-* `redis_version` - (Optional) The requested Redis version of the database. If omitted, the Redis version will be the default. May differ if `auto_minor_version_upgrade` is set to `true`. Use `actual_redis_version` to fetch the Redis version used by the database.
+* `redis_version` - (Optional) The requested Redis version of the database. If omitted, the Redis version will be the default. May differ if `auto_minor_version_upgrade` is set to `true`. Use `redis_version_actual` to fetch the Redis version used by the database.
 * `throughput_measurement_by` - (Required) Throughput measurement method that will be used by your databases. Either `number-of-shards` or `operations-per-second`. **`number-of-shards` is deprecated and only supported for legacy deployments.**
 * `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
 * `memory_limit_in_gb` - (Optional -  **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favor of `dataset_size_in_gb` - not possible to import databases with this attribute set**
@@ -151,7 +151,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/l
 * `db_id` - Identifier of the database created
 * `public_endpoint` - Public endpoint to access the database
 * `private_endpoint` - Private endpoint to access the database
-* `actual_redis_version` - The Redis version of the database. Can differ from `redis_version` if `auto_minor_version_upgrade` is set to `true`
+* `redis_version_actual` - The Redis version of the database. Can differ from `redis_version` if `auto_minor_version_upgrade` is set to `true`
 
 ## Import
 `rediscloud_subscription_database` can be imported using the ID of the subscription and the ID of the database in the format {subscription ID}/{database ID}, e.g.

@@ -6,7 +6,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 # 2.17.0 (TBD)
 
 ## Added
-- Added `actual_redis_version` attribute to the `rediscloud_subscription_database` resource.
+- Added `redis_version_actual` attribute to the `rediscloud_subscription_database` resource.
 
 ## Changed
 - Upgraded Go dependencies and CI workflow actions.
