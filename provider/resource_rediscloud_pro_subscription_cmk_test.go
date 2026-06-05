@@ -1,7 +1,6 @@
 package provider
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -29,7 +28,10 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:             fmt.Sprintf(proCmkStep1Config, name),
+				ConfigFile: config.StaticFile("./pro/testdata/cmk_gcp_step1.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+				},
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -44,7 +46,11 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 				),
 			},
 			{
-				Config:             fmt.Sprintf(proCmkStep2Config, name, gcpCmkResourceName),
+				ConfigFile: config.StaticFile("./pro/testdata/cmk_gcp_step1.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name":     config.StringVariable(name),
+					"gcp_cmk_resource_name": config.StringVariable(gcpCmkResourceName),
+				},
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -61,74 +67,6 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 		},
 	})
 }
-
-const proCmkStep1Config = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-resource "rediscloud_subscription" "example" {
-  name = "%s"
-  payment_method = "credit-card"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-  customer_managed_key_enabled = true
-
-  cloud_provider {
-    provider = "GCP"
-    region {
-      region                     = "europe-west2"
-      networking_deployment_cidr = "10.0.1.0/24"
-    }
-  }
-
-  creation_plan {
-    dataset_size_in_gb = 1
-    quantity = 1
-    replication = false
-    support_oss_cluster_api = false
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-  }
-}
-`
-
-const proCmkStep2Config = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-resource "rediscloud_subscription" "example" {
-  name = "%s"
-  payment_method = "credit-card"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-  customer_managed_key_enabled = true
-
-  cloud_provider {
-    provider = "GCP"
-    region {
-      region                     = "europe-west2"
-      networking_deployment_cidr = "10.0.1.0/24"
-    }
-  }
-
-  creation_plan {
-    dataset_size_in_gb = 1
-    quantity = 1
-    replication = false
-    support_oss_cluster_api = false
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-  }
-
-  customer_managed_key {
-    resource_name = "%s"
-  }
-}
-`
 
 // TestAccResourceRedisCloudProSubscription_CMK_AWS is a fully automated AWS CMK test.
 // It uses the hashicorp/aws external provider to create the KMS key and key policy
