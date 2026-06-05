@@ -6,6 +6,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 # 2.17.0 (TBD)
 
 ## Added
+- Added `redis_version_actual` attribute to the `rediscloud_subscription_database` resource.
 - Added `redis_version_actual` attribute to the `rediscloud_essentials_database` resource.
 
 ## Changed
@@ -16,6 +17,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 - Enabled `unused` check in linter
 
 ## Fixed
+- State drift on `redis_version` caused by `auto_minor_version_upgrade` being set to `true`
 - State drift on `redis_version` in `rediscloud_essentials_database` resource caused by auto minor version upgrade feature.
 
 # 2.16.1 (May 2026)
