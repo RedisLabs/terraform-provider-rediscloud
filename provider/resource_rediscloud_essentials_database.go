@@ -79,10 +79,11 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				ForceNew:         true,
 			},
 			"redis_version": {
-				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
-				Type:        schema.TypeString,
-				Optional:    true,
-				Computed:    true,
+				Description:      "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: utils.SuppressIfRedisVersionSatisfied,
 			},
 			"redis_version_actual": {
 				Description: "The actual Redis database version",
@@ -636,6 +637,7 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 		actualRedisVersion := d.Get("redis_version_actual")
 
 		// Only perform upgrade if both versions are non-empty (prevents unnecessary upgrades on creation)
+		//TODO(TF3.0) once redis_version goes write-only-by-convention (Computed dropped, not written from Read), drop the actualRedisVersion guard — DSF already makes it unreachable in normal operation. Kept today as belt-and-suspenders against DSF regressions.
 		if originalVersion.(string) != "" && newVersion.(string) != "" && actualRedisVersion.(string) != newVersion.(string) {
 			if upgradeDiags := upgradeRedisVersionEssentials(ctx, api, subId, databaseId, newVersion.(string)); upgradeDiags != nil {
 				return upgradeDiags

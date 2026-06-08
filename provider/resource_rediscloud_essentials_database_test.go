@@ -447,7 +447,10 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionAutoMinorUpgrade(t 
 					resource.TestCheckResourceAttr(resourceName, "redis_version_actual", "8.6"),
 				),
 			},
-			// Step 2: Simulate that an auto_minor_version_upgrade happened, not throwing an error when receiving a `downgrade` request, is currently expected behaviour
+			// Step 2: Simulate that an auto_minor_version_upgrade happened: actual ("8.6") is now ahead
+			// of the requested version ("8.4"). DiffSuppressFunc (utils.SuppressIfRedisVersionSatisfied)
+			// must treat the request as satisfied and produce a clean plan — PlanOnly with the default
+			// ExpectNonEmptyPlan=false fails if any diff sneaks through.
 			{
 				ConfigFile: config.StaticFile("./essentials/testdata/essentials_database_basic_8.tf"),
 				ConfigVariables: config.Variables{
@@ -457,12 +460,13 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionAutoMinorUpgrade(t 
 					"password":          config.StringVariable(password),
 					"database_protocol": config.StringVariable("stack"),
 				},
+				PlanOnly: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
 					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
-					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.4"),
+					// DSF makes the field look unchanged, so state retains the value from the prior step.
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.6"),
 					resource.TestCheckResourceAttr(resourceName, "redis_version_actual", "8.6"),
-					// Verify database is still active and accessible
 					resource.TestCheckResourceAttrSet(resourceName, "public_endpoint"),
 				),
 			},
