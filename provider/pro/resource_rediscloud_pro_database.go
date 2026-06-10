@@ -131,8 +131,9 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Description: "Defines the requested Redis database version. If omitted, the Redis version will be set to the default version. Use `redis_version_actual` to get the version on which the database is running.",
 				Type:        schema.TypeString,
 				Optional:    true,
-				//TODO(TF3.0) remove computed , as it is a breaking change. Previously value could also be received from API, but should become write-only
-				Computed: true,
+				//TODO(TF3.0) drop Computed and stop writing redis_version from Read — makes the field write-only-by-convention (no plugin-framework migration), so state only ever holds what the user wrote in config and auto-upgrades can't drift state. DSF stays to heal state poisoned by older provider versions.
+				Computed:         true,
+				DiffSuppressFunc: utils.SuppressIfRedisVersionSatisfied,
 			},
 			"redis_version_actual": {
 				Description: "The actual Redis database version",
@@ -992,6 +993,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 
 		// if either version is blank, it could attempt to upgrade unnecessarily.
 		// only upgrade when a known version goes to another known version
+		//TODO(TF3.0) once redis_version goes write-only-by-convention (Computed dropped, not written from Read), drop the actualRedisVersion guard — DSF already makes it unreachable in normal operation. Kept today as belt-and-suspenders against DSF regressions.
 		if originalVersion.(string) != "" && newVersion.(string) != "" && actualRedisVersion != newVersion.(string) {
 			if upgradeDiags, unlocked := upgradeRedisVersion(ctx, api, subId, dbId, newVersion.(string)); upgradeDiags != nil {
 				if !unlocked {

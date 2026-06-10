@@ -348,7 +348,10 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 					resource.TestCheckResourceAttr(resourceName, "redis_version_actual", "8.6"),
 				),
 			},
-			//simulate that an auto_minor_version_upgrade happened, not throwing an error when receiving a `downgrade` request, is currently expected behaviour
+			// Simulate that an auto_minor_version_upgrade happened: actual ("8.6") is now ahead of the
+			// requested version ("8.4"). DiffSuppressFunc (utils.SuppressIfRedisVersionSatisfied) must
+			// treat the request as satisfied and produce a clean plan — PlanOnly with the default
+			// ExpectNonEmptyPlan=false fails if any diff sneaks through.
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_auto_minor_version_upgrade.tf"),
 				ConfigVariables: config.Variables{
@@ -358,9 +361,11 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 					"auto_minor_version_upgrade":   config.BoolVariable(true),
 					"redis_version":                config.StringVariable("8.4"),
 				},
+				PlanOnly: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "auto_minor_version_upgrade", "true"),
-					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.4"),
+					// DSF makes the field look unchanged, so state retains the value from the prior step.
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.6"),
 					resource.TestCheckResourceAttr(resourceName, "redis_version_actual", "8.6"),
 				),
 			},
