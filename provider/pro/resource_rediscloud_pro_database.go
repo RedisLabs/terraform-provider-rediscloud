@@ -128,9 +128,16 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				ExactlyOneOf: []string{"memory_limit_in_gb", "dataset_size_in_gb"},
 			},
 			"redis_version": {
-				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
+				Description: "Defines the requested Redis database version. If omitted, the Redis version will be set to the default version. Use `redis_version_actual` to get the version on which the database is running.",
 				Type:        schema.TypeString,
 				Optional:    true,
+				//TODO(TF3.0) drop Computed and stop writing redis_version from Read — makes the field write-only-by-convention (no plugin-framework migration), so state only ever holds what the user wrote in config and auto-upgrades can't drift state. DSF stays to heal state poisoned by older provider versions.
+				Computed:         true,
+				DiffSuppressFunc: utils.SuppressIfRedisVersionSatisfied,
+			},
+			"redis_version_actual": {
+				Description: "The actual Redis database version",
+				Type:        schema.TypeString,
 				Computed:    true,
 			},
 			"support_oss_cluster_api": {
@@ -616,9 +623,17 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	}
 
 	if db.RedisVersion != nil {
-		if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
+		if err := d.Set("redis_version_actual", redis.StringValue(db.RedisVersion)); err != nil {
 			return diag.FromErr(err)
 		}
+		_, inState := d.GetOk("redis_version")
+
+		if !inState {
+			if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+
 	}
 
 	// For Redis 8.0+, modules are bundled by default and returned by the API
@@ -970,7 +985,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		utils.SubscriptionMutex.Unlock(subId)
 		return append(diags, diag.FromErr(err)...)
 	}
-
+	actualRedisVersion := d.Get("redis_version_actual")
 	// if redis_version has changed, then upgrade first
 	if d.HasChange("redis_version") {
 		// if we have just created the database, it will detect an upgrade unnecessarily
@@ -978,7 +993,8 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 
 		// if either version is blank, it could attempt to upgrade unnecessarily.
 		// only upgrade when a known version goes to another known version
-		if originalVersion.(string) != "" && newVersion.(string) != "" {
+		//TODO(TF3.0) once redis_version goes write-only-by-convention (Computed dropped, not written from Read), drop the actualRedisVersion guard — DSF already makes it unreachable in normal operation. Kept today as belt-and-suspenders against DSF regressions.
+		if originalVersion.(string) != "" && newVersion.(string) != "" && actualRedisVersion != newVersion.(string) {
 			if upgradeDiags, unlocked := upgradeRedisVersion(ctx, api, subId, dbId, newVersion.(string)); upgradeDiags != nil {
 				if !unlocked {
 					utils.SubscriptionMutex.Unlock(subId)
@@ -1200,16 +1216,6 @@ func ValidatePasswordlessNotConflicting() schema.CustomizeDiffFunc {
 
 		return nil
 	}
-}
-
-// Helper function to check if a module exists
-func containsDBModule(modules []map[string]interface{}, moduleName string) bool {
-	for _, module := range modules {
-		if name, ok := module["name"].(string); ok && name == moduleName {
-			return true
-		}
-	}
-	return false
 }
 
 // ShouldWarnRedis8Modules checks if a warning should be issued for modules in Redis 8.0 or higher

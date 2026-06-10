@@ -18,8 +18,8 @@ func init() {
 	protoV5ProviderFactories = map[string]func() (tfprotov5.ProviderServer, error){
 		"rediscloud": func() (tfprotov5.ProviderServer, error) {
 			muxServer, err := MuxProviderServerCreator(
-				NewSdkProvider("dev")(),
-				NewFrameworkProvider("dev")(),
+				NewSdkProvider("99.99.99")(),
+				NewFrameworkProvider("99.99.99")(),
 			)
 			if err != nil {
 				return nil, err
@@ -71,6 +71,13 @@ func testAccAwsPreExistingCloudAccountPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
 }
 
+// testAccAwsApiCredsPreCheck requires only the AWS API credentials needed by the
+// hashicorp/aws external provider for tests that provision AWS resources directly
+// (e.g. the AWS CMK tests, which create KMS keys + key policies in-fixture).
+func testAccAwsApiCredsPreCheck(t *testing.T) {
+	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY")
+}
+
 func testAccAwsCloudAccountPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_ACCESS_SECRET_KEY", "AWS_CONSOLE_USERNAME", "AWS_CONSOLE_PASSWORD", "AWS_SIGNIN_URL")
 }
@@ -87,16 +94,8 @@ func testAccGcpCredentialsPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "GOOGLE_CREDENTIALS")
 }
 
-func testAccAwsPreExistingTgwCheck(t *testing.T) {
-	requireEnvironmentVariables(t, "AWS_TEST_TGW_ID")
-}
-
 func testAccAwsCredentialsPreCheck(t *testing.T) {
 	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION")
-}
-
-func testAccRedisCloudAwsAccountPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, "REDISCLOUD_AWS_ACCOUNT_ID")
 }
 
 func requireEnvironmentVariables(t *testing.T, names ...string) {

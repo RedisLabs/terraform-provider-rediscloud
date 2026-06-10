@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
@@ -23,9 +24,9 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 	const resourceName = "rediscloud_active_active_subscription.example"
 	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
 
-	placeholders := map[string]string{
-		"__NAME__":           name,
-		"__GCP_PROJECT_ID__": gcpProjectId,
+	configVars := config.Variables{
+		"name":           config.StringVariable(name),
+		"gcp_project_id": config.StringVariable(gcpProjectId),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -42,7 +43,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 			{
 				// Step 1: Create subscription with CMK enabled (enters encryption_key_pending state)
 				// Also creates GCP KMS key and grants IAM permissions to the Redis service account
-				Config:             utils.RenderTestConfig(t, "./activeactive/testdata/cmk_step1.tf", placeholders),
+				ConfigFile:         config.StaticFile("./activeactive/testdata/cmk_step1.tf"),
+				ConfigVariables:    configVars,
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -56,11 +58,77 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 			{
 				// Step 2: Add CMK blocks to activate encryption
 				// This triggers the UpdateCmk code path which should also clean up creation plan databases
-				Config:             utils.RenderTestConfig(t, "./activeactive/testdata/cmk_step2.tf", placeholders),
+				ConfigFile:         config.StaticFile("./activeactive/testdata/cmk_step2.tf"),
+				ConfigVariables:    configVars,
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_redis_service_account"),
+					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
+					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider"),
+					resource.TestCheckResourceAttr(resourceName, "customer_managed_key_enabled", "true"),
+					testAccCheckNoCreationPlanDatabases(resourceName),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS is a fully automated AWS CMK test.
+// It uses the hashicorp/aws external provider to create a multi-region KMS key
+// (primary in us-east-1, replica in us-east-2) and key policies in-fixture,
+// removing the need for a pre-existing AWS_CMK_KEY_ARN.
+func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
+
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	name := testRandomWithPrefix() + "-aa-cmk-aws"
+	const resourceName = "rediscloud_active_active_subscription.example"
+
+	configVars := config.Variables{
+		"name": config.StringVariable(name),
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccAwsPreExistingCloudAccountPreCheck(t)
+			testAccAwsApiCredsPreCheck(t)
+		},
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"aws": {
+				Source:            "hashicorp/aws",
+				VersionConstraint: "~> 5.0",
+			},
+		},
+		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				// Step 1: subscription enters encryption_key_pending; both key policies
+				// (primary + replica) reference the role ARN returned by the subscription.
+				ConfigFile:         config.StaticFile("./activeactive/testdata/cmk_aws_step1.tf"),
+				ConfigVariables:    configVars,
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_aws_role_arn"),
+					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
+					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider"),
+					resource.TestCheckResourceAttr(resourceName, "customer_managed_key_enabled", "true"),
+				),
+			},
+			{
+				// Step 2: subscription supplies the per-region KMS ARNs (primary + replica)
+				// and transitions out of encryption_key_pending.
+				ConfigFile:         config.StaticFile("./activeactive/testdata/cmk_aws_step2.tf"),
+				ConfigVariables:    configVars,
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_aws_role_arn"),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider"),

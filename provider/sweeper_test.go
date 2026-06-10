@@ -17,8 +17,8 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	fixedSubscriptions "github.com/RedisLabs/rediscloud-go-api/service/fixed/subscriptions"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 // testResourcePrefix is the prefix used for all test resource names.

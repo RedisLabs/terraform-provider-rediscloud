@@ -7,11 +7,10 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserInheritance tests the fix for
@@ -33,10 +32,10 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserInheritance(
 	const resourceName = "rediscloud_active_active_subscription_database.test"
 	const subscriptionResourceName = "rediscloud_active_active_subscription.test"
 
-	placeholders := map[string]string{
-		"__SUBSCRIPTION_NAME__": subscriptionName,
-		"__DATABASE_NAME__":     databaseName,
-		"__PASSWORD__":          password,
+	configVars := config.Variables{
+		"subscription_name": config.StringVariable(subscriptionName),
+		"database_name":     config.StringVariable(databaseName),
+		"password":          config.StringVariable(password),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -45,7 +44,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserInheritance(
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: utils.RenderTestConfig(t, "./activeactive/testdata/enable_default_user_inheritance.tf", placeholders),
+				ConfigFile:      config.StaticFile("./activeactive/testdata/enable_default_user_inheritance.tf"),
+				ConfigVariables: configVars,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
 					resource.TestCheckResourceAttr(resourceName, "global_enable_default_user", "false"),
@@ -70,10 +70,10 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 	const resourceName = "rediscloud_active_active_subscription_database.test"
 	const subscriptionResourceName = "rediscloud_active_active_subscription.test"
 
-	placeholders := map[string]string{
-		"__SUBSCRIPTION_NAME__": subscriptionName,
-		"__DATABASE_NAME__":     databaseName,
-		"__PASSWORD__":          password,
+	configVars := config.Variables{
+		"subscription_name": config.StringVariable(subscriptionName),
+		"database_name":     config.StringVariable(databaseName),
+		"password":          config.StringVariable(password),
 	}
 
 	// Track database ID to verify it's not recreated between steps
@@ -86,7 +86,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 		Steps: []resource.TestStep{
 			// Step 1: global=true, both regions inherit
 			{
-				Config: utils.RenderTestConfig(t, "./activeactive/testdata/enable_default_user_global_true_inherit.tf", placeholders),
+				ConfigFile:      config.StaticFile("./activeactive/testdata/enable_default_user_global_true_inherit.tf"),
+				ConfigVariables: configVars,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
 					resource.TestCheckResourceAttr(resourceName, "global_enable_default_user", "true"),
@@ -109,7 +110,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 			// Step 2: global=true, us-east-1 overrides to false, us-east-2 inherits
 			// Also tests override_global_password matching global_password doesn't cause drift
 			{
-				Config: utils.RenderTestConfig(t, "./activeactive/testdata/enable_default_user_mixed_overrides.tf", placeholders),
+				ConfigFile:      config.StaticFile("./activeactive/testdata/enable_default_user_mixed_overrides.tf"),
+				ConfigVariables: configVars,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "global_enable_default_user", "true"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.#", "2"),
@@ -133,7 +135,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 			// Step 3: global=false, us-east-1 overrides to true, us-east-2 inherits false
 			// This step catches the inheritance bug where us-east-2 incorrectly gets true
 			{
-				Config: utils.RenderTestConfig(t, "./activeactive/testdata/enable_default_user_global_false_region_true.tf", placeholders),
+				ConfigFile:      config.StaticFile("./activeactive/testdata/enable_default_user_global_false_region_true.tf"),
+				ConfigVariables: configVars,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "global_enable_default_user", "false"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.#", "2"),
@@ -156,7 +159,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 			},
 			// Step 4: global=true, both regions explicit (us-east-1=true, us-east-2=false)
 			{
-				Config: utils.RenderTestConfig(t, "./activeactive/testdata/enable_default_user_all_explicit.tf", placeholders),
+				ConfigFile:      config.StaticFile("./activeactive/testdata/enable_default_user_all_explicit.tf"),
+				ConfigVariables: configVars,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "global_enable_default_user", "true"),
 					resource.TestCheckResourceAttr(resourceName, "override_region.#", "2"),

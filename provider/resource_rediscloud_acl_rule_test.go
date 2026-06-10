@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
@@ -128,12 +128,6 @@ func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 	})
 
 }
-
-const getDefaultAclRuleDataSource = `
-data "rediscloud_acl_rule" "test" {
-	name = "%s"
-}
-`
 
 const testRedisRule = `
 resource "rediscloud_acl_rule" "test" {

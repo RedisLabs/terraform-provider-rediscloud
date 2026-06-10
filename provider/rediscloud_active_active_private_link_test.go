@@ -11,9 +11,9 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
 	pl "github.com/RedisLabs/rediscloud-go-api/service/privatelink"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 const testActiveActivePrivateLinkConfigFile = "./privatelink/testdata/active_active_private_link.tf"
@@ -83,13 +83,6 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 			},
 		},
 	})
-}
-
-func getRedisActiveActivePrivateLinkConfig(t *testing.T, testFile, shareName, password string) string {
-	subName := testRandomWithPrefix() + "-aa-private-link"
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
-	content := utils.GetTestConfig(t, testFile)
-	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName, password)
 }
 
 func getRedisActiveActivePrivateLinkConfigWithNames(t *testing.T, subName, shareName, password string) string {

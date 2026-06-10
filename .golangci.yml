@@ -27,6 +27,7 @@ linters:
     - noctx         # Find HTTP requests without context.Context
     - unconvert     # Remove unnecessary type conversions
     - unparam       # Find unused function parameters
+    - unused        # Find unused constants, variables, functions and types
     - wastedassign  # Find wasted assignment statements
 
   settings:

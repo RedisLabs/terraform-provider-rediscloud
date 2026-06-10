@@ -5,7 +5,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
@@ -31,9 +32,10 @@ func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
 		CheckDestroy:             nil, // test doesn't create a resource at the moment, so don't need to check anything
 		Steps: []resource.TestStep{
 			{
-				Config: utils.RenderTestConfig(t, "./testdata/datasource_basic.tf", map[string]string{
-					"__NAME__": name,
-				}),
+				ConfigFile: config.StaticFile("./testdata/datasource_basic.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(testCloudAccount, "id", regexp.MustCompile("^\\d*$")),
 					resource.TestCheckResourceAttr(testCloudAccount, "provider_type", "AWS"),

@@ -1,7 +1,13 @@
-locals {
-  rediscloud_cloud_account     = "__CLOUD_ACCOUNT__"
-  rediscloud_subscription_name = "__SUBSCRIPTION_NAME__"
-  port_number                  = tonumber("__PORT_NUMBER__")
+variable "rediscloud_cloud_account" {
+  type = string
+}
+
+variable "rediscloud_subscription_name" {
+  type = string
+}
+
+variable "port_number" {
+  type = number
 }
 
 data "rediscloud_payment_method" "card" {
@@ -12,11 +18,11 @@ data "rediscloud_payment_method" "card" {
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
   provider_type            = "AWS"
-  name                     = local.rediscloud_cloud_account
+  name                     = var.rediscloud_cloud_account
 }
 
 resource "rediscloud_subscription" "example" {
-  name              = local.rediscloud_subscription_name
+  name              = var.rediscloud_subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider {
     provider         = data.rediscloud_cloud_account.account.provider_type
@@ -44,5 +50,5 @@ resource "rediscloud_subscription_database" "example" {
   data_persistence             = "none"
   throughput_measurement_by    = "operations-per-second"
   throughput_measurement_value = 1000
-  port                         = local.port_number
+  port                         = var.port_number
 }

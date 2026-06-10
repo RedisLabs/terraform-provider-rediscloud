@@ -11,9 +11,8 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
@@ -830,7 +829,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.
 	}
 	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
 	assert.Len(t, diags, 1, "Warning should be reported when storage was ram and using `average_item_size_in_bytes`")
-	assert.Equal(t, diag.Warning, diags[0].Severity)
+	assert.False(t, diags.HasError(), "diagnostic should be a warning, not an error")
 	createDb := createDbs[0]
 	assert.Equal(t, "operations-per-second", *createDb.ThroughputMeasurement.By)
 	assert.Equal(t, 2*500, *createDb.ThroughputMeasurement.Value)
@@ -866,55 +865,6 @@ func testAccCheckProSubscriptionDestroy(s *terraform.State) error {
 
 	return nil
 }
-
-// TF config for provisioning a new subscription.
-const testAccResourceRedisCloudProSubscription = `
-data "rediscloud_payment_method" "card" {
-	card_type = "Visa"
-	last_four_numbers = "5556"
-}
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type = "AWS" 
-  name = "%s"
-}
-
-resource "rediscloud_subscription" "example" {
-
-  name = "%s"
-  payment_method = "credit-card"
-  payment_method_id = data.rediscloud_payment_method.card.id
-  memory_storage = "ram"
-
-  allowlist {
-    cidrs = ["192.168.0.0/16"]
-    security_group_ids = []
-  }
-
-  cloud_provider {
-    provider = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
-    region {
-      region = "eu-west-1"
-      networking_deployment_cidr = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
-    }
-  }
-
-  creation_plan {
-    dataset_size_in_gb = 1
-    quantity = 1
-    replication = false
-    support_oss_cluster_api = false
-	query_performance_factor = "4x"
-
-    throughput_measurement_by = "operations-per-second"
-    throughput_measurement_value = 10000
-    modules = ["RedisJSON", "RedisBloom", "RediSearch"]
-  }
-}
-`
 
 const testAccResourceRedisCloudProSubscriptionWithRedisVersion = `
 data "rediscloud_payment_method" "card" {

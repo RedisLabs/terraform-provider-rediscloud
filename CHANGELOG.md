@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.17.0 (TBD)
+
+## Added
+- Added `redis_version_actual` attribute to the `rediscloud_subscription_database` resource.
+- Added `redis_version_actual` attribute to the `rediscloud_essentials_database` resource.
+- Added AWS support for customer managed keys on the `rediscloud_subscription` resource, exposing the new `customer_managed_key_aws_role_arn` computed attribute — the IAM role ARN to add to your KMS key policy.
+- Exposed `customer_managed_key_aws_role_arn` attribute on the `rediscloud_subscription` data source.
+- Added AWS support for customer managed keys on the `rediscloud_active_active_subscription` resource, exposing the new `customer_managed_key_aws_role_arn` computed attribute — the IAM role ARN to add to your KMS key policy.
+- Exposed `customer_managed_key_aws_role_arn` attribute on the `rediscloud_active_active_subscription` data source.
+
+
+## Changed
+- Upgraded Go dependencies and CI workflow actions.
+- Removed use of `RenderTestConfig` from tests
+- Removed imports from `terraform-plugin-sdk/v2/` from tests
+- Tests sending `dev` as provider version, changed to `99.99.99`
+- Enabled `unused` check in linter
+
+## Fixed
+- State drift on `redis_version` caused by `auto_minor_version_upgrade` being set to `true`
+- State drift on `redis_version` in `rediscloud_essentials_database` resource caused by auto minor version upgrade feature.
+
 # 2.16.1 (May 2026)
 
 ## Fixed

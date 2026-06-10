@@ -79,9 +79,15 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 				ForceNew:         true,
 			},
 			"redis_version": {
-				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
+				Description:      "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: utils.SuppressIfRedisVersionSatisfied,
+			},
+			"redis_version_actual": {
+				Description: "The actual Redis database version",
 				Type:        schema.TypeString,
-				Optional:    true,
 				Computed:    true,
 			},
 			"cloud_provider": {
@@ -479,8 +485,18 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 	if err := d.Set("protocol", redis.StringValue(db.Protocol)); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
-		return diag.FromErr(err)
+	if db.RedisVersion != nil {
+		if err := d.Set("redis_version_actual", redis.StringValue(db.RedisVersion)); err != nil {
+			return diag.FromErr(err)
+		}
+		_, inState := d.GetOk("redis_version")
+
+		if !inState {
+			if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
+				return diag.FromErr(err)
+			}
+		}
+
 	}
 	if err := d.Set("cloud_provider", redis.StringValue(db.Provider)); err != nil {
 		return diag.FromErr(err)
@@ -618,9 +634,11 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 	// Handle redis_version upgrades before other updates
 	if d.HasChange("redis_version") {
 		originalVersion, newVersion := d.GetChange("redis_version")
+		actualRedisVersion := d.Get("redis_version_actual")
 
 		// Only perform upgrade if both versions are non-empty (prevents unnecessary upgrades on creation)
-		if originalVersion.(string) != "" && newVersion.(string) != "" {
+		//TODO(TF3.0) once redis_version goes write-only-by-convention (Computed dropped, not written from Read), drop the actualRedisVersion guard — DSF already makes it unreachable in normal operation. Kept today as belt-and-suspenders against DSF regressions.
+		if originalVersion.(string) != "" && newVersion.(string) != "" && actualRedisVersion.(string) != newVersion.(string) {
 			if upgradeDiags := upgradeRedisVersionEssentials(ctx, api, subId, databaseId, newVersion.(string)); upgradeDiags != nil {
 				return upgradeDiags
 			}
@@ -870,20 +888,4 @@ func writeFixedTags(ctx context.Context, api *client.ApiClient, subId int, datab
 		})
 	}
 	return api.Client.Tags.PutFixed(ctx, subId, databaseId, tags.AllTags{Tags: &t})
-}
-
-func essentialsCustomizeDiff() schema.CustomizeDiffFunc {
-	return func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-		// Check if user is trying to specify modules
-		modules, modulesExists := diff.GetOkExists("modules")
-
-		if modulesExists {
-			moduleSet := modules.(*schema.Set)
-			if moduleSet.Len() > 0 {
-				// Warn, don't error
-				log.Printf("[WARN] Modules are explicitly configured. Note that some plans may use Redis 8.0+ where modules are bundled by default. The API will reject invalid configurations.")
-			}
-		}
-		return nil
-	}
 }

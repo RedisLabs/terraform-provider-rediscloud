@@ -5,7 +5,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
@@ -404,6 +406,67 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.
 					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.4"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "aof-every-write"),
 					// Verify database is still active and accessible
+					resource.TestCheckResourceAttrSet(resourceName, "public_endpoint"),
+				),
+			},
+		},
+	})
+}
+
+// Test redis_version no incorrect diff and redis_version_actual always has correct version
+func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionAutoMinorUpgrade(t *testing.T) {
+	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
+
+	subscriptionName := utils.RandomWithPrefix()
+	databaseName := subscriptionName + "-db"
+	password := acctest.RandString(20)
+
+	const resourceName = "rediscloud_essentials_database.example"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
+		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: Create database with Redis 8.4
+			{
+				ConfigFile: config.StaticFile("./essentials/testdata/essentials_database_basic_8.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_name":     config.StringVariable(databaseName),
+					"redis_version":     config.StringVariable("8.6"),
+					"password":          config.StringVariable(password),
+					"database_protocol": config.StringVariable("stack"),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
+					resource.TestCheckResourceAttrSet(resourceName, "subscription_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "db_id"),
+					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.6"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version_actual", "8.6"),
+				),
+			},
+			// Step 2: Simulate that an auto_minor_version_upgrade happened: actual ("8.6") is now ahead
+			// of the requested version ("8.4"). DiffSuppressFunc (utils.SuppressIfRedisVersionSatisfied)
+			// must treat the request as satisfied and produce a clean plan — PlanOnly with the default
+			// ExpectNonEmptyPlan=false fails if any diff sneaks through.
+			{
+				ConfigFile: config.StaticFile("./essentials/testdata/essentials_database_basic_8.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_name":     config.StringVariable(databaseName),
+					"redis_version":     config.StringVariable("8.4"),
+					"password":          config.StringVariable(password),
+					"database_protocol": config.StringVariable("stack"),
+				},
+				PlanOnly: true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
+					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
+					// DSF makes the field look unchanged, so state retains the value from the prior step.
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.6"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version_actual", "8.6"),
 					resource.TestCheckResourceAttrSet(resourceName, "public_endpoint"),
 				),
 			},

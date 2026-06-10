@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -24,9 +25,9 @@ func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 	const resourceName = "rediscloud_subscription.example"
 	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
 
-	placeholders := map[string]string{
-		"__NAME__":           name,
-		"__GCP_PROJECT_ID__": gcpProjectId,
+	configVars := config.Variables{
+		"name":           config.StringVariable(name),
+		"gcp_project_id": config.StringVariable(gcpProjectId),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -43,7 +44,8 @@ func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 			{
 				// Step 1: Create subscription with CMK enabled (enters encryption_key_pending state)
 				// Also creates GCP KMS key and grants IAM permissions to the Redis service account
-				Config:             utils.RenderTestConfig(t, "testdata/cmk_step1.tf", placeholders),
+				ConfigFile:         config.StaticFile("./testdata/cmk_step1.tf"),
+				ConfigVariables:    configVars,
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -59,7 +61,8 @@ func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 			{
 				// Step 2: Add CMK blocks to activate encryption
 				// This triggers the UpdateCmk code path which should also clean up creation plan databases
-				Config:             utils.RenderTestConfig(t, "testdata/cmk_step2.tf", placeholders),
+				ConfigFile:         config.StaticFile("./testdata/cmk_step2.tf"),
+				ConfigVariables:    configVars,
 				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),

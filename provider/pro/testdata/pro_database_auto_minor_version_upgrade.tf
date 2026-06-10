@@ -1,8 +1,21 @@
-locals {
-  rediscloud_cloud_account     = "__CLOUD_ACCOUNT__"
-  rediscloud_subscription_name = "__SUBSCRIPTION_NAME__"
-  rediscloud_database_name     = "__DATABASE_NAME__"
-  auto_minor_version_upgrade   = "__AUTO_MINOR_VERSION_UPGRADE__" == "true"
+variable "rediscloud_cloud_account" {
+  type = string
+}
+
+variable "rediscloud_subscription_name" {
+  type = string
+}
+
+variable "rediscloud_database_name" {
+  type = string
+}
+
+variable "auto_minor_version_upgrade" {
+  type = bool
+}
+
+variable "redis_version" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
@@ -13,11 +26,11 @@ data "rediscloud_payment_method" "card" {
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
   provider_type            = "AWS"
-  name                     = local.rediscloud_cloud_account
+  name                     = var.rediscloud_cloud_account
 }
 
 resource "rediscloud_subscription" "example" {
-  name              = local.rediscloud_subscription_name
+  name              = var.rediscloud_subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage    = "ram"
   cloud_provider {
@@ -41,11 +54,12 @@ resource "rediscloud_subscription" "example" {
 
 resource "rediscloud_subscription_database" "example" {
   subscription_id              = rediscloud_subscription.example.id
-  name                         = local.rediscloud_database_name
+  name                         = var.rediscloud_database_name
   protocol                     = "redis"
   memory_limit_in_gb           = 1
   data_persistence             = "none"
   throughput_measurement_by    = "operations-per-second"
   throughput_measurement_value = 1000
-  auto_minor_version_upgrade   = local.auto_minor_version_upgrade
+  auto_minor_version_upgrade   = var.auto_minor_version_upgrade
+  redis_version                = var.redis_version
 }
