@@ -4,15 +4,20 @@ All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 # 2.17.1 (TBD)
+
 ## Changed
-- Added validation for `maintenance_windows` being set in CMK workflow tests for `rediscloud_active_active_subscription` resource
+- Added validation for `maintenance_windows` being set in CMK workflow tests in `rediscloud_subscription` and `rediscloud_active_active_subscription` resources
 
 ## Fixed
-- `maintenance_windows` not being set after CMK workflow in `rediscloud_active_active_subscription` resource
-- CMK workflow test for `rediscloud_active_active_subscription` not being runnable
+- `maintenance_windows` not being set after CMK workflow in `rediscloud_subscription` and `rediscloud_active_active_subscription` resources
+- `maintenance_windows` not being set on creation in `rediscloud_subscription` resource
+- Read logic for `maintenance_windows` and `pricing` not triggering properly during CMK workflow in `rediscloud_subscription` and `rediscloud_active_active_subscription` resources
+- CMK workflow test for `rediscloud_subscription` and `rediscloud_active_active_subscription` not being runnable
+- `rediscloud_subscription` tests for setting `maintenance_windows`
 - Read logic for `maintenance_windows` and `pricing` not triggering properly when in CMK workflow
 
-# 2.17.0 (10th June 2026)
+
+# 2.17.0 (10.06.2026)
 
 ## Added
 - Added `redis_version_actual` attribute to the `rediscloud_subscription_database` resource.
@@ -21,7 +26,6 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 - Exposed `customer_managed_key_aws_role_arn` attribute on the `rediscloud_subscription` data source.
 - Added AWS support for customer managed keys on the `rediscloud_active_active_subscription` resource, exposing the new `customer_managed_key_aws_role_arn` computed attribute — the IAM role ARN to add to your KMS key policy.
 - Exposed `customer_managed_key_aws_role_arn` attribute on the `rediscloud_active_active_subscription` data source.
-
 
 ## Changed
 - Upgraded Go dependencies and CI workflow actions.
