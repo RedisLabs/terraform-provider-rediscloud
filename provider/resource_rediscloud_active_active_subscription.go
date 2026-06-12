@@ -552,9 +552,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		return diag.FromErr(err)
 	}
 
-	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
-
-	if !cmkEnabled {
+	if *subscription.Status == subscriptions.SubscriptionStatusActive {
 		m, err := api.Client.Maintenance.Get(ctx, subId)
 		if err != nil {
 			return diag.FromErr(err)
