@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 6.5"
+    }
+  }
+}
+
 variable "name" {
   type = string
 }
@@ -44,6 +53,15 @@ resource "rediscloud_active_active_subscription" "example" {
   payment_method_id            = data.rediscloud_payment_method.card.id
   customer_managed_key_enabled = true
   cloud_provider               = "GCP"
+
+  maintenance_windows {
+    mode = "manual"
+    window {
+      start_hour        = 22
+      duration_in_hours = 8
+      days              = ["Monday", "Thursday"]
+    }
+  }
 
   customer_managed_key {
     resource_name = google_kms_crypto_key.cmk.id
