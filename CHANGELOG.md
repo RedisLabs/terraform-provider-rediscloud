@@ -5,13 +5,14 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 # 2.17.1 (TBD)
 ## Changed
-- Added validation for `maintenance_window` being set in CMK workflow tests
+- Added validation for `maintenance_windows` being set in CMK workflow tests for `rediscloud_active_active_subscription` resource
 
 ## Fixed
-- `maintenance_window` not being set after CMK workflow in active-active subscription
-- CMK workflow test for active_active subscription not being runnable
+- `maintenance_windows` not being set after CMK workflow in `rediscloud_active_active_subscription` resource
+- CMK workflow test for `rediscloud_active_active_subscription` not being runnable
+- Read logic for `maintenance_windows` and `pricing` not triggering properly when in CMK workflow
 
-# 2.17.0 (10.06.2026)
+# 2.17.0 (10th June 2026)
 
 ## Added
 - Added `redis_version_actual` attribute to the `rediscloud_subscription_database` resource.
@@ -33,12 +34,12 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 - State drift on `redis_version` caused by `auto_minor_version_upgrade` being set to `true`
 - State drift on `redis_version` in `rediscloud_essentials_database` resource caused by auto minor version upgrade feature.
 
-# 2.16.1 (May 2026)
+# 2.16.1 (21st May 2026)
 
 ## Fixed
 - Remove usage of immutable GitHub releases
 
-# 2.16.0 (May 2026)
+# 2.16.0 (19th May 2026)
 
 ## Added
 - Added `prometheus_endpoint` attribute to the `rediscloud_subscription` resource.
