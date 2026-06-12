@@ -3,7 +3,15 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-# 2.17.0 (TBD)
+# 2.17.1 (TBD)
+## Changed
+- Added validation for `maintenance_window` being set in CMK workflow tests
+
+## Fixed
+- `maintenance_window` not being set after CMK workflow in active-active subscription
+- CMK workflow test for active_active subscription not being runnable
+
+# 2.17.0 (10.06.2026)
 
 ## Added
 - Added `redis_version_actual` attribute to the `rediscloud_subscription_database` resource.
