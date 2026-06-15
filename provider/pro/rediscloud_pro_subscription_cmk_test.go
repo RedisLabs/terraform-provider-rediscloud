@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -28,6 +29,17 @@ func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 	configVars := config.Variables{
 		"name":           config.StringVariable(name),
 		"gcp_project_id": config.StringVariable(gcpProjectId),
+		"maintenance_windows": config.ListVariable(config.ObjectVariable(
+			map[string]config.Variable{
+				"mode": config.StringVariable("manual"),
+				"window": config.ListVariable(config.ObjectVariable(
+					map[string]config.Variable{
+						"start_hour":        config.IntegerVariable(22),
+						"duration_in_hours": config.IntegerVariable(8),
+						"days":              config.ListVariable(config.StringVariable("Monday"), config.StringVariable("Thursday")),
+					})),
+			},
+		)),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -58,8 +70,17 @@ func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				ConfigFile:               config.StaticFile("./testdata/cmk_step2.tf"),
 				ConfigVariables:          configVars,
-				ExpectNonEmptyPlan:       true,
-				Check: resource.ComposeAggregateTestCheckFunc(
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+					PostApplyPreRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+					PostApplyPostRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				}, Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_redis_service_account"),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
