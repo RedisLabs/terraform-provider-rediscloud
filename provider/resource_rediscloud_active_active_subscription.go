@@ -375,6 +375,7 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 }
 
 func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	//TODO fix mapping of empty objects to remove non-empty plan on refresh
 	api := meta.(*client.ApiClient)
 
 	plan := d.Get("creation_plan").([]interface{})
@@ -552,9 +553,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 		return diag.FromErr(err)
 	}
 
-	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
-
-	if !cmkEnabled {
+	if *subscription.Status == subscriptions.SubscriptionStatusActive {
 		m, err := api.Client.Maintenance.Get(ctx, subId)
 		if err != nil {
 			return diag.FromErr(err)
@@ -625,9 +624,10 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 	}
 
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
-
+	wasCmkPending := false
 	// CMK flow
 	if *subscription.Status == subscriptions.SubscriptionStatusEncryptionKeyPending && cmkEnabled {
+		wasCmkPending = true
 		diags := resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx, d, api, subId)
 
 		if diags != nil {
@@ -699,7 +699,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 		}
 	}
 
-	if d.HasChange("maintenance_windows") {
+	if d.HasChange("maintenance_windows") || wasCmkPending {
 		var updateMaintenanceRequest maintenance.Maintenance
 		if m, ok := d.GetOk("maintenance_windows"); ok {
 			mMap := m.([]interface{})[0].(map[string]interface{})
