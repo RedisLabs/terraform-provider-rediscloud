@@ -1,29 +1,9 @@
-terraform {
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 6.5"
-    }
-  }
-}
-
 variable "name" {
   type = string
 }
 
 variable "gcp_project_id" {
   type = string
-}
-
-variable "maintenance_windows" {
-  type = list(object({
-    mode = string
-    window = list(object({
-      start_hour        = number
-      duration_in_hours = number
-      days              = list(string)
-    }))
-  }))
 }
 
 data "rediscloud_payment_method" "card" {
@@ -54,21 +34,6 @@ resource "rediscloud_active_active_subscription" "example" {
   payment_method_id            = data.rediscloud_payment_method.card.id
   customer_managed_key_enabled = true
   cloud_provider               = "GCP"
-
-  dynamic "maintenance_windows" {
-    for_each = var.maintenance_windows
-    content {
-      mode = maintenance_windows.value.mode
-      dynamic "window" {
-        for_each = maintenance_windows.value.window
-        content {
-          start_hour        = window.value.start_hour
-          duration_in_hours = window.value.duration_in_hours
-          days              = window.value.days
-        }
-      }
-    }
-  }
 
   creation_plan {
     memory_limit_in_gb = 1
