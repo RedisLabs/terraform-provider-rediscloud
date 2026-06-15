@@ -28,6 +28,17 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 	configVars := config.Variables{
 		"name":           config.StringVariable(name),
 		"gcp_project_id": config.StringVariable(gcpProjectId),
+		"maintenance_windows": config.ListVariable(config.ObjectVariable(
+			map[string]config.Variable{
+				"mode": config.StringVariable("manual"),
+				"window": config.ListVariable(config.ObjectVariable(
+					map[string]config.Variable{
+						"start_hour":        config.IntegerVariable(22),
+						"duration_in_hours": config.IntegerVariable(8),
+						"days":              config.ListVariable(config.StringVariable("Monday"), config.StringVariable("Thursday")),
+					})),
+			},
+		)),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -40,11 +51,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 				ProtoV5ProviderFactories: protoV5ProviderFactories,
 				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_step1.tf"),
 				ConfigVariables:          configVars,
-				ConfigPlanChecks: resource.ConfigPlanChecks{
-					PreApply: []plancheck.PlanCheck{
-						plancheck.ExpectNonEmptyPlan(),
-					},
-				}, Check: resource.ComposeAggregateTestCheckFunc(
+				ExpectNonEmptyPlan:       true,
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_redis_service_account"),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
@@ -98,6 +106,17 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 
 	configVars := config.Variables{
 		"name": config.StringVariable(name),
+		"maintenance_windows": config.ListVariable(config.ObjectVariable(
+			map[string]config.Variable{
+				"mode": config.StringVariable("manual"),
+				"window": config.ListVariable(config.ObjectVariable(
+					map[string]config.Variable{
+						"start_hour":        config.IntegerVariable(22),
+						"duration_in_hours": config.IntegerVariable(8),
+						"days":              config.ListVariable(config.StringVariable("Monday"), config.StringVariable("Thursday")),
+					})),
+			},
+		)),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -114,11 +133,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 				ProtoV5ProviderFactories: protoV5ProviderFactories,
 				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_aws_step1.tf"),
 				ConfigVariables:          configVars,
-				ConfigPlanChecks: resource.ConfigPlanChecks{
-					PreApply: []plancheck.PlanCheck{
-						plancheck.ExpectNonEmptyPlan(),
-					},
-				}, Check: resource.ComposeAggregateTestCheckFunc(
+				ExpectNonEmptyPlan:       true,
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_aws_role_arn"),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),

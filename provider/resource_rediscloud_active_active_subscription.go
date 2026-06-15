@@ -375,6 +375,7 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 }
 
 func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	//TODO fix mapping of empty objects to remove non-empty plan on refresh
 	api := meta.(*client.ApiClient)
 
 	plan := d.Get("creation_plan").([]interface{})

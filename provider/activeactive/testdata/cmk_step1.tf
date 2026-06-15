@@ -15,6 +15,17 @@ variable "gcp_project_id" {
   type = string
 }
 
+variable "maintenance_windows" {
+  type = list(object({
+    mode = string
+    window = list(object({
+      start_hour        = number
+      duration_in_hours = number
+      days              = list(string)
+    }))
+  }))
+}
+
 data "rediscloud_payment_method" "card" {
   card_type         = "Visa"
   last_four_numbers = "5556"
@@ -44,12 +55,18 @@ resource "rediscloud_active_active_subscription" "example" {
   customer_managed_key_enabled = true
   cloud_provider               = "GCP"
 
-  maintenance_windows {
-    mode = "manual"
-    window {
-      start_hour        = 22
-      duration_in_hours = 8
-      days              = ["Monday", "Thursday"]
+  dynamic "maintenance_windows" {
+    for_each = var.maintenance_windows
+    content {
+      mode = maintenance_windows.value.mode
+      dynamic "window" {
+        for_each = maintenance_windows.value.window
+        content {
+          start_hour        = window.value.start_hour
+          duration_in_hours = window.value.duration_in_hours
+          days              = window.value.days
+        }
+      }
     }
   }
 
