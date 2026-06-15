@@ -26,7 +26,6 @@ variable "maintenance_windows" {
   }))
 }
 
-
 data "rediscloud_payment_method" "card" {
   card_type         = "Visa"
   last_four_numbers = "5556"
