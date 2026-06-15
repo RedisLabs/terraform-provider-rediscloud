@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
@@ -39,8 +40,11 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 				ProtoV5ProviderFactories: protoV5ProviderFactories,
 				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_step1.tf"),
 				ConfigVariables:          configVars,
-				ExpectNonEmptyPlan:       true,
-				Check: resource.ComposeAggregateTestCheckFunc(
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+				}, Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_redis_service_account"),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
@@ -55,8 +59,17 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 				ProtoV5ProviderFactories: protoV5ProviderFactories,
 				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_step2.tf"),
 				ConfigVariables:          configVars,
-				ExpectNonEmptyPlan:       true,
-				Check: resource.ComposeAggregateTestCheckFunc(
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+					PostApplyPreRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+					PostApplyPostRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				}, Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_redis_service_account"),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
@@ -64,7 +77,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider"),
 					resource.TestCheckResourceAttr(resourceName, "customer_managed_key_enabled", "true"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
-					resource.TestCheckResourceAttrSet(resourceName, "maintenance_windows.0.window"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "1"),
 					testAccCheckNoCreationPlanDatabases(resourceName),
 				),
 			},
@@ -101,8 +114,11 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 				ProtoV5ProviderFactories: protoV5ProviderFactories,
 				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_aws_step1.tf"),
 				ConfigVariables:          configVars,
-				ExpectNonEmptyPlan:       true,
-				Check: resource.ComposeAggregateTestCheckFunc(
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+				}, Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_aws_role_arn"),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
@@ -117,7 +133,17 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 				ProtoV5ProviderFactories: protoV5ProviderFactories,
 				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_aws_step2.tf"),
 				ConfigVariables:          configVars,
-				ExpectNonEmptyPlan:       true,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+					PostApplyPreRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+					PostApplyPostRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_aws_role_arn"),
@@ -126,7 +152,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider"),
 					resource.TestCheckResourceAttr(resourceName, "customer_managed_key_enabled", "true"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
-					resource.TestCheckResourceAttrSet(resourceName, "maintenance_windows.0.window"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "1"),
 					testAccCheckNoCreationPlanDatabases(resourceName),
 				),
 			},
