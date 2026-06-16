@@ -1,5 +1,25 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
 variable "name" {
   type = string
+}
+
+variable "maintenance_windows" {
+  type = list(object({
+    mode = string
+    window = list(object({
+      start_hour        = number
+      duration_in_hours = number
+      days              = list(string)
+    }))
+  }))
 }
 
 provider "aws" {
@@ -91,6 +111,21 @@ resource "rediscloud_active_active_subscription" "example" {
   payment_method_id            = data.rediscloud_payment_method.card.id
   customer_managed_key_enabled = true
   cloud_provider               = "AWS"
+
+  dynamic "maintenance_windows" {
+    for_each = var.maintenance_windows
+    content {
+      mode = maintenance_windows.value.mode
+      dynamic "window" {
+        for_each = maintenance_windows.value.window
+        content {
+          start_hour        = window.value.start_hour
+          duration_in_hours = window.value.duration_in_hours
+          days              = window.value.days
+        }
+      }
+    }
+  }
 
   customer_managed_key {
     resource_name = aws_kms_key.cmk_primary.arn
