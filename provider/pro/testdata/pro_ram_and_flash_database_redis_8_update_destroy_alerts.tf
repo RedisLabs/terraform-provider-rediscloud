@@ -44,7 +44,7 @@ resource "rediscloud_subscription_database" "example" {
   protocol                              = "redis"
   dataset_size_in_gb                    = 1
   data_persistence                      = "none"
-  data_eviction                         = "allkeys-random"
+  data_eviction                         = "volatile-lru"
   throughput_measurement_by             = "operations-per-second"
   throughput_measurement_value          = 2000
   password                              = local.rediscloud_database_password
