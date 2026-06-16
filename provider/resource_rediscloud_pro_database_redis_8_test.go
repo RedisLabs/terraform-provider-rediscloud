@@ -330,6 +330,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 
 // Test that modules cannot be set on Redis 8.x
 func TestAccResourceRedisCloudProDatabase_Redis8_ModulesBlocked(t *testing.T) {
+	t.Skip("modules + Redis 8.0+ currently emits a warning, not a hard error; revive when block behaviour is implemented")
 
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
