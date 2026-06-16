@@ -74,5 +74,6 @@ resource "rediscloud_subscription_database" "example_replica" {
   dataset_size_in_gb           = 1
   throughput_measurement_by    = "operations-per-second"
   throughput_measurement_value = 1000
+  ram_percentage               = 30
   replica_of                   = ["redis://${rediscloud_subscription_database.example.public_endpoint}"]
 }
