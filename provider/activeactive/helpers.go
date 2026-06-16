@@ -252,8 +252,10 @@ func flattenBackupPlan(backup *databases.Backup, stateStorageType string) (types
 		"storage_path": types.StringType,
 	}
 
+	emptyList := types.ListValueMust(types.ObjectType{AttrTypes: remoteBackupAttrTypes}, []attr.Value{})
+
 	if backup == nil || !redis.BoolValue(backup.Enabled) {
-		return types.ListNull(types.ObjectType{AttrTypes: remoteBackupAttrTypes}), nil
+		return emptyList, nil
 	}
 
 	timeUTC := types.StringNull()
@@ -271,7 +273,7 @@ func flattenBackupPlan(backup *databases.Backup, stateStorageType string) (types
 		"storage_path": types.StringValue(redis.StringValue(backup.Destination)),
 	})
 	if diags.HasError() {
-		return types.ListNull(types.ObjectType{AttrTypes: remoteBackupAttrTypes}), diags
+		return emptyList, diags
 	}
 
 	return types.ListValue(types.ObjectType{AttrTypes: remoteBackupAttrTypes}, []attr.Value{obj})

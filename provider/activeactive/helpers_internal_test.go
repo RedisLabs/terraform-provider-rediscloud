@@ -8,6 +8,31 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+func TestFlattenBackupPlan_AbsentBackupIsEmptyList(t *testing.T) {
+	cases := []struct {
+		name   string
+		backup *databases.Backup
+	}{
+		{name: "nil backup", backup: nil},
+		{name: "disabled backup", backup: &databases.Backup{Enabled: redis.Bool(false)}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			list, diags := flattenBackupPlan(tc.backup, "")
+			if diags.HasError() {
+				t.Fatalf("unexpected diags: %v", diags)
+			}
+			if list.IsNull() {
+				t.Fatalf("expected empty list, got null — would cause 'planned set element does not correlate' on block removal")
+			}
+			if len(list.Elements()) != 0 {
+				t.Fatalf("expected empty list, got %d elements", len(list.Elements()))
+			}
+		})
+	}
+}
+
 func TestFlattenBackupPlan_TimeUTC(t *testing.T) {
 	cases := []struct {
 		name      string
