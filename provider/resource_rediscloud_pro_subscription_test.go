@@ -538,22 +538,21 @@ func TestAccResourceRedisCloudProSubscription_PublicEndpointAccess(t *testing.T)
 
 	name := testRandomWithPrefix()
 	resourceName := "rediscloud_subscription.example"
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPublicEndpointDisabled, cloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPublicEndpointDisabled, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "false"),
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPublicEndpointEnabled, cloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPublicEndpointEnabled, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),
@@ -1132,12 +1131,6 @@ data "rediscloud_payment_method" "card" {
   last_four_numbers = "5556"
 }
 
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type            = "AWS"
-  name                     = "%s"
-}
-
 resource "rediscloud_subscription" "example" {
   name                   = "%s"
   payment_method         = "credit-card"
@@ -1151,8 +1144,6 @@ resource "rediscloud_subscription" "example" {
   }
 
   cloud_provider {
-    provider         = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
     region {
       region                       = "eu-west-1"
       networking_deployment_cidr   = "10.0.0.0/24"
@@ -1167,7 +1158,6 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api      = false
     throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 10000
-    modules                      = ["RedisJSON"]
   }
 }
 `
@@ -1176,12 +1166,6 @@ const testAccResourceRedisCloudProSubscriptionPublicEndpointEnabled = `
 data "rediscloud_payment_method" "card" {
   card_type         = "Visa"
   last_four_numbers = "5556"
-}
-
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type            = "AWS"
-  name                     = "%s"
 }
 
 resource "rediscloud_subscription" "example" {
@@ -1197,8 +1181,6 @@ resource "rediscloud_subscription" "example" {
   }
 
   cloud_provider {
-    provider         = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
     region {
       region                       = "eu-west-1"
       networking_deployment_cidr   = "10.0.0.0/24"
@@ -1213,7 +1195,6 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api      = false
     throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 10000
-    modules                      = ["RedisJSON"]
   }
 }
 `
