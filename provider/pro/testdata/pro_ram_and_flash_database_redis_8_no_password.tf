@@ -46,4 +46,5 @@ resource "rediscloud_subscription_database" "no_password_database" {
   throughput_measurement_by    = "operations-per-second"
   redis_version                = "8.2"
   throughput_measurement_value = 1000
+  ram_percentage               = 20
 }
