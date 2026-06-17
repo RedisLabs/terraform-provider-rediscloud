@@ -81,13 +81,7 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		ExternalProviders: map[string]resource.ExternalProvider{
-			"aws": {
-				Source:            "hashicorp/aws",
-				VersionConstraint: "~> 5.0",
-			},
-		},
-		CheckDestroy: testAccCheckProSubscriptionDestroy,
+		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				// Step 1: subscription enters encryption_key_pending; KMS key policy
