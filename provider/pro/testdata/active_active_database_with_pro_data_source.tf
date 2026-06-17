@@ -1,6 +1,9 @@
-locals {
-  rediscloud_subscription_name = "%s"
-  rediscloud_database_password = "%s"
+variable "subscription_name" {
+  type = string
+}
+
+variable "database_password" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
@@ -9,7 +12,7 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_active_active_subscription" "example" {
-  name              = local.rediscloud_subscription_name
+  name              = var.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider    = "AWS"
   creation_plan {
@@ -29,16 +32,17 @@ resource "rediscloud_active_active_subscription" "example" {
     }
   }
 }
+
 resource "rediscloud_active_active_subscription_database" "example" {
   subscription_id                       = rediscloud_active_active_subscription.example.id
-  name                                  = local.rediscloud_subscription_name
+  name                                  = var.subscription_name
   memory_limit_in_gb                    = 3
   support_oss_cluster_api               = false
   external_endpoint_for_oss_cluster_api = false
   enable_tls                            = false
 
   global_data_persistence = "none"
-  global_password         = local.rediscloud_database_password
+  global_password         = var.database_password
   global_source_ips       = ["192.168.0.0/16", "192.170.0.0/16"]
   global_alert {
     name  = "dataset-size"
@@ -58,6 +62,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
     name = "us-east-2"
   }
 }
+
 data "rediscloud_database" "example" {
   subscription_id = rediscloud_active_active_subscription.example.id
   name            = rediscloud_active_active_subscription_database.example.name

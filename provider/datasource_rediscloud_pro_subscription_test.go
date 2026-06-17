@@ -1,22 +1,19 @@
 package provider_test
 
 import (
-	"fmt"
 	"regexp"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 const (
-	proSubscriptionConfigPath           = "./pro/testdata/pro_subscription_boilerplate.tf"
-	proSubscriptionDataSourceConfigPath = "./pro/testdata/pro_subscription_data_source.tf"
-	AADatabaseProDatasourceConfigPath   = "./pro/testdata/active_active_database_with_pro_data_source.tf"
+	proSubscriptionConfigPath         = "./pro/testdata/pro_subscription_boilerplate.tf"
+	AADatabaseProDatasourceConfigPath = "./pro/testdata/active_active_database_with_pro_data_source.tf"
 )
 
 func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
@@ -27,25 +24,27 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 	const dataSourceName = "data.rediscloud_subscription.example"
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
-	proSubConfig := utils.GetTestConfig(t, proSubscriptionConfigPath)
-	proSubConfig = fmt.Sprintf(proSubConfig, cloudAccountName, name)
-
-	proSubDataConfig := utils.GetTestConfig(t, proSubscriptionDataSourceConfigPath)
-	proSubDataConfig = fmt.Sprintf(proSubDataConfig, name)
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: proSubConfig,
+				ConfigFile: config.StaticFile(proSubscriptionConfigPath),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(cloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "name", regexp.MustCompile(name)),
 				),
 			},
 			{
-				Config: proSubDataConfig + proSubConfig,
+				ConfigFile: config.StaticFile(proSubscriptionConfigPath),
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(cloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(dataSourceName, "name", regexp.MustCompile(name)),
 					resource.TestCheckResourceAttr(dataSourceName, "payment_method", "credit-card"),
@@ -81,10 +80,6 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 func TestAccDataSourceRedisCloudProSubscription_ignoresAA(t *testing.T) {
 
 	name := testRandomWithPrefix()
-	password := acctest.RandString(20)
-
-	config := utils.GetTestConfig(t, AADatabaseProDatasourceConfigPath)
-	config = fmt.Sprintf(config, name+"-subscription", name+"-database", password)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
@@ -92,7 +87,11 @@ func TestAccDataSourceRedisCloudProSubscription_ignoresAA(t *testing.T) {
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      config,
+				ConfigFile: config.StaticFile(AADatabaseProDatasourceConfigPath),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name + "-subscription"),
+					"database_password": config.StringVariable(name + "-database"),
+				},
 				ExpectError: regexp.MustCompile("Your query returned no results. Please change your search criteria and try again."),
 			},
 		},
