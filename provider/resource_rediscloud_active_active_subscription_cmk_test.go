@@ -45,6 +45,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.GCPProviderCheck),
 		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
+		// ProtoV5ProviderFactories is set per-step (not at TestCase) so the SDK rule
+		// "providers must only be specified either at TestCase or TestStep level" is satisfied
+		// while the fixture keeps its own `provider "aws"` / `provider "google"` configuration
+		// blocks (required for multi-region/aliased external providers).
 		Steps: []resource.TestStep{
 			{
 				// Step 1: Create subscription with CMK enabled (enters encryption_key_pending state)
@@ -121,6 +125,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
 		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
+		// ProtoV5ProviderFactories is set per-step; see the GCP variant above for context.
 		Steps: []resource.TestStep{
 			{
 				// Step 1: subscription enters encryption_key_pending; both key policies
