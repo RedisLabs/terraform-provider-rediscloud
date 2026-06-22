@@ -296,7 +296,12 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 		return diag.Errorf("Your query returned more than one result. Please change try a more specific search criteria and try again.")
 	}
 
-	sub := subs[0]
+	// The /subscriptions list endpoint returns an abbreviated view (e.g. awsAccountId
+	// is omitted from per-CloudDetail entries). Re-fetch by ID for the full detail.
+	sub, err := api.Client.Subscription.Get(ctx, redis.IntValue(subs[0].ID))
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
 	paymentMethodID := ""
 	if sub.PaymentMethodID != nil {
