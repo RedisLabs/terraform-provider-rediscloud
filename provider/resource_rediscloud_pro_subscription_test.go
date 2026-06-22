@@ -1137,11 +1137,6 @@ resource "rediscloud_subscription" "example" {
   memory_storage         = "ram"
   public_endpoint_access = false
 
-  allowlist {
-    cidrs              = ["192.168.0.0/16"]
-    security_group_ids = []
-  }
-
   cloud_provider {
     region {
       region                     = "eu-west-1"
@@ -1172,11 +1167,6 @@ resource "rediscloud_subscription" "example" {
   payment_method_id      = data.rediscloud_payment_method.card.id
   memory_storage         = "ram"
   public_endpoint_access = true
-
-  allowlist {
-    cidrs              = ["192.168.0.0/16"]
-    security_group_ids = []
-  }
 
   cloud_provider {
     region {
