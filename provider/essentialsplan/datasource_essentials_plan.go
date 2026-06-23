@@ -55,6 +55,7 @@ func (d *essentialsPlanDataSource) Schema(_ context.Context, _ datasource.Schema
 	resp.Schema = schema.Schema{
 		Description: "The Essentials Plan data source allows access to the templates for Essentials Subscriptions.",
 		Attributes: map[string]schema.Attribute{
+			//TODO(TF3.0) refactor the id to a StringAttribute
 			"id": schema.Int64Attribute{
 				Description: "The plan's unique identifier",
 				Computed:    true,

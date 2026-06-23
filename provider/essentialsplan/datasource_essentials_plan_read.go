@@ -2,12 +2,15 @@ package essentialsplan
 
 import (
 	"context"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/fixed/plans"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
 // Read refreshes the Terraform state with the latest data.
@@ -117,26 +120,26 @@ func (d *essentialsPlanDataSource) Read(ctx context.Context, req datasource.Read
 	// Map the result to state
 	plan := list[0]
 	model.ID = types.Int64Value(int64(redis.IntValue(plan.ID)))
-	model.Name = types.StringValue(redis.StringValue(plan.Name))
-	model.Size = types.Float64Value(redis.Float64Value(plan.Size))
-	model.SizeMeasurementUnit = types.StringValue(redis.StringValue(plan.SizeMeasurementUnit))
-	model.CloudProvider = types.StringValue(redis.StringValue(plan.Provider))
-	model.Region = types.StringValue(redis.StringValue(plan.Region))
+	model.Name = types.StringPointerValue(plan.Name)
+	model.Size = types.Float64PointerValue(plan.Size)
+	model.SizeMeasurementUnit = types.StringPointerValue(plan.SizeMeasurementUnit)
+	model.CloudProvider = types.StringPointerValue(plan.Provider)
+	model.Region = types.StringPointerValue(plan.Region)
 	model.RegionID = types.Int64Value(int64(redis.IntValue(plan.RegionID)))
 	model.Price = types.Int64Value(int64(redis.IntValue(plan.Price)))
-	model.PriceCurrency = types.StringValue(redis.StringValue(plan.PriceCurrency))
-	model.PricePeriod = types.StringValue(redis.StringValue(plan.PricePeriod))
+	model.PriceCurrency = types.StringPointerValue(plan.PriceCurrency)
+	model.PricePeriod = types.StringPointerValue(plan.PricePeriod)
 	model.MaximumDatabases = types.Int64Value(int64(redis.IntValue(plan.MaximumDatabases)))
 	model.MaximumThroughput = types.Int64Value(int64(redis.IntValue(plan.MaximumThroughput)))
 	model.MaximumBandwidthInGB = types.Int64Value(int64(redis.IntValue(plan.MaximumBandwidthGB)))
-	model.Availability = types.StringValue(redis.StringValue(plan.Availability))
-	model.Connections = types.StringValue(redis.StringValue(plan.Connections))
+	model.Availability = types.StringPointerValue(plan.Availability)
+	model.Connections = types.StringPointerValue(plan.Connections)
 	model.CidrAllowRules = types.Int64Value(int64(redis.IntValue(plan.CidrAllowRules)))
-	model.SupportDataPersistence = types.BoolValue(redis.BoolValue(plan.SupportDataPersistence))
-	model.SupportInstantAndDailyBackups = types.BoolValue(redis.BoolValue(plan.SupportInstantAndDailyBackups))
-	model.SupportReplication = types.BoolValue(redis.BoolValue(plan.SupportReplication))
-	model.SupportClustering = types.BoolValue(redis.BoolValue(plan.SupportClustering))
-	alerts, diags := types.ListValueFrom(ctx, types.StringType, redis.StringSliceValue(plan.SupportedAlerts...))
+	model.SupportDataPersistence = types.BoolPointerValue(plan.SupportDataPersistence)
+	model.SupportInstantAndDailyBackups = types.BoolPointerValue(plan.SupportInstantAndDailyBackups)
+	model.SupportReplication = types.BoolPointerValue(plan.SupportReplication)
+	model.SupportClustering = types.BoolPointerValue(plan.SupportClustering)
+	alerts, diags := types.ListValueFrom(ctx, types.StringType, plan.SupportedAlerts)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -147,4 +150,39 @@ func (d *essentialsPlanDataSource) Read(ctx context.Context, req datasource.Read
 	// Set state
 	diags = resp.State.Set(ctx, &model)
 	resp.Diagnostics.Append(diags...)
+}
+
+func getPlanList(ctx context.Context, model EssentialsPlanModel, api *client.ApiClient) ([]*plans.GetPlanResponse, error) {
+	var list []*plans.GetPlanResponse
+	var err error
+
+	if !model.SubscriptionID.IsNull() {
+		list, err = api.Client.FixedPlanSubscriptions.List(ctx, int(model.SubscriptionID.ValueInt64()))
+	} else if !model.CloudProvider.IsNull() && model.CloudProvider.ValueString() != "" {
+		list, err = api.Client.FixedPlans.ListWithProvider(ctx, strings.ToUpper(model.CloudProvider.ValueString()))
+	} else {
+		list, err = api.Client.FixedPlans.List(ctx)
+	}
+
+	return list, err
+}
+
+func filterPlans(allPlans []*plans.GetPlanResponse, filters []func(plan *plans.GetPlanResponse) bool) []*plans.GetPlanResponse {
+	var filtered []*plans.GetPlanResponse
+	for _, candidatePlan := range allPlans {
+		if filterPlan(candidatePlan, filters) {
+			filtered = append(filtered, candidatePlan)
+		}
+	}
+
+	return filtered
+}
+
+func filterPlan(plan *plans.GetPlanResponse, filters []func(plan *plans.GetPlanResponse) bool) bool {
+	for _, f := range filters {
+		if !f(plan) {
+			return false
+		}
+	}
+	return true
 }
