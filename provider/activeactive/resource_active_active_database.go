@@ -102,7 +102,7 @@ type emptyStringToNullModifier struct{}
 var _ planmodifier.String = emptyStringToNullModifier{}
 
 func (m emptyStringToNullModifier) Description(_ context.Context) string {
-	return "Normalizes an empty string config value to null in the plan, so it matches the null produced by the read path."
+	return "Normalises an empty string config value to null in the plan, so it matches the null produced by the read path."
 }
 
 func (m emptyStringToNullModifier) MarkdownDescription(ctx context.Context) string {
