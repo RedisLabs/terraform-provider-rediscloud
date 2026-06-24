@@ -29,6 +29,7 @@ output "rediscloud_essentials_plan" {
 * `name` - (Optional) The plan's name. Not guaranteed to be unique across providers/regions.
 * `size` - (Optional) The capacity of databases created in this plan.
 * `size_measurement_unit` - (Optional) The units of 'size'. Either 'MB' or 'GB'.
+* `subscription_id` - (Optional) Filter the plans to those available for a given Essentials subscription.
 * `cloud_provider` - (Optional) The cloud provider. Either: 'AWS', 'GCP' or 'Azure'.
 * `region` - (Optional) The region in which to place the database. The format and availability are dependent on 'cloud_provider'.
 * `availability` - (Optional) Either 'No replication', 'Single-zone' or 'Multi-zone'.
@@ -52,10 +53,10 @@ output "rediscloud_essentials_plan" {
 * `maximum_bandwidth_in_gb` - The maximum network bandwidth the plan supports.
 * `availability` - Either 'No replication', 'Single-zone' or 'Multi-zone'.
 * `connections` - The maximum allowed connections of the plan.
-* `cidr_allow_rules` - Self-explanatory.
-* `support_data_persistence`— The plan persistence support. If 'true', you define the persistence rate on the database level.
+* `cidr_allow_rules` - The maximum number of CIDR allow-list rules that can be configured for databases in this plan.
+* `support_data_persistence` - The plan persistence support. If 'true', you define the persistence rate on the database level.
 * `support_instant_and_daily_backups` - If 'true', daily and instant backups are supported.
-* `support_replication` - (Optional) Databases replication support. Either 'true' or 'false'.
+* `support_replication` - Databases replication support. Either 'true' or 'false'.
 * `support_clustering` - Databases clustering support. Either 'true' or 'false'.
 * `supported_alerts` - A list of the alerts supported by databases created under Subscriptions from this Plan.
 * `customer_support` - The level of customer support available. E.g., 'Basic', 'Standard'.
