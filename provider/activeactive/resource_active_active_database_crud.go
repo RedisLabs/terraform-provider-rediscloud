@@ -771,7 +771,9 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 			allDiags.Append(diags...)
 			regionConfig["override_global_alert"] = alertSet
 		} else {
-			regionConfig["override_global_alert"] = types.SetValueMust(types.ObjectType{AttrTypes: alertAttrTypes}, []attr.Value{})
+			alertSet, diags := types.SetValue(types.ObjectType{AttrTypes: alertAttrTypes}, []attr.Value{})
+			allDiags.Append(diags...)
+			regionConfig["override_global_alert"] = alertSet
 		}
 
 		// Handle enable_default_user
