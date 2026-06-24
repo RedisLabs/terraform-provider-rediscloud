@@ -212,9 +212,16 @@ func flattenAlertsToSet(alerts []*databases.Alert) (types.Set, diag.Diagnostics)
 }
 
 // buildBackupPlan converts a RemoteBackupModel to the API request format.
+// Returns Active=false when the block is absent so a removed remote_backup
+// disables the backup on the API side, matching the empty list produced by
+// the read path.
 func buildBackupPlan(ctx context.Context, remoteBackupList types.List) (*databases.DatabaseBackupConfig, diag.Diagnostics) {
-	if remoteBackupList.IsNull() || remoteBackupList.IsUnknown() || len(remoteBackupList.Elements()) == 0 {
+	if remoteBackupList.IsUnknown() {
 		return nil, nil
+	}
+
+	if remoteBackupList.IsNull() || len(remoteBackupList.Elements()) == 0 {
+		return &databases.DatabaseBackupConfig{Active: redis.Bool(false)}, nil
 	}
 
 	var backups []RemoteBackupModel
@@ -224,7 +231,7 @@ func buildBackupPlan(ctx context.Context, remoteBackupList types.List) (*databas
 	}
 
 	if len(backups) == 0 {
-		return nil, nil
+		return &databases.DatabaseBackupConfig{Active: redis.Bool(false)}, nil
 	}
 
 	backup := backups[0]
