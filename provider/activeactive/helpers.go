@@ -259,10 +259,15 @@ func flattenBackupPlan(backup *databases.Backup, stateStorageType string) (types
 		"storage_path": types.StringType,
 	}
 
-	emptyList := types.ListValueMust(types.ObjectType{AttrTypes: remoteBackupAttrTypes}, []attr.Value{})
+	objectType := types.ObjectType{AttrTypes: remoteBackupAttrTypes}
+
+	emptyList, diags := types.ListValue(objectType, []attr.Value{})
+	if diags.HasError() {
+		return emptyList, diags
+	}
 
 	if backup == nil || !redis.BoolValue(backup.Enabled) {
-		return emptyList, nil
+		return emptyList, diags
 	}
 
 	timeUTC := types.StringNull()
@@ -273,17 +278,20 @@ func flattenBackupPlan(backup *databases.Backup, stateStorageType string) (types
 	// Storage type is not returned by API, preserve from state
 	storageType := types.StringValue(stateStorageType)
 
-	obj, diags := types.ObjectValue(remoteBackupAttrTypes, map[string]attr.Value{
+	obj, objDiags := types.ObjectValue(remoteBackupAttrTypes, map[string]attr.Value{
 		"interval":     types.StringValue(redis.StringValue(backup.Interval)),
 		"time_utc":     timeUTC,
 		"storage_type": storageType,
 		"storage_path": types.StringValue(redis.StringValue(backup.Destination)),
 	})
+	diags.Append(objDiags...)
 	if diags.HasError() {
 		return emptyList, diags
 	}
 
-	return types.ListValue(types.ObjectType{AttrTypes: remoteBackupAttrTypes}, []attr.Value{obj})
+	list, listDiags := types.ListValue(objectType, []attr.Value{obj})
+	diags.Append(listDiags...)
+	return list, diags
 }
 
 // waitForDatabaseToBeDeleted waits for the database to be deleted using retry.StateChangeConf.
