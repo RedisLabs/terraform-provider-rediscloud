@@ -11,6 +11,10 @@ variable "password" {
   sensitive = true
 }
 
+variable "redis_version" {
+  type = string
+}
+
 data "rediscloud_payment_method" "card" {
   card_type         = "Visa"
   last_four_numbers = "5556"
@@ -46,7 +50,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
   support_oss_cluster_api               = false
   external_endpoint_for_oss_cluster_api = false
   enable_tls                            = false
-  redis_version                         = "8.2"
+  redis_version                         = var.redis_version
 
   global_data_persistence    = "none"
   global_password            = var.password

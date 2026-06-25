@@ -1,4 +1,4 @@
-package provider
+package activeactive_test
 
 import (
 	"context"
@@ -14,13 +14,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
+
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 // Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the database resource.
 func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
-	subscriptionName := testRandomWithPrefix() + "-subscription"
-	databaseName := testRandomWithPrefix() + "-database"
+	subscriptionName := utils.RandomWithPrefix() + "-subscription"
+	databaseName := utils.RandomWithPrefix() + "-database"
 	databaseNameUpdated := databaseName + "-updated"
 	password := acctest.RandString(20)
 
@@ -32,21 +34,24 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 	var subId, dbId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database creation
 			{
-				ConfigFile: config.StaticFile("./activeactive/testdata/database_crudi_create.tf"),
+				ConfigFile: config.StaticFile("./testdata/database_crudi_create.tf"),
 				ConfigVariables: config.Variables{
 					"subscription_name": config.StringVariable(subscriptionName),
 					"database_name":     config.StringVariable(databaseName),
 					"password":          config.StringVariable(password),
+					"redis_version":     config.StringVariable("8.2"),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test resource attributes
 					resource.TestCheckResourceAttr(databaseResourceName, "name", databaseName),
+					resource.TestCheckResourceAttr(databaseResourceName, "redis_version", "8.2"),
+					resource.TestCheckResourceAttr(databaseResourceName, "redis_version_actual", "8.2"),
 					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_data_persistence", "none"),
@@ -98,7 +103,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse database ID: %s", dbResource.Primary.Attributes["db_id"])
 						}
 
-						apiClient := sharedTestClient(t)
+						apiClient := utils.SharedTestClient(t)
 
 						// Verify subscription
 						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
@@ -128,6 +133,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "db_id"),
 					resource.TestCheckResourceAttr(datasourceName, "name", databaseName),
+					resource.TestCheckResourceAttr(datasourceName, "redis_version", "8.2"),
 					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "false"),
 					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "false"),
@@ -149,13 +155,16 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			},
 			// Test database update: change global and local alerts, enable OSS cluster API, update DB name
 			{
-				ConfigFile: config.StaticFile("./activeactive/testdata/database_crudi_update.tf"),
+				ConfigFile: config.StaticFile("./testdata/database_crudi_update.tf"),
 				ConfigVariables: config.Variables{
 					"subscription_name": config.StringVariable(subscriptionName),
 					"database_name":     config.StringVariable(databaseNameUpdated),
+					"redis_version":     config.StringVariable("8.4"),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(databaseResourceName, "name", databaseNameUpdated),
+					resource.TestCheckResourceAttr(databaseResourceName, "redis_version", "8.4"),
+					resource.TestCheckResourceAttr(databaseResourceName, "redis_version_actual", "8.4"),
 					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(databaseResourceName, "external_endpoint_for_oss_cluster_api", "true"),
@@ -165,7 +174,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.name", "dataset-size"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.value", "60"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "false"),
-					resource.TestCheckResourceAttr(databaseResourceName, "redis_version", "8.2"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "0"),
 
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "1"),
@@ -179,7 +187,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
 					// API check: verify updates applied
 					func(s *terraform.State) error {
-						apiClient := sharedTestClient(t)
+						apiClient := utils.SharedTestClient(t)
 						db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
 						if err != nil {
 							return fmt.Errorf("failed to get database: %w", err)
@@ -195,18 +203,75 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
 					// Test data source reflects updates
 					resource.TestCheckResourceAttr(datasourceName, "name", databaseNameUpdated),
+					resource.TestCheckResourceAttr(datasourceName, "redis_version", "8.4"),
 					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "true"),
-					resource.TestCheckResourceAttr(datasourceName, "redis_version", "8.2"),
+					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "true"),
+				),
+			},
+			// Simulate auto_minor_version_upgrade having gone through
+			{
+				ConfigFile: config.StaticFile("./testdata/database_crudi_update.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_name":     config.StringVariable(databaseNameUpdated),
+					"redis_version":     config.StringVariable("8.2"),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(databaseResourceName, "name", databaseNameUpdated),
+					resource.TestCheckResourceAttr(databaseResourceName, "redis_version", "8.2"),
+					resource.TestCheckResourceAttr(databaseResourceName, "redis_version_actual", "8.4"),
+					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(databaseResourceName, "external_endpoint_for_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_data_persistence", "aof-every-1-second"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_password", "updated-password"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.name", "dataset-size"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.value", "60"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "false"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "0"),
+
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.name", "us-east-1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_data_persistence", "none"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_password", "password-updated"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.0.name", "dataset-size"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.0.value", "41"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_source_ips.#", "0"),
+
+					// API check: verify updates applied
+					func(s *terraform.State) error {
+						apiClient := utils.SharedTestClient(t)
+						db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
+						if err != nil {
+							return fmt.Errorf("failed to get database: %w", err)
+						}
+						if redis.StringValue(db.GlobalDataPersistence) != "aof-every-1-second" {
+							return fmt.Errorf("expected global_data_persistence %q, got %q", "aof-every-1-second", redis.StringValue(db.GlobalDataPersistence))
+						}
+						if redis.BoolValue(db.SupportOSSClusterAPI) != true {
+							return fmt.Errorf("expected support_oss_cluster_api true, got false")
+						}
+						return nil
+					},
+
+					// Test data source reflects updates
+					resource.TestCheckResourceAttr(datasourceName, "name", databaseNameUpdated),
+					resource.TestCheckResourceAttr(datasourceName, "redis_version", "8.4"),
+					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "1"),
+					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "true"),
 					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "true"),
 				),
 			},
 			// Test database update: remove alerts, restore default user
 			{
-				ConfigFile: config.StaticFile("./activeactive/testdata/database_crudi_update_no_alerts.tf"),
+				ConfigFile: config.StaticFile("./testdata/database_crudi_update_no_alerts.tf"),
 				ConfigVariables: config.Variables{
 					"subscription_name": config.StringVariable(subscriptionName),
 					"database_name":     config.StringVariable(databaseNameUpdated),
+					"redis_version":     config.StringVariable("8.2"),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
@@ -228,7 +293,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			},
 			// Test import
 			{
-				ConfigFile: config.StaticFile("./activeactive/testdata/database_crudi_import.tf"),
+				ConfigFile: config.StaticFile("./testdata/database_crudi_import.tf"),
 				ConfigVariables: config.Variables{
 					"subscription_name": config.StringVariable(subscriptionName),
 					"database_name":     config.StringVariable(databaseNameUpdated),
@@ -237,6 +302,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 				ImportState:       true,
 				ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{
+					"redis_version",
 					"global_password",
 					"global_source_ips.#",
 					"global_source_ips.0",
@@ -251,6 +317,15 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					"override_region.0.override_global_password",
 					"override_region.0.enable_default_user",
 				},
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected 1 imported state, got %d", len(states))
+					}
+					if got := states[0].Attributes["redis_version"]; got != "8.4" {
+						return fmt.Errorf("expected imported redis_version %q, got %q", "8.4", got)
+					}
+					return nil
+				},
 			},
 		},
 	})
@@ -261,16 +336,16 @@ func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
-	subscriptionName := testRandomWithPrefix() + "-subscription"
-	name := testRandomWithPrefix() + "-database"
+	subscriptionName := utils.RandomWithPrefix() + "-subscription"
+	name := utils.RandomWithPrefix() + "-database"
 	password := acctest.RandString(20)
 	const resourceName = "rediscloud_active_active_subscription_database.example"
 	portNumber := 10101
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseOptionalAttributes, subscriptionName, name, password, portNumber),
@@ -287,14 +362,14 @@ func TestAccResourceRedisCloudActiveActiveDatabase_timeUtcRequiresValidInterval(
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	name := testRandomWithPrefix()
+	name := utils.RandomWithPrefix()
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseInvalidTimeUtc, testCloudAccountName, name, password),
@@ -438,18 +513,18 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	subscriptionName := testRandomWithPrefix() + "-subscription"
-	databaseName := testRandomWithPrefix() + "-database"
+	subscriptionName := utils.RandomWithPrefix() + "-subscription"
+	databaseName := utils.RandomWithPrefix() + "-database"
 	const resourceName = "rediscloud_active_active_subscription_database.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database creation with auto_minor_version_upgrade set to false
 			{
-				ConfigFile: config.StaticFile("./activeactive/testdata/auto_minor_version_upgrade.tf"), ConfigVariables: config.Variables{
+				ConfigFile: config.StaticFile("./testdata/auto_minor_version_upgrade.tf"), ConfigVariables: config.Variables{
 					"subscription_name":          config.StringVariable(subscriptionName),
 					"database_name":              config.StringVariable(databaseName),
 					"auto_minor_version_upgrade": config.BoolVariable(false),
@@ -461,7 +536,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 			},
 			// Test database update with auto_minor_version_upgrade set to true
 			{
-				ConfigFile: config.StaticFile("./activeactive/testdata/auto_minor_version_upgrade.tf"),
+				ConfigFile: config.StaticFile("./testdata/auto_minor_version_upgrade.tf"),
 				ConfigVariables: config.Variables{
 					"subscription_name":          config.StringVariable(subscriptionName),
 					"database_name":              config.StringVariable(databaseName),
@@ -476,18 +551,18 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 }
 
 func TestAccResourceRedisCloudActiveActiveDatabase_modulesImmutable(t *testing.T) {
-	subscriptionName := testRandomWithPrefix() + "-modules-immutable"
-	databaseName := testRandomWithPrefix() + "-database"
+	subscriptionName := utils.RandomWithPrefix() + "-modules-immutable"
+	databaseName := utils.RandomWithPrefix() + "-database"
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create database with RedisJSON module
 			{
-				ConfigFile: config.StaticFile("./activeactive/testdata/modules_immutable_create.tf"),
+				ConfigFile: config.StaticFile("./testdata/modules_immutable_create.tf"),
 				ConfigVariables: config.Variables{
 					"subscription_name": config.StringVariable(subscriptionName),
 					"database_name":     config.StringVariable(databaseName),
@@ -500,7 +575,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_modulesImmutable(t *testing.T
 			},
 			// Step 2: Try to change modules - changes should be silently ignored
 			{
-				ConfigFile: config.StaticFile("./activeactive/testdata/modules_immutable_change.tf"),
+				ConfigFile: config.StaticFile("./testdata/modules_immutable_change.tf"),
 				ConfigVariables: config.Variables{
 					"subscription_name": config.StringVariable(subscriptionName),
 					"database_name":     config.StringVariable(databaseName),

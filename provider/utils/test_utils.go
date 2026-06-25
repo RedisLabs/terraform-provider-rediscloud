@@ -27,6 +27,16 @@ func GetTestClient() (*client.ApiClient, error) {
 	return sharedTestClient, sharedTestClientErr
 }
 
+func SharedTestClient(t *testing.T) *client.ApiClient {
+	sharedTestClientOnce.Do(func() {
+		sharedTestClient, sharedTestClientErr = client.NewClient()
+	})
+	if sharedTestClientErr != nil {
+		t.Fatalf("Failed to create test API client: %s", sharedTestClientErr)
+	}
+	return sharedTestClient
+}
+
 // CheckNoDatabasesForSubscription verifies that no databases exist in a subscription.
 // Combines GetTestClient with CheckNoDatabasesInSubscription for convenience in test check functions.
 func CheckNoDatabasesForSubscription(ctx context.Context, subId int) error {
