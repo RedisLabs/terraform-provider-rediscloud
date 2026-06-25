@@ -13,6 +13,7 @@ type ActiveActiveDatabaseModel struct {
 	MemoryLimitInGB                  types.Float64 `tfsdk:"memory_limit_in_gb"`
 	DatasetSizeInGB                  types.Float64 `tfsdk:"dataset_size_in_gb"`
 	RedisVersion                     types.String  `tfsdk:"redis_version"`
+	RedisVersionActual               types.String  `tfsdk:"redis_version_actual"`
 	SupportOssClusterAPI             types.Bool    `tfsdk:"support_oss_cluster_api"`
 	ExternalEndpointForOssClusterAPI types.Bool    `tfsdk:"external_endpoint_for_oss_cluster_api"`
 	EnableTLS                        types.Bool    `tfsdk:"enable_tls"`
