@@ -3,21 +3,32 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-# 2.17.1 (TBD)
+# 2.18.0 (TBD)
+
+## Added
+- Ability to upgrade `redis_version` in `rediscloud_active_active_subscription_database` resource without recreating the resource.
+- Exposed `redis_version_actual` attribute on the `rediscloud_active_active_subscription_database` resource.
 
 ## Changed
-- Added validation for `maintenance_windows` being set in CMK workflow tests in `rediscloud_subscription` and `rediscloud_active_active_subscription` resources
+- Migrated `rediscloud_essentials_plan` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
 
 ## Fixed
-- `maintenance_windows` not being set after CMK workflow in `rediscloud_subscription` and `rediscloud_active_active_subscription` resources
-- `maintenance_windows` not being set on creation in `rediscloud_subscription` resource
-- Read logic for `maintenance_windows` and `pricing` not triggering properly during CMK workflow in `rediscloud_subscription` and `rediscloud_active_active_subscription` resources
-- CMK workflow test for `rediscloud_subscription` and `rediscloud_active_active_subscription` not being runnable
-- `rediscloud_subscription` tests for setting `maintenance_windows`
-- Read logic for `maintenance_windows` and `pricing` not triggering properly when in CMK workflow
+- Inconsistent state around `remote_backup` block in `override_region` argument for the `rediscloud_active_active_subscription_database` resource.
 
+# 2.17.1 (16th June 2026)
 
-# 2.17.0 (10.06.2026)
+## Changed
+- Added validation for `maintenance_windows` being set in CMK workflow tests in `rediscloud_subscription` and `rediscloud_active_active_subscription` resources.
+
+## Fixed
+- `maintenance_windows` not being set after CMK workflow in `rediscloud_subscription` and `rediscloud_active_active_subscription` resources.
+- `maintenance_windows` not being set on creation in `rediscloud_subscription` resource.
+- Read logic for `maintenance_windows` and `pricing` not triggering properly during CMK workflow in `rediscloud_subscription` and `rediscloud_active_active_subscription` resources.
+- CMK workflow test for `rediscloud_subscription` and `rediscloud_active_active_subscription` not being runnable.
+- `rediscloud_subscription` tests for setting `maintenance_windows`.
+- Read logic for `maintenance_windows` and `pricing` not triggering properly when in CMK workflow.
+
+# 2.17.0 (10th June 2026)
 
 ## Added
 - Added `redis_version_actual` attribute to the `rediscloud_subscription_database` resource.
