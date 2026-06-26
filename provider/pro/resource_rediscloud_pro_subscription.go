@@ -652,6 +652,28 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api); cleanupDiags != nil {
 		return append(diags, cleanupDiags...)
 	}
+	if m, ok := d.GetOk("maintenance_windows"); ok {
+		mMap := m.([]interface{})[0].(map[string]interface{})
+
+		windows := make([]*maintenance.Window, 0)
+		for _, w := range mMap["window"].([]interface{}) {
+			wMap := w.(map[string]interface{})
+			windows = append(windows, &maintenance.Window{
+				StartHour:       redis.Int(wMap["start_hour"].(int)),
+				DurationInHours: redis.Int(wMap["duration_in_hours"].(int)),
+				Days:            utils.InterfaceToStringSlice(wMap["days"].([]interface{})),
+			})
+		}
+
+		updateMaintenanceRequest := maintenance.Maintenance{
+			Mode:    redis.String(mMap["mode"].(string)),
+			Windows: windows,
+		}
+		err = api.Client.Maintenance.Update(ctx, subId, updateMaintenanceRequest)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	}
 
 	if redisVersion != "" {
 		if err := d.Set("redis_version", redisVersion); err != nil {
@@ -721,8 +743,7 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 		}
 	}
 
-	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
-	if !cmkEnabled {
+	if *subscription.Status == subscriptions.SubscriptionStatusActive {
 		m, err := api.Client.Maintenance.Get(ctx, subId)
 		if err != nil {
 			return diag.FromErr(err)
@@ -797,9 +818,10 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 	}
 
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
-
+	wasCmkPending := false
 	// CMK flow
 	if *subscription.Status == subscriptions.SubscriptionStatusEncryptionKeyPending && cmkEnabled {
+		wasCmkPending = true
 		diags := resourceRedisCloudProSubscriptionUpdateCmk(ctx, d, api, subId)
 
 		if diags != nil {
@@ -881,7 +903,7 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 		}
 	}
 
-	if d.HasChange("maintenance_windows") {
+	if d.HasChange("maintenance_windows") || wasCmkPending {
 		var updateMaintenanceRequest maintenance.Maintenance
 		if m, ok := d.GetOk("maintenance_windows"); ok {
 			mMap := m.([]interface{})[0].(map[string]interface{})

@@ -3,7 +3,21 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-# 2.17.0 (TBD)
+# 2.17.1 (TBD)
+
+## Changed
+- Added validation for `maintenance_windows` being set in CMK workflow tests in `rediscloud_subscription` and `rediscloud_active_active_subscription` resources
+
+## Fixed
+- `maintenance_windows` not being set after CMK workflow in `rediscloud_subscription` and `rediscloud_active_active_subscription` resources
+- `maintenance_windows` not being set on creation in `rediscloud_subscription` resource
+- Read logic for `maintenance_windows` and `pricing` not triggering properly during CMK workflow in `rediscloud_subscription` and `rediscloud_active_active_subscription` resources
+- CMK workflow test for `rediscloud_subscription` and `rediscloud_active_active_subscription` not being runnable
+- `rediscloud_subscription` tests for setting `maintenance_windows`
+- Read logic for `maintenance_windows` and `pricing` not triggering properly when in CMK workflow
+
+
+# 2.17.0 (10.06.2026)
 
 ## Added
 - Added `redis_version_actual` attribute to the `rediscloud_subscription_database` resource.
@@ -12,7 +26,6 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 - Exposed `customer_managed_key_aws_role_arn` attribute on the `rediscloud_subscription` data source.
 - Added AWS support for customer managed keys on the `rediscloud_active_active_subscription` resource, exposing the new `customer_managed_key_aws_role_arn` computed attribute — the IAM role ARN to add to your KMS key policy.
 - Exposed `customer_managed_key_aws_role_arn` attribute on the `rediscloud_active_active_subscription` data source.
-
 
 ## Changed
 - Upgraded Go dependencies and CI workflow actions.
@@ -25,12 +38,12 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 - State drift on `redis_version` caused by `auto_minor_version_upgrade` being set to `true`
 - State drift on `redis_version` in `rediscloud_essentials_database` resource caused by auto minor version upgrade feature.
 
-# 2.16.1 (May 2026)
+# 2.16.1 (21st May 2026)
 
 ## Fixed
 - Remove usage of immutable GitHub releases
 
-# 2.16.0 (May 2026)
+# 2.16.0 (19th May 2026)
 
 ## Added
 - Added `prometheus_endpoint` attribute to the `rediscloud_subscription` resource.

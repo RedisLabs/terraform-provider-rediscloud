@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -28,25 +29,30 @@ func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 	configVars := config.Variables{
 		"name":           config.StringVariable(name),
 		"gcp_project_id": config.StringVariable(gcpProjectId),
+		"maintenance_windows": config.ListVariable(config.ObjectVariable(
+			map[string]config.Variable{
+				"mode": config.StringVariable("manual"),
+				"window": config.ListVariable(config.ObjectVariable(
+					map[string]config.Variable{
+						"start_hour":        config.IntegerVariable(22),
+						"duration_in_hours": config.IntegerVariable(8),
+						"days":              config.ListVariable(config.StringVariable("Monday"), config.StringVariable("Thursday")),
+					})),
+			},
+		)),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
-		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		ExternalProviders: map[string]resource.ExternalProvider{
-			"google": {
-				Source:            "hashicorp/google",
-				VersionConstraint: "~> 6.5",
-			},
-		},
+		PreCheck:     func() { testhelpers.BasicPreCheck(t) },
 		CheckDestroy: checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				// Step 1: Create subscription with CMK enabled (enters encryption_key_pending state)
 				// Also creates GCP KMS key and grants IAM permissions to the Redis service account
-				ConfigFile:         config.StaticFile("./testdata/cmk_step1.tf"),
-				ConfigVariables:    configVars,
-				ExpectNonEmptyPlan: true,
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ConfigFile:               config.StaticFile("./testdata/cmk_step1.tf"),
+				ConfigVariables:          configVars,
+				ExpectNonEmptyPlan:       true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_redis_service_account"),
@@ -61,10 +67,20 @@ func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 			{
 				// Step 2: Add CMK blocks to activate encryption
 				// This triggers the UpdateCmk code path which should also clean up creation plan databases
-				ConfigFile:         config.StaticFile("./testdata/cmk_step2.tf"),
-				ConfigVariables:    configVars,
-				ExpectNonEmptyPlan: true,
-				Check: resource.ComposeAggregateTestCheckFunc(
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ConfigFile:               config.StaticFile("./testdata/cmk_step2.tf"),
+				ConfigVariables:          configVars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+					PostApplyPreRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+					PostApplyPostRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				}, Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_redis_service_account"),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
@@ -74,7 +90,8 @@ func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "cloud_provider.0.region.#"),
 					resource.TestCheckResourceAttr(resourceName, "customer_managed_key_enabled", "true"),
 					checkNoCreationPlanDatabases(resourceName),
-				),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
+					resource.TestCheckResourceAttrSet(resourceName, "maintenance_windows.0.window")),
 			},
 		},
 	})

@@ -212,9 +212,16 @@ func flattenAlertsToSet(alerts []*databases.Alert) (types.Set, diag.Diagnostics)
 }
 
 // buildBackupPlan converts a RemoteBackupModel to the API request format.
+// Returns Active=false when the block is absent so a removed remote_backup
+// disables the backup on the API side, matching the empty list produced by
+// the read path.
 func buildBackupPlan(ctx context.Context, remoteBackupList types.List) (*databases.DatabaseBackupConfig, diag.Diagnostics) {
-	if remoteBackupList.IsNull() || remoteBackupList.IsUnknown() || len(remoteBackupList.Elements()) == 0 {
+	if remoteBackupList.IsUnknown() {
 		return nil, nil
+	}
+
+	if remoteBackupList.IsNull() || len(remoteBackupList.Elements()) == 0 {
+		return &databases.DatabaseBackupConfig{Active: redis.Bool(false)}, nil
 	}
 
 	var backups []RemoteBackupModel
@@ -224,7 +231,7 @@ func buildBackupPlan(ctx context.Context, remoteBackupList types.List) (*databas
 	}
 
 	if len(backups) == 0 {
-		return nil, nil
+		return &databases.DatabaseBackupConfig{Active: redis.Bool(false)}, nil
 	}
 
 	backup := backups[0]
@@ -252,29 +259,39 @@ func flattenBackupPlan(backup *databases.Backup, stateStorageType string) (types
 		"storage_path": types.StringType,
 	}
 
+	objectType := types.ObjectType{AttrTypes: remoteBackupAttrTypes}
+
+	emptyList, diags := types.ListValue(objectType, []attr.Value{})
+	if diags.HasError() {
+		return emptyList, diags
+	}
+
 	if backup == nil || !redis.BoolValue(backup.Enabled) {
-		return types.ListNull(types.ObjectType{AttrTypes: remoteBackupAttrTypes}), nil
+		return emptyList, diags
 	}
 
 	timeUTC := types.StringNull()
-	if backup.TimeUTC != nil {
-		timeUTC = types.StringValue(redis.StringValue(backup.TimeUTC))
+	if v := redis.StringValue(backup.TimeUTC); v != "" {
+		timeUTC = types.StringValue(v)
 	}
 
 	// Storage type is not returned by API, preserve from state
 	storageType := types.StringValue(stateStorageType)
 
-	obj, diags := types.ObjectValue(remoteBackupAttrTypes, map[string]attr.Value{
+	obj, objDiags := types.ObjectValue(remoteBackupAttrTypes, map[string]attr.Value{
 		"interval":     types.StringValue(redis.StringValue(backup.Interval)),
 		"time_utc":     timeUTC,
 		"storage_type": storageType,
 		"storage_path": types.StringValue(redis.StringValue(backup.Destination)),
 	})
+	diags.Append(objDiags...)
 	if diags.HasError() {
-		return types.ListNull(types.ObjectType{AttrTypes: remoteBackupAttrTypes}), diags
+		return emptyList, diags
 	}
 
-	return types.ListValue(types.ObjectType{AttrTypes: remoteBackupAttrTypes}, []attr.Value{obj})
+	list, listDiags := types.ListValue(objectType, []attr.Value{obj})
+	diags.Append(listDiags...)
+	return list, diags
 }
 
 // waitForDatabaseToBeDeleted waits for the database to be deleted using retry.StateChangeConf.
