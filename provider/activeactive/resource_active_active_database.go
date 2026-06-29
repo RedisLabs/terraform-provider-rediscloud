@@ -97,6 +97,31 @@ func UseStateOnUpdate() planmodifier.List {
 	return useStateOnUpdateListModifier{}
 }
 
+type emptyStringToNullModifier struct{}
+
+var _ planmodifier.String = emptyStringToNullModifier{}
+
+func (m emptyStringToNullModifier) Description(_ context.Context) string {
+	return "Normalises an empty string config value to null in the plan, so it matches the null produced by the read path."
+}
+
+func (m emptyStringToNullModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m emptyStringToNullModifier) PlanModifyString(_ context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	if !req.PlanValue.IsNull() && !req.PlanValue.IsUnknown() && req.PlanValue.ValueString() == "" {
+		resp.PlanValue = types.StringNull()
+	}
+}
+
+// EmptyStringToNull returns a plan modifier that converts an empty string to null in the plan.
+// Use this when the read path produces null for missing/empty values, to keep plan and apply
+// in agreement and avoid "planned set element does not correlate" errors on parent set blocks.
+func EmptyStringToNull() planmodifier.String {
+	return emptyStringToNullModifier{}
+}
+
 // Schema defines the schema for the resource.
 func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	// Alert block schema (used in global_alert and override_global_alert)
@@ -131,6 +156,9 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 				Optional:    true,
 				Validators: []validator.String{
 					TimeValidator(),
+				},
+				PlanModifiers: []planmodifier.String{
+					EmptyStringToNull(),
 				},
 			},
 			"storage_type": schema.StringAttribute{
