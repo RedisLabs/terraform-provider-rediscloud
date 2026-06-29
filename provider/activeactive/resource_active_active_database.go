@@ -223,13 +223,17 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 				},
 			},
 			"redis_version": schema.StringAttribute{
-				Description: "Defines the Redis database version. If omitted, the Redis version will be set to the default version",
+				Description: "Defines the requested Redis database version. If omitted, the Redis version will be set to the default version. Use `redis_version_actual` to get the version on which the database is running.",
 				Optional:    true,
-				Computed:    true,
+				//TODO(TF3.0) drop Computed and stop writing redis_version from Read — makes the field write-only-by-convention (no plugin-framework migration), so state only ever holds what the user wrote in config and auto-upgrades can't drift state. DSF stays to heal state poisoned by older provider versions.
+				Computed: true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"redis_version_actual": schema.StringAttribute{
+				Description: "The actual Redis database version",
+				Computed:    true,
 			},
 			"support_oss_cluster_api": schema.BoolAttribute{
 				Description: "Support Redis open-source (OSS) Cluster API",
