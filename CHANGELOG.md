@@ -14,6 +14,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ## Fixed
 - Inconsistent state around `remote_backup` block in `override_region` argument for the `rediscloud_active_active_subscription_database` resource.
+- Proper `Context` passed to `frameworkDebugLogger` for logging.
 
 # 2.17.1 (16th June 2026)
 
