@@ -376,7 +376,7 @@ func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan 
 	defer utils.SubscriptionMutex.Unlock(subId)
 
 	// Update database version first if changed
-	if !plan.RedisVersion.IsNull() && state != nil && !state.RedisVersion.IsNull() && plan.RedisVersion.ValueString() != state.RedisVersion.ValueString() {
+	if !plan.RedisVersion.IsNull() && state != nil && !state.RedisVersion.IsNull() && plan.RedisVersion.ValueString() != state.RedisVersion.ValueString() && plan.RedisVersion.ValueString() != state.RedisVersionActual.ValueString() {
 		upgradeVersionRequest := databases.UpgradeRedisVersion{TargetRedisVersion: plan.RedisVersion.ValueStringPointer()}
 		if err := r.client.Client.Database.UpgradeRedisVersion(ctx, subId, dbId, upgradeVersionRequest); err != nil {
 			diagnostics.AddError("Failed to upgrade database version", err.Error())
