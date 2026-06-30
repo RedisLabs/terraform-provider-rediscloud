@@ -265,6 +265,62 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "true"),
 				),
 			},
+			// Sync redis_version to redis_version_actual
+			{
+				ConfigFile: config.StaticFile("./testdata/database_crudi_update.tf"),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(subscriptionName),
+					"database_name":     config.StringVariable(databaseNameUpdated),
+					"redis_version":     config.StringVariable("8.4"),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(databaseResourceName, "name", databaseNameUpdated),
+					resource.TestCheckResourceAttr(databaseResourceName, "redis_version", "8.4"),
+					resource.TestCheckResourceAttr(databaseResourceName, "redis_version_actual", "8.4"),
+					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(databaseResourceName, "external_endpoint_for_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_data_persistence", "aof-every-1-second"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_password", "updated-password"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.name", "dataset-size"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_alert.0.value", "60"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "false"),
+					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "0"),
+
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.name", "us-east-1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_data_persistence", "none"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_password", "password-updated"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.#", "1"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.0.name", "dataset-size"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_alert.0.value", "41"),
+					resource.TestCheckResourceAttr(databaseResourceName, "override_region.0.override_global_source_ips.#", "0"),
+
+					// API check: verify updates applied
+					func(s *terraform.State) error {
+						apiClient := utils.SharedTestClient(t)
+						db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
+						if err != nil {
+							return fmt.Errorf("failed to get database: %w", err)
+						}
+						if redis.StringValue(db.GlobalDataPersistence) != "aof-every-1-second" {
+							return fmt.Errorf("expected global_data_persistence %q, got %q", "aof-every-1-second", redis.StringValue(db.GlobalDataPersistence))
+						}
+						if redis.BoolValue(db.SupportOSSClusterAPI) != true {
+							return fmt.Errorf("expected support_oss_cluster_api true, got false")
+						}
+						return nil
+					},
+
+					// Test data source reflects updates
+					resource.TestCheckResourceAttr(datasourceName, "name", databaseNameUpdated),
+					resource.TestCheckResourceAttr(datasourceName, "redis_version", "8.4"),
+					resource.TestCheckResourceAttr(datasourceName, "dataset_size_in_gb", "1"),
+					resource.TestCheckResourceAttr(datasourceName, "support_oss_cluster_api", "true"),
+					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "true"),
+				),
+			},
 			// Test database update: remove alerts, restore default user
 			{
 				ConfigFile: config.StaticFile("./testdata/database_crudi_update_no_alerts.tf"),
