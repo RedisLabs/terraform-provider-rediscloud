@@ -164,11 +164,11 @@ func dataSourceActiveActivePrivateLinkRead(ctx context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("connections", flattenConnections(privateLink.Connections)); err != nil {
+	if err := d.Set("connections", FlattenConnections(privateLink.Connections)); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("databases", flattenDatabases(privateLink.Databases)); err != nil {
+	if err := d.Set("databases", FlattenDatabases(privateLink.Databases)); err != nil {
 		return diag.FromErr(err)
 	}
 
