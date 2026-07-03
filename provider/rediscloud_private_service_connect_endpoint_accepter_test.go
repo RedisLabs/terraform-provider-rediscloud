@@ -49,14 +49,14 @@ func TestAccResourceRedisCloudPrivateServiceConnectEndpointAccepter_Create(t *te
 						}
 
 						client := sharedTestClient(t)
-						endpoints, err := client.Client.PrivateServiceConnect.GetEndpoints(context.TODO(), accepterId.SubscriptionId(), accepterId.PscServiceId())
+						endpoints, err := client.Client.PrivateServiceConnect.GetEndpoints(context.TODO(), accepterId.SubscriptionId, accepterId.PscServiceId)
 						if err != nil {
 							return err
 						}
 
-						endpoint := provider.FindPrivateServiceConnectEndpoints(accepterId.EndpointId(), endpoints.Endpoints)
+						endpoint := provider.FindPrivateServiceConnectEndpoints(accepterId.EndpointId, endpoints.Endpoints)
 						if endpoint == nil {
-							return fmt.Errorf("couldn't find endpoint with ID: %d", accepterId.EndpointId())
+							return fmt.Errorf("couldn't find endpoint with ID: %d", accepterId.EndpointId)
 						}
 
 						if redis.StringValue(endpoint.Status) != psc.EndpointStatusActive {

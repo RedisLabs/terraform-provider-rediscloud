@@ -175,7 +175,7 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointRead(ctx context
 		return diag.FromErr(err)
 	}
 
-	endpoint := findPrivateServiceConnectEndpoints(resId.endpointId, endpoints.Endpoints)
+	endpoint := FindPrivateServiceConnectEndpoints(resId.endpointId, endpoints.Endpoints)
 	if endpoint == nil {
 		d.SetId("")
 		return diags
@@ -268,7 +268,7 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointDelete(ctx conte
 		return diag.FromErr(err)
 	}
 
-	endpoint := findPrivateServiceConnectEndpoints(resId.endpointId, endpoints.Endpoints)
+	endpoint := FindPrivateServiceConnectEndpoints(resId.endpointId, endpoints.Endpoints)
 	if endpoint == nil {
 		d.SetId("")
 		return diags
@@ -360,7 +360,7 @@ func refreshPrivateServiceConnectServiceActiveActiveEndpointDisappear(ctx contex
 		return nil, "", err
 	}
 
-	endpoint := findPrivateServiceConnectEndpoints(endpointId, endpoints.Endpoints)
+	endpoint := FindPrivateServiceConnectEndpoints(endpointId, endpoints.Endpoints)
 	if endpoint == nil {
 		return placeholderStatusDisappear, placeholderStatusDisappear, nil
 	}

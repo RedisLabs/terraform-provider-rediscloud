@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
-	providerpkg "github.com/RedisLabs/terraform-provider-rediscloud/provider"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
 )
 
 // testResourcePrefix is the prefix used for all test resource names.
@@ -103,11 +103,11 @@ func sharedClientForRegion(region string) (*rediscloudApi.Client, error) {
 		return client, nil
 	}
 
-	if os.Getenv(providerpkg.RedisCloudUrlEnvVar) == "" || os.Getenv(rediscloudApi.AccessKeyEnvVar) == "" || os.Getenv(rediscloudApi.SecretKeyEnvVar) == "" {
-		return nil, fmt.Errorf("must provide environment variables %s, %s, %s", providerpkg.RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
+	if os.Getenv(provider.RedisCloudUrlEnvVar) == "" || os.Getenv(rediscloudApi.AccessKeyEnvVar) == "" || os.Getenv(rediscloudApi.SecretKeyEnvVar) == "" {
+		return nil, fmt.Errorf("must provide environment variables %s, %s, %s", provider.RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
 	}
 
-	client, err := rediscloudApi.NewClient(rediscloudApi.BaseURL(os.Getenv(providerpkg.RedisCloudUrlEnvVar)))
+	client, err := rediscloudApi.NewClient(rediscloudApi.BaseURL(os.Getenv(provider.RedisCloudUrlEnvVar)))
 	if err != nil {
 		return nil, err
 	}
