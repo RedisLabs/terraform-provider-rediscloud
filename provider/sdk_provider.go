@@ -18,8 +18,6 @@ import (
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 )
 
-const RedisCloudUrlEnvVar = "REDISCLOUD_URL"
-
 func init() {
 	schema.DescriptionKind = schema.StringMarkdown
 }
@@ -32,9 +30,9 @@ func NewSdkProvider(version string) func() *schema.Provider {
 			Schema: map[string]*schema.Schema{
 				"url": {
 					Type:        schema.TypeString,
-					Description: fmt.Sprintf("This is the URL of Redis Cloud and will default to `https://api.redislabs.com/v1`. This can also be set by the `%s` environment variable.", RedisCloudUrlEnvVar),
+					Description: fmt.Sprintf("This is the URL of Redis Cloud and will default to `https://api.redislabs.com/v1`. This can also be set by the `%s` environment variable.", rediscloudApi.RedisCloudUrlEnvVar),
 					Optional:    true,
-					DefaultFunc: schema.EnvDefaultFunc(RedisCloudUrlEnvVar, ""),
+					DefaultFunc: schema.EnvDefaultFunc(rediscloudApi.RedisCloudUrlEnvVar, ""),
 				},
 				"api_key": {
 					Type:        schema.TypeString,

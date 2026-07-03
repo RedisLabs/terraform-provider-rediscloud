@@ -65,7 +65,7 @@ func TestProvider(t *testing.T) {
 }
 
 func testAccPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, provider.RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
+	requireEnvironmentVariables(t, rediscloudApi.RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
 }
 
 func testAccAwsPreExistingCloudAccountPreCheck(t *testing.T) {

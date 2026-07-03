@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
-
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
 )
 
 // RequireEnvVars skips or fails the test if any of the named environment
@@ -25,5 +23,5 @@ func RequireEnvVars(t *testing.T, names ...string) {
 // variables are needed.
 func BasicPreCheck(t *testing.T) {
 	t.Helper()
-	RequireEnvVars(t, provider.RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
+	RequireEnvVars(t, rediscloudApi.RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
 }
