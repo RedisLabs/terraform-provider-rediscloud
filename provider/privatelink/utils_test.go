@@ -1,4 +1,4 @@
-package privatelink
+package privatelink_test
 
 import (
 	"testing"
@@ -6,10 +6,12 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	pl "github.com/RedisLabs/rediscloud-go-api/service/privatelink"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/privatelink"
 )
 
 func TestUnitFlattenConnections(t *testing.T) {
-	// Test that flattenConnections produces keys that match the schema
+	// Test that FlattenConnections produces keys that match the schema
 	connections := []*pl.PrivateLinkConnection{
 		{
 			AssociationId:   redis.String("assoc-123"),
@@ -20,7 +22,7 @@ func TestUnitFlattenConnections(t *testing.T) {
 		},
 	}
 
-	result := flattenConnections(connections)
+	result := privatelink.FlattenConnections(connections)
 
 	assert.Len(t, result, 1)
 
@@ -39,7 +41,7 @@ func TestUnitFlattenConnections(t *testing.T) {
 }
 
 func TestUnitFlattenConnectionsEmpty(t *testing.T) {
-	result := flattenConnections([]*pl.PrivateLinkConnection{})
+	result := privatelink.FlattenConnections([]*pl.PrivateLinkConnection{})
 	assert.Len(t, result, 0)
 }
 
@@ -52,7 +54,7 @@ func TestUnitFlattenDatabases(t *testing.T) {
 		},
 	}
 
-	result := flattenDatabases(databases)
+	result := privatelink.FlattenDatabases(databases)
 
 	assert.Len(t, result, 1)
 
@@ -80,7 +82,7 @@ func TestUnitFlattenPrincipals(t *testing.T) {
 		},
 	}
 
-	result := flattenPrincipals(principals)
+	result := privatelink.FlattenPrincipals(principals)
 
 	assert.Len(t, result, 2)
 
