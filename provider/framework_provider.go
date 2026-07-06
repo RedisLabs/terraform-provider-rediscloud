@@ -61,7 +61,7 @@ func (p *redisCloudFrameworkProvider) Schema(_ context.Context, _ provider.Schem
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"url": schema.StringAttribute{
-				MarkdownDescription: fmt.Sprintf("This is the URL of Redis Cloud and will default to `https://api.redislabs.com/v1`. This can also be set by the `%s` environment variable.", RedisCloudUrlEnvVar),
+				MarkdownDescription: fmt.Sprintf("This is the URL of Redis Cloud and will default to `https://api.redislabs.com/v1`. This can also be set by the `%s` environment variable.", rediscloudApi.RedisCloudUrlEnvVar),
 				Optional:            true,
 			},
 			"api_key": schema.StringAttribute{
@@ -88,7 +88,7 @@ func (p *redisCloudFrameworkProvider) Configure(ctx context.Context, req provide
 	}
 
 	// Default values from environment variables
-	url := os.Getenv(RedisCloudUrlEnvVar)
+	url := os.Getenv(rediscloudApi.RedisCloudUrlEnvVar)
 	apiKey := os.Getenv(rediscloudApi.AccessKeyEnvVar)
 	secretKey := os.Getenv(rediscloudApi.SecretKeyEnvVar)
 
