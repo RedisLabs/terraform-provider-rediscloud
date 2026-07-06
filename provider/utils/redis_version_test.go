@@ -1,10 +1,12 @@
-package utils
+package utils_test
 
 import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func TestSuppressIfRedisVersionSatisfied(t *testing.T) {
@@ -39,7 +41,7 @@ func TestSuppressIfRedisVersionSatisfied(t *testing.T) {
 				raw["redis_version_actual"] = tc.actual
 			}
 			d := schema.TestResourceDataRaw(t, rsrc.Schema, raw)
-			got := SuppressIfRedisVersionSatisfied("redis_version", "", tc.newVal, d)
+			got := utils.SuppressIfRedisVersionSatisfied("redis_version", "", tc.newVal, d)
 			assert.Equal(t, tc.suppress, got)
 		})
 	}

@@ -167,7 +167,7 @@ func resourceRedisCloudPrivateServiceConnectEndpointRead(ctx context.Context, d 
 		return diag.FromErr(err)
 	}
 
-	endpoint := findPrivateServiceConnectEndpoints(resId.endpointId, endpoints.Endpoints)
+	endpoint := FindPrivateServiceConnectEndpoints(resId.endpointId, endpoints.Endpoints)
 	if endpoint == nil {
 		d.SetId("")
 		return diags
@@ -255,7 +255,7 @@ func resourceRedisCloudPrivateServiceConnectEndpointDelete(ctx context.Context, 
 		return diag.FromErr(err)
 	}
 
-	endpoint := findPrivateServiceConnectEndpoints(resId.endpointId, endpoints.Endpoints)
+	endpoint := FindPrivateServiceConnectEndpoints(resId.endpointId, endpoints.Endpoints)
 	if endpoint == nil {
 		d.SetId("")
 		return diags
@@ -340,7 +340,7 @@ func refreshPrivateServiceConnectServiceEndpointDisappear(ctx context.Context, s
 		return nil, "", err
 	}
 
-	endpoint := findPrivateServiceConnectEndpoints(endpointId, endpoints.Endpoints)
+	endpoint := FindPrivateServiceConnectEndpoints(endpointId, endpoints.Endpoints)
 	if endpoint == nil {
 		return placeholderStatusDisappear, placeholderStatusDisappear, nil
 	}
@@ -348,7 +348,7 @@ func refreshPrivateServiceConnectServiceEndpointDisappear(ctx context.Context, s
 	return redis.StringValue(endpoint.Status), redis.StringValue(endpoint.Status), nil
 }
 
-func findPrivateServiceConnectEndpoints(id int, endpoints []*psc.PrivateServiceConnectEndpoint) *psc.PrivateServiceConnectEndpoint {
+func FindPrivateServiceConnectEndpoints(id int, endpoints []*psc.PrivateServiceConnectEndpoint) *psc.PrivateServiceConnectEndpoint {
 	for _, endpoint := range endpoints {
 		if redis.IntValue(endpoint.ID) == id {
 			return endpoint

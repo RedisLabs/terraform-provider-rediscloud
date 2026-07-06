@@ -100,7 +100,8 @@ func principalsFromSet(principals *schema.Set) []pl.PrivateLinkPrincipal {
 	return createPrincipals
 }
 
-func flattenPrincipals(principals []*pl.PrivateLinkPrincipal) []map[string]interface{} {
+// FlattenPrincipals converts private link principals to Terraform state shape.
+func FlattenPrincipals(principals []*pl.PrivateLinkPrincipal) []map[string]interface{} {
 	var tfs = make([]map[string]interface{}, 0)
 
 	for _, principal := range principals {
@@ -119,7 +120,8 @@ func flattenPrincipals(principals []*pl.PrivateLinkPrincipal) []map[string]inter
 	return tfs
 }
 
-func flattenDatabases(databases []*pl.PrivateLinkDatabase) []map[string]interface{} {
+// FlattenDatabases converts private link databases to Terraform state shape.
+func FlattenDatabases(databases []*pl.PrivateLinkDatabase) []map[string]interface{} {
 	var tfs = make([]map[string]interface{}, 0)
 
 	for _, db := range databases {
@@ -133,7 +135,8 @@ func flattenDatabases(databases []*pl.PrivateLinkDatabase) []map[string]interfac
 	return tfs
 }
 
-func flattenConnections(connections []*pl.PrivateLinkConnection) []map[string]interface{} {
+// FlattenConnections converts private link connections to Terraform state shape.
+func FlattenConnections(connections []*pl.PrivateLinkConnection) []map[string]interface{} {
 	var tfs = make([]map[string]interface{}, 0)
 
 	for _, connection := range connections {

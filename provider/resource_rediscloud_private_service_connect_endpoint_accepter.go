@@ -89,7 +89,7 @@ func resourceRedisCloudPrivateServiceConnectEndpointAccepterCreate(ctx context.C
 		return diag.FromErr(err)
 	}
 
-	endpoint := findPrivateServiceConnectEndpoints(endpointId, endpoints.Endpoints)
+	endpoint := FindPrivateServiceConnectEndpoints(endpointId, endpoints.Endpoints)
 	if endpoint == nil {
 		return diag.FromErr(fmt.Errorf("endpoint with id %d not found", endpointId))
 	}
@@ -147,12 +147,12 @@ func resourceRedisCloudPrivateServiceConnectEndpointAccepterRead(ctx context.Con
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
-	resId, err := toPscEndpointAccepterId(d.Id())
+	resId, err := ToPscEndpointAccepterId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	endpoints, err := api.Client.PrivateServiceConnect.GetEndpoints(ctx, resId.subscriptionId, resId.pscServiceId)
+	endpoints, err := api.Client.PrivateServiceConnect.GetEndpoints(ctx, resId.SubscriptionId, resId.PscServiceId)
 	if err != nil {
 		var notFound *psc.NotFound
 		if errors.As(err, &notFound) {
@@ -162,20 +162,20 @@ func resourceRedisCloudPrivateServiceConnectEndpointAccepterRead(ctx context.Con
 		return diag.FromErr(err)
 	}
 
-	endpoint := findPrivateServiceConnectEndpoints(resId.endpointId, endpoints.Endpoints)
+	endpoint := FindPrivateServiceConnectEndpoints(resId.EndpointId, endpoints.Endpoints)
 	if endpoint == nil {
 		d.SetId("")
 		return diags
 	}
 
-	d.SetId(buildPrivateServiceConnectEndpointAccepterId(resId.subscriptionId, resId.pscServiceId, redis.IntValue(endpoint.ID)))
+	d.SetId(buildPrivateServiceConnectEndpointAccepterId(resId.SubscriptionId, resId.PscServiceId, redis.IntValue(endpoint.ID)))
 
-	err = d.Set("subscription_id", strconv.Itoa(resId.subscriptionId))
+	err = d.Set("subscription_id", strconv.Itoa(resId.SubscriptionId))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	err = d.Set("private_service_connect_service_id", resId.pscServiceId)
+	err = d.Set("private_service_connect_service_id", resId.PscServiceId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -195,17 +195,17 @@ func buildPrivateServiceConnectEndpointAccepterId(subId int, pscId int, endpoint
 		endpointId:     endpointId}.String()
 }
 
-type privateServiceConnectEndpointAccepterId struct {
-	subscriptionId int
-	pscServiceId   int
-	endpointId     int
+type PrivateServiceConnectEndpointAccepterId struct {
+	SubscriptionId int
+	PscServiceId   int
+	EndpointId     int
 }
 
-func (p privateServiceConnectEndpointAccepterId) String() string {
-	return fmt.Sprintf("%d/%d/%d", p.subscriptionId, p.pscServiceId, p.endpointId)
+func (p PrivateServiceConnectEndpointAccepterId) String() string {
+	return fmt.Sprintf("%d/%d/%d", p.SubscriptionId, p.PscServiceId, p.EndpointId)
 }
 
-func toPscEndpointAccepterId(id string) (*privateServiceConnectEndpointAccepterId, error) {
+func ToPscEndpointAccepterId(id string) (*PrivateServiceConnectEndpointAccepterId, error) {
 	parts := strings.Split(id, "/")
 	if len(parts) != 3 {
 		return nil, fmt.Errorf("invalid id: %s", id)
@@ -226,10 +226,10 @@ func toPscEndpointAccepterId(id string) (*privateServiceConnectEndpointAccepterI
 		return nil, err
 	}
 
-	return &privateServiceConnectEndpointAccepterId{
-		subscriptionId: subId,
-		pscServiceId:   pscId,
-		endpointId:     endpointId,
+	return &PrivateServiceConnectEndpointAccepterId{
+		SubscriptionId: subId,
+		PscServiceId:   pscId,
+		EndpointId:     endpointId,
 	}, nil
 }
 
@@ -253,7 +253,7 @@ func refreshPrivateServiceConnectServiceEndpointStatus(ctx context.Context, subs
 		return nil, "", err
 	}
 
-	endpoint := findPrivateServiceConnectEndpoints(endpointId, endpoints.Endpoints)
+	endpoint := FindPrivateServiceConnectEndpoints(endpointId, endpoints.Endpoints)
 	if endpoint == nil {
 		return nil, "", fmt.Errorf("endpoint with id %d not found", endpointId)
 	}

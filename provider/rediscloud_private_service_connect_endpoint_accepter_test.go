@@ -1,4 +1,4 @@
-package provider
+package provider_test
 
 import (
 	"context"
@@ -10,6 +10,8 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/psc"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
@@ -41,20 +43,20 @@ func TestAccResourceRedisCloudPrivateServiceConnectEndpointAccepter_Create(t *te
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
 
-						accepterId, err := toPscEndpointAccepterId(r.Primary.ID)
+						accepterId, err := provider.ToPscEndpointAccepterId(r.Primary.ID)
 						if err != nil {
 							return fmt.Errorf("couldn't parse the accepter ID: %s", r.Primary.ID)
 						}
 
 						client := sharedTestClient(t)
-						endpoints, err := client.Client.PrivateServiceConnect.GetEndpoints(context.TODO(), accepterId.subscriptionId, accepterId.pscServiceId)
+						endpoints, err := client.Client.PrivateServiceConnect.GetEndpoints(context.TODO(), accepterId.SubscriptionId, accepterId.PscServiceId)
 						if err != nil {
 							return err
 						}
 
-						endpoint := findPrivateServiceConnectEndpoints(accepterId.endpointId, endpoints.Endpoints)
+						endpoint := provider.FindPrivateServiceConnectEndpoints(accepterId.EndpointId, endpoints.Endpoints)
 						if endpoint == nil {
-							return fmt.Errorf("couldn't find endpoint with ID: %d", accepterId.endpointId)
+							return fmt.Errorf("couldn't find endpoint with ID: %d", accepterId.EndpointId)
 						}
 
 						if redis.StringValue(endpoint.Status) != psc.EndpointStatusActive {

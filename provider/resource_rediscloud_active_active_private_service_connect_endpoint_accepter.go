@@ -95,7 +95,7 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterCreate(c
 		return diag.FromErr(err)
 	}
 
-	endpoint := findPrivateServiceConnectEndpoints(endpointId, endpoints.Endpoints)
+	endpoint := FindPrivateServiceConnectEndpoints(endpointId, endpoints.Endpoints)
 	if endpoint == nil {
 		return diag.FromErr(fmt.Errorf("endpoint with id %d not found", endpointId))
 	}
@@ -153,12 +153,12 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterRead(ctx
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
-	resId, err := toPscEndpointActiveActiveAccepterId(d.Id())
+	resId, err := ToPscEndpointActiveActiveAccepterId(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	endpoints, err := api.Client.PrivateServiceConnect.GetActiveActiveEndpoints(ctx, resId.subscriptionId, resId.regionId, resId.pscServiceId)
+	endpoints, err := api.Client.PrivateServiceConnect.GetActiveActiveEndpoints(ctx, resId.SubscriptionId, resId.RegionId, resId.PscServiceId)
 	if err != nil {
 		var notFound *psc.NotFoundActiveActive
 		if errors.As(err, &notFound) {
@@ -168,25 +168,25 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterRead(ctx
 		return diag.FromErr(err)
 	}
 
-	endpoint := findPrivateServiceConnectEndpoints(resId.endpointId, endpoints.Endpoints)
+	endpoint := FindPrivateServiceConnectEndpoints(resId.EndpointId, endpoints.Endpoints)
 	if endpoint == nil {
 		d.SetId("")
 		return diags
 	}
 
-	d.SetId(buildPrivateServiceConnectActiveActiveEndpointAccepterId(resId.subscriptionId, resId.regionId, resId.pscServiceId, redis.IntValue(endpoint.ID)))
+	d.SetId(buildPrivateServiceConnectActiveActiveEndpointAccepterId(resId.SubscriptionId, resId.RegionId, resId.PscServiceId, redis.IntValue(endpoint.ID)))
 
-	err = d.Set("subscription_id", strconv.Itoa(resId.subscriptionId))
+	err = d.Set("subscription_id", strconv.Itoa(resId.SubscriptionId))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	err = d.Set("region_id", resId.regionId)
+	err = d.Set("region_id", resId.RegionId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	err = d.Set("private_service_connect_service_id", resId.pscServiceId)
+	err = d.Set("private_service_connect_service_id", resId.PscServiceId)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -207,18 +207,18 @@ func buildPrivateServiceConnectActiveActiveEndpointAccepterId(subId int, regionI
 		endpointId:     endpointId}.String()
 }
 
-type privateServiceConnectActiveActiveEndpointAccepterId struct {
-	subscriptionId int
-	regionId       int
-	pscServiceId   int
-	endpointId     int
+type PrivateServiceConnectActiveActiveEndpointAccepterId struct {
+	SubscriptionId int
+	RegionId       int
+	PscServiceId   int
+	EndpointId     int
 }
 
-func (p privateServiceConnectActiveActiveEndpointAccepterId) String() string {
-	return fmt.Sprintf("%d/%d/%d/%d", p.subscriptionId, p.regionId, p.pscServiceId, p.endpointId)
+func (p PrivateServiceConnectActiveActiveEndpointAccepterId) String() string {
+	return fmt.Sprintf("%d/%d/%d/%d", p.SubscriptionId, p.RegionId, p.PscServiceId, p.EndpointId)
 }
 
-func toPscEndpointActiveActiveAccepterId(id string) (*privateServiceConnectActiveActiveEndpointAccepterId, error) {
+func ToPscEndpointActiveActiveAccepterId(id string) (*PrivateServiceConnectActiveActiveEndpointAccepterId, error) {
 	parts := strings.Split(id, "/")
 	if len(parts) != 4 {
 		return nil, fmt.Errorf("invalid id: %s", id)
@@ -244,11 +244,11 @@ func toPscEndpointActiveActiveAccepterId(id string) (*privateServiceConnectActiv
 		return nil, err
 	}
 
-	return &privateServiceConnectActiveActiveEndpointAccepterId{
-		subscriptionId: subId,
-		regionId:       regionId,
-		pscServiceId:   pscId,
-		endpointId:     endpointId,
+	return &PrivateServiceConnectActiveActiveEndpointAccepterId{
+		SubscriptionId: subId,
+		RegionId:       regionId,
+		PscServiceId:   pscId,
+		EndpointId:     endpointId,
 	}, nil
 }
 
@@ -272,7 +272,7 @@ func refreshPrivateServiceConnectServiceEndpointActiveActiveStatus(ctx context.C
 		return nil, "", err
 	}
 
-	endpoint := findPrivateServiceConnectEndpoints(endpointId, endpoints.Endpoints)
+	endpoint := FindPrivateServiceConnectEndpoints(endpointId, endpoints.Endpoints)
 	if endpoint == nil {
 		return nil, "", fmt.Errorf("endpoint with id %d not found", endpointId)
 	}
