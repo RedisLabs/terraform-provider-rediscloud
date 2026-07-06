@@ -1,9 +1,11 @@
-package utils
+package utils_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func TestIsTime(t *testing.T) {
@@ -22,7 +24,7 @@ func TestIsTime(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.input, func(t *testing.T) {
-			actual := IsTime()(test.input, nil)
+			actual := utils.IsTime()(test.input, nil)
 			assert.Equal(t, test.errors, actual.HasError(), "%+v", actual)
 		})
 	}

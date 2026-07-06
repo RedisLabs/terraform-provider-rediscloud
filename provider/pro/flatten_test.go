@@ -1,4 +1,4 @@
-package pro
+package pro_test
 
 import (
 	"testing"
@@ -6,6 +6,8 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 )
 
 func TestFlattenCloudDetails_WithResourceTags(t *testing.T) {
@@ -20,7 +22,7 @@ func TestFlattenCloudDetails_WithResourceTags(t *testing.T) {
 		},
 	}
 
-	flattened := FlattenCloudDetails(details, true)
+	flattened := pro.FlattenCloudDetails(details, true)
 
 	assert.Len(t, flattened, 1)
 	tags, ok := flattened[0]["resource_tags"].(map[string]string)
@@ -40,7 +42,7 @@ func TestFlattenCloudDetails_ResourceTagsNil(t *testing.T) {
 		},
 	}
 
-	flattened := FlattenCloudDetails(details, true)
+	flattened := pro.FlattenCloudDetails(details, true)
 
 	assert.Len(t, flattened, 1)
 	tags, ok := flattened[0]["resource_tags"].(map[string]string)
@@ -57,7 +59,7 @@ func TestFlattenCloudDetails_ResourceTagsEmpty(t *testing.T) {
 		},
 	}
 
-	flattened := FlattenCloudDetails(details, true)
+	flattened := pro.FlattenCloudDetails(details, true)
 
 	assert.Len(t, flattened, 1)
 	tags, ok := flattened[0]["resource_tags"].(map[string]string)
@@ -79,7 +81,7 @@ func TestFlattenCloudDetails_DataSourceIncludesTags(t *testing.T) {
 		},
 	}
 
-	flattened := FlattenCloudDetails(details, false)
+	flattened := pro.FlattenCloudDetails(details, false)
 
 	assert.Len(t, flattened, 1)
 	assert.Equal(t, map[string]string{"environment": "staging"}, flattened[0]["resource_tags"])
