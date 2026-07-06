@@ -15,7 +15,7 @@ type ApiClient struct {
 func NewClient() (*ApiClient, error) {
 	var config []rediscloudApi.Option
 
-	url := os.Getenv("REDISCLOUD_URL")
+	url := os.Getenv(rediscloudApi.RedisCloudUrlEnvVar)
 	if url != "" {
 		config = append(config, rediscloudApi.BaseURL(url))
 	}
