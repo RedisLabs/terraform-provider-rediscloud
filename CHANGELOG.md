@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
-# 2.18.0 (TBD)
+# 2.18.0 (7th July 2026)
 
 ## Added
 - Ability to upgrade `redis_version` in `rediscloud_active_active_subscription_database` resource without recreating the resource.
