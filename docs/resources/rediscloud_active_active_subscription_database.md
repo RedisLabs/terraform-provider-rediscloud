@@ -87,7 +87,7 @@ output "us-east-2-private-endpoints" {
 The following arguments are supported:
 * `subscription_id`: (Required) The ID of the Active-Active subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
 * `name` - (Required) A meaningful name to identify the database (maximum 40 characters).
-* `redis_version` - (Optional) The Redis version of the database. If omitted, the Redis version will be the default.  **Modifying this attribute will force creation of a new resource.**
+* `redis_version` - (Optional) The Redis version of the database. If omitted, the Redis version will be the default. May differ if `auto_minor_version_upgrade` is set to `true`. Use `redis_version_actual` to fetch the Redis version used by the database.
 * `memory_limit_in_gb` - (Optional - **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favor of `dataset_size_in_gb` - not possible to import databases with this attribute set**
 * `dataset_size_in_gb` - (Optional - **Required if `memory_limit_in_gb` is unset**) The maximum amount of data in the dataset for this specific database is in GB
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
@@ -147,6 +147,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/l
 * `db_id` - Identifier of the database created
 * `public_endpoint` - A map of which public endpoints can to access the database per region, uses region name as key.
 * `private_endpoint` - A map of which private endpoints can to access the database per region, uses region name as key.
+* `redis_version_actual` - The Redis version of the database. Can differ from `redis_version` if `auto_minor_version_upgrade` is set to `true`.
 
 ## Import
 `rediscloud_active_active_subscription_database` can be imported using the ID of the Active-Active subscription and the ID of the database in the format {subscription ID}/{database ID}, e.g.

@@ -13,7 +13,8 @@ func TestAccResourceRedisCloudPrivateServiceConnect_CRUDI(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	baseName := testRandomWithPrefix() + "-pro-psc"
+	subName := testRandomWithPrefix() + "-pro-psc"
+	databaseName := subName + "-database"
 
 	const resourceName = "rediscloud_private_service_connect.psc"
 	const datasourceName = "data.rediscloud_private_service_connect.psc"
@@ -24,7 +25,7 @@ func TestAccResourceRedisCloudPrivateServiceConnect_CRUDI(t *testing.T) {
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudPrivateServiceConnectProStep1, baseName),
+				Config: fmt.Sprintf(testAccResourceRedisCloudPrivateServiceConnectProStep1, subName, databaseName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "subscription_id"),
@@ -32,7 +33,7 @@ func TestAccResourceRedisCloudPrivateServiceConnect_CRUDI(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudPrivateServiceConnectProStep2, baseName),
+				Config: fmt.Sprintf(testAccResourceRedisCloudPrivateServiceConnectProStep2, subName, databaseName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(datasourceName, "id"),
 					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
@@ -78,8 +79,18 @@ resource "rediscloud_subscription" "subscription_resource" {
   }
 }
 
+resource "rediscloud_subscription_database" "database_resource" {
+  name                         = "%s"
+  subscription_id              = rediscloud_subscription.subscription_resource.id
+  dataset_size_in_gb           = 1
+  replication                  = true
+  throughput_measurement_by    = "operations-per-second"
+  throughput_measurement_value = 20000
+}
+
 resource "rediscloud_private_service_connect" "psc" {
   subscription_id = rediscloud_subscription.subscription_resource.id
+  depends_on = [rediscloud_subscription_database.database_resource]
 }
 `
 

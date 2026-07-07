@@ -6,6 +6,10 @@ variable "database_name" {
   type = string
 }
 
+variable "redis_version" {
+  type = string
+}
+
 data "rediscloud_payment_method" "card" {
   card_type         = "Visa"
   last_four_numbers = "5556"
@@ -40,7 +44,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
   dataset_size_in_gb                    = 1
   support_oss_cluster_api               = true
   external_endpoint_for_oss_cluster_api = true
-  redis_version                         = "8.2"
+  redis_version                         = var.redis_version
 
   global_data_persistence = "aof-every-1-second"
   global_password         = "updated-password"

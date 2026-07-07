@@ -20,6 +20,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/cloudaccount"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/datapersistence"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentialsplan"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/paymentmethod"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/regions"
 )
@@ -137,7 +138,7 @@ func (p *redisCloudFrameworkProvider) Configure(ctx context.Context, req provide
 
 	// Enable request logging in debug mode
 	clientConfig = append(clientConfig, rediscloudApi.LogRequests(true))
-	clientConfig = append(clientConfig, rediscloudApi.Logger(&frameworkDebugLogger{}))
+	clientConfig = append(clientConfig, rediscloudApi.Logger(&frameworkDebugLogger{ctx: ctx}))
 
 	// Create the API client
 	apiClient, err := rediscloudApi.NewClient(clientConfig...)
@@ -176,6 +177,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 		aclrule.NewAclRuleDataSource,
 		acluser.NewAclUserDataSource,
 		datapersistence.NewDataPersistenceDataSource,
+		essentialsplan.NewEssentialsPlanDataSource,
 		paymentmethod.NewPaymentMethodDataSource,
 		cloudaccount.NewCloudAccountDataSource,
 		regions.NewRegionsDataSource,
@@ -183,12 +185,14 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 }
 
 // frameworkDebugLogger implements the rediscloud-go-api Logger interface for Plugin Framework.
-type frameworkDebugLogger struct{}
+type frameworkDebugLogger struct {
+	ctx context.Context
+}
 
 func (l *frameworkDebugLogger) Printf(format string, v ...interface{}) {
-	tflog.Debug(context.Background(), fmt.Sprintf("[rediscloud-go-api] "+format, v...))
+	tflog.Debug(l.ctx, fmt.Sprintf("[rediscloud-go-api] "+format, v...))
 }
 
 func (l *frameworkDebugLogger) Println(v ...interface{}) {
-	tflog.Debug(context.Background(), fmt.Sprintf("[rediscloud-go-api] %v", v))
+	tflog.Debug(l.ctx, fmt.Sprintf("[rediscloud-go-api] %v", v))
 }

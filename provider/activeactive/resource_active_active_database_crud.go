@@ -199,7 +199,10 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 	state.DataEviction = types.StringValue(redis.StringValue(db.DataEvictionPolicy))
 	state.SupportOssClusterAPI = types.BoolValue(redis.BoolValue(db.SupportOSSClusterAPI))
 	state.ExternalEndpointForOssClusterAPI = types.BoolValue(redis.BoolValue(db.UseExternalEndpointForOSSClusterAPI))
-	state.RedisVersion = types.StringValue(redis.StringValue(db.RedisVersion))
+	if state.RedisVersion.IsNull() || state.RedisVersion.ValueString() == "" {
+		state.RedisVersion = types.StringPointerValue(db.RedisVersion)
+	}
+	state.RedisVersionActual = types.StringPointerValue(db.RedisVersion)
 
 	// Set global_data_persistence - Optional+Computed, always from API
 	utils.SetStringFromAPI(&state.GlobalDataPersistence, db.GlobalDataPersistence)
@@ -371,6 +374,27 @@ func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan 
 	// Acquire subscription mutex
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
+
+	// Update database version first if changed
+	if !plan.RedisVersion.IsNull() && state != nil && !state.RedisVersion.IsNull() && plan.RedisVersion.ValueString() != state.RedisVersion.ValueString() && plan.RedisVersion.ValueString() != state.RedisVersionActual.ValueString() {
+		upgradeVersionRequest := databases.UpgradeRedisVersion{TargetRedisVersion: plan.RedisVersion.ValueStringPointer()}
+		if err := r.client.Client.Database.UpgradeRedisVersion(ctx, subId, dbId, upgradeVersionRequest); err != nil {
+			diagnostics.AddError("Failed to upgrade database version", err.Error())
+			return
+		}
+
+		// Wait for database to be active
+		if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, r.client); err != nil {
+			diagnostics.AddError("Database failed to become active after update", err.Error())
+			return
+		}
+
+		// Wait for subscription to be active
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, r.client); err != nil {
+			diagnostics.AddError("Subscription failed to become active after update", err.Error())
+			return
+		}
+	}
 
 	// Build alerts from plan
 	alerts, diags := buildAlertsFromSet(ctx, plan.GlobalAlert)
@@ -771,7 +795,9 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 			allDiags.Append(diags...)
 			regionConfig["override_global_alert"] = alertSet
 		} else {
-			regionConfig["override_global_alert"] = types.SetNull(types.ObjectType{AttrTypes: alertAttrTypes})
+			alertSet, diags := types.SetValue(types.ObjectType{AttrTypes: alertAttrTypes}, []attr.Value{})
+			allDiags.Append(diags...)
+			regionConfig["override_global_alert"] = alertSet
 		}
 
 		// Handle enable_default_user
