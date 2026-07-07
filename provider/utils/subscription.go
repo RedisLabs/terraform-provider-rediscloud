@@ -2,6 +2,8 @@ package utils
 
 import (
 	"context"
+	"fmt"
+	"sort"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/maintenance"
@@ -117,13 +119,22 @@ func FlattenMaintenance(ctx context.Context, m *maintenance.Maintenance) (types.
 }
 
 // FlattenPricing converts a pricing API response into the pricing list expected by the
-// subscription data sources.
+// subscription data sources. Entries are sorted by a composite key so the ordered list
+// is stable across reads: the Pricing.List API does not guarantee a consistent order,
+// which would otherwise churn the list and produce a perpetual plan diff.
 func FlattenPricing(ctx context.Context, prices []*pricing.Pricing) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	pricingType := types.ObjectType{AttrTypes: pricingAttrTypes}
-	elems := make([]attr.Value, 0, len(prices))
-	for _, p := range prices {
+
+	sorted := make([]*pricing.Pricing, len(prices))
+	copy(sorted, prices)
+	sort.SliceStable(sorted, func(i, j int) bool {
+		return pricingSortKey(sorted[i]) < pricingSortKey(sorted[j])
+	})
+
+	elems := make([]attr.Value, 0, len(sorted))
+	for _, p := range sorted {
 		entry, d := types.ObjectValue(pricingAttrTypes, map[string]attr.Value{
 			"database_name":        types.StringPointerValue(p.DatabaseName),
 			"type":                 types.StringPointerValue(p.Type),
@@ -145,4 +156,20 @@ func FlattenPricing(ctx context.Context, prices []*pricing.Pricing) (types.List,
 	list, d := types.ListValue(pricingType, elems)
 	diags.Append(d...)
 	return list, diags
+}
+
+// pricingSortKey builds a deterministic ordering key for a pricing entry, combining every
+// field so the sort is total even when entries differ only in a single value.
+func pricingSortKey(p *pricing.Pricing) string {
+	return fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%d|%f",
+		redis.StringValue(p.Region),
+		redis.StringValue(p.Type),
+		redis.StringValue(p.TypeDetails),
+		redis.StringValue(p.DatabaseName),
+		redis.StringValue(p.QuantityMeasurement),
+		redis.StringValue(p.PricePeriod),
+		redis.StringValue(p.PriceCurrency),
+		redis.IntValue(p.Quantity),
+		redis.Float64Value(p.PricePerUnit),
+	)
 }
