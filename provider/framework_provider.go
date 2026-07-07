@@ -176,6 +176,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 	return []func() datasource.DataSource{
 		aclrule.NewAclRuleDataSource,
 		acluser.NewAclUserDataSource,
+		activeactive.NewActiveActiveSubscriptionDataSource,
 		datapersistence.NewDataPersistenceDataSource,
 		essentialsplan.NewEssentialsPlanDataSource,
 		paymentmethod.NewPaymentMethodDataSource,

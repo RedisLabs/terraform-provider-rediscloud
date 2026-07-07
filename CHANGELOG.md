@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
+# 2.19.0 (TBD)
+
+## Changed
+- Migrated `rediscloud_active_active_subscription` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no schema changes; the only behaviour change is the `null`-vs-empty-string handling noted under Fixed.
+
+## Fixed
+- `rediscloud_active_active_subscription` data source: optional attributes the API omits (`payment_method_id`, `customer_managed_key_deletion_grace_period`, `customer_managed_key_redis_service_account`, `customer_managed_key_aws_role_arn`) are now written to state as `null` instead of empty strings.
+
 # 2.18.0 (7th July 2026)
 
 ## Added
