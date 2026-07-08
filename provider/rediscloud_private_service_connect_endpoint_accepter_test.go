@@ -13,6 +13,7 @@ import (
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
@@ -27,7 +28,7 @@ func TestAccResourceRedisCloudPrivateServiceConnectEndpointAccepter_Create(t *te
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t); testAccGcpProjectPreCheck(t); testAccGcpCredentialsPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"google": {
 				Source:            "hashicorp/google",

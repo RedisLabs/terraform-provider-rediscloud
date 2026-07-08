@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
@@ -51,7 +52,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -116,7 +117,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -182,7 +183,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -253,7 +254,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -316,7 +317,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Incorrect_PaymentIdForType(
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudPaidIncorrectPaymentTypeEssentialsSubscription, subscriptionName),

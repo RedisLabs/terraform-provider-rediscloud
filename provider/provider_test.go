@@ -7,28 +7,9 @@ import (
 
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 
-	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
-
 	provider "github.com/RedisLabs/terraform-provider-rediscloud/provider"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
-
-var protoV5ProviderFactories map[string]func() (tfprotov5.ProviderServer, error)
-
-func init() {
-	protoV5ProviderFactories = map[string]func() (tfprotov5.ProviderServer, error){
-		"rediscloud": func() (tfprotov5.ProviderServer, error) {
-			muxServer, err := provider.MuxProviderServerCreator(
-				provider.NewSdkProvider("99.99.99")(),
-				provider.NewFrameworkProvider("99.99.99")(),
-			)
-			if err != nil {
-				return nil, err
-			}
-			return muxServer(), nil
-		},
-	}
-}
 
 // sharedTestClient returns an API client for use in test check functions.
 // The client is lazily initialised and shared across all tests.

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -20,7 +21,7 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnect_CRUDI(t *testing
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{

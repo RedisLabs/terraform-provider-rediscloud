@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
@@ -25,7 +26,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -282,7 +283,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -348,7 +349,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -382,7 +383,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create database with Redis 7.2
@@ -425,7 +426,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionAutoMinorUpgrade(t 
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create database with Redis 8.4
