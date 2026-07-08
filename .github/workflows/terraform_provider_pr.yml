@@ -209,7 +209,10 @@ jobs:
   pre_sweep:
     name: pre-test sweep
     needs: [lint-complete, detect-changes]
-    if: github.event.pull_request.draft == false && needs.detect-changes.outputs.code == 'true'
+    if: >
+      github.event.pull_request.draft == false &&
+      needs.detect-changes.outputs.code == 'true' &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-tests')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -396,7 +399,11 @@ jobs:
 
   post_sweep:
     name: post-test sweep
-    if: ${{ always() && github.event.pull_request.draft == false && needs.detect-changes.outputs.code == 'true' }}
+    if: >
+      always() &&
+      github.event.pull_request.draft == false &&
+      needs.detect-changes.outputs.code == 'true' &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-tests')
     needs:
       - detect-changes
       - go_test_smoke_aa_db
