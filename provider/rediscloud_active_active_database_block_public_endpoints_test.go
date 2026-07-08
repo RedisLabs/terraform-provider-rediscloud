@@ -29,7 +29,7 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PrivateAccess(t *t
 	configDisabled := fmt.Sprintf(contentDisabled, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -73,7 +73,7 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PublicAccess(t *te
 	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -114,7 +114,7 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) 
 	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{

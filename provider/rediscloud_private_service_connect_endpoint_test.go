@@ -22,7 +22,7 @@ func TestAccResourceRedisCloudPrivateServiceConnectEndpoint_CRUDI(t *testing.T) 
 	gcpVPCSubnetName := fmt.Sprintf("%s-subnet", baseName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t); testAccGcpProjectPreCheck(t) },
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t); testAccGcpProjectPreCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{

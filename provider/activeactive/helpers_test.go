@@ -8,21 +8,12 @@ import (
 	"sync"
 	"testing"
 
-	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
-
-func testAccPreCheck(t *testing.T) {
-	for _, name := range []string{rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar} {
-		if _, ok := os.LookupEnv(name); !ok {
-			t.Fatalf("Missing `%s` environment variable", name)
-		}
-	}
-}
 
 func testAccAwsPreExistingCloudAccountPreCheck(t *testing.T) {
 	if _, ok := os.LookupEnv("AWS_TEST_CLOUD_ACCOUNT_NAME"); !ok {

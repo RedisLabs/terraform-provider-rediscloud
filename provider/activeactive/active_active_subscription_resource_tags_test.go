@@ -33,9 +33,7 @@ func TestActiveActiveSubscriptionResourceTags_OnCreate_CRUDI(t *testing.T) {
 	subscriptionName := testRandomWithPrefix()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -116,9 +114,7 @@ func TestActiveActiveSubscriptionResourceTags_CRUDI(t *testing.T) {
 	subscriptionName := testRandomWithPrefix()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
