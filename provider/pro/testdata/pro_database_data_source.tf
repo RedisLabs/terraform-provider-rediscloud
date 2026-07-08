@@ -34,7 +34,6 @@ resource "rediscloud_subscription" "example" {
     support_oss_cluster_api      = true
     throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = 1000
-    modules                      = ["RediSearch"]
   }
 }
 resource "rediscloud_subscription_database" "example" {
@@ -50,12 +49,6 @@ resource "rediscloud_subscription_database" "example" {
   replication                  = false
   enable_default_user          = true
   query_performance_factor     = "2x"
-  redis_version                = "7.4"
-  modules = [
-    {
-      name : "RediSearch"
-    }
-  ]
 }
 
 data "rediscloud_database" "example-by-id" {

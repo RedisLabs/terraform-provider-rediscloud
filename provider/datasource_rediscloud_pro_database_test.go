@@ -70,7 +70,6 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceByName, "enable_default_user", "true"),
 					resource.TestCheckResourceAttr(dataSourceByName, "query_performance_factor", "2x"),
 					resource.TestCheckResourceAttr(dataSourceByName, "auto_minor_version_upgrade", "true"),
-					resource.TestCheckResourceAttr(dataSourceByName, "redis_version", "7.4"),
 				),
 			},
 		},

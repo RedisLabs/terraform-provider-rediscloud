@@ -52,6 +52,7 @@ resource "rediscloud_subscription_database" "example" {
   data_persistence             = "none"
   throughput_measurement_by    = "operations-per-second"
   throughput_measurement_value = 1000
+  redis_version                = "7.4"
   modules = [
     {
       name = "RedisJSON"
