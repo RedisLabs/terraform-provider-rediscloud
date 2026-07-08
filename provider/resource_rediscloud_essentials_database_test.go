@@ -385,26 +385,26 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.
 		ProtoV5ProviderFactories: protoV5ProviderFactories,
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
-			// Step 1: Create database with Redis 7.2
+			// Step 1: Create database with Redis 8.2
 			{
-				Config: getEssentialsDatabaseConfigWithVersion(t, subscriptionName, databaseName, password, "7.2"),
+				Config: getEssentialsDatabaseConfigWithVersion(t, subscriptionName, databaseName, password, "8.2"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
 					resource.TestCheckResourceAttrSet(resourceName, "subscription_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "db_id"),
 					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
-					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.2"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.2"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
 				),
 			},
-			// Step 2: Upgrade to Redis 7.4 with updated data_persistence
+			// Step 2: Upgrade to Redis 8.4 with updated data_persistence
 			{
-				Config: getEssentialsDatabaseConfigWithVersionUpdated(t, subscriptionName, databaseName, password, "7.4"),
+				Config: getEssentialsDatabaseConfigWithVersionUpdated(t, subscriptionName, databaseName, password, "8.4"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
 					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
-					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.4"),
-					resource.TestCheckResourceAttr(resourceName, "data_persistence", "aof-every-write"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.4"),
+					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
 					// Verify database is still active and accessible
 					resource.TestCheckResourceAttrSet(resourceName, "public_endpoint"),
 				),

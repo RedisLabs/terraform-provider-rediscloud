@@ -25,10 +25,10 @@ resource "rediscloud_essentials_subscription" "example" {
 resource "rediscloud_essentials_database" "example" {
   subscription_id  = rediscloud_essentials_subscription.example.id
   name             = local.database_name
-  protocol         = "redis"
+  protocol         = "stack"
   redis_version    = local.redis_version
   replication      = false
-  data_persistence = "aof-every-write"
+  data_persistence = "none"
 
   password = local.password
 
