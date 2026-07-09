@@ -15,7 +15,6 @@ import (
 // TODO: integrate the GCP provider and set up these permissions automatically
 func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 	utils.AccRequiresEnvVar(t, "GCP_CMK_RESOURCE_NAME")
 
 	name := testRandomWithPrefix()
@@ -72,8 +71,6 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 // It uses the hashicorp/aws external provider to create the KMS key and key policy
 // in-fixture, removing the need for a pre-existing AWS_CMK_KEY_ARN.
 func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := testRandomWithPrefix() + "-pro-cmk-aws"
 	const resourceName = "rediscloud_subscription.example"

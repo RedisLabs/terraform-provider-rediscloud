@@ -14,8 +14,6 @@ import (
 
 func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	subscriptionName := testRandomWithPrefix()
 	databaseName := subscriptionName + "-db"
 	databaseNameUpdated := databaseName + "-updated"
@@ -271,7 +269,6 @@ data "rediscloud_essentials_database" "example" {
 
 // there was a bug where removing the default user would cause issues with passwords
 func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T) {
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := testRandomWithPrefix()
 	databaseName := subscriptionName + "-db"
@@ -338,7 +335,6 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 
 // Test redis_version field support - ensures version can be specified and read
 func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := testRandomWithPrefix()
 	databaseName := subscriptionName + "-db"
@@ -372,7 +368,6 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
 
 // Test redis_version upgrade - ensures version can be upgraded after database creation
 func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.T) {
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := testRandomWithPrefix()
 	databaseName := subscriptionName + "-db"
@@ -415,7 +410,6 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.
 
 // Test redis_version no incorrect diff and redis_version_actual always has correct version
 func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionAutoMinorUpgrade(t *testing.T) {
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := utils.RandomWithPrefix()
 	databaseName := subscriptionName + "-db"

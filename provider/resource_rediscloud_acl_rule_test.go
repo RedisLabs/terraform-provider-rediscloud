@@ -10,13 +10,9 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
-
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	prefix := testRandomWithPrefix()
 	testName := prefix + "-test-rule"

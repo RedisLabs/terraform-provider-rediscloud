@@ -13,7 +13,6 @@ import (
 
 func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 	byocCloudAccountName := utils.AccRequiresEnvVar(t, "AWS_TEST_BYOC_CLOUD_ACCOUNT_NAME")
 
 	name := acctest.RandomWithPrefix("tf-test") + "-resource-tags"

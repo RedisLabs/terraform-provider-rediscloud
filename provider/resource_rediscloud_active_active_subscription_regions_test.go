@@ -10,13 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
-
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUB_ACTIVE_ACTIVE")
 
 	subName := testRandomWithPrefix() + "-regions-test"
 	dbName := testRandomWithPrefix() + "-regions" + "-db"

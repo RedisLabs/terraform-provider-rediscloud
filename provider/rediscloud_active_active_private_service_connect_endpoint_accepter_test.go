@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/psc"
@@ -16,8 +15,6 @@ import (
 )
 
 func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter_Create(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	baseName := testRandomWithPrefix() + "-pro-pscea"
 

@@ -4,14 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccResourceRedisCloudActiveActivePrivateServiceConnect_CRUDI(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	baseName := testRandomWithPrefix() + "-pro-psc"
 
