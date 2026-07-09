@@ -74,7 +74,7 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 	subId := redis.IntValue(sub.ID)
 
 	model.ID = types.StringValue(strconv.Itoa(subId))
-	model.Name = types.StringValue(redis.StringValue(sub.Name))
+	model.Name = types.StringPointerValue(sub.Name)
 
 	if sub.PaymentMethodID != nil {
 		model.PaymentMethodID = types.StringValue(strconv.Itoa(redis.IntValue(sub.PaymentMethodID)))
