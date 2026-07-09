@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
+
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
@@ -41,7 +43,11 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testhelpers.BasicPreCheck(t); testAccGcpProjectPreCheck(t); testAccGcpCredentialsPreCheck(t) },
+		PreCheck: func() {
+			envchecks.RedisCloudCheck(t)
+			testAccGcpProjectPreCheck(t)
+			testAccGcpCredentialsPreCheck(t)
+		},
 		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -118,7 +124,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
-			testhelpers.BasicPreCheck(t)
+			envchecks.RedisCloudCheck(t)
 			testAccAwsPreExistingCloudAccountPreCheck(t)
 			testAccAwsApiCredsPreCheck(t)
 		},

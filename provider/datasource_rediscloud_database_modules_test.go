@@ -3,6 +3,7 @@ package provider_test
 import (
 	"testing"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -11,7 +12,7 @@ import (
 func TestAccDataSourceRedisCloudDatabaseModules_basic(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil, // database modules isn't a 'real' resource
 		Steps: []resource.TestStep{
