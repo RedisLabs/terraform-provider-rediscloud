@@ -5,6 +5,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
+
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
 
@@ -12,7 +14,7 @@ func TestAccDataSourceRedisCloudDataPersistence_basic(t *testing.T) {
 
 	const dataPersistenceFoo = "data.rediscloud_data_persistence.foo"
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil, // data persistence isn't a 'real' resource
 		Steps: []resource.TestStep{

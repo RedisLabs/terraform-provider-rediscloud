@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
+
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
 
@@ -31,7 +33,7 @@ func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 	const AclRuleTestData = "data.rediscloud_acl_rule.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckAclRuleDestroy,
 		Steps: []resource.TestStep{

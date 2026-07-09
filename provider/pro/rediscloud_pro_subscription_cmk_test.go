@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
+
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
@@ -20,7 +22,7 @@ import (
 // to create KMS keys and grant IAM permissions automatically.
 func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 
-	testhelpers.RequireEnvVars(t, "GCP_PROJECT_ID", "GOOGLE_CREDENTIALS")
+	envchecks.RequireEnvVars(t, "GCP_PROJECT_ID", "GOOGLE_CREDENTIALS")
 
 	name := utils.RandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
@@ -43,7 +45,7 @@ func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { testhelpers.BasicPreCheck(t) },
+		PreCheck:     func() { envchecks.RedisCloudCheck(t) },
 		CheckDestroy: checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{

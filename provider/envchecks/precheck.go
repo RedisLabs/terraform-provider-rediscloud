@@ -1,4 +1,4 @@
-package testhelpers
+package envchecks
 
 import (
 	"os"
@@ -18,10 +18,10 @@ func RequireEnvVars(t *testing.T, names ...string) {
 	}
 }
 
-// BasicPreCheck checks that the minimum provider configuration (URL, access key
+// RedisCloudCheck checks that the minimum provider configuration (URL, access key
 // and secret key) are present. Use RequireEnvVars directly when additional
 // variables are needed.
-func BasicPreCheck(t *testing.T) {
+func RedisCloudCheck(t *testing.T) {
 	t.Helper()
 	RequireEnvVars(t, rediscloudApi.RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
 }
