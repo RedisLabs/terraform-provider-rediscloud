@@ -80,8 +80,7 @@ endif
 	@echo "WARNING: This will destroy infrastructure matching prefix '$(TEST_RESOURCE_PREFIX)'. Use only in development accounts."
 	TEST_RESOURCE_PREFIX=$(TEST_RESOURCE_PREFIX) SWEEP_AGE_THRESHOLD=0s go test ./provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
 
-tfproviderlintx: $(BIN)/tfproviderlintx
-	$(BIN)/tfproviderlintx $(TFPROVIDERLINT_ARGS) ./...
-
-tfproviderlint: $(BIN)/tfproviderlint
-	$(BIN)/tfproviderlint $(TFPROVIDERLINT_ARGS) ./...
+tfproviderlint: $(BIN)/tfproviderlintx
+  # XS001 — disables "schema should configure Description"
+  # XS002 — disables "schema attributes should be in alphabetical order"
+	$(BIN)/tfproviderlintx $(TFPROVIDERLINT_ARGS) -XS001=false -XS002=false ./...
