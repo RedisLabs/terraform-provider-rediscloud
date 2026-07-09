@@ -11,12 +11,6 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
 
-func testAccPreCheck(t *testing.T) {
-	t.Helper()
-	testhelpers.BasicPreCheck(t)
-	testhelpers.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
-}
-
 func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
 
 	name := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -24,7 +18,7 @@ func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
 	const testCloudAccount = "data.rediscloud_cloud_account.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t); testhelpers.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME") },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil, // test doesn't create a resource at the moment, so don't need to check anything
 		Steps: []resource.TestStep{

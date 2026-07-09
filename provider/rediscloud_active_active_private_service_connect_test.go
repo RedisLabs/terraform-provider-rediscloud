@@ -17,7 +17,7 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnect_CRUDI(t *testing
 	const datasourceName = "data.rediscloud_active_active_private_service_connect.psc"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{

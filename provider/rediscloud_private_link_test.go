@@ -38,7 +38,7 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 	terraformConfigWithoutPrivateLink := getRedisPrivateLinkConfigWithoutPrivateLink(t, subName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -150,7 +150,7 @@ func TestAccResourceRedisCloudPrivateLink_PortConsistency(t *testing.T) {
 	terraformConfig := getRedisPrivateLinkConfig(t, shareName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
+		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{

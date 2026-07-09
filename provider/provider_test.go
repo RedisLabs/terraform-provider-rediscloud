@@ -5,8 +5,6 @@ import (
 	"sync"
 	"testing"
 
-	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
-
 	provider "github.com/RedisLabs/terraform-provider-rediscloud/provider"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
@@ -43,10 +41,6 @@ func TestProvider(t *testing.T) {
 	if err := provider.NewSdkProvider("dev")().InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
-}
-
-func testAccPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, rediscloudApi.RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
 }
 
 func testAccAwsPreExistingCloudAccountPreCheck(t *testing.T) {
