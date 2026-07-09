@@ -2,7 +2,7 @@ module github.com/RedisLabs/terraform-provider-rediscloud
 
 go 1.25.8
 
-toolchain go1.26.4
+toolchain go1.26.5
 
 require (
 	github.com/RedisLabs/rediscloud-go-api v0.52.1
