@@ -43,7 +43,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserInheritance(
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME") },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -84,7 +84,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 	var initialDbId string
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME") },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{

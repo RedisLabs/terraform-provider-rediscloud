@@ -125,7 +125,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			envchecks.RedisCloudCheck(t)
-			testAccAwsPreExistingCloudAccountPreCheck(t)
+			envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
 			testAccAwsApiCredsPreCheck(t)
 		},
 		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,

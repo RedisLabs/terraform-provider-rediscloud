@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 	"sync"
-	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -14,12 +13,6 @@ import (
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
-
-func testAccAwsPreExistingCloudAccountPreCheck(t *testing.T) {
-	if _, ok := os.LookupEnv("AWS_TEST_CLOUD_ACCOUNT_NAME"); !ok {
-		t.Fatalf("Missing `AWS_TEST_CLOUD_ACCOUNT_NAME` environment variable")
-	}
-}
 
 var (
 	sharedClient     *client.ApiClient

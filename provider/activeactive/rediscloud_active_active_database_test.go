@@ -36,7 +36,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 	var subId, dbId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME") },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -399,7 +399,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing
 	portNumber := 10101
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME") },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -421,7 +421,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_timeUtcRequiresValidInterval(
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME") },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -608,7 +608,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_modulesImmutable(t *testing.T
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME") },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
