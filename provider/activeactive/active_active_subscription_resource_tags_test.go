@@ -3,12 +3,13 @@ package activeactive_test
 import (
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
