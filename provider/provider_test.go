@@ -1,12 +1,12 @@
 package provider_test
 
 import (
-	"os"
 	"sync"
 	"testing"
 
 	provider "github.com/RedisLabs/terraform-provider-rediscloud/provider"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 )
 
 // sharedTestClient returns an API client for use in test check functions.
@@ -43,41 +43,29 @@ func TestProvider(t *testing.T) {
 	}
 }
 
-func testAccAwsPreExistingCloudAccountPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
-}
-
 // testAccAwsApiCredsPreCheck requires only the AWS API credentials needed by the
 // hashicorp/aws external provider for tests that provision AWS resources directly
 // (e.g. the AWS CMK tests, which create KMS keys + key policies in-fixture).
 func testAccAwsApiCredsPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY")
+	envchecks.RequireEnvVars(t, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY")
 }
 
 func testAccAwsCloudAccountPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_CONSOLE_USERNAME", "AWS_CONSOLE_PASSWORD", "AWS_SIGNIN_URL")
+	envchecks.RequireEnvVars(t, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_CONSOLE_USERNAME", "AWS_CONSOLE_PASSWORD", "AWS_SIGNIN_URL")
 }
 
 func testAccAwsPeeringPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, "AWS_PEERING_REGION", "AWS_ACCOUNT_ID", "AWS_VPC_ID", "AWS_VPC_CIDR")
+	envchecks.RequireEnvVars(t, "AWS_PEERING_REGION", "AWS_ACCOUNT_ID", "AWS_VPC_ID", "AWS_VPC_CIDR")
 }
 
 func testAccGcpProjectPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, "GCP_PROJECT_ID")
+	envchecks.RequireEnvVars(t, "GCP_PROJECT_ID")
 }
 
 func testAccGcpCredentialsPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, "GOOGLE_CREDENTIALS")
+	envchecks.RequireEnvVars(t, "GOOGLE_CREDENTIALS")
 }
 
 func testAccAwsCredentialsPreCheck(t *testing.T) {
-	requireEnvironmentVariables(t, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION")
-}
-
-func requireEnvironmentVariables(t *testing.T, names ...string) {
-	for _, name := range names {
-		if _, ok := os.LookupEnv(name); !ok {
-			t.Fatalf("Missing `%s` environment variable", name)
-		}
-	}
+	envchecks.RequireEnvVars(t, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION")
 }

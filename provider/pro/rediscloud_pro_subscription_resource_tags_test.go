@@ -1,6 +1,7 @@
 package pro_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -10,12 +11,12 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 
-	byocCloudAccountName := utils.AccRequiresEnvVar(t, "AWS_TEST_BYOC_CLOUD_ACCOUNT_NAME")
+	envchecks.RequireEnvVars(t, "AWS_TEST_BYOC_CLOUD_ACCOUNT_NAME")
+	byocCloudAccountName := os.Getenv("AWS_TEST_BYOC_CLOUD_ACCOUNT_NAME")
 
 	name := acctest.RandomWithPrefix("tf-test") + "-resource-tags"
 	const resourceName = "rediscloud_subscription.example"

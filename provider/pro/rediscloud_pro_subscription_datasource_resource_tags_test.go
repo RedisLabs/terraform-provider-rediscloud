@@ -1,6 +1,7 @@
 package pro_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -10,15 +11,14 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 // TestAccDataSourceRedisCloudProSubscription_ResourceTags exercises the data
 // source's cloud_provider.0.resource_tags attribute. It requires a BYOC cloud
 // account because the API only accepts tags for BYOC subscriptions.
 func TestAccDataSourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
-
-	byocCloudAccountName := utils.AccRequiresEnvVar(t, "AWS_TEST_BYOC_CLOUD_ACCOUNT_NAME")
+	envchecks.RequireEnvVars(t, "AWS_TEST_BYOC_CLOUD_ACCOUNT_NAME")
+	byocCloudAccountName := os.Getenv("AWS_TEST_BYOC_CLOUD_ACCOUNT_NAME")
 
 	name := acctest.RandomWithPrefix("tf-test") + "-ds-resource-tags"
 	const dataSourceName = "data.rediscloud_subscription.example"
