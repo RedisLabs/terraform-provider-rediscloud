@@ -220,146 +220,91 @@ jobs:
   go_test_smoke_aa_sub:
     name: go test smoke aa sub
     needs: [pre_sweep]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAccResourceRedisCloudActiveActiveSubscription_CRUDI
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloudActiveActiveSubscription_CRUDI
+    secrets: inherit
 
   go_test_smoke_aa_db:
     name: go test smoke aa db
     needs: [ go_test_smoke_aa_sub ]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAccResourceRedisCloudActiveActiveDatabase_CRUDI
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloudActiveActiveDatabase_CRUDI
+    secrets: inherit
 
   go_test_smoke_aa_regions:
     name: go test smoke aa regions
     needs: [ go_test_smoke_aa_sub ]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI
+    secrets: inherit
 
   go_test_smoke_aa_enable_default_user:
     name: go test smoke aa enable default user
     needs: [ go_test_smoke_aa_sub ]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser
+    secrets: inherit
 
   go_test_smoke_pro_sub:
     name: go test smoke pro sub
     needs: [pre_sweep]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAccResourceRedisCloudProSubscription_CRUDI
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloudProSubscription_CRUDI
+    secrets: inherit
 
   go_test_smoke_pro_db:
     name: go test smoke pro db
     needs: [ go_test_smoke_pro_sub ]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAccResourceRedisCloudProDatabase_CRUDI
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloudProDatabase_CRUDI
+    secrets: inherit
 
   go_test_smoke_essentials_sub:
     name: go test smoke essentials sub
     needs: [pre_sweep]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAccResourceRedisCloudEssentialsSubscription
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloudEssentialsSubscription
+    secrets: inherit
 
 
   go_test_smoke_essentials_db:
     name: go test smoke essentials db
     needs: go_test_smoke_essentials_sub
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAccResourceRedisCloudEssentialsDatabase_CRUDI
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloudEssentialsDatabase_CRUDI
+    secrets: inherit
 
   go_test_smoke_misc:
     name: go test smoke misc
     needs: [pre_sweep]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAccResourceRedisCloud(PrivateServiceConnect_CRUDI|AclRule_CRUDI)
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloud(PrivateServiceConnect_CRUDI|AclRule_CRUDI)
+    secrets: inherit
 
   go_test_pro_db_upgrade:
     name: go test smoke pro db upgrade
     needs: [go_test_smoke_pro_sub]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAccResourceRedisCloudProDatabase_Redis8_Upgrade
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloudProDatabase_Redis8_Upgrade
+    secrets: inherit
 
   go_test_block_public_endpoints:
     name: go test smoke public endpoints
     needs: [pre_sweep]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAcc(RedisCloudProDatabase_BlockPublicEndpoints|ActiveActiveSubscriptionDatabase_BlockPublicEndpoints)
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAcc(RedisCloudProDatabase_BlockPublicEndpoints|ActiveActiveSubscriptionDatabase_BlockPublicEndpoints)
+    secrets: inherit
 
   tfproviderlint:
     name: tfproviderlint

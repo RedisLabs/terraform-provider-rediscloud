@@ -119,93 +119,58 @@ jobs:
   go_test_databases:
     name: go test Databases
     needs: [go_build, pre_sweep]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Database_.*
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Database_.*
+    secrets: inherit
 
   go_test_subscriptions:
     name: go test Subscriptions
     needs: [go_test_databases]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Subscription_.*
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Subscription_.*
+    secrets: inherit
 
   go_test_subscriptions_tls:
     name: go test Subscriptions TLS
     needs: [go_test_subscriptions]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAcc(DataSource|Resource)RedisCloudSubscriptionTls_.*
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAcc(DataSource|Resource)RedisCloudSubscriptionTls_.*
+    secrets: inherit
 
   go_test_essentials_plan:
     name: go test Essentials Plan
     needs: [go_test_subscriptions_tls]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAcc(DataSource|Resource)RedisCloudEssentialsPlan_.*
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAcc(DataSource|Resource)RedisCloudEssentialsPlan_.*
+    secrets: inherit
 
   go_test_persistence_modules_regions_acl:
     name: go test Other
     needs: [go_test_essentials_plan]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAcc(DataSource|Resource)RedisCloud(DataPersistence|DatabaseModules|Regions|Acl).*
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAcc(DataSource|Resource)RedisCloud(DataPersistence|DatabaseModules|Regions|Acl).*
+    secrets: inherit
 
   go_test_cloud_account:
     name: go test Cloud Account
     needs: [go_test_persistence_modules_regions_acl]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAcc(DataSource|Resource)RedisCloud(CloudAccount).*
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAcc(DataSource|Resource)RedisCloud(CloudAccount).*
+    secrets: inherit
 
   go_test_transit_payment:
     name: go test Transit Gateway & Payment
     needs: [go_test_cloud_account]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - uses: ./.github/actions/run-testacc
-        with:
-          test_pattern: TestAcc(DataSource|Resource)RedisCloud(TransitGatewayAttachment|PaymentMethod).*
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAcc(DataSource|Resource)RedisCloud(TransitGatewayAttachment|PaymentMethod).*
+    secrets: inherit
 
   go_unit_test:
     name: go unit test

@@ -1,0 +1,59 @@
+name: Acceptance Tests (reusable)
+
+# Reusable workflow that runs a single slice of the acceptance-test suite,
+# selected by `test_pattern`. Callers wire ordering via `needs:` and must pass
+# `secrets: inherit` (a called workflow does NOT inherit the caller's env/secrets).
+on:
+  workflow_call:
+    inputs:
+      test_pattern:
+        description: 'Test pattern passed to the -run flag'
+        required: true
+        type: string
+
+env:
+  TERRAFORM_VERSION: "1.2.6"
+  REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_STAGING }}
+  REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_STAGING }}
+  REDISCLOUD_URL: ${{ secrets.REDISCLOUD_URL_STAGING }}
+  AWS_TEST_CLOUD_ACCOUNT_NAME: "${{ secrets.AWS_TEST_CLOUD_ACCOUNT_NAME_STAGING }}"
+  AWS_PEERING_REGION: ${{ secrets.AWS_PEERING_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  AWS_VPC_CIDR: ${{ secrets.AWS_VPC_CIDR }}
+  AWS_VPC_ID: ${{ secrets.AWS_VPC_ID }}
+  AWS_TEST_TGW_ID: ${{ secrets.AWS_TEST_TGW_ID_STAGING }}
+  TF_ACC: true
+  TF_LOG: info
+  AWS_ACCESS_KEY_ID: ${{ secrets.CLOUD_ACCOUNT_KEY }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUD_ACCOUNT_SECRET }}
+  AWS_CONSOLE_USERNAME: ${{ secrets.CLOUD_ACCOUNT_USERNAME }}
+  AWS_CONSOLE_PASSWORD: ${{ secrets.CLOUD_ACCOUNT_PASS }}
+  AWS_SIGNIN_URL: ${{ secrets.CLOUD_ACCOUNT_URL }}
+  GCP_VPC_PROJECT: ${{ secrets.GCP_VPC_PROJECT }}
+  GCP_VPC_ID: ${{ secrets.GCP_VPC_ID }}
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+  # Derived from the caller's trigger context (shared with this reusable
+  # workflow): PRs get "tf-ci-pr<number>-<run>", everything else (push /
+  # workflow_dispatch on main) gets "tf-ci-main-<run>". Must stay in sync with
+  # the post-test sweep prefixes in the PR/main workflows.
+  TEST_RESOURCE_PREFIX: ${{ github.event_name == 'pull_request' && format('tf-ci-pr{0}-{1}', github.event.pull_request.number, github.run_number) || format('tf-ci-main-{0}', github.run_number) }}
+
+jobs:
+  testacc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+      - name: Run tests
+        env:
+          TEST_PATTERN: ${{ inputs.test_pattern }}
+        run: |
+          set -o pipefail
+          make testacc TESTARGS="-run=\"$TEST_PATTERN\"" 2>&1 | tee test_output.txt
+          if ! grep -q "=== RUN" test_output.txt; then
+            echo "ERROR: No tests matched the pattern. Please check the -run argument."
+            exit 1
+          fi
