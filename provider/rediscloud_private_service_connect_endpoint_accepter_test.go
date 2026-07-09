@@ -14,7 +14,6 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func TestAccResourceRedisCloudPrivateServiceConnectEndpointAccepter_Create(t *testing.T) {

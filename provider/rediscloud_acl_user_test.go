@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
-
 )
 
 func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {

@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 // TestAccActiveActiveDatabase_Passwordless creates a passwordless AA database,

@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func TestActiveActiveSubscriptionResourceTags_OnCreate_CRUDI(t *testing.T) {

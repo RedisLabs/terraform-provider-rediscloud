@@ -14,7 +14,6 @@ import (
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 var essentialsMarketplaceFlag = flag.Bool("essentialsMarketplace", false,

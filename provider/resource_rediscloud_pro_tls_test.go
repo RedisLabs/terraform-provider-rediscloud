@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
