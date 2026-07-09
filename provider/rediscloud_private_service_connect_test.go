@@ -12,8 +12,6 @@ import (
 
 func TestAccResourceRedisCloudPrivateServiceConnect_CRUDI(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	subName := testRandomWithPrefix() + "-pro-psc"
 	databaseName := subName + "-database"
 

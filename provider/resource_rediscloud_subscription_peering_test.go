@@ -15,8 +15,6 @@ import (
 
 func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	name := testRandomWithPrefix()
 
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -78,8 +76,6 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := testRandomWithPrefix()
 

@@ -18,8 +18,6 @@ import (
 
 func TestAccRedisCloudProDatabase_DefaultSourceIPs_PrivateAccess(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	const databaseResource = "rediscloud_subscription_database.example"
 	const datasourceName = "data.rediscloud_database.example"
 	password := acctest.RandString(20)
@@ -64,8 +62,6 @@ func TestAccRedisCloudProDatabase_DefaultSourceIPs_PrivateAccess(t *testing.T) {
 }
 
 func TestAccRedisCloudProDatabase_DefaultSourceIPs_PublicAccess(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const databaseResource = "rediscloud_subscription_database.example"
 	const datasourceName = "data.rediscloud_database.example"

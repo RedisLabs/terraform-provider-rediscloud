@@ -21,8 +21,6 @@ const (
 
 func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	name := testRandomWithPrefix()
 
 	const resourceName = "rediscloud_subscription.example"
@@ -81,8 +79,6 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 }
 
 func TestAccDataSourceRedisCloudProSubscription_ignoresAA(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)

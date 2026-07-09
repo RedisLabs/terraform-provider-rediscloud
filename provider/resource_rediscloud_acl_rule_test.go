@@ -17,8 +17,6 @@ import (
 
 func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	prefix := testRandomWithPrefix()
 	testName := prefix + "-test-rule"
 	const testRule = "+@all"

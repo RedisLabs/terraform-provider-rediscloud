@@ -11,8 +11,6 @@ import (
 
 func TestAccDataSourceRedisCloudDatabaseModules_basic(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),

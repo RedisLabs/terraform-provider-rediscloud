@@ -17,7 +17,6 @@ import (
 )
 
 func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI(t *testing.T) {
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	testAwsRegion := os.Getenv("AWS_REGION")
 	subscriptionName := testRandomWithPrefix() + "-aa-tgw"

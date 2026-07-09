@@ -19,8 +19,6 @@ import (
 
 func TestAccResourceRedisCloudPrivateServiceConnectEndpointAccepter_Create(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	baseName := testRandomWithPrefix() + "-pro-pscea"
 
 	const resourceName = "rediscloud_private_service_connect_endpoint_accepter.accepter"

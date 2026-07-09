@@ -21,7 +21,7 @@ $(BIN)/%:
 	@echo "Installing tools from tools/tools.go"
 	@cat tools/tools.go | grep _ | awk -F '"' '{print $$2}' | GOBIN=$(BIN) xargs -tI {} go install {}
 
-.PHONY: build clean fmt fmtcheck lint testacc testacc-essentials generate_coverage install_local sweep sweep-prefix tfproviderlint tfproviderlintx
+.PHONY: build clean fmt fmtcheck lint testacc testacc-build testacc-essentials generate_coverage install_local sweep sweep-prefix tfproviderlint tfproviderlintx
 
 build: bin fmtcheck
 	@echo "Building local provider binary"
@@ -50,6 +50,9 @@ lint:
 	@echo "Running golangci-lint"
 	golangci-lint run
 
+testacc-build:
+	go test ./... -run=^$$
+
 # `-p=1` added to avoid testing packages in parallel which causes `go test` to not stream logs as they are written
 testacc: bin
 	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 360m -p=1 -parallel=$(TEST_PARALLELISM) -coverprofile bin/coverage.out
@@ -77,8 +80,7 @@ endif
 	@echo "WARNING: This will destroy infrastructure matching prefix '$(TEST_RESOURCE_PREFIX)'. Use only in development accounts."
 	TEST_RESOURCE_PREFIX=$(TEST_RESOURCE_PREFIX) SWEEP_AGE_THRESHOLD=0s go test ./provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
 
-tfproviderlintx: $(BIN)/tfproviderlintx
-	$(BIN)/tfproviderlintx $(TFPROVIDERLINT_ARGS) ./...
-
-tfproviderlint: $(BIN)/tfproviderlint
-	$(BIN)/tfproviderlint $(TFPROVIDERLINT_ARGS) ./...
+tfproviderlint: $(BIN)/tfproviderlintx
+  # XS001 — disables "schema should configure Description"
+  # XS002 — disables "schema attributes should be in alphabetical order"
+	$(BIN)/tfproviderlintx $(TFPROVIDERLINT_ARGS) -XS001=false -XS002=false ./...

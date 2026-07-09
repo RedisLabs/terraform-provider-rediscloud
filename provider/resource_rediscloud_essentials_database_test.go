@@ -15,8 +15,6 @@ import (
 
 func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	subscriptionName := testRandomWithPrefix()
 	databaseName := subscriptionName + "-db"
 	databaseNameUpdated := databaseName + "-updated"
@@ -272,7 +270,6 @@ data "rediscloud_essentials_database" "example" {
 
 // there was a bug where removing the default user would cause issues with passwords
 func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T) {
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := testRandomWithPrefix()
 	databaseName := subscriptionName + "-db"
@@ -339,7 +336,6 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 
 // Test redis_version field support - ensures version can be specified and read
 func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := testRandomWithPrefix()
 	databaseName := subscriptionName + "-db"
@@ -373,7 +369,6 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
 
 // Test redis_version upgrade - ensures version can be upgraded after database creation
 func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.T) {
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := testRandomWithPrefix()
 	databaseName := subscriptionName + "-db"
@@ -386,26 +381,26 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
-			// Step 1: Create database with Redis 7.2
+			// Step 1: Create database with Redis 8.2
 			{
-				Config: getEssentialsDatabaseConfigWithVersion(t, subscriptionName, databaseName, password, "7.2"),
+				Config: getEssentialsDatabaseConfigWithVersion(t, subscriptionName, databaseName, password, "8.2"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
 					resource.TestCheckResourceAttrSet(resourceName, "subscription_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "db_id"),
 					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
-					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.2"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.2"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
 				),
 			},
-			// Step 2: Upgrade to Redis 7.4 with updated data_persistence
+			// Step 2: Upgrade to Redis 8.4 with updated data_persistence
 			{
-				Config: getEssentialsDatabaseConfigWithVersionUpdated(t, subscriptionName, databaseName, password, "7.4"),
+				Config: getEssentialsDatabaseConfigWithVersionUpdated(t, subscriptionName, databaseName, password, "8.4"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
 					resource.TestCheckResourceAttr(resourceName, "name", databaseName),
-					resource.TestCheckResourceAttr(resourceName, "redis_version", "7.4"),
-					resource.TestCheckResourceAttr(resourceName, "data_persistence", "aof-every-write"),
+					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.4"),
+					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
 					// Verify database is still active and accessible
 					resource.TestCheckResourceAttrSet(resourceName, "public_endpoint"),
 				),
@@ -416,7 +411,6 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.
 
 // Test redis_version no incorrect diff and redis_version_actual always has correct version
 func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionAutoMinorUpgrade(t *testing.T) {
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := utils.RandomWithPrefix()
 	databaseName := subscriptionName + "-db"

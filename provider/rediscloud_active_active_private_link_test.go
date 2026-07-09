@@ -22,8 +22,6 @@ const testActiveActivePrivateLinkConfigWithoutPrivateLinkFile = "./privatelink/t
 
 func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	const resourceName = "rediscloud_active_active_private_link.aa_private_link"
 	const subscriptionResourceName = "rediscloud_active_active_subscription.aa_subscription"
 	const regionsDataSourceName = "data.rediscloud_active_active_subscription_regions.aa_regions_info"

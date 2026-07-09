@@ -21,8 +21,6 @@ import (
 // Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the database resource.
 func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	const resourceName = "rediscloud_subscription_database.example"
@@ -167,8 +165,6 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription_database.example"
@@ -198,8 +194,6 @@ func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 
 func TestAccResourceRedisCloudProDatabase_timeUtcRequiresValidInterval(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	name := testRandomWithPrefix()
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
@@ -218,8 +212,6 @@ func TestAccResourceRedisCloudProDatabase_timeUtcRequiresValidInterval(t *testin
 
 // Tests the multi-modules feature in a database resource.
 func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := testRandomWithPrefix()
 	dbName := "db-multi-modules"
@@ -250,8 +242,6 @@ func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	name := testRandomWithPrefix()
@@ -303,8 +293,6 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := testRandomWithPrefix()
 	databaseName := testRandomWithPrefix() + "-database"

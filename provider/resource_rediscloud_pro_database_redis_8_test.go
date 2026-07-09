@@ -20,8 +20,6 @@ import (
 // checks that a redis 8 database can be provisioned
 func TestAccResourceRedisCloudProDatabase_Redis8(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	const resourceName = "rediscloud_subscription_database.example"
@@ -99,8 +97,6 @@ func TestAccResourceRedisCloudProDatabase_Redis8(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
@@ -246,8 +242,6 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 // Checks that users can upgrade from 7.2 to 8.0
 func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	const resourceName = "rediscloud_subscription_database.example"
@@ -334,7 +328,6 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 
 // Test that modules cannot be set on Redis 8.x
 func TestAccResourceRedisCloudProDatabase_Redis8_ModulesBlocked(t *testing.T) {
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)

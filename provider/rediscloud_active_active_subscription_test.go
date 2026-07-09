@@ -26,8 +26,6 @@ var activeActiveMarketplaceFlag = flag.Bool("activeActiveMarketplace", false,
 // Also checks active-active subscription regions.
 func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceSubscriptionName = "data.rediscloud_active_active_subscription.example"
@@ -278,8 +276,6 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 // Also checks active-active subscription regions.
 func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceSubscriptionName = "data.rediscloud_active_active_subscription.example"
@@ -526,8 +522,6 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 
 func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayment(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	if !*activeActiveContractFlag {
 		t.Skip("The '-activeActiveContract' parameter wasn't provided in the test command.")
 	}
@@ -566,8 +560,6 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateContractPayme
 
 func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePayment(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	if !*activeActiveMarketplaceFlag {
 		t.Skip("The '-activeActiveMarketplace' parameter wasn't provided in the test command.")
 	}
@@ -605,8 +597,6 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 }
 
 func TestAccResourceRedisCloudActiveActiveSubscription_PublicEndpointAccess(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
@@ -811,8 +801,6 @@ func testAccResourceRedisCloudActiveActiveSubscriptionImportRedis8(t *testing.T,
 // TestAccResourceRedisCloudActiveActiveSubscription_RemoveRedisVersion tests that removing
 // the redis_version attribute from an existing subscription does NOT force replacement.
 func TestAccResourceRedisCloudActiveActiveSubscription_RemoveRedisVersion(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"

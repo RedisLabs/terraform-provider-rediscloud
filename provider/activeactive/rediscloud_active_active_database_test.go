@@ -389,8 +389,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	subscriptionName := utils.RandomWithPrefix() + "-subscription"
 	name := utils.RandomWithPrefix() + "-database"
@@ -416,8 +414,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing
 
 func TestAccResourceRedisCloudActiveActiveDatabase_timeUtcRequiresValidInterval(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	name := utils.RandomWithPrefix()
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	password := acctest.RandString(20)
@@ -429,7 +425,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_timeUtcRequiresValidInterval(
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseInvalidTimeUtc, testCloudAccountName, name, password),
-				ExpectError: regexp.MustCompile("unexpected value at override_region\\.\\d*\\.remote_backup\\.0\\.time_utc - time_utc can only be set when interval is either every-24-hours or every-12-hours"),
+				ExpectError: regexp.MustCompile(`(?s)'time_utc' can only be set when 'interval' is 'every-12-hours' or\s+'every-24-hours'`),
 			},
 		},
 	})
@@ -566,8 +562,6 @@ resource "rediscloud_active_active_subscription_database" "example" {
 `
 
 func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := utils.RandomWithPrefix() + "-subscription"
 	databaseName := utils.RandomWithPrefix() + "-database"

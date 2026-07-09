@@ -17,8 +17,6 @@ import (
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TEST_SUB_ACTIVE_ACTIVE")
-
 	subName := testRandomWithPrefix() + "-regions-test"
 	dbName := testRandomWithPrefix() + "-regions" + "-db"
 	dbPass := acctest.RandString(20)

@@ -15,8 +15,6 @@ import (
 
 func TestActiveActiveSubscriptionResourceTags_OnCreate_CRUDI(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceName = "data.rediscloud_active_active_subscription.example"
 	resourceTags := map[string]config.Variable{
@@ -106,8 +104,6 @@ func TestActiveActiveSubscriptionResourceTags_OnCreate_CRUDI(t *testing.T) {
 }
 
 func TestActiveActiveSubscriptionResourceTags_CRUDI(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceName = "data.rediscloud_active_active_subscription.example"

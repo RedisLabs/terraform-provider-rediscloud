@@ -18,17 +18,13 @@ import (
 
 func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
-	if testing.Short() {
-		t.Skip("Required environment variables currently not available under CI")
-	}
+	t.Skip("Required environment variables currently not available under CI")
 
 	name := testRandomWithPrefix()
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudCloudAccount,
 		os.Getenv("AWS_ACCESS_KEY_ID"),
-		os.Getenv("AWS_ACCESS_SECRET_KEY"),
+		os.Getenv("AWS_SECRET_ACCESS_KEY"),
 		os.Getenv("AWS_CONSOLE_USERNAME"),
 		os.Getenv("AWS_CONSOLE_PASSWORD"),
 		name,

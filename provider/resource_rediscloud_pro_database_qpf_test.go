@@ -54,7 +54,6 @@ resource "rediscloud_subscription" "example" {
     replication = false
     support_oss_cluster_api = false
     query_performance_factor = "%s"
-    modules = ["RediSearch"]
   }
 }`, cloudAccountName, name, qpf)
 }
@@ -121,7 +120,7 @@ func TestAccResourceRedisCloudProDatabase_qpf(t *testing.T) {
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: formatDatabaseConfig(name, testCloudAccountName, password, "4x", `modules = [{ name = "RediSearch" }]`),
+				Config: formatDatabaseConfig(name, testCloudAccountName, password, "4x", ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "name", "example"),
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "protocol", "redis"),
@@ -134,7 +133,7 @@ func TestAccResourceRedisCloudProDatabase_qpf(t *testing.T) {
 
 			// Test that query_performance_factor can be updated without forcing replacement
 			{
-				Config: formatDatabaseConfig(name, testCloudAccountName, password, "2x", `modules = [{ name = "RediSearch" }]`),
+				Config: formatDatabaseConfig(name, testCloudAccountName, password, "2x", ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "name", "example"),
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "query_performance_factor", "2x"),
@@ -149,7 +148,7 @@ func TestAccResourceRedisCloudProDatabase_qpf_missingModule(t *testing.T) {
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
-	config := formatDatabaseConfig(name, testCloudAccountName, password, "4x", "")
+	config := formatDatabaseConfig(name, testCloudAccountName, password, "4x", `redis_version = "7.4"`)
 
 	testErrorCase(t, config, regexp.MustCompile("DATABASE_QUERY_PERFORMANCE_FACTOR_SEARCH_IS_REQUIRED.*RediSearch.*required"))
 }
@@ -159,7 +158,8 @@ func TestAccResourceRedisCloudProDatabase_qpf_missingRediSearchModule(t *testing
 	password := acctest.RandString(20)
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
-	config := formatDatabaseConfig(name, testCloudAccountName, password, "4x", `modules = [{ name = "RediBloom" }]`)
+	config := formatDatabaseConfig(name, testCloudAccountName, password, "4x", `modules = [{ name = "RediBloom" }]
+    redis_version = "7.4"`)
 
 	testErrorCase(t, config, regexp.MustCompile("DATABASE_QUERY_PERFORMANCE_FACTOR_SEARCH_IS_REQUIRED.*RediSearch.*required"))
 }

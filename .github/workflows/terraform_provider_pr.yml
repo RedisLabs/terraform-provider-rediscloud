@@ -20,7 +20,7 @@ env:
   TF_ACC: true
   TF_LOG: info
   AWS_ACCESS_KEY_ID: ${{ secrets.CLOUD_ACCOUNT_KEY }}
-  AWS_ACCESS_SECRET_KEY: ${{ secrets.CLOUD_ACCOUNT_SECRET }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUD_ACCOUNT_SECRET }}
   AWS_CONSOLE_USERNAME: ${{ secrets.CLOUD_ACCOUNT_USERNAME }}
   AWS_CONSOLE_PASSWORD: ${{ secrets.CLOUD_ACCOUNT_PASS }}
   AWS_SIGNIN_URL: ${{ secrets.CLOUD_ACCOUNT_URL }}
@@ -73,20 +73,14 @@ jobs:
       - uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee # v9.2.1
 
   go-mod-tidy:
-    name: go mod tidy
+    name: go mod tidy -diff
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
-      - run: go mod tidy
-      - name: Check for changes
-        run: |
-          if ! git diff --exit-code go.mod go.sum; then
-            echo "::error::go.mod or go.sum is not tidy. Run 'go mod tidy' and commit the changes."
-            exit 1
-          fi
+      - run: go mod tidy -diff
 
   terraform-fmt:
     name: terraform fmt
@@ -209,7 +203,10 @@ jobs:
   pre_sweep:
     name: pre-test sweep
     needs: [lint-complete, detect-changes]
-    if: github.event.pull_request.draft == false && needs.detect-changes.outputs.code == 'true'
+    if: >
+      github.event.pull_request.draft == false &&
+      needs.detect-changes.outputs.code == 'true' &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-tests')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -396,7 +393,11 @@ jobs:
 
   post_sweep:
     name: post-test sweep
-    if: ${{ always() && github.event.pull_request.draft == false && needs.detect-changes.outputs.code == 'true' }}
+    if: >
+      always() &&
+      github.event.pull_request.draft == false &&
+      needs.detect-changes.outputs.code == 'true' &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-tests')
     needs:
       - detect-changes
       - go_test_smoke_aa_db

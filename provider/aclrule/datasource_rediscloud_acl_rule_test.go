@@ -8,12 +8,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func TestAccDataSourceRedisCloudAclRule_ForDefaultRule(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	// This rule already exists
 	const testName = "Read-Write"
