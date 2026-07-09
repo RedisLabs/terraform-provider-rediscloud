@@ -19,9 +19,7 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 
 	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
-	if testing.Short() {
-		t.Skip("Required environment variables currently not available under CI")
-	}
+	t.Skip("Required environment variables currently not available under CI")
 
 	name := testRandomWithPrefix()
 
