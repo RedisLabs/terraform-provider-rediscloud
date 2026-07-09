@@ -27,7 +27,7 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 	config := fmt.Sprintf(content, testCloudAccountName, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME") },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{

@@ -55,7 +55,7 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 	const AclUserTestData = "data.rediscloud_acl_user.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME") },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckAclUserDestroy,
 		Steps: []resource.TestStep{

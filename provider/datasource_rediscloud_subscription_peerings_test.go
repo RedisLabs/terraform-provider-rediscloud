@@ -40,7 +40,7 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 		PreCheck: func() {
 			envchecks.RedisCloudCheck(t)
 			testAccAwsPeeringPreCheck(t)
-			testAccAwsPreExistingCloudAccountPreCheck(t)
+			envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
 		},
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
