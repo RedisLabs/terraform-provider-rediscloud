@@ -20,7 +20,7 @@ import (
 // to create KMS keys and grant IAM permissions automatically.
 func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 
-	testhelpers.RequireEnvVars(t, "EXECUTE_TESTS", "GCP_PROJECT_ID", "GOOGLE_CREDENTIALS")
+	testhelpers.RequireEnvVars(t, "GCP_PROJECT_ID", "GOOGLE_CREDENTIALS")
 
 	name := utils.RandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"

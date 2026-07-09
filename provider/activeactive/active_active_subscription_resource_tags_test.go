@@ -8,13 +8,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
-
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func TestActiveActiveSubscriptionResourceTags_OnCreate_CRUDI(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceName = "data.rediscloud_active_active_subscription.example"
@@ -105,8 +101,6 @@ func TestActiveActiveSubscriptionResourceTags_OnCreate_CRUDI(t *testing.T) {
 }
 
 func TestActiveActiveSubscriptionResourceTags_CRUDI(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceName = "data.rediscloud_active_active_subscription.example"

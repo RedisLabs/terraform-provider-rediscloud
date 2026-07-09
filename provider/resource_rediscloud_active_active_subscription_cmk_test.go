@@ -19,8 +19,6 @@ import (
 // that uses the GCP provider to create KMS keys and grant IAM permissions automatically.
 func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
 	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
@@ -98,8 +96,6 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 // (primary in us-east-1, replica in us-east-2) and key policies in-fixture,
 // removing the need for a pre-existing AWS_CMK_KEY_ARN.
 func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := testRandomWithPrefix() + "-aa-cmk-aws"
 	const resourceName = "rediscloud_active_active_subscription.example"

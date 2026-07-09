@@ -3,14 +3,10 @@ package provider_test
 import (
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccDataSourceRedisCloudDatabaseModules_basic(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },

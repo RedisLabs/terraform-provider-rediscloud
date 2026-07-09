@@ -16,7 +16,6 @@ import (
 // account because the API only accepts tags for BYOC subscriptions.
 func TestAccDataSourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 	byocCloudAccountName := utils.AccRequiresEnvVar(t, "AWS_TEST_BYOC_CLOUD_ACCOUNT_NAME")
 
 	name := acctest.RandomWithPrefix("tf-test") + "-ds-resource-tags"

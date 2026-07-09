@@ -13,8 +13,6 @@ import (
 
 func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	const dataSourceById = "data.rediscloud_database.example-by-id"
 	const dataSourceByName = "data.rediscloud_database.example-by-name"
 	password := acctest.RandString(20)

@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func testAccPreCheck(t *testing.T) {
@@ -19,8 +18,6 @@ func testAccPreCheck(t *testing.T) {
 }
 
 func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 

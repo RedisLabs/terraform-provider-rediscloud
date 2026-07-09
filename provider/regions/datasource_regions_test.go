@@ -7,14 +7,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 const regionsDataSource = "data.rediscloud_regions.example"
 
 func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
@@ -51,8 +48,6 @@ func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
 
 func TestAccDataSourceRedisCloudRegions_AWS(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
@@ -81,8 +76,6 @@ func TestAccDataSourceRedisCloudRegions_AWS(t *testing.T) {
 }
 
 func TestAccDataSourceRedisCloudRegions_GCP(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },

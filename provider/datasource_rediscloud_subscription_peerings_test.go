@@ -6,14 +6,10 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := testRandomWithPrefix()
 
