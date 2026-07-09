@@ -10,6 +10,7 @@ See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
 
 ## Fixed
 - `rediscloud_active_active_subscription` data source: optional attributes the API omits (`payment_method_id`, `customer_managed_key_deletion_grace_period`, `customer_managed_key_redis_service_account`, `customer_managed_key_aws_role_arn`) are now written to state as `null` instead of empty strings.
+- Added sorting in FlattenPricing - Pricing.List returns regions in nondeterministic order, which results in a potential perpetual `tf plan` diff
 
 # 2.18.0 (7th July 2026)
 
