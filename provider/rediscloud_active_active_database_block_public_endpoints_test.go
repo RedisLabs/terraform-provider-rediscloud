@@ -19,8 +19,6 @@ import (
 
 func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PrivateAccess(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	const databaseResource = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
 	password := acctest.RandString(20)
@@ -65,8 +63,6 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PrivateAccess(t *t
 
 func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PublicAccess(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	const databaseResource = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
 	password := acctest.RandString(20)
@@ -104,8 +100,6 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PublicAccess(t *te
 }
 
 func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const databaseResource = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"

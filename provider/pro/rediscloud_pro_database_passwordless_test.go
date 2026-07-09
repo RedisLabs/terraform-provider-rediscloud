@@ -14,8 +14,6 @@ import (
 
 func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	const databaseResource = "rediscloud_subscription_database.example"
 	const datasourceName = "data.rediscloud_database.example"
 	subscriptionName := utils.RandomWithPrefix()
@@ -83,8 +81,6 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 
 func TestAccRedisCloudProDatabase_ExplicitPasswordFalseWithPassword(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	const databaseResource = "rediscloud_subscription_database.example"
 	const datasourceName = "data.rediscloud_database.example"
 	subscriptionName := utils.RandomWithPrefix()
@@ -125,8 +121,6 @@ func TestAccRedisCloudProDatabase_ExplicitPasswordFalseWithPassword(t *testing.T
 }
 
 func TestAccRedisCloudProDatabase_PasswordToPasswordless(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const databaseResource = "rediscloud_subscription_database.example"
 	const datasourceName = "data.rediscloud_database.example"
@@ -169,8 +163,6 @@ func TestAccRedisCloudProDatabase_PasswordToPasswordless(t *testing.T) {
 
 func TestAccRedisCloudProDatabase_PasswordlessDisableWithoutPassword(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	subscriptionName := utils.RandomWithPrefix()
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -198,8 +190,6 @@ func TestAccRedisCloudProDatabase_PasswordlessDisableWithoutPassword(t *testing.
 }
 
 func TestAccRedisCloudProDatabase_PasswordlessWithPasswordConflict(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := utils.RandomWithPrefix()
 	password := acctest.RandString(20)

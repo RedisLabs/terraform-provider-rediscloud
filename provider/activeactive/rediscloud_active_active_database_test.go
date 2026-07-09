@@ -389,8 +389,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
 func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	subscriptionName := utils.RandomWithPrefix() + "-subscription"
 	name := utils.RandomWithPrefix() + "-database"
@@ -415,8 +413,6 @@ func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing
 }
 
 func TestAccResourceRedisCloudActiveActiveDatabase_timeUtcRequiresValidInterval(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	name := utils.RandomWithPrefix()
 	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
@@ -566,8 +562,6 @@ resource "rediscloud_active_active_subscription_database" "example" {
 `
 
 func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := utils.RandomWithPrefix() + "-subscription"
 	databaseName := utils.RandomWithPrefix() + "-database"

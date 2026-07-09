@@ -7,15 +7,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 // TestAccActiveActiveDatabase_Passwordless creates a passwordless AA database,
 // transitions to password-protected, and transitions back.
 func TestAccActiveActiveDatabase_Passwordless(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const databaseResource = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
@@ -74,8 +70,6 @@ func TestAccActiveActiveDatabase_Passwordless(t *testing.T) {
 // setting both global_enable_passwordless=true and global_password produces a plan error.
 func TestAccActiveActiveDatabase_PasswordlessWithPasswordConflict(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	subscriptionName := testRandomWithPrefix()
 	password := acctest.RandString(20)
 
@@ -99,8 +93,6 @@ func TestAccActiveActiveDatabase_PasswordlessWithPasswordConflict(t *testing.T) 
 // TestAccActiveActiveDatabase_PasswordlessRegionOverride tests per-region passwordless
 // override with global password set.
 func TestAccActiveActiveDatabase_PasswordlessRegionOverride(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	const databaseResource = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
@@ -141,8 +133,6 @@ func TestAccActiveActiveDatabase_PasswordlessRegionOverride(t *testing.T) {
 // transitioning from passwordless to password-protected without providing a password produces an error.
 func TestAccActiveActiveDatabase_PasswordlessDisableWithoutPassword(t *testing.T) {
 
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
-
 	subscriptionName := testRandomWithPrefix()
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -176,8 +166,6 @@ func TestAccActiveActiveDatabase_PasswordlessDisableWithoutPassword(t *testing.T
 // setting both override_global_enable_passwordless=true and override_global_password in the
 // same region produces a plan error.
 func TestAccActiveActiveDatabase_PasswordlessRegionOverrideWithPasswordConflict(t *testing.T) {
-
-	utils.AccRequiresEnvVar(t, "EXECUTE_TESTS")
 
 	subscriptionName := testRandomWithPrefix()
 	password := acctest.RandString(20)
