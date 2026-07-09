@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -23,7 +24,11 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter_
 	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t); testAccGcpProjectPreCheck(t); testAccGcpCredentialsPreCheck(t) },
+		PreCheck: func() {
+			envchecks.RedisCloudCheck(t)
+			testAccGcpProjectPreCheck(t)
+			testAccGcpCredentialsPreCheck(t)
+		},
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"google": {

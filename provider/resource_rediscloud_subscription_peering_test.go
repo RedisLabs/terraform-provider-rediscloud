@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -52,7 +53,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
-			testhelpers.BasicPreCheck(t)
+			envchecks.RedisCloudCheck(t)
 			testAccAwsPeeringPreCheck(t)
 			testAccAwsPreExistingCloudAccountPreCheck(t)
 		},
@@ -90,7 +91,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
 	const resourceName = "rediscloud_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{

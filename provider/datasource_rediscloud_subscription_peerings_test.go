@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -37,7 +38,7 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
-			testhelpers.BasicPreCheck(t)
+			envchecks.RedisCloudCheck(t)
 			testAccAwsPeeringPreCheck(t)
 			testAccAwsPreExistingCloudAccountPreCheck(t)
 		},

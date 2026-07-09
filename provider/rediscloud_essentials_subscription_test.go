@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
+
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
@@ -22,7 +24,7 @@ var essentialsMarketplaceFlag = flag.Bool("essentialsMarketplace", false,
 // testAccPreCheckEssentialsSubscription checks if an essentials subscription already exists
 // and fails fast to avoid the test failing after provisioning attempts
 func testAccPreCheckEssentialsSubscription(t *testing.T) {
-	testhelpers.BasicPreCheck(t)
+	envchecks.RedisCloudCheck(t)
 
 	apiClient, err := client.NewClient()
 	if err != nil {
@@ -306,7 +308,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Incorrect_PaymentIdForType(
 	subscriptionName := testRandomWithPrefix()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{

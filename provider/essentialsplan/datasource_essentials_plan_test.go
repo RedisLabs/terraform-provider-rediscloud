@@ -7,13 +7,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
+
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
 
 func TestAccDataSourceRedisCloudEssentialsPlan_basic(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil, // Essentials Plans aren't managed by this provider
 		Steps: []resource.TestStep{
@@ -76,7 +78,7 @@ func TestAccDataSourceRedisCloudEssentialsPlan_basic(t *testing.T) {
 func TestAccDataSourceRedisCloudEssentialsPlan_azure(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil, // Essentials Plans aren't managed by this provider
 		Steps: []resource.TestStep{
@@ -140,7 +142,7 @@ func TestAccDataSourceRedisCloudEssentialsPlan_azure(t *testing.T) {
 func TestAccDataSourceRedisCloudEssentialsPlan_ambiguous(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil, // Essentials Plans aren't managed by this provider
 		Steps: []resource.TestStep{
@@ -158,7 +160,7 @@ func TestAccDataSourceRedisCloudEssentialsPlan_ambiguous(t *testing.T) {
 func TestAccDataSourceRedisCloudEssentialsPlan_impossible(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil, // Essentials Plans aren't managed by this provider
 		Steps: []resource.TestStep{
@@ -176,7 +178,7 @@ func TestAccDataSourceRedisCloudEssentialsPlan_impossible(t *testing.T) {
 func TestAccDataSourceRedisCloudEssentialsPlan_subscription(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { testhelpers.BasicPreCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil, // Essentials Plans aren't managed by this provider
 		Steps: []resource.TestStep{
