@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
@@ -46,7 +47,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 			{
 				// Step 1: Create subscription with CMK enabled (enters encryption_key_pending state)
 				// Also creates GCP KMS key and grants IAM permissions to the Redis service account
-				ProtoV5ProviderFactories: protoV5ProviderFactories,
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_step1.tf"),
 				ConfigVariables:          configVars,
 				ExpectNonEmptyPlan:       true,
@@ -62,7 +63,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 			{
 				// Step 2: Add CMK blocks to activate encryption
 				// This triggers the UpdateCmk code path which should also clean up creation plan databases
-				ProtoV5ProviderFactories: protoV5ProviderFactories,
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_step2.tf"),
 				ConfigVariables:          configVars,
 				ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -126,7 +127,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 			{
 				// Step 1: subscription enters encryption_key_pending; both key policies
 				// (primary + replica) reference the role ARN returned by the subscription.
-				ProtoV5ProviderFactories: protoV5ProviderFactories,
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_aws_step1.tf"),
 				ConfigVariables:          configVars,
 				ExpectNonEmptyPlan:       true,
@@ -142,7 +143,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 			{
 				// Step 2: subscription supplies the per-region KMS ARNs (primary + replica)
 				// and transitions out of encryption_key_pending.
-				ProtoV5ProviderFactories: protoV5ProviderFactories,
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_aws_step2.tf"),
 				ConfigVariables:          configVars,
 				ConfigPlanChecks: resource.ConfigPlanChecks{

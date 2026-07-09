@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
+
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -33,7 +35,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 			testAccPreCheck(t)
 			testAccAwsPreExistingCloudAccountPreCheck(t)
 		},
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -135,7 +137,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t); testAccAwsPreExistingCloudAccountPreCheck(t) },
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -211,7 +213,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 			testAccPreCheck(t)
 			testAccAwsPreExistingCloudAccountPreCheck(t)
 		},
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -234,7 +236,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseAndDisabledTlsAn
 			testAccPreCheck(t)
 			testAccAwsPreExistingCloudAccountPreCheck(t)
 		},
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -257,7 +259,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithoutEnableTlsAndTlsCert(t
 			testAccPreCheck(t)
 			testAccAwsPreExistingCloudAccountPreCheck(t)
 		},
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -279,7 +281,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithSslCertAndTlsCert(t *tes
 			testAccPreCheck(t)
 			testAccAwsPreExistingCloudAccountPreCheck(t)
 		},
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -306,7 +308,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 			testAccPreCheck(t)
 			testAccAwsPreExistingCloudAccountPreCheck(t)
 		},
-		ProtoV5ProviderFactories: protoV5ProviderFactories,
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
