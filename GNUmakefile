@@ -21,9 +21,9 @@ $(BIN)/%:
 	@echo "Installing tools from tools/tools.go"
 	@cat tools/tools.go | grep _ | awk -F '"' '{print $$2}' | GOBIN=$(BIN) xargs -tI {} go install {}
 
-.PHONY: build clean fmt fmtcheck lint testacc testacc-build testacc-essentials generate_coverage install_local sweep sweep-prefix tfproviderlint tfproviderlintx
+.PHONY: build clean fmt lint testacc testacc-build testacc-essentials generate_coverage install_local sweep sweep-prefix tfproviderlint tfproviderlintx
 
-build: bin fmtcheck
+build: bin lint
 	@echo "Building local provider binary"
 	go build -o $(BIN)/terraform-provider-rediscloud_v$(PROVIDER_VERSION)
 	@sh -c "'$(CURDIR)/scripts/generate-dev-overrides.sh'"
@@ -34,17 +34,7 @@ clean:
 
 fmt:
 	@echo "Formatting Go files"
-	goimports -w -local github.com/RedisLabs/terraform-provider-rediscloud .
-
-fmtcheck:
-	@echo "Checking Go file formatting"
-	@BADFILES=$$(goimports -l -local github.com/RedisLabs/terraform-provider-rediscloud .); \
-	if [ -n "$$BADFILES" ]; then \
-		echo "The following files are not formatted correctly:"; \
-		echo "$$BADFILES"; \
-		echo "Run 'make fmt' to fix."; \
-		exit 1; \
-	fi
+	golangci-lint fmt
 
 lint:
 	@echo "Running golangci-lint"
