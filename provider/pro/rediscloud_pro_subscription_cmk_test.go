@@ -21,9 +21,6 @@ import (
 // TestAccRedisCloudProSubscription_CMK is a fully automated CMK test that uses the GCP provider
 // to create KMS keys and grant IAM permissions automatically.
 func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
-
-	envchecks.RequireEnvVars(t, "GCP_PROJECT_ID", "GOOGLE_CREDENTIALS")
-
 	name := utils.RandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
 	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
@@ -45,7 +42,7 @@ func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { envchecks.RedisCloudCheck(t) },
+		PreCheck:     func() { envchecks.RedisCloudCheck(t); envchecks.GCPProviderCheck(t) },
 		CheckDestroy: checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
