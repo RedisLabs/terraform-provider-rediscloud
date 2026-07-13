@@ -42,7 +42,7 @@ func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     func() { envchecks.RedisCloudCheck(t); envchecks.GCPProviderCheck(t) },
+		PreCheck:     envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.GCPProviderCheck),
 		CheckDestroy: checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{

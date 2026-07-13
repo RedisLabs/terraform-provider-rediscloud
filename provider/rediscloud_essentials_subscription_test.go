@@ -23,22 +23,29 @@ var essentialsMarketplaceFlag = flag.Bool("essentialsMarketplace", false,
 
 // testAccPreCheckEssentialsSubscription checks if an essentials subscription already exists
 // and fails fast to avoid the test failing after provisioning attempts
-func testAccPreCheckEssentialsSubscription(t *testing.T) {
-	envchecks.RedisCloudCheck(t)
+func testAccPreCheckEssentialsSubscription(t *testing.T) bool {
+	t.Helper()
+	if !envchecks.RedisCloudCheck(t) {
+		return false
+	}
 
 	apiClient, err := client.NewClient()
 	if err != nil {
-		t.Fatalf("Failed to create API client: %v", err)
+		t.Errorf("Failed to create API client: %v", err)
+		return false
 	}
 
 	subs, err := apiClient.Client.FixedSubscriptions.List(context.TODO())
 	if err != nil {
-		t.Fatalf("Failed to list essentials subscriptions: %v", err)
+		t.Errorf("Failed to list essentials subscriptions: %v", err)
+		return false
 	}
 
 	if len(subs) > 0 {
-		t.Fatalf("Essentials subscription already exists (ID: %d). Redis Cloud allows only 1 essentials subscription per account. Please delete the existing subscription before running this test.", redis.IntValue(subs[0].ID))
+		t.Errorf("Essentials subscription already exists (ID: %d). Redis Cloud allows only 1 essentials subscription per account. Please delete the existing subscription before running this test.", redis.IntValue(subs[0].ID))
+		return false
 	}
+	return true
 }
 
 func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
@@ -50,7 +57,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -113,7 +120,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -177,7 +184,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -247,7 +254,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -308,7 +315,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Incorrect_PaymentIdForType(
 	subscriptionName := testRandomWithPrefix()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
