@@ -25,7 +25,7 @@ const testPrivateLinkConfigWithoutPrivateLinkFile = "./privatelink/testdata/pro_
 
 func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 
-	envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
+	envchecks.AWSBYOCloudAccountCheck(t)
 
 	const resourceName = "rediscloud_private_link.pro_private_link"
 	const subscriptionResourceName = "rediscloud_subscription.pro_subscription"
@@ -143,7 +143,7 @@ func testAccCheckPrivateLinkDeleted(subscriptionResourceName string) resource.Te
 // This test was added to catch a bug where the private link API returns a different port
 // than what's shown in the database's private_endpoint for Pro subscriptions.
 func TestAccResourceRedisCloudPrivateLink_PortConsistency(t *testing.T) {
-	envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
+	envchecks.AWSBYOCloudAccountCheck(t)
 
 	const databaseResourceName = "rediscloud_subscription_database.pro_database"
 	const privateLinkResourceName = "rediscloud_private_link.pro_private_link"

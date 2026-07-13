@@ -44,7 +44,7 @@ func TestAccResourceRedisCloudAclRole_CRUDI(t *testing.T) {
 	const testAclRoleData = "data.rediscloud_acl_role.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME") },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		// Sometimes after deletion, the entity 'flickers'
 		CheckDestroy: nil,
