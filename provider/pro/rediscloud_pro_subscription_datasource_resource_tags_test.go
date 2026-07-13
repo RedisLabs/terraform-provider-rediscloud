@@ -17,14 +17,13 @@ import (
 // source's cloud_provider.0.resource_tags attribute. It requires a BYOC cloud
 // account because the API only accepts tags for BYOC subscriptions.
 func TestAccDataSourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
-	envchecks.RequireEnvVars(t, "AWS_TEST_BYOC_CLOUD_ACCOUNT_NAME")
-	byocCloudAccountName := os.Getenv("AWS_TEST_BYOC_CLOUD_ACCOUNT_NAME")
+	byocCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	name := acctest.RandomWithPrefix("tf-test") + "-ds-resource-tags"
 	const dataSourceName = "data.rediscloud_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{

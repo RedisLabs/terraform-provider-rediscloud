@@ -54,8 +54,8 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			envchecks.RedisCloudCheck(t)
-			testAccAwsPeeringPreCheck(t)
-			envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
+			envchecks.AwsPeeringCheck(t)
+			envchecks.AWSBYOCloudAccountCheck(t)
 		},
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,

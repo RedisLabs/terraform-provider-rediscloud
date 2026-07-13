@@ -28,8 +28,7 @@ func TestAccResourceRedisCloudPrivateServiceConnectEndpointAccepter_Create(t *te
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			envchecks.RedisCloudCheck(t)
-			testAccGcpProjectPreCheck(t)
-			testAccGcpCredentialsPreCheck(t)
+			envchecks.GCPProviderCheck(t)
 		},
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{

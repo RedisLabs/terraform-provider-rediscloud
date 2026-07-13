@@ -24,7 +24,7 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 	gcpCmkResourceName := os.Getenv("GCP_CMK_RESOURCE_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME") },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -84,8 +84,8 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			envchecks.RedisCloudCheck(t)
-			envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
-			testAccAwsApiCredsPreCheck(t)
+			envchecks.AWSBYOCloudAccountCheck(t)
+			envchecks.AWSProviderCheck(t)
 		},
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
