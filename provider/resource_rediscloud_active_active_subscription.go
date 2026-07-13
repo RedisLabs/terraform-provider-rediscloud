@@ -828,7 +828,7 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 
 func newCreateSubscription(name string, paymentMethodID *int, paymentMethod string, providers []*subscriptions.CreateCloudProvider, dbs []*subscriptions.CreateDatabase, cmkEnabled bool, publicEndpointAccess bool) subscriptions.CreateSubscription {
 	req := subscriptions.CreateSubscription{
-		DeploymentType:       redis.String("active-active"),
+		DeploymentType:       redis.String(subscriptions.SubscriptionDeploymentTypeActiveActive),
 		Name:                 redis.String(name),
 		DryRun:               redis.Bool(false),
 		PaymentMethodID:      paymentMethodID,

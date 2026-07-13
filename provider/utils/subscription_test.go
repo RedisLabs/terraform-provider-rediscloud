@@ -33,13 +33,13 @@ func TestFilterSubscriptions(t *testing.T) {
 		}
 	}
 
-	aaAlpha := newSub("alpha", "active-active")
-	singleBeta := newSub("beta", "single-region")
-	singleAlpha := newSub("alpha", "single-region")
+	aaAlpha := newSub("alpha", subscriptions.SubscriptionDeploymentTypeActiveActive)
+	singleBeta := newSub("beta", subscriptions.SubscriptionDeploymentTypeSingleRegion)
+	singleAlpha := newSub("alpha", subscriptions.SubscriptionDeploymentTypeSingleRegion)
 	subs := []*subscriptions.Subscription{aaAlpha, singleBeta, singleAlpha}
 
 	isActiveActive := func(s *subscriptions.Subscription) bool {
-		return redis.StringValue(s.DeploymentType) == "active-active"
+		return redis.StringValue(s.DeploymentType) == subscriptions.SubscriptionDeploymentTypeActiveActive
 	}
 	namedAlpha := func(s *subscriptions.Subscription) bool {
 		return redis.StringValue(s.Name) == "alpha"

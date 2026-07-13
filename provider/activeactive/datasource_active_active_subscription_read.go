@@ -43,7 +43,7 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 
 	// Filter to AA subscriptions only (pro subs come from the same endpoint)
 	filters = append(filters, func(sub *subscriptions.Subscription) bool {
-		return redis.StringValue(sub.DeploymentType) == "active-active"
+		return redis.StringValue(sub.DeploymentType) == subscriptions.SubscriptionDeploymentTypeActiveActive
 	})
 
 	if !model.Name.IsNull() && model.Name.ValueString() != "" {
