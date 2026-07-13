@@ -37,11 +37,6 @@ func AWSProviderAndRegionCheck(t *testing.T) {
 	RequireEnvVars(t, "AWS_REGION")
 }
 
-func AWSBYOCloudAccountCheck(t *testing.T) {
-	t.Helper()
-	RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
-}
-
 func AwsPeeringCheck(t *testing.T) {
 	t.Helper()
 	RequireEnvVars(t, "AWS_PEERING_REGION", "AWS_ACCOUNT_ID", "AWS_VPC_ID", "AWS_VPC_CIDR")
@@ -56,4 +51,15 @@ func GCPProviderCheck(t *testing.T) {
 	t.Helper()
 	GCPProjectCheck(t)
 	RequireEnvVars(t, "GOOGLE_CREDENTIALS")
+}
+
+func ValueAndCheck(t *testing.T, key string) (string, func()) {
+	t.Helper()
+	value := os.Getenv(key)
+	return value, func() { RequireEnvVars(t, key) }
+}
+
+func AWSBYOCValueAndCheck(t *testing.T) (string, func()) {
+	t.Helper()
+	return ValueAndCheck(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
 }
