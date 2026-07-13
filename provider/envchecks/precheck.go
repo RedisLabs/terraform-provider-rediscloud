@@ -46,3 +46,14 @@ func AwsPeeringCheck(t *testing.T) {
 	t.Helper()
 	RequireEnvVars(t, "AWS_PEERING_REGION", "AWS_ACCOUNT_ID", "AWS_VPC_ID", "AWS_VPC_CIDR")
 }
+
+func GCPProjectCheck(t *testing.T) {
+	t.Helper()
+	RequireEnvVars(t, "GCP_PROJECT_ID")
+}
+
+func GCPProviderCheck(t *testing.T) {
+	t.Helper()
+	GCPProjectCheck(t)
+	RequireEnvVars(t, "GOOGLE_CREDENTIALS")
+}

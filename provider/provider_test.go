@@ -46,11 +46,3 @@ func TestProvider(t *testing.T) {
 func testAccAwsCloudAccountPreCheck(t *testing.T) {
 	envchecks.RequireEnvVars(t, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_CONSOLE_USERNAME", "AWS_CONSOLE_PASSWORD", "AWS_SIGNIN_URL")
 }
-
-func testAccGcpProjectPreCheck(t *testing.T) {
-	envchecks.RequireEnvVars(t, "GCP_PROJECT_ID")
-}
-
-func testAccGcpCredentialsPreCheck(t *testing.T) {
-	envchecks.RequireEnvVars(t, "GOOGLE_CREDENTIALS")
-}

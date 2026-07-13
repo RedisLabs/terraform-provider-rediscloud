@@ -45,8 +45,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			envchecks.RedisCloudCheck(t)
-			testAccGcpProjectPreCheck(t)
-			testAccGcpCredentialsPreCheck(t)
+			envchecks.GCPProviderCheck(t)
 		},
 		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
