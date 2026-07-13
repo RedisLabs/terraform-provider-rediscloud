@@ -2,7 +2,6 @@ package provider_test
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 
@@ -16,31 +15,28 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 
 	name := testRandomWithPrefix()
 
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	// Chose a CIDR range for the subscription that's unlikely to overlap with any VPC CIDR
 	const subCidrRange = "10.0.0.0/24"
 
-	awsAccountId := os.Getenv("AWS_ACCOUNT_ID")
-	awsVPCId := os.Getenv("AWS_VPC_ID")
-	awsVPCCidr := os.Getenv("AWS_VPC_CIDR")
-	awsRegion := os.Getenv("AWS_PEERING_REGION")
+	awsPeering, awsPeeringCheck := envchecks.AwsPeeringValueAndCheck(t)
 	tf := fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionPeeringsDataSource,
-		testCloudAccountName,
+		cloudAccountName,
 		name,
 		subCidrRange,
-		awsRegion,
-		awsAccountId,
-		awsVPCId,
-		awsVPCCidr,
+		awsPeering.Region,
+		awsPeering.AccountId,
+		awsPeering.VpcId,
+		awsPeering.VpcCidr,
 	)
 	const dataSourceName = "data.rediscloud_subscription_peerings.example"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			envchecks.RedisCloudCheck(t)
-			envchecks.AwsPeeringCheck(t)
-			envchecks.AWSBYOCloudAccountCheck(t)
+			awsPeeringCheck()
+			cloudAccountCheck()
 		},
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
@@ -50,11 +46,11 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchTypeSetElemNestedAttrs(dataSourceName, "peerings.*", map[string]*regexp.Regexp{
 						"provider_name":  regexp.MustCompile("AWS"),
-						"aws_account_id": regexp.MustCompile(awsAccountId),
-						"vpc_id":         regexp.MustCompile(awsVPCId),
-						"vpc_cidr":       regexp.MustCompile(awsVPCCidr),
+						"aws_account_id": regexp.MustCompile(awsPeering.AccountId),
+						"vpc_id":         regexp.MustCompile(awsPeering.VpcId),
+						"vpc_cidr":       regexp.MustCompile(awsPeering.VpcCidr),
 						"aws_peering_id": regexp.MustCompile("^pcx-"),
-						"region":         regexp.MustCompile(awsRegion),
+						"region":         regexp.MustCompile(awsPeering.Region),
 					}),
 				),
 			},

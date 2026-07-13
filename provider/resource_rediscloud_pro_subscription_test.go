@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"testing"
@@ -33,17 +32,17 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceRedisCloudProSubscriptionRedis7(t, testCloudAccountName, name),
+				Config: testAccResourceRedisCloudProSubscriptionRedis7(t, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
@@ -92,7 +91,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 			},
 			{
 				// Checks if the changes in the creation plan are ignored.
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, testCloudAccountName, name, "ram"),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, cloudAccountName, name, "ram"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "0"),
@@ -106,7 +105,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 			},
 			{
 				// Checks if the changes to the payment_method are ignored.
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionChangedPaymentMethod, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionChangedPaymentMethod, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 				),
@@ -129,7 +128,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 			},
 			{
 				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
-				Config:       fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, testCloudAccountName, name, "ram-and-flash"),
+				Config:       fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, cloudAccountName, name, "ram-and-flash"),
 				ResourceName: resourceName,
 				ExpectError:  regexp.MustCompile(`Error: the "creation_plan" block is required`),
 			},
@@ -142,17 +141,17 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccResourceRedisCloudProSubscriptionRedis8(t, testCloudAccountName, name),
+				Config: testAccResourceRedisCloudProSubscriptionRedis8(t, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
@@ -198,7 +197,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 			},
 			{
 				// Checks if the changes in the creation plan are ignored.
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, testCloudAccountName, name, "ram"),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, cloudAccountName, name, "ram"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "0"),
@@ -212,7 +211,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 			},
 			{
 				// Checks if the changes to the payment_method are ignored.
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionChangedPaymentMethod, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionChangedPaymentMethod, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
 				),
@@ -235,7 +234,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 			},
 			{
 				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
-				Config:       fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, testCloudAccountName, name, "ram-and-flash"),
+				Config:       fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, cloudAccountName, name, "ram-and-flash"),
 				ResourceName: resourceName,
 				ExpectError:  regexp.MustCompile(`Error: the "creation_plan" block is required`),
 			},
@@ -247,15 +246,15 @@ func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *tes
 
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPreferredAZsModulesOptional, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPreferredAZsModulesOptional, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
@@ -274,15 +273,15 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 	name := testRandomWithPrefix()
 	updatedName := fmt.Sprintf("%v-updatedName", name)
 	const resourceName = "rediscloud_subscription.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionContractPayment, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionContractPayment, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -292,7 +291,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionContractPayment, testCloudAccountName, updatedName),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionContractPayment, cloudAccountName, updatedName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
@@ -311,15 +310,15 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 	name := testRandomWithPrefix()
 	updatedName := fmt.Sprintf("%v-updatedName", name)
 	const resourceName = "rediscloud_subscription.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -328,7 +327,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, testCloudAccountName, updatedName),
+				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, cloudAccountName, updatedName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
 				),
@@ -340,17 +339,17 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 
 	name := testRandomWithPrefix()
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	identifier := ""
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionWithRedisVersion, testCloudAccountName, name, ""),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionWithRedisVersion, cloudAccountName, name, ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Take a snapshot of the ID
 					func(s *terraform.State) error {
@@ -361,7 +360,7 @@ func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionWithRedisVersion, testCloudAccountName, name, "redis_version = \"latest\""),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionWithRedisVersion, cloudAccountName, name, "redis_version = \"latest\""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Take a snapshot of the ID
 					func(s *terraform.State) error {
@@ -388,7 +387,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 	name := testRandomWithPrefix() + "-mw"
 	resourceName := "rediscloud_subscription.example"
 	datasourceName := "data.rediscloud_subscription.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	const defaultMW = ""
 	const autoMw = `maintenance_windows {
@@ -430,12 +429,12 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 	}`
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, defaultMW),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, defaultMW),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
@@ -447,7 +446,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, autoMw),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, autoMw),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
@@ -457,7 +456,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, manualMw),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, manualMw),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "1"),
@@ -477,15 +476,15 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 				),
 			},
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, errorManualMw),
+				Config:      fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, errorManualMw),
 				ExpectError: regexp.MustCompile("Must provide at least one maintenance window with manual maintenance mode"),
 			},
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, errorAutoMw),
+				Config:      fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, errorAutoMw),
 				ExpectError: regexp.MustCompile("Automatic mode cannot be set with a manual maintenance window"),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, multipleManualMw),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, multipleManualMw),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "2"),
@@ -521,7 +520,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, testCloudAccountName, name, autoMw),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, autoMw),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
@@ -538,22 +537,22 @@ func TestAccResourceRedisCloudProSubscription_PublicEndpointAccess(t *testing.T)
 
 	name := testRandomWithPrefix()
 	resourceName := "rediscloud_subscription.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPublicEndpointDisabled, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPublicEndpointDisabled, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "false"),
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPublicEndpointEnabled, testCloudAccountName, name),
+				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPublicEndpointEnabled, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "public_endpoint_access", "true"),

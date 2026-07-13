@@ -2,7 +2,6 @@ package provider_test
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 
@@ -97,9 +96,9 @@ resource "rediscloud_subscription_database" "example" {
 }
 
 // Generic test helper for error cases
-func testErrorCase(t *testing.T, config string, expectedError *regexp.Regexp) {
+func testErrorCase(t *testing.T, config string, cloudAccountCheck func(), expectedError *regexp.Regexp) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -114,15 +113,15 @@ func testErrorCase(t *testing.T, config string, expectedError *regexp.Regexp) {
 func TestAccResourceRedisCloudProDatabase_qpf(t *testing.T) {
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: formatDatabaseConfig(name, testCloudAccountName, password, "4x", ""),
+				Config: formatDatabaseConfig(name, cloudAccountName, password, "4x", ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "name", "example"),
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "protocol", "redis"),
@@ -135,7 +134,7 @@ func TestAccResourceRedisCloudProDatabase_qpf(t *testing.T) {
 
 			// Test that query_performance_factor can be updated without forcing replacement
 			{
-				Config: formatDatabaseConfig(name, testCloudAccountName, password, "2x", ""),
+				Config: formatDatabaseConfig(name, cloudAccountName, password, "2x", ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "name", "example"),
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "query_performance_factor", "2x"),
@@ -148,20 +147,20 @@ func TestAccResourceRedisCloudProDatabase_qpf(t *testing.T) {
 func TestAccResourceRedisCloudProDatabase_qpf_missingModule(t *testing.T) {
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
-	config := formatDatabaseConfig(name, testCloudAccountName, password, "4x", `redis_version = "7.4"`)
+	config := formatDatabaseConfig(name, cloudAccountName, password, "4x", `redis_version = "7.4"`)
 
-	testErrorCase(t, config, regexp.MustCompile("DATABASE_QUERY_PERFORMANCE_FACTOR_SEARCH_IS_REQUIRED.*RediSearch.*required"))
+	testErrorCase(t, config, cloudAccountCheck, regexp.MustCompile("DATABASE_QUERY_PERFORMANCE_FACTOR_SEARCH_IS_REQUIRED.*RediSearch.*required"))
 }
 
 func TestAccResourceRedisCloudProDatabase_qpf_missingRediSearchModule(t *testing.T) {
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
-	config := formatDatabaseConfig(name, testCloudAccountName, password, "4x", `modules = [{ name = "RediBloom" }]
+	config := formatDatabaseConfig(name, cloudAccountName, password, "4x", `modules = [{ name = "RediBloom" }]
     redis_version = "7.4"`)
 
-	testErrorCase(t, config, regexp.MustCompile("DATABASE_QUERY_PERFORMANCE_FACTOR_SEARCH_IS_REQUIRED.*RediSearch.*required"))
+	testErrorCase(t, config, cloudAccountCheck, regexp.MustCompile("DATABASE_QUERY_PERFORMANCE_FACTOR_SEARCH_IS_REQUIRED.*RediSearch.*required"))
 }
