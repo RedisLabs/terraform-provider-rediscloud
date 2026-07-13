@@ -3,7 +3,6 @@ package provider_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"testing"
@@ -68,16 +67,17 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_gcp(t *testing.T) {
 
 	name := testRandomWithPrefix()
-
+	gcpVPCProject, gcpVPCProjectCheck := envchecks.ValueAndCheck(t, "GCP_VPC_PROJECT")
+	gcpVPCId, gcpVPCIdCheck := envchecks.ValueAndCheck(t, "GCP_VPC_ID")
 	tf := fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionPeeringGCP,
 		name,
-		os.Getenv("GCP_VPC_PROJECT"),
-		os.Getenv("GCP_VPC_ID"),
+		gcpVPCProject,
+		gcpVPCId,
 	)
 	const resourceName = "rediscloud_active_active_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); gcpVPCProjectCheck(); gcpVPCIdCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{

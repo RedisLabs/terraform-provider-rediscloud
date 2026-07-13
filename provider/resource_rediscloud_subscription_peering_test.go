@@ -3,7 +3,6 @@ package provider_test
 import (
 	"fmt"
 	"net"
-	"os"
 	"regexp"
 	"testing"
 
@@ -18,43 +17,40 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 	name := testRandomWithPrefix()
 
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	awsPeering, awsPeeringCheck := envchecks.AwsPeeringValueAndCheck(t)
 
-	cidrRange := os.Getenv("AWS_VPC_CIDR")
 	// Chose a CIDR range for the subscription that's unlikely to overlap with any VPC CIDR
 	subCidrRange := "10.0.0.0/24"
 
-	overlap, err := cidrRangesOverlap(subCidrRange, cidrRange)
+	overlap, err := cidrRangesOverlap(subCidrRange, awsPeering.VpcCidr)
 	if err != nil {
-		t.Fatalf("AWS_VPC_CIDR is not a valid CIDR range %s: %s", cidrRange, err)
+		t.Fatalf("AWS_VPC_CIDR is not a valid CIDR range %s: %s", awsPeering.VpcCidr, err)
 	}
 	if overlap {
 		subCidrRange = "172.16.0.0/24"
 	}
 
-	peeringRegion := os.Getenv("AWS_PEERING_REGION")
-	matchesRegex(t, peeringRegion, "^[a-z]+-[a-z]+-\\d+$")
+	matchesRegex(t, awsPeering.Region, "^[a-z]+-[a-z]+-\\d+$")
 
-	accountId := os.Getenv("AWS_ACCOUNT_ID")
-	matchesRegex(t, accountId, "^\\d+$")
+	matchesRegex(t, awsPeering.AccountId, "^\\d+$")
 
-	vpcId := os.Getenv("AWS_VPC_ID")
-	matchesRegex(t, vpcId, "^vpc-[a-z\\d]+$")
+	matchesRegex(t, awsPeering.VpcId, "^vpc-[a-z\\d]+$")
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudSubscriptionPeeringAWS,
 		cloudAccountName,
 		name,
 		subCidrRange,
-		peeringRegion,
-		accountId,
-		vpcId,
-		cidrRange,
+		awsPeering.Region,
+		awsPeering.AccountId,
+		awsPeering.VpcId,
+		awsPeering.VpcCidr,
 	)
 	const resourceName = "rediscloud_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			envchecks.RedisCloudCheck(t)
-			envchecks.AwsPeeringCheck(t)
+			awsPeeringCheck()
 			cloudAccountCheck()
 		},
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
@@ -68,9 +64,9 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "provider_name"),
 					resource.TestCheckResourceAttrSet(resourceName, "aws_account_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "vpc_id"),
-					resource.TestCheckResourceAttr(resourceName, "vpc_cidr", cidrRange),
+					resource.TestCheckResourceAttr(resourceName, "vpc_cidr", awsPeering.VpcCidr),
 					resource.TestCheckResourceAttr(resourceName, "vpc_cidrs.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "vpc_cidrs.0", cidrRange),
+					resource.TestCheckResourceAttr(resourceName, "vpc_cidrs.0", awsPeering.VpcCidr),
 					resource.TestCheckResourceAttrSet(resourceName, "region"),
 					resource.TestCheckResourceAttrSet(resourceName, "aws_peering_id"),
 				),
@@ -82,16 +78,18 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
 
 	name := testRandomWithPrefix()
+	gcpVpcProject, gcpVpcProjectCheck := envchecks.ValueAndCheck(t, "GCP_VPC_PROJECT")
+	gcpVpcId, gcpVpcIdCheck := envchecks.ValueAndCheck(t, "GCP_VPC_ID")
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudSubscriptionPeeringGCP,
 		name,
-		os.Getenv("GCP_VPC_PROJECT"),
-		os.Getenv("GCP_VPC_ID"),
+		gcpVpcProject,
+		gcpVpcId,
 	)
 	const resourceName = "rediscloud_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); gcpVpcProjectCheck(); gcpVpcIdCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
