@@ -45,8 +45,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			envchecks.RedisCloudCheck(t)
-			testAccGcpProjectPreCheck(t)
-			testAccGcpCredentialsPreCheck(t)
+			envchecks.GCPProviderCheck(t)
 		},
 		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -125,8 +124,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			envchecks.RedisCloudCheck(t)
-			envchecks.RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
-			testAccAwsApiCredsPreCheck(t)
+			envchecks.AWSBYOCloudAccountCheck(t)
+			envchecks.AWSProviderCheck(t)
 		},
 		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{

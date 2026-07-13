@@ -25,3 +25,35 @@ func RedisCloudCheck(t *testing.T) {
 	t.Helper()
 	RequireEnvVars(t, rediscloudApi.RedisCloudUrlEnvVar, rediscloudApi.AccessKeyEnvVar, rediscloudApi.SecretKeyEnvVar)
 }
+
+func AWSProviderCheck(t *testing.T) {
+	t.Helper()
+	RequireEnvVars(t, "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY")
+}
+
+func AWSProviderAndRegionCheck(t *testing.T) {
+	t.Helper()
+	AWSProviderCheck(t)
+	RequireEnvVars(t, "AWS_REGION")
+}
+
+func AWSBYOCloudAccountCheck(t *testing.T) {
+	t.Helper()
+	RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
+}
+
+func AwsPeeringCheck(t *testing.T) {
+	t.Helper()
+	RequireEnvVars(t, "AWS_PEERING_REGION", "AWS_ACCOUNT_ID", "AWS_VPC_ID", "AWS_VPC_CIDR")
+}
+
+func GCPProjectCheck(t *testing.T) {
+	t.Helper()
+	RequireEnvVars(t, "GCP_PROJECT_ID")
+}
+
+func GCPProviderCheck(t *testing.T) {
+	t.Helper()
+	GCPProjectCheck(t)
+	RequireEnvVars(t, "GOOGLE_CREDENTIALS")
+}

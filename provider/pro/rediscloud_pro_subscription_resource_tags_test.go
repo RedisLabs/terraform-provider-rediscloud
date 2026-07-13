@@ -15,14 +15,13 @@ import (
 
 func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 
-	envchecks.RequireEnvVars(t, "AWS_TEST_BYOC_CLOUD_ACCOUNT_NAME")
-	byocCloudAccountName := os.Getenv("AWS_TEST_BYOC_CLOUD_ACCOUNT_NAME")
+	byocCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	name := acctest.RandomWithPrefix("tf-test") + "-resource-tags"
 	const resourceName = "rediscloud_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
