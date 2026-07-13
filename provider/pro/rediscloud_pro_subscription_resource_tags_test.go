@@ -1,7 +1,6 @@
 package pro_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -15,13 +14,13 @@ import (
 
 func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 
-	byocCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	name := acctest.RandomWithPrefix("tf-test") + "-resource-tags"
 	const resourceName = "rediscloud_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -29,7 +28,7 @@ func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 				// Step 1: Create with resource tags
 				ConfigFile: config.StaticFile("testdata/pro_subscription_resource_tags.tf"),
 				ConfigVariables: config.Variables{
-					"cloud_account_name": config.StringVariable(byocCloudAccountName),
+					"cloud_account_name": config.StringVariable(cloudAccountName),
 					"subscription_name":  config.StringVariable(name),
 					"resource_tags": config.MapVariable(map[string]config.Variable{
 						"environment": config.StringVariable("staging"),
@@ -46,7 +45,7 @@ func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 				// Step 2: Update tags (change value, add key)
 				ConfigFile: config.StaticFile("testdata/pro_subscription_resource_tags.tf"),
 				ConfigVariables: config.Variables{
-					"cloud_account_name": config.StringVariable(byocCloudAccountName),
+					"cloud_account_name": config.StringVariable(cloudAccountName),
 					"subscription_name":  config.StringVariable(name),
 					"resource_tags": config.MapVariable(map[string]config.Variable{
 						"environment": config.StringVariable("production"),
@@ -70,7 +69,7 @@ func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 				// Step 4: Remove all tags
 				ConfigFile: config.StaticFile("testdata/pro_subscription_resource_tags.tf"),
 				ConfigVariables: config.Variables{
-					"cloud_account_name": config.StringVariable(byocCloudAccountName),
+					"cloud_account_name": config.StringVariable(cloudAccountName),
 					"subscription_name":  config.StringVariable(name),
 					"resource_tags":      config.MapVariable(map[string]config.Variable{}),
 				},
@@ -83,7 +82,7 @@ func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 				// Re-apply tags first so there's something to verify.
 				ConfigFile: config.StaticFile("testdata/pro_subscription_resource_tags.tf"),
 				ConfigVariables: config.Variables{
-					"cloud_account_name": config.StringVariable(byocCloudAccountName),
+					"cloud_account_name": config.StringVariable(cloudAccountName),
 					"subscription_name":  config.StringVariable(name),
 					"resource_tags": config.MapVariable(map[string]config.Variable{
 						"environment": config.StringVariable("staging"),
@@ -93,7 +92,7 @@ func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/pro_subscription_resource_tags.tf"),
 				ConfigVariables: config.Variables{
-					"cloud_account_name": config.StringVariable(byocCloudAccountName),
+					"cloud_account_name": config.StringVariable(cloudAccountName),
 					"subscription_name":  config.StringVariable(name),
 					"resource_tags": config.MapVariable(map[string]config.Variable{
 						"environment": config.StringVariable("staging"),

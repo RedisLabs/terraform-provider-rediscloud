@@ -2,7 +2,6 @@ package provider_test
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -18,12 +17,12 @@ func TestAccResourceRedisCloudPrivateServiceConnectEndpoint_CRUDI(t *testing.T) 
 
 	const resourceName = "rediscloud_private_service_connect_endpoint.psce"
 	const datasourceName = "data.rediscloud_private_service_connect_endpoints.psce"
-	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
+	gcpProjectId, gcpProjectCheck := envchecks.GCPProjectValueAndCheck(t)
 	gcpVPCName := fmt.Sprintf("%s-network", baseName)
 	gcpVPCSubnetName := fmt.Sprintf("%s-subnet", baseName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.GCPProjectCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); gcpProjectCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{

@@ -3,7 +3,6 @@ package provider_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"testing"
@@ -21,7 +20,7 @@ import (
 func TestAccResourceRedisCloudAclRole_CRUDI(t *testing.T) {
 
 	prefix := testRandomWithPrefix()
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 	exampleSubscriptionName := prefix + "-subscription"
 	exampleDatabasePassword := prefix + "aA.1"
 	exampleRuleName := prefix + "-rule"
@@ -30,7 +29,7 @@ func TestAccResourceRedisCloudAclRole_CRUDI(t *testing.T) {
 	testRoleNameUpdated := testRoleName + "-updated"
 
 	proSubBoilerPlate := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_boilerplate.tf")
-	proSubBoilerPlateFormatted := fmt.Sprintf(proSubBoilerPlate, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword)
+	proSubBoilerPlateFormatted := fmt.Sprintf(proSubBoilerPlate, cloudAccountName, exampleSubscriptionName, exampleDatabasePassword)
 
 	testCreateTerraform := proSubBoilerPlateFormatted + testAccResourceRedisCloudProDatabaseAcl +
 		fmt.Sprintf(referencableRule, exampleRuleName) +
@@ -44,7 +43,7 @@ func TestAccResourceRedisCloudAclRole_CRUDI(t *testing.T) {
 	const testAclRoleData = "data.rediscloud_acl_role.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		// Sometimes after deletion, the entity 'flickers'
 		CheckDestroy: nil,

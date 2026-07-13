@@ -7,7 +7,7 @@ import (
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 )
 
-// RequireEnvVars skips or fails the test if any of the named environment
+// RequireEnvVars fails the test if any of the named environment
 // variables are not set.
 func RequireEnvVars(t *testing.T, names ...string) {
 	t.Helper()
@@ -37,23 +37,39 @@ func AWSProviderAndRegionCheck(t *testing.T) {
 	RequireEnvVars(t, "AWS_REGION")
 }
 
-func AWSBYOCloudAccountCheck(t *testing.T) {
-	t.Helper()
-	RequireEnvVars(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
-}
-
-func AwsPeeringCheck(t *testing.T) {
-	t.Helper()
-	RequireEnvVars(t, "AWS_PEERING_REGION", "AWS_ACCOUNT_ID", "AWS_VPC_ID", "AWS_VPC_CIDR")
-}
-
-func GCPProjectCheck(t *testing.T) {
-	t.Helper()
-	RequireEnvVars(t, "GCP_PROJECT_ID")
-}
-
 func GCPProviderCheck(t *testing.T) {
 	t.Helper()
-	GCPProjectCheck(t)
-	RequireEnvVars(t, "GOOGLE_CREDENTIALS")
+	RequireEnvVars(t, "GOOGLE_CREDENTIALS", "GCP_PROJECT_ID")
+}
+
+func ValueAndCheck(t *testing.T, key string) (string, func()) {
+	t.Helper()
+	value := os.Getenv(key)
+	return value, func() { RequireEnvVars(t, key) }
+}
+
+func AWSBYOCValueAndCheck(t *testing.T) (string, func()) {
+	t.Helper()
+	return ValueAndCheck(t, "AWS_TEST_CLOUD_ACCOUNT_NAME")
+}
+
+func GCPProjectValueAndCheck(t *testing.T) (string, func()) {
+	t.Helper()
+	return ValueAndCheck(t, "GCP_PROJECT_ID")
+}
+
+type AWSPeering struct {
+	Region    string
+	AccountId string
+	VpcId     string
+	VpcCidr   string
+}
+
+func AwsPeeringValueAndCheck(t *testing.T) (AWSPeering, func()) {
+	t.Helper()
+	region, regionCheck := ValueAndCheck(t, "AWS_PEERING_REGION")
+	accountId, accountIdCheck := ValueAndCheck(t, "AWS_ACCOUNT_ID")
+	vpcId, vpcIdCheck := ValueAndCheck(t, "AWS_VPC_ID")
+	vpcCidr, vpcCidrCheck := ValueAndCheck(t, "AWS_VPC_CIDR")
+	return AWSPeering{Region: region, AccountId: accountId, VpcId: vpcId, VpcCidr: vpcCidr}, func() { regionCheck(); accountIdCheck(); vpcIdCheck(); vpcCidrCheck() }
 }

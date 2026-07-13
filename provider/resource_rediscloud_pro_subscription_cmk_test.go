@@ -1,7 +1,6 @@
 package provider_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -17,14 +16,12 @@ import (
 // TODO: integrate the GCP provider and set up these permissions automatically
 func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 
-	envchecks.RequireEnvVars(t, "GCP_CMK_RESOURCE_NAME")
-
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
-	gcpCmkResourceName := os.Getenv("GCP_CMK_RESOURCE_NAME")
+	gcpCmkResourceName, gcpCmkResourceNameCheck := envchecks.ValueAndCheck(t, "GCP_CMK_RESOURCE_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); gcpCmkResourceNameCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -84,7 +81,6 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: func() {
 			envchecks.RedisCloudCheck(t)
-			envchecks.AWSBYOCloudAccountCheck(t)
 			envchecks.AWSProviderCheck(t)
 		},
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
