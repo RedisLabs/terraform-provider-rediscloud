@@ -3,7 +3,6 @@ package provider_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"testing"
@@ -28,18 +27,18 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 	const resourceName = "rediscloud_subscription_database.example"
 	const subscriptionResourceName = "rediscloud_subscription.example"
 	const replicaResourceName = "rediscloud_subscription_database.example_replica"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database and replica database creation
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_with_replica.tf"), testCloudAccountName, name, password),
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_with_replica.tf"), cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -107,7 +106,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 			},
 			// Test database is updated successfully
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_update.tf"), testCloudAccountName, name),
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_update.tf"), cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example-updated"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -137,14 +136,14 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 			},
 			// Test that alerts are deleted
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_update_destroy_alerts.tf"), testCloudAccountName, name),
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_update_destroy_alerts.tf"), cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "alert.#", "0"),
 				),
 			},
 			// Test that a 32-character password is generated when no password is provided
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_no_password.tf"), testCloudAccountName, name),
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_no_password.tf"), cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					func(s *terraform.State) error {
 						is := s.RootModule().Resources["rediscloud_subscription_database.no_password_database"].Primary
@@ -170,18 +169,18 @@ func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription_database.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 	portNumber := 10101
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_optional_attributes.tf"),
 				ConfigVariables: config.Variables{
-					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_cloud_account":     config.StringVariable(cloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
 					"port_number":                  config.IntegerVariable(portNumber),
 				},
@@ -197,15 +196,15 @@ func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 func TestAccResourceRedisCloudProDatabase_timeUtcRequiresValidInterval(t *testing.T) {
 
 	name := testRandomWithPrefix()
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_invalid_time_utc.tf"), testCloudAccountName, name),
+				Config:      fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_invalid_time_utc.tf"), cloudAccountName, name),
 				ExpectError: regexp.MustCompile("unexpected value at remote_backup\\.0\\.time_utc - time_utc can only be set when interval is either every-24-hours or every-12-hours"),
 			},
 		},
@@ -218,15 +217,15 @@ func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 	name := testRandomWithPrefix()
 	dbName := "db-multi-modules"
 	const resourceName = "rediscloud_subscription_database.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_multi_modules.tf"), testCloudAccountName, name, dbName),
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_multi_modules.tf"), cloudAccountName, name, dbName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", dbName),
 					resource.TestCheckResourceAttr(resourceName, "modules.#", "2"),
@@ -248,18 +247,18 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 	// Test that attributes can be optional, either by setting them or not having them set when compared to CRUDI test
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription_database.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 	portNumber := 10101
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_resp_versions.tf"),
 				ConfigVariables: config.Variables{
-					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_cloud_account":     config.StringVariable(cloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
 					"port_number":                  config.IntegerVariable(portNumber),
 					"resp_version":                 config.StringVariable("resp2"),
@@ -271,7 +270,7 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_resp_versions.tf"),
 				ConfigVariables: config.Variables{
-					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_cloud_account":     config.StringVariable(cloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
 					"port_number":                  config.IntegerVariable(portNumber),
 					"resp_version":                 config.StringVariable("resp3"),
@@ -283,7 +282,7 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_resp_versions.tf"),
 				ConfigVariables: config.Variables{
-					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_cloud_account":     config.StringVariable(cloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
 					"port_number":                  config.IntegerVariable(portNumber),
 					"resp_version":                 config.StringVariable("best_resp_100"),
@@ -299,10 +298,10 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 	name := testRandomWithPrefix()
 	databaseName := testRandomWithPrefix() + "-database"
 	const resourceName = "rediscloud_subscription_database.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -310,7 +309,7 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_auto_minor_version_upgrade.tf"),
 				ConfigVariables: config.Variables{
-					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_cloud_account":     config.StringVariable(cloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
 					"rediscloud_database_name":     config.StringVariable(databaseName),
 					"auto_minor_version_upgrade":   config.BoolVariable(false),
@@ -327,7 +326,7 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_auto_minor_version_upgrade.tf"),
 				ConfigVariables: config.Variables{
-					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_cloud_account":     config.StringVariable(cloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
 					"rediscloud_database_name":     config.StringVariable(databaseName),
 					"auto_minor_version_upgrade":   config.BoolVariable(true),
@@ -346,7 +345,7 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_auto_minor_version_upgrade.tf"),
 				ConfigVariables: config.Variables{
-					"rediscloud_cloud_account":     config.StringVariable(testCloudAccountName),
+					"rediscloud_cloud_account":     config.StringVariable(cloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
 					"rediscloud_database_name":     config.StringVariable(databaseName),
 					"auto_minor_version_upgrade":   config.BoolVariable(true),

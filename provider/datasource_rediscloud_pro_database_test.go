@@ -2,7 +2,6 @@ package provider_test
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -20,14 +19,14 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 	const dataSourceByName = "data.rediscloud_database.example-by-name"
 	password := acctest.RandString(20)
 
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 	subscriptionName := testRandomWithPrefix()
 
 	content := utils.GetTestConfig(t, "./pro/testdata/pro_database_data_source.tf")
-	config := fmt.Sprintf(content, testCloudAccountName, subscriptionName, password)
+	config := fmt.Sprintf(content, cloudAccountName, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{

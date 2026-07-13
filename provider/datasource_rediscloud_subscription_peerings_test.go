@@ -16,7 +16,7 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 
 	name := testRandomWithPrefix()
 
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	// Chose a CIDR range for the subscription that's unlikely to overlap with any VPC CIDR
 	const subCidrRange = "10.0.0.0/24"
@@ -26,7 +26,7 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 	awsVPCCidr := os.Getenv("AWS_VPC_CIDR")
 	awsRegion := os.Getenv("AWS_PEERING_REGION")
 	tf := fmt.Sprintf(testAccDatasourceRedisCloudSubscriptionPeeringsDataSource,
-		testCloudAccountName,
+		cloudAccountName,
 		name,
 		subCidrRange,
 		awsRegion,
@@ -40,7 +40,7 @@ func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
 		PreCheck: func() {
 			envchecks.RedisCloudCheck(t)
 			envchecks.AwsPeeringCheck(t)
-			envchecks.AWSBYOCloudAccountCheck(t)
+			cloudAccountCheck()
 		},
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,

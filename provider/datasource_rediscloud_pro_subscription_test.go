@@ -2,7 +2,6 @@ package provider_test
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 
@@ -26,16 +25,16 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 
 	const resourceName = "rediscloud_subscription.example"
 	const dataSourceName = "data.rediscloud_subscription.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	proSubConfig := utils.GetTestConfig(t, proSubscriptionConfigPath)
-	proSubConfig = fmt.Sprintf(proSubConfig, testCloudAccountName, name)
+	proSubConfig = fmt.Sprintf(proSubConfig, cloudAccountName, name)
 
 	proSubDataConfig := utils.GetTestConfig(t, proSubscriptionDataSourceConfigPath)
 	proSubDataConfig = fmt.Sprintf(proSubDataConfig, name)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -88,7 +87,7 @@ func TestAccDataSourceRedisCloudProSubscription_ignoresAA(t *testing.T) {
 	config = fmt.Sprintf(config, name+"-subscription", name+"-database", password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{

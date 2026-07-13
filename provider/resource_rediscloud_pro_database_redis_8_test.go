@@ -3,7 +3,6 @@ package provider_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"testing"
@@ -26,17 +25,17 @@ func TestAccResourceRedisCloudProDatabase_Redis8(t *testing.T) {
 	password := acctest.RandString(20)
 	const resourceName = "rediscloud_subscription_database.example"
 	const subscriptionResourceName = "rediscloud_subscription.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: getRedis8DatabaseConfig(t, testCloudAccountName, name, password),
+				Config: getRedis8DatabaseConfig(t, cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -106,18 +105,18 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 	const subscriptionResourceName = "rediscloud_subscription.example"
 	const replicaResourceName = "rediscloud_subscription_database.example_replica"
 
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database and replica database creation
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_with_replica.tf"), testCloudAccountName, name, password),
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_with_replica.tf"), cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -184,7 +183,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 			},
 			// Test database is updated successfully
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_update.tf"), testCloudAccountName, name),
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_update.tf"), cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example-updated"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -211,14 +210,14 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 			},
 			// Test that alerts are deleted
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_update_destroy_alerts.tf"), testCloudAccountName, name, password),
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_update_destroy_alerts.tf"), cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "alert.#", "0"),
 				),
 			},
 			// Test that a 32-character password is generated when no password is provided
 			{
-				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_no_password.tf"), testCloudAccountName, name),
+				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_no_password.tf"), cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.no_password_database", "ram_percentage", "20"),
 					func(s *terraform.State) error {
@@ -248,18 +247,18 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 	password := acctest.RandString(20)
 	const resourceName = "rediscloud_subscription_database.example"
 	const subscriptionResourceName = "rediscloud_subscription.example"
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database and replica database creation with Redis 7.2
 			{
-				Config: getRedis7DatabaseConfig(t, testCloudAccountName, name, password),
+				Config: getRedis7DatabaseConfig(t, cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
 					resource.TestCheckResourceAttr(resourceName, "protocol", "redis"),
@@ -319,7 +318,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 			},
 			// Test database is updated successfully to Redis 8.0
 			{
-				Config: getRedis8DatabaseConfig(t, testCloudAccountName, name, password),
+				Config: getRedis8DatabaseConfig(t, cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.2"),
 				),
@@ -333,15 +332,15 @@ func TestAccResourceRedisCloudProDatabase_Redis8_ModulesBlocked(t *testing.T) {
 
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
-	testCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      getRedis8WithModulesConfig(t, testCloudAccountName, name, password),
+				Config:      getRedis8WithModulesConfig(t, cloudAccountName, name, password),
 				ExpectError: regexp.MustCompile(`"modules" cannot be explicitly set for Redis version 8\.0 as modules are bundled by default`),
 			},
 		},

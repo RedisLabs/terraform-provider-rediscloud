@@ -3,7 +3,6 @@ package provider_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"testing"
@@ -20,7 +19,7 @@ import (
 func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 
 	prefix := testRandomWithPrefix()
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 	exampleSubscriptionName := prefix + "-subscription"
 	exampleDatabasePassword := prefix + "aA.1"
 
@@ -32,20 +31,20 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 	testUserPassword := prefix + "aA.1"
 	testUserPasswordUpdated := testUserPassword + "-updated"
 
-	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabaseAcl, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testCreateTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabaseAcl, cloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRole, exampleRoleName) +
 		fmt.Sprintf(testUser, testUserName, testUserPassword)
 
 	// The User will be updated because the Role's name will have changed
-	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabaseAcl, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testUpdateTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabaseAcl, cloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRole, exampleRoleNameUpdated) +
 		fmt.Sprintf(testUser, testUserName, testUserPassword)
 
-	testNewNameTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabaseAcl, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testNewNameTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabaseAcl, cloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRole, exampleRoleNameUpdated) +
 		fmt.Sprintf(testUser, testUserNameUpdated, testUserPassword)
 
-	testNewPasswordTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabaseAcl, exampleCloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
+	testNewPasswordTerraform := fmt.Sprintf(testAccResourceRedisCloudProDatabaseAcl, cloudAccountName, exampleSubscriptionName, exampleDatabasePassword) +
 		fmt.Sprintf(referencableRole, exampleRoleNameUpdated) +
 		fmt.Sprintf(testUser, testUserNameUpdated, testUserPasswordUpdated)
 
@@ -55,7 +54,7 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 	const AclUserTestData = "data.rediscloud_acl_user.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckAclUserDestroy,
 		Steps: []resource.TestStep{

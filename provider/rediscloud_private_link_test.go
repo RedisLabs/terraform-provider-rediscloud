@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"testing"
@@ -25,8 +24,6 @@ const testPrivateLinkConfigWithoutPrivateLinkFile = "./privatelink/testdata/pro_
 
 func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 
-	envchecks.AWSBYOCloudAccountCheck(t)
-
 	const resourceName = "rediscloud_private_link.pro_private_link"
 	const subscriptionResourceName = "rediscloud_subscription.pro_subscription"
 	const datasourceName = "data.rediscloud_private_link.pro_private_link"
@@ -35,12 +32,13 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 	subName := testRandomWithPrefix() + "-pro-private-link"
 	shareName := testRandomWithPrefix() + "-privatelink"
 	password := acctest.RandString(20)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
-	terraformConfig := getRedisPrivateLinkConfigWithNames(t, subName, shareName, password)
-	terraformConfigWithoutPrivateLink := getRedisPrivateLinkConfigWithoutPrivateLink(t, subName, password)
+	terraformConfig := getRedisPrivateLinkConfigWithNames(t, subName, cloudAccountName, shareName, password)
+	terraformConfigWithoutPrivateLink := getRedisPrivateLinkConfigWithoutPrivateLink(t, subName, cloudAccountName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -86,25 +84,22 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 	})
 }
 
-func getRedisPrivateLinkConfig(t *testing.T, shareName string) string {
+func getRedisPrivateLinkConfig(t *testing.T, cloudAccountName, shareName string) string {
 	subName := testRandomWithPrefix() + "-pro-private-link"
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 
 	password := acctest.RandString(20)
 	content := utils.GetTestConfig(t, testPrivateLinkConfigFile)
-	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName, password)
+	return fmt.Sprintf(content, subName, cloudAccountName, shareName, password)
 }
 
-func getRedisPrivateLinkConfigWithNames(t *testing.T, subName, shareName, password string) string {
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+func getRedisPrivateLinkConfigWithNames(t *testing.T, subName, cloudAccountName, shareName, password string) string {
 	content := utils.GetTestConfig(t, testPrivateLinkConfigFile)
-	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName, password)
+	return fmt.Sprintf(content, subName, cloudAccountName, shareName, password)
 }
 
-func getRedisPrivateLinkConfigWithoutPrivateLink(t *testing.T, subName, password string) string {
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+func getRedisPrivateLinkConfigWithoutPrivateLink(t *testing.T, subName, cloudAccountName, password string) string {
 	content := utils.GetTestConfig(t, testPrivateLinkConfigWithoutPrivateLinkFile)
-	return fmt.Sprintf(content, subName, exampleCloudAccountName, password)
+	return fmt.Sprintf(content, subName, cloudAccountName, password)
 }
 
 func testAccCheckPrivateLinkDeleted(subscriptionResourceName string) resource.TestCheckFunc {
@@ -143,16 +138,16 @@ func testAccCheckPrivateLinkDeleted(subscriptionResourceName string) resource.Te
 // This test was added to catch a bug where the private link API returns a different port
 // than what's shown in the database's private_endpoint for Pro subscriptions.
 func TestAccResourceRedisCloudPrivateLink_PortConsistency(t *testing.T) {
-	envchecks.AWSBYOCloudAccountCheck(t)
 
 	const databaseResourceName = "rediscloud_subscription_database.pro_database"
 	const privateLinkResourceName = "rediscloud_private_link.pro_private_link"
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	shareName := testRandomWithPrefix() + "-port-test"
-	terraformConfig := getRedisPrivateLinkConfig(t, shareName)
+	terraformConfig := getRedisPrivateLinkConfig(t, cloudAccountName, shareName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{

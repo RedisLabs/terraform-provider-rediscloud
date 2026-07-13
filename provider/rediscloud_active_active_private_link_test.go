@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"testing"
 
@@ -32,12 +31,13 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 	subName := testRandomWithPrefix() + "-aa-private-link"
 	shareName := testRandomWithPrefix() + "-privatelink-aa"
 	password := acctest.RandString(20)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
-	terraformConfig := getRedisActiveActivePrivateLinkConfigWithNames(t, subName, shareName, password)
-	terraformConfigWithoutPrivateLink := getRedisActiveActivePrivateLinkConfigWithoutPrivateLink(t, subName, password)
+	terraformConfig := getRedisActiveActivePrivateLinkConfigWithNames(t, subName, cloudAccountName, shareName, password)
+	terraformConfigWithoutPrivateLink := getRedisActiveActivePrivateLinkConfigWithoutPrivateLink(t, subName, cloudAccountName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -85,16 +85,14 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 	})
 }
 
-func getRedisActiveActivePrivateLinkConfigWithNames(t *testing.T, subName, shareName, password string) string {
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+func getRedisActiveActivePrivateLinkConfigWithNames(t *testing.T, subName, cloudAccountName, shareName, password string) string {
 	content := utils.GetTestConfig(t, testActiveActivePrivateLinkConfigFile)
-	return fmt.Sprintf(content, subName, exampleCloudAccountName, shareName, password)
+	return fmt.Sprintf(content, subName, cloudAccountName, shareName, password)
 }
 
-func getRedisActiveActivePrivateLinkConfigWithoutPrivateLink(t *testing.T, subName, password string) string {
-	exampleCloudAccountName := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+func getRedisActiveActivePrivateLinkConfigWithoutPrivateLink(t *testing.T, subName, cloudAccountName, password string) string {
 	content := utils.GetTestConfig(t, testActiveActivePrivateLinkConfigWithoutPrivateLinkFile)
-	return fmt.Sprintf(content, subName, exampleCloudAccountName, password)
+	return fmt.Sprintf(content, subName, cloudAccountName, password)
 }
 
 func testAccCheckActiveActivePrivateLinkDeleted(subscriptionResourceName, regionsDataSourceName string) resource.TestCheckFunc {

@@ -1,7 +1,6 @@
 package cloudaccount_test
 
 import (
-	"os"
 	"regexp"
 	"testing"
 
@@ -15,24 +14,24 @@ import (
 
 func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
 
-	name := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
 
 	const testCloudAccount = "data.rediscloud_cloud_account.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSBYOCloudAccountCheck(t) },
+		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil, // test doesn't create a resource at the moment, so don't need to check anything
 		Steps: []resource.TestStep{
 			{
 				ConfigFile: config.StaticFile("./testdata/datasource_basic.tf"),
 				ConfigVariables: config.Variables{
-					"name": config.StringVariable(name),
+					"name": config.StringVariable(cloudAccountName),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(testCloudAccount, "id", regexp.MustCompile("^\\d*$")),
 					resource.TestCheckResourceAttr(testCloudAccount, "provider_type", "AWS"),
-					resource.TestCheckResourceAttr(testCloudAccount, "name", name),
+					resource.TestCheckResourceAttr(testCloudAccount, "name", cloudAccountName),
 					resource.TestCheckResourceAttrSet(testCloudAccount, "access_key_id"),
 				),
 			},
