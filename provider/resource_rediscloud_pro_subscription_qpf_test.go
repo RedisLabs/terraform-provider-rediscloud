@@ -61,11 +61,11 @@ resource "rediscloud_subscription" "example" {
 
 func TestAccResourceRedisCloudProSubscription_qpf(t *testing.T) {
 	name := testRandomWithPrefix()
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 	const resourceName = "rediscloud_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{

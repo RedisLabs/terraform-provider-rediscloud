@@ -33,7 +33,7 @@ func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 	const AclRuleTestData = "data.rediscloud_acl_rule.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckAclRuleDestroy,
 		Steps: []resource.TestStep{

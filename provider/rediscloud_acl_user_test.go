@@ -19,7 +19,7 @@ import (
 func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 
 	prefix := testRandomWithPrefix()
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 	exampleSubscriptionName := prefix + "-subscription"
 	exampleDatabasePassword := prefix + "aA.1"
 
@@ -54,7 +54,7 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 	const AclUserTestData = "data.rediscloud_acl_user.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckAclUserDestroy,
 		Steps: []resource.TestStep{

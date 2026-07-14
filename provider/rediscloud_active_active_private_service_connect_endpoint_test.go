@@ -17,12 +17,12 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpoint_CRUDI(t 
 
 	const resourceName = "rediscloud_active_active_private_service_connect_endpoint.psce"
 	const datasourceName = "data.rediscloud_active_active_private_service_connect_endpoints.psce"
-	gcpProjectId, gcpProjectCheck := envchecks.GCPProjectValueAndCheck(t)
+	gcpProjectId, gcpProjectCheck := envchecks.GCPProjectValueAndCheck()
 	gcpVPCName := fmt.Sprintf("%s-network", baseName)
 	gcpVPCSubnetName := fmt.Sprintf("%s-subnet", baseName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); gcpProjectCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, gcpProjectCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{

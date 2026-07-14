@@ -32,12 +32,12 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -141,12 +141,12 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -246,10 +246,10 @@ func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *tes
 
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -273,10 +273,10 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 	name := testRandomWithPrefix()
 	updatedName := fmt.Sprintf("%v-updatedName", name)
 	const resourceName = "rediscloud_subscription.example"
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -310,10 +310,10 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 	name := testRandomWithPrefix()
 	updatedName := fmt.Sprintf("%v-updatedName", name)
 	const resourceName = "rediscloud_subscription.example"
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -339,12 +339,12 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 
 	name := testRandomWithPrefix()
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	identifier := ""
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -387,7 +387,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 	name := testRandomWithPrefix() + "-mw"
 	resourceName := "rediscloud_subscription.example"
 	datasourceName := "data.rediscloud_subscription.example"
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	const defaultMW = ""
 	const autoMw = `maintenance_windows {
@@ -429,7 +429,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 	}`
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -537,10 +537,10 @@ func TestAccResourceRedisCloudProSubscription_PublicEndpointAccess(t *testing.T)
 
 	name := testRandomWithPrefix()
 	resourceName := "rediscloud_subscription.example"
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{

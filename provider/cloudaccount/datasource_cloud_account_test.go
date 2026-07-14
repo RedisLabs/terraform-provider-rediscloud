@@ -14,12 +14,12 @@ import (
 
 func TestAccDataSourceRedisCloudCloudAccount_basic(t *testing.T) {
 
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	const testCloudAccount = "data.rediscloud_cloud_account.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil, // test doesn't create a resource at the moment, so don't need to check anything
 		Steps: []resource.TestStep{

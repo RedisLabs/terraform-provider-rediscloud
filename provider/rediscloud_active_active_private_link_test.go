@@ -31,13 +31,13 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 	subName := testRandomWithPrefix() + "-aa-private-link"
 	shareName := testRandomWithPrefix() + "-privatelink-aa"
 	password := acctest.RandString(20)
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	terraformConfig := getRedisActiveActivePrivateLinkConfigWithNames(t, subName, cloudAccountName, shareName, password)
 	terraformConfigWithoutPrivateLink := getRedisActiveActivePrivateLinkConfigWithoutPrivateLink(t, subName, cloudAccountName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{

@@ -3,7 +3,6 @@ package provider_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"testing"
 
@@ -20,7 +19,7 @@ import (
 
 func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI(t *testing.T) {
 
-	testAwsRegion := os.Getenv("AWS_REGION")
+	awsRegion, awsRegionCheck := envchecks.ValueAndCheck("AWS_REGION")
 	subscriptionName := testRandomWithPrefix() + "-aa-tgw"
 	databaseName := testRandomWithPrefix() + "-aa-tgw-db"
 	databasePassword := acctest.RandString(20)
@@ -31,7 +30,11 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 	const routeResourceName = "rediscloud_active_active_transit_gateway_route.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSProviderAndRegionCheck(t) },
+		PreCheck: envchecks.ComposePreChecks(t,
+			envchecks.RedisCloudCheck,
+			envchecks.AWSProviderCheck,
+			awsRegionCheck,
+		),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"aws": {
@@ -48,7 +51,7 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 			{
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./transitgateway/testdata/aa_transit_gateway_invitation_acceptor.tf"),
-					subscriptionName, databaseName, databasePassword, testAwsRegion),
+					subscriptionName, databaseName, databasePassword, awsRegion),
 			},
 			{
 				RefreshState: true,
@@ -81,7 +84,7 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 			{
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./transitgateway/testdata/aa_transit_gateway_route_update.tf"),
-					subscriptionName, databaseName, databasePassword, testAwsRegion),
+					subscriptionName, databaseName, databasePassword, awsRegion),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(routeResourceName, "cidrs.#", "2"),
 					resource.TestCheckResourceAttr(routeResourceName, "cidrs.0", "10.10.20.0/24"),

@@ -16,7 +16,7 @@ const regionsDataSource = "data.rediscloud_regions.example"
 func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
@@ -51,7 +51,7 @@ func TestAccDataSourceRedisCloudRegions_all(t *testing.T) {
 func TestAccDataSourceRedisCloudRegions_AWS(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
@@ -80,7 +80,7 @@ func TestAccDataSourceRedisCloudRegions_AWS(t *testing.T) {
 func TestAccDataSourceRedisCloudRegions_GCP(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             nil,
 		Steps: []resource.TestStep{
