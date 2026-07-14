@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -58,7 +59,7 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 }
 
 func testAccCheckCloudAccountDestroy(s *terraform.State) error {
-	client, err := getTestClient()
+	apiClient, err := client.GetTestClient()
 	if err != nil {
 		return err
 	}
@@ -73,7 +74,7 @@ func testAccCheckCloudAccountDestroy(s *terraform.State) error {
 			return err
 		}
 
-		accounts, err := client.Client.CloudAccount.List(context.TODO())
+		accounts, err := apiClient.Client.CloudAccount.List(context.TODO())
 		if err != nil {
 			return err
 		}

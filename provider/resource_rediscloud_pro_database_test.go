@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -82,8 +83,8 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the subscription ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						client := sharedTestClient(t)
-						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
+						apiClient := client.MustTestClient(t)
+						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -92,7 +93,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
 						}
 
-						listDb := client.Client.Database.List(context.TODO(), subId)
+						listDb := apiClient.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
 							return fmt.Errorf("no database found: %w", listDb.Err())
 						}

@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -61,7 +62,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 							return err
 						}
 
-						apiClient := sharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err

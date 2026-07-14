@@ -29,7 +29,7 @@ func testAccPreCheckEssentialsSubscription(t *testing.T) bool {
 		return false
 	}
 
-	apiClient, err := client.NewClient()
+	apiClient, err := client.GetTestClient()
 	if err != nil {
 		t.Errorf("Failed to create API client: %v", err)
 		return false
@@ -437,7 +437,7 @@ data "rediscloud_essentials_subscription" "example" {
 `
 
 func testAccCheckEssentialsSubscriptionDestroy(s *terraform.State) error {
-	apiClient, err := getTestClient()
+	apiClient, err := client.GetTestClient()
 	if err != nil {
 		return err
 	}

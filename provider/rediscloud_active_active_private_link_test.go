@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
@@ -119,7 +120,7 @@ func testAccCheckActiveActivePrivateLinkDeleted(subscriptionResourceName, region
 			return fmt.Errorf("could not parse region_id: %w", err)
 		}
 
-		apiClient, err := getTestClient()
+		apiClient, err := client.GetTestClient()
 		if err != nil {
 			return err
 		}

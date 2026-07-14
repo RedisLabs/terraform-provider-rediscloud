@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -120,7 +121,7 @@ func testAccCheckTransitGatewayInvitationOnApi(resourceName string, expectedStat
 			return err
 		}
 
-		apiClient, err := getTestClient()
+		apiClient, err := client.GetTestClient()
 		if err != nil {
 			return err
 		}
@@ -158,7 +159,7 @@ func testAccCheckTransitGatewayAttachmentOnApi(resourceName string, expectedStat
 			return err
 		}
 
-		apiClient, err := getTestClient()
+		apiClient, err := client.GetTestClient()
 		if err != nil {
 			return err
 		}
@@ -206,7 +207,7 @@ func testAccCheckTransitGatewayRouteCidrsOnApi(resourceName string, expectedCidr
 			return err
 		}
 
-		apiClient, err := getTestClient()
+		apiClient, err := client.GetTestClient()
 		if err != nil {
 			return err
 		}
