@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -82,8 +83,8 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the role ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						apiClient := sharedTestClient(t)
-						user, err := apiClient.Client.Users.Get(context.TODO(), id)
+						testApiClient := client.SharedTestClient(t)
+						user, err := testApiClient.Client.Users.Get(context.TODO(), id)
 						if err != nil {
 							return err
 						}
@@ -194,7 +195,7 @@ data "rediscloud_acl_user" "test" {
 `
 
 func testAccCheckAclUserDestroy(s *terraform.State) error {
-	apiClient, err := getTestClient()
+	testApiClient, err := client.GetTestClient()
 	if err != nil {
 		return err
 	}
@@ -209,7 +210,7 @@ func testAccCheckAclUserDestroy(s *terraform.State) error {
 			return err
 		}
 
-		roles, err := apiClient.Client.Users.List(context.TODO())
+		roles, err := testApiClient.Client.Users.List(context.TODO())
 		if err != nil {
 			return err
 		}

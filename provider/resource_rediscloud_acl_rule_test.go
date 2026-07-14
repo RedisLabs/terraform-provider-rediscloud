@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -55,8 +56,8 @@ func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the rule ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						client := sharedTestClient(t)
-						rule, err := client.Client.RedisRules.Get(context.TODO(), id)
+						testApiClient := client.SharedTestClient(t)
+						rule, err := testApiClient.Client.RedisRules.Get(context.TODO(), id)
 						if err != nil {
 							return err
 						}
@@ -141,7 +142,7 @@ data "rediscloud_acl_rule" "test" {
 `
 
 func testAccCheckAclRuleDestroy(s *terraform.State) error {
-	client, err := getTestClient()
+	testApiClient, err := client.GetTestClient()
 	if err != nil {
 		return err
 	}
@@ -156,7 +157,7 @@ func testAccCheckAclRuleDestroy(s *terraform.State) error {
 			return err
 		}
 
-		rules, err := client.Client.RedisRules.List(context.TODO())
+		rules, err := testApiClient.Client.RedisRules.List(context.TODO())
 		if err != nil {
 			return err
 		}

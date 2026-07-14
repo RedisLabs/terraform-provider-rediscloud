@@ -29,13 +29,13 @@ func testAccPreCheckEssentialsSubscription(t *testing.T) bool {
 		return false
 	}
 
-	apiClient, err := client.NewClient()
+	testApiClient, err := client.GetTestClient()
 	if err != nil {
 		t.Errorf("Failed to create API client: %v", err)
 		return false
 	}
 
-	subs, err := apiClient.Client.FixedSubscriptions.List(context.TODO())
+	subs, err := testApiClient.Client.FixedSubscriptions.List(context.TODO())
 	if err != nil {
 		t.Errorf("Failed to list essentials subscriptions: %v", err)
 		return false
@@ -437,7 +437,7 @@ data "rediscloud_essentials_subscription" "example" {
 `
 
 func testAccCheckEssentialsSubscriptionDestroy(s *terraform.State) error {
-	apiClient, err := getTestClient()
+	testApiClient, err := client.GetTestClient()
 	if err != nil {
 		return err
 	}
@@ -452,7 +452,7 @@ func testAccCheckEssentialsSubscriptionDestroy(s *terraform.State) error {
 			return err
 		}
 
-		subs, err := apiClient.Client.FixedSubscriptions.List(context.TODO())
+		subs, err := testApiClient.Client.FixedSubscriptions.List(context.TODO())
 		if err != nil {
 			return err
 		}

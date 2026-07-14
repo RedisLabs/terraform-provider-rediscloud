@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
@@ -119,12 +120,12 @@ func testAccCheckActiveActivePrivateLinkDeleted(subscriptionResourceName, region
 			return fmt.Errorf("could not parse region_id: %w", err)
 		}
 
-		apiClient, err := getTestClient()
+		testApiClient, err := client.GetTestClient()
 		if err != nil {
 			return err
 		}
 
-		_, err = apiClient.Client.PrivateLink.GetActiveActivePrivateLink(context.TODO(), subId, regionId)
+		_, err = testApiClient.Client.PrivateLink.GetActiveActivePrivateLink(context.TODO(), subId, regionId)
 		if err == nil {
 			return fmt.Errorf("active-active privatelink for subscription %d region %d still exists after deletion", subId, regionId)
 		}

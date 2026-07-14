@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -115,8 +116,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 							return err
 						}
 
-						client := sharedTestClient(t)
-						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
+						testApiClient := client.SharedTestClient(t)
+						sub, err := testApiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -364,8 +365,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 							return err
 						}
 
-						client := sharedTestClient(t)
-						sub, err := client.Client.Subscription.Get(context.TODO(), subId)
+						testApiClient := client.SharedTestClient(t)
+						sub, err := testApiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -627,7 +628,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_PublicEndpointAccess(t *t
 }
 
 func testAccCheckActiveActiveSubscriptionDestroy(s *terraform.State) error {
-	client, err := getTestClient()
+	testApiClient, err := client.GetTestClient()
 	if err != nil {
 		return err
 	}
@@ -642,7 +643,7 @@ func testAccCheckActiveActiveSubscriptionDestroy(s *terraform.State) error {
 			return err
 		}
 
-		subs, err := client.Client.Subscription.List(context.TODO())
+		subs, err := testApiClient.Client.Subscription.List(context.TODO())
 		if err != nil {
 			return err
 		}

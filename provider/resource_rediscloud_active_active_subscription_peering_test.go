@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -125,12 +126,12 @@ func testAccCheckActiveActivePeeringAwsAttributesMatchApi(resourceName string) r
 			return fmt.Errorf("failed to parse peering ID from %s: %w", peeringIdStr, err)
 		}
 
-		apiClient, err := getTestClient()
+		testApiClient, err := client.GetTestClient()
 		if err != nil {
 			return fmt.Errorf("failed to get API client: %w", err)
 		}
 
-		peerings, err := apiClient.Client.Subscription.ListActiveActiveVPCPeering(context.TODO(), subId)
+		peerings, err := testApiClient.Client.Subscription.ListActiveActiveVPCPeering(context.TODO(), subId)
 		if err != nil {
 			return fmt.Errorf("failed to list peerings: %w", err)
 		}

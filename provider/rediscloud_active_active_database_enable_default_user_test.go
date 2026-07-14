@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -213,8 +214,8 @@ func checkEnableDefaultUserFromAPI(t *testing.T, subscriptionResourceName, datab
 			return fmt.Errorf("couldn't parse database ID: %s", dbResource.Primary.Attributes["db_id"])
 		}
 
-		apiClient := sharedTestClient(t)
-		db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
+		testApiClient := client.SharedTestClient(t)
+		db, err := testApiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
 		if err != nil {
 			return fmt.Errorf("failed to get database from API: %w", err)
 		}

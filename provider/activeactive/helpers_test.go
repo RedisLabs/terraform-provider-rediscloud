@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"sync"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -13,19 +12,6 @@ import (
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
-
-var (
-	sharedClient     *client.ApiClient
-	sharedClientOnce sync.Once
-	sharedClientErr  error
-)
-
-func getTestClient() (*client.ApiClient, error) {
-	sharedClientOnce.Do(func() {
-		sharedClient, sharedClientErr = client.NewClient()
-	})
-	return sharedClient, sharedClientErr
-}
 
 func testRandomWithPrefix(n ...int) string {
 	length := 6
@@ -43,7 +29,7 @@ func testRandomWithPrefix(n ...int) string {
 // resources have been destroyed. Uses terraform-plugin-testing's terraform.State
 // (required for ConfigFile/ConfigVariables gold standard test pattern).
 func checkAASubscriptionDestroy(s *terraform.State) error {
-	apiClient, err := getTestClient()
+	testApiClient, err := client.GetTestClient()
 	if err != nil {
 		return err
 	}
@@ -58,7 +44,7 @@ func checkAASubscriptionDestroy(s *terraform.State) error {
 			return err
 		}
 
-		subs, err := apiClient.Client.Subscription.List(context.TODO())
+		subs, err := testApiClient.Client.Subscription.List(context.TODO())
 		if err != nil {
 			return err
 		}

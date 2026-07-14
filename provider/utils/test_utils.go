@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sync"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -12,39 +11,14 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
-var (
-	sharedTestClient     *client.ApiClient
-	sharedTestClientOnce sync.Once
-	sharedTestClientErr  error
-)
-
-// GetTestClient returns a shared API client for acceptance tests.
-// The client is created once and reused across all calls within a test binary.
-func GetTestClient() (*client.ApiClient, error) {
-	sharedTestClientOnce.Do(func() {
-		sharedTestClient, sharedTestClientErr = client.NewClient()
-	})
-	return sharedTestClient, sharedTestClientErr
-}
-
-func SharedTestClient(t *testing.T) *client.ApiClient {
-	sharedTestClientOnce.Do(func() {
-		sharedTestClient, sharedTestClientErr = client.NewClient()
-	})
-	if sharedTestClientErr != nil {
-		t.Fatalf("Failed to create test API client: %s", sharedTestClientErr)
-	}
-	return sharedTestClient
-}
-
 // CheckNoDatabasesForSubscription verifies that no databases exist in a subscription.
 // Combines GetTestClient with CheckNoDatabasesInSubscription for convenience in test check functions.
 func CheckNoDatabasesForSubscription(ctx context.Context, subId int) error {
-	api, err := GetTestClient()
+	testApiClient, err := client.GetTestClient()
 	if err != nil {
 		return err
 	}
-	return CheckNoDatabasesInSubscription(ctx, subId, api)
+	return CheckNoDatabasesInSubscription(ctx, subId, testApiClient)
 }
 
 func GetTestConfig(t *testing.T, testFile string) string {

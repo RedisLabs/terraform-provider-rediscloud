@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -114,12 +115,12 @@ func testAccCheckPrivateLinkDeleted(subscriptionResourceName string) resource.Te
 			return err
 		}
 
-		apiClient, err := getTestClient()
+		testApiClient, err := client.GetTestClient()
 		if err != nil {
 			return err
 		}
 
-		_, err = apiClient.Client.PrivateLink.GetPrivateLink(context.TODO(), subId)
+		_, err = testApiClient.Client.PrivateLink.GetPrivateLink(context.TODO(), subId)
 		if err == nil {
 			return fmt.Errorf("privatelink for subscription %d still exists after deletion", subId)
 		}

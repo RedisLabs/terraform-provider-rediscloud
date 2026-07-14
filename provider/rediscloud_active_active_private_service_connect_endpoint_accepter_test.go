@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 
@@ -46,8 +47,8 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter_
 							return fmt.Errorf("couldn't parse the accepter ID: %s", r.Primary.ID)
 						}
 
-						client := sharedTestClient(t)
-						endpoints, err := client.Client.PrivateServiceConnect.GetActiveActiveEndpoints(context.TODO(),
+						testApiClient := client.SharedTestClient(t)
+						endpoints, err := testApiClient.Client.PrivateServiceConnect.GetActiveActiveEndpoints(context.TODO(),
 							accepterId.SubscriptionId, accepterId.RegionId, accepterId.PscServiceId)
 						if err != nil {
 							return err
