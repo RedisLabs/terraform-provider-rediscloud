@@ -214,8 +214,8 @@ func checkEnableDefaultUserFromAPI(t *testing.T, subscriptionResourceName, datab
 			return fmt.Errorf("couldn't parse database ID: %s", dbResource.Primary.Attributes["db_id"])
 		}
 
-		testApiClient := client.SharedTestClient(t)
-		db, err := testApiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
+		apiClient := client.SharedTestClient(t)
+		db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
 		if err != nil {
 			return fmt.Errorf("failed to get database from API: %w", err)
 		}

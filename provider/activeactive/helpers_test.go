@@ -29,7 +29,7 @@ func testRandomWithPrefix(n ...int) string {
 // resources have been destroyed. Uses terraform-plugin-testing's terraform.State
 // (required for ConfigFile/ConfigVariables gold standard test pattern).
 func checkAASubscriptionDestroy(s *terraform.State) error {
-	testApiClient, err := client.GetTestClient()
+	apiClient, err := client.GetTestClient()
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func checkAASubscriptionDestroy(s *terraform.State) error {
 			return err
 		}
 
-		subs, err := testApiClient.Client.Subscription.List(context.TODO())
+		subs, err := apiClient.Client.Subscription.List(context.TODO())
 		if err != nil {
 			return err
 		}

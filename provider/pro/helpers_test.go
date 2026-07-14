@@ -14,7 +14,7 @@ import (
 // checkProSubscriptionDestroy verifies that all rediscloud_subscription resources
 // have been destroyed after a test completes.
 func checkProSubscriptionDestroy(s *terraform.State) error {
-	testApiClient, err := client.GetTestClient()
+	apiClient, err := client.GetTestClient()
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func checkProSubscriptionDestroy(s *terraform.State) error {
 			return err
 		}
 
-		subs, err := testApiClient.Client.Subscription.List(context.TODO())
+		subs, err := apiClient.Client.Subscription.List(context.TODO())
 		if err != nil {
 			return err
 		}

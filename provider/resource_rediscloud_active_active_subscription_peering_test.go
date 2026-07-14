@@ -126,12 +126,12 @@ func testAccCheckActiveActivePeeringAwsAttributesMatchApi(resourceName string) r
 			return fmt.Errorf("failed to parse peering ID from %s: %w", peeringIdStr, err)
 		}
 
-		testApiClient, err := client.GetTestClient()
+		apiClient, err := client.GetTestClient()
 		if err != nil {
 			return fmt.Errorf("failed to get API client: %w", err)
 		}
 
-		peerings, err := testApiClient.Client.Subscription.ListActiveActiveVPCPeering(context.TODO(), subId)
+		peerings, err := apiClient.Client.Subscription.ListActiveActiveVPCPeering(context.TODO(), subId)
 		if err != nil {
 			return fmt.Errorf("failed to list peerings: %w", err)
 		}

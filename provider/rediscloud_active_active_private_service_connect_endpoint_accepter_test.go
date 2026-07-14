@@ -47,8 +47,8 @@ func TestAccResourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter_
 							return fmt.Errorf("couldn't parse the accepter ID: %s", r.Primary.ID)
 						}
 
-						testApiClient := client.SharedTestClient(t)
-						endpoints, err := testApiClient.Client.PrivateServiceConnect.GetActiveActiveEndpoints(context.TODO(),
+						apiClient := client.SharedTestClient(t)
+						endpoints, err := apiClient.Client.PrivateServiceConnect.GetActiveActiveEndpoints(context.TODO(),
 							accepterId.SubscriptionId, accepterId.RegionId, accepterId.PscServiceId)
 						if err != nil {
 							return err

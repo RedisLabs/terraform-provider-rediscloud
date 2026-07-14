@@ -77,8 +77,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 							return err
 						}
 
-						testApiClient := client.SharedTestClient(t)
-						sub, err := testApiClient.Client.Subscription.Get(context.TODO(), subId)
+						apiClient := client.SharedTestClient(t)
+						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -183,8 +183,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 							return err
 						}
 
-						testApiClient := client.SharedTestClient(t)
-						sub, err := testApiClient.Client.Subscription.Get(context.TODO(), subId)
+						apiClient := client.SharedTestClient(t)
+						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -803,7 +803,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.
 }
 
 func testAccCheckProSubscriptionDestroy(s *terraform.State) error {
-	testApiClient, err := client.GetTestClient()
+	apiClient, err := client.GetTestClient()
 	if err != nil {
 		return err
 	}
@@ -818,7 +818,7 @@ func testAccCheckProSubscriptionDestroy(s *terraform.State) error {
 			return err
 		}
 
-		subs, err := testApiClient.Client.Subscription.List(context.TODO())
+		subs, err := apiClient.Client.Subscription.List(context.TODO())
 		if err != nil {
 			return err
 		}

@@ -56,8 +56,8 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return err
 						}
 
-						testApiClient := client.SharedTestClient(t)
-						sub, err := testApiClient.Client.Subscription.Get(context.TODO(), subId)
+						apiClient := client.SharedTestClient(t)
+						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -66,7 +66,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
 						}
 
-						listDb := testApiClient.Client.Database.List(context.TODO(), subId)
+						listDb := apiClient.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
 							return fmt.Errorf("no database found: %w", listDb.Err())
 						}
@@ -158,8 +158,8 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return err
 						}
 
-						testApiClient := client.SharedTestClient(t)
-						sub, err := testApiClient.Client.Subscription.Get(context.TODO(), subId)
+						apiClient := client.SharedTestClient(t)
+						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -168,7 +168,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
 						}
 
-						listDb := testApiClient.Client.Database.List(context.TODO(), subId)
+						listDb := apiClient.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
 							return fmt.Errorf("no database found: %w", listDb.Err())
 						}
@@ -314,8 +314,8 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return err
 						}
 
-						testApiClient := client.SharedTestClient(t)
-						sub, err := testApiClient.Client.Subscription.Get(context.TODO(), subId)
+						apiClient := client.SharedTestClient(t)
+						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -324,7 +324,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
 						}
 
-						listDb := testApiClient.Client.Database.List(context.TODO(), subId)
+						listDb := apiClient.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
 							return fmt.Errorf("no database found: %w", listDb.Err())
 						}

@@ -133,11 +133,11 @@ func testAccCheckActiveActiveTransitGatewayInvitationOnApi(resourceName string, 
 			return err
 		}
 
-		testApiClient, err := client.GetTestClient()
+		apiClient, err := client.GetTestClient()
 		if err != nil {
 			return err
 		}
-		invitations, err := testApiClient.Client.TransitGatewayAttachments.ListInvitationsActiveActive(context.TODO(), subId, regionId)
+		invitations, err := apiClient.Client.TransitGatewayAttachments.ListInvitationsActiveActive(context.TODO(), subId, regionId)
 		if err != nil {
 			return err
 		}
@@ -175,11 +175,11 @@ func testAccCheckActiveActiveTransitGatewayAttachmentOnApi(resourceName string, 
 			return err
 		}
 
-		testApiClient, err := client.GetTestClient()
+		apiClient, err := client.GetTestClient()
 		if err != nil {
 			return err
 		}
-		tgwTask, err := testApiClient.Client.TransitGatewayAttachments.GetActiveActive(context.TODO(), subId, regionId)
+		tgwTask, err := apiClient.Client.TransitGatewayAttachments.GetActiveActive(context.TODO(), subId, regionId)
 		if err != nil {
 			return err
 		}
@@ -227,11 +227,11 @@ func testAccCheckActiveActiveTransitGatewayRouteCidrsOnApi(resourceName string, 
 			return err
 		}
 
-		testApiClient, err := client.GetTestClient()
+		apiClient, err := client.GetTestClient()
 		if err != nil {
 			return err
 		}
-		tgwTask, err := testApiClient.Client.TransitGatewayAttachments.GetActiveActive(context.TODO(), subId, regionId)
+		tgwTask, err := apiClient.Client.TransitGatewayAttachments.GetActiveActive(context.TODO(), subId, regionId)
 		if err != nil {
 			return err
 		}

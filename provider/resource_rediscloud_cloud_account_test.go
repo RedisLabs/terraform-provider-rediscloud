@@ -59,7 +59,7 @@ func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 }
 
 func testAccCheckCloudAccountDestroy(s *terraform.State) error {
-	testApiClient, err := client.GetTestClient()
+	apiClient, err := client.GetTestClient()
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func testAccCheckCloudAccountDestroy(s *terraform.State) error {
 			return err
 		}
 
-		accounts, err := testApiClient.Client.CloudAccount.List(context.TODO())
+		accounts, err := apiClient.Client.CloudAccount.List(context.TODO())
 		if err != nil {
 			return err
 		}

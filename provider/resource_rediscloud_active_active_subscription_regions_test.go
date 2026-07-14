@@ -62,8 +62,8 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 							return err
 						}
 
-						testApiClient := client.SharedTestClient(t)
-						sub, err := testApiClient.Client.Subscription.Get(context.TODO(), subId)
+						apiClient := client.SharedTestClient(t)
+						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}

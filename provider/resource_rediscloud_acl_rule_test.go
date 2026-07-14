@@ -56,8 +56,8 @@ func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the rule ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						testApiClient := client.SharedTestClient(t)
-						rule, err := testApiClient.Client.RedisRules.Get(context.TODO(), id)
+						apiClient := client.SharedTestClient(t)
+						rule, err := apiClient.Client.RedisRules.Get(context.TODO(), id)
 						if err != nil {
 							return err
 						}
@@ -142,7 +142,7 @@ data "rediscloud_acl_rule" "test" {
 `
 
 func testAccCheckAclRuleDestroy(s *terraform.State) error {
-	testApiClient, err := client.GetTestClient()
+	apiClient, err := client.GetTestClient()
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func testAccCheckAclRuleDestroy(s *terraform.State) error {
 			return err
 		}
 
-		rules, err := testApiClient.Client.RedisRules.List(context.TODO())
+		rules, err := apiClient.Client.RedisRules.List(context.TODO())
 		if err != nil {
 			return err
 		}

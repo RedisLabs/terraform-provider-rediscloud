@@ -115,12 +115,12 @@ func testAccCheckPrivateLinkDeleted(subscriptionResourceName string) resource.Te
 			return err
 		}
 
-		testApiClient, err := client.GetTestClient()
+		apiClient, err := client.GetTestClient()
 		if err != nil {
 			return err
 		}
 
-		_, err = testApiClient.Client.PrivateLink.GetPrivateLink(context.TODO(), subId)
+		_, err = apiClient.Client.PrivateLink.GetPrivateLink(context.TODO(), subId)
 		if err == nil {
 			return fmt.Errorf("privatelink for subscription %d still exists after deletion", subId)
 		}

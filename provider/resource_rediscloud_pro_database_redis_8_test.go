@@ -72,8 +72,8 @@ func TestAccResourceRedisCloudProDatabase_Redis8(t *testing.T) {
 							return fmt.Errorf("couldn't parse the subscription ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						testApiClient := client.SharedTestClient(t)
-						sub, err := testApiClient.Client.Subscription.Get(context.TODO(), subId)
+						apiClient := client.SharedTestClient(t)
+						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -82,7 +82,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8(t *testing.T) {
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
 						}
 
-						listDb := testApiClient.Client.Database.List(context.TODO(), subId)
+						listDb := apiClient.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
 							return fmt.Errorf("no database found: %w", listDb.Err())
 						}
@@ -160,8 +160,8 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 							return fmt.Errorf("couldn't parse the subscription ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						testApiClient := client.SharedTestClient(t)
-						sub, err := testApiClient.Client.Subscription.Get(context.TODO(), subId)
+						apiClient := client.SharedTestClient(t)
+						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -170,7 +170,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
 						}
 
-						listDb := testApiClient.Client.Database.List(context.TODO(), subId)
+						listDb := apiClient.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
 							return fmt.Errorf("no database found: %w", listDb.Err())
 						}
@@ -295,8 +295,8 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 							return fmt.Errorf("couldn't parse the subscription ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						testApiClient := client.SharedTestClient(t)
-						sub, err := testApiClient.Client.Subscription.Get(context.TODO(), subId)
+						apiClient := client.SharedTestClient(t)
+						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
 						}
@@ -305,7 +305,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 							return fmt.Errorf("unexpected name value: %s", redis.StringValue(sub.Name))
 						}
 
-						listDb := testApiClient.Client.Database.List(context.TODO(), subId)
+						listDb := apiClient.Client.Database.List(context.TODO(), subId)
 						if listDb.Next() != true {
 							return fmt.Errorf("no database found: %w", listDb.Err())
 						}

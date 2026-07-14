@@ -14,11 +14,11 @@ import (
 // CheckNoDatabasesForSubscription verifies that no databases exist in a subscription.
 // Combines GetTestClient with CheckNoDatabasesInSubscription for convenience in test check functions.
 func CheckNoDatabasesForSubscription(ctx context.Context, subId int) error {
-	testApiClient, err := client.GetTestClient()
+	apiClient, err := client.GetTestClient()
 	if err != nil {
 		return err
 	}
-	return CheckNoDatabasesInSubscription(ctx, subId, testApiClient)
+	return CheckNoDatabasesInSubscription(ctx, subId, apiClient)
 }
 
 func GetTestConfig(t *testing.T, testFile string) string {
