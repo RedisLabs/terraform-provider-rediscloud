@@ -38,10 +38,9 @@ func NewClient() (*ApiClient, error) {
 	}, nil
 }
 
-func SharedTestClient(t *testing.T) *ApiClient {
-	sharedClientOnce.Do(func() {
-		sharedClient, sharedClientErr = NewClient()
-	})
+// MustTestClient returns an API client or logs an error to the test logs and fails the test instantly
+func MustTestClient(t *testing.T) *ApiClient {
+	sharedClient, sharedClientErr = GetTestClient()
 	if sharedClientErr != nil {
 		t.Fatalf("Failed to create test API client: %s", sharedClientErr)
 	}

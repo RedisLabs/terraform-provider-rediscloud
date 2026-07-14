@@ -56,7 +56,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return err
 						}
 
-						apiClient := client.SharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
@@ -158,7 +158,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return err
 						}
 
-						apiClient := client.SharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err
@@ -314,7 +314,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 							return err
 						}
 
-						apiClient := client.SharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err

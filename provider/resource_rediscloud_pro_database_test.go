@@ -83,7 +83,7 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the subscription ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						apiClient := client.SharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
 						if err != nil {
 							return err

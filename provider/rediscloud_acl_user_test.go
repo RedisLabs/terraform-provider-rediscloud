@@ -83,7 +83,7 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the role ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						apiClient := client.SharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 						user, err := apiClient.Client.Users.Get(context.TODO(), id)
 						if err != nil {
 							return err

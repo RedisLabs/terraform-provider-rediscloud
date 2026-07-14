@@ -56,7 +56,7 @@ func TestAccResourceRedisCloudAclRule_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse the rule ID: %s", redis.StringValue(&r.Primary.ID))
 						}
 
-						apiClient := client.SharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 						rule, err := apiClient.Client.RedisRules.Get(context.TODO(), id)
 						if err != nil {
 							return err

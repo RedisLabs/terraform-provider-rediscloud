@@ -105,7 +105,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse database ID: %s", dbResource.Primary.Attributes["db_id"])
 						}
 
-						apiClient := client.SharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 
 						// Verify subscription
 						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
@@ -189,7 +189,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
 					// API check: verify updates applied
 					func(s *terraform.State) error {
-						apiClient := client.SharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 						db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
 						if err != nil {
 							return fmt.Errorf("failed to get database: %w", err)
@@ -245,7 +245,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
 					// API check: verify updates applied
 					func(s *terraform.State) error {
-						apiClient := client.SharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 						db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
 						if err != nil {
 							return fmt.Errorf("failed to get database: %w", err)
@@ -301,7 +301,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
 					// API check: verify updates applied
 					func(s *terraform.State) error {
-						apiClient := client.SharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 						db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
 						if err != nil {
 							return fmt.Errorf("failed to get database: %w", err)

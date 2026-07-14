@@ -49,7 +49,7 @@ func TestAccResourceRedisCloudPrivateServiceConnectEndpointAccepter_Create(t *te
 							return fmt.Errorf("couldn't parse the accepter ID: %s", r.Primary.ID)
 						}
 
-						apiClient := client.SharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 						endpoints, err := apiClient.Client.PrivateServiceConnect.GetEndpoints(context.TODO(), accepterId.SubscriptionId, accepterId.PscServiceId)
 						if err != nil {
 							return err
