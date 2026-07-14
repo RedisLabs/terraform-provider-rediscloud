@@ -1,41 +1,11 @@
 package provider_test
 
 import (
-	"sync"
 	"testing"
 
 	provider "github.com/RedisLabs/terraform-provider-rediscloud/provider"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 )
-
-// sharedTestClient returns an API client for use in test check functions.
-// The client is lazily initialised and shared across all tests.
-var (
-	sharedClient     *client.ApiClient
-	sharedClientOnce sync.Once
-	sharedClientErr  error
-)
-
-func sharedTestClient(t *testing.T) *client.ApiClient {
-	sharedClientOnce.Do(func() {
-		sharedClient, sharedClientErr = client.NewClient()
-	})
-	if sharedClientErr != nil {
-		t.Fatalf("Failed to create test API client: %s", sharedClientErr)
-	}
-	return sharedClient
-}
-
-// getTestClient returns an API client for use in CheckDestroy and other
-// functions that don't have access to *testing.T. Returns an error if the
-// client cannot be created.
-func getTestClient() (*client.ApiClient, error) {
-	sharedClientOnce.Do(func() {
-		sharedClient, sharedClientErr = client.NewClient()
-	})
-	return sharedClient, sharedClientErr
-}
 
 func TestProvider(t *testing.T) {
 	if err := provider.NewSdkProvider("dev")().InternalValidate(); err != nil {

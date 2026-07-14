@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -132,7 +133,7 @@ func testAccCheckActiveActiveTransitGatewayInvitationOnApi(resourceName string, 
 			return err
 		}
 
-		apiClient, err := getTestClient()
+		apiClient, err := client.GetTestClient()
 		if err != nil {
 			return err
 		}
@@ -174,7 +175,7 @@ func testAccCheckActiveActiveTransitGatewayAttachmentOnApi(resourceName string, 
 			return err
 		}
 
-		apiClient, err := getTestClient()
+		apiClient, err := client.GetTestClient()
 		if err != nil {
 			return err
 		}
@@ -226,7 +227,7 @@ func testAccCheckActiveActiveTransitGatewayRouteCidrsOnApi(resourceName string, 
 			return err
 		}
 
-		apiClient, err := getTestClient()
+		apiClient, err := client.GetTestClient()
 		if err != nil {
 			return err
 		}

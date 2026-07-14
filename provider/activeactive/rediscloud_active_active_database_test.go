@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -104,7 +105,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 							return fmt.Errorf("couldn't parse database ID: %s", dbResource.Primary.Attributes["db_id"])
 						}
 
-						apiClient := utils.SharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 
 						// Verify subscription
 						sub, err := apiClient.Client.Subscription.Get(context.TODO(), subId)
@@ -188,7 +189,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
 					// API check: verify updates applied
 					func(s *terraform.State) error {
-						apiClient := utils.SharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 						db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
 						if err != nil {
 							return fmt.Errorf("failed to get database: %w", err)
@@ -244,7 +245,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
 					// API check: verify updates applied
 					func(s *terraform.State) error {
-						apiClient := utils.SharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 						db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
 						if err != nil {
 							return fmt.Errorf("failed to get database: %w", err)
@@ -300,7 +301,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 
 					// API check: verify updates applied
 					func(s *terraform.State) error {
-						apiClient := utils.SharedTestClient(t)
+						apiClient := client.MustTestClient(t)
 						db, err := apiClient.Client.Database.GetActiveActive(context.TODO(), subId, dbId)
 						if err != nil {
 							return fmt.Errorf("failed to get database: %w", err)
