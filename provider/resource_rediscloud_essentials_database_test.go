@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
@@ -23,7 +24,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -279,7 +280,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -344,7 +345,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -377,7 +378,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.
 	const resourceName = "rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -419,7 +420,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionAutoMinorUpgrade(t 
 	const resourceName = "rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheckEssentialsSubscription(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{

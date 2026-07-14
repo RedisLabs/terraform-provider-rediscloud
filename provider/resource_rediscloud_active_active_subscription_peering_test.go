@@ -25,7 +25,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 	const resourceName = "rediscloud_active_active_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSProviderAndRegionCheck(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"aws": {
@@ -67,8 +67,8 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_gcp(t *testing.T) {
 
 	name := testRandomWithPrefix()
-	gcpVPCProject, gcpVPCProjectCheck := envchecks.ValueAndCheck(t, "GCP_VPC_PROJECT")
-	gcpVPCId, gcpVPCIdCheck := envchecks.ValueAndCheck(t, "GCP_VPC_ID")
+	gcpVPCProject, gcpVPCProjectCheck := envchecks.ValueAndCheck("GCP_VPC_PROJECT")
+	gcpVPCId, gcpVPCIdCheck := envchecks.ValueAndCheck("GCP_VPC_ID")
 	tf := fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionPeeringGCP,
 		name,
 		gcpVPCProject,
@@ -77,7 +77,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_gcp(t *testing.T) 
 	const resourceName = "rediscloud_active_active_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); gcpVPCProjectCheck(); gcpVPCIdCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, gcpVPCProjectCheck, gcpVPCIdCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{

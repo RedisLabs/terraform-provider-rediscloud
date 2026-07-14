@@ -16,8 +16,8 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 
 	name := testRandomWithPrefix()
 
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
-	awsPeering, awsPeeringCheck := envchecks.AwsPeeringValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
+	awsPeering, awsPeeringCheck := envchecks.AwsPeeringValueAndCheck()
 
 	// Chose a CIDR range for the subscription that's unlikely to overlap with any VPC CIDR
 	subCidrRange := "10.0.0.0/24"
@@ -48,11 +48,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 	const resourceName = "rediscloud_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() {
-			envchecks.RedisCloudCheck(t)
-			awsPeeringCheck()
-			cloudAccountCheck()
-		},
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, awsPeeringCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -78,8 +74,8 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
 
 	name := testRandomWithPrefix()
-	gcpVpcProject, gcpVpcProjectCheck := envchecks.ValueAndCheck(t, "GCP_VPC_PROJECT")
-	gcpVpcId, gcpVpcIdCheck := envchecks.ValueAndCheck(t, "GCP_VPC_ID")
+	gcpVpcProject, gcpVpcProjectCheck := envchecks.ValueAndCheck("GCP_VPC_PROJECT")
+	gcpVpcId, gcpVpcIdCheck := envchecks.ValueAndCheck("GCP_VPC_ID")
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudSubscriptionPeeringGCP,
 		name,
@@ -89,7 +85,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_gcp(t *testing.T) {
 	const resourceName = "rediscloud_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); gcpVpcProjectCheck(); gcpVpcIdCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, gcpVpcProjectCheck, gcpVpcIdCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{

@@ -96,9 +96,9 @@ resource "rediscloud_subscription_database" "example" {
 }
 
 // Generic test helper for error cases
-func testErrorCase(t *testing.T, config string, cloudAccountCheck func(), expectedError *regexp.Regexp) {
+func testErrorCase(t *testing.T, config string, cloudAccountCheck func(t *testing.T) bool, expectedError *regexp.Regexp) {
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -113,10 +113,10 @@ func testErrorCase(t *testing.T, config string, cloudAccountCheck func(), expect
 func TestAccResourceRedisCloudProDatabase_qpf(t *testing.T) {
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); cloudAccountCheck() },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -147,7 +147,7 @@ func TestAccResourceRedisCloudProDatabase_qpf(t *testing.T) {
 func TestAccResourceRedisCloudProDatabase_qpf_missingModule(t *testing.T) {
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	config := formatDatabaseConfig(name, cloudAccountName, password, "4x", `redis_version = "7.4"`)
 
@@ -157,7 +157,7 @@ func TestAccResourceRedisCloudProDatabase_qpf_missingModule(t *testing.T) {
 func TestAccResourceRedisCloudProDatabase_qpf_missingRediSearchModule(t *testing.T) {
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
-	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck(t)
+	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	config := formatDatabaseConfig(name, cloudAccountName, password, "4x", `modules = [{ name = "RediBloom" }]
     redis_version = "7.4"`)

@@ -3,7 +3,6 @@ package provider_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"strconv"
 	"testing"
 
@@ -19,7 +18,7 @@ import (
 
 func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.T) {
 
-	testAwsRegion := os.Getenv("AWS_REGION")
+	awsRegion, awsRegionCheck := envchecks.ValueAndCheck("AWS_REGION")
 	subscriptionName := testRandomWithPrefix() + "-pro-tgw"
 
 	const invitationsDatasourceName = "data.rediscloud_transit_gateway_invitations.test"
@@ -28,7 +27,7 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 	const routeResourceName = "rediscloud_transit_gateway_route.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { envchecks.RedisCloudCheck(t); envchecks.AWSProviderAndRegionCheck(t) },
+		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck, awsRegionCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"aws": {
@@ -45,7 +44,7 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 			{
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./transitgateway/testdata/pro_transit_gateway_invitation_acceptor.tf"),
-					subscriptionName, testAwsRegion),
+					subscriptionName, awsRegion),
 			},
 			{
 				RefreshState: true,
@@ -77,7 +76,7 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 			{
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./transitgateway/testdata/pro_transit_gateway_route_update.tf"),
-					subscriptionName, testAwsRegion),
+					subscriptionName, awsRegion),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(routeResourceName, "cidrs.#", "2"),
 					resource.TestCheckResourceAttr(routeResourceName, "cidrs.0", "10.10.20.0/24"),
