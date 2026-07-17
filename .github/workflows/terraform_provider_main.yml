@@ -7,7 +7,6 @@ on:
       - develop
   workflow_dispatch:
 env:
-  TERRAFORM_VERSION: "1.2.6"
   REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_STAGING }}
   REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_STAGING }}
   REDISCLOUD_URL: ${{ secrets.REDISCLOUD_URL_STAGING }}
@@ -40,85 +39,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: ./.github/actions/setup-nix
         with:
-          go-version-file: go.mod
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: ./.github/actions/run-sweep
         with:
           sweep_prefix: 'tf-ci'
 
-  go_build:
-    name: go build
+  ci:
+    name: ci
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        continue-on-error: true
-        id: cache-terraform-plugin-dir
-        timeout-minutes: 2
+      - uses: ./.github/actions/setup-nix
         with:
-          path: terraform-plugin-dir
-          key: ${{ runner.os }}-terraform-plugin-dir-${{ hashFiles('go.sum') }}-${{ hashFiles('provider/**') }}
-      - if: steps.cache-terraform-plugin-dir.outputs.cache-hit != 'true' || steps.cache-terraform-plugin-dir.outcome == 'failure'
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - if: steps.cache-terraform-plugin-dir.outputs.cache-hit != 'true' || steps.cache-terraform-plugin-dir.outcome == 'failure'
-        name: go mod download
-        run: go mod download
-      - if: steps.cache-terraform-plugin-dir.outputs.cache-hit != 'true' || steps.cache-terraform-plugin-dir.outcome == 'failure'
-        name: go build
-        run: go build -o terraform-plugin-dir/registry.terraform.io/RedisLabs/rediscloud/99.99.99/$(go env GOOS)_$(go env GOARCH)/terraform-provider-rediscloud .
-
-  terraform_providers_schema:
-    name: terraform providers schema
-    needs: [go_build]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        continue-on-error: true
-        id: cache-terraform-providers-schema
-        timeout-minutes: 2
-        with:
-          path: terraform-providers-schema
-          key: ${{ runner.os }}-terraform-providers-schema-${{ hashFiles('go.sum') }}-${{ hashFiles('provider/**') }}
-      - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        timeout-minutes: 2
-        with:
-          path: terraform-plugin-dir
-          key: ${{ runner.os }}-terraform-plugin-dir-${{ hashFiles('go.sum') }}-${{ hashFiles('provider/**') }}
-      - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
-        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-          terraform_wrapper: false
-      - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
-        name: terraform init
-        run: |
-          # We need a file to initialize the provider
-          cat <<EOT >> providers.tf
-          terraform {
-            required_providers {
-              rediscloud = {
-                source  = "RedisLabs/rediscloud"
-                version = "99.99.99"
-              }
-            }
-          }
-          EOT
-          echo 'resource "rediscloud_subscription" "example" {}' > example.tf
-          terraform init -plugin-dir terraform-plugin-dir
-      - if: steps.cache-terraform-providers-schema.outputs.cache-hit != 'true' || steps.cache-terraform-providers-schema.outcome == 'failure'
-        name: terraform providers schema
-        run: |
-          mkdir terraform-providers-schema
-          terraform providers schema -json > terraform-providers-schema/schema.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: nix develop --command make ci
 
   go_test_databases:
     name: go test Databases
-    needs: [go_build, pre_sweep]
+    needs: [ci, pre_sweep]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Database_.*
@@ -172,28 +112,6 @@ jobs:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(TransitGatewayAttachment|PaymentMethod).*
     secrets: inherit
 
-  go_unit_test:
-    name: go unit test
-    needs: [go_build]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - run: go test ./... -run="^TestUnit"  # Runs tests starting with TestUnit
-
-  tfproviderlint:
-    name: tfproviderlint
-    needs: [go_build]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
-        with:
-          go-version-file: go.mod
-      - run: make tfproviderlint
-
   post_sweep:
     name: post-test sweep
     if: ${{ always() && !cancelled() }}
@@ -205,9 +123,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: ./.github/actions/setup-nix
         with:
-          go-version-file: go.mod
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: ./.github/actions/run-sweep
         with:
           sweep_prefix: "tf-ci-main-${{ github.run_number }}"

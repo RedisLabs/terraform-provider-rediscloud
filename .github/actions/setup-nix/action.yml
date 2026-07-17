@@ -1,0 +1,31 @@
+name: Setup Nix
+description: Install Nix, restore/save the Nix store cache, and run flake check.
+
+inputs:
+  github-token:
+    description: Token passed to install-nix-action for authenticated fetches.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install Nix
+      uses: cachix/install-nix-action@v31
+      with:
+        github_access_token: ${{ inputs.github-token }}
+
+    - name: Cache Nix store
+      uses: nix-community/cache-nix-action@v7
+      with:
+        primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+        restore-prefixes-first-match: nix-${{ runner.os }}-
+        # Cap store at ~5 GiB on save so cache fits under GHA's 10 GB repo budget
+        gc-max-store-size-linux: 5368709120
+        purge: true
+        purge-prefixes: nix-${{ runner.os }}-
+        purge-created: 0
+        purge-primary-key: never
+
+    - name: Nix flake check
+      shell: bash
+      run: nix flake check

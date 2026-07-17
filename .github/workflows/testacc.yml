@@ -12,7 +12,6 @@ on:
         type: string
 
 env:
-  TERRAFORM_VERSION: "1.2.6"
   REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_STAGING }}
   REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_STAGING }}
   REDISCLOUD_URL: ${{ secrets.REDISCLOUD_URL_STAGING }}
@@ -44,15 +43,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: ./.github/actions/setup-nix
         with:
-          go-version-file: go.mod
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run tests
         env:
           TEST_PATTERN: ${{ inputs.test_pattern }}
         run: |
           set -o pipefail
-          make testacc TESTARGS="-run=\"$TEST_PATTERN\"" 2>&1 | tee test_output.txt
+          nix develop --command make testacc TESTARGS="-run=\"$TEST_PATTERN\"" 2>&1 | tee test_output.txt
           if ! grep -q "=== RUN" test_output.txt; then
             echo "ERROR: No tests matched the pattern. Please check the -run argument."
             exit 1
