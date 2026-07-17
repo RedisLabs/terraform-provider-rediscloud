@@ -7,8 +7,6 @@ on:
       - develop
       - 'release/*'
 env:
-  REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_STAGING }}
-  REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_STAGING }}
   REDISCLOUD_URL: ${{ secrets.REDISCLOUD_URL_STAGING }}
   AWS_TEST_CLOUD_ACCOUNT_NAME: "${{ secrets.AWS_TEST_CLOUD_ACCOUNT_NAME_STAGING }}"
   AWS_PEERING_REGION: ${{ secrets.AWS_PEERING_REGION }}
@@ -69,7 +67,7 @@ jobs:
       - run: nix develop --command make ci
 
   pre_sweep:
-    name: pre-test sweep
+    name: pre-test gate
     needs: [ci, detect-changes]
     if: >
       github.event.pull_request.draft == false &&
@@ -77,13 +75,7 @@ jobs:
       !contains(github.event.pull_request.labels.*.name, 'skip-tests')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: ./.github/actions/setup-nix
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: ./.github/actions/run-sweep
-        with:
-          sweep_prefix: 'tf-ci'
+      - run: echo "Gate passed - running acceptance tests"
 
   go_test_smoke_aa_sub:
     name: go test smoke aa sub
@@ -173,34 +165,6 @@ jobs:
     with:
       test_pattern: TestAcc(RedisCloudProDatabase_BlockPublicEndpoints|ActiveActiveSubscriptionDatabase_BlockPublicEndpoints)
     secrets: inherit
-
-  post_sweep:
-    name: post-test sweep
-    if: >
-      always() &&
-      github.event.pull_request.draft == false &&
-      needs.detect-changes.outputs.code == 'true' &&
-      !contains(github.event.pull_request.labels.*.name, 'skip-tests')
-    needs:
-      - detect-changes
-      - go_test_smoke_aa_db
-      - go_test_smoke_aa_regions
-      - go_test_smoke_aa_enable_default_user
-      - go_test_smoke_pro_db
-      - go_test_smoke_essentials_db
-      - go_test_smoke_misc
-      - go_test_pro_db_upgrade
-      - go_test_block_public_endpoints
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: ./.github/actions/setup-nix
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: ./.github/actions/run-sweep
-        with:
-          sweep_prefix: "tf-ci-pr${{ github.event.pull_request.number }}-${{ github.run_number }}"
-          age_threshold: '0s'
 
   status:
     name: Status

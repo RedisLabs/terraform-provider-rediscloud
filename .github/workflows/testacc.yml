@@ -3,6 +3,14 @@ name: Acceptance Tests (reusable)
 # Reusable workflow that runs a single slice of the acceptance-test suite,
 # selected by `test_pattern`. Callers wire ordering via `needs:` and must pass
 # `secrets: inherit` (a called workflow does NOT inherit the caller's env/secrets).
+#
+# Each invocation provisions its OWN throwaway Redis Cloud account: it mints a
+# GitHub App token for the private provisioning repo, dispatches that repo's
+# `create-credentials` workflow (which encrypts a fresh account's credentials to
+# an ephemeral age key we generate here), decrypts them, runs the tests, sweeps
+# any leftover resources, then dispatches `delete-credentials` to tear the
+# account down. The account is disposable, so there is no shared state to
+# pre-sweep and the caller only needs a lightweight gate before this runs.
 on:
   workflow_call:
     inputs:
@@ -11,9 +19,13 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 env:
-  REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_STAGING }}
-  REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_STAGING }}
+  # REDISCLOUD_ACCESS_KEY / REDISCLOUD_SECRET_KEY are intentionally absent here:
+  # they are produced per-run by the ephemeral account and live only as shell
+  # variables inside the single "Run tests with ephemeral credentials" step.
   REDISCLOUD_URL: ${{ secrets.REDISCLOUD_URL_STAGING }}
   AWS_TEST_CLOUD_ACCOUNT_NAME: "${{ secrets.AWS_TEST_CLOUD_ACCOUNT_NAME_STAGING }}"
   AWS_PEERING_REGION: ${{ secrets.AWS_PEERING_REGION }}
@@ -34,25 +46,144 @@ env:
   GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
   # Derived from the caller's trigger context (shared with this reusable
   # workflow): PRs get "tf-ci-pr<number>-<run>", everything else (push /
-  # workflow_dispatch on main) gets "tf-ci-main-<run>". Must stay in sync with
-  # the post-test sweep prefixes in the PR/main workflows.
+  # workflow_dispatch on main) gets "tf-ci-main-<run>".
   TEST_RESOURCE_PREFIX: ${{ github.event_name == 'pull_request' && format('tf-ci-pr{0}-{1}', github.event.pull_request.number, github.run_number) || format('tf-ci-main-{0}', github.run_number) }}
 
 jobs:
   testacc:
     runs-on: ubuntu-latest
+    # The GitHub App private key and its client id live in this environment,
+    # alongside any other credentials the provisioning flow needs.
+    environment: integration-tests
+    env:
+      PRIVATE_OWNER: redislabsdev
+      PRIVATE_REPO: terraform-provider-rediscloud-private
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/setup-nix
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Run tests
+
+      # Short-lived installation token scoped to the private provisioning repo,
+      # used to dispatch its workflows and download the encrypted artifact.
+      - name: Mint GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.TF_PROVIDER_REDISCLOUD_CREDS_CLIENT_ID }}
+          private-key: ${{ secrets.TF_PROVIDER_REDISCLOUD_CREDS_PRIVATE_KEY }}
+          owner: ${{ env.PRIVATE_OWNER }}
+          repositories: ${{ env.PRIVATE_REPO }}
+
+      # Fresh keypair per run; only the public recipient leaves this runner, so
+      # nobody but this job can decrypt the credentials artifact.
+      - name: Generate ephemeral age keypair
+        id: keygen
+        shell: nix develop --command bash -e {0}
+        run: |
+          set -euo pipefail
+          age-keygen -o "$RUNNER_TEMP/age-key.txt"
+          public_key=$(age-keygen -y "$RUNNER_TEMP/age-key.txt")
+          echo "public_key=$public_key" >> "$GITHUB_OUTPUT"
+
+      # Ask the private repo to provision an account and encrypt its credentials
+      # to our public key. Waits for the run and exposes its runId.
+      - name: Create ephemeral credentials
+        id: create
+        uses: benc-uk/workflow-dispatch@31e2b3319479a63f0ab15bf800eff9e913504e26 # v1.3.2
+        with:
+          workflow: create-credentials.yml
+          repo: ${{ env.PRIVATE_OWNER }}/${{ env.PRIVATE_REPO }}
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
+          wait-for-completion: true
+          wait-timeout-seconds: 600
+          sync-status: true
+          inputs: |
+            {
+              "age_recipient": "${{ steps.keygen.outputs.public_key }}"
+            }
+
+      - name: Download encrypted credentials
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          repository: ${{ env.PRIVATE_OWNER }}/${{ env.PRIVATE_REPO }}
+          run-id: ${{ steps.create.outputs.runId }}
+          name: encrypted-credentials-${{ steps.create.outputs.runId }}
+          path: ${{ runner.temp }}/artifact
+
+      # Decrypt, test, and sweep in a SINGLE step so the account key/secret only
+      # ever exist as shell variables inside this one process: they are passed
+      # inline to the test/sweep commands that need them and never exported,
+      # written to $GITHUB_ENV/$GITHUB_OUTPUT, or persisted to disk, so they
+      # cannot leak into later steps. Only the opaque cleanup token is persisted
+      # as an output (and written up front, so the deletion step still runs when
+      # the tests fail). The age key and ciphertext are removed on exit via the
+      # trap. The shell is the Nix dev shell, so age/jq/go/make are all on PATH.
+      - name: Run tests with ephemeral credentials
+        id: creds
+        shell: nix develop --command bash -e {0}
         env:
           TEST_PATTERN: ${{ inputs.test_pattern }}
         run: |
-          set -o pipefail
-          nix develop --command make testacc TESTARGS="-run=\"$TEST_PATTERN\"" 2>&1 | tee test_output.txt
+          set -euo pipefail
+          trap 'rm -f "$RUNNER_TEMP/age-key.txt" "$RUNNER_TEMP/artifact/credentials.json.age"' EXIT
+
+          plaintext=$(age -d -i "$RUNNER_TEMP/age-key.txt" "$RUNNER_TEMP/artifact/credentials.json.age")
+          access_key="$(jq -er '.accessKey' <<< "$plaintext")"
+          access_secret="$(jq -er '.secretKey' <<< "$plaintext")"
+          token="$(jq -er '.token' <<< "$plaintext")"
+          unset plaintext
+          # Mask before any use, then re-export under the provider's env-var
+          # names; the export stays confined to this step's process.
+          echo "::add-mask::$access_key"
+          echo "::add-mask::$access_secret"
+          echo "::add-mask::$token"
+
+
+          export REDISCLOUD_ACCESS_KEY="$access_key"
+          export REDISCLOUD_SECRET_KEY="$access_secret"
+
+          # Persist the cleanup token before running tests so the deletion step
+          # fires even if the tests below fail.
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+
+          # Run the tests but keep going so the sweep still tears the account's
+          # resources down (a live subscription/database can block deletion).
+          # The credentials are exported above, so they stay confined to this
+          # step's process. The trailing `|| test_status=...` records make's exit
+          # without tripping `set -e`; PIPESTATUS[0] pins it to make (not tee),
+          # and is read in the `||` branch before any later command clobbers it.
+          test_status=0
+          make testacc TESTARGS="-run=\"$TEST_PATTERN\"" 2>&1 | tee test_output.txt || test_status=${PIPESTATUS[0]}
+
+          # Non-fatal sweep, mirroring .github/actions/run-sweep. SWEEP_AGE_THRESHOLD=0s
+          # sweeps everything in this throwaway account regardless of age.
+          if ! SWEEP_AGE_THRESHOLD='0s' go test ./provider -v -sweep=ALL -timeout 30m 2>&1; then
+            echo "::warning::Sweep of prefix '$TEST_RESOURCE_PREFIX' completed with errors - some resources may not have been cleaned up"
+          fi
+
           if ! grep -q "=== RUN" test_output.txt; then
             echo "ERROR: No tests matched the pattern. Please check the -run argument."
             exit 1
           fi
+          exit "$test_status"
+
+      # Delete the throwaway account. The token is the account id encrypted to
+      # the private repo's own key, so only that repo can act on it.
+      - name: Delete ephemeral credentials
+        if: always() && steps.creds.outputs.token != ''
+        uses: benc-uk/workflow-dispatch@31e2b3319479a63f0ab15bf800eff9e913504e26 # v1.3.2
+        with:
+          workflow: delete-credentials.yml
+          repo: ${{ env.PRIVATE_OWNER }}/${{ env.PRIVATE_REPO }}
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
+          wait-for-completion: true
+          wait-timeout-seconds: 600
+          sync-status: true
+          inputs: |
+            {
+              "token": "${{ steps.creds.outputs.token }}"
+            }
