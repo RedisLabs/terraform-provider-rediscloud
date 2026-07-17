@@ -9,55 +9,104 @@ PROVIDER_VERSION = 99.99.99
 PLUGINS_PATH = ~/.terraform.d/plugins
 PLUGINS_PROVIDER_PATH=$(PROVIDER_HOSTNAME)/$(PROVIDER_NAMESPACE)/$(PROVIDER_TYPE)/$(PROVIDER_VERSION)/$(PROVIDER_TARGET)
 
+BIN=$(CURDIR)/bin
+CI_PLUGIN_DIR = $(BIN)/terraform-plugin-dir
+CI_SCHEMA_DIR = $(BIN)/providers-schema
+
 # Use a parallelism of 3 by default for tests, overriding whatever GOMAXPROCS is set to.
 TEST_PARALLELISM?=6
 TESTARGS?=-short
 
+.PHONY: build clean fmt fmt-golangci fmt-terraform lint lint-golangci lint-terraform lint-tfproviderlint tfproviderlint \
+        testacc testacc-essentials install-local sweep sweep-prefix \
+        lint-docs ci go-mod-tidy govulncheck go-unit-test go-build go-build-tests \
+        terraform-providers-schema
+
 bin:
-	@mkdir -p bin/
-
-BIN=$(CURDIR)/bin
-$(BIN)/%:
-	@echo "Installing tools from tools/tools.go"
-	@cat tools/tools.go | grep _ | awk -F '"' '{print $$2}' | GOBIN=$(BIN) xargs -tI {} go install {}
-
-.PHONY: build clean fmt lint testacc testacc-build testacc-essentials generate_coverage install_local sweep sweep-prefix tfproviderlint tfproviderlintx
-
-build: bin lint
-	@echo "Building local provider binary"
-	go build -o $(BIN)/terraform-provider-rediscloud_v$(PROVIDER_VERSION)
-	@sh -c "'$(CURDIR)/scripts/generate-dev-overrides.sh'"
+	mkdir -p $(BIN)
 
 clean:
 	@echo "Deleting local provider binary"
 	rm -rf $(BIN)
 
-fmt:
+build: bin lint-golangci
+	@echo "Building local provider binary"
+	go build -o $(BIN)/terraform-provider-rediscloud_v$(PROVIDER_VERSION)
+	$(CURDIR)/scripts/generate-dev-overrides.sh
+
+fmt: fmt-golangci fmt-terraform
+
+fmt-golangci:
 	@echo "Formatting Go files"
 	golangci-lint fmt
 
-lint:
+fmt-terraform:
+	@echo "Formatting Terraform files"
+	terraform fmt -recursive
+
+lint: lint-golangci lint-tfproviderlint lint-terraform lint-docs
+
+lint-golangci:
 	@echo "Running golangci-lint"
 	golangci-lint run
 
-testacc-build:
-	go test ./... -run=^$$
+lint-tfproviderlint:
+  # XS001 — disables "schema should configure Description"
+  # XS002 — disables "schema attributes should be in alphabetical order"
+	tfproviderlintx $(TFPROVIDERLINT_ARGS) -XS001=false -XS002=false ./...
+
+lint-terraform:
+	@echo "Checking Terraform formatting"
+	terraform fmt -check -recursive
+
+lint-docs:
+	@echo "Validating documentation"
+	tfplugindocs validate
+
+ci: govulncheck go-mod-tidy lint go-build go-build-tests go-unit-test terraform-providers-schema
+	@echo "All local CI checks passed"
+
+govulncheck:
+	@echo "Running govulncheck"
+	govulncheck ./...
+
+go-mod-tidy:
+	@echo "Checking go.mod/go.sum are tidy"
+	go mod tidy -diff
+
+go-build: bin
+	@echo "Building provider into local plugin mirror"
+	mkdir -p $(CI_PLUGIN_DIR)/$(PLUGINS_PROVIDER_PATH)
+	go build -o $(CI_PLUGIN_DIR)/$(PLUGINS_PROVIDER_PATH)/terraform-provider-rediscloud .
+
+go-build-tests:
+	@echo "Building test packages"
+	go test ./... -run="^$$"
+
+go-unit-test:
+	@echo "Running unit tests"
+	go test ./... -run="^TestUnit"
+
+terraform-providers-schema: go-build
+	@echo "Generating provider schema"
+	rm -rf $(CI_SCHEMA_DIR) && mkdir -p $(CI_SCHEMA_DIR)
+	printf 'terraform {\n  required_providers {\n    rediscloud = {\n      source  = "$(PROVIDER_NAMESPACE)/$(PROVIDER_TYPE)"\n      version = "$(PROVIDER_VERSION)"\n    }\n  }\n}\n' > $(CI_SCHEMA_DIR)/providers.tf
+	echo 'resource "rediscloud_subscription" "example" {}' > $(CI_SCHEMA_DIR)/example.tf
+	cd $(CI_SCHEMA_DIR) && terraform init -plugin-dir $(CI_PLUGIN_DIR) && terraform providers schema -json > schema.json
+	@echo "Schema written to $(CI_SCHEMA_DIR)/schema.json"
 
 # `-p=1` added to avoid testing packages in parallel which causes `go test` to not stream logs as they are written
 testacc: bin
-	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 360m -p=1 -parallel=$(TEST_PARALLELISM) -coverprofile bin/coverage.out
+	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 360m -p=1 -parallel=$(TEST_PARALLELISM) -coverprofile $(BIN)/coverage.out
 
 # Essentials tests must run serially due to API limitation of one essentials db per account
 testacc-essentials: bin
-	TF_ACC=1 go test ./provider -v -run="TestAccResourceRedisCloudEssentials|TestAccDataSourceRedisCloudEssentials" -timeout 360m -p=1 -parallel=1 -coverprofile bin/coverage.out
+	TF_ACC=1 go test ./provider -v -run="TestAccResourceRedisCloudEssentials|TestAccDataSourceRedisCloudEssentials" -timeout 360m -p=1 -parallel=1 -coverprofile $(BIN)/coverage.out
 
-generate_coverage:
-	go tool cover -html=bin/coverage.out -o bin/coverage.html
-
-install_local: build
+install-local: build
 	@echo "Installing local provider binary to plugins mirror path $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)"
-	@mkdir -p $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)
-	@cp $(BIN)/terraform-provider-rediscloud_v$(PROVIDER_VERSION) $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)
+	mkdir -p $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)
+	cp $(BIN)/terraform-provider-rediscloud_v$(PROVIDER_VERSION) $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)
 
 sweep:
 	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
@@ -69,8 +118,3 @@ ifndef TEST_RESOURCE_PREFIX
 endif
 	@echo "WARNING: This will destroy infrastructure matching prefix '$(TEST_RESOURCE_PREFIX)'. Use only in development accounts."
 	TEST_RESOURCE_PREFIX=$(TEST_RESOURCE_PREFIX) SWEEP_AGE_THRESHOLD=0s go test ./provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
-
-tfproviderlint: $(BIN)/tfproviderlintx
-  # XS001 — disables "schema should configure Description"
-  # XS002 — disables "schema attributes should be in alphabetical order"
-	$(BIN)/tfproviderlintx $(TFPROVIDERLINT_ARGS) -XS001=false -XS002=false ./...
