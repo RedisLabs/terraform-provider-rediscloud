@@ -1,7 +1,16 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
-See updating [Changelog example here](https://keepachangelog.com/en/1.0.0/)
+# 2.18.1 (17th July 2026)
+
+**Internal release** - No user-facing changes to the provider's resources, data sources, or behaviour.
+
+## Changed
+- Adopted Nix flakes for the development environment, Makefile, and GitHub Actions.
+- Reworked CI: change-based path filtering, reusable `run-testacc` workflow, `skip-tests` label support, and additional linting (extended Terraform provider linter, `golangci-lint` for `goimports`, go mod drift detection).
+- Consolidated test infrastructure: deduplicated the shared test client, env var lookups, precheck/compose-check helpers, and proto v5 factories; moved test files into `_test` packages.
+
+## Fixed
+- Fixed test setup for Redis 7/8 modules, Essentials database upgrades, and Active-Active resource migration assertions.
 
 # 2.18.0 (7th July 2026)
 
