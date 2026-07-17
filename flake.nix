@@ -85,6 +85,9 @@
 
               pkgs.gnumake
 
+              pkgs.age
+              pkgs.jq
+
               pkgs.go_1_25
               pkgs.golangci-lint
               pkgs.gotools
