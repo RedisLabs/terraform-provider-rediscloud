@@ -28,6 +28,23 @@ Developing the Provider
 If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (see [Requirements](#requirements) above).
 You will also need to create or have access to a [Redis Cloud Enterprise](https://redislabs.com/redis-enterprise-cloud/overview) account.
 
+Development Environment
+-----------------------
+
+The repo ships a [Nix flake](flake.nix) that pins the toolchain (Go, `golangci-lint`, `gotools`, GNU `make`, Terraform) so local development matches CI. Combined with [direnv](https://direnv.net/), your shell automatically enters that environment when you `cd` into the repo.
+
+Setup:
+
+1. Install Nix with flakes enabled — the [Determinate Nix Installer](https://determinate.systems/nix-installer/) is the easiest option; the [official Nix installer](https://nixos.org/download/) works too but requires [enabling flakes manually](https://nixos.wiki/wiki/Flakes#Enable_flakes_permanently_in_NixOS).
+2. Install [direnv](https://direnv.net/docs/installation.html) and hook it into your shell.
+3. Install [nix-direnv](https://github.com/nix-community/nix-direnv) so direnv can load the flake's dev shell.
+4. From the repo root, activate the environment:
+   ```shell
+   direnv allow
+   ```
+
+Every subsequent `cd` into the repo brings up a shell with the pinned toolchain on `PATH`. Run `make` to execute the same checks CI runs.
+
 Building the Provider
 ---------------------
 
