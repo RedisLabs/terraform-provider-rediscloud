@@ -169,6 +169,7 @@ resource "rediscloud_active_active_subscription_database" "example" {
 
 data "rediscloud_active_active_subscription_regions" "example" {
 	subscription_name = rediscloud_active_active_subscription.example.name
+    depends_on = [rediscloud_active_active_subscription_regions.example]
 }
 
 `
