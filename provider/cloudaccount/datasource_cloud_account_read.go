@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type caFilterFunc func(account *cloud_accounts.CloudAccount) bool
+
 // Read refreshes the Terraform state with the latest data.
 func (d *cloudAccountDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	// Defensive nil check for client
@@ -39,23 +41,17 @@ func (d *cloudAccountDataSource) Read(ctx context.Context, req datasource.ReadRe
 	}
 
 	// Build filters based on configuration
-	var filters []func(cloudAccount *cloud_accounts.CloudAccount) bool
+	var filters []caFilterFunc
 
 	// Handle exclude_internal_account filter - default to false if not set
 	if !config.ExcludeInternalAccount.IsNull() && config.ExcludeInternalAccount.ValueBool() {
-		filters = append(filters, func(cloudAccount *cloud_accounts.CloudAccount) bool {
-			return redis.IntValue(cloudAccount.ID) != 1
-		})
+		filters = append(filters, excludeInternalAccountFilter())
 	}
 	if !config.ProviderType.IsNull() && config.ProviderType.ValueString() != "" {
-		filters = append(filters, func(cloudAccount *cloud_accounts.CloudAccount) bool {
-			return redis.StringValue(cloudAccount.Provider) == config.ProviderType.ValueString()
-		})
+		filters = append(filters, providerTypeFilter(config.ProviderType.ValueString()))
 	}
 	if !config.Name.IsNull() && config.Name.ValueString() != "" {
-		filters = append(filters, func(cloudAccount *cloud_accounts.CloudAccount) bool {
-			return redis.StringValue(cloudAccount.Name) == config.Name.ValueString()
-		})
+		filters = append(filters, nameFilter(config.Name.ValueString()))
 	}
 
 	// Apply filters
@@ -91,7 +87,7 @@ func (d *cloudAccountDataSource) Read(ctx context.Context, req datasource.ReadRe
 	resp.Diagnostics.Append(diags...)
 }
 
-func filterCloudAccounts(accounts []*cloud_accounts.CloudAccount, filters []func(account *cloud_accounts.CloudAccount) bool) []*cloud_accounts.CloudAccount {
+func filterCloudAccounts(accounts []*cloud_accounts.CloudAccount, filters []caFilterFunc) []*cloud_accounts.CloudAccount {
 	var filtered []*cloud_accounts.CloudAccount
 	for _, cloudAccount := range accounts {
 		if cloudAccount == nil {
@@ -105,11 +101,33 @@ func filterCloudAccounts(accounts []*cloud_accounts.CloudAccount, filters []func
 	return filtered
 }
 
-func filterCloudAccount(account *cloud_accounts.CloudAccount, filters []func(account *cloud_accounts.CloudAccount) bool) bool {
+func filterCloudAccount(account *cloud_accounts.CloudAccount, filters []caFilterFunc) bool {
 	for _, f := range filters {
 		if !f(account) {
 			return false
 		}
 	}
 	return true
+}
+
+// excludeInternalAccountFilter matches every cloud account except the Redis Labs
+// internal account (id 1).
+func excludeInternalAccountFilter() caFilterFunc {
+	return func(account *cloud_accounts.CloudAccount) bool {
+		return redis.IntValue(account.ID) != 1
+	}
+}
+
+// providerTypeFilter matches cloud accounts with the given provider (e.g. AWS, GCP).
+func providerTypeFilter(providerType string) caFilterFunc {
+	return func(account *cloud_accounts.CloudAccount) bool {
+		return redis.StringValue(account.Provider) == providerType
+	}
+}
+
+// nameFilter matches cloud accounts with the given name.
+func nameFilter(name string) caFilterFunc {
+	return func(account *cloud_accounts.CloudAccount) bool {
+		return redis.StringValue(account.Name) == name
+	}
 }
