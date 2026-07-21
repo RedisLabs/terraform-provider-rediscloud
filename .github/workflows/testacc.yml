@@ -66,14 +66,15 @@ jobs:
 
       # Short-lived installation token scoped to the private provisioning repo,
       # used to dispatch its workflows and download the encrypted artifact.
-      - name: Mint GitHub App token
-        id: app-token
+      - name: Mint GitHub App token (Create Account)
+        id: app-token-create-account
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ vars.TF_PROVIDER_REDISCLOUD_CREDS_CLIENT_ID }}
           private-key: ${{ secrets.TF_PROVIDER_REDISCLOUD_CREDS_PRIVATE_KEY }}
           owner: ${{ env.PRIVATE_OWNER }}
           repositories: ${{ env.PRIVATE_REPO }}
+          permission-actions: write
 
       # Fresh keypair per run; only the public recipient leaves this runner, so
       # nobody but this job can decrypt the credentials artifact.
@@ -95,7 +96,7 @@ jobs:
           workflow: create-credentials.yml
           repo: ${{ env.PRIVATE_OWNER }}/${{ env.PRIVATE_REPO }}
           ref: main
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ steps.app-token-create-account.outputs.token }}
           wait-for-completion: true
           wait-timeout-seconds: 600
           sync-status: true
@@ -107,7 +108,7 @@ jobs:
       - name: Download encrypted credentials
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          github-token: ${{ steps.app-token.outputs.token }}
+          github-token: ${{ steps.app-token-create-account.outputs.token }}
           repository: ${{ env.PRIVATE_OWNER }}/${{ env.PRIVATE_REPO }}
           run-id: ${{ steps.create.outputs.runId }}
           name: encrypted-credentials-${{ steps.create.outputs.runId }}
@@ -170,6 +171,19 @@ jobs:
           fi
           exit "$test_status"
 
+      # GitHub tokens expire after 1 hour, so the token minted at the start of the job
+      # may expire for longer running tests.
+      - name: Mint GitHub App token (Delete Account)
+        id: app-token-delete-account
+        if: always() && steps.creds.outputs.token != ''
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.TF_PROVIDER_REDISCLOUD_CREDS_CLIENT_ID }}
+          private-key: ${{ secrets.TF_PROVIDER_REDISCLOUD_CREDS_PRIVATE_KEY }}
+          owner: ${{ env.PRIVATE_OWNER }}
+          repositories: ${{ env.PRIVATE_REPO }}
+          permission-actions: write
+
       # Delete the throwaway account. The token is the account id encrypted to
       # the private repo's own key, so only that repo can act on it.
       - name: Delete ephemeral credentials
@@ -179,7 +193,7 @@ jobs:
           workflow: delete-credentials.yml
           repo: ${{ env.PRIVATE_OWNER }}/${{ env.PRIVATE_REPO }}
           ref: main
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ steps.app-token-delete-account.outputs.token }}
           wait-for-completion: true
           wait-timeout-seconds: 600
           sync-status: true
