@@ -6,6 +6,7 @@ terraform.tfplan
 terraform.tfstate
 bin/
 dist/
+release-notes.md
 terraform-plugin-dir/
 .envrc
 modules-dev/

@@ -12,6 +12,7 @@ PLUGINS_PROVIDER_PATH=$(PROVIDER_HOSTNAME)/$(PROVIDER_NAMESPACE)/$(PROVIDER_TYPE
 BIN=$(CURDIR)/bin
 CI_PLUGIN_DIR = $(BIN)/terraform-plugin-dir
 CI_SCHEMA_DIR = $(BIN)/providers-schema
+RELEASE_NOTES_FILE = release-notes.md
 
 # Use a parallelism of 3 by default for tests, overriding whatever GOMAXPROCS is set to.
 TEST_PARALLELISM?=6
@@ -20,7 +21,7 @@ TESTARGS?=-short
 .PHONY: build clean fmt fmt-golangci fmt-terraform lint lint-golangci lint-terraform lint-tfproviderlint tfproviderlint \
         testacc testacc-essentials install-local sweep sweep-prefix \
         lint-docs lint-goreleaser ci go-mod-tidy govulncheck go-unit-test go-build go-build-tests \
-        terraform-providers-schema lint-markdown
+        terraform-providers-schema lint-markdown release-notes release
 
 bin:
 	mkdir -p $(BIN)
@@ -126,3 +127,13 @@ ifndef TEST_RESOURCE_PREFIX
 endif
 	@echo "WARNING: This will destroy infrastructure matching prefix '$(TEST_RESOURCE_PREFIX)'. Use only in development accounts."
 	TEST_RESOURCE_PREFIX=$(TEST_RESOURCE_PREFIX) SWEEP_AGE_THRESHOLD=0s go test ./provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
+
+release-notes:
+	@echo "Generating release notes"
+	./scripts/release-notes.sh > $(RELEASE_NOTES_FILE)
+	@echo "===== release notes ====="
+	@cat $(RELEASE_NOTES_FILE)
+	@echo "================================="
+
+release: release-notes
+	goreleaser release --clean --release-notes=$(RELEASE_NOTES_FILE)

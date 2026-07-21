@@ -85,6 +85,14 @@
 
               pkgs.gnumake
               pkgs.markdownlint-cli2
+              pkgs.mdq
+
+              # GNU userland so shell tooling (e.g. scripts/release-notes.sh)
+              # behaves identically on macOS (BSD by default) and Linux CI.
+              pkgs.coreutils
+              pkgs.gawk
+              pkgs.gnugrep
+              pkgs.gnused
 
               pkgs.go_1_25
               pkgs.golangci-lint
