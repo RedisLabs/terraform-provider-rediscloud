@@ -84,6 +84,7 @@
               tfproviderlint
 
               pkgs.gnumake
+              pkgs.markdownlint-cli2
 
               pkgs.go_1_25
               pkgs.golangci-lint

@@ -1,36 +1,43 @@
 # Changelog
 
-# 2.18.1 (17th July 2026)
+## 2.18.1 (17th July 2026)
 
 **Internal release** - No user-facing changes to the provider's resources, data sources, or behaviour.
 
-## Changed
+### Changed
+
 - Adopted Nix flakes for the development environment, Makefile, and GitHub Actions.
 - Reworked CI: change-based path filtering, reusable `run-testacc` workflow, `skip-tests` label support, and additional linting (extended Terraform provider linter, `golangci-lint` for `goimports`, go mod drift detection).
 - Consolidated test infrastructure: deduplicated the shared test client, env var lookups, precheck/compose-check helpers, and proto v5 factories; moved test files into `_test` packages.
 
-## Fixed
+### Fixed
+
 - Fixed test setup for Redis 7/8 modules, Essentials database upgrades, and Active-Active resource migration assertions.
 
-# 2.18.0 (7th July 2026)
+## 2.18.0 (7th July 2026)
 
-## Added
+### Added
+
 - Ability to upgrade `redis_version` in `rediscloud_active_active_subscription_database` resource without recreating the resource.
 - Exposed `redis_version_actual` attribute on the `rediscloud_active_active_subscription_database` resource.
 
-## Changed
+### Changed
+
 - Migrated `rediscloud_essentials_plan` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
 
-## Fixed
+### Fixed
+
 - Inconsistent state around `remote_backup` block in `override_region` argument for the `rediscloud_active_active_subscription_database` resource.
 - Proper `Context` passed to `frameworkDebugLogger` for logging.
 
-# 2.17.1 (16th June 2026)
+## 2.17.1 (16th June 2026)
 
-## Changed
+### Changed
+
 - Added validation for `maintenance_windows` being set in CMK workflow tests in `rediscloud_subscription` and `rediscloud_active_active_subscription` resources.
 
-## Fixed
+### Fixed
+
 - `maintenance_windows` not being set after CMK workflow in `rediscloud_subscription` and `rediscloud_active_active_subscription` resources.
 - `maintenance_windows` not being set on creation in `rediscloud_subscription` resource.
 - Read logic for `maintenance_windows` and `pricing` not triggering properly during CMK workflow in `rediscloud_subscription` and `rediscloud_active_active_subscription` resources.
@@ -38,9 +45,10 @@
 - `rediscloud_subscription` tests for setting `maintenance_windows`.
 - Read logic for `maintenance_windows` and `pricing` not triggering properly when in CMK workflow.
 
-# 2.17.0 (10th June 2026)
+## 2.17.0 (10th June 2026)
 
-## Added
+### Added
+
 - Added `redis_version_actual` attribute to the `rediscloud_subscription_database` resource.
 - Added `redis_version_actual` attribute to the `rediscloud_essentials_database` resource.
 - Added AWS support for customer managed keys on the `rediscloud_subscription` resource, exposing the new `customer_managed_key_aws_role_arn` computed attribute — the IAM role ARN to add to your KMS key policy.
@@ -48,158 +56,186 @@
 - Added AWS support for customer managed keys on the `rediscloud_active_active_subscription` resource, exposing the new `customer_managed_key_aws_role_arn` computed attribute — the IAM role ARN to add to your KMS key policy.
 - Exposed `customer_managed_key_aws_role_arn` attribute on the `rediscloud_active_active_subscription` data source.
 
-## Changed
+### Changed
+
 - Upgraded Go dependencies and CI workflow actions.
 - Removed use of `RenderTestConfig` from tests
 - Removed imports from `terraform-plugin-sdk/v2/` from tests
 - Tests sending `dev` as provider version, changed to `99.99.99`
 - Enabled `unused` check in linter
 
-## Fixed
+### Fixed
+
 - State drift on `redis_version` caused by `auto_minor_version_upgrade` being set to `true`
 - State drift on `redis_version` in `rediscloud_essentials_database` resource caused by auto minor version upgrade feature.
 
-# 2.16.1 (21st May 2026)
+## 2.16.1 (21st May 2026)
 
-## Fixed
+### Fixed
+
 - Remove usage of immutable GitHub releases
 
-# 2.16.0 (19th May 2026)
+## 2.16.0 (19th May 2026)
 
-## Added
+### Added
+
 - Added `prometheus_endpoint` attribute to the `rediscloud_subscription` resource.
 - Exposed `prometheus_endpoint` attribute on the `rediscloud_subscription` data source.
 
-## Changed
+### Changed
+
 - Upgraded Go dependencies and CI workflow actions.
 - Migrated `acl_rule` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
 
-## Fixed
+### Fixed
+
 - `rediscloud_active_active_subscription_database`: Changing the database `name` attribute no longer causes the resource to be destroyed and recreated.
 
-# 2.15.0 (28th April 2026)
+## 2.15.0 (28th April 2026)
 
-## Added
+### Added
+
 - Added `resource_tags` attribute to the `rediscloud_subscription` and `rediscloud_active_active_subscription` resources. A string/string map of tags applied to the subscription's cloud infrastructure at creation time and updatable thereafter.
 - Exposed `resource_tags` attribute on the `rediscloud_subscription` and `rediscloud_active_active_subscription` data sources.
 
-## Changed
+### Changed
+
 - Migrated `regions` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
 
-## Fixed
+### Fixed
+
 - `rediscloud_subscription` and `rediscloud_active_active_subscription`: Fixed creation plan database not being deleted after CMK subscription activation. The temporary database created during subscription provisioning is now properly cleaned up when using CMKs.
 - `rediscloud_subscription_database`: Fixed inconsistent handling of `query_performance_factor` and `redis_version` when not set, ensuring nil values are not written to state as empty strings.
 
-# 2.14.0 (1st April 2026)
+## 2.14.0 (1st April 2026)
 
-## Added
+### Added
+
 - Added `global_enable_passwordless` and `override_global_enable_passwordless` attributes to `rediscloud_active_active_subscription_database` resource. When set to `true`, the database is configured without a password. Only valid when the subscription has `public_endpoint_access` disabled. Conflicts with `password`.
 - Exposed `global_enable_passwordless` attribute on the `rediscloud_active_active_subscription_database` data source.
 
-# 2.13.0 (24th March 2026)
+## 2.13.0 (24th March 2026)
 
-## Added
+### Added
+
 - Added `enable_passwordless` attribute to `rediscloud_subscription_database` resource. When set to `true`, the database is configured without a password. Only valid when the subscription has `public_endpoint_access` disabled. Cannot be used together with `password`.
 - Exposed `enable_passwordless` attribute on the `rediscloud_database` data source.
 
-## Changed
+### Changed
+
 - Upgraded Go dependencies and CI workflow actions.
 
-## Fixed
+### Fixed
+
 - CI: Fixed `govulncheck` step in PR workflow.
 - Exposed `query_performance_factor` attribute in `rediscloud_subscription` and `rediscloud_subscription_database` resources documentation. Corrected validation, to allow higher values and resetting to `Standard`.
 
+## 2.12.0 (5th March 2026)
 
-# 2.12.0 (5th March 2026)
-
-## Added
+### Added
 
 - Added `auto_minor_version_upgrade` attribute to `rediscloud_subscription_database` and `rediscloud_active_active_subscription_database` resources and `rediscloud_database` data source. When set to `true` (the default), the database automatically upgrades to the latest minor Redis version.
 
-# 2.11.1 (2nd March 2026)
+## 2.11.1 (2nd March 2026)
 
-## Changed
+### Changed
 
 - CI: Isolated test resources per workflow run and added automatic cleanup sweeps to prevent orphaned cloud resources.
 - Migrated `acl_user` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
 
-# 2.11.0 (16th February 2026)
+## 2.11.0 (16th February 2026)
 
-## Added
+### Added
+
 - Added `ram_percentage` attribute to `rediscloud_subscription` and `rediscloud_subscription_database` resources.
 - `rediscloud_subscription` and `rediscloud_active_active_subscription` data sources: Exposed `customer_managed_key_enabled`, `customer_managed_key_deletion_grace_period`, `customer_managed_key_redis_service_account`, and `public_endpoint_access` fields.
 
-## Changed
+### Changed
+
 - Migrated `rediscloud_cloud_account` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
 - Deprecated `average_item_size_in_bytes` attribute on `rediscloud_subscription` resources. Configure `ram_percentage` instead.
 
-## Fixed
+### Fixed
+
 - `rediscloud_transit_gateway`, `rediscloud_active_active_transit_gateway`, and related attachment/invitation resources: Improved wait logic for state transitions, removing the need for manual workarounds.
 
-# 2.10.5 (9th February 2026)
+## 2.10.5 (9th February 2026)
 
-## Changed
+### Changed
+
 - Migrated `rediscloud_payment_method` and `rediscloud_data_persistence` data sources from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the data source schema or behaviour.
 
-## Fixed
+### Fixed
+
 - `rediscloud_subscription` and `rediscloud_active_active_subscription`: Fixed drift for `customer_managed_key_enabled` and `customer_managed_key_deletion_grace_period` when upgrading from older provider versions.
 
-# 2.10.4 (30th January 2026)
+## 2.10.4 (30th January 2026)
 
-## Fixed
+### Fixed
+
 - `rediscloud_active_active_subscription_database`: Fixed "provider produced inconsistent result after apply" error when `override_global_password` is set to the same value as `global_password`.
 
-# 2.10.3 (29th January 2026)
+## 2.10.3 (29th January 2026)
 
-## Fixed
+### Fixed
+
 - `rediscloud_active_active_subscription`: Fixed CMK (Customer Managed Key) flow by properly handling the `encryption_key_pending` state during subscription creation and reads.
 
-# 2.10.2 (27th January 2026)
+## 2.10.2 (27th January 2026)
 
-## Changed
+### Changed
+
 - Migrated `rediscloud_active_active_subscription_database` resource from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no breaking changes to the resource schema or behaviour.
 - Provider now uses muxing to serve resources from both SDK v2 and Plugin Framework simultaneously, enabling incremental migration of resources.
 - `rediscloud_private_link` and `rediscloud_active_active_private_link`: Delete now uses direct API endpoint instead of removing principals individually.
 - `rediscloud_private_link`: Updated documentation to use availability zone IDs instead of names, and added database resource.
 
-## Fixed
+### Fixed
+
 - `rediscloud_active_active_subscription_database`: Improved handling of `enable_default_user` inheritance between global and regional overrides.
 - `rediscloud_active_active_subscription_database`: Fixed `global_data_persistence` to be computed, correctly reflecting API defaults when not explicitly configured.
 
-# 2.10.1 (12th January 2026)
+## 2.10.1 (12th January 2026)
 
-## Added
+### Added
+
 - Added missing documentation for `rediscloud_private_link_endpoint_script` and `rediscloud_active_active_private_link_endpoint_script` data sources.
 
-## Fixed
+### Fixed
+
 - Fixed nil pointer dereference crashes in `rediscloud_database` and `rediscloud_active_active_subscription_database` data sources/resources when optional fields are missing from API response.
 - `rediscloud_active_active_subscription`: Fixed spurious resource replacement when removing the deprecated `redis_version` field.
 - `rediscloud_active_active_subscription_peering`: Fixed import failure when provider_name was not explicitly set.
 - Fixed incorrect usage of data sources in example documentation.
 
-## Changed
+### Changed
+
 - Improved CI/CD pipeline with additional validation checks and security scanning.
 - Improved test infrastructure and parallel resource cleanup.
 
-# 2.10.0 (22nd December 2025)
+## 2.10.0 (22nd December 2025)
 
-## Added
+### Added
+
 - New `rediscloud_transit_gateway_route` resource to manage Transit Gateway routing (CIDRs) separately from the attachment for Pro subscriptions. This is the preferred way to manage CIDRs.
 - New `rediscloud_active_active_transit_gateway_route` resource to manage Transit Gateway routing (CIDRs) separately from the attachment for Active-Active subscriptions. This is the preferred way to manage CIDRs.
 
-## Fixed
+### Fixed
+
 - `rediscloud_transit_gateway_attachment`: Delete operation now handles "TGW_ATTACHMENT_DOES_NOT_EXIST" error gracefully, making destroy idempotent.
 - `rediscloud_active_active_transit_gateway_attachment`: Delete operation now handles "TGW_ATTACHMENT_DOES_NOT_EXIST" error gracefully, making destroy idempotent.
 
-# 2.9.0 (15th December 2025)
+## 2.9.0 (15th December 2025)
 
-## Added
+### Added
+
 - New `rediscloud_transit_gateway_invitations` data source to retrieve pending Transit Gateway attachment invitations for Pro subscriptions.
 - New `rediscloud_transit_gateway_invitation_acceptor` resource to accept Transit Gateway attachment invitations for Pro subscriptions.
 - New `rediscloud_active_active_transit_gateway_invitations` data source to retrieve pending Transit Gateway attachment invitations for Active-Active subscriptions.
 - New `rediscloud_active_active_transit_gateway_invitation_acceptor` resource to accept Transit Gateway attachment invitations for Active-Active subscriptions.
 
-## Fixed
+### Fixed
+
 - `rediscloud_subscription`: Fixed "Provider produced inconsistent final plan" error when `networking_deployment_cidr` is not known until apply time (e.g., when the CIDR comes from another resource).
 - `rediscloud_subscription` and `rediscloud_active_active_subscription_database`: Fixed default `source_ips` values to correctly use RFC1918 private ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) when public endpoint access is
   disabled.
@@ -207,49 +243,56 @@
 - `rediscloud_pro_database`: Fixed import behaviour for `redis_version` field to prevent post-import drift.
 - Improved reliability of subscription and database state transitions with additional wait conditions.
 
-# 2.8.0 (10th November 2025)
+## 2.8.0 (10th November 2025)
 
-## Added
+### Added
+
 - Added support for database version for Essentials databases.
 - Added `aws_account_id` attribute to Pro and Active-Active subscription resources and data sources.
 - Added `region_id` to the attribute reference documentation for `rediscloud_active_active_subscription_regions` data source.
 - Added `region_id` attribute to `rediscloud_regions` data source.
 - Added `db_id` to the attribute reference documentation for `rediscloud_database` data source.
 
-## Fixed
+### Fixed
+
 - Spurious diffs for `customer_managed_key_deletion_grace_period` are now suppressed when upgrading the provider.
 
-# 2.7.4 (7th November 2025)
+## 2.7.4 (7th November 2025)
 
-## Changed
+### Changed
+
 - Reverted global/regional override rework from v2.7.3 due to regressions. Active-Active database global configuration behavior has been restored to v2.7.2 state. Transit Gateway improvements from v2.7.3 have been preserved.
 - `rediscloud_active_active_subscription_database`: Both `global_enable_default_user` and the region-level `enable_default_user` (in `override_region` blocks) now default to `true`. To disable the default user in a specific region, you must explicitly set `enable_default_user = false` in that region's `override_region` block.
 
-# 2.7.3 (6th November 2025)
+## 2.7.3 (6th November 2025)
 
-## Changed
+### Changed
+
 - Reworked the entire interaction between global/regional overrides and how they read config and state. This should fix many existing subtle state drift bugs.
 
-## Fixed
+### Fixed
+
 - `rediscloud_active_active_subscription_database`: Fixed multiple issues concerning regional `enable_default_user` and `global_enable_default_user` to do with drift or incorrectly not detecting changes.
 - The default for `global_enable_default_user` was omitted, it is now set to true.
 - `rediscloud_active_active_transit_gateway_attachment`: Fixed parameter order bug in update operation.
 
-## Testing
+### Testing
+
 - Added acceptance tests covering `enable_default_user` inheritance and override scenarios
 - Added acceptance test for `rediscloud_active_active_transit_gateway_attachment` resource lifecycle (Create/Read/Update/Delete/Import)
 
-# 2.7.2 (3rd November 2025)
+## 2.7.2 (3rd November 2025)
 
-## Fixed
+### Fixed
+
 - rediscloud_active_active_subscription_database: Fixed state management for global configuration fields (`global_enable_default_user`, `global_data_persistence`, `global_password`). These fields are now read directly from the API response instead of being preserved from configuration, eliminating state drift issues and ensuring accurate change detection.
 - `rediscloud_active_active_subscription_database`: Fixed issue where setting `global_enable_default_user = false` was silently ignored during updates. The provider now correctly handles boolean `false` values.
 - `rediscloud_private_link_endpoint_script` and `rediscloud_active_active_private_link_endpoint_script` datasources: Updated to support changes in the underlying API structure for endpoint scripts.
 
+## 2.7.1 (27th October 2025)
 
-# 2.7.1 (27th October 2025)
+### Fixed
 
-## Fixed
 - rediscloud_subscription_database: The query_performance_factor attribute can now be updated in-place without recreating the database. Previously, any changes to this attribute would force resource replacement.
 - When you remove the deprecated field `redis_version` field in subscriptions it should not attempt to force renew the resource.
 - rediscloud_subscription_database (Redis 8.0+): Fixed drift detection issues where explicitly configured modules would incorrectly show as changes requiring resource replacement after upgrading to Redis 8.0 or higher. Modules are bundled
@@ -258,69 +301,79 @@
 - Support for a new pending status for subscription and database updates.
 - Test Suite: Fixed incorrect file path references in acceptance tests.
 
-# 2.7.0 (22nd October 2025)
+## 2.7.0 (22nd October 2025)
 
-## Added:
+### Added
+
 - Add auto_minor_version_upgrade field to Pro and Active-Active database resources (default: true) to allow users to control automatic minor version upgrades. This will NOT affect existing databases.
 
-## Changed:
+### Changed
+
 - Change Redis 8.0 modules validation from hard error to warning since modules are bundled by default in Redis 8+.
 
-## Fixed:
+### Fixed
+
 - Fix test error message patterns to match updated API error format.
 - Fix Redis 8 upgrade test expectation (dataset_size_in_gb: 3→1).
 
+## 2.6.0 (17th October 2025)
 
-# 2.6.0 (17th October 2025)
+### Added
 
-## Added:
 - Support for disabling public endpoints on databases. When public endpoints are disabled, database connections are restricted to private networks only (via VPC peering, PrivateLink, or Private Service Connect).
 - `source_ips` attribute added to `rediscloud_database` data source.
 - `global_source_ips` attribute added to `rediscloud_active_active_subscription_database` data source.
 
-## Fixed:
+### Fixed
+
 - The default value for `enable_default_user` on each region for active-active subscriptions made the global default effectively redundant. The default has been removed meaning that the global default should work correctly now.
 
-# 2.5.0 (13th October 2025)
+## 2.5.0 (13th October 2025)
 
-## Added:
+### Added
+
 - Support for Redis 8 databases and upgrading. Redis 8 does not have modules so the provider should handle these gracefully.
 - Support for `query_performance_factor` on Redis 8.0 - Updated validation logic to allow QPF on Redis 8.0+ databases since RediSearch is bundled by default.
 
-## Fixed:
+### Fixed
+
 - Fix subscription state handling after Redis version upgrades - Added wait for subscription to become active after upgrading Redis versions to prevent "SUBSCRIPTION_NOT_ACTIVE" errors during subsequent operations.
 - Added full compatibility with Redis 8.2 and later.
 - Older provider versions (<2.5.0) will fail during 8.2 database creation.
 
-## Changed:
+### Changed
 
 - Refactor inline pro Terraform configs to external files.
 - Optimize test execution time by downsizing some configs
 
-# 2.4.5 (9th October 2025)
+## 2.4.5 (9th October 2025)
 
-## Added:
+### Added
+
 - Support for the global_enable_default_user attribute to Active-Active database resources, allowing users to control whether the default Redis user is enabled across all regions.
 
-# 2.4.4 (3rd October 2025)
+## 2.4.4 (3rd October 2025)
 
-## Changed:
+### Changed
+
 - Fixed AA endpoint script calling wrong method
 - Fixed connection flattening not aligning to schema
 
-# 2.4.3 (1st October 2025)
+## 2.4.3 (1st October 2025)
 
-## Added:
+### Added
+
 - PrivateLink pro subscription tests
 
-## Changed:
+### Changed
+
 - Fixed recursive delete loop on PrivateLink deletes
 - Fixed import ID mismatches and subscription IDs to be more idiomatic
 - Updated API SDK to fix some API schema issues for PrivateLink
 - Fixed schema mismatches that could cause issues
 - Fixed description on some of the PrivateLink schema that was incorrect
 
-# 2.4.2 (29th September 2025)
+## 2.4.2 (29th September 2025)
 
 ### Added
 
@@ -330,7 +383,7 @@
 
 - Expanded PrivateLink documentation and fixed errata
 
-# 2.4.1 (24th September 2025)
+## 2.4.1 (24th September 2025)
 
 ### Added
 
@@ -339,11 +392,11 @@
 - New data source: `rediscloud_active_active_private_link`
 - New data source: `rediscloud_active_active_private_link_endpoint_script`
 
-### Changed:
+### Changed
 
 - `rediscloud_active_active_subscription_regions` now supports the property `region_id`
 
-# 2.4.0 (19th September 2025)
+## 2.4.0 (19th September 2025)
 
 ### Added
 
@@ -352,7 +405,7 @@
 - New data source: `rediscloud_private_link`
 - New data source: `rediscloud_private_link_endpoint_script`
 
-# 2.3.0 (19th August 2025)
+## 2.3.0 (19th August 2025)
 
 ### Added
 
@@ -362,55 +415,56 @@
 - Updated data sources for pro and active active databases to also support `redis_version`.
 
 ### Changed
+
 - Updating multiple dependencies.
 - Deprecate subscription version support. If you use `redis_version` on your pro subscription a warning will come up. This will be removed entirely on a major update.
 
-# 2.2.0 (1st August 2025)
+## 2.2.0 (1st August 2025)
 
 ### Added
 
 - Customer Managed Key support for active-active and pro subscriptions. Only supports redis internal GCP cloud subscriptions. CMKs are externally provided by a customer-supplied GCP account and are managed externally by the user.
 
-# 2.1.5 (1st July 2025)
+## 2.1.5 (1st July 2025)
 
 ### Added
 
 - Feature: Support Marketplace as a payment method for Essentials subscription
 - Feature: Add TLS certificate to databases’ data sources
 
-### Fixed:
+### Fixed
 
 - Unexpected state `dynamic-endpoints-creation-pending'
 - Can not disable default user on essentials db
 
-# 2.1.4 (22nd May 2025)
+## 2.1.4 (22nd May 2025)
 
 ### Added
 
 - Documentation for `rediscloud_active_active_subscription_regions` added.
 - Schema documentation amended to match documentation above.
 
-# 2.1.3 (21st May 2025)
+## 2.1.3 (21st May 2025)
 
 ### Added
 
 - New datasource `rediscloud_active_active_subscription_regions` added.
 
-# 2.1.2 (19th May 2025)
+## 2.1.2 (19th May 2025)
 
 ### Added
 
 - Query Performance Factor now implemented for resources `rediscloud_subscription` and `rediscloud_subscription_database`
 - Reducing the number of attachments for Private Service Connect from 40 down to 1, in tests and documentation
 
-# 2.1.1 (6th Feb 2025)
+## 2.1.1 (6th February 2025)
 
 ### Added
 
 - Documentation related to using the [Redis Cloud Private Service Connect Module](https://github.com/RedisLabs/terraform-rediscloud-private-service-connect)
   to simplify the Terraform configuration.
 
-# 2.1.0 (6th Feb 2025)
+## 2.1.0 (6th February 2025)
 
 ### Added
 
@@ -425,7 +479,7 @@
 
 - Upgraded the provider to use `v0.22.0` of the [rediscloud-go-api](https://github.com/RedisLabs/rediscloud-go-api) SDK.
 
-# 2.0.0 (5th Dec 2024)
+## 2.0.0 (5th December 2024)
 
 ### Changed
 
@@ -437,7 +491,7 @@
   `rediscloud_active_active_subscription_regions`, `rediscloud_subscription_database` and `rediscloud_essentials_database`.
   Users should use the equivalent data sources instead.
 
-# 1.9.0 (9th Oct 2024)
+## 1.9.0 (9th October 2024)
 
 ### Added
 
@@ -445,7 +499,7 @@
 - The facility for users to upgrade from memorySizeInGb to datasetSizeInGb
   (please note that changing back may have unexpected results and is not supported)
 
-# 1.8.1 (3rd Sept 2024)
+## 1.8.1 (3rd September 2024)
 
 ### Removed
 
@@ -455,7 +509,7 @@
 
 - Slight performance improvement
 
-# 1.8.0 (12th August 2024)
+## 1.8.0 (12th August 2024)
 
 ### Added
 
@@ -497,7 +551,7 @@
 - All Database resources include `latest_backup_status` and `latest_import_status` attributes as appropriate
 - The `redis_version` attribute for `rediscloud_subscription` now supports numeric versions as input
 
-## 1.6.0 (12 April 2024)
+## 1.6.0 (12th April 2024)
 
 ### Fixed
 
@@ -511,14 +565,14 @@
   This means if it has been changed behind the scenes, reapplying the same Terraform configuration should not change
   anything.
 
-## 1.5.0 (24 November 2023)
+## 1.5.0 (24th November 2023)
 
 ### Added
 
 - a `resp_version` property on active-active databases
 - a `resp_version` property on active-active regions
 
-## 1.4.0 (21 November 2023)
+## 1.4.0 (21st November 2023)
 
 ### Added
 
@@ -526,7 +580,7 @@
 - an `enable_default_user` property on single-region databases
 - a `redis_version` property on both single-region and active-active subscriptions
 
-## 1.3.3 (10 November 2023)
+## 1.3.3 (10th November 2023)
 
 ### Fixed
 
@@ -540,7 +594,7 @@
 - The `REDISCLOUD_SUBSCRIPTION_TIMEOUT` environment variable is gone. Subscription creation times out after the user's
   setting (or 30 minutes by default). Note there is a 6-hour cap, regardless of the user's setting.
 
-## 1.3.2 (9 October 2023)
+## 1.3.2 (9th October 2023)
 
 ### Added
 
@@ -548,19 +602,19 @@
   configuring timeouts for subscriptions at the provider level.
   This is a **TEMPORARY** solution and will be deleted in the next releases.
 
-## 1.3.1 (10 August 2023)
+## 1.3.1 (10th August 2023)
 
 ### Fixed
 
 - Documentation fixes
 
-## 1.3.0 (7 August 2023)
+## 1.3.0 (7th August 2023)
 
 ### Added
 
 - Added ACL resources and data sources (users, roles, rules)
 
-## 1.2.0 (9 June 2023)
+## 1.2.0 (9th June 2023)
 
 ### Added
 
@@ -582,13 +636,13 @@
 - Emit a warning if `average_item_size_in_bytes` has been specified when `memory_storage` is set to `ram` as this
   attribute is only applicable with `ram-and-flash` storage.
 
-## 1.1.1 (6 March 2023)
+## 1.1.1 (6th March 2023)
 
 ### Fixed
 
 - Documentation fixes
 
-## 1.1.0 (6 March 2023)
+## 1.1.0 (6th March 2023)
 
 ### Added
 
@@ -598,19 +652,19 @@
 
 - Documentation fixes
 
-## 1.0.3 (1 February 2023)
+## 1.0.3 (1st February 2023)
 
 ### Fixed
 
 - Documentation fixes
 
-## 1.0.2 (16 January 2023)
+## 1.0.2 (16th January 2023)
 
 ### Fixed
 
 - Documentation fixes
 
-## 1.0.1 (12 September 2022)
+## 1.0.1 (12th September 2022)
 
 ### Changed
 
@@ -623,7 +677,7 @@
 - Fixed an issue where the `source_ips` and `enable_tls` attributes were not being provisioned correctly on
   the `rediscloud_subscription_database` resource
 
-## 1.0.0 (30 August 2022)
+## 1.0.0 (30th August 2022)
 
 ### Added
 
@@ -641,7 +695,7 @@
 
 - Removed the database block from the subscription resource schema.
 
-## 0.3.0 (May 24 2022)
+## 0.3.0 (24th May 2022)
 
 ### Added
 
@@ -659,7 +713,7 @@
 - Patch a vulnerability: CVE-2022-29810 by upgrading go-getter v1.5.3 -> v1.5.11
 - Fix timing on large subscription: reduce PUT requests
 
-## 0.2.9 (March 28 2022)
+## 0.2.9 (28th March 2022)
 
 ### Changed
 
@@ -667,20 +721,20 @@
 - Updates Terraform Plugin SDK to v2.10.1
 - Updates rediscloud-go-api dependency to v0.1.6 use correct content-type with API
 
-## 0.2.8 (December 14 2021)
+## 0.2.8 (14th December 2021)
 
 ### Changed
 
 - Updates Subscription database to enable TLS
 - Updates Terraform Plugin SDK to v2.10.0
 
-## 0.2.7 (November 26 2021)
+## 0.2.7 (26th November 2021)
 
 ### Fixed
 
 - Adjusts goreleaser configuration with go 1.17
 
-## 0.2.6 (November 26 2021)
+## 0.2.6 (26th November 2021)
 
 ### Changed
 
@@ -688,7 +742,7 @@
 - Updates Go version [#162](https://github.com/RedisLabs/terraform-provider-rediscloud/pull/162)
 - Updates additional dependencies contributing to build
 
-## 0.2.5 (November 11, 2021)
+## 0.2.5 (11th November 2021)
 
 ### Changed
 
@@ -702,7 +756,7 @@
   id [#149](https://github.com/RedisLabs/terraform-provider-rediscloud/pull/149)
 - Wrong syntax in example. [#153](https://github.com/RedisLabs/terraform-provider-rediscloud/pull/153)
 
-## 0.2.4 (July 24, 2021)
+## 0.2.4 (24th July 2021)
 
 ### Changed
 
@@ -718,7 +772,7 @@
 - Fixed parsing of log-levels by removing date/time
   prefix [#132](https://github.com/RedisLabs/terraform-provider-rediscloud/pull/132)
 
-## 0.2.3 (June 22, 2021)
+## 0.2.3 (22nd June 2021)
 
 ### Changed
 
@@ -729,7 +783,7 @@
 - replicaOf setting cannot be disabled from
   terraform [#121](https://github.com/RedisLabs/terraform-provider-rediscloud/issues/121)
 
-## 0.2.2 (April 27, 2021)
+## 0.2.2 (27th April 2021)
 
 ### Changed
 
@@ -746,7 +800,7 @@
 - Modules not included when creating DB on existing subscription in
   GCP [#98](https://github.com/RedisLabs/terraform-provider-rediscloud/issues/98)
 
-## 0.2.1 (December 7, 2020)
+## 0.2.1 (7th December 2020)
 
 ### Changed
 
@@ -754,7 +808,7 @@
 - Updates docs to include new attributes and expands examples to include output value for peering commands
 - Updates rediscloud-go-api to release v0.1.3
 
-## 0.2.0 (November 30, 2020)
+## 0.2.0 (30th November 2020)
 
 ### Added
 
@@ -776,13 +830,13 @@
 
 - `network_deployment_subnet` was moved to the `networks` block in subscription resource and data source
 
-## 0.1.1 (November 24, 2020)
+## 0.1.1 (24th November 2020)
 
 ### Added
 
 - Released through `registry.terraform.io` RedisLabs/rediscloud
 
-## 0.1.0 (November 24, 2020)
+## 0.1.0 (24th November 2020)
 
 ### Added
 

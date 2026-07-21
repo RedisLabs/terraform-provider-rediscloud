@@ -1,0 +1,12 @@
+# markdownlint-cli2 config. Scoped to the changelog for now (the provider docs
+# under docs/ are validated separately by `tfplugindocs validate`).
+config:
+  # Long lines are fine in changelog prose.
+  MD013: false
+  # A changelog repeats "Added"/"Changed"/"Fixed" under every release; only flag
+  # duplicate headings that are siblings under the same parent.
+  MD024:
+    siblings_only: true
+
+globs:
+  - "CHANGELOG.md"
