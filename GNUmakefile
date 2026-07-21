@@ -19,7 +19,7 @@ TESTARGS?=-short
 
 .PHONY: build clean fmt fmt-golangci fmt-terraform lint lint-golangci lint-terraform lint-tfproviderlint tfproviderlint \
         testacc testacc-essentials install-local sweep sweep-prefix \
-        lint-docs ci go-mod-tidy govulncheck go-unit-test go-build go-build-tests \
+        lint-docs lint-goreleaser ci go-mod-tidy govulncheck go-unit-test go-build go-build-tests \
         terraform-providers-schema
 
 bin:
@@ -44,7 +44,7 @@ fmt-terraform:
 	@echo "Formatting Terraform files"
 	terraform fmt -recursive
 
-lint: lint-golangci lint-tfproviderlint lint-terraform lint-docs
+lint: lint-golangci lint-tfproviderlint lint-terraform lint-docs lint-goreleaser
 
 lint-golangci:
 	@echo "Running golangci-lint"
@@ -62,6 +62,10 @@ lint-terraform:
 lint-docs:
 	@echo "Validating documentation"
 	tfplugindocs validate
+
+lint-goreleaser:
+	@echo "Checking GoReleaser config"
+	goreleaser check
 
 ci: govulncheck go-mod-tidy lint go-build go-build-tests go-unit-test terraform-providers-schema
 	@echo "All local CI checks passed"
