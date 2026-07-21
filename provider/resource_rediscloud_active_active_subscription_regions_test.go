@@ -36,22 +36,30 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 				Config: fmt.Sprintf(testAccResourceRedisCloudCreateActiveActiveRegion, subName, dbName, dbPass),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.2.0.0/24"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1500"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1500"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "region.*", map[string]string{
+						"region":                     "eu-west-2",
+						"networking_deployment_cidr": "10.2.0.0/24",
+						"database.#":                 "1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "region.*.database.*", map[string]string{
+						"database_name":                     dbName,
+						"local_write_operations_per_second": "1500",
+						"local_read_operations_per_second":  "1500",
+					}),
 
 					// Test the db regions datasource
 					resource.TestCheckResourceAttr(datasourceRegionName, "subscription_name", subName),
 					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.2.vpc_id"),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.region", "us-west-2"),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.networking_deployment_cidr", "10.2.0.0/24"),
+					resource.TestCheckTypeSetElemNestedAttrs(datasourceRegionName, "regions.*", map[string]string{
+						"region":                     "eu-west-2",
+						"networking_deployment_cidr": "10.2.0.0/24",
+					}),
 					resource.TestCheckResourceAttrSet(datasourceRegionName, "regions.2.databases.0.database_id"),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.databases.0.database_name", dbName),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.databases.0.read_operations_per_second", "1500"),
-					resource.TestCheckResourceAttr(datasourceRegionName, "regions.2.databases.0.write_operations_per_second", "1500"),
+					resource.TestCheckTypeSetElemNestedAttrs(datasourceRegionName, "regions.*.databases.*", map[string]string{
+						"database_name":               dbName,
+						"read_operations_per_second":  "1500",
+						"write_operations_per_second": "1500",
+					}),
 
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[resourceName]
@@ -80,12 +88,16 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 				Config: fmt.Sprintf(testAccResourceRedisCloudReCreateActiveActiveRegion, subName, dbName, dbPass),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.3.0.0/24"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1500"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1500"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "region.*", map[string]string{
+						"region":                     "eu-west-2",
+						"networking_deployment_cidr": "10.3.0.0/24",
+						"database.#":                 "1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "region.*.database.*", map[string]string{
+						"database_name":                     dbName,
+						"local_write_operations_per_second": "1500",
+						"local_read_operations_per_second":  "1500",
+					}),
 				),
 			},
 			{
@@ -93,12 +105,16 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 				Config: fmt.Sprintf(testAccResourceRedisCloudUpdateDBActiveActiveRegion, subName, dbName, dbPass),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "region.#", "3"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.region", "eu-west-2"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.networking_deployment_cidr", "10.3.0.0/24"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.database_name", dbName),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_write_operations_per_second", "1000"),
-					resource.TestCheckResourceAttr(resourceName, "region.2.database.0.local_read_operations_per_second", "1000"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "region.*", map[string]string{
+						"region":                     "eu-west-2",
+						"networking_deployment_cidr": "10.3.0.0/24",
+						"database.#":                 "1",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "region.*.database.*", map[string]string{
+						"database_name":                     dbName,
+						"local_write_operations_per_second": "1000",
+						"local_read_operations_per_second":  "1000",
+					}),
 				),
 			},
 			{
@@ -106,10 +122,14 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI(t *testing.T
 				Config: fmt.Sprintf(testAccResourceRedisCloudRemoveAndCreateSameTimeActiveActiveRegion, subName, dbName, dbPass),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "region.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "region.0.region", "us-east-1"),
-					resource.TestCheckResourceAttr(resourceName, "region.0.networking_deployment_cidr", "10.0.0.0/24"),
-					resource.TestCheckResourceAttr(resourceName, "region.1.region", "eu-west-1"),
-					resource.TestCheckResourceAttr(resourceName, "region.1.networking_deployment_cidr", "10.2.0.0/24"),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "region.*", map[string]string{
+						"region":                     "us-east-1",
+						"networking_deployment_cidr": "10.0.0.0/24",
+					}),
+					resource.TestCheckTypeSetElemNestedAttrs(resourceName, "region.*", map[string]string{
+						"region":                     "eu-west-1",
+						"networking_deployment_cidr": "10.2.0.0/24",
+					}),
 				),
 			},
 			{
