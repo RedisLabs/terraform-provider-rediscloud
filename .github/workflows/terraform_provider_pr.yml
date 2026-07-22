@@ -7,8 +7,6 @@ on:
       - develop
       - 'release/*'
 env:
-  REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_STAGING }}
-  REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_STAGING }}
   REDISCLOUD_URL: ${{ secrets.REDISCLOUD_URL_STAGING }}
   AWS_TEST_CLOUD_ACCOUNT_NAME: "${{ secrets.AWS_TEST_CLOUD_ACCOUNT_NAME_STAGING }}"
   AWS_PEERING_REGION: ${{ secrets.AWS_PEERING_REGION }}
@@ -68,8 +66,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - run: nix develop --command make ci
 
-  pre_sweep:
-    name: pre-test sweep
+  pre_test:
+    name: pre-test gate
     needs: [ci, detect-changes]
     if: >
       github.event.pull_request.draft == false &&
@@ -77,17 +75,11 @@ jobs:
       !contains(github.event.pull_request.labels.*.name, 'skip-tests')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-nix
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: ./.github/actions/run-sweep
-        with:
-          sweep_prefix: 'tf-ci'
+      - run: echo "Gate passed - running acceptance tests"
 
   go_test_smoke_aa_sub:
     name: go test smoke aa sub
-    needs: [pre_sweep]
+    needs: [pre_test]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloudActiveActiveSubscription_CRUDI
@@ -119,7 +111,7 @@ jobs:
 
   go_test_smoke_pro_sub:
     name: go test smoke pro sub
-    needs: [pre_sweep]
+    needs: [pre_test]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloudProSubscription_CRUDI
@@ -135,7 +127,7 @@ jobs:
 
   go_test_smoke_essentials_sub:
     name: go test smoke essentials sub
-    needs: [pre_sweep]
+    needs: [pre_test]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloudEssentialsSubscription
@@ -152,7 +144,7 @@ jobs:
 
   go_test_smoke_misc:
     name: go test smoke misc
-    needs: [pre_sweep]
+    needs: [pre_test]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloud(PrivateServiceConnect_CRUDI|AclRule_CRUDI)
@@ -168,39 +160,11 @@ jobs:
 
   go_test_block_public_endpoints:
     name: go test smoke public endpoints
-    needs: [pre_sweep]
+    needs: [pre_test]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(RedisCloudProDatabase_BlockPublicEndpoints|ActiveActiveSubscriptionDatabase_BlockPublicEndpoints)
     secrets: inherit
-
-  post_sweep:
-    name: post-test sweep
-    if: >
-      always() &&
-      github.event.pull_request.draft == false &&
-      needs.detect-changes.outputs.code == 'true' &&
-      !contains(github.event.pull_request.labels.*.name, 'skip-tests')
-    needs:
-      - detect-changes
-      - go_test_smoke_aa_db
-      - go_test_smoke_aa_regions
-      - go_test_smoke_aa_enable_default_user
-      - go_test_smoke_pro_db
-      - go_test_smoke_essentials_db
-      - go_test_smoke_misc
-      - go_test_pro_db_upgrade
-      - go_test_block_public_endpoints
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-nix
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: ./.github/actions/run-sweep
-        with:
-          sweep_prefix: "tf-ci-pr${{ github.event.pull_request.number }}-${{ github.run_number }}"
-          age_threshold: '0s'
 
   status:
     name: Status

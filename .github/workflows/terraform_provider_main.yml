@@ -7,8 +7,6 @@ on:
       - develop
   workflow_dispatch:
 env:
-  REDISCLOUD_ACCESS_KEY: ${{ secrets.REDISCLOUD_ACCESS_KEY_STAGING }}
-  REDISCLOUD_SECRET_KEY: ${{ secrets.REDISCLOUD_SECRET_KEY_STAGING }}
   REDISCLOUD_URL: ${{ secrets.REDISCLOUD_URL_STAGING }}
   AWS_TEST_CLOUD_ACCOUNT_NAME: "${{ secrets.AWS_TEST_CLOUD_ACCOUNT_NAME_STAGING }}"
   AWS_PEERING_REGION: ${{ secrets.AWS_PEERING_REGION }}
@@ -34,17 +32,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  pre_sweep:
-    name: pre-test sweep
+  # Lightweight gate the test chain depends on. Each acceptance-test run now
+  # provisions and tears down its own throwaway account (see testacc.yml), so
+  # there is no shared state to pre-sweep here.
+  pre_test:
+    name: pre-test gate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-nix
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: ./.github/actions/run-sweep
-        with:
-          sweep_prefix: 'tf-ci'
+      - run: echo "Gate passed - running acceptance tests"
 
   ci:
     name: ci
@@ -58,7 +53,7 @@ jobs:
 
   go_test_databases:
     name: go test Databases
-    needs: [ci, pre_sweep]
+    needs: [ci, pre_test]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Database_.*
@@ -111,22 +106,3 @@ jobs:
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(TransitGatewayAttachment|PaymentMethod).*
     secrets: inherit
-
-  post_sweep:
-    name: post-test sweep
-    if: ${{ always() && !cancelled() }}
-    # go_test_transit_payment is the terminal node of a strictly linear chain
-    # (databases -> subscriptions -> ... -> transit_payment). If the chain gains
-    # parallel branches in future, list all terminal jobs here explicitly
-    # (see terraform_provider_pr.yml for an example).
-    needs: [go_test_transit_payment]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-nix
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: ./.github/actions/run-sweep
-        with:
-          sweep_prefix: "tf-ci-main-${{ github.run_number }}"
-          age_threshold: '0s'
