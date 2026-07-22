@@ -66,7 +66,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - run: nix develop --command make ci
 
-  pre_sweep:
+  pre_test:
     name: pre-test gate
     needs: [ci, detect-changes]
     if: >
@@ -79,7 +79,7 @@ jobs:
 
   go_test_smoke_aa_sub:
     name: go test smoke aa sub
-    needs: [pre_sweep]
+    needs: [pre_test]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloudActiveActiveSubscription_CRUDI
@@ -111,7 +111,7 @@ jobs:
 
   go_test_smoke_pro_sub:
     name: go test smoke pro sub
-    needs: [pre_sweep]
+    needs: [pre_test]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloudProSubscription_CRUDI
@@ -127,7 +127,7 @@ jobs:
 
   go_test_smoke_essentials_sub:
     name: go test smoke essentials sub
-    needs: [pre_sweep]
+    needs: [pre_test]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloudEssentialsSubscription
@@ -144,7 +144,7 @@ jobs:
 
   go_test_smoke_misc:
     name: go test smoke misc
-    needs: [pre_sweep]
+    needs: [pre_test]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloud(PrivateServiceConnect_CRUDI|AclRule_CRUDI)
@@ -160,7 +160,7 @@ jobs:
 
   go_test_block_public_endpoints:
     name: go test smoke public endpoints
-    needs: [pre_sweep]
+    needs: [pre_test]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(RedisCloudProDatabase_BlockPublicEndpoints|ActiveActiveSubscriptionDatabase_BlockPublicEndpoints)

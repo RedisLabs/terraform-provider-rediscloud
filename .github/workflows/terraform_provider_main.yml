@@ -35,7 +35,7 @@ jobs:
   # Lightweight gate the test chain depends on. Each acceptance-test run now
   # provisions and tears down its own throwaway account (see testacc.yml), so
   # there is no shared state to pre-sweep here.
-  pre_sweep:
+  pre_test:
     name: pre-test gate
     runs-on: ubuntu-latest
     steps:
@@ -53,7 +53,7 @@ jobs:
 
   go_test_databases:
     name: go test Databases
-    needs: [ci, pre_sweep]
+    needs: [ci, pre_test]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Database_.*
