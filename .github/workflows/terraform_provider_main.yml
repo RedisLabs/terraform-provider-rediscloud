@@ -12,17 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Lightweight gate the test chain depends on. Each acceptance-test run now
-  # provisions and tears down its own throwaway account (see testacc.yml), so
-  # there is no shared state to pre-sweep here.
-  pre_test:
-    name: pre-test gate
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Gate passed - running acceptance tests"
-
   ci:
-    name: ci
+    name: CI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -31,57 +22,57 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - run: nix develop --command make ci
 
-  go_test_databases:
-    name: go test Databases
-    needs: [ci, pre_test]
+  testacc-databases:
+    name: Acceptance Tests (Databases)
+    needs: [ci]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Database_.*
     secrets: inherit
 
-  go_test_subscriptions:
-    name: go test Subscriptions
-    needs: [go_test_databases]
+  testacc-subscriptions:
+    name: Acceptance Tests (Subscriptions)
+    needs: [testacc-databases]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Subscription_.*
     secrets: inherit
 
-  go_test_subscriptions_tls:
-    name: go test Subscriptions TLS
-    needs: [go_test_subscriptions]
+  testacc-subscriptions-tls:
+    name: Acceptance Tests (Subscriptions TLS)
+    needs: [testacc-subscriptions]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloudSubscriptionTls_.*
     secrets: inherit
 
-  go_test_essentials_plan:
-    name: go test Essentials Plan
-    needs: [go_test_subscriptions_tls]
+  testacc-essentials-plan:
+    name: Acceptance Tests (Essentials Plan)
+    needs: [testacc-subscriptions-tls]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloudEssentialsPlan_.*
     secrets: inherit
 
-  go_test_persistence_modules_regions_acl:
-    name: go test Other
-    needs: [go_test_essentials_plan]
+  testacc-persistence-modules-regions-acl:
+    name: Acceptance Tests (Persistence Modules Regions ACL)
+    needs: [testacc-essentials-plan]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(DataPersistence|DatabaseModules|Regions|Acl).*
     secrets: inherit
 
-  go_test_cloud_account:
-    name: go test Cloud Account
-    needs: [go_test_persistence_modules_regions_acl]
+  testacc-cloud-account:
+    name: Acceptance Tests (Cloud Account)
+    needs: [testacc-persistence-modules-regions-acl]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(CloudAccount).*
     secrets: inherit
 
-  go_test_transit_payment:
-    name: go test Transit Gateway & Payment
-    needs: [go_test_cloud_account]
+  testacc-transit-payment:
+    name: Acceptance Tests (Transit Payment)
+    needs: [testacc-cloud-account]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(TransitGatewayAttachment|PaymentMethod).*
