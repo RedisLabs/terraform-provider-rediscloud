@@ -121,13 +121,6 @@ sweep:
 	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
 	go test ./provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
 
-sweep-prefix:
-ifndef TEST_RESOURCE_PREFIX
-	$(error TEST_RESOURCE_PREFIX is not set. Usage: TEST_RESOURCE_PREFIX=tf-ci-12345 make sweep-prefix)
-endif
-	@echo "WARNING: This will destroy infrastructure matching prefix '$(TEST_RESOURCE_PREFIX)'. Use only in development accounts."
-	TEST_RESOURCE_PREFIX=$(TEST_RESOURCE_PREFIX) SWEEP_AGE_THRESHOLD=0s go test ./provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
-
 release-notes:
 	@echo "Generating release notes"
 	./scripts/release-notes.sh > $(RELEASE_NOTES_FILE)
