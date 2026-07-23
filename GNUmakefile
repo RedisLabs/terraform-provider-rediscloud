@@ -110,6 +110,9 @@ terraform-providers-schema: go-build
 
 # `-p=1` added to avoid testing packages in parallel which causes `go test` to not stream logs as they are written
 testacc: bin
+ifndef TEST_PATTERN
+	$(error TEST_PATTERN is not set, e.g. make testacc TEST_PATTERN=TestAccResourceRedisCloudProSubscription_CRUDI)
+endif
 	TF_ACC=1 go test ./... -v -run='$(TEST_PATTERN)' -timeout 360m -p=1 -parallel=$(TEST_PARALLELISM) -coverprofile $(BIN)/coverage.out
 
 # Essentials tests must run serially due to an API limit of one essentials db per
