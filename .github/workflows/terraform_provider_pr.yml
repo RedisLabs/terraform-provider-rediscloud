@@ -176,6 +176,14 @@ jobs:
       test_pattern: TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndEmptySslCert$
     secrets: inherit
 
+  testacc-acl-role-crudi:
+    name: Acceptance Tests (ACL Role CRUDI)
+    needs: [pre-test]
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloudAclRole_CRUDI$
+    secrets: inherit
+
   status:
     name: Status
     runs-on: ubuntu-latest
@@ -195,6 +203,7 @@ jobs:
       - testacc-aa-sub-cmk
       - testacc-aa-sub-cmk-aws
       - testacc-tls-empty-sslcert
+      - testacc-acl-role-crudi
     if: always()
     steps:
       - name: Check CI status
