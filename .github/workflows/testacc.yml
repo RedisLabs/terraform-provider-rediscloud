@@ -64,6 +64,15 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # Fail fast if the caller's pattern matches no tests, BEFORE provisioning an
+      # account: `go test -run` exits 0 on no match, so `make testacc-check` uses
+      # `-list` to verify the pattern first (no credentials needed).
+      - name: Verify test pattern matches
+        shell: nix develop --command bash -e {0}
+        env:
+          TEST_PATTERN: ${{ inputs.test_pattern }}
+        run: make testacc-check
+
       # Short-lived installation token scoped to the private provisioning repo,
       # used to dispatch its workflows and download the encrypted artifact.
       - name: Mint GitHub App token (Create Account)
@@ -150,19 +159,13 @@ jobs:
           # deletion steps fire even if the tests below fail.
           echo "token=$token" >> "$GITHUB_OUTPUT"
 
-          # Run the tests but keep going so the sweep step below still tears the
-          # account's resources down. The trailing `|| test_status=...` records
-          # make's exit without tripping `set -e`; PIPESTATUS[0] pins it to make
-          # (not tee), and is read in the `||` branch before any later command
-          # clobbers it.
-          test_status=0
-          make testacc 2>&1 | tee test_output.txt || test_status=${PIPESTATUS[0]}
-
-          if ! grep -q "=== RUN" test_output.txt; then
-            echo "ERROR: No tests matched the pattern. Please check the -run argument."
-            exit 1
-          fi
-          exit "$test_status"
+          # Run the acceptance tests. The pattern was already validated by the
+          # "Verify test pattern matches" step above, and the credentials exported
+          # above stay confined to this step's process. No inline error handling or
+          # sweep is needed here: if the tests fail, `set -e` fails the step, and
+          # teardown still runs via the separate always() sweep and delete steps
+          # below (the cleanup token was persisted above).
+          make testacc
 
       # Sweep the throwaway account's resources in a SEPARATE always() step so
       # it also runs when the test step is cancelled (an inline sweep dies with

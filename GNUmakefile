@@ -108,6 +108,20 @@ terraform-providers-schema: go-build
 	cd $(CI_SCHEMA_DIR) && terraform init -plugin-dir $(CI_PLUGIN_DIR) && terraform providers schema -json > schema.json
 	@echo "Schema written to $(CI_SCHEMA_DIR)/schema.json"
 
+# Fail fast when TEST_PATTERN matches no tests: `go test -run` exits 0 even on no
+# match, so a typo'd pattern would silently "pass" without running anything.
+# `-list` applies the same regex but only prints matching test names (it runs
+# nothing, so no credentials are needed) — CI runs this as its own step before
+# provisioning a test account.
+testacc-check:
+ifndef TEST_PATTERN
+	$(error TEST_PATTERN is not set, e.g. make testacc-check TEST_PATTERN='TestAccResourceRedisCloudProSubscription_CRUDI')
+endif
+	@if [ -z "$$(go test ./... -list='$(TEST_PATTERN)' | grep '^Test')" ]; then \
+		echo "Error: no tests match TEST_PATTERN='$(TEST_PATTERN)'"; \
+		exit 1; \
+	fi
+
 # `-p=1` added to avoid testing packages in parallel which causes `go test` to not stream logs as they are written
 testacc: bin
 ifndef TEST_PATTERN
