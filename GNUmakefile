@@ -1,4 +1,4 @@
-default: testacc
+default: ci
 
 PROVIDER_HOSTNAME=registry.terraform.io
 PROVIDER_NAMESPACE=RedisLabs
