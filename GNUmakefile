@@ -52,8 +52,9 @@ lint-golangci:
 	golangci-lint run
 
 lint-tfproviderlint:
-  # XS001 — disables "schema should configure Description"
-  # XS002 — disables "schema attributes should be in alphabetical order"
+	# XS001 — disables "schema should configure Description"
+	# XS002 — disables "schema attributes should be in alphabetical order"
+	@echo "Running tfproviderlint"
 	tfproviderlintx $(TFPROVIDERLINT_ARGS) -XS001=false -XS002=false ./...
 
 lint-terraform:
