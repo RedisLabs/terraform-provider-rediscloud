@@ -114,14 +114,15 @@ jobs:
           name: encrypted-credentials-${{ steps.create.outputs.runId }}
           path: ${{ runner.temp }}/artifact
 
-      # Decrypt, test, and sweep in a SINGLE step so the account key/secret only
-      # ever exist as shell variables inside this one process: they are passed
-      # inline to the test/sweep commands that need them and never exported,
-      # written to $GITHUB_ENV/$GITHUB_OUTPUT, or persisted to disk, so they
-      # cannot leak into later steps. Only the opaque cleanup token is persisted
-      # as an output (and written up front, so the deletion step still runs when
-      # the tests fail). The age key and ciphertext are removed on exit via the
-      # trap. The shell is the Nix dev shell, so age/jq/go/make are all on PATH.
+      # Decrypt and test. The account key/secret only ever exist as shell
+      # variables inside this one process: they are exported under the
+      # provider's env-var names but never written to $GITHUB_ENV,
+      # $GITHUB_OUTPUT, or disk, so they cannot leak into later steps. Only the
+      # opaque cleanup token is persisted as an output (written up front, so the
+      # sweep and deletion steps still run when the tests fail). The age key and
+      # ciphertext are NOT removed here: the separate sweep step below
+      # re-decrypts them, and a final always() step deletes them. The shell is
+      # the Nix dev shell, so age/jq/go/make are all on PATH.
       - name: Run tests with ephemeral credentials
         id: creds
         shell: nix develop --command bash -e {0}
@@ -129,7 +130,6 @@ jobs:
           TEST_PATTERN: ${{ inputs.test_pattern }}
         run: |
           set -euo pipefail
-          trap 'rm -f "$RUNNER_TEMP/age-key.txt" "$RUNNER_TEMP/artifact/credentials.json.age"' EXIT
 
           plaintext=$(age -d -i "$RUNNER_TEMP/age-key.txt" "$RUNNER_TEMP/artifact/credentials.json.age")
           access_key="$(jq -er '.accessKey' <<< "$plaintext")"
@@ -146,30 +146,51 @@ jobs:
           export REDISCLOUD_ACCESS_KEY="$access_key"
           export REDISCLOUD_SECRET_KEY="$access_secret"
 
-          # Persist the cleanup token before running tests so the deletion step
-          # fires even if the tests below fail.
+          # Persist the cleanup token before running tests so the sweep and
+          # deletion steps fire even if the tests below fail.
           echo "token=$token" >> "$GITHUB_OUTPUT"
 
-          # Run the tests but keep going so the sweep still tears the account's
-          # resources down (a live subscription/database can block deletion).
-          # The credentials are exported above, so they stay confined to this
-          # step's process. The trailing `|| test_status=...` records make's exit
-          # without tripping `set -e`; PIPESTATUS[0] pins it to make (not tee),
-          # and is read in the `||` branch before any later command clobbers it.
+          # Run the tests but keep going so the sweep step below still tears the
+          # account's resources down. The trailing `|| test_status=...` records
+          # make's exit without tripping `set -e`; PIPESTATUS[0] pins it to make
+          # (not tee), and is read in the `||` branch before any later command
+          # clobbers it.
           test_status=0
           make testacc TESTARGS="-run=\"$TEST_PATTERN\"" 2>&1 | tee test_output.txt || test_status=${PIPESTATUS[0]}
-
-          # Non-fatal sweep, mirroring .github/actions/run-sweep. SWEEP_AGE_THRESHOLD=0s
-          # sweeps everything in this throwaway account regardless of age.
-          if ! SWEEP_AGE_THRESHOLD='0s' go test ./provider -v -sweep=ALL -timeout 30m 2>&1; then
-            echo "::warning::Sweep of prefix '$TEST_RESOURCE_PREFIX' completed with errors - some resources may not have been cleaned up"
-          fi
 
           if ! grep -q "=== RUN" test_output.txt; then
             echo "ERROR: No tests matched the pattern. Please check the -run argument."
             exit 1
           fi
           exit "$test_status"
+
+      # Sweep the throwaway account's resources in a SEPARATE always() step so
+      # it also runs when the test step is cancelled (an inline sweep dies with
+      # the cancelled step). This is required for teardown: delete-credentials
+      # refuses to remove a non-empty account, so a live subscription/database
+      # would otherwise orphan the whole account. Credentials are re-decrypted
+      # here rather than carried over, so the key/secret still never leave a
+      # single step's process. Best-effort: a sweep error only warns.
+      # SWEEP_AGE_THRESHOLD=0s sweeps everything in this account regardless of age.
+      - name: Sweep ephemeral account
+        if: always() && steps.creds.outputs.token != ''
+        shell: nix develop --command bash -e {0}
+        run: |
+          set -euo pipefail
+
+          plaintext=$(age -d -i "$RUNNER_TEMP/age-key.txt" "$RUNNER_TEMP/artifact/credentials.json.age")
+          access_key="$(jq -er '.accessKey' <<< "$plaintext")"
+          access_secret="$(jq -er '.secretKey' <<< "$plaintext")"
+          unset plaintext
+          echo "::add-mask::$access_key"
+          echo "::add-mask::$access_secret"
+
+          export REDISCLOUD_ACCESS_KEY="$access_key"
+          export REDISCLOUD_SECRET_KEY="$access_secret"
+
+          if ! SWEEP_AGE_THRESHOLD='0s' go test ./provider -v -sweep=ALL -timeout 30m 2>&1; then
+            echo "::warning::Sweep of prefix '$TEST_RESOURCE_PREFIX' completed with errors - some resources may not have been cleaned up"
+          fi
 
       # GitHub tokens expire after 1 hour, so the token minted at the start of the job
       # may expire for longer running tests.
@@ -201,3 +222,11 @@ jobs:
             {
               "token": "${{ steps.creds.outputs.token }}"
             }
+
+      # Remove the decrypted key material now that every step that needs it (the
+      # test and sweep steps) has run. This replaces the EXIT trap the test step
+      # used to carry, which had to go so the sweep step could re-decrypt.
+      - name: Remove decrypted credentials
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/age-key.txt" "$RUNNER_TEMP/artifact/credentials.json.age"
