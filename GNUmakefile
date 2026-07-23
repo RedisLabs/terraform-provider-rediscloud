@@ -18,7 +18,7 @@ RELEASE_NOTES_FILE = release-notes.md
 TEST_PARALLELISM?=6
 TESTARGS?=-short
 
-.PHONY: build clean fmt fmt-golangci fmt-terraform lint lint-golangci lint-terraform lint-tfproviderlint tfproviderlint \
+.PHONY: default build clean fmt fmt-golangci fmt-terraform lint lint-golangci lint-terraform lint-tfproviderlint tfproviderlint \
         testacc testacc-essentials install-local sweep sweep-prefix \
         lint-docs lint-goreleaser ci go-mod-tidy govulncheck go-unit-test go-build go-build-tests \
         terraform-providers-schema lint-markdown release-notes release
