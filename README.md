@@ -118,11 +118,11 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 $ make testacc
 ```
 
-In order to run an individual acceptance test, the '-run' flag can be used together with a regular expression. 
-The following example uses a regular expression matching single test called 'TestAccResourceRedisCloudSubscription_createWithDatabase'.
+In order to run an individual acceptance test, set the `TEST_PATTERN` variable to a regular expression.
+The following example uses a regular expression matching a single test called 'TestAccResourceRedisCloudSubscription_createWithDatabase'.
 
 ```sh
-$ make testacc TESTARGS='-run=TestAccResourceRedisCloudSubscription_createWithDatabase'
+$ make testacc TEST_PATTERN='TestAccResourceRedisCloudSubscription_createWithDatabase'
 ```
 
 In order to run the tests with extra debugging context, prefix the make command with TF_LOG (see the [terraform documentation](https://www.terraform.io/docs/internals/debugging.html) for details).
@@ -130,7 +130,7 @@ In order to run the tests with extra debugging context, prefix the make command 
 $ TF_LOG=trace make testacc
 ```
 
-By default, the tests run with a parallelism of 3. This can be reduced if some tests are failing due to network-related 
+By default, the tests run with a parallelism of 6. This can be reduced if some tests are failing due to network-related 
 issues, or increased if possible, to reduce the running time of the tests. Prefix the make command with TEST_PARALLELISM, 
 as in the following example, to configure this.
 ```sh
