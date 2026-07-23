@@ -12,7 +12,7 @@ PLUGINS_PROVIDER_PATH=$(PROVIDER_HOSTNAME)/$(PROVIDER_NAMESPACE)/$(PROVIDER_TYPE
 BIN=$(CURDIR)/bin
 CI_PLUGIN_DIR = $(BIN)/terraform-plugin-dir
 CI_SCHEMA_DIR = $(BIN)/providers-schema
-RELEASE_NOTES_FILE = release-notes.md
+RELEASE_NOTES_FILE = $(CURDIR)/release-notes.md
 
 # Use a parallelism of 6 by default for tests, overriding whatever GOMAXPROCS is set to.
 TEST_PARALLELISM?=6
