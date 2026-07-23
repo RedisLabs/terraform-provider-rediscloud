@@ -104,6 +104,22 @@ jobs:
       test_pattern: TestAccResourceRedisCloudProSubscription_qpf$
     secrets: inherit
 
+  testacc-pro-sub-crudi-redis7:
+    name: Acceptance Tests (Pro Sub CRUDI Redis7)
+    needs: [pre-test]
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloudProSubscription_CRUDI_Redis7$
+    secrets: inherit
+
+  testacc-pro-sub-crudi-redis8:
+    name: Acceptance Tests (Pro Sub CRUDI Redis8)
+    needs: [pre-test]
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloudProSubscription_CRUDI_Redis8$
+    secrets: inherit
+
   status:
     name: Status
     runs-on: ubuntu-latest
@@ -114,6 +130,8 @@ jobs:
       - testacc-pro-db-redis8-ramflash-crudi
       - testacc-essentials-db-redis-version
       - testacc-pro-sub-qpf
+      - testacc-pro-sub-crudi-redis7
+      - testacc-pro-sub-crudi-redis8
     if: always()
     steps:
       - name: Check CI status
