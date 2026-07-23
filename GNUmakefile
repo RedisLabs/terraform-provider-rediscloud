@@ -18,10 +18,14 @@ RELEASE_NOTES_FILE=$(CURDIR)/release-notes.md
 TEST_PARALLELISM?=6
 TESTARGS?=-short
 
-.PHONY: default build clean fmt fmt-golangci fmt-terraform lint lint-golangci lint-terraform lint-tfproviderlint \
-        testacc testacc-essentials install-local sweep sweep-prefix \
-        lint-docs lint-goreleaser ci go-mod-tidy govulncheck go-unit-test go-build go-build-tests \
-        terraform-providers-schema lint-markdown release-notes release
+.PHONY: default \
+        build clean install-local \
+        fmt fmt-golangci fmt-terraform \
+        lint lint-golangci lint-terraform lint-tfproviderlint lint-docs lint-goreleaser lint-markdown \
+        ci govulncheck go-mod-tidy go-build go-build-tests go-unit-test terraform-providers-schema \
+        testacc testacc-essentials testacc-check \
+        sweep \
+        release-notes release
 
 bin:
 	mkdir -p $(BIN)
