@@ -152,6 +152,22 @@ jobs:
       test_pattern: TestAccResourceRedisCloudProSubscription_PublicEndpointAccess$
     secrets: inherit
 
+  testacc-aa-sub-cmk:
+    name: Acceptance Tests (AA Sub CMK)
+    needs: [pre-test]
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloudActiveActiveSubscription_CMK$
+    secrets: inherit
+
+  testacc-aa-sub-cmk-aws:
+    name: Acceptance Tests (AA Sub CMK AWS)
+    needs: [pre-test]
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS$
+    secrets: inherit
+
   status:
     name: Status
     runs-on: ubuntu-latest
@@ -168,6 +184,8 @@ jobs:
       - testacc-ds-pro-sub-basic
       - testacc-ds-pro-sub-ignoresaa
       - testacc-pro-sub-public-endpoint
+      - testacc-aa-sub-cmk
+      - testacc-aa-sub-cmk-aws
     if: always()
     steps:
       - name: Check CI status
