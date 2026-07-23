@@ -16,7 +16,6 @@ RELEASE_NOTES_FILE=$(CURDIR)/release-notes.md
 
 # Use a parallelism of 6 by default for tests, overriding whatever GOMAXPROCS is set to.
 TEST_PARALLELISM?=6
-TESTARGS?=-short
 
 .PHONY: default \
         build clean install-local \
@@ -111,7 +110,7 @@ terraform-providers-schema: go-build
 
 # `-p=1` added to avoid testing packages in parallel which causes `go test` to not stream logs as they are written
 testacc: bin
-	TF_ACC=1 go test ./... -v -run='$(TEST_PATTERN)' $(TESTARGS) -timeout 360m -p=1 -parallel=$(TEST_PARALLELISM) -coverprofile $(BIN)/coverage.out
+	TF_ACC=1 go test ./... -v -run='$(TEST_PATTERN)' -timeout 360m -p=1 -parallel=$(TEST_PARALLELISM) -coverprofile $(BIN)/coverage.out
 
 # Essentials tests must run serially due to an API limit of one essentials db per
 # account, so run them through `testacc` with parallelism pinned to 1.
