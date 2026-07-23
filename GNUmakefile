@@ -1,27 +1,31 @@
-default: testacc
+default: ci
 
 PROVIDER_HOSTNAME=registry.terraform.io
 PROVIDER_NAMESPACE=RedisLabs
 PROVIDER_TYPE=rediscloud
 PROVIDER_TARGET=$(shell go env GOOS)_$(shell go env GOARCH)
-PROVIDER_VERSION = 99.99.99
+PROVIDER_VERSION=99.99.99
 
-PLUGINS_PATH = ~/.terraform.d/plugins
+PLUGINS_PATH=~/.terraform.d/plugins
 PLUGINS_PROVIDER_PATH=$(PROVIDER_HOSTNAME)/$(PROVIDER_NAMESPACE)/$(PROVIDER_TYPE)/$(PROVIDER_VERSION)/$(PROVIDER_TARGET)
 
 BIN=$(CURDIR)/bin
-CI_PLUGIN_DIR = $(BIN)/terraform-plugin-dir
-CI_SCHEMA_DIR = $(BIN)/providers-schema
-RELEASE_NOTES_FILE = release-notes.md
+CI_PLUGIN_DIR=$(BIN)/terraform-plugin-dir
+CI_SCHEMA_DIR=$(BIN)/providers-schema
+RELEASE_NOTES_FILE=$(CURDIR)/release-notes.md
 
-# Use a parallelism of 3 by default for tests, overriding whatever GOMAXPROCS is set to.
+# Use a parallelism of 6 by default for tests, overriding whatever GOMAXPROCS is set to.
 TEST_PARALLELISM?=6
 TESTARGS?=-short
 
-.PHONY: build clean fmt fmt-golangci fmt-terraform lint lint-golangci lint-terraform lint-tfproviderlint tfproviderlint \
-        testacc testacc-essentials install-local sweep sweep-prefix \
-        lint-docs lint-goreleaser ci go-mod-tidy govulncheck go-unit-test go-build go-build-tests \
-        terraform-providers-schema lint-markdown release-notes release
+.PHONY: default \
+        build clean install-local \
+        fmt fmt-golangci fmt-terraform \
+        lint lint-golangci lint-terraform lint-tfproviderlint lint-docs lint-goreleaser lint-markdown \
+        ci govulncheck go-mod-tidy go-build go-build-tests go-unit-test terraform-providers-schema \
+        testacc testacc-essentials testacc-check \
+        sweep \
+        release-notes release
 
 bin:
 	mkdir -p $(BIN)
@@ -52,8 +56,9 @@ lint-golangci:
 	golangci-lint run
 
 lint-tfproviderlint:
-  # XS001 — disables "schema should configure Description"
-  # XS002 — disables "schema attributes should be in alphabetical order"
+	# XS001 — disables "schema should configure Description"
+	# XS002 — disables "schema attributes should be in alphabetical order"
+	@echo "Running tfproviderlint"
 	tfproviderlintx $(TFPROVIDERLINT_ARGS) -XS001=false -XS002=false ./...
 
 lint-terraform:
@@ -120,13 +125,6 @@ install-local: build
 sweep:
 	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
 	go test ./provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
-
-sweep-prefix:
-ifndef TEST_RESOURCE_PREFIX
-	$(error TEST_RESOURCE_PREFIX is not set. Usage: TEST_RESOURCE_PREFIX=tf-ci-12345 make sweep-prefix)
-endif
-	@echo "WARNING: This will destroy infrastructure matching prefix '$(TEST_RESOURCE_PREFIX)'. Use only in development accounts."
-	TEST_RESOURCE_PREFIX=$(TEST_RESOURCE_PREFIX) SWEEP_AGE_THRESHOLD=0s go test ./provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
 
 release-notes:
 	@echo "Generating release notes"
