@@ -16,7 +16,6 @@ RELEASE_NOTES_FILE=$(CURDIR)/release-notes.md
 
 # Use a parallelism of 6 by default for tests, overriding whatever GOMAXPROCS is set to.
 TEST_PARALLELISM?=6
-TESTARGS?=-short
 
 .PHONY: default \
         build clean install-local \
@@ -111,12 +110,15 @@ terraform-providers-schema: go-build
 
 # `-p=1` added to avoid testing packages in parallel which causes `go test` to not stream logs as they are written
 testacc: bin
-	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 360m -p=1 -parallel=$(TEST_PARALLELISM) -coverprofile $(BIN)/coverage.out
+ifndef TEST_PATTERN
+	$(error TEST_PATTERN is not set, e.g. make testacc TEST_PATTERN='TestAccResourceRedisCloudProSubscription_CRUDI')
+endif
+	TF_ACC=1 go test ./... -v -run='$(TEST_PATTERN)' -timeout 360m -p=1 -parallel=$(TEST_PARALLELISM) -coverprofile $(BIN)/coverage.out
 
 # Essentials tests must run serially due to an API limit of one essentials db per
 # account, so run them through `testacc` with parallelism pinned to 1.
 testacc-essentials:
-	$(MAKE) testacc TEST_PARALLELISM=1 TESTARGS='-run="TestAccResourceRedisCloudEssentials|TestAccDataSourceRedisCloudEssentials"'
+	$(MAKE) testacc TEST_PARALLELISM=1 TEST_PATTERN='TestAccResourceRedisCloudEssentials|TestAccDataSourceRedisCloudEssentials'
 
 install-local: build
 	@echo "Installing local provider binary to plugins mirror path $(PLUGINS_PATH)/$(PLUGINS_PROVIDER_PATH)"
