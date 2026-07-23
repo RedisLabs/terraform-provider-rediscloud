@@ -14,7 +14,7 @@ CI_PLUGIN_DIR = $(BIN)/terraform-plugin-dir
 CI_SCHEMA_DIR = $(BIN)/providers-schema
 RELEASE_NOTES_FILE = release-notes.md
 
-# Use a parallelism of 3 by default for tests, overriding whatever GOMAXPROCS is set to.
+# Use a parallelism of 6 by default for tests, overriding whatever GOMAXPROCS is set to.
 TEST_PARALLELISM?=6
 TESTARGS?=-short
 
