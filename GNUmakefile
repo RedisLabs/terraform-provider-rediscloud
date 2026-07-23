@@ -4,15 +4,15 @@ PROVIDER_HOSTNAME=registry.terraform.io
 PROVIDER_NAMESPACE=RedisLabs
 PROVIDER_TYPE=rediscloud
 PROVIDER_TARGET=$(shell go env GOOS)_$(shell go env GOARCH)
-PROVIDER_VERSION = 99.99.99
+PROVIDER_VERSION=99.99.99
 
-PLUGINS_PATH = ~/.terraform.d/plugins
+PLUGINS_PATH=~/.terraform.d/plugins
 PLUGINS_PROVIDER_PATH=$(PROVIDER_HOSTNAME)/$(PROVIDER_NAMESPACE)/$(PROVIDER_TYPE)/$(PROVIDER_VERSION)/$(PROVIDER_TARGET)
 
 BIN=$(CURDIR)/bin
-CI_PLUGIN_DIR = $(BIN)/terraform-plugin-dir
-CI_SCHEMA_DIR = $(BIN)/providers-schema
-RELEASE_NOTES_FILE = $(CURDIR)/release-notes.md
+CI_PLUGIN_DIR=$(BIN)/terraform-plugin-dir
+CI_SCHEMA_DIR=$(BIN)/providers-schema
+RELEASE_NOTES_FILE=$(CURDIR)/release-notes.md
 
 # Use a parallelism of 6 by default for tests, overriding whatever GOMAXPROCS is set to.
 TEST_PARALLELISM?=6
