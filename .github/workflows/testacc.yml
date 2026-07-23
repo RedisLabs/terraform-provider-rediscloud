@@ -23,10 +23,9 @@ permissions:
   contents: read
 
 env:
-  # REDISCLOUD_ACCESS_KEY / REDISCLOUD_SECRET_KEY are intentionally absent here:
+  # REDISCLOUD_URL / REDISCLOUD_ACCESS_KEY / REDISCLOUD_SECRET_KEY are intentionally absent here:
   # they are produced per-run by the ephemeral account and live only as shell
   # variables inside the single "Run tests with ephemeral credentials" step.
-  REDISCLOUD_URL: ${{ secrets.REDISCLOUD_URL_STAGING }}
   AWS_TEST_CLOUD_ACCOUNT_NAME: "${{ secrets.AWS_TEST_CLOUD_ACCOUNT_NAME_STAGING }}"
   AWS_PEERING_REGION: ${{ secrets.AWS_PEERING_REGION }}
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
@@ -141,17 +140,19 @@ jobs:
           set -euo pipefail
 
           plaintext=$(age -d -i "$RUNNER_TEMP/age-key.txt" "$RUNNER_TEMP/artifact/credentials.json.age")
+          cloud_url="$(jq -er '.cloudUrl' <<< "$plaintext")"
           access_key="$(jq -er '.accessKey' <<< "$plaintext")"
           access_secret="$(jq -er '.secretKey' <<< "$plaintext")"
           token="$(jq -er '.token' <<< "$plaintext")"
           unset plaintext
           # Mask before any use, then re-export under the provider's env-var
           # names; the export stays confined to this step's process.
+          echo "::add-mask::$cloud_url"
           echo "::add-mask::$access_key"
           echo "::add-mask::$access_secret"
           echo "::add-mask::$token"
 
-
+          export REDISCLOUD_URL="$cloud_url"
           export REDISCLOUD_ACCESS_KEY="$access_key"
           export REDISCLOUD_SECRET_KEY="$access_secret"
 
@@ -182,12 +183,15 @@ jobs:
           set -euo pipefail
 
           plaintext=$(age -d -i "$RUNNER_TEMP/age-key.txt" "$RUNNER_TEMP/artifact/credentials.json.age")
+          cloud_url="$(jq -er '.cloudUrl' <<< "$plaintext")"
           access_key="$(jq -er '.accessKey' <<< "$plaintext")"
           access_secret="$(jq -er '.secretKey' <<< "$plaintext")"
           unset plaintext
+          echo "::add-mask::$cloud_url"
           echo "::add-mask::$access_key"
           echo "::add-mask::$access_secret"
 
+          export REDISCLOUD_URL="$cloud_url"
           export REDISCLOUD_ACCESS_KEY="$access_key"
           export REDISCLOUD_SECRET_KEY="$access_secret"
 
