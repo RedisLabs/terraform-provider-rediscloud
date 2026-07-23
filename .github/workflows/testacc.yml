@@ -188,7 +188,7 @@ jobs:
           export REDISCLOUD_ACCESS_KEY="$access_key"
           export REDISCLOUD_SECRET_KEY="$access_secret"
 
-          if ! SWEEP_AGE_THRESHOLD='0s' go test ./provider -v -sweep=ALL -timeout 30m 2>&1; then
+          if ! SWEEP_AGE_THRESHOLD='0s' make sweep 2>&1; then
             echo "::warning::Sweep of prefix '$TEST_RESOURCE_PREFIX' completed with errors - some resources may not have been cleaned up"
           fi
 
