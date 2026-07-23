@@ -72,12 +72,21 @@ jobs:
       test_pattern: TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade$
     secrets: inherit
 
+  testacc-pro-db-redis8-modules-blocked:
+    name: Acceptance Tests (Pro DB Redis8 Modules Blocked)
+    needs: [pre-test]
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: TestAccResourceRedisCloudProDatabase_Redis8_ModulesBlocked$
+    secrets: inherit
+
   status:
     name: Status
     runs-on: ubuntu-latest
     needs:
       - ci
       - testacc-pro-db-auto-minor-upgrade
+      - testacc-pro-db-redis8-modules-blocked
     if: always()
     steps:
       - name: Check CI status
