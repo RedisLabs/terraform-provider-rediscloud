@@ -6,9 +6,8 @@ variable "owner" {
   type = string
 }
 
-locals {
-  rediscloud_cloud_account     = "%s"
-  rediscloud_subscription_name = "%s"
+variable "subscription_name" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
@@ -16,31 +15,26 @@ data "rediscloud_payment_method" "card" {
   last_four_numbers = "5556"
 }
 
-data "rediscloud_cloud_account" "account" {
-  exclude_internal_account = true
-  provider_type            = "AWS"
-  name                     = local.rediscloud_cloud_account
-}
-
 resource "rediscloud_subscription" "example" {
-  name              = local.rediscloud_subscription_name
+  name              = var.subscription_name
   payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage    = "ram"
+
   cloud_provider {
     resource_tags = {
       team  = var.team
       owner = var.owner
     }
 
-    provider         = data.rediscloud_cloud_account.account.provider_type
-    cloud_account_id = data.rediscloud_cloud_account.account.id
+    provider = "AWS"
+
     region {
-      region                       = "eu-west-1"
-      networking_deployment_cidr   = "10.0.0.0/24"
-      preferred_availability_zones = ["eu-west-1a"]
+      region                     = "eu-west-1"
+      networking_deployment_cidr = "10.0.0.0/24"
     }
   }
+
   creation_plan {
     memory_limit_in_gb           = 1
     quantity                     = 1
@@ -60,4 +54,9 @@ resource "rediscloud_subscription_database" "example" {
   data_persistence             = "none"
   throughput_measurement_by    = "operations-per-second"
   throughput_measurement_value = 1000
+}
+
+data "rediscloud_subscription" "example" {
+  name       = rediscloud_subscription.example.name
+  depends_on = [rediscloud_subscription_database.example]
 }

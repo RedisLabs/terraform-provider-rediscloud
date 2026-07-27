@@ -14,13 +14,21 @@ import (
 // checkProSubscriptionDestroy verifies that all rediscloud_subscription resources
 // have been destroyed after a test completes.
 func checkProSubscriptionDestroy(s *terraform.State) error {
+	return checkSubscriptionDestroy(s, "rediscloud_subscription")
+}
+
+func checkAASubscriptionDestroy(s *terraform.State) error {
+	return checkSubscriptionDestroy(s, "rediscloud_active_active_subscription")
+}
+
+func checkSubscriptionDestroy(s *terraform.State, resourceType string) error {
 	apiClient, err := client.GetTestClient()
 	if err != nil {
 		return err
 	}
 
 	for _, r := range s.RootModule().Resources {
-		if r.Type != "rediscloud_subscription" {
+		if r.Type != resourceType {
 			continue
 		}
 

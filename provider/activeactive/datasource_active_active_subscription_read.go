@@ -157,7 +157,7 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 		)
 		return
 	}
-	pricing, diags := utils.PricingListFromAPI(ctx, pricingList)
+	pricing, diags := utils.PricingFromAPI(ctx, pricingList)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -5,6 +5,7 @@
 ### Changed
 
 - Migrated `rediscloud_active_active_subscription` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no schema or behaviour changes.
+- Migrated `rediscloud_subscription` (pro/flexible) data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no schema or behaviour changes.
 
 ### Fixed
 

@@ -25,7 +25,7 @@ func TestActiveActiveSubscriptionDataSourceSchemaMatchesModel(t *testing.T) {
 	// needs an initialized value to preserve the collection's element type.
 	maintenance, diags := customtypes.NewMaintenanceList(ctx, nil)
 	require.False(t, diags.HasError())
-	pricing, diags := utils.PricingListFromAPI(ctx, nil)
+	pricing, diags := utils.PricingFromAPI(ctx, nil)
 	require.False(t, diags.HasError())
 	resourceTags, diags := utils.ResourceTagsFromAPI(ctx, nil)
 	require.False(t, diags.HasError())
