@@ -32,7 +32,7 @@ jobs:
 
   testacc-subscriptions:
     name: Acceptance Tests (Subscriptions)
-    needs: [testacc-databases]
+    needs: [ci]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Subscription_.*
@@ -40,7 +40,7 @@ jobs:
 
   testacc-subscriptions-tls:
     name: Acceptance Tests (Subscriptions TLS)
-    needs: [testacc-subscriptions]
+    needs: [ci]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloudSubscriptionTls_.*
@@ -48,7 +48,7 @@ jobs:
 
   testacc-essentials-plan:
     name: Acceptance Tests (Essentials Plan)
-    needs: [testacc-subscriptions-tls]
+    needs: [ci]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloudEssentialsPlan_.*
@@ -56,7 +56,7 @@ jobs:
 
   testacc-persistence-modules-regions-acl:
     name: Acceptance Tests (Persistence Modules Regions ACL)
-    needs: [testacc-essentials-plan]
+    needs: [ci]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(DataPersistence|DatabaseModules|Regions|Acl).*
@@ -64,7 +64,7 @@ jobs:
 
   testacc-cloud-account:
     name: Acceptance Tests (Cloud Account)
-    needs: [testacc-persistence-modules-regions-acl]
+    needs: [ci]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(CloudAccount).*
@@ -72,7 +72,7 @@ jobs:
 
   testacc-transit-payment:
     name: Acceptance Tests (Transit Payment)
-    needs: [testacc-cloud-account]
+    needs: [ci]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(TransitGatewayAttachment|PaymentMethod).*
