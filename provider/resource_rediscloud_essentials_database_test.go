@@ -362,6 +362,7 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
 					// Test the datasource also returns redis_version
 					resource.TestMatchResourceAttr(datasourceName, "id", regexp.MustCompile("^\\d+/\\d+$")),
 					resource.TestCheckResourceAttrSet(datasourceName, "redis_version"),
+					resource.TestCheckResourceAttrSet(datasourceName, "redis_version_compliance"),
 				),
 			},
 		},
