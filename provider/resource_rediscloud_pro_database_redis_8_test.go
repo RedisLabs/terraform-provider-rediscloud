@@ -128,7 +128,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_by", "operations-per-second"),
 					resource.TestCheckResourceAttr(resourceName, "throughput_measurement_value", "1000"),
 					resource.TestCheckResourceAttr(resourceName, "data_persistence", "none"),
-					resource.TestCheckResourceAttr(resourceName, "data_eviction", "allkeys-random"),
+					resource.TestCheckResourceAttr(resourceName, "data_eviction", "volatile-lru"),
 					resource.TestCheckResourceAttr(resourceName, "average_item_size_in_bytes", "0"),
 					resource.TestCheckResourceAttr(resourceName, "client_ssl_certificate", ""),
 					resource.TestCheckResourceAttr(resourceName, "external_endpoint_for_oss_cluster_api", "false"),
