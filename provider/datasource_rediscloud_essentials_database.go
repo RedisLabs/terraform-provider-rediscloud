@@ -52,6 +52,11 @@ func dataSourceRedisCloudEssentialsDatabase() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 			},
+			"redis_version": {
+				Description: "The actual Redis database version",
+				Type:        schema.TypeString,
+				Computed:    true,
+			},
 			"redis_version_compliance": {
 				Description: "The compliance level (redis version) of this database",
 				Type:        schema.TypeString,
@@ -427,6 +432,9 @@ func dataSourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 	if err := d.Set("region", redis.StringValue(db.Region)); err != nil {
+		return diag.FromErr(err)
+	}
+	if err := d.Set("redis_version", redis.StringValue(db.RedisVersion)); err != nil {
 		return diag.FromErr(err)
 	}
 	if err := d.Set("redis_version_compliance", redis.StringValue(db.RedisVersionCompliance)); err != nil {
