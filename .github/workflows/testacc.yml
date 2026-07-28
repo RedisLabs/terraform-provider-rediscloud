@@ -18,6 +18,10 @@ on:
         description: 'Test pattern passed to the -run flag'
         required: true
         type: string
+      create_account_sleep_seconds:
+        description: 'Seconds to sleep (stagger) ephemeral account creation'
+        required: true
+        type: number
 
 permissions:
   contents: read
@@ -94,6 +98,12 @@ jobs:
           age-keygen -o "$RUNNER_TEMP/age-key.txt"
           public_key=$(age-keygen -y "$RUNNER_TEMP/age-key.txt")
           echo "public_key=$public_key" >> "$GITHUB_OUTPUT"
+
+      - name: Stagger ephemeral account creation
+        shell: bash
+        env:
+          OFFSET_SECONDS: ${{ inputs.create_account_sleep_seconds }}
+        run: sleep "$OFFSET_SECONDS"
 
       # Ask the private repo to provision an account and encrypt its credentials
       # with our public key. Waits for the run and exposes its runId.
