@@ -63,6 +63,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloudActiveActiveSubscription_CRUDI
+      create_account_sleep_seconds: 0
     secrets: inherit
 
   testacc-smoke-aa-db:
@@ -71,6 +72,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloudActiveActiveDatabase_CRUDI
+      create_account_sleep_seconds: 30
     secrets: inherit
 
   testacc-smoke-aa-regions:
@@ -79,6 +81,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloudActiveActiveSubscriptionRegions_CRUDI
+      create_account_sleep_seconds: 60
     secrets: inherit
 
   testacc-smoke-aa-enable-default-user:
@@ -87,6 +90,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser
+      create_account_sleep_seconds: 90
     secrets: inherit
 
   testacc-smoke-pro-sub:
@@ -95,6 +99,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloudProSubscription_CRUDI
+      create_account_sleep_seconds: 120
     secrets: inherit
 
   testacc-smoke-pro-db:
@@ -103,6 +108,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloudProDatabase_CRUDI
+      create_account_sleep_seconds: 150
     secrets: inherit
 
   testacc-smoke-essentials-sub:
@@ -111,6 +117,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloudEssentialsSubscription
+      create_account_sleep_seconds: 180
     secrets: inherit
 
 
@@ -120,6 +127,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloudEssentialsDatabase_CRUDI
+      create_account_sleep_seconds: 210
     secrets: inherit
 
   testacc-smoke-misc:
@@ -128,6 +136,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloud(PrivateServiceConnect_CRUDI|AclRule_CRUDI)
+      create_account_sleep_seconds: 240
     secrets: inherit
 
   testacc-pro-db-upgrade:
@@ -136,6 +145,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAccResourceRedisCloudProDatabase_Redis8_Upgrade
+      create_account_sleep_seconds: 270
     secrets: inherit
 
   testacc-block-public-endpoints:
@@ -144,6 +154,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(RedisCloudProDatabase_BlockPublicEndpoints|ActiveActiveSubscriptionDatabase_BlockPublicEndpoints)
+      create_account_sleep_seconds: 300
     secrets: inherit
 
   status:

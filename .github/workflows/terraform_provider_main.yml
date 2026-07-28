@@ -28,6 +28,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Database_.*
+      create_account_sleep_seconds: 0
     secrets: inherit
 
   testacc-subscriptions:
@@ -36,6 +37,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Subscription_.*
+      create_account_sleep_seconds: 30
     secrets: inherit
 
   testacc-subscriptions-tls:
@@ -44,6 +46,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloudSubscriptionTls_.*
+      create_account_sleep_seconds: 60
     secrets: inherit
 
   testacc-essentials-plan:
@@ -52,6 +55,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloudEssentialsPlan_.*
+      create_account_sleep_seconds: 90
     secrets: inherit
 
   testacc-persistence-modules-regions-acl:
@@ -60,6 +64,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(DataPersistence|DatabaseModules|Regions|Acl).*
+      create_account_sleep_seconds: 120
     secrets: inherit
 
   testacc-cloud-account:
@@ -68,6 +73,7 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(CloudAccount).*
+      create_account_sleep_seconds: 150
     secrets: inherit
 
   testacc-transit-payment:
@@ -76,4 +82,5 @@ jobs:
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(TransitGatewayAttachment|PaymentMethod).*
+      create_account_sleep_seconds: 180
     secrets: inherit
