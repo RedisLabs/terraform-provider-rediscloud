@@ -16,7 +16,6 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func TestAccResourceRedisCloudAclRole_CRUDI(t *testing.T) {
@@ -30,14 +29,14 @@ func TestAccResourceRedisCloudAclRole_CRUDI(t *testing.T) {
 	testRoleName := prefix + "-test-role"
 	testRoleNameUpdated := testRoleName + "-updated"
 
-	proSubBoilerPlate := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_boilerplate.tf")
-	proSubBoilerPlateFormatted := fmt.Sprintf(proSubBoilerPlate, cloudAccountName, exampleSubscriptionName, exampleDatabasePassword)
+	subAndDb := fmt.Sprintf(testAccResourceRedisCloudProDatabaseAcl,
+		cloudAccountName, exampleSubscriptionName, exampleDatabasePassword)
 
-	testCreateTerraform := proSubBoilerPlateFormatted + testAccResourceRedisCloudProDatabaseAcl +
+	testCreateTerraform := subAndDb +
 		fmt.Sprintf(referencableRule, exampleRuleName) +
 		fmt.Sprintf(testRole, testRoleName)
 
-	testUpdateTerraform := proSubBoilerPlateFormatted + testAccResourceRedisCloudProDatabaseAcl +
+	testUpdateTerraform := subAndDb +
 		fmt.Sprintf(referencableRule, exampleRuleName) +
 		fmt.Sprintf(testRole, testRoleNameUpdated)
 
