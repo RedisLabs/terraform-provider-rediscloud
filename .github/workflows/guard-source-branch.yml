@@ -1,0 +1,25 @@
+name: Guard PR source branch
+
+# Restrict which head branches may be merged into main, only release/*
+# branches are permitted.
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: Allowed source branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate head branch name
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [[ "$HEAD_REF" != release/* ]]; then
+            echo "::error::PRs into main must come from a 'release/*' branch (got '$HEAD_REF')."
+            exit 1
+          fi
