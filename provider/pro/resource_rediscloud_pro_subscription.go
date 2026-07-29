@@ -1125,7 +1125,10 @@ func BuildSubscriptionCreatePlanDatabases(memoryStorage string, planMap map[stri
 	throughputMeasurementBy := planMap["throughput_measurement_by"].(string)
 	throughputMeasurementValue := planMap["throughput_measurement_value"].(int)
 	averageItemSizeInBytes := planMap["average_item_size_in_bytes"].(int)
-	ramPercentage := planMap["ram_percentage"].(int)
+	ramPercentage := 0
+	if v, ok := planMap["ram_percentage"]; ok && v != nil {
+		ramPercentage = v.(int)
+	}
 
 	numDatabases := planMap["quantity"].(int)
 	supportOSSClusterAPI := planMap["support_oss_cluster_api"].(bool)
