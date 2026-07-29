@@ -19,22 +19,13 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 	awsPeering, awsPeeringCheck := envchecks.AwsPeeringValueAndCheck()
 
-	// Chose a CIDR range for the subscription that's unlikely to overlap with any VPC CIDR
+	// Chose a CIDR range for the subscription that's unlikely to overlap with the peer VPC.
+	// Env format is validated in PreCheck; offline the env is empty and the test skips at the
+	// TF_ACC gate, so tolerate an empty/invalid AWS_VPC_CIDR here rather than failing early.
 	subCidrRange := "10.0.0.0/24"
-
-	overlap, err := cidrRangesOverlap(subCidrRange, awsPeering.VpcCidr)
-	if err != nil {
-		t.Fatalf("AWS_VPC_CIDR is not a valid CIDR range %s: %s", awsPeering.VpcCidr, err)
-	}
-	if overlap {
+	if overlap, err := cidrRangesOverlap(subCidrRange, awsPeering.VpcCidr); err == nil && overlap {
 		subCidrRange = "172.16.0.0/24"
 	}
-
-	matchesRegex(t, awsPeering.Region, "^[a-z]+-[a-z]+-\\d+$")
-
-	matchesRegex(t, awsPeering.AccountId, "^\\d+$")
-
-	matchesRegex(t, awsPeering.VpcId, "^vpc-[a-z\\d]+$")
 
 	tf := fmt.Sprintf(testAccResourceRedisCloudSubscriptionPeeringAWS,
 		cloudAccountName,
@@ -48,7 +39,23 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 	const resourceName = "rediscloud_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, awsPeeringCheck, cloudAccountCheck),
+		PreCheck: envchecks.ComposePreChecks(t,
+			envchecks.RedisCloudCheck,
+			awsPeeringCheck,
+			cloudAccountCheck,
+			// Validate env-var formats here (after the TF_ACC gate) so the test skips
+			// cleanly offline instead of t.Fatal-ing in the test body.
+			func(t *testing.T) bool {
+				if _, err := cidrRangesOverlap("10.0.0.0/24", awsPeering.VpcCidr); err != nil {
+					t.Errorf("AWS_VPC_CIDR is not a valid CIDR range %q: %s", awsPeering.VpcCidr, err)
+					return false
+				}
+				matchesRegex(t, awsPeering.Region, "^[a-z]+-[a-z]+-\\d+$")
+				matchesRegex(t, awsPeering.AccountId, "^\\d+$")
+				matchesRegex(t, awsPeering.VpcId, "^vpc-[a-z\\d]+$")
+				return true
+			},
+		),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
