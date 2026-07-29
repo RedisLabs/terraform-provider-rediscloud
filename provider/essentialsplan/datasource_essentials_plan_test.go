@@ -151,7 +151,7 @@ func TestAccDataSourceRedisCloudEssentialsPlan_ambiguous(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable("30MB"),
 				},
-				ExpectError: regexp.MustCompile("Your query returned more than one result. Please change try a more specific search criteria and try again."),
+				ExpectError: regexp.MustCompile("Multiple Essentials Plans Found"),
 			},
 		},
 	})
@@ -169,7 +169,7 @@ func TestAccDataSourceRedisCloudEssentialsPlan_impossible(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"name": config.StringVariable("There should never be a essentials plan with this name!"),
 				},
-				ExpectError: regexp.MustCompile("Your query returned no results. Please change your search criteria and try again."),
+				ExpectError: regexp.MustCompile("No Essentials Plans Found"),
 			},
 		},
 	})
