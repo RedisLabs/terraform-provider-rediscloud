@@ -563,7 +563,7 @@ func TestAccResourceRedisCloudProSubscription_PublicEndpointAccess(t *testing.T)
 }
 
 // Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is one.
-func TestFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
+func TestUnitFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 
 	numDatabases := 1
 	planMap := map[string]interface{}{
@@ -599,7 +599,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 }
 
 // Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is greater than one.
-func TestFlexSubModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
+func TestUnitFlexSubModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 
 	numDatabases := 5
 	planMap := map[string]interface{}{
@@ -634,7 +634,7 @@ func TestFlexSubModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.T) {
 }
 
 // Checks that modules are allocated correctly into each creation-plan db if the only module is "RedisGraph".
-func TestFlexSubModulesAllocationWhenOnlyGraphModule(t *testing.T) {
+func TestUnitFlexSubModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 
 	numDatabases := 5
 	planMap := map[string]interface{}{
@@ -657,7 +657,7 @@ func TestFlexSubModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 }
 
 // Checks that modules are allocated correctly into the creation-plan dbs if "RedisGraph" is not included
-func TestFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
+func TestUnitFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
 
 	numDatabases := 5
 	planMap := map[string]interface{}{
@@ -683,7 +683,7 @@ func TestFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
 	}
 }
 
-func TestFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
+func TestUnitFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -704,7 +704,7 @@ func TestFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
 	}
 }
 
-func TestFlexSubNoAverageItemSizeInBytes(t *testing.T) {
+func TestUnitFlexSubNoAverageItemSizeInBytes(t *testing.T) {
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0, // 0 is the value that is returned when the field is not present
@@ -724,7 +724,7 @@ func TestFlexSubNoAverageItemSizeInBytes(t *testing.T) {
 	}
 }
 
-func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
+func TestUnitFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -743,7 +743,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *testing
 	assert.Equal(t, 2, *createDb.ThroughputMeasurement.Value)
 }
 
-func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
+func TestUnitFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -762,7 +762,7 @@ func TestFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *testing.
 	assert.Equal(t, 2, *createDb.ThroughputMeasurement.Value)
 }
 
-func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
+func TestUnitFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing.T) {
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   0,
@@ -781,7 +781,7 @@ func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *testing
 	assert.Equal(t, 2*250, *createDb.ThroughputMeasurement.Value)
 }
 
-func TestFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
+func TestUnitFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *testing.T) {
 
 	planMap := map[string]interface{}{
 		"average_item_size_in_bytes":   1000,
