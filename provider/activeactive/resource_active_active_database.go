@@ -234,6 +234,9 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 			"redis_version_actual": schema.StringAttribute{
 				Description: "The actual Redis database version",
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"support_oss_cluster_api": schema.BoolAttribute{
 				Description: "Support Redis open-source (OSS) Cluster API",
