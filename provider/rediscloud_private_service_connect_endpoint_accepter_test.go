@@ -32,7 +32,7 @@ func TestAccResourceRedisCloudPrivateServiceConnectEndpointAccepter_Create(t *te
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"google": {
 				Source:            "hashicorp/google",
-				VersionConstraint: "~> 6.5",
+				VersionConstraint: "~> 7.0",
 			},
 		},
 		CheckDestroy: testAccCheckProSubscriptionDestroy,

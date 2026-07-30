@@ -33,11 +33,11 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"aws": {
 				Source:            "hashicorp/aws",
-				VersionConstraint: "~> 5.0",
+				VersionConstraint: "~> 6.0",
 			},
 			"time": {
 				Source:            "hashicorp/time",
-				VersionConstraint: "~> 0.9",
+				VersionConstraint: "~> 0.14",
 			},
 		},
 		CheckDestroy: testAccCheckProSubscriptionDestroy,
