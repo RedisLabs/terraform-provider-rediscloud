@@ -17,6 +17,10 @@ RELEASE_NOTES_FILE=$(CURDIR)/release-notes.md
 # Use a parallelism of 6 by default for tests, overriding whatever GOMAXPROCS is set to.
 TEST_PARALLELISM?=6
 
+# Terraform log level for acceptance tests (TRACE|DEBUG|INFO|WARN|ERROR; empty = off).
+# Overridable per run, e.g. `make testacc TF_LOG=` for quiet output or `TF_LOG=TRACE` to debug.
+TF_LOG?=info
+
 .PHONY: default \
         build clean install-local \
         fmt fmt-golangci fmt-terraform \
@@ -123,7 +127,7 @@ testacc: bin
 ifndef TEST_PATTERN
 	$(error TEST_PATTERN is not set, e.g. make testacc TEST_PATTERN='TestAccResourceRedisCloudProSubscription_CRUDI')
 endif
-	TF_ACC=1 go test ./... -v -run='$(TEST_PATTERN)' -timeout 360m -p=1 -parallel=$(TEST_PARALLELISM) -coverprofile $(BIN)/coverage.out
+	TF_ACC=1 TF_LOG=$(TF_LOG) go test ./... -v -run='$(TEST_PATTERN)' -timeout 360m -p=1 -parallel=$(TEST_PARALLELISM) -coverprofile $(BIN)/coverage.out
 
 # Essentials tests must run serially due to an API limit of one essentials db per
 # account, so run them through `testacc` with parallelism pinned to 1.
