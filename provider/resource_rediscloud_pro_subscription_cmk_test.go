@@ -80,22 +80,16 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
-		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		ExternalProviders: map[string]resource.ExternalProvider{
-			"aws": {
-				Source:            "hashicorp/aws",
-				VersionConstraint: "~> 5.0",
-			},
-		},
+		PreCheck:     envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
 		CheckDestroy: testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				// Step 1: subscription enters encryption_key_pending; KMS key policy
 				// references the role ARN returned by the subscription.
-				ConfigFile:         config.StaticFile("./pro/testdata/cmk_aws_step1.tf"),
-				ConfigVariables:    configVars,
-				ExpectNonEmptyPlan: true,
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ConfigFile:               config.StaticFile("./pro/testdata/cmk_aws_step1.tf"),
+				ConfigVariables:          configVars,
+				ExpectNonEmptyPlan:       true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_aws_role_arn"),
@@ -110,9 +104,10 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 			},
 			{
 				// Step 2: subscription supplies the KMS key ARN and transitions to active.
-				ConfigFile:         config.StaticFile("./pro/testdata/cmk_aws_step2.tf"),
-				ConfigVariables:    configVars,
-				ExpectNonEmptyPlan: true,
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ConfigFile:               config.StaticFile("./pro/testdata/cmk_aws_step2.tf"),
+				ConfigVariables:          configVars,
+				ExpectNonEmptyPlan:       true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_aws_role_arn"),

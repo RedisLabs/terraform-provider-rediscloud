@@ -26,18 +26,12 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 	const resourceName = "rediscloud_active_active_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
-		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		ExternalProviders: map[string]resource.ExternalProvider{
-			"aws": {
-				Source:            "hashicorp/aws",
-				VersionConstraint: "~> 5.0",
-			},
-		},
+		PreCheck:     envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
 		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigFile: config.StaticFile("./peering/testdata/active_active_peering_aws.tf"),
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ConfigFile:               config.StaticFile("./peering/testdata/active_active_peering_aws.tf"),
 				ConfigVariables: config.Variables{
 					"subscription_name": config.StringVariable(name),
 					"aws_region":        config.StringVariable(awsRegion),
@@ -57,9 +51,10 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 				),
 			},
 			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ResourceName:             resourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
 			},
 		},
 	})
