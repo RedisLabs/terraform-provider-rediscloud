@@ -84,7 +84,7 @@ func TestAccDataSourceRedisCloudProSubscription_ignoresAA(t *testing.T) {
 	password := acctest.RandString(20)
 
 	config := utils.GetTestConfig(t, AADatabaseProDatasourceConfigPath)
-	config = fmt.Sprintf(config, name+"-subscription", name+"-database", password)
+	config = fmt.Sprintf(config, name+"-subscription", password)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
