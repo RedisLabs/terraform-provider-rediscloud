@@ -34,6 +34,35 @@ green".
 
 ---
 
+## Branching & PRs
+
+**Default: branch from — and open PRs against — the latest release branch, not
+`main`.** Release branches are named `release/<x.y.z>` (e.g. `release/2.19.0`).
+Only release branches get merged into `main`, with very few exceptions.
+
+Why: each release is assembled as a stable, predictable set of features. Nothing
+half-baked reaches `main` ahead of a release, and what's on the release branch is
+exactly what ships.
+
+- **Find the latest release branch; never assume one.** `git fetch` then
+  `git branch -r --list 'origin/release/*'` and take the highest version — don't
+  reuse a release branch name you saw in an earlier session or in this document,
+  it goes stale every release. If which one is current is ambiguous (two open, or
+  the newest looks already-released), ask rather than guess: a wrong base makes
+  the whole diff wrong.
+- **Work that won't be in the next release may be based on `main`** — but it's
+  parked, not done. Once the next release branch opens, put it in the right place:
+  rebase onto that newer release branch and merge there.
+- **Stacked work bases on its parent branch**, which is itself based on the
+  release branch — see the stacked-migrations bullet in the playbook (§0).
+- Anchor: `.github/workflows/terraform_provider_pr.yml` runs the PR checks for
+  PRs targeting `main`, `develop`, and `release/*`. Note that
+  `RELEASE_PROCESS.md` step 1 ("open a PR to `main`") describes the
+  release-branch → `main` PR — it is not licence for a feature branch to target
+  `main`.
+
+---
+
 ## Migration playbook (SDKv2 → Plugin Framework)
 
 The provider is migrated one data source / resource at a time. Most rules below
@@ -55,10 +84,12 @@ the few kind-specific bullets are tagged _(data sources)_ / _(resources)_.
   improvement, **stop and confirm with the user** before deviating — don't
   silently "fix" it, and don't silently carry a known bug forward.
 - **Migrations are often stacked.** A task may depend on helpers/files added on
-  an earlier migration branch that are **not on `main`** (e.g.
-  `provider/pro/flatten.go`). Verify prerequisites exist on your base
+  an earlier migration branch that **haven't landed on the release branch** yet
+  (e.g. `provider/pro/flatten.go`). Verify prerequisites exist on your base
   before writing code (`git show HEAD:<path>`). If stacked, the **PR base should
-  be the parent migration branch**, not `main`, so the diff stays scoped.
+  be the parent migration branch** — not the release branch, not `main` — so the
+  diff stays scoped. Unstacked work follows the default in
+  [Branching & PRs](#branching--prs).
 
 ### 1. Schema type translation (non-negotiable mux v5 rules)
 
