@@ -211,7 +211,9 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(datasourceName, "external_endpoint_for_oss_cluster_api", "true"),
 				),
 			},
-			// Simulate auto_minor_version_upgrade having gone through
+			// Requesting a lower redis_version than the running one (as happens after a background
+			// auto minor upgrade) is already satisfied, so it is a no-op: redis_version keeps the
+			// running value (8.4) and no in-place downgrade is attempted.
 			{
 				ConfigFile: config.StaticFile("./testdata/database_crudi_update.tf"),
 				ConfigVariables: config.Variables{
@@ -221,7 +223,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(databaseResourceName, "name", databaseNameUpdated),
-					resource.TestCheckResourceAttr(databaseResourceName, "redis_version", "8.2"),
+					resource.TestCheckResourceAttr(databaseResourceName, "redis_version", "8.4"),
 					resource.TestCheckResourceAttr(databaseResourceName, "redis_version_actual", "8.4"),
 					resource.TestCheckResourceAttr(databaseResourceName, "dataset_size_in_gb", "1"),
 					resource.TestCheckResourceAttr(databaseResourceName, "support_oss_cluster_api", "true"),
