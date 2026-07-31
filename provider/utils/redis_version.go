@@ -28,11 +28,22 @@ func SuppressIfRedisVersionSatisfied(_, _, newVal string, d *schema.ResourceData
 	if !ok {
 		return false
 	}
-	requested, err := version.NewVersion(newVal)
+	return RedisVersionSatisfied(newVal, actualRaw.(string))
+}
+
+// RedisVersionSatisfied reports whether a database already running actualVersion
+// satisfies a request for requestedVersion: same major version, with the running
+// version greater than or equal to the requested one. This treats "already at or
+// above the requested version" (e.g. after a background auto minor upgrade) as a
+// no-op rather than a change — and in particular avoids attempting an unsupported
+// in-place downgrade. Returns false if either version is unparseable or the majors
+// differ.
+func RedisVersionSatisfied(requestedVersion, actualVersion string) bool {
+	requested, err := version.NewVersion(requestedVersion)
 	if err != nil {
 		return false
 	}
-	actual, err := version.NewVersion(actualRaw.(string))
+	actual, err := version.NewVersion(actualVersion)
 	if err != nil {
 		return false
 	}
