@@ -16,6 +16,7 @@ import (
 )
 
 // createDatabase implements the Create operation for the active-active database resource.
+// Keep in sync: ./active_active_database_resource_test.go
 func (r *activeActiveDatabaseResource) createDatabase(ctx context.Context, plan *ActiveActiveDatabaseModel, diagnostics *diag.Diagnostics) {
 	subId := int(plan.SubscriptionID.ValueInt64())
 
@@ -168,6 +169,7 @@ func (r *activeActiveDatabaseResource) createDatabase(ctx context.Context, plan 
 
 // readDatabase implements the Read operation for the active-active database resource.
 // Returns true if the resource was removed (not found).
+// Keep in sync: ./active_active_database_resource_test.go
 func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *ActiveActiveDatabaseModel, diagnostics *diag.Diagnostics) bool {
 	subId, dbId, err := parseResourceId(state.ID.ValueString())
 	if err != nil {
@@ -364,6 +366,7 @@ func ensureNoUnknownFields(state *ActiveActiveDatabaseModel) {
 }
 
 // updateDatabase implements the Update operation for the active-active database resource.
+// Keep in sync: ./active_active_database_resource_test.go
 func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan *ActiveActiveDatabaseModel, state *ActiveActiveDatabaseModel, diagnostics *diag.Diagnostics) {
 	subId, dbId, err := parseResourceId(plan.ID.ValueString())
 	if err != nil {
