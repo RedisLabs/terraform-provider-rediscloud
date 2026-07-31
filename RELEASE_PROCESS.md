@@ -16,7 +16,7 @@ That's it! The release automation handles everything else (building binaries, GP
 
 Create a PR with your changes targeting the `main` branch. The PR should:
 - Include all the changes you want to release
-- Update the CHANGELOG if needed (follow existing format)
+- Add a new entry to [`CHANGELOG.md`](./CHANGELOG.md) for this version, following the existing `## MAJOR.MINOR.PATCH (Month Day Year)` format. **This is required and must be merged before you tag** — the release automation generates the GitHub release notes from the latest CHANGELOG entry in the tagged commit.
 - Pass all required checks before merging
 
 You should get someone to test and review your changes manually before releasing.
@@ -48,7 +48,7 @@ After merging to `main`:
 git checkout main
 git pull origin main
 
-# Create an annotated tag with the version number
+# Create a tag with the version number
 # Use semantic versioning: v<major>.<minor>.<patch>
 git tag v1.2.3
 
@@ -63,25 +63,24 @@ git push origin v1.2.3
 When you push the tag, the `release` workflow (`.github/workflows/release.yml`) automatically:
 
 1. Checks out the tagged commit
-2. Sets up Go using the version from `go.mod`
+2. Sets up the pinned Nix toolchain (via the `./.github/actions/setup-nix` action)
 3. Imports the GPG signing key from GitHub secrets
-4. Runs [GoReleaser](https://goreleaser.com/) to:
+4. Runs [GoReleaser](https://goreleaser.com/) (`make release`) to:
+   - Generate the release notes from the latest `CHANGELOG.md` entry
    - Build binaries for all supported platforms
    - Sign the binaries with GPG
-   - Create a GitHub release
+   - Create the GitHub release (published, not a draft)
    - Publish to the Terraform Registry
 
 **No manual intervention required** - just wait for the workflow to complete (usually 5-10 minutes).
 
-### 6. Create a GitHub Release
+### 6. Verify the Release
 
-To do this:
+GoReleaser creates the GitHub release automatically, with its notes taken from the latest
+`CHANGELOG.md` entry — there is no manual release-creation step. Once the workflow finishes:
 
-2. Go to https://github.com/RedisLabs/terraform-provider-rediscloud/releases
-2. Add a new draft release
-3. Update the description with your entries in the `CHANGELOG.md`.
-
-**This step is not required for the release to work** - it's just nice to have for users.
+1. Check the [releases page](https://github.com/RedisLabs/terraform-provider-rediscloud/releases) to confirm the release and its notes look correct.
+2. Wait for the [Terraform Registry](https://registry.terraform.io/providers/RedisLabs/rediscloud/latest) to pick up the new version (usually a few minutes).
 
 ## Additional Resources
 
