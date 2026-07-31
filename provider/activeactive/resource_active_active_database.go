@@ -26,6 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 var (
@@ -129,6 +130,107 @@ func (m emptyStringToNullModifier) PlanModifyString(_ context.Context, req planm
 // in agreement and avoid "planned set element does not correlate" errors on parent set blocks.
 func EmptyStringToNull() planmodifier.String {
 	return emptyStringToNullModifier{}
+}
+
+// redisVersionModifier ports the Pro database's SuppressIfRedisVersionSatisfied DiffSuppressFunc to
+// the framework. If the running version (redis_version_actual) already satisfies the requested
+// redis_version — same major and actual >= requested — the requested change is treated as a no-op
+// (keep the prior value), so no update is planned. This implements "the requested version is a
+// floor" and, in particular, avoids attempting an in-place downgrade when a background auto minor
+// upgrade has moved the actual version past the requested one. It also subsumes UseStateForUnknown
+// (keeps the prior value when redis_version is not explicitly requested).
+type redisVersionModifier struct{}
+
+var _ planmodifier.String = redisVersionModifier{}
+
+func (m redisVersionModifier) Description(_ context.Context) string {
+	return "Keeps the prior requested version when the running version already satisfies it (same major, actual >= requested)."
+}
+
+func (m redisVersionModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m redisVersionModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	// Nothing to preserve on create.
+	if req.StateValue.IsNull() {
+		return
+	}
+	// No explicit request: keep the prior value (UseStateForUnknown behaviour) so a computed
+	// unknown plan value doesn't churn.
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		resp.PlanValue = req.StateValue
+		return
+	}
+	// If the running version already satisfies the request, suppress the change (keep the prior
+	// value); otherwise leave the configured value in place — a genuine upgrade.
+	var actual types.String
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("redis_version_actual"), &actual)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !actual.IsNull() && !actual.IsUnknown() &&
+		utils.RedisVersionSatisfied(req.ConfigValue.ValueString(), actual.ValueString()) {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+// RedisVersion returns the plan modifier for the requested redis_version attribute.
+func RedisVersion() planmodifier.String {
+	return redisVersionModifier{}
+}
+
+// redisVersionActualModifier keeps the prior redis_version_actual value in the plan unless a genuine
+// upgrade is requested (the running version does not satisfy the requested redis_version), in which
+// case it lets the value be recomputed. This gives the framework resource the same behaviour SDKv2
+// provides for free on the Pro database (stable on non-version in-place updates, refreshed on
+// upgrade). A plain Computed field would show a spurious "known after apply" diff on every update;
+// UseStateForUnknown would instead pin the value and cause "Provider produced inconsistent result
+// after apply" when an upgrade legitimately changes the running version.
+type redisVersionActualModifier struct{}
+
+var _ planmodifier.String = redisVersionActualModifier{}
+
+func (m redisVersionActualModifier) Description(_ context.Context) string {
+	return "Uses the prior state value unless a genuine redis_version upgrade is requested, in which case redis_version_actual is recomputed."
+}
+
+func (m redisVersionActualModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m redisVersionActualModifier) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	// Same guards as UseStateForUnknown: nothing to do on create, when the value is already known
+	// (e.g. destroy leaves a null plan value), or with an unknown config value.
+	if req.StateValue.IsNull() {
+		return
+	}
+	if !req.PlanValue.IsUnknown() {
+		return
+	}
+	if req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	// req.StateValue is the running version. If the requested redis_version is NOT satisfied by it
+	// (a genuine upgrade will occur), leave the value unknown so apply can set the new running
+	// version without a plan/apply inconsistency. Otherwise keep the prior value (no churn).
+	var configVersion types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("redis_version"), &configVersion)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !configVersion.IsNull() && !configVersion.IsUnknown() &&
+		!utils.RedisVersionSatisfied(configVersion.ValueString(), req.StateValue.ValueString()) {
+		return
+	}
+
+	resp.PlanValue = req.StateValue
+}
+
+// RedisVersionActual returns the plan modifier for the computed redis_version_actual attribute.
+func RedisVersionActual() planmodifier.String {
+	return redisVersionActualModifier{}
 }
 
 // Schema defines the schema for the resource.
@@ -237,12 +339,15 @@ func (r *activeActiveDatabaseResource) Schema(ctx context.Context, _ resource.Sc
 				//TODO(TF3.0) drop Computed and stop writing redis_version from Read — makes the field write-only-by-convention (no plugin-framework migration), so state only ever holds what the user wrote in config and auto-upgrades can't drift state. DSF stays to heal state poisoned by older provider versions.
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+					RedisVersion(),
 				},
 			},
 			"redis_version_actual": schema.StringAttribute{
 				Description: "The actual Redis database version",
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					RedisVersionActual(),
+				},
 			},
 			"support_oss_cluster_api": schema.BoolAttribute{
 				Description: "Support Redis open-source (OSS) Cluster API",

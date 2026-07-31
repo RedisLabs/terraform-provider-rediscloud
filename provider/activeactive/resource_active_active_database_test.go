@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/activeactive"
@@ -45,6 +44,6 @@ func TestUnitRedisVersionModifiersWired(t *testing.T) {
 	activeactive.NewActiveActiveDatabaseResource().Schema(context.Background(), resource.SchemaRequest{}, &resp)
 	assert.False(t, resp.Diagnostics.HasError())
 
-	hasModifier(t, resp, "redis_version", stringplanmodifier.UseStateForUnknown())
-	hasModifier(t, resp, "redis_version_actual", stringplanmodifier.UseStateForUnknown())
+	hasModifier(t, resp, "redis_version", activeactive.RedisVersion())
+	hasModifier(t, resp, "redis_version_actual", activeactive.RedisVersionActual())
 }
