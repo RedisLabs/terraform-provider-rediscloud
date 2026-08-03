@@ -23,6 +23,8 @@ jobs:
         with:
           filters: |
             code:
+              - 'flake.nix'
+              - 'flake.lock'
               - '**/*.go'
               - 'go.mod'
               - 'go.sum'
