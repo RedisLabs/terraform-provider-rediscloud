@@ -163,9 +163,4 @@ Then commit the changes to `go.mod` and `go.sum`.
 Releasing the Provider
 ----------------------
 
-The steps to release a provider are:
-1. Decide what the next version number will be. As this provider tries to follow [semantic versioning](https://semver.org/), the best strategy would be to look at the previous release number and decide whether the `MAJOR`, `MINOR` or `PATCH` version should be incremented.
-2. Create a new tag on your local copy of this Git repository in the format of `vMAJOR.MINOR.PATCH`, where `MAJOR.MINOR.PATCH` is the version number you settled on in the previous step.
-3. Push the tag from your local copy to GitHub. This will trigger the [release GitHub Action workflow](.github/workflows/release.yml) that will create the release for you.
-4. While you are waiting for GitHub to finish building the release, update the [CHANGELOG](./CHANGELOG.md) with what has been added, fixed and changed in this release.
-5. Once the release workflow has finished, the Terraform Registry will eventually spot the new version and update [the registry page](https://registry.terraform.io/providers/RedisLabs/rediscloud/latest) - this may take a few minutes.
+Releases are automated. See [RELEASE_PROCESS.md](./RELEASE_PROCESS.md) for the full process.
