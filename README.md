@@ -7,8 +7,8 @@ lifecycle of their subscriptions and related Redis databases.
 Requirements
 ------------
 
--	[Terraform](https://www.terraform.io/downloads.html) >= 1.x
--	[Go](https://golang.org/doc/install) >= 1.19
+-	[Terraform](https://www.terraform.io/downloads.html) >= 1.0
+-	[Go](https://golang.org/doc/install) >= 1.25
 
 Quick Starts
 ------------
@@ -65,7 +65,7 @@ Terraform CLI.  The default user plugins directory root is `~/.terraform.d/plugi
 
 Use the following make command to install the provider locally.
 ```sh
-$ make install_local
+$ make install-local
 ```
 
 The provider will now be installed in the following location ready to be used by Terraform
@@ -91,7 +91,7 @@ terraform {
       source = "RedisLabs/rediscloud"
     }
   }
-  required_version = "~> 1.2"
+  required_version = "~> 1.0"
 }
 ``` 
 
