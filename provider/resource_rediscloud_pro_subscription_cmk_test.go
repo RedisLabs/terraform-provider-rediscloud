@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
@@ -107,7 +108,17 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				ConfigFile:               config.StaticFile("./pro/testdata/cmk_aws_step2.tf"),
 				ConfigVariables:          configVars,
-				ExpectNonEmptyPlan:       true,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectNonEmptyPlan(),
+					},
+					PostApplyPreRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+					PostApplyPostRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_aws_role_arn"),
