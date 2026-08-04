@@ -78,7 +78,7 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				"rediscloud_acl_role":                                        dataSourceRedisCloudAclRole(),
 			},
 			ResourcesMap: map[string]*schema.Resource{
-				"rediscloud_cloud_account":           resourceRedisCloudCloudAccount(),
+				// Note: rediscloud_cloud_account is served by the Plugin Framework provider
 				"rediscloud_essentials_subscription": resourceRedisCloudEssentialsSubscription(),
 				"rediscloud_essentials_database":     resourceRedisCloudEssentialsDatabase(),
 				// Note the difference in public resource name and the file/method name.

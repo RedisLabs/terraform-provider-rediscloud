@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.19.0 (TBD)
+
+### Changed
+
+- Migrated the `rediscloud_cloud_account` resource to the Terraform Plugin Framework
+- Upgraded the provider to use `v0.52.1` of the [rediscloud-go-api](https://github.com/RedisLabs/rediscloud-go-api) SDK
+
+### Fixed
+
+- `rediscloud_cloud_account` creation now waits for the account to become active up to the configurable `create` timeout (default 5m) instead of a hard-coded 1 minute
+- `rediscloud_cloud_account` create and update no longer fail with `unexpected state 'pending'` — the `pending` and `change-pending` statuses are now treated as in-progress while waiting for the account to become active
+- `rediscloud_cloud_account` updates now wait for the account to return to `active`, preventing a "Provider produced inconsistent result after apply" error
+- `rediscloud_cloud_account` deletion now waits for the account to be fully removed instead of returning while deletion is still in progress
+
 ## 2.18.1 (17th July 2026)
 
 **Internal release** - No user-facing changes to the provider's resources, data sources, or behaviour.
