@@ -69,30 +69,36 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 	subId := redis.IntValue(sub.ID)
 
 	model.ID = types.StringValue(strconv.Itoa(subId))
-	model.Name = types.StringPointerValue(sub.Name)
+	// The SDKv2 datasource set "" (never null) for every absent string value; preserve
+	// that so the Framework migration stays backward compatible.
+	//TODO(TF3.0) use StringPointerValue for name
+	model.Name = types.StringValue(redis.StringValue(sub.Name))
 
+	//TODO(TF3.0) make payment_method_id and payment_method nullable
+	paymentMethodID := ""
 	if sub.PaymentMethodID != nil {
-		model.PaymentMethodID = types.StringValue(strconv.Itoa(redis.IntValue(sub.PaymentMethodID)))
-	} else {
-		model.PaymentMethodID = types.StringNull()
+		paymentMethodID = strconv.Itoa(redis.IntValue(sub.PaymentMethodID))
 	}
-	model.PaymentMethod = types.StringPointerValue(sub.PaymentMethod)
+	model.PaymentMethodID = types.StringValue(paymentMethodID)
+	model.PaymentMethod = types.StringValue(redis.StringValue(sub.PaymentMethod))
 	model.NumberOfDatabases = types.Int64Value(int64(redis.IntValue(sub.NumberOfDatabases)))
-	model.Status = types.StringPointerValue(sub.Status)
+	model.Status = types.StringValue(redis.StringValue(sub.Status))
 
 	cmkEnabled := sub.PersistentStorageEncryptionType != nil &&
 		redis.StringValue(sub.PersistentStorageEncryptionType) == utils.CmkEnabledString
 	model.CustomerManagedKeyEnabled = types.BoolValue(cmkEnabled)
 
+	//TODO(TF3.0) make the customer_managed_key_* fields nullable
+	cmkServiceAccount := ""
+	cmkAwsRoleArn := ""
 	if sub.CustomerManagedKeyAccessDetails != nil {
-		model.CustomerManagedKeyRedisServiceAccount = types.StringPointerValue(sub.CustomerManagedKeyAccessDetails.RedisServiceAccount)
-		model.CustomerManagedKeyAwsRoleArn = types.StringPointerValue(sub.CustomerManagedKeyAccessDetails.AwsRoleArn)
-	} else {
-		model.CustomerManagedKeyRedisServiceAccount = types.StringNull()
-		model.CustomerManagedKeyAwsRoleArn = types.StringNull()
+		cmkServiceAccount = redis.StringValue(sub.CustomerManagedKeyAccessDetails.RedisServiceAccount)
+		cmkAwsRoleArn = redis.StringValue(sub.CustomerManagedKeyAccessDetails.AwsRoleArn)
 	}
+	model.CustomerManagedKeyRedisServiceAccount = types.StringValue(cmkServiceAccount)
+	model.CustomerManagedKeyAwsRoleArn = types.StringValue(cmkAwsRoleArn)
 
-	model.CustomerManagedKeyDeletionGracePeriod = types.StringPointerValue(sub.DeletionGracePeriod)
+	model.CustomerManagedKeyDeletionGracePeriod = types.StringValue(redis.StringValue(sub.DeletionGracePeriod))
 
 	// Default to true if not set by API, matching Redis Cloud's default behaviour
 	publicEndpointAccess := true
@@ -101,16 +107,23 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 	}
 	model.PublicEndpointAccess = types.BoolValue(publicEndpointAccess)
 
+	//TODO(TF3.0) make cloud_provider and aws_account_id nullable
 	cloudDetails := sub.CloudDetails
 	if len(cloudDetails) == 0 {
-		// A subscription with 0 databases will have no CloudDetail blocks
-		model.CloudProvider = types.StringNull()
-		model.AwsAccountID = types.StringNull()
-		model.ResourceTags = types.MapNull(types.StringType)
+		// A subscription with 0 databases has no CloudDetail blocks; the SDKv2 datasource
+		// left cloud_provider/aws_account_id as "" and resource_tags as an empty map.
+		model.CloudProvider = types.StringValue("")
+		model.AwsAccountID = types.StringValue("")
+		tags, diags := utils.FlattenResourceTags(ctx, nil)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		model.ResourceTags = tags
 	} else {
 		cd := cloudDetails[0]
-		model.CloudProvider = types.StringPointerValue(cd.Provider)
-		model.AwsAccountID = types.StringPointerValue(cd.AWSAccountID)
+		model.CloudProvider = types.StringValue(redis.StringValue(cd.Provider))
+		model.AwsAccountID = types.StringValue(redis.StringValue(cd.AWSAccountID))
 
 		tags, diags := utils.FlattenResourceTags(ctx, cd.ResourceTags)
 		resp.Diagnostics.Append(diags...)
