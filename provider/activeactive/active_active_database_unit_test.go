@@ -141,44 +141,32 @@ func TestUnitActiveActiveDatabaseVersion_SatisfiedRequestIsNoOp(t *testing.T) {
 			{
 				Config: newAADatabaseConfig(subID, "8.2"), // lower than the running 8.4 -> satisfied
 				ConfigPlanChecks: resource.ConfigPlanChecks{
-					// redis_version is Optional+Computed and set in config, so the config value lands in
-					// state — this is a real update, not a suppressed one.
-					PreApply: []plancheck.PlanCheck{
-						plancheck.ExpectResourceAction(aaResourceName, plancheck.ResourceActionUpdate),
-					},
+					// RedisVersion keeps the prior value when the running version already satisfies the
+					// request, so lowering redis_version produces no diff at all.
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 					PostApplyPreRefresh:  []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// State records what the user asked for; redis_version_actual still reports what the
-					// database is running.
-					resource.TestCheckResourceAttr(aaResourceName, "redis_version", "8.2"),
+					// redis_version keeps the prior 8.4 rather than following config down to 8.2:
+					// redis_version is a floor, and the running version already clears it.
+					resource.TestCheckResourceAttr(aaResourceName, "redis_version", "8.4"),
 					resource.TestCheckResourceAttr(aaResourceName, "redis_version_actual", "8.4"),
 				),
 			},
 		},
 	})
 
-	// BUG: state follows config, but the provider ALSO asks the API to move a database running 8.4 down
-	// to 8.2. updateDatabase's version guard compares plan.RedisVersion against state's redis_version and
-	// redis_version_actual with exact string inequality, so a request below the running version clears it
-	// just as readily as an upgrade. Nothing on that path compares versions.
-	//
-	// State stays coherent only because the API ignores a target it has already passed — which is an
-	// assumption this fixture encodes, not something verified. The correct value here is an empty slice.
-	assert.Equal(t, []string{"8.2"}, api.requestedUpgrades())
+	// No upgrade call is issued, and not because the API refused a downgrade — the provider never asks.
+	// RedisVersion suppresses the diff at plan time, so updateDatabase's version branch is never reached
+	// and its exact-string comparison never gets the chance to misfire.
+	assert.Empty(t, api.requestedUpgrades())
 }
 
-// BUG(redis_version_actual): a genuine upgrade cannot be applied at all.
-//
-// redis_version_actual is Computed and carries only stringplanmodifier.UseStateForUnknown, so the
-// planned value is pinned to the PRIOR running version. Apply then performs the upgrade and
-// readDatabase writes the new running version, contradicting the plan, and Terraform rejects that as a
-// provider bug. This step encodes the failure so it is pinned rather than latent.
-//
-// To fix: give redis_version_actual a plan modifier that leaves the value unknown when the planned
-// redis_version is a genuine upgrade, then drop ExpectError and assert instead that the step plans an
-// update, converges to an empty plan, and leaves both attributes at 8.4.
+// A genuine upgrade applies cleanly. RedisVersionActual leaves redis_version_actual unknown when the
+// running version does not satisfy the requested one, so apply is free to write the new running
+// version. With plain UseStateForUnknown the planned value was pinned to the prior version and apply
+// contradicted it — "Provider produced inconsistent result after apply".
 func TestUnitActiveActiveDatabaseVersion_GenuineUpgrade(t *testing.T) {
 	api, factories, subID := newAAFixture(t)
 
@@ -192,13 +180,16 @@ func TestUnitActiveActiveDatabaseVersion_GenuineUpgrade(t *testing.T) {
 			{
 				Config: newAADatabaseConfig(subID, "8.4"), // higher than the running 8.2 -> genuine upgrade
 				ConfigPlanChecks: resource.ConfigPlanChecks{
-					// No PostApply checks: apply fails, so they would never run.
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(aaResourceName, plancheck.ResourceActionUpdate),
 					},
+					PostApplyPreRefresh:  []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 				},
-				ExpectError: regexp.MustCompile(`(?s)Provider produced inconsistent result after apply.*` +
-					`\.redis_version_actual: was cty\.StringVal\("8\.2"\),\s+but\s+now cty\.StringVal\("8\.4"\)`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(aaResourceName, "redis_version", "8.4"),
+					resource.TestCheckResourceAttr(aaResourceName, "redis_version_actual", "8.4"),
+				),
 			},
 		},
 	})
@@ -209,7 +200,7 @@ func TestUnitActiveActiveDatabaseVersion_GenuineUpgrade(t *testing.T) {
 }
 
 // A background auto-upgrade moves the running version past the requested one; a subsequent config
-// change to a still-lower version must be a no-op, never an in-place downgrade.
+// change to a still-lower version is a no-op, and no in-place downgrade is even attempted.
 func TestUnitActiveActiveDatabaseVersion_BackgroundUpgradeThenLowerRequestIsNoOp(t *testing.T) {
 	api, factories, subID := newAAFixture(t)
 
@@ -229,29 +220,25 @@ func TestUnitActiveActiveDatabaseVersion_BackgroundUpgradeThenLowerRequestIsNoOp
 				},
 				Config: newAADatabaseConfig(subID, "8.4"),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
-					// The config change from 8.2 to 8.4 is a real update: redis_version is Optional+Computed
-					// and set, so state follows config even though the running 8.6 already satisfies it.
-					PreApply: []plancheck.PlanCheck{
-						plancheck.ExpectResourceAction(aaResourceName, plancheck.ResourceActionUpdate),
-					},
+					// Running 8.6 satisfies the requested 8.4, so RedisVersion suppresses the diff entirely.
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 					PostApplyPreRefresh:  []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// State records the requested 8.4; redis_version_actual keeps the 8.6 the background
-					// upgrade moved it to. Crucially the database is NOT moved back down to 8.4.
-					resource.TestCheckResourceAttr(aaResourceName, "redis_version", "8.4"),
+					// redis_version keeps the prior 8.2 — not the 8.4 in config — because the running 8.6
+					// already satisfies the request. redis_version_actual tracks the background upgrade.
+					resource.TestCheckResourceAttr(aaResourceName, "redis_version", "8.2"),
 					resource.TestCheckResourceAttr(aaResourceName, "redis_version_actual", "8.6"),
 				),
 			},
 		},
 	})
 
-	// BUG: same exact-string guard as SatisfiedRequestIsNoOp, in the scenario this resource most needs to
-	// get right. A background auto minor upgrade took the database to 8.6, the customer asked for 8.4,
-	// and the provider responds by requesting 8.4 — an in-place downgrade. redis_version_actual stays 8.6
-	// only because the fixture models the API refusing it. The correct value here is an empty slice.
-	assert.Equal(t, []string{"8.4"}, api.requestedUpgrades())
+	// The scenario this resource most needs to get right: a background auto minor upgrade took the
+	// database to 8.6, and the provider does NOT respond by requesting 8.4. No in-place downgrade is even
+	// attempted, and that no longer depends on the API refusing one.
+	assert.Empty(t, api.requestedUpgrades())
 }
 
 // Changing an attribute other than redis_version must not touch the version endpoint. The guard's
