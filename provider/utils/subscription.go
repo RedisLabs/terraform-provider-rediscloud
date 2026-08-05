@@ -2,12 +2,9 @@ package utils
 
 import (
 	"context"
-	"fmt"
-	"sort"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/maintenance"
-	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -73,19 +70,6 @@ var maintenanceAttrTypes = map[string]attr.Type{
 	"window": types.ListType{ElemType: types.ObjectType{AttrTypes: maintenanceWindowAttrTypes}},
 }
 
-// pricingAttrTypes describes a single pricing block.
-var pricingAttrTypes = map[string]attr.Type{
-	"database_name":        types.StringType,
-	"type":                 types.StringType,
-	"type_details":         types.StringType,
-	"quantity":             types.Int64Type,
-	"quantity_measurement": types.StringType,
-	"price_per_unit":       types.Float64Type,
-	"price_currency":       types.StringType,
-	"price_period":         types.StringType,
-	"region":               types.StringType,
-}
-
 // FlattenMaintenance converts a maintenance API response into the single-element
 // maintenance_windows list expected by the subscription data sources.
 func FlattenMaintenance(ctx context.Context, m *maintenance.Maintenance) (types.List, diag.Diagnostics) {
@@ -125,7 +109,7 @@ func FlattenMaintenance(ctx context.Context, m *maintenance.Maintenance) (types.
 	}
 
 	entry, d := types.ObjectValue(maintenanceAttrTypes, map[string]attr.Value{
-		"mode":   types.StringPointerValue(m.Mode),
+		"mode":   types.StringValue(redis.StringValue(m.Mode)),
 		"window": windows,
 	})
 	diags.Append(d...)
@@ -136,62 +120,6 @@ func FlattenMaintenance(ctx context.Context, m *maintenance.Maintenance) (types.
 	list, d := types.ListValue(maintenanceType, []attr.Value{entry})
 	diags.Append(d...)
 	return list, diags
-}
-
-// FlattenPricing converts a pricing API response into the pricing list expected by the
-// subscription data sources. Entries are sorted by a composite key so the ordered list
-// is stable across reads: the Pricing.List API does not guarantee a consistent order,
-// which would otherwise churn the list and produce a perpetual plan diff.
-func FlattenPricing(ctx context.Context, prices []*pricing.Pricing) (types.List, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	pricingType := types.ObjectType{AttrTypes: pricingAttrTypes}
-
-	sorted := make([]*pricing.Pricing, len(prices))
-	copy(sorted, prices)
-	sort.SliceStable(sorted, func(i, j int) bool {
-		return pricingSortKey(sorted[i]) < pricingSortKey(sorted[j])
-	})
-
-	elems := make([]attr.Value, 0, len(sorted))
-	for _, p := range sorted {
-		entry, d := types.ObjectValue(pricingAttrTypes, map[string]attr.Value{
-			"database_name":        types.StringPointerValue(p.DatabaseName),
-			"type":                 types.StringPointerValue(p.Type),
-			"type_details":         types.StringPointerValue(p.TypeDetails),
-			"quantity":             types.Int64Value(int64(redis.IntValue(p.Quantity))),
-			"quantity_measurement": types.StringPointerValue(p.QuantityMeasurement),
-			"price_per_unit":       types.Float64PointerValue(p.PricePerUnit),
-			"price_currency":       types.StringPointerValue(p.PriceCurrency),
-			"price_period":         types.StringPointerValue(p.PricePeriod),
-			"region":               types.StringPointerValue(p.Region),
-		})
-		diags.Append(d...)
-		if diags.HasError() {
-			return types.ListNull(pricingType), diags
-		}
-		elems = append(elems, entry)
-	}
-
-	list, d := types.ListValue(pricingType, elems)
-	diags.Append(d...)
-	return list, diags
-}
-
-// pricingSortKey builds a deterministic ordering key for a pricing entry, combining every
-// field so the sort is total even when entries differ only in a single value.
-func pricingSortKey(p *pricing.Pricing) string {
-	return fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%d|%f",
-		redis.StringValue(p.Region),
-		redis.StringValue(p.Type),
-		redis.StringValue(p.TypeDetails),
-		redis.StringValue(p.DatabaseName),
-		redis.StringValue(p.QuantityMeasurement),
-		redis.StringValue(p.PricePeriod),
-		redis.StringValue(p.PriceCurrency),
-		redis.IntValue(p.Quantity),
-		redis.Float64Value(p.PricePerUnit),
-	)
 }
 
 // FlattenResourceTags converts the API's key/value tag slice into a types.Map for

@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/customtypes"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
@@ -148,7 +149,7 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 	}
 	model.MaintenanceWindows = maintenanceWindows
 
-	pricingList, err := d.client.Client.Pricing.List(ctx, subId)
+	pricingRes, err := d.client.Client.Pricing.List(ctx, subId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read Subscription Pricing",
@@ -156,12 +157,12 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 		)
 		return
 	}
-	pricing, diags := utils.FlattenPricing(ctx, pricingList)
+	pricingList, diags := customtypes.NewPricingList(ctx, pricingRes)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	model.Pricing = pricing
+	model.Pricing = pricingList
 
 	diags = resp.State.Set(ctx, &model)
 	resp.Diagnostics.Append(diags...)
