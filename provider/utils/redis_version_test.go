@@ -46,3 +46,31 @@ func TestSuppressIfRedisVersionSatisfied(t *testing.T) {
 		})
 	}
 }
+
+func TestRedisVersionSatisfied(t *testing.T) {
+	tests := []struct {
+		name      string
+		requested string
+		actual    string
+		satisfied bool
+	}{
+		{name: "running version ahead within major (bg auto-upgrade past request)", requested: "8.2", actual: "8.6", satisfied: true},
+		{name: "running version behind (genuine upgrade needed)", requested: "8.4", actual: "8.2", satisfied: false},
+		{name: "running version equals request", requested: "8.4", actual: "8.4", satisfied: true},
+		{name: "unchanged version (e.g. non-version update)", requested: "7.4", actual: "7.4", satisfied: true},
+		{name: "patch-level actual ahead satisfies", requested: "7.4", actual: "7.4.2", satisfied: true},
+		{name: "higher requested minor not satisfied", requested: "8.10", actual: "8.2", satisfied: false},
+		{name: "lower requested minor satisfied", requested: "8.2", actual: "8.10", satisfied: true},
+		{name: "cross-major upgrade not satisfied", requested: "9.0", actual: "8.6", satisfied: false},
+		{name: "cross-major downgrade not satisfied", requested: "7.0", actual: "8.6", satisfied: false},
+		{name: "unparseable requested not satisfied", requested: "not-a-version", actual: "8.6", satisfied: false},
+		{name: "unparseable actual not satisfied", requested: "8.4", actual: "not-a-version", satisfied: false},
+		{name: "empty requested not satisfied", requested: "", actual: "8.6", satisfied: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.satisfied, utils.RedisVersionSatisfied(tc.requested, tc.actual))
+		})
+	}
+}
