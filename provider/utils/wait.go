@@ -21,8 +21,8 @@ func WaitForSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiC
 		Pending:      []string{subscriptions.SubscriptionStatusPending},
 		Target:       []string{subscriptions.SubscriptionStatusActive},
 		Timeout:      SafetyTimeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        api.WaitDelay(10 * time.Second),
+		PollInterval: api.WaitPollInterval(30 * time.Second),
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for subscription %d to be %s", id, subscriptions.SubscriptionStatusActive)
@@ -95,8 +95,8 @@ func WaitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.A
 		},
 		Target:       []string{databases.StatusActive},
 		Timeout:      SafetyTimeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        api.WaitDelay(10 * time.Second),
+		PollInterval: api.WaitPollInterval(30 * time.Second),
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for database %d to be active", id)
