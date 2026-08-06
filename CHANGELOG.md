@@ -6,7 +6,7 @@
 
 - Migrated the `rediscloud_cloud_account` resource to the Terraform Plugin Framework
 - Upgraded the provider to use `v0.52.1` of the [rediscloud-go-api](https://github.com/RedisLabs/rediscloud-go-api) SDK
-- Migrated `rediscloud_active_active_subscription` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no schema changes; the only behaviour change is the `null`-vs-empty-string handling noted under Fixed.
+- Migrated `rediscloud_active_active_subscription` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no schema or behaviour changes.
 
 ### Fixed
 
@@ -15,6 +15,7 @@
 - `rediscloud_cloud_account` updates now wait for the account to return to `active`, preventing a "Provider produced inconsistent result after apply" error
 - `rediscloud_cloud_account` deletion now waits for the account to be fully removed instead of returning while deletion is still in progress
 - `rediscloud_active_active_subscription` data source: optional attributes the API omits (`payment_method_id`, `customer_managed_key_deletion_grace_period`, `customer_managed_key_redis_service_account`, `customer_managed_key_aws_role_arn`) are now written to state as `null` instead of empty strings.
+- `rediscloud_active_active_subscription` data source now sorts the `pricing` list by a stable key. `Pricing.List` returns entries in nondeterministic order, which otherwise produced a perpetual `tf plan` diff.
 - Added sorting in FlattenPricing - Pricing.List returns regions in nondeterministic order, which results in a potential perpetual `tf plan` diff
 
 ## 2.18.1 (17th July 2026)

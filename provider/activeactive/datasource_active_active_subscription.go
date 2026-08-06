@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/customtypes"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -60,11 +61,11 @@ func (d *activeActiveSubscriptionDataSource) Schema(_ context.Context, _ datasou
 				Computed:    true,
 			},
 			"name": schema.StringAttribute{
-				Description: "A meaningful name to identify the subscription",
+				Description: "The name of the subscription to filter returned subscriptions",
 				Required:    true,
 			},
 			"payment_method": schema.StringAttribute{
-				Description: "Payment method for the requested subscription. If credit card is specified, the payment method id must be defined. This information is only used when creating a new subscription and any changes will be ignored after this.",
+				Description: "Payment method for the requested subscription.",
 				Computed:    true,
 			},
 			"payment_method_id": schema.StringAttribute{
@@ -92,7 +93,7 @@ func (d *activeActiveSubscriptionDataSource) Schema(_ context.Context, _ datasou
 				Computed:    true,
 			},
 			"customer_managed_key_aws_role_arn": schema.StringAttribute{
-				Description: "The ARN of the IAM role used by the subscription to access the AWS KMS customer managed key. Grant this role access to your KMS key via key policy",
+				Description: "The ARN of the IAM role used by the subscription to access the AWS KMS customer managed key",
 				Computed:    true,
 			},
 			"public_endpoint_access": schema.BoolAttribute{
@@ -154,6 +155,8 @@ func (d *activeActiveSubscriptionDataSource) Schema(_ context.Context, _ datasou
 			"pricing": schema.ListNestedBlock{
 				Description: "Pricing details totalled over this Subscription",
 				NestedObject: schema.NestedBlockObject{
+					// CustomType strongly types each pricing entry (see customtypes.PricingType)
+					CustomType: customtypes.NewPricingType(),
 					Attributes: map[string]schema.Attribute{
 						"database_name": schema.StringAttribute{
 							Description: "The database this pricing entry applies to",
