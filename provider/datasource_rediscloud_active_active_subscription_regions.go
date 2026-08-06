@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func dataSourceRedisCloudActiveActiveSubscriptionRegions() *schema.Resource {
@@ -96,21 +95,17 @@ func dataSourceRedisCloudActiveActiveRegionsRead(ctx context.Context, d *schema.
 		return diag.FromErr(err)
 	}
 
-	var filters []func(method *subscriptions.Subscription) bool
-
-	// Filter to active-active subscriptions only (pro subs come from the same endpoint)
-	filters = append(filters, func(sub *subscriptions.Subscription) bool {
-		return redis.StringValue(sub.DeploymentType) == "active-active"
-	})
-
-	// Filter down to requested subscription by name
-	if name, ok := d.GetOk("subscription_name"); ok {
-		filters = append(filters, func(sub *subscriptions.Subscription) bool {
-			return redis.StringValue(sub.Name) == name
-		})
+	// AA and pro subscriptions come from the same endpoint; keep only active-active.
+	filters := []utils.SubscriptionFilter{
+		utils.ActiveActiveSubscriptionFilter(),
 	}
 
-	subs = pro.FilterSubscriptions(subs, filters)
+	// Filter down to the requested subscription by name.
+	if name, ok := d.GetOk("subscription_name"); ok {
+		filters = append(filters, utils.SubscriptionNameFilter(name.(string)))
+	}
+
+	subs = utils.FilterSubscriptions(subs, filters)
 
 	if len(subs) == 0 {
 		return diag.Errorf("Your query returned no results. Please change your search criteria and try again.")
