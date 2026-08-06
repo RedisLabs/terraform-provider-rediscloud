@@ -66,9 +66,9 @@ The `pricing` object has these attributes:
 * `database_name` - The database this pricing entry applies to.
 * `type` - The type of cost e.g. 'Shards'.
 * `typeDetails` - Further detail e.g. 'micro'.
-* `quantity` - Self-explanatory.
-* `quantityMeasurement` - Self-explanatory.
-* `pricePerUnit` - Self-explanatory.
-* `priceCurrency` - Self-explanatory e.g. 'USD'.
-* `pricePeriod` - Self-explanatory e.g. 'hour'.
-* `region` - Self-explanatory, if the cost is associated with a particular region.
+* `quantity` - The number of units this pricing entry covers.
+* `quantityMeasurement` - The unit that `quantity` is measured in, e.g. 'shards'.
+* `pricePerUnit` - The cost of a single unit.
+* `priceCurrency` - The currency the price is denominated in, e.g. 'USD'.
+* `pricePeriod` - The billing period the price applies to, e.g. 'hour'.
+* `region` - The region this cost is associated with, if any.
