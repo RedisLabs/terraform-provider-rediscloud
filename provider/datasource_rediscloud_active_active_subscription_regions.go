@@ -100,7 +100,7 @@ func dataSourceRedisCloudActiveActiveRegionsRead(ctx context.Context, d *schema.
 
 	// Filter to active-active subscriptions only (pro subs come from the same endpoint)
 	filters = append(filters, func(sub *subscriptions.Subscription) bool {
-		return redis.StringValue(sub.DeploymentType) == "active-active"
+		return redis.StringValue(sub.DeploymentType) == subscriptions.SubscriptionDeploymentTypeActiveActive
 	})
 
 	// Filter down to requested subscription by name

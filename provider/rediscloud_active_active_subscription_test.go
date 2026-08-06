@@ -137,8 +137,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "number_of_databases", "0"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "status", "active"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "customer_managed_key_enabled", "false"),
-					resource.TestCheckResourceAttr(datasourceSubscriptionName, "customer_managed_key_deletion_grace_period", ""),
-					resource.TestCheckResourceAttr(datasourceSubscriptionName, "customer_managed_key_redis_service_account", ""),
+					resource.TestCheckNoResourceAttr(datasourceSubscriptionName, "customer_managed_key_deletion_grace_period"),
+					resource.TestCheckNoResourceAttr(datasourceSubscriptionName, "customer_managed_key_redis_service_account"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "public_endpoint_access", "true"),
 
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.mode", "manual"),
@@ -386,8 +386,8 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "number_of_databases", "0"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "status", "active"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "customer_managed_key_enabled", "false"),
-					resource.TestCheckResourceAttr(datasourceSubscriptionName, "customer_managed_key_deletion_grace_period", ""),
-					resource.TestCheckResourceAttr(datasourceSubscriptionName, "customer_managed_key_redis_service_account", ""),
+					resource.TestCheckNoResourceAttr(datasourceSubscriptionName, "customer_managed_key_deletion_grace_period"),
+					resource.TestCheckNoResourceAttr(datasourceSubscriptionName, "customer_managed_key_redis_service_account"),
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "public_endpoint_access", "true"),
 
 					resource.TestCheckResourceAttr(datasourceSubscriptionName, "maintenance_windows.0.mode", "manual"),
