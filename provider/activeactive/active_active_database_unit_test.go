@@ -10,10 +10,10 @@ package activeactive_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
@@ -44,49 +44,13 @@ func newAAFixture(t *testing.T) (*aaAPI, map[string]func() (tfprotov5.ProviderSe
 	)
 }
 
-// These configs set global_password even though no test asserts anything about it. Leaving it out makes
-// every step that plans an update also plan that attribute as unknown, which defeats any empty-plan
-// assertion. The note on global_password at the bottom of this file explains why.
-func newAADatabaseConfig(subID int, redisVersion string) string {
-	return fmt.Sprintf(`resource "test_active_active_subscription_database" "aa_db" {
-  subscription_id    = %d
-  name               = "aa-db"
-  dataset_size_in_gb = 1
-  global_password    = "test-password"
-  redis_version      = %q
-}`, subID, redisVersion)
-}
-
-func newAADatabaseConfigNoVersion(subID int) string {
-	return fmt.Sprintf(`resource "test_active_active_subscription_database" "aa_db" {
-  subscription_id    = %d
-  name               = "aa-db"
-  dataset_size_in_gb = 1
-  global_password    = "test-password"
-}`, subID)
-}
-
-// newAADatabaseConfigNoPassword leaves global_password out, which is the default configuration where the
-// API generates it. Only the global_password test uses this. Every other config sets the password, for the
-// reason given in the note at the bottom of this file.
-func newAADatabaseConfigNoPassword(subID int, name string) string {
-	return fmt.Sprintf(`resource "test_active_active_subscription_database" "aa_db" {
-  subscription_id    = %d
-  name               = %q
-  dataset_size_in_gb = 1
-  redis_version      = "8.2"
-}`, subID, name)
-}
-
-func newAADatabaseConfigNamed(subID int, name, redisVersion string) string {
-	return fmt.Sprintf(`resource "test_active_active_subscription_database" "aa_db" {
-  subscription_id    = %d
-  name               = %q
-  dataset_size_in_gb = 1
-  global_password    = "test-password"
-  redis_version      = %q
-}`, subID, name, redisVersion)
-}
+// The configs these tests apply live in testdata/unit, which keeps them apart from the acceptance
+// configs in testdata. Each one declares the variables every step that uses it has to supply.
+const (
+	aaDatabaseConfig           = "./testdata/unit/database.tf"
+	aaDatabaseNoVersionConfig  = "./testdata/unit/database_no_version.tf"
+	aaDatabaseNoPasswordConfig = "./testdata/unit/database_no_password.tf"
+)
 
 func TestUnitActiveActiveDatabaseVersion_DefaultsWhenOmitted(t *testing.T) {
 	api, factories := newAAFixture(t)
@@ -95,14 +59,22 @@ func TestUnitActiveActiveDatabaseVersion_DefaultsWhenOmitted(t *testing.T) {
 		ProtoV5ProviderFactories: factories,
 		Steps: []resource.TestStep{
 			{
-				Config: newAADatabaseConfigNoVersion(api.subID),
+				ConfigFile: config.StaticFile(aaDatabaseNoVersionConfig),
+				ConfigVariables: config.Variables{
+					"subscription_id": config.IntegerVariable(api.subID),
+					"name":            config.StringVariable("aa-db"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(aaResourceName, "redis_version", defaultRedisVersion),
 					resource.TestCheckResourceAttr(aaResourceName, "redis_version_actual", defaultRedisVersion),
 				),
 			},
 			{
-				Config: newAADatabaseConfigNoVersion(api.subID),
+				ConfigFile: config.StaticFile(aaDatabaseNoVersionConfig),
+				ConfigVariables: config.Variables{
+					"subscription_id": config.IntegerVariable(api.subID),
+					"name":            config.StringVariable("aa-db"),
+				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply:             []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 					PostApplyPreRefresh:  []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
@@ -124,14 +96,25 @@ func TestUnitActiveActiveDatabaseVersion_SatisfiedRequestIsNoOp(t *testing.T) {
 		ProtoV5ProviderFactories: factories,
 		Steps: []resource.TestStep{
 			{
-				Config: newAADatabaseConfig(api.subID, "8.4"),
+				ConfigFile: config.StaticFile(aaDatabaseConfig),
+				ConfigVariables: config.Variables{
+					"subscription_id": config.IntegerVariable(api.subID),
+					"name":            config.StringVariable("aa-db"),
+					"redis_version":   config.StringVariable("8.4"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(aaResourceName, "redis_version", "8.4"),
 					resource.TestCheckResourceAttr(aaResourceName, "redis_version_actual", "8.4"),
 				),
 			},
 			{
-				Config: newAADatabaseConfig(api.subID, "8.2"), // lower than the running 8.4 -> satisfied
+				// 8.2 is lower than the running 8.4, so the request is already satisfied.
+				ConfigFile: config.StaticFile(aaDatabaseConfig),
+				ConfigVariables: config.Variables{
+					"subscription_id": config.IntegerVariable(api.subID),
+					"name":            config.StringVariable("aa-db"),
+					"redis_version":   config.StringVariable("8.2"),
+				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					// redis_version is Optional+Computed and set in config, so the config value lands in state.
 					// This is a real update rather than a suppressed one.
@@ -176,11 +159,22 @@ func TestUnitActiveActiveDatabaseVersion_GenuineUpgrade(t *testing.T) {
 		ProtoV5ProviderFactories: factories,
 		Steps: []resource.TestStep{
 			{
-				Config: newAADatabaseConfig(api.subID, "8.2"),
-				Check:  resource.TestCheckResourceAttr(aaResourceName, "redis_version_actual", "8.2"),
+				ConfigFile: config.StaticFile(aaDatabaseConfig),
+				ConfigVariables: config.Variables{
+					"subscription_id": config.IntegerVariable(api.subID),
+					"name":            config.StringVariable("aa-db"),
+					"redis_version":   config.StringVariable("8.2"),
+				},
+				Check: resource.TestCheckResourceAttr(aaResourceName, "redis_version_actual", "8.2"),
 			},
 			{
-				Config: newAADatabaseConfig(api.subID, "8.4"), // higher than the running 8.2 -> genuine upgrade
+				// 8.4 is higher than the running 8.2, so this is a genuine upgrade.
+				ConfigFile: config.StaticFile(aaDatabaseConfig),
+				ConfigVariables: config.Variables{
+					"subscription_id": config.IntegerVariable(api.subID),
+					"name":            config.StringVariable("aa-db"),
+					"redis_version":   config.StringVariable("8.4"),
+				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(aaResourceName, plancheck.ResourceActionUpdate),
@@ -209,7 +203,12 @@ func TestUnitActiveActiveDatabaseVersion_BackgroundUpgradeThenLowerRequestIsNoOp
 		ProtoV5ProviderFactories: factories,
 		Steps: []resource.TestStep{
 			{
-				Config: newAADatabaseConfig(api.subID, "8.2"),
+				ConfigFile: config.StaticFile(aaDatabaseConfig),
+				ConfigVariables: config.Variables{
+					"subscription_id": config.IntegerVariable(api.subID),
+					"name":            config.StringVariable("aa-db"),
+					"redis_version":   config.StringVariable("8.2"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(aaResourceName, "redis_version", "8.2"),
 					resource.TestCheckResourceAttr(aaResourceName, "redis_version_actual", "8.2"),
@@ -219,7 +218,12 @@ func TestUnitActiveActiveDatabaseVersion_BackgroundUpgradeThenLowerRequestIsNoOp
 				PreConfig: func() {
 					api.setRunningVersion("8.6") // simulate a background auto minor upgrade
 				},
-				Config: newAADatabaseConfig(api.subID, "8.4"),
+				ConfigFile: config.StaticFile(aaDatabaseConfig),
+				ConfigVariables: config.Variables{
+					"subscription_id": config.IntegerVariable(api.subID),
+					"name":            config.StringVariable("aa-db"),
+					"redis_version":   config.StringVariable("8.4"),
+				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					// The config change from 8.2 to 8.4 is a real update. redis_version is Optional+Computed and
 					// set, so state follows config even though the running 8.6 already satisfies it.
@@ -261,7 +265,12 @@ func TestUnitActiveActiveDatabaseVersion_UnrelatedChangeDoesNotUpgrade(t *testin
 		ProtoV5ProviderFactories: factories,
 		Steps: []resource.TestStep{
 			{
-				Config: newAADatabaseConfigNamed(api.subID, "aa-db", "8.2"),
+				ConfigFile: config.StaticFile(aaDatabaseConfig),
+				ConfigVariables: config.Variables{
+					"subscription_id": config.IntegerVariable(api.subID),
+					"name":            config.StringVariable("aa-db"),
+					"redis_version":   config.StringVariable("8.2"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(aaResourceName, "redis_version", "8.2"),
 					resource.TestCheckResourceAttr(aaResourceName, "redis_version_actual", "8.2"),
@@ -269,7 +278,12 @@ func TestUnitActiveActiveDatabaseVersion_UnrelatedChangeDoesNotUpgrade(t *testin
 			},
 			{
 				// A rename only. redis_version is untouched.
-				Config: newAADatabaseConfigNamed(api.subID, "aa-db-renamed", "8.2"),
+				ConfigFile: config.StaticFile(aaDatabaseConfig),
+				ConfigVariables: config.Variables{
+					"subscription_id": config.IntegerVariable(api.subID),
+					"name":            config.StringVariable("aa-db-renamed"),
+					"redis_version":   config.StringVariable("8.2"),
+				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(aaResourceName, plancheck.ResourceActionUpdate),
@@ -303,11 +317,21 @@ func TestUnitActiveActiveDatabaseVersion_BackgroundUpgradeAfterPlanConverges(t *
 		ProtoV5ProviderFactories: factories,
 		Steps: []resource.TestStep{
 			{
-				Config: newAADatabaseConfigNamed(api.subID, "aa-db", "8.2"),
-				Check:  resource.TestCheckResourceAttr(aaResourceName, "redis_version_actual", "8.2"),
+				ConfigFile: config.StaticFile(aaDatabaseConfig),
+				ConfigVariables: config.Variables{
+					"subscription_id": config.IntegerVariable(api.subID),
+					"name":            config.StringVariable("aa-db"),
+					"redis_version":   config.StringVariable("8.2"),
+				},
+				Check: resource.TestCheckResourceAttr(aaResourceName, "redis_version_actual", "8.2"),
 			},
 			{
-				Config: newAADatabaseConfigNamed(api.subID, "aa-db-renamed", "8.2"),
+				ConfigFile: config.StaticFile(aaDatabaseConfig),
+				ConfigVariables: config.Variables{
+					"subscription_id": config.IntegerVariable(api.subID),
+					"name":            config.StringVariable("aa-db-renamed"),
+					"redis_version":   config.StringVariable("8.2"),
+				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(aaResourceName, plancheck.ResourceActionUpdate),
@@ -354,8 +378,8 @@ func TestUnitActiveActiveDatabaseVersion_BackgroundUpgradeAfterPlanConverges(t *
 // resource.
 //
 // The practical consequence is that a test cannot assert a genuinely empty plan for a no-op config change
-// unless global_password is set in config, which is why every config here except
-// newAADatabaseConfigNoPassword sets it.
+// unless global_password is set in config, which is why every config in testdata/unit except
+// database_no_password.tf sets it.
 //
 // None of this is verified against the real API. If that API returns the password only on create, then
 // readDatabase would write null to state on refresh, which would be a separate and worse problem that this
@@ -371,12 +395,22 @@ func TestUnitActiveActiveDatabase_GlobalPasswordLeftToAPIIsPlannedUnknown(t *tes
 		ProtoV5ProviderFactories: factories,
 		Steps: []resource.TestStep{
 			{
-				Config: newAADatabaseConfigNoPassword(api.subID, "aa-db"),
+				ConfigFile: config.StaticFile(aaDatabaseNoPasswordConfig),
+				ConfigVariables: config.Variables{
+					"subscription_id": config.IntegerVariable(api.subID),
+					"name":            config.StringVariable("aa-db"),
+					"redis_version":   config.StringVariable("8.2"),
+				},
 				// The generated password is persisted, so a missing state value is not the cause.
 				Check: resource.TestCheckResourceAttrSet(aaResourceName, "global_password"),
 			},
 			{
-				Config: newAADatabaseConfigNoPassword(api.subID, "aa-db-renamed"),
+				ConfigFile: config.StaticFile(aaDatabaseNoPasswordConfig),
+				ConfigVariables: config.Variables{
+					"subscription_id": config.IntegerVariable(api.subID),
+					"name":            config.StringVariable("aa-db-renamed"),
+					"redis_version":   config.StringVariable("8.2"),
+				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(aaResourceName, plancheck.ResourceActionUpdate),
