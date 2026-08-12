@@ -18,10 +18,6 @@ resource "rediscloud_active_active_subscription" "example" {
   }
 }
 
-data "rediscloud_active_active_subscription" "example" {
-  name = rediscloud_active_active_subscription.example.name
-}
-
 resource "rediscloud_active_active_subscription_database" "example" {
   subscription_id         = rediscloud_active_active_subscription.example.id
   name                    = local.rediscloud_subscription_name
