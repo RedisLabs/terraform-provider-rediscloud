@@ -11,7 +11,7 @@ import (
 )
 
 func TestProvider(t *testing.T) {
-	if err := provider.NewSdkProvider("dev")().InternalValidate(); err != nil {
+	if err := provider.NewSdkProvider("99.99.99")().InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 }
