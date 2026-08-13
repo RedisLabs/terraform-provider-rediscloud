@@ -154,9 +154,10 @@ func (d *activeActiveSubscriptionDataSource) Schema(_ context.Context, _ datasou
 			},
 			"pricing": schema.ListNestedBlock{
 				Description: "Pricing details totalled over this Subscription",
+				// CustomType strongly types the list as a whole (a PricingListValue rather
+				// than a bare types.List); its elements remain generic objects.
+				CustomType: customtypes.NewPricingListType(),
 				NestedObject: schema.NestedBlockObject{
-					// CustomType strongly types each pricing entry (see customtypes.PricingType)
-					CustomType: customtypes.NewPricingType(),
 					Attributes: map[string]schema.Attribute{
 						"database_name": schema.StringAttribute{
 							Description: "The database this pricing entry applies to",

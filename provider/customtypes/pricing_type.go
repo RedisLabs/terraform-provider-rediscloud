@@ -14,17 +14,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
-// Ensure the custom type/value satisfy the framework interfaces at compile time.
+// Ensure the custom list type/value satisfy the framework interfaces at compile time.
 var (
-	_ basetypes.ObjectTypable  = PricingType{}
-	_ basetypes.ObjectValuable = PricingValue{}
+	_ basetypes.ListTypable  = PricingListType{}
+	_ basetypes.ListValuable = PricingListValue{}
 )
 
-// PricingModel is the typed, tfsdk-tagged view of a pricing entry and the single source
-// of truth for its shape: pricingAttrTypes is derived from it (see below), and it's the
-// compile-checked surface for building/reading PricingValue (NewPricingValue /
-// PricingValue.As) as opposed to using string-keyed maps. Its tfsdk tags must still agree with the
-// pricing block's schema Attributes.
+// PricingModel is the typed, tfsdk-tagged view of a pricing entry and the single source of
+// truth for its shape: pricingAttrTypes is derived from the tfsdk taged fields (see below), and it's the
+// compile-checked surface for building each entry (newPricingObject) and for decoding the
+// list (PricingListValue.ElementsAs into []PricingModel).
+// Note that the tfsdk tags must still agree with the pricing block's Attributes in the TF schema.
 type PricingModel struct {
 	DatabaseName        types.String  `tfsdk:"database_name"`
 	Type                types.String  `tfsdk:"type"`
@@ -41,89 +41,83 @@ type PricingModel struct {
 // can't drift from the struct.
 var pricingAttrTypes = attrTypesOf(PricingModel{})
 
-// PricingType is the custom framework type for a single pricing entry. It embeds
-// basetypes.ObjectType so it inherits standard object behaviour and stays current with
-// the framework, overriding only the identity/conversion methods so values round-trip
-// as PricingValue rather than a bare types.Object.
-type PricingType struct {
-	basetypes.ObjectType
+// pricingObjectType is the element type of the pricing list: a plain object whose attribute
+// types come from PricingModel
+var pricingObjectType = types.ObjectType{AttrTypes: pricingAttrTypes}
+
+// PricingListType is the custom list type for pricing entries, where the entries themselves
+// are generic objects with element attributes derived from PricingModel.
+// PricingListType embeds basetypes.ListType, overriding only the identity/conversion methods.
+type PricingListType struct {
+	basetypes.ListType
 }
 
-// NewPricingType returns a PricingType with its attribute types populated. Use this
-// wherever the type is needed (schema CustomType, list element type, null values).
-func NewPricingType() PricingType {
-	return PricingType{basetypes.ObjectType{AttrTypes: pricingAttrTypes}}
+// NewPricingListType returns a PricingListType whose element type is the pricing object. Use
+// it as the schema block's list-level CustomType and wherever the list type is needed.
+func NewPricingListType() PricingListType {
+	return PricingListType{basetypes.ListType{ElemType: pricingObjectType}}
 }
 
-func (t PricingType) Equal(o attr.Type) bool {
-	other, ok := o.(PricingType)
+func (t PricingListType) Equal(o attr.Type) bool {
+	other, ok := o.(PricingListType)
 	if !ok {
 		return false
 	}
-	return t.ObjectType.Equal(other.ObjectType)
+	return t.ListType.Equal(other.ListType)
 }
 
-// String is the type's human-facing label in diagnostics/logs. Fully qualified on
-// purpose so a failure involving this type points clearly at the provider + package.
-func (t PricingType) String() string {
-	return "rediscloud.customtypes.PricingType"
+// String is the type's human-facing label in diagnostics/logs. Fully qualified on purpose so
+// a failure involving this type points clearly at the provider + package.
+func (t PricingListType) String() string {
+	return "rediscloud.customtypes.PricingListType"
 }
 
-func (t PricingType) ValueFromObject(ctx context.Context, in basetypes.ObjectValue) (basetypes.ObjectValuable, diag.Diagnostics) {
-	return PricingValue{ObjectValue: in}, nil
+func (t PricingListType) ValueFromList(ctx context.Context, in basetypes.ListValue) (basetypes.ListValuable, diag.Diagnostics) {
+	return PricingListValue{ListValue: in}, nil
 }
 
-func (t PricingType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
-	val, err := t.ObjectType.ValueFromTerraform(ctx, in)
+func (t PricingListType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+	val, err := t.ListType.ValueFromTerraform(ctx, in)
 	if err != nil {
 		return nil, err
 	}
-	obj, ok := val.(basetypes.ObjectValue)
+	list, ok := val.(basetypes.ListValue)
 	if !ok {
-		return nil, fmt.Errorf("unexpected value type %T, expected basetypes.ObjectValue", val)
+		return nil, fmt.Errorf("unexpected value type %T, expected basetypes.ListValue", val)
 	}
-	return PricingValue{ObjectValue: obj}, nil
+	return PricingListValue{ListValue: list}, nil
 }
 
-func (t PricingType) ValueType(ctx context.Context) attr.Value {
-	return PricingValue{}
+func (t PricingListType) ValueType(ctx context.Context) attr.Value {
+	return PricingListValue{}
 }
 
-// PricingValue is the strongly typed state value for a single pricing entry. It embeds
-// basetypes.ObjectValue for the standard object behaviour (ToObjectValue,
-// ToTerraformValue, null/unknown handling) and overrides identity so it reports itself
-// as a PricingType.
-type PricingValue struct {
-	basetypes.ObjectValue
+// PricingListValue is the strongly typed list value holding the pricing-entry objects. It
+// embeds basetypes.ListValue for the standard list behaviour and overrides identity so it
+// reports itself as a PricingListType.
+type PricingListValue struct {
+	basetypes.ListValue
 }
 
-func (v PricingValue) Equal(o attr.Value) bool {
-	other, ok := o.(PricingValue)
+func (v PricingListValue) Equal(o attr.Value) bool {
+	other, ok := o.(PricingListValue)
 	if !ok {
 		return false
 	}
-	return v.ObjectValue.Equal(other.ObjectValue)
+	return v.ListValue.Equal(other.ListValue)
 }
 
-func (v PricingValue) Type(ctx context.Context) attr.Type {
-	return NewPricingType()
+func (v PricingListValue) Type(ctx context.Context) attr.Type {
+	return NewPricingListType()
 }
 
-// As decodes the value into a typed PricingModel so callers read fields by name
-// (v.As(ctx) → m.DatabaseName) instead of reaching into the string-keyed attribute map.
-func (v PricingValue) As(ctx context.Context) (PricingModel, diag.Diagnostics) {
-	var m PricingModel
-	diags := v.ObjectValue.As(ctx, &m, basetypes.ObjectAsOptions{})
-	return m, diags
-}
-
-// NewPricingValue builds a PricingValue from a pricing API entry, mirroring the SDKv2
-// flatten's value mapping — empty-string for nil strings, 0 for nil numbers — so the
+// newPricingObject builds one pricing entry as a generic object value, mirroring the SDKv2
+// flatten's value mapping — empty string for nil strings, 0 for nil numbers — so the
 // Framework migration stays backward compatible. It builds through the tfsdk-tagged
 // PricingModel, so the field mapping is compile-checked rather than a string-keyed map.
-func NewPricingValue(ctx context.Context, p *pricing.Pricing) (PricingValue, diag.Diagnostics) {
+func newPricingObject(ctx context.Context, p *pricing.Pricing) (types.Object, diag.Diagnostics) {
 	//TODO(TF3.0) make the pricing string fields (and price_per_unit) nullable
-	obj, diags := types.ObjectValueFrom(ctx, pricingAttrTypes, PricingModel{
+	return types.ObjectValueFrom(ctx, pricingAttrTypes, PricingModel{
 		DatabaseName:        types.StringValue(redis.StringValue(p.DatabaseName)),
 		Type:                types.StringValue(redis.StringValue(p.Type)),
 		TypeDetails:         types.StringValue(redis.StringValue(p.TypeDetails)),
@@ -134,17 +128,14 @@ func NewPricingValue(ctx context.Context, p *pricing.Pricing) (PricingValue, dia
 		PricePeriod:         types.StringValue(redis.StringValue(p.PricePeriod)),
 		Region:              types.StringValue(redis.StringValue(p.Region)),
 	})
-	return PricingValue{ObjectValue: obj}, diags
 }
 
-// NewPricingList builds the pricing list (elements of the custom PricingType) from a
-// pricing API response. Entries are sorted by a composite key so the ordered list is
-// stable across reads: the Pricing.List API does not guarantee a consistent order, which
-// would otherwise churn the list and produce a perpetual plan diff.
-func NewPricingList(ctx context.Context, prices []*pricing.Pricing) (types.List, diag.Diagnostics) {
+// NewPricingList builds the pricing list value (a PricingListValue of pricing objects) from a
+// pricing API response. Entries are sorted by a composite key so the ordered list is stable
+// across reads: the Pricing.List API does not guarantee a consistent order, which would
+// otherwise churn the list and produce a perpetual plan diff.
+func NewPricingList(ctx context.Context, prices []*pricing.Pricing) (PricingListValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
-
-	pricingType := NewPricingType()
 
 	sorted := make([]*pricing.Pricing, len(prices))
 	copy(sorted, prices)
@@ -154,17 +145,17 @@ func NewPricingList(ctx context.Context, prices []*pricing.Pricing) (types.List,
 
 	elems := make([]attr.Value, 0, len(sorted))
 	for _, p := range sorted {
-		entry, d := NewPricingValue(ctx, p)
+		entry, d := newPricingObject(ctx, p)
 		diags.Append(d...)
 		elems = append(elems, entry)
 	}
 
-	list, d := types.ListValue(pricingType, elems)
+	list, d := types.ListValue(pricingObjectType, elems)
 	diags.Append(d...)
 	if diags.HasError() {
-		return types.ListNull(pricingType), diags
+		return PricingListValue{ListValue: types.ListNull(pricingObjectType)}, diags
 	}
-	return list, diags
+	return PricingListValue{ListValue: list}, diags
 }
 
 // pricingSortKey builds a deterministic ordering key for a pricing entry, combining every

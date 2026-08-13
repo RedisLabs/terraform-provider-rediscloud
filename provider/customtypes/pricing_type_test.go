@@ -90,49 +90,10 @@ func TestNewPricingList(t *testing.T) {
 	})
 }
 
-// --- PricingType / PricingValue basics --------------------------------------
+// --- PricingListType basics --------------------------------------------------
 
-func TestPricingTypeEqual(t *testing.T) {
-	assert.True(t, customtypes.NewPricingType().Equal(customtypes.NewPricingType()))
-	// A bare object type of any shape is not equal to the custom type.
-	assert.False(t, customtypes.NewPricingType().Equal(types.ObjectType{}))
-}
-
-func TestPricingValueTerraformRoundTrip(t *testing.T) {
-	ctx := context.Background()
-
-	orig, diags := customtypes.NewPricingValue(ctx, &pricing.Pricing{
-		Region: redis.String("us-east-1"),
-		Type:   redis.String("MinimumPrice"),
-	})
-	require.False(t, diags.HasError())
-
-	// ToTerraformValue -> ValueFromTerraform round-trips back to a PricingValue.
-	tv, err := orig.ToTerraformValue(ctx)
-	require.NoError(t, err)
-
-	back, err := customtypes.NewPricingType().ValueFromTerraform(ctx, tv)
-	require.NoError(t, err)
-
-	got, ok := back.(customtypes.PricingValue)
-	require.True(t, ok, "ValueFromTerraform should yield a customtypes.PricingValue, got %T", back)
-	assert.True(t, orig.Equal(got))
-}
-
-func TestPricingValueAs(t *testing.T) {
-	ctx := context.Background()
-
-	v, diags := customtypes.NewPricingValue(ctx, &pricing.Pricing{
-		DatabaseName: redis.String("db-1"),
-		Region:       redis.String("us-east-1"),
-		Quantity:     redis.Int(3),
-	})
-	require.False(t, diags.HasError())
-
-	// Typed, compile-checked field access instead of a string-keyed attribute map.
-	m, diags := v.As(ctx)
-	require.False(t, diags.HasError())
-	assert.Equal(t, "db-1", m.DatabaseName.ValueString())
-	assert.Equal(t, "us-east-1", m.Region.ValueString())
-	assert.EqualValues(t, 3, m.Quantity.ValueInt64())
+func TestPricingListTypeEqual(t *testing.T) {
+	assert.True(t, customtypes.NewPricingListType().Equal(customtypes.NewPricingListType()))
+	// A bare list type is not equal to the custom list type.
+	assert.False(t, customtypes.NewPricingListType().Equal(types.ListType{}))
 }
