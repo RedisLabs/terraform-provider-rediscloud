@@ -5,22 +5,13 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/rediscloud-go-api/service/maintenance"
+	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
-
-func strPtrs(vals ...string) []*string {
-	out := make([]*string, len(vals))
-	for i, v := range vals {
-		out[i] = redis.String(v)
-	}
-	return out
-}
 
 // --- FilterSubscriptions -----------------------------------------------------
 
@@ -88,74 +79,64 @@ func TestSubscriptionNameFilter(t *testing.T) {
 	assert.False(t, f(&subscriptions.Subscription{Name: redis.String("beta")}), "should not match a different name")
 }
 
-// --- FlattenMaintenance ------------------------------------------------------
+// --- FlattenPricing ----------------------------------------------------------
 
-type testWindow struct {
-	StartHour       types.Int64 `tfsdk:"start_hour"`
-	DurationInHours types.Int64 `tfsdk:"duration_in_hours"`
-	Days            types.List  `tfsdk:"days"`
+func decodePricing(ctx context.Context, t *testing.T, prices []*pricing.Pricing) []utils.PricingModel {
+	t.Helper()
+	list, diags := utils.FlattenPricing(ctx, prices)
+	require.False(t, diags.HasError())
+	var got []utils.PricingModel
+	require.False(t, list.ElementsAs(ctx, &got, false).HasError())
+	return got
 }
 
-type testMaintenance struct {
-	Mode   types.String `tfsdk:"mode"`
-	Window types.List   `tfsdk:"window"`
-}
-
-func TestFlattenMaintenance(t *testing.T) {
+func TestFlattenPricing(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("nil maintenance yields a null list", func(t *testing.T) {
-		list, diags := utils.FlattenMaintenance(ctx, nil)
-		require.False(t, diags.HasError())
-		assert.True(t, list.IsNull())
+	t.Run("sorts deterministically regardless of input order", func(t *testing.T) {
+		p1 := &pricing.Pricing{Region: redis.String("us-east-1"), Type: redis.String("MinimumPrice")}
+		p2 := &pricing.Pricing{Region: redis.String("us-east-2"), Type: redis.String("MinimumPrice")}
+
+		forward := decodePricing(ctx, t, []*pricing.Pricing{p1, p2})
+		reversed := decodePricing(ctx, t, []*pricing.Pricing{p2, p1})
+
+		require.Len(t, forward, 2)
+		require.Len(t, reversed, 2)
+		assert.Equal(t, "us-east-1", forward[0].Region.ValueString())
+		assert.Equal(t, "us-east-2", forward[1].Region.ValueString())
+		assert.Equal(t, "us-east-1", reversed[0].Region.ValueString())
+		assert.Equal(t, "us-east-2", reversed[1].Region.ValueString())
 	})
 
-	t.Run("manual mode maps windows and days", func(t *testing.T) {
-		m := &maintenance.Maintenance{
-			Mode: redis.String("manual"),
-			Windows: []*maintenance.Window{
-				{StartHour: redis.Int(22), DurationInHours: redis.Int(8), Days: strPtrs("Monday", "Thursday")},
-				{StartHour: redis.Int(12), DurationInHours: redis.Int(6), Days: strPtrs("Friday", "Saturday", "Sunday")},
+	t.Run("maps fields with null-for-nil strings and zero-for-nil ints", func(t *testing.T) {
+		prices := []*pricing.Pricing{
+			{
+				Type:                redis.String("Shards"),
+				QuantityMeasurement: redis.String("shards"),
+				PricePerUnit:        redis.Float64(0.5),
+				PriceCurrency:       redis.String("USD"),
+				PricePeriod:         redis.String("hour"),
+				Region:              redis.String("us-east-1"),
 			},
 		}
 
-		list, diags := utils.FlattenMaintenance(ctx, m)
-		require.False(t, diags.HasError())
-		require.False(t, list.IsNull())
+		got := decodePricing(ctx, t, prices)
+		require.Len(t, got, 1)
 
-		var entries []testMaintenance
-		require.False(t, list.ElementsAs(ctx, &entries, false).HasError())
-		require.Len(t, entries, 1)
-		assert.Equal(t, "manual", entries[0].Mode.ValueString())
-
-		var windows []testWindow
-		require.False(t, entries[0].Window.ElementsAs(ctx, &windows, false).HasError())
-		require.Len(t, windows, 2)
-
-		assert.EqualValues(t, 22, windows[0].StartHour.ValueInt64())
-		assert.EqualValues(t, 8, windows[0].DurationInHours.ValueInt64())
-		var days0 []string
-		require.False(t, windows[0].Days.ElementsAs(ctx, &days0, false).HasError())
-		assert.Equal(t, []string{"Monday", "Thursday"}, days0)
-
-		assert.EqualValues(t, 12, windows[1].StartHour.ValueInt64())
-		var days1 []string
-		require.False(t, windows[1].Days.ElementsAs(ctx, &days1, false).HasError())
-		assert.Equal(t, []string{"Friday", "Saturday", "Sunday"}, days1)
+		assert.Equal(t, "Shards", got[0].Type.ValueString())
+		assert.Equal(t, "USD", got[0].PriceCurrency.ValueString())
+		assert.InEpsilon(t, 0.5, got[0].PricePerUnit.ValueFloat64(), 1e-9)
+		assert.True(t, got[0].DatabaseName.IsNull())
+		assert.True(t, got[0].TypeDetails.IsNull())
+		assert.False(t, got[0].Quantity.IsNull())
+		assert.EqualValues(t, 0, got[0].Quantity.ValueInt64())
 	})
 
-	t.Run("automatic mode has an empty but non-null window list", func(t *testing.T) {
-		m := &maintenance.Maintenance{Mode: redis.String("automatic")}
-
-		list, diags := utils.FlattenMaintenance(ctx, m)
+	t.Run("empty input yields an empty but non-null list", func(t *testing.T) {
+		list, diags := utils.FlattenPricing(ctx, nil)
 		require.False(t, diags.HasError())
-
-		var entries []testMaintenance
-		require.False(t, list.ElementsAs(ctx, &entries, false).HasError())
-		require.Len(t, entries, 1)
-		assert.Equal(t, "automatic", entries[0].Mode.ValueString())
-		assert.False(t, entries[0].Window.IsNull())
-		assert.Empty(t, entries[0].Window.Elements())
+		assert.False(t, list.IsNull())
+		assert.Empty(t, list.Elements())
 	})
 }
 

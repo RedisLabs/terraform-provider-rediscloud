@@ -1,18 +1,16 @@
-package customtypes
-
-// Internal test (package customtypes, not _test) so it can reach the unexported
-// attrTypesOf and pricingAttrTypes.
+package customtypes_test
 
 import (
 	"testing"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
 
-// sampleModel documents, by example, what attrTypesOf reads: a flat struct of framework
-// value types. Note GoName vs its tag — attrTypesOf keys the map by the `tfsdk` **tag**,
+// sampleModel documents, by example, what AttrTypesOf reads: a flat struct of framework
+// value types. Note GoName vs its tag — AttrTypesOf keys the map by the `tfsdk` **tag**,
 // never the Go field name — and the mix of value kinds it maps to attr.Types.
 type sampleModel struct {
 	GoName  types.String  `tfsdk:"tag_name"`
@@ -24,7 +22,7 @@ type sampleModel struct {
 // TestAttrTypesOf is the canonical "what does this function do" example: model in,
 // attr-type map out — keyed by tfsdk tag, valued by each field's attr.Type.
 func TestAttrTypesOf(t *testing.T) {
-	got := attrTypesOf(sampleModel{})
+	got := customtypes.AttrTypesOf(sampleModel{})
 
 	assert.Equal(t, map[string]attr.Type{
 		"tag_name": types.StringType,  // types.String  -> StringType, keyed by the tag
@@ -43,7 +41,7 @@ func TestAttrTypesOfSkipsUntaggedAndDashFields(t *testing.T) {
 		NoTag   types.String // no tfsdk tag -> excluded
 	}
 
-	got := attrTypesOf(withSkips{})
+	got := customtypes.AttrTypesOf(withSkips{})
 
 	assert.Equal(t, map[string]attr.Type{"kept": types.StringType}, got)
 	assert.NotContains(t, got, "-")
@@ -53,7 +51,7 @@ func TestAttrTypesOfSkipsUntaggedAndDashFields(t *testing.T) {
 // TestAttrTypesOfEmptyStruct: no tagged fields yields an empty, non-nil map (safe to
 // pass to types.ObjectValue / a schema without a nil check).
 func TestAttrTypesOfEmptyStruct(t *testing.T) {
-	got := attrTypesOf(struct{}{})
+	got := customtypes.AttrTypesOf(struct{}{})
 
 	assert.NotNil(t, got)
 	assert.Empty(t, got)

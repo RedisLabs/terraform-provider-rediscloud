@@ -121,6 +121,7 @@ func (d *activeActiveSubscriptionDataSource) Schema(_ context.Context, _ datasou
 		Blocks: map[string]schema.Block{
 			"maintenance_windows": schema.ListNestedBlock{
 				Description: "Details about the subscription's maintenance window specification",
+				CustomType:  customtypes.NewMaintenanceListType(),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"mode": schema.StringAttribute{
@@ -154,9 +155,6 @@ func (d *activeActiveSubscriptionDataSource) Schema(_ context.Context, _ datasou
 			},
 			"pricing": schema.ListNestedBlock{
 				Description: "Pricing details totalled over this Subscription",
-				// CustomType strongly types the list as a whole (a PricingListValue rather
-				// than a bare types.List); its elements remain generic objects.
-				CustomType: customtypes.NewPricingListType(),
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"database_name": schema.StringAttribute{
