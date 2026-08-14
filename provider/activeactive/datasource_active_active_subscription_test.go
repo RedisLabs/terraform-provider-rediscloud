@@ -23,18 +23,16 @@ func TestAccDataSourceRedisCloudActiveActiveSubscription_basic(t *testing.T) {
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const dataSourceName = "data.rediscloud_active_active_subscription.example"
 
-	configVariables := config.Variables{
-		"subscription_name": config.StringVariable(name),
-	}
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigFile:      config.StaticFile(aaSubscriptionResourceConfigFile),
-				ConfigVariables: configVariables,
+				ConfigFile: config.StaticFile(aaSubscriptionResourceConfigFile),
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
@@ -42,7 +40,9 @@ func TestAccDataSourceRedisCloudActiveActiveSubscription_basic(t *testing.T) {
 			},
 			{
 				ConfigDirectory: config.StaticDirectory(aaSubscriptionDataSourceConfigDirectory),
-				ConfigVariables: configVariables,
+				ConfigVariables: config.Variables{
+					"subscription_name": config.StringVariable(name),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceName, "name", name),
 					resource.TestCheckResourceAttr(dataSourceName, "payment_method", "credit-card"),
