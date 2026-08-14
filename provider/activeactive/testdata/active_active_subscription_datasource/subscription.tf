@@ -1,5 +1,5 @@
-locals {
-  rediscloud_subscription_name = "%s"
+variable "subscription_name" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
@@ -8,7 +8,7 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_active_active_subscription" "example" {
-  name              = local.rediscloud_subscription_name
+  name              = var.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider    = "AWS"
 
