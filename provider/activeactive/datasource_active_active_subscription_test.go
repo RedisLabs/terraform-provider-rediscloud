@@ -1,52 +1,48 @@
-package provider_test
+package activeactive_test
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
-
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
 
 const (
-	aaSubscriptionDataSourceBoilerplatePath = "./activeactive/testdata/active_active_subscription_datasource_boilerplate.tf"
-	aaSubscriptionDataSourceConfigPath      = "./activeactive/testdata/active_active_subscription_datasource.tf"
+	aaSubscriptionDataSourceConfigDirectory = "testdata/active_active_subscription_datasource"
+	aaSubscriptionResourceConfigFile        = aaSubscriptionDataSourceConfigDirectory + "/subscription.tf"
 )
 
-// TestAccDataSourceRedisCloudActiveActiveSubscription_basic exercises the Active-Active
-// subscription data source in isolation, rather than piggy-backing on the subscription
-// resource's lifecycle test. The subscription is created in the first step so the second
-// step -- which adds the data source -- reads a fully provisioned subscription: the data
-// source looks it up by name, a value already known at plan time, so a single-step config
-// would let the data source read before the subscription exists.
 func TestAccDataSourceRedisCloudActiveActiveSubscription_basic(t *testing.T) {
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const dataSourceName = "data.rediscloud_active_active_subscription.example"
 
-	subscriptionConfig := fmt.Sprintf(utils.GetTestConfig(t, aaSubscriptionDataSourceBoilerplatePath), name)
-	dataSourceConfig := utils.GetTestConfig(t, aaSubscriptionDataSourceConfigPath)
+	configVariables := config.Variables{
+		"subscription_name": config.StringVariable(name),
+	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: subscriptionConfig,
+				ConfigFile:      config.StaticFile(aaSubscriptionResourceConfigFile),
+				ConfigVariables: configVariables,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
 				),
 			},
 			{
-				Config: dataSourceConfig + subscriptionConfig,
+				ConfigDirectory: config.StaticDirectory(aaSubscriptionDataSourceConfigDirectory),
+				ConfigVariables: configVariables,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceName, "name", name),
 					resource.TestCheckResourceAttr(dataSourceName, "payment_method", "credit-card"),
@@ -57,8 +53,6 @@ func TestAccDataSourceRedisCloudActiveActiveSubscription_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "status", "active"),
 					resource.TestCheckResourceAttr(dataSourceName, "customer_managed_key_enabled", "false"),
 					resource.TestCheckResourceAttr(dataSourceName, "public_endpoint_access", "true"),
-
-					// maintenance_windows (manual mode, two windows)
 					resource.TestCheckResourceAttr(dataSourceName, "maintenance_windows.0.mode", "manual"),
 					resource.TestCheckResourceAttr(dataSourceName, "maintenance_windows.0.window.#", "2"),
 					resource.TestCheckResourceAttr(dataSourceName, "maintenance_windows.0.window.0.start_hour", "22"),
@@ -72,8 +66,6 @@ func TestAccDataSourceRedisCloudActiveActiveSubscription_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "maintenance_windows.0.window.1.days.0", "Friday"),
 					resource.TestCheckResourceAttr(dataSourceName, "maintenance_windows.0.window.1.days.1", "Saturday"),
 					resource.TestCheckResourceAttr(dataSourceName, "maintenance_windows.0.window.1.days.2", "Sunday"),
-
-					// pricing (the custom type sorts entries for a stable order)
 					resource.TestCheckResourceAttr(dataSourceName, "pricing.#", "2"),
 					resource.TestCheckResourceAttr(dataSourceName, "pricing.0.type", "MinimumPrice"),
 					resource.TestCheckResourceAttr(dataSourceName, "pricing.0.quantity", "1"),
@@ -89,10 +81,7 @@ func TestAccDataSourceRedisCloudActiveActiveSubscription_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "pricing.1.price_period", "hour"),
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
-					// The SDKv2 data source set "" (never null) for these fields when the API
-					// omits them. Assert the empty string exactly: unlike the legacy TestCheck*
-					// helpers, knownvalue distinguishes "" from null, so this fails if the value
-					// ever regresses to null (e.g. via StringPointerValue).
+					// ExpectKnownValue distinguishes the compatibility value "" from null.
 					statecheck.ExpectKnownValue(dataSourceName, tfjsonpath.New("customer_managed_key_deletion_grace_period"), knownvalue.StringExact("")),
 					statecheck.ExpectKnownValue(dataSourceName, tfjsonpath.New("customer_managed_key_redis_service_account"), knownvalue.StringExact("")),
 					statecheck.ExpectKnownValue(dataSourceName, tfjsonpath.New("customer_managed_key_aws_role_arn"), knownvalue.StringExact("")),
