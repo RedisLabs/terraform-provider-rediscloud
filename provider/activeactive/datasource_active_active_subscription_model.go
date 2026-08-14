@@ -21,7 +21,7 @@ type ActiveActiveSubscriptionDataSourceModel struct {
 	PublicEndpointAccess                  types.Bool                   `tfsdk:"public_endpoint_access"`
 	CloudProvider                         types.String                 `tfsdk:"cloud_provider"`
 	AwsAccountID                          types.String                 `tfsdk:"aws_account_id"`
-	MaintenanceWindows                    types.List                   `tfsdk:"maintenance_windows"`
-	Pricing                               customtypes.PricingListValue `tfsdk:"pricing"`
-	ResourceTags                          types.Map                    `tfsdk:"resource_tags"`
+	MaintenanceWindows                    customtypes.MaintenanceListValue `tfsdk:"maintenance_windows"`
+	Pricing                               types.List                        `tfsdk:"pricing"`
+	ResourceTags                          types.Map                         `tfsdk:"resource_tags"`
 }

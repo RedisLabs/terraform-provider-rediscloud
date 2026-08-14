@@ -142,14 +142,14 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 		)
 		return
 	}
-	maintenanceWindows, diags := utils.FlattenMaintenance(ctx, m)
+	maintenanceWindows, diags := customtypes.NewMaintenanceList(ctx, m)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	model.MaintenanceWindows = maintenanceWindows
 
-	pricingRes, err := d.client.Client.Pricing.List(ctx, subId)
+	pricingList, err := d.client.Client.Pricing.List(ctx, subId)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read Subscription Pricing",
@@ -157,12 +157,12 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 		)
 		return
 	}
-	pricingList, diags := customtypes.NewPricingList(ctx, pricingRes)
+	pricing, diags := utils.FlattenPricing(ctx, pricingList)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	model.Pricing = pricingList
+	model.Pricing = pricing
 
 	diags = resp.State.Set(ctx, &model)
 	resp.Diagnostics.Append(diags...)

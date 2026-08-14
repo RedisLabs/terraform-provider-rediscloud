@@ -2,13 +2,17 @@ package utils
 
 import (
 	"context"
+	"fmt"
+	"sort"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/rediscloud-go-api/service/maintenance"
+	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/customtypes"
 )
 
 // CmkEnabledString is the value the API uses for PersistentStorageEncryptionType when
@@ -57,69 +61,73 @@ func SubscriptionNameFilter(name string) SubscriptionFilter {
 	}
 }
 
-// maintenanceWindowAttrTypes describes a single window within a maintenance_windows block.
-var maintenanceWindowAttrTypes = map[string]attr.Type{
-	"start_hour":        types.Int64Type,
-	"duration_in_hours": types.Int64Type,
-	"days":              types.ListType{ElemType: types.StringType},
+// PricingModel represents one pricing entry returned by the subscription data sources.
+type PricingModel struct {
+	DatabaseName        types.String  `tfsdk:"database_name"`
+	Type                types.String  `tfsdk:"type"`
+	TypeDetails         types.String  `tfsdk:"type_details"`
+	Quantity            types.Int64   `tfsdk:"quantity"`
+	QuantityMeasurement types.String  `tfsdk:"quantity_measurement"`
+	PricePerUnit        types.Float64 `tfsdk:"price_per_unit"`
+	PriceCurrency       types.String  `tfsdk:"price_currency"`
+	PricePeriod         types.String  `tfsdk:"price_period"`
+	Region              types.String  `tfsdk:"region"`
 }
 
-// maintenanceAttrTypes describes a single maintenance_windows block.
-var maintenanceAttrTypes = map[string]attr.Type{
-	"mode":   types.StringType,
-	"window": types.ListType{ElemType: types.ObjectType{AttrTypes: maintenanceWindowAttrTypes}},
-}
+var pricingAttrTypes = customtypes.AttrTypesOf(PricingModel{})
 
-// FlattenMaintenance converts a maintenance API response into the single-element
-// maintenance_windows list expected by the subscription data sources.
-func FlattenMaintenance(ctx context.Context, m *maintenance.Maintenance) (types.List, diag.Diagnostics) {
+// FlattenPricing converts a pricing API response into the pricing list expected by the
+// subscription data sources. Entries are sorted by a composite key so the ordered list
+// is stable across reads. Pricing.List does not guarantee a consistent order, which
+// would otherwise churn the list and produce a perpetual plan diff.
+func FlattenPricing(ctx context.Context, prices []*pricing.Pricing) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	maintenanceType := types.ObjectType{AttrTypes: maintenanceAttrTypes}
-	if m == nil {
-		return types.ListNull(maintenanceType), diags
-	}
+	pricingType := types.ObjectType{AttrTypes: pricingAttrTypes}
 
-	windowType := types.ObjectType{AttrTypes: maintenanceWindowAttrTypes}
-	// A non-null but possibly empty list: automatic-mode maintenance has no windows.
-	windowElems := make([]attr.Value, 0, len(m.Windows))
-	for _, w := range m.Windows {
-		days, d := types.ListValueFrom(ctx, types.StringType, w.Days)
-		diags.Append(d...)
-		if diags.HasError() {
-			return types.ListNull(maintenanceType), diags
-		}
+	sorted := make([]*pricing.Pricing, len(prices))
+	copy(sorted, prices)
+	sort.SliceStable(sorted, func(i, j int) bool {
+		return pricingSortKey(sorted[i]) < pricingSortKey(sorted[j])
+	})
 
-		window, d := types.ObjectValue(maintenanceWindowAttrTypes, map[string]attr.Value{
-			"start_hour":        types.Int64Value(int64(redis.IntValue(w.StartHour))),
-			"duration_in_hours": types.Int64Value(int64(redis.IntValue(w.DurationInHours))),
-			"days":              days,
+	elems := make([]attr.Value, 0, len(sorted))
+	for _, p := range sorted {
+		entry, d := types.ObjectValueFrom(ctx, pricingAttrTypes, PricingModel{
+			DatabaseName:        types.StringPointerValue(p.DatabaseName),
+			Type:                types.StringPointerValue(p.Type),
+			TypeDetails:         types.StringPointerValue(p.TypeDetails),
+			Quantity:            types.Int64Value(int64(redis.IntValue(p.Quantity))),
+			QuantityMeasurement: types.StringPointerValue(p.QuantityMeasurement),
+			PricePerUnit:        types.Float64PointerValue(p.PricePerUnit),
+			PriceCurrency:       types.StringPointerValue(p.PriceCurrency),
+			PricePeriod:         types.StringPointerValue(p.PricePeriod),
+			Region:              types.StringPointerValue(p.Region),
 		})
 		diags.Append(d...)
 		if diags.HasError() {
-			return types.ListNull(maintenanceType), diags
+			return types.ListNull(pricingType), diags
 		}
-		windowElems = append(windowElems, window)
+		elems = append(elems, entry)
 	}
 
-	windows, d := types.ListValue(windowType, windowElems)
-	diags.Append(d...)
-	if diags.HasError() {
-		return types.ListNull(maintenanceType), diags
-	}
-
-	entry, d := types.ObjectValue(maintenanceAttrTypes, map[string]attr.Value{
-		"mode":   types.StringValue(redis.StringValue(m.Mode)),
-		"window": windows,
-	})
-	diags.Append(d...)
-	if diags.HasError() {
-		return types.ListNull(maintenanceType), diags
-	}
-
-	list, d := types.ListValue(maintenanceType, []attr.Value{entry})
+	list, d := types.ListValue(pricingType, elems)
 	diags.Append(d...)
 	return list, diags
+}
+
+func pricingSortKey(p *pricing.Pricing) string {
+	return fmt.Sprintf("%s|%s|%s|%s|%s|%s|%s|%d|%f",
+		redis.StringValue(p.Region),
+		redis.StringValue(p.Type),
+		redis.StringValue(p.TypeDetails),
+		redis.StringValue(p.DatabaseName),
+		redis.StringValue(p.QuantityMeasurement),
+		redis.StringValue(p.PricePeriod),
+		redis.StringValue(p.PriceCurrency),
+		redis.IntValue(p.Quantity),
+		redis.Float64Value(p.PricePerUnit),
+	)
 }
 
 // FlattenResourceTags converts the API's key/value tag slice into a types.Map for
