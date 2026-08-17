@@ -3,8 +3,10 @@ package activeactive
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -31,6 +33,13 @@ var (
 	_ resource.ResourceWithConfigure   = &activeActiveDatabaseResource{}
 	_ resource.ResourceWithImportState = &activeActiveDatabaseResource{}
 	_ resource.ResourceWithModifyPlan  = &activeActiveDatabaseResource{}
+)
+
+const (
+	activeActiveDatabaseCreateDefaultTimeout = 30 * time.Minute
+	activeActiveDatabaseReadDefaultTimeout   = 10 * time.Minute
+	activeActiveDatabaseUpdateDefaultTimeout = 30 * time.Minute
+	activeActiveDatabaseDeleteDefaultTimeout = 10 * time.Minute
 )
 
 // activeActiveDatabaseResource is the resource implementation.
@@ -123,7 +132,7 @@ func EmptyStringToNull() planmodifier.String {
 }
 
 // Schema defines the schema for the resource.
-func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *activeActiveDatabaseResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	// Alert block schema (used in global_alert and override_global_alert)
 	alertBlockSchema := schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
@@ -366,6 +375,12 @@ func (r *activeActiveDatabaseResource) Schema(_ context.Context, _ resource.Sche
 			},
 		},
 		Blocks: map[string]schema.Block{
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{
+				Create: true,
+				Read:   true,
+				Update: true,
+				Delete: true,
+			}),
 			"global_alert": schema.SetNestedBlock{
 				Description:  "Set of alerts to enable on the database",
 				NestedObject: alertBlockSchema,
@@ -653,6 +668,14 @@ func (r *activeActiveDatabaseResource) Create(ctx context.Context, req resource.
 		return
 	}
 
+	createTimeout, diags := plan.Timeouts.Create(ctx, activeActiveDatabaseCreateDefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
+
 	// Call the CRUD implementation
 	r.createDatabase(ctx, &plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -672,6 +695,14 @@ func (r *activeActiveDatabaseResource) Read(ctx context.Context, req resource.Re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	readTimeout, diags := state.Timeouts.Read(ctx, activeActiveDatabaseReadDefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
 
 	// Call the CRUD implementation
 	removed := r.readDatabase(ctx, &state, &resp.Diagnostics)
@@ -709,6 +740,14 @@ func (r *activeActiveDatabaseResource) Update(ctx context.Context, req resource.
 	plan.ID = state.ID
 	plan.DbID = state.DbID
 
+	updateTimeout, diags := plan.Timeouts.Update(ctx, activeActiveDatabaseUpdateDefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
+
 	// Call the CRUD implementation
 	r.updateDatabase(ctx, &plan, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -734,6 +773,14 @@ func (r *activeActiveDatabaseResource) Delete(ctx context.Context, req resource.
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	deleteTimeout, diags := state.Timeouts.Delete(ctx, activeActiveDatabaseDeleteDefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
 
 	// Call the CRUD implementation
 	r.deleteDatabase(ctx, &state, &resp.Diagnostics)

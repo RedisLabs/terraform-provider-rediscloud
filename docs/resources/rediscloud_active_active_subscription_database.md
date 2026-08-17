@@ -138,6 +138,7 @@ The `remote_backup` block supports:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/language/resources/syntax#operation-timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Used when creating the database
+* `read` - (Defaults to 10 mins) Used when reading the database
 * `update` - (Defaults to 30 mins) Used when updating the database
 * `delete` - (Defaults to 10 mins) Used when destroying the database
 
