@@ -42,7 +42,7 @@ output "rediscloud_active_active_subscription" {
 * `customer_managed_key_enabled` - Whether customer managed key encryption is enabled for the subscription
 * `customer_managed_key_deletion_grace_period` - The deletion grace period for the customer managed key (e.g. 'immediate', '15-minutes')
 * `customer_managed_key_redis_service_account` - The Redis service account principal associated with the subscription. This is used to grant access to the customer managed encryption key (GCP subscriptions).
-* `customer_managed_key_aws_role_arn` - The ARN of the IAM role used by the subscription to access the AWS KMS customer managed key (AWS subscriptions).
+* `customer_managed_key_aws_role_arn` - The ARN of the IAM role used by the subscription to access the AWS KMS customer managed key. Grant this role access to your KMS key via key policy (AWS subscriptions).
 * `public_endpoint_access` - Whether public endpoint access is enabled for databases in the subscription
 * `maintenance_windows` - Details about the subscription's maintenance window specification, documented below
 * `pricing` - A list of pricing objects, documented below
