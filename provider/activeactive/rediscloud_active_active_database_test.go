@@ -67,6 +67,10 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttr(databaseResourceName, "global_modules.#", "0"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_source_ips.#", "2"),
 					resource.TestCheckResourceAttr(databaseResourceName, "global_enable_default_user", "true"),
+					resource.TestCheckResourceAttr(databaseResourceName, "timeouts.create", "45m"),
+					resource.TestCheckResourceAttr(databaseResourceName, "timeouts.read", "15m"),
+					resource.TestCheckResourceAttr(databaseResourceName, "timeouts.update", "45m"),
+					resource.TestCheckResourceAttr(databaseResourceName, "timeouts.delete", "15m"),
 
 					// Check override_region for us-east-1 (with overrides)
 					resource.TestCheckResourceAttr(databaseResourceName, "override_region.#", "2"),
@@ -374,6 +378,10 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 					"override_region.0.override_global_data_persistence",
 					"override_region.0.override_global_password",
 					"override_region.0.enable_default_user",
+					"timeouts.create",
+					"timeouts.read",
+					"timeouts.update",
+					"timeouts.delete",
 				},
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
 					if len(states) != 1 {

@@ -52,6 +52,13 @@ resource "rediscloud_active_active_subscription_database" "example" {
   enable_tls                            = false
   redis_version                         = var.redis_version
 
+  timeouts {
+    create = "45m"
+    read   = "15m"
+    update = "45m"
+    delete = "15m"
+  }
+
   global_data_persistence    = "none"
   global_password            = var.password
   global_source_ips          = ["192.168.0.0/16", "192.170.0.0/16"]
