@@ -1,11 +1,14 @@
 # Changelog
 
-## 2.19.0 (TBD)
+## 2.19.0 (17th August 2026)
+
+### Added
+
+- Added the `redis_version` attribute to the `rediscloud_essentials_database` data source
 
 ### Changed
 
 - Migrated the `rediscloud_cloud_account` resource to the Terraform Plugin Framework
-- Upgraded the provider to use `v0.52.1` of the [rediscloud-go-api](https://github.com/RedisLabs/rediscloud-go-api) SDK
 
 ### Fixed
 
