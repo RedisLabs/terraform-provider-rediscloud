@@ -21,6 +21,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/cloudaccount"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/datapersistence"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentialsplan"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/langcache"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/paymentmethod"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/regions"
 )
@@ -169,6 +170,8 @@ func (p *redisCloudFrameworkProvider) Resources(_ context.Context) []func() reso
 	return []func() resource.Resource{
 		activeactive.NewActiveActiveDatabaseResource,
 		cloudaccount.NewCloudAccountResource,
+		langcache.NewLangCacheResource,
+		langcache.NewLangCacheAPIKeyResource,
 	}
 }
 

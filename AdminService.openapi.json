@@ -1,0 +1,2519 @@
+{
+    "openapi": "3.0.2",
+    "info": {
+        "title": "AdminService",
+        "version": ""
+    },
+    "paths": {
+        "/ui/admin/api-keys": {
+            "get": {
+                "description": "List every API key across all caches owned by the calling account.\nThe account is derived from the JWT claims; no path or query parameters\nare accepted. The response is not paginated.",
+                "operationId": "ListAccountAPIKeys",
+                "responses": {
+                    "200": {
+                        "description": "ListAccountAPIKeys 200 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListAccountAPIKeysResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            }
+        },
+        "/ui/caches": {
+            "get": {
+                "operationId": "ListCaches",
+                "responses": {
+                    "200": {
+                        "description": "ListCaches 200 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListCachesResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            },
+            "post": {
+                "operationId": "CreateCache",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CacheCreateRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "CreateCache 201 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CreateCacheResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            }
+        },
+        "/ui/caches/{cacheId}": {
+            "delete": {
+                "operationId": "DeleteCache",
+                "parameters": [
+                    {
+                        "name": "cacheId",
+                        "in": "path",
+                        "description": "The ID of the cache to delete",
+                        "schema": {
+                            "type": "string",
+                            "description": "The ID of the cache to delete"
+                        },
+                        "required": true
+                    },
+                    {
+                        "name": "flush",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DeleteCache 200 response"
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            },
+            "get": {
+                "operationId": "GetCache",
+                "parameters": [
+                    {
+                        "name": "cacheId",
+                        "in": "path",
+                        "description": "The ID of the cache to fetch configuration for",
+                        "schema": {
+                            "type": "string",
+                            "description": "The ID of the cache to fetch configuration for"
+                        },
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "GetCache 200 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GetCacheResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            },
+            "patch": {
+                "operationId": "UpdateCache",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CacheUpdateRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "parameters": [
+                    {
+                        "name": "cacheId",
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "UpdateCache 201 response"
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            }
+        },
+        "/ui/caches/{cacheId}/accuracy-analyzer": {
+            "get": {
+                "operationId": "GetAccuracyAnalyzer",
+                "parameters": [
+                    {
+                        "name": "cacheId",
+                        "in": "path",
+                        "description": "The ID of the cache",
+                        "schema": {
+                            "type": "string",
+                            "description": "The ID of the cache"
+                        },
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "GetAccuracyAnalyzer 200 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GetAccuracyAnalyzerResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            }
+        },
+        "/ui/caches/{cacheId}/accuracy-analyzer/disable": {
+            "post": {
+                "operationId": "DisableAccuracyAnalyzer",
+                "parameters": [
+                    {
+                        "name": "cacheId",
+                        "in": "path",
+                        "description": "The ID of the cache",
+                        "schema": {
+                            "type": "string",
+                            "description": "The ID of the cache"
+                        },
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "DisableAccuracyAnalyzer 204 response"
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            }
+        },
+        "/ui/caches/{cacheId}/accuracy-analyzer/enable": {
+            "post": {
+                "operationId": "EnableAccuracyAnalyzer",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AccuracyAnalyzerEnableRequest"
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "cacheId",
+                        "in": "path",
+                        "description": "The ID of the cache",
+                        "schema": {
+                            "type": "string",
+                            "description": "The ID of the cache"
+                        },
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "EnableAccuracyAnalyzer 204 response"
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            }
+        },
+        "/ui/caches/{cacheId}/api-key": {
+            "get": {
+                "operationId": "ListAPIKeys",
+                "parameters": [
+                    {
+                        "name": "cacheId",
+                        "in": "path",
+                        "description": "The ID of the cache",
+                        "schema": {
+                            "type": "string",
+                            "description": "The ID of the cache"
+                        },
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ListAPIKeys 200 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListAPIKeysResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            },
+            "post": {
+                "operationId": "AddAPIKey",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/APIKeyAddRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "parameters": [
+                    {
+                        "name": "cacheId",
+                        "in": "path",
+                        "description": "The ID of the cache",
+                        "schema": {
+                            "type": "string",
+                            "description": "The ID of the cache"
+                        },
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "AddAPIKey 201 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AddAPIKeyResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            }
+        },
+        "/ui/caches/{cacheId}/api-key/{apiKeyId}": {
+            "delete": {
+                "operationId": "DeleteAPIKey",
+                "parameters": [
+                    {
+                        "name": "cacheId",
+                        "in": "path",
+                        "description": "The ID of the cache",
+                        "schema": {
+                            "type": "string",
+                            "description": "The ID of the cache"
+                        },
+                        "required": true
+                    },
+                    {
+                        "name": "apiKeyId",
+                        "in": "path",
+                        "description": "The API key ID to delete",
+                        "schema": {
+                            "type": "string",
+                            "description": "The API key ID to delete"
+                        },
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "DeleteAPIKey 204 response"
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            }
+        },
+        "/ui/caches/{cacheId}/entries": {
+            "delete": {
+                "operationId": "EmptyCache",
+                "parameters": [
+                    {
+                        "name": "cacheId",
+                        "in": "path",
+                        "description": "The metadata langcache ID of the entry to delete",
+                        "schema": {
+                            "type": "string",
+                            "description": "The metadata langcache ID of the entry to delete"
+                        },
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "EmptyCache 204 response"
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            }
+        },
+        "/ui/caches/{cacheId}/metrics": {
+            "get": {
+                "operationId": "GetMetrics",
+                "parameters": [
+                    {
+                        "name": "cacheId",
+                        "in": "path",
+                        "description": "The ID of the cache",
+                        "schema": {
+                            "type": "string",
+                            "description": "The ID of the cache"
+                        },
+                        "required": true
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "Start of period",
+                        "schema": {
+                            "type": "string",
+                            "description": "Start of period",
+                            "format": "date-time"
+                        },
+                        "required": true
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "End of period",
+                        "schema": {
+                            "type": "string",
+                            "description": "End of period",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "period",
+                        "in": "query",
+                        "description": "Time period granularity for metrics aggregation",
+                        "schema": {
+                            "$ref": "#/components/schemas/MetricsPeriod"
+                        },
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "GetMetrics 200 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GetMetricsResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            }
+        },
+        "/ui/caches/{cacheId}/token": {
+            "post": {
+                "operationId": "AddAPIKeyNoBody",
+                "parameters": [
+                    {
+                        "name": "cacheId",
+                        "in": "path",
+                        "description": "The ID of the cache",
+                        "schema": {
+                            "type": "string",
+                            "description": "The ID of the cache"
+                        },
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "AddAPIKeyNoBody 201 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AddAPIKeyNoBodyResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            }
+        },
+        "/ui/controlplane/info": {
+            "get": {
+                "operationId": "GetControlPlaneInfo",
+                "responses": {
+                    "200": {
+                        "description": "GetControlPlaneInfo 200 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GetControlPlaneInfoResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "admin"
+                ]
+            }
+        },
+        "/ui/embedding-providers": {
+            "get": {
+                "operationId": "ListEmbeddingProviders",
+                "responses": {
+                    "200": {
+                        "description": "ListEmbeddingProviders 200 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListEmbeddingProvidersResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "BadRequestError 400 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "AuthenticationError 401 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AuthenticationErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "ForbiddenError 403 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForbiddenErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NotFoundError 404 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotFoundErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "424": {
+                        "description": "FailedDependencyError 424 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDependencyErrorResponseContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "UnexpectedError 500 response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnexpectedErrorResponseContent"
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "cache"
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "APIKeyAddRequest": {
+                "type": "object",
+                "description": "APIKeyAddRequest contains apikey name",
+                "properties": {
+                    "keyName": {
+                        "type": "string",
+                        "description": "Name of the API Key"
+                    }
+                },
+                "required": [
+                    "keyName"
+                ]
+            },
+            "APIKeyInfo": {
+                "type": "object",
+                "properties": {
+                    "apiKeyId": {
+                        "type": "string",
+                        "description": "The APIKey ID (hashed version)"
+                    },
+                    "keyName": {
+                        "type": "string",
+                        "description": "The name of the APIKey"
+                    },
+                    "obfuscatedToken": {
+                        "type": "string",
+                        "description": "The obfuscated version of raw key"
+                    },
+                    "createdAt": {
+                        "type": "integer",
+                        "description": "When the API Key was created",
+                        "format": "int64"
+                    }
+                },
+                "required": [
+                    "apiKeyId",
+                    "createdAt",
+                    "keyName",
+                    "obfuscatedToken"
+                ]
+            },
+            "AccountAPIKeyInfo": {
+                "type": "object",
+                "properties": {
+                    "apiKey": {
+                        "$ref": "#/components/schemas/APIKeyInfo"
+                    },
+                    "resourceId": {
+                        "type": "string",
+                        "description": "The stable identifier of the parent cache that owns this API key"
+                    },
+                    "resourceName": {
+                        "type": "string",
+                        "description": "The human-readable display name of the parent cache that owns this API key"
+                    }
+                },
+                "required": [
+                    "apiKey",
+                    "resourceId",
+                    "resourceName"
+                ]
+            },
+            "AccuracyAnalyzerEnableRequest": {
+                "type": "object",
+                "description": "Accuracy analyzer enable request",
+                "properties": {
+                    "consent": {
+                        "type": "boolean",
+                        "description": "User consent for accuracy analyzer data collection.\nRequired when enabling for the first time (transitioning from NOT_CONFIGURED)."
+                    }
+                }
+            },
+            "AccuracyAnalyzerState": {
+                "type": "string",
+                "description": "Accuracy analyzer state\nThe state of the accuracy analyzer.\n- ENABLED: The accuracy analyzer is enabled and active for the cache.\n- DISABLED: The accuracy analyzer is explicitly disabled for the cache, having been enabled prior to that.\n- NOT_CONFIGURED: The accuracy analyzer has never been configured for the cache. The is the default initial state.",
+                "enum": [
+                    "ENABLED",
+                    "DISABLED",
+                    "NOT_CONFIGURED"
+                ]
+            },
+            "AddAPIKeyNoBodyResponseContent": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "description": "The generated api key"
+                    }
+                },
+                "required": [
+                    "token"
+                ]
+            },
+            "AddAPIKeyResponseContent": {
+                "type": "object",
+                "properties": {
+                    "apiKey": {
+                        "type": "string",
+                        "description": "The generated api key"
+                    }
+                },
+                "required": [
+                    "apiKey"
+                ]
+            },
+            "AuthenticationErrorResponseContent": {
+                "type": "object",
+                "description": "Authentication credentials are missing, malformed, or invalid.",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "A short, human-readable summary of the problem\n                                      type.  It SHOULD NOT change from occurrence to occurrence of the\n                                      problem, except for purposes of localization (e.g., using\n                                      proactive content negotiation; see [RFC7231], Section 3.4)."
+                    },
+                    "status": {
+                        "type": "integer",
+                        "default": 401,
+                        "description": "The HTTP status code ([RFC7231], Section 6) generated by the origin server for this occurrence of the problem.",
+                        "format": "int32"
+                    },
+                    "detail": {
+                        "type": "string",
+                        "description": "A human-readable explanation specific to this occurrence of the problem."
+                    },
+                    "instance": {
+                        "type": "string",
+                        "description": "A URI reference that identifies the specific occurrence of the problem.  It may or may not yield further information if dereferenced."
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/AuthenticationErrorType"
+                    }
+                },
+                "required": [
+                    "status",
+                    "title",
+                    "type"
+                ]
+            },
+            "AuthenticationErrorType": {
+                "type": "string",
+                "description": "Problem type URI for authentication errors.",
+                "enum": [
+                    "/errors/authentication-failed"
+                ]
+            },
+            "BadRequestErrorResponseContent": {
+                "type": "object",
+                "description": "Request validation or input decoding failed.",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "A short, human-readable summary of the problem\n                                      type.  It SHOULD NOT change from occurrence to occurrence of the\n                                      problem, except for purposes of localization (e.g., using\n                                      proactive content negotiation; see [RFC7231], Section 3.4)."
+                    },
+                    "status": {
+                        "type": "integer",
+                        "default": 400,
+                        "description": "The HTTP status code ([RFC7231], Section 6) generated by the origin server for this occurrence of the problem.",
+                        "format": "int32"
+                    },
+                    "detail": {
+                        "type": "string",
+                        "description": "A human-readable explanation specific to this occurrence of the problem."
+                    },
+                    "instance": {
+                        "type": "string",
+                        "description": "A URI reference that identifies the specific occurrence of the problem.  It may or may not yield further information if dereferenced."
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/BadRequestErrorType"
+                    },
+                    "fields": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FieldError"
+                        },
+                        "description": "Optional field-level validation errors."
+                    }
+                },
+                "required": [
+                    "status",
+                    "title",
+                    "type"
+                ]
+            },
+            "BadRequestErrorType": {
+                "type": "string",
+                "description": "Problem type URI for bad request errors.",
+                "enum": [
+                    "/errors/invalid-data"
+                ]
+            },
+            "CacheCreateRequest": {
+                "type": "object",
+                "description": "Create cache request",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the cache"
+                    },
+                    "database": {
+                        "$ref": "#/components/schemas/DatabaseConfig"
+                    },
+                    "embeddingModel": {
+                        "$ref": "#/components/schemas/EmbeddingModel"
+                    },
+                    "defaultSearchThreshold": {
+                        "type": "number",
+                        "description": "Default distance threshold for searching cache entries",
+                        "format": "float"
+                    },
+                    "defaultTtlMillis": {
+                        "type": "integer",
+                        "description": "Default cache entry time-to-live, in milliseconds. A value of 0 indicates entry is not stored.\nA value of -1 indicates the entry is stored indefinitely.",
+                        "format": "int64"
+                    },
+                    "attributes": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Custom attributes for filtering cache entries"
+                    },
+                    "searchStrategies": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SearchStrategy"
+                        },
+                        "description": "Default search strategies to use for this cache, ordered by priority"
+                    }
+                },
+                "required": [
+                    "attributes",
+                    "database",
+                    "defaultSearchThreshold",
+                    "defaultTtlMillis",
+                    "embeddingModel",
+                    "name"
+                ]
+            },
+            "CacheState": {
+                "type": "string",
+                "enum": [
+                    "PROVISIONING",
+                    "READY",
+                    "UNAVAILABLE"
+                ]
+            },
+            "CacheUpdateEmbeddingModel": {
+                "type": "object",
+                "properties": {
+                    "apiKey": {
+                        "type": "string",
+                        "description": "API key for the embedding model (only allowed for authorized embedding providers)"
+                    }
+                }
+            },
+            "CacheUpdateRequest": {
+                "type": "object",
+                "description": "CacheUpdateRequest applies optional field changes to be applied if present",
+                "properties": {
+                    "defaultSearchThreshold": {
+                        "type": "number",
+                        "description": "Default distance threshold for searching cache entries",
+                        "format": "float"
+                    },
+                    "defaultTtlMillis": {
+                        "type": "integer",
+                        "description": "Default cache entry time-to-live, in milliseconds. A value of 0 indicates entry is not stored.\nA value of -1 indicates the entry is stored indefinitely.",
+                        "format": "int64"
+                    },
+                    "embeddingModel": {
+                        "$ref": "#/components/schemas/CacheUpdateEmbeddingModel"
+                    },
+                    "searchStrategies": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SearchStrategy"
+                        },
+                        "description": "Default search strategies to use for this cache, ordered by priority"
+                    }
+                }
+            },
+            "CreateCacheResponseContent": {
+                "type": "object",
+                "description": "Configuration of the newly created cache",
+                "properties": {
+                    "cacheId": {
+                        "type": "string",
+                        "description": "The ID of the created cache"
+                    }
+                },
+                "required": [
+                    "cacheId"
+                ]
+            },
+            "CustomEmbeddingModelOptions": {
+                "type": "object",
+                "properties": {
+                    "baseUrl": {
+                        "type": "string"
+                    },
+                    "dimensions": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                },
+                "required": [
+                    "baseUrl",
+                    "dimensions"
+                ]
+            },
+            "DatabaseConfig": {
+                "type": "object",
+                "description": "Database information for the cache",
+                "properties": {
+                    "databaseId": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "databaseId"
+                ]
+            },
+            "Embedding": {
+                "type": "object",
+                "properties": {
+                    "provider": {
+                        "type": "string",
+                        "description": "The ID of the Embedding Provider"
+                    },
+                    "model": {
+                        "type": "string",
+                        "description": "The Model ID"
+                    }
+                },
+                "required": [
+                    "model",
+                    "provider"
+                ]
+            },
+            "EmbeddingModel": {
+                "type": "object",
+                "description": "Embedding model information",
+                "properties": {
+                    "provider": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "apiKey": {
+                        "type": "string"
+                    },
+                    "customOptions": {
+                        "$ref": "#/components/schemas/CustomEmbeddingModelOptions"
+                    }
+                },
+                "required": [
+                    "name",
+                    "provider"
+                ]
+            },
+            "EmbeddingProvider": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The ID of the Embedding Provider"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the Embedding Provider"
+                    },
+                    "models": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ModelItem"
+                        },
+                        "description": "Supported models by the Embedding Provider"
+                    },
+                    "authorized": {
+                        "type": "boolean",
+                        "description": "Whether the Embedding Provider is authorized and require API Key"
+                    }
+                },
+                "required": [
+                    "authorized",
+                    "id",
+                    "models",
+                    "name"
+                ]
+            },
+            "FailedDependencyErrorResponseContent": {
+                "type": "object",
+                "description": "A dependent resource required to process the request is unavailable or unhealthy.",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "A short, human-readable summary of the problem\n                                      type.  It SHOULD NOT change from occurrence to occurrence of the\n                                      problem, except for purposes of localization (e.g., using\n                                      proactive content negotiation; see [RFC7231], Section 3.4)."
+                    },
+                    "status": {
+                        "type": "integer",
+                        "default": 424,
+                        "description": "The HTTP status code ([RFC7231], Section 6) generated by the origin server for this occurrence of the problem.",
+                        "format": "int32"
+                    },
+                    "detail": {
+                        "type": "string",
+                        "description": "A human-readable explanation specific to this occurrence of the problem."
+                    },
+                    "instance": {
+                        "type": "string",
+                        "description": "A URI reference that identifies the specific occurrence of the problem.  It may or may not yield further information if dereferenced."
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/FailedDependencyErrorType"
+                    }
+                },
+                "required": [
+                    "status",
+                    "title",
+                    "type"
+                ]
+            },
+            "FailedDependencyErrorType": {
+                "type": "string",
+                "description": "Problem type URI for failed-dependency errors.",
+                "enum": [
+                    "/errors/resource-unavailable",
+                    "/errors/database-out-of-memory"
+                ]
+            },
+            "FieldError": {
+                "type": "object",
+                "description": "Validation error details for a single request field.",
+                "properties": {
+                    "field": {
+                        "type": "string",
+                        "description": "Name of the invalid request field."
+                    },
+                    "rule": {
+                        "type": "string",
+                        "description": "Validation rule that was violated."
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Human-readable validation error message."
+                    }
+                },
+                "required": [
+                    "field",
+                    "message",
+                    "rule"
+                ]
+            },
+            "ForbiddenErrorResponseContent": {
+                "type": "object",
+                "description": "The caller is authenticated but not allowed to access the requested resource.",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "A short, human-readable summary of the problem\n                                      type.  It SHOULD NOT change from occurrence to occurrence of the\n                                      problem, except for purposes of localization (e.g., using\n                                      proactive content negotiation; see [RFC7231], Section 3.4)."
+                    },
+                    "status": {
+                        "type": "integer",
+                        "default": 403,
+                        "description": "The HTTP status code ([RFC7231], Section 6) generated by the origin server for this occurrence of the problem.",
+                        "format": "int32"
+                    },
+                    "detail": {
+                        "type": "string",
+                        "description": "A human-readable explanation specific to this occurrence of the problem."
+                    },
+                    "instance": {
+                        "type": "string",
+                        "description": "A URI reference that identifies the specific occurrence of the problem.  It may or may not yield further information if dereferenced."
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/ForbiddenErrorType"
+                    }
+                },
+                "required": [
+                    "status",
+                    "title",
+                    "type"
+                ]
+            },
+            "ForbiddenErrorType": {
+                "type": "string",
+                "description": "Problem type URI for authorization errors.",
+                "enum": [
+                    "/errors/insufficient-permissions"
+                ]
+            },
+            "GetAccuracyAnalyzerResponseContent": {
+                "type": "object",
+                "description": "Accuracy analyzer state response",
+                "properties": {
+                    "state": {
+                        "$ref": "#/components/schemas/AccuracyAnalyzerState"
+                    },
+                    "lastStateUpdate": {
+                        "type": "string",
+                        "description": "When the accuracy analyzer configuration was last updated",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "state"
+                ]
+            },
+            "GetCacheResponseContent": {
+                "type": "object",
+                "description": "Configuration of a cache",
+                "properties": {
+                    "cacheId": {
+                        "type": "string",
+                        "description": "The cache's ID"
+                    },
+                    "cacheName": {
+                        "type": "string",
+                        "description": "The cache name"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "description": "The UTC timestamp when the cache was created",
+                        "format": "date-time"
+                    },
+                    "databaseId": {
+                        "type": "string",
+                        "description": "The cache's database ID"
+                    },
+                    "databaseName": {
+                        "type": "string",
+                        "description": "The cache's database name"
+                    },
+                    "databaseProvider": {
+                        "type": "string",
+                        "description": "The cloud provider where the database is provisioned"
+                    },
+                    "databaseRegion": {
+                        "type": "string",
+                        "description": "The cloud region where the database is provisioned"
+                    },
+                    "databaseAccessCidrs": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Database CIDR allow-list items"
+                    },
+                    "subscriptionId": {
+                        "type": "string",
+                        "description": "The cache's database subscription ID"
+                    },
+                    "defaultSearchThreshold": {
+                        "type": "number",
+                        "description": "Default distance threshold for searching cache entries",
+                        "format": "float"
+                    },
+                    "defaultTtlMillis": {
+                        "type": "integer",
+                        "description": "Default cache entry time-to-live, in milliseconds. A value of 0 indicates entry is not stored.\nA value of -1 indicates the entry is stored indefinitely.",
+                        "format": "int64"
+                    },
+                    "attributes": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "User-defined cache entry attributes"
+                    },
+                    "searchStrategies": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SearchStrategy"
+                        },
+                        "description": "Default search strategies for this cache, ordered by priority"
+                    },
+                    "endpoint": {
+                        "type": "string",
+                        "description": "API endpoint for accessing the Cache"
+                    },
+                    "endpoints": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PublicEndpoint"
+                        },
+                        "description": "API endpoints for accessing the Cache"
+                    },
+                    "embeddingProvider": {
+                        "$ref": "#/components/schemas/Embedding"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/CacheState"
+                    },
+                    "errorMessage": {
+                        "type": "string",
+                        "description": "Cache status error message"
+                    },
+                    "errorMessageTimestamp": {
+                        "type": "number",
+                        "description": "Cache status error message timestamp",
+                        "format": "double"
+                    },
+                    "dataPlaneAccessKey": {
+                        "type": "string",
+                        "description": "Data plane access key for the cache"
+                    }
+                },
+                "required": [
+                    "attributes",
+                    "cacheId",
+                    "cacheName",
+                    "databaseId",
+                    "defaultSearchThreshold",
+                    "defaultTtlMillis",
+                    "embeddingProvider",
+                    "endpoint",
+                    "endpoints",
+                    "status",
+                    "subscriptionId"
+                ]
+            },
+            "GetControlPlaneInfoResponseContent": {
+                "type": "object",
+                "description": "Control plane information response",
+                "properties": {
+                    "egressIps": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of egress IP addresses for the control plane"
+                    }
+                },
+                "required": [
+                    "egressIps"
+                ]
+            },
+            "GetMetricsResponseContent": {
+                "type": "object",
+                "description": "Cache metrics",
+                "properties": {
+                    "hitRatio": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TimeValue"
+                        },
+                        "description": "Queries served from cache / total read requests"
+                    },
+                    "readRequests": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TimeValue"
+                        },
+                        "description": "Total read requests"
+                    },
+                    "readLatency": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TimeValue"
+                        },
+                        "description": "Total time in milliseconds to respond to search the cache"
+                    },
+                    "cacheHits": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TimeValue"
+                        },
+                        "description": "Total cache hits"
+                    },
+                    "cacheItems": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TimeValue"
+                        },
+                        "description": "Number of items in cache"
+                    },
+                    "totalReads": {
+                        "type": "number",
+                        "description": "Total reads (single value)",
+                        "format": "float"
+                    }
+                },
+                "required": [
+                    "cacheHits",
+                    "cacheItems",
+                    "hitRatio",
+                    "readLatency",
+                    "readRequests",
+                    "totalReads"
+                ]
+            },
+            "ListAPIKeysResponseContent": {
+                "type": "object",
+                "properties": {
+                    "apiKeys": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/APIKeyInfo"
+                        },
+                        "description": "List of API keys for the cache"
+                    }
+                },
+                "required": [
+                    "apiKeys"
+                ]
+            },
+            "ListAccountAPIKeysResponseContent": {
+                "type": "object",
+                "properties": {
+                    "apiKeys": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AccountAPIKeyInfo"
+                        },
+                        "description": "List of API keys across every cache owned by the calling account"
+                    }
+                },
+                "required": [
+                    "apiKeys"
+                ]
+            },
+            "ListCacheItem": {
+                "type": "object",
+                "properties": {
+                    "cacheId": {
+                        "type": "string",
+                        "description": "The ID of the cache"
+                    },
+                    "cacheName": {
+                        "type": "string",
+                        "description": "The cache name"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "description": "The UTC timestamp when the cache was created",
+                        "format": "date-time"
+                    },
+                    "databaseId": {
+                        "type": "string",
+                        "description": "The cache's database ID"
+                    },
+                    "databaseName": {
+                        "type": "string",
+                        "description": "The cache's database name"
+                    },
+                    "subscriptionId": {
+                        "type": "string",
+                        "description": "The cache's database subscription ID"
+                    },
+                    "embedding": {
+                        "$ref": "#/components/schemas/Embedding"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/CacheState"
+                    }
+                },
+                "required": [
+                    "cacheId",
+                    "cacheName",
+                    "databaseId",
+                    "embedding",
+                    "status",
+                    "subscriptionId"
+                ]
+            },
+            "ListCachesResponseContent": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ListCacheItem"
+                        },
+                        "description": "List of all caches"
+                    }
+                },
+                "required": [
+                    "data"
+                ]
+            },
+            "ListEmbeddingProvidersResponseContent": {
+                "type": "object",
+                "properties": {
+                    "embeddingProviders": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EmbeddingProvider"
+                        },
+                        "description": "List of supported Embedding Providers and their models"
+                    }
+                },
+                "required": [
+                    "embeddingProviders"
+                ]
+            },
+            "MetricsPeriod": {
+                "type": "string",
+                "description": "Time period granularity for metrics aggregation",
+                "enum": [
+                    "hour",
+                    "day",
+                    "week"
+                ]
+            },
+            "ModelItem": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The ID of the model"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The name of the model"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name"
+                ]
+            },
+            "NotFoundErrorResponseContent": {
+                "type": "object",
+                "description": "The requested resource does not exist.",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "A short, human-readable summary of the problem\n                                      type.  It SHOULD NOT change from occurrence to occurrence of the\n                                      problem, except for purposes of localization (e.g., using\n                                      proactive content negotiation; see [RFC7231], Section 3.4)."
+                    },
+                    "status": {
+                        "type": "integer",
+                        "default": 404,
+                        "description": "The HTTP status code ([RFC7231], Section 6) generated by the origin server for this occurrence of the problem.",
+                        "format": "int32"
+                    },
+                    "detail": {
+                        "type": "string",
+                        "description": "A human-readable explanation specific to this occurrence of the problem."
+                    },
+                    "instance": {
+                        "type": "string",
+                        "description": "A URI reference that identifies the specific occurrence of the problem.  It may or may not yield further information if dereferenced."
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/NotFoundErrorType"
+                    }
+                },
+                "required": [
+                    "status",
+                    "title",
+                    "type"
+                ]
+            },
+            "NotFoundErrorType": {
+                "type": "string",
+                "description": "Problem type URI for not-found errors.",
+                "enum": [
+                    "/errors/resource-not-found"
+                ]
+            },
+            "PublicEndpoint": {
+                "type": "object",
+                "description": "List of URL strings\nPublic endpoint configuration",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "The URL of the endpoint"
+                    },
+                    "provider": {
+                        "type": "string",
+                        "description": "The endpoint cloud provider"
+                    },
+                    "region": {
+                        "type": "string",
+                        "description": "The endpoint cloud region"
+                    },
+                    "egressIps": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of egress IP addresses for the endpoint"
+                    },
+                    "isAccessible": {
+                        "type": "boolean",
+                        "description": "Whether the service for this endpoint can access the database based on egress IPs and database CIDR allow-list"
+                    }
+                },
+                "required": [
+                    "isAccessible",
+                    "provider",
+                    "region",
+                    "url"
+                ]
+            },
+            "SearchStrategy": {
+                "type": "string",
+                "enum": [
+                    "exact",
+                    "semantic"
+                ],
+                "x-enumNames": [
+                    "SearchStrategyExact",
+                    "SearchStrategySemantic"
+                ]
+            },
+            "TimeValue": {
+                "type": "object",
+                "description": "A single point in a metrics timeseries",
+                "properties": {
+                    "time": {
+                        "type": "string",
+                        "description": "Time of the metric point",
+                        "format": "date-time"
+                    },
+                    "value": {
+                        "type": "number",
+                        "description": "Value of the metric at this time",
+                        "format": "float"
+                    }
+                },
+                "required": [
+                    "time",
+                    "value"
+                ]
+            },
+            "UnexpectedErrorResponseContent": {
+                "type": "object",
+                "description": "The service failed with an unexpected internal error.",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "A short, human-readable summary of the problem\n                                      type.  It SHOULD NOT change from occurrence to occurrence of the\n                                      problem, except for purposes of localization (e.g., using\n                                      proactive content negotiation; see [RFC7231], Section 3.4)."
+                    },
+                    "status": {
+                        "type": "integer",
+                        "default": 500,
+                        "description": "The HTTP status code ([RFC7231], Section 6) generated by the origin server for this occurrence of the problem.",
+                        "format": "int32"
+                    },
+                    "detail": {
+                        "type": "string",
+                        "description": "A human-readable explanation specific to this occurrence of the problem."
+                    },
+                    "instance": {
+                        "type": "string",
+                        "description": "A URI reference that identifies the specific occurrence of the problem.  It may or may not yield further information if dereferenced."
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/UnexpectedErrorType"
+                    }
+                },
+                "required": [
+                    "status",
+                    "title",
+                    "type"
+                ]
+            },
+            "UnexpectedErrorType": {
+                "type": "string",
+                "description": "Problem type URI for unexpected internal errors.",
+                "enum": [
+                    "/errors/unexpected-error"
+                ]
+            }
+        }
+    }
+}
