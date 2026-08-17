@@ -46,6 +46,13 @@ resource "rediscloud_active_active_subscription_database" "example" {
   external_endpoint_for_oss_cluster_api = true
   redis_version                         = var.redis_version
 
+  timeouts {
+    create = "45m"
+    read   = "15m"
+    update = "45m"
+    delete = "15m"
+  }
+
   global_data_persistence    = "aof-every-1-second"
   global_password            = "updated-password"
   global_source_ips          = ["192.170.0.0/16"]

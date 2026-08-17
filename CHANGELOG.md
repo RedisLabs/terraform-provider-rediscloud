@@ -9,6 +9,7 @@
 
 ### Fixed
 
+- `rediscloud_active_active_subscription_database` once again accepts configurable `create`, `read`, `update`, and `delete` timeouts, restoring the behavior available before its Plugin Framework migration
 - `rediscloud_cloud_account` creation now waits for the account to become active up to the configurable `create` timeout (default 5m) instead of a hard-coded 1 minute
 - `rediscloud_cloud_account` create and update no longer fail with `unexpected state 'pending'` — the `pending` and `change-pending` statuses are now treated as in-progress while waiting for the account to become active
 - `rediscloud_cloud_account` updates now wait for the account to return to `active`, preventing a "Provider produced inconsistent result after apply" error
