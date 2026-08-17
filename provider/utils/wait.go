@@ -75,6 +75,7 @@ func WaitForSubscriptionPublicEndpointAccess(ctx context.Context, id int, api *c
 	return nil
 }
 
+// TODO: use configurable timeout, instead of SafetyTimeout
 func WaitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient) error {
 	wait := &retry.StateChangeConf{
 		Pending: []string{
