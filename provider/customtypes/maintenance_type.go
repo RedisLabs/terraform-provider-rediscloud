@@ -115,7 +115,7 @@ func (v MaintenanceListValue) Type(context.Context) attr.Type {
 // Callers should check IsNull and IsUnknown before using this method.
 func (v MaintenanceListValue) AsModels(ctx context.Context) ([]MaintenanceModel, diag.Diagnostics) {
 	var models []MaintenanceModel
-	diags := v.ListValue.ElementsAs(ctx, &models, false)
+	diags := v.ElementsAs(ctx, &models, false)
 	return models, diags
 }
 

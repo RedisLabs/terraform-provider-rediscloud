@@ -3,10 +3,11 @@ package customtypes_test
 import (
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/customtypes"
 )
 
 // sampleModel documents, by example, what AttrTypesOf reads: a flat struct of framework
