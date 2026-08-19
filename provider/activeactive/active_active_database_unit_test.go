@@ -12,7 +12,6 @@ package activeactive_test
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
@@ -169,16 +168,7 @@ func TestUnitActiveActiveDatabaseVersion_SatisfiedRequestIsNoOp(t *testing.T) {
 	assert.Equal(t, []string{"8.2"}, api.requestedUpgrades())
 }
 
-// BUG(redis_version_actual): a genuine upgrade cannot be applied at all.
-//
-// redis_version_actual is Computed and carries only stringplanmodifier.UseStateForUnknown, so the
-// planned value is pinned to the PRIOR running version. Apply then performs the upgrade and
-// readDatabase writes the new running version, contradicting the plan, and Terraform rejects that as a
-// provider bug. This step encodes the failure so it is pinned rather than latent.
-//
-// To fix: give redis_version_actual a plan modifier that leaves the value unknown when the planned
-// redis_version is a genuine upgrade, then drop ExpectError and assert instead that the step plans an
-// update, converges to an empty plan, and leaves both attributes at 8.4.
+// A genuine upgrade must allow redis_version_actual to be recomputed during apply and then converge.
 func TestUnitActiveActiveDatabaseVersion_GenuineUpgrade(t *testing.T) {
 	api, factories, subID := newAAFixture(t)
 
@@ -192,19 +182,21 @@ func TestUnitActiveActiveDatabaseVersion_GenuineUpgrade(t *testing.T) {
 			{
 				Config: newAADatabaseConfig(subID, "8.4"), // higher than the running 8.2 -> genuine upgrade
 				ConfigPlanChecks: resource.ConfigPlanChecks{
-					// No PostApply checks: apply fails, so they would never run.
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(aaResourceName, plancheck.ResourceActionUpdate),
 					},
+					PostApplyPreRefresh:  []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 				},
-				ExpectError: regexp.MustCompile(`(?s)Provider produced inconsistent result after apply.*` +
-					`\.redis_version_actual: was cty\.StringVal\("8\.2"\),\s+but\s+now cty\.StringVal\("8\.4"\)`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(aaResourceName, "redis_version", "8.4"),
+					resource.TestCheckResourceAttr(aaResourceName, "redis_version_actual", "8.4"),
+				),
 			},
 		},
 	})
 
-	// The one path that SHOULD reach the upgrade endpoint: exactly one request, for the version config
-	// asked for — not skipped, not repeated.
+	// A genuine upgrade reaches the endpoint exactly once with the configured target.
 	assert.Equal(t, []string{"8.4"}, api.requestedUpgrades())
 }
 
@@ -276,13 +268,10 @@ func TestUnitActiveActiveDatabaseVersion_UnrelatedChangeDoesNotUpgrade(t *testin
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(aaResourceName, plancheck.ResourceActionUpdate),
-						// Asserted on the PLAN, not just on state after apply: the point is that neither
-						// version attribute goes unknown ("known after apply") on an update that has nothing
-						// to do with versions. A post-apply state check cannot see that — the state value is
-						// 8.2 either way — so without these two checks, removing the plan modifier from
-						// redis_version_actual would only be caught by GenuineUpgrade.
+						// The configured target remains known, while the computed running version is
+						// refreshed during any update.
 						plancheck.ExpectKnownValue(aaResourceName, tfjsonpath.New("redis_version"), knownvalue.StringExact("8.2")),
-						plancheck.ExpectKnownValue(aaResourceName, tfjsonpath.New("redis_version_actual"), knownvalue.StringExact("8.2")),
+						plancheck.ExpectUnknownValue(aaResourceName, tfjsonpath.New("redis_version_actual")),
 					},
 					PostApplyPreRefresh:  []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
@@ -300,11 +289,9 @@ func TestUnitActiveActiveDatabaseVersion_UnrelatedChangeDoesNotUpgrade(t *testin
 	assert.Empty(t, api.requestedUpgrades())
 }
 
-// A background auto-upgrade can land after Terraform has saved the plan but before apply. Since
-// redis_version_actual is pinned to its prior value for an unrelated update, the read after apply
-// contradicts that plan. A PreApply plan check provides the exact boundary needed to reproduce the
-// race: the saved plan contains 8.2, then the fixture starts reporting 8.4 before apply begins.
-func TestUnitActiveActiveDatabaseVersion_BackgroundUpgradeAfterPlanIsInconsistent(t *testing.T) {
+// A background upgrade that lands after planning must be accepted when apply refreshes the computed
+// running version.
+func TestUnitActiveActiveDatabaseVersion_BackgroundUpgradeAfterPlanConverges(t *testing.T) {
 	api, factories, subID := newAAFixture(t)
 
 	resource.UnitTest(t, resource.TestCase{
@@ -323,8 +310,13 @@ func TestUnitActiveActiveDatabaseVersion_BackgroundUpgradeAfterPlanIsInconsisten
 							api.setRunningVersion("8.4")
 						}),
 					},
+					PostApplyPreRefresh:  []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 				},
-				ExpectError: regexp.MustCompile(`(?s)Provider produced inconsistent result after apply.*redis_version_actual.*8\.2.*8\.4`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(aaResourceName, "redis_version", "8.2"),
+					resource.TestCheckResourceAttr(aaResourceName, "redis_version_actual", "8.4"),
+				),
 			},
 		},
 	})
