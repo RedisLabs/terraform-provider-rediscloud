@@ -115,7 +115,7 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 		// left cloud_provider/aws_account_id as "" and resource_tags as an empty map.
 		model.CloudProvider = types.StringValue("")
 		model.AwsAccountID = types.StringValue("")
-		tags, diags := utils.FlattenResourceTags(ctx, nil)
+		tags, diags := utils.ResourceTagsFromAPI(ctx, nil)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -126,7 +126,7 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 		model.CloudProvider = types.StringValue(redis.StringValue(cd.Provider))
 		model.AwsAccountID = types.StringValue(redis.StringValue(cd.AWSAccountID))
 
-		tags, diags := utils.FlattenResourceTags(ctx, cd.ResourceTags)
+		tags, diags := utils.ResourceTagsFromAPI(ctx, cd.ResourceTags)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -157,7 +157,7 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 		)
 		return
 	}
-	pricing, diags := utils.FlattenPricing(ctx, pricingList)
+	pricing, diags := utils.PricingListFromAPI(ctx, pricingList)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

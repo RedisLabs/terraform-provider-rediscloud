@@ -76,11 +76,11 @@ type PricingModel struct {
 
 var pricingAttrTypes = customtypes.AttrTypesOf(PricingModel{})
 
-// FlattenPricing converts a pricing API response into the pricing list expected by the
+// PricingListFromAPI converts a pricing API response into the pricing list expected by the
 // subscription data sources. Entries are sorted by a composite key so the ordered list
 // is stable across reads. Pricing.List does not guarantee a consistent order, which
 // would otherwise churn the list and produce a perpetual plan diff.
-func FlattenPricing(ctx context.Context, prices []*pricing.Pricing) (types.List, diag.Diagnostics) {
+func PricingListFromAPI(ctx context.Context, prices []*pricing.Pricing) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	pricingType := types.ObjectType{AttrTypes: pricingAttrTypes}
@@ -130,10 +130,10 @@ func pricingSortKey(p *pricing.Pricing) string {
 	)
 }
 
-// FlattenResourceTags converts the API's key/value tag slice into a types.Map for
+// ResourceTagsFromAPI converts the API's key/value tag slice into a types.Map for
 // Terraform state. It always yields a known (possibly empty) map, never null, so a
 // "tags cleared" state records an empty map rather than a missing attribute.
-func FlattenResourceTags(ctx context.Context, tags []*subscriptions.ResourceTag) (types.Map, diag.Diagnostics) {
+func ResourceTagsFromAPI(ctx context.Context, tags []*subscriptions.ResourceTag) (types.Map, diag.Diagnostics) {
 	result := make(map[string]string, len(tags))
 	for _, t := range tags {
 		result[redis.StringValue(t.Key)] = redis.StringValue(t.Value)

@@ -79,18 +79,18 @@ func TestSubscriptionNameFilter(t *testing.T) {
 	assert.False(t, f(&subscriptions.Subscription{Name: redis.String("beta")}), "should not match a different name")
 }
 
-// --- FlattenPricing ----------------------------------------------------------
+// --- PricingListFromAPI ------------------------------------------------------
 
 func decodePricing(ctx context.Context, t *testing.T, prices []*pricing.Pricing) []utils.PricingModel {
 	t.Helper()
-	list, diags := utils.FlattenPricing(ctx, prices)
+	list, diags := utils.PricingListFromAPI(ctx, prices)
 	require.False(t, diags.HasError())
 	var got []utils.PricingModel
 	require.False(t, list.ElementsAs(ctx, &got, false).HasError())
 	return got
 }
 
-func TestFlattenPricing(t *testing.T) {
+func TestPricingListFromAPI(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("sorts deterministically regardless of input order", func(t *testing.T) {
@@ -133,16 +133,16 @@ func TestFlattenPricing(t *testing.T) {
 	})
 
 	t.Run("empty input yields an empty but non-null list", func(t *testing.T) {
-		list, diags := utils.FlattenPricing(ctx, nil)
+		list, diags := utils.PricingListFromAPI(ctx, nil)
 		require.False(t, diags.HasError())
 		assert.False(t, list.IsNull())
 		assert.Empty(t, list.Elements())
 	})
 }
 
-// --- FlattenResourceTags -----------------------------------------------------
+// --- ResourceTagsMapFromAPI -------------------------------------------------
 
-func TestFlattenResourceTags(t *testing.T) {
+func TestResourceTagsMapFromAPI(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("maps key/value pairs", func(t *testing.T) {
@@ -150,7 +150,7 @@ func TestFlattenResourceTags(t *testing.T) {
 			{Key: redis.String("environment"), Value: redis.String("test")},
 			{Key: redis.String("owner"), Value: redis.String("team-a")},
 		}
-		m, diags := utils.FlattenResourceTags(ctx, tags)
+		m, diags := utils.ResourceTagsFromAPI(ctx, tags)
 		require.False(t, diags.HasError())
 		require.False(t, m.IsNull())
 
@@ -160,7 +160,7 @@ func TestFlattenResourceTags(t *testing.T) {
 	})
 
 	t.Run("empty input yields an empty but non-null map", func(t *testing.T) {
-		m, diags := utils.FlattenResourceTags(ctx, nil)
+		m, diags := utils.ResourceTagsFromAPI(ctx, nil)
 		require.False(t, diags.HasError())
 		assert.False(t, m.IsNull())
 		assert.Empty(t, m.Elements())
