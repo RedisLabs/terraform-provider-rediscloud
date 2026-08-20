@@ -20,7 +20,7 @@ import (
 
 func TestAccResourceRedisCloudCloudAccount_basic(t *testing.T) {
 	accessKeyID, accessKeyIDCheck := envchecks.ValueAndCheck("AWS_ACCESS_KEY_ID")
-	accessSecretKey, accessSecretKeyCheck := envchecks.ValueAndCheck("AWS_ACCESS_SECRET_KEY")
+	accessSecretKey, accessSecretKeyCheck := envchecks.ValueAndCheck("AWS_SECRET_ACCESS_KEY")
 	consoleUsername, consoleUsernameCheck := envchecks.ValueAndCheck("AWS_CONSOLE_USERNAME")
 	consolePassword, consolePasswordCheck := envchecks.ValueAndCheck("AWS_CONSOLE_PASSWORD")
 	signInLoginUrl, signInLoginUrlCheck := envchecks.ValueAndCheck("AWS_SIGNIN_URL")
