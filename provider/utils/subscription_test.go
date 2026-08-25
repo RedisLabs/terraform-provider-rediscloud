@@ -125,7 +125,7 @@ func TestPricingListFromAPI(t *testing.T) {
 
 		assert.Equal(t, "Shards", got[0].Type.ValueString())
 		assert.Equal(t, "USD", got[0].PriceCurrency.ValueString())
-		assert.InEpsilon(t, 0.5, got[0].PricePerUnit.ValueFloat64(), 1e-9)
+		assert.Equal(t, 0.5, got[0].PricePerUnit.ValueFloat64())
 		assert.True(t, got[0].DatabaseName.IsNull())
 		assert.True(t, got[0].TypeDetails.IsNull())
 		assert.False(t, got[0].Quantity.IsNull())
