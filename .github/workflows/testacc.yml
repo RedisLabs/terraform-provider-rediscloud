@@ -46,9 +46,9 @@ env:
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
   # Derived from the caller's trigger context (shared with this reusable
-  # workflow): PRs get "tf-ci-pr<number>-<run>", everything else (push /
+  # workflow): PRs get "tf-ci-<run>", everything else (push /
   # workflow_dispatch on main) gets "tf-ci-main-<run>".
-  TEST_RESOURCE_PREFIX: ${{ github.event_name == 'pull_request' && format('tf-ci-pr{0}-{1}', github.event.pull_request.number, github.run_number) || format('tf-ci-main-{0}', github.run_number) }}
+  TEST_RESOURCE_PREFIX: ${{ github.event_name == 'pull_request' && format('tf-ci-{0}', github.run_number) || format('tf-ci-main-{0}', github.run_number) }}
 
 jobs:
   testacc:
