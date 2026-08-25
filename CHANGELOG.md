@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.19.1 (TBD)
+
+### Changed
+
+- Migrated `rediscloud_active_active_subscription` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no schema or behaviour changes.
+
+### Fixed
+
+- `rediscloud_active_active_subscription` data source now sorts the `pricing` list by a stable key. `Pricing.List` returns entries in nondeterministic order, which otherwise produced a perpetual `tf plan` diff.
+- Added sorting in FlattenPricing - Pricing.List returns regions in nondeterministic order, which results in a potential perpetual `tf plan` diff
+
 ## 2.19.0 (17th August 2026)
 
 ### Added
@@ -9,7 +20,6 @@
 ### Changed
 
 - Migrated the `rediscloud_cloud_account` resource to the Terraform Plugin Framework
-- Migrated `rediscloud_active_active_subscription` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no schema or behaviour changes.
 
 ### Fixed
 
@@ -18,8 +28,6 @@
 - `rediscloud_cloud_account` create and update no longer fail with `unexpected state 'pending'` — the `pending` and `change-pending` statuses are now treated as in-progress while waiting for the account to become active
 - `rediscloud_cloud_account` updates now wait for the account to return to `active`, preventing a "Provider produced inconsistent result after apply" error
 - `rediscloud_cloud_account` deletion now waits for the account to be fully removed instead of returning while deletion is still in progress
-- `rediscloud_active_active_subscription` data source now sorts the `pricing` list by a stable key. `Pricing.List` returns entries in nondeterministic order, which otherwise produced a perpetual `tf plan` diff.
-- Added sorting in FlattenPricing - Pricing.List returns regions in nondeterministic order, which results in a potential perpetual `tf plan` diff
 
 ## 2.18.1 (17th July 2026)
 
