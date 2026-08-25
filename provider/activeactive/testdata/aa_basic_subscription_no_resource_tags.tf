@@ -2,6 +2,7 @@ variable "rediscloud_subscription_name" {
   type = string
 }
 
+
 data "rediscloud_payment_method" "card" {
   card_type         = "Visa"
   last_four_numbers = "5556"
@@ -22,4 +23,8 @@ resource "rediscloud_active_active_subscription" "example" {
       read_operations_per_second  = 1000
     }
   }
+}
+
+data "rediscloud_active_active_subscription" "example" {
+  name = rediscloud_active_active_subscription.example.name
 }

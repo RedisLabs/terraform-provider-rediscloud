@@ -28,3 +28,7 @@ resource "rediscloud_active_active_subscription" "example" {
   }
   resource_tags = var.rediscloud_subscription_resource_tags
 }
+
+data "rediscloud_active_active_subscription" "example" {
+  name = rediscloud_active_active_subscription.example.name
+}
