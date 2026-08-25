@@ -111,8 +111,9 @@ func (v MaintenanceListValue) Type(context.Context) attr.Type {
 	return NewMaintenanceListType()
 }
 
-// AsModels decodes each known maintenance list element into its typed model.
-// Callers should check IsNull and IsUnknown before using this method.
+// AsModels decodes each element of a known maintenance list into its typed model.
+// Callers must handle null and unknown values first because a model slice cannot
+// represent either Terraform state without losing information.
 func (v MaintenanceListValue) AsModels(ctx context.Context) ([]MaintenanceModel, diag.Diagnostics) {
 	var models []MaintenanceModel
 	diags := v.ElementsAs(ctx, &models, false)
