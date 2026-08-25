@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	aaSubscriptionDataSourceConfigDirectory = "testdata/active_active_subscription_datasource"
+	aaSubscriptionDataSourceConfigDirectory = "testdata/datasource/subscription"
 	aaSubscriptionResourceConfigFile        = aaSubscriptionDataSourceConfigDirectory + "/subscription.tf"
 )
 
