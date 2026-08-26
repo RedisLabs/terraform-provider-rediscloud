@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -16,7 +17,7 @@ import (
 )
 
 // createDatabase implements the Create operation for the active-active database resource.
-func (r *activeActiveDatabaseResource) createDatabase(ctx context.Context, plan *ActiveActiveDatabaseModel, diagnostics *diag.Diagnostics) {
+func (r *activeActiveDatabaseResource) createDatabase(ctx context.Context, plan *ActiveActiveDatabaseModel, diagnostics *diag.Diagnostics, timeout time.Duration) {
 	subId := int(plan.SubscriptionID.ValueInt64())
 
 	// Acquire subscription mutex
@@ -120,7 +121,7 @@ func (r *activeActiveDatabaseResource) createDatabase(ctx context.Context, plan 
 	}
 
 	// Wait for subscription to be active before creating database
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, r.client); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, r.client, timeout); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		diagnostics.AddError("Subscription not active", err.Error())
 		return
@@ -139,14 +140,14 @@ func (r *activeActiveDatabaseResource) createDatabase(ctx context.Context, plan 
 	plan.DbID = types.Int64Value(int64(dbId))
 
 	// Wait for database to be active
-	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, r.client); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, r.client, timeout); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		diagnostics.AddError("Database failed to become active", err.Error())
 		return
 	}
 
 	// Wait for subscription to be active
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, r.client); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, r.client, timeout); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		diagnostics.AddError("Subscription failed to become active", err.Error())
 		return
@@ -157,18 +158,18 @@ func (r *activeActiveDatabaseResource) createDatabase(ctx context.Context, plan 
 
 	// Some attributes on a database are not accessible by the create API.
 	// Run the update function to apply any additional changes.
-	r.updateDatabase(ctx, plan, nil, diagnostics)
+	r.updateDatabase(ctx, plan, nil, diagnostics, timeout)
 	if diagnostics.HasError() {
 		return
 	}
 
 	// Read back the state to get computed values
-	r.readDatabase(ctx, plan, diagnostics)
+	r.readDatabase(ctx, plan, diagnostics, timeout)
 }
 
 // readDatabase implements the Read operation for the active-active database resource.
 // Returns true if the resource was removed (not found).
-func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *ActiveActiveDatabaseModel, diagnostics *diag.Diagnostics) bool {
+func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *ActiveActiveDatabaseModel, diagnostics *diag.Diagnostics, timeout time.Duration) bool {
 	subId, dbId, err := parseResourceId(state.ID.ValueString())
 	if err != nil {
 		diagnostics.AddError("Invalid resource ID", err.Error())
@@ -233,7 +234,7 @@ func (r *activeActiveDatabaseResource) readDatabase(ctx context.Context, state *
 		globalSourceIPs = currentSourceIPs
 	} else {
 		// No custom value - compute default based on subscription's public_endpoint_access
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, r.client); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, r.client, timeout); err != nil {
 			diagnostics.AddError("Failed to wait for subscription", err.Error())
 			return false
 		}
@@ -364,7 +365,7 @@ func ensureNoUnknownFields(state *ActiveActiveDatabaseModel) {
 }
 
 // updateDatabase implements the Update operation for the active-active database resource.
-func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan *ActiveActiveDatabaseModel, state *ActiveActiveDatabaseModel, diagnostics *diag.Diagnostics) {
+func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan *ActiveActiveDatabaseModel, state *ActiveActiveDatabaseModel, diagnostics *diag.Diagnostics, timeout time.Duration) {
 	subId, dbId, err := parseResourceId(plan.ID.ValueString())
 	if err != nil {
 		diagnostics.AddError("Invalid resource ID", err.Error())
@@ -384,13 +385,13 @@ func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan 
 		}
 
 		// Wait for database to be active
-		if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, r.client); err != nil {
+		if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, r.client, timeout); err != nil {
 			diagnostics.AddError("Database failed to become active after update", err.Error())
 			return
 		}
 
 		// Wait for subscription to be active
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, r.client); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, r.client, timeout); err != nil {
 			diagnostics.AddError("Subscription failed to become active after update", err.Error())
 			return
 		}
@@ -523,13 +524,13 @@ func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan 
 	}
 
 	// Wait for database to be active
-	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, r.client); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, r.client, timeout); err != nil {
 		diagnostics.AddError("Database failed to become active after update", err.Error())
 		return
 	}
 
 	// Wait for subscription to be active
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, r.client); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, r.client, timeout); err != nil {
 		diagnostics.AddError("Subscription failed to become active after update", err.Error())
 		return
 	}
@@ -559,7 +560,7 @@ func (r *activeActiveDatabaseResource) updateDatabase(ctx context.Context, plan 
 }
 
 // deleteDatabase implements the Delete operation for the active-active database resource.
-func (r *activeActiveDatabaseResource) deleteDatabase(ctx context.Context, state *ActiveActiveDatabaseModel, diagnostics *diag.Diagnostics) {
+func (r *activeActiveDatabaseResource) deleteDatabase(ctx context.Context, state *ActiveActiveDatabaseModel, diagnostics *diag.Diagnostics, timeout time.Duration) {
 	subId, dbId, err := parseResourceId(state.ID.ValueString())
 	if err != nil {
 		diagnostics.AddError("Invalid resource ID", err.Error())
@@ -571,7 +572,7 @@ func (r *activeActiveDatabaseResource) deleteDatabase(ctx context.Context, state
 	defer utils.SubscriptionMutex.Unlock(subId)
 
 	// Wait for database to be active before deletion
-	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, r.client); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, r.client, timeout); err != nil {
 		diagnostics.AddError("Database not active", err.Error())
 		return
 	}

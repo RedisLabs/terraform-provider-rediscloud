@@ -191,7 +191,7 @@ func resourceRedisCloudPrivateLinkCreate(ctx context.Context, d *schema.Resource
 	//	return diag.FromErr(err)
 	//}
 
-	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -332,7 +332,7 @@ func resourceRedisCloudPrivateLinkDelete(ctx context.Context, d *schema.Resource
 
 	d.SetId("")
 
-	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api, d.Timeout(schema.TimeoutDelete))
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -409,6 +409,7 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 
 func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutCreate)
 
 	subId := *utils.GetInt(d, "subscription_id")
 	utils.SubscriptionMutex.Lock(subId)
@@ -513,7 +514,7 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	createDatabase.AutoMinorVersionUpgrade = redis.Bool(d.Get("auto_minor_version_upgrade").(bool))
 
 	// Confirm sub is ready to accept a db request
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return append(diags, diag.FromErr(err)...)
 	}
@@ -527,11 +528,11 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	d.SetId(utils.BuildResourceId(subId, dbId))
 
 	// Confirm db + sub active status
-	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api, timeout); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return append(diags, diag.FromErr(err)...)
 	}
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return append(diags, diag.FromErr(err)...)
 	}
@@ -539,11 +540,15 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password, enableDefaultUser and so on.
 	utils.SubscriptionMutex.Unlock(subId)
-	updateDiags := resourceRedisCloudProDatabaseUpdate(ctx, d, meta)
+	updateDiags := resourceRedisCloudProDatabaseUpdateWithTimeout(ctx, d, meta, timeout)
 	return append(diags, updateDiags...)
 }
 
 func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	return resourceRedisCloudProDatabaseReadWithTimeout(ctx, d, meta, d.Timeout(schema.TimeoutRead))
+}
+
+func resourceRedisCloudProDatabaseReadWithTimeout(ctx context.Context, d *schema.ResourceData, meta interface{}, timeout time.Duration) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
 
 	var diags diag.Diagnostics
@@ -723,7 +728,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 	} else if len(sourceIPs) == 0 || isDefaultSourceIPs(sourceIPsPtrs) {
 		// No custom value - ensure defaults match current public_endpoint_access setting
 		// Wait for subscription to be fully active to ensure we have the latest state
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 		subscription, err := api.Client.Subscription.Get(ctx, subId)
@@ -787,6 +792,7 @@ func resourceRedisCloudProDatabaseRead(ctx context.Context, d *schema.ResourceDa
 func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutDelete)
 
 	var diags diag.Diagnostics
 	subId := d.Get("subscription_id").(int)
@@ -800,10 +806,10 @@ func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.Resource
 	defer utils.SubscriptionMutex.Unlock(subId)
 
 	// Confirm sub + db are ready to accept a db request
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
-	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -811,7 +817,7 @@ func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -819,6 +825,10 @@ func resourceRedisCloudProDatabaseDelete(ctx context.Context, d *schema.Resource
 }
 
 func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	return resourceRedisCloudProDatabaseUpdateWithTimeout(ctx, d, meta, d.Timeout(schema.TimeoutUpdate))
+}
+
+func resourceRedisCloudProDatabaseUpdateWithTimeout(ctx context.Context, d *schema.ResourceData, meta interface{}, timeout time.Duration) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
 	var diags diag.Diagnostics
 
@@ -977,11 +987,11 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	// Confirm sub + db are ready to accept a db request
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return append(diags, diag.FromErr(err)...)
 	}
-	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api, timeout); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return append(diags, diag.FromErr(err)...)
 	}
@@ -995,7 +1005,7 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 		// only upgrade when a known version goes to another known version
 		//TODO(TF3.0) once redis_version goes write-only-by-convention (Computed dropped, not written from Read), drop the actualRedisVersion guard — DSF already makes it unreachable in normal operation. Kept today as belt-and-suspenders against DSF regressions.
 		if originalVersion.(string) != "" && newVersion.(string) != "" && actualRedisVersion != newVersion.(string) {
-			if upgradeDiags, unlocked := upgradeRedisVersion(ctx, api, subId, dbId, newVersion.(string)); upgradeDiags != nil {
+			if upgradeDiags, unlocked := upgradeRedisVersion(ctx, api, subId, dbId, newVersion.(string), timeout); upgradeDiags != nil {
 				if !unlocked {
 					utils.SubscriptionMutex.Unlock(subId)
 				}
@@ -1012,11 +1022,11 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	// Confirm db + sub active status
-	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api, timeout); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return append(diags, diag.FromErr(err)...)
 	}
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return append(diags, diag.FromErr(err)...)
 	}
@@ -1027,11 +1037,11 @@ func resourceRedisCloudProDatabaseUpdate(ctx context.Context, d *schema.Resource
 	}
 
 	utils.SubscriptionMutex.Unlock(subId)
-	readDiags := resourceRedisCloudProDatabaseRead(ctx, d, meta)
+	readDiags := resourceRedisCloudProDatabaseReadWithTimeout(ctx, d, meta, timeout)
 	return append(diags, readDiags...)
 }
 
-func upgradeRedisVersion(ctx context.Context, api *client.ApiClient, subId int, dbId int, newVersion string) (diag.Diagnostics, bool) {
+func upgradeRedisVersion(ctx context.Context, api *client.ApiClient, subId int, dbId int, newVersion string, timeout time.Duration) (diag.Diagnostics, bool) {
 	log.Printf("[INFO] Requesting Redis version change to %s...", newVersion)
 
 	upgrade := databases.UpgradeRedisVersion{
@@ -1045,12 +1055,12 @@ func upgradeRedisVersion(ctx context.Context, api *client.ApiClient, subId int, 
 
 	log.Printf("[INFO] Redis version change request to %s accepted by API", newVersion)
 
-	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := utils.WaitForDatabaseToBeActive(ctx, subId, dbId, api, timeout); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err), true
 	}
 
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err), true
 	}

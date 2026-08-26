@@ -140,7 +140,7 @@ func resourceRedisCloudPrivateServiceConnectEndpointCreate(ctx context.Context, 
 
 	d.SetId(buildPrivateServiceConnectEndpointId(subscriptionId, pscServiceId, endpointId))
 
-	err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
 		return diag.FromErr(err)
 	}

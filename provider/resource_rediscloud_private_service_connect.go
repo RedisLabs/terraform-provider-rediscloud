@@ -76,7 +76,7 @@ func resourceRedisCloudPrivateServiceConnectCreate(ctx context.Context, d *schem
 		return diag.FromErr(err)
 	}
 
-	err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -141,7 +141,7 @@ func resourceRedisCloudPrivateServiceConnectDelete(ctx context.Context, d *schem
 
 	d.SetId("")
 
-	err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api, d.Timeout(schema.TimeoutDelete))
 	if err != nil {
 		return diag.FromErr(err)
 	}
