@@ -137,10 +137,16 @@ func resourceRedisCloudActiveActiveRegionCreate(ctx context.Context, d *schema.R
 	}
 	d.SetId(strconv.Itoa(subId))
 
-	return resourceRedisCloudActiveActiveRegionUpdate(ctx, d, meta)
+	timeout := d.Timeout(schema.TimeoutCreate)
+	return resourceRedisCloudActiveActiveRegionApply(ctx, d, meta, timeout)
 }
 
 func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	timeout := d.Timeout(schema.TimeoutUpdate)
+	return resourceRedisCloudActiveActiveRegionApply(ctx, d, meta, timeout)
+}
+
+func resourceRedisCloudActiveActiveRegionApply(ctx context.Context, d *schema.ResourceData, meta interface{}, timeout time.Duration) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Id())
@@ -196,7 +202,7 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 	}
 
 	if len(regionsToCreate) > 0 {
-		err := regionsCreate(ctx, subId, regionsToCreate, api)
+		err := regionsCreate(ctx, subId, regionsToCreate, api, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -209,18 +215,18 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 			regionIds = append(regionIds, r.Region)
 		}
 
-		err := regionsDelete(ctx, subId, regionIds, api)
+		err := regionsDelete(ctx, subId, regionIds, api, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		err = regionsCreate(ctx, subId, regionsToRecreate, api)
+		err = regionsCreate(ctx, subId, regionsToRecreate, api, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
 	if len(regionsToUpdateDatabases) > 0 {
-		err = regionsUpdateDatabases(ctx, subId, api, regionsToUpdateDatabases, existingRegionMap)
+		err = regionsUpdateDatabases(ctx, subId, api, regionsToUpdateDatabases, existingRegionMap, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -235,7 +241,7 @@ func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.R
 		for _, r := range regionsToDelete {
 			regionIds = append(regionIds, r.Region)
 		}
-		err := regionsDelete(ctx, subId, regionIds, api)
+		err := regionsDelete(ctx, subId, regionIds, api, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -319,7 +325,7 @@ func resourceRedisCloudActiveActiveRegionDelete(ctx context.Context, d *schema.R
 	return resourceRedisCloudActiveActiveRegionRead(ctx, d, meta)
 }
 
-func regionsCreate(ctx context.Context, subId int, regionsToCreate []*RequestedRegion, api *client.ApiClient) error {
+func regionsCreate(ctx context.Context, subId int, regionsToCreate []*RequestedRegion, api *client.ApiClient, timeout time.Duration) error {
 	// If no new regions were defined return
 	if len(regionsToCreate) == 0 {
 		return nil
@@ -358,14 +364,14 @@ func regionsCreate(ctx context.Context, subId int, regionsToCreate []*RequestedR
 		}
 
 		// Wait for the subscription to be active before deleting it.
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 			return err
 		}
 
 		// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 		// This additional wait ensures that the databases are deleted before the subscription is deleted.
 		time.Sleep(30 * time.Second) //lintignore:R018
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 			return err
 		}
 	}
@@ -373,7 +379,7 @@ func regionsCreate(ctx context.Context, subId int, regionsToCreate []*RequestedR
 	return nil
 }
 
-func regionsUpdateDatabases(ctx context.Context, subId int, api *client.ApiClient, regionsToUpdateDatabases []*RequestedRegion, existingRegionMap map[string]*regions.Region) error {
+func regionsUpdateDatabases(ctx context.Context, subId int, api *client.ApiClient, regionsToUpdateDatabases []*RequestedRegion, existingRegionMap map[string]*regions.Region, timeout time.Duration) error {
 	databaseUpdates := make(map[int][]*databases.LocalRegionProperties)
 	for _, desiredRegion := range regionsToUpdateDatabases {
 		// Collect existing databases to a map <dbId, db>
@@ -412,14 +418,14 @@ func regionsUpdateDatabases(ctx context.Context, subId int, api *client.ApiClien
 			}
 
 			// Wait for the subscription to be active before deleting it.
-			if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+			if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 				return err
 			}
 
 			// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 			// This additional wait ensures that the databases are deleted before the subscription is deleted.
 			time.Sleep(30 * time.Second) //lintignore:R018
-			if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+			if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 				return err
 			}
 		}
@@ -428,7 +434,7 @@ func regionsUpdateDatabases(ctx context.Context, subId int, api *client.ApiClien
 	return nil
 }
 
-func regionsDelete(ctx context.Context, subId int, regionsToDelete []*string, api *client.ApiClient) error {
+func regionsDelete(ctx context.Context, subId int, regionsToDelete []*string, api *client.ApiClient, timeout time.Duration) error {
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
 
@@ -446,14 +452,14 @@ func regionsDelete(ctx context.Context, subId int, regionsToDelete []*string, ap
 	}
 
 	// Wait for the subscription to be active before deleting it.
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return err
 	}
 
 	// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 	// This additional wait ensures that the databases are deleted before the subscription is deleted.
 	time.Sleep(30 * time.Second) //lintignore:R018
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return err
 	}
 

@@ -86,6 +86,17 @@ func ResourceRedisCloudTransitGatewayInvitationAcceptor() *schema.Resource {
 }
 
 func resourceRedisCloudTransitGatewayInvitationAcceptorCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	timeout := d.Timeout(schema.TimeoutCreate)
+	return resourceRedisCloudTransitGatewayInvitationAcceptorApply(ctx, d, meta, timeout)
+}
+
+// Update reapplies the configured action to correct drift.
+func resourceRedisCloudTransitGatewayInvitationAcceptorUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	timeout := d.Timeout(schema.TimeoutUpdate)
+	return resourceRedisCloudTransitGatewayInvitationAcceptorApply(ctx, d, meta, timeout)
+}
+
+func resourceRedisCloudTransitGatewayInvitationAcceptorApply(ctx context.Context, d *schema.ResourceData, meta interface{}, timeout time.Duration) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
 
 	subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
@@ -129,7 +140,7 @@ func resourceRedisCloudTransitGatewayInvitationAcceptorCreate(ctx context.Contex
 		}
 
 		// Wait for subscription to be active
-		err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api)
+		err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -194,11 +205,6 @@ func resourceRedisCloudTransitGatewayInvitationAcceptorRead(ctx context.Context,
 	}
 
 	return diags
-}
-
-func resourceRedisCloudTransitGatewayInvitationAcceptorUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	// Update = re-apply the action (drift correction)
-	return resourceRedisCloudTransitGatewayInvitationAcceptorCreate(ctx, d, meta)
 }
 
 func resourceRedisCloudTransitGatewayInvitationAcceptorDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {

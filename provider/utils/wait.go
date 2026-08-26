@@ -16,11 +16,11 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
-func WaitForSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiClient) error {
+func WaitForSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending:      []string{subscriptions.SubscriptionStatusPending},
 		Target:       []string{subscriptions.SubscriptionStatusActive},
-		Timeout:      SafetyTimeout,
+		Timeout:      timeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 
@@ -75,8 +75,7 @@ func WaitForSubscriptionPublicEndpointAccess(ctx context.Context, id int, api *c
 	return nil
 }
 
-// TODO: use configurable timeout, instead of SafetyTimeout
-func WaitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient) error {
+func WaitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending: []string{
 			databases.StatusDraft,
@@ -94,7 +93,7 @@ func WaitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.A
 			// TODO replace with api model string in next release
 		},
 		Target:       []string{databases.StatusActive},
-		Timeout:      SafetyTimeout,
+		Timeout:      timeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 
