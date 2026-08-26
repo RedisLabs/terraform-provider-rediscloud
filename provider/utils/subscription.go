@@ -8,7 +8,6 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
@@ -81,8 +80,6 @@ var pricingAttrTypes = customtypes.AttrTypesOf(PricingModel{})
 // is stable across reads. Pricing.List does not guarantee a consistent order, which
 // would otherwise churn the list and produce a perpetual plan diff.
 func PricingListFromAPI(ctx context.Context, prices []*pricing.Pricing) (types.List, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
 	pricingType := types.ObjectType{AttrTypes: pricingAttrTypes}
 
 	sorted := make([]*pricing.Pricing, len(prices))
@@ -91,9 +88,9 @@ func PricingListFromAPI(ctx context.Context, prices []*pricing.Pricing) (types.L
 		return pricingSortKey(sorted[i]) < pricingSortKey(sorted[j])
 	})
 
-	elems := make([]attr.Value, 0, len(sorted))
+	elems := make([]PricingModel, 0, len(sorted))
 	for _, p := range sorted {
-		entry, d := types.ObjectValueFrom(ctx, pricingAttrTypes, PricingModel{
+		elems = append(elems, PricingModel{
 			DatabaseName:        types.StringPointerValue(p.DatabaseName),
 			Type:                types.StringPointerValue(p.Type),
 			TypeDetails:         types.StringPointerValue(p.TypeDetails),
@@ -104,16 +101,9 @@ func PricingListFromAPI(ctx context.Context, prices []*pricing.Pricing) (types.L
 			PricePeriod:         types.StringPointerValue(p.PricePeriod),
 			Region:              types.StringPointerValue(p.Region),
 		})
-		diags.Append(d...)
-		if diags.HasError() {
-			return types.ListNull(pricingType), diags
-		}
-		elems = append(elems, entry)
 	}
 
-	list, d := types.ListValue(pricingType, elems)
-	diags.Append(d...)
-	return list, diags
+	return types.ListValueFrom(ctx, pricingType, elems)
 }
 
 func pricingSortKey(p *pricing.Pricing) string {
