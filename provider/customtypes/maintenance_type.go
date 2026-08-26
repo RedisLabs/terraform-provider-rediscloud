@@ -127,7 +127,7 @@ func NewMaintenanceList(ctx context.Context, apiMaintenance *maintenance.Mainten
 	}
 
 	var diags diag.Diagnostics
-	windows := make([]attr.Value, 0, len(apiMaintenance.Windows))
+	windows := make([]MaintenanceWindowModel, 0, len(apiMaintenance.Windows))
 	for _, apiWindow := range apiMaintenance.Windows {
 		days, daysDiags := types.ListValueFrom(ctx, types.StringType, apiWindow.Days)
 		diags.Append(daysDiags...)
@@ -135,35 +135,25 @@ func NewMaintenanceList(ctx context.Context, apiMaintenance *maintenance.Mainten
 			return nullMaintenanceListValue(), diags
 		}
 
-		window, windowDiags := types.ObjectValueFrom(ctx, maintenanceWindowAttrTypes, MaintenanceWindowModel{
+		windows = append(windows, MaintenanceWindowModel{
 			StartHour:       types.Int64Value(int64(redis.IntValue(apiWindow.StartHour))),
 			DurationInHours: types.Int64Value(int64(redis.IntValue(apiWindow.DurationInHours))),
 			Days:            days,
 		})
-		diags.Append(windowDiags...)
-		if diags.HasError() {
-			return nullMaintenanceListValue(), diags
-		}
-
-		windows = append(windows, window)
 	}
 
-	windowList, windowListDiags := types.ListValue(maintenanceWindowElemType, windows)
+	windowList, windowListDiags := types.ListValueFrom(ctx, maintenanceWindowElemType, windows)
 	diags.Append(windowListDiags...)
 	if diags.HasError() {
 		return nullMaintenanceListValue(), diags
 	}
 
-	maintenanceValue, maintenanceDiags := types.ObjectValueFrom(ctx, maintenanceAttrTypes, MaintenanceModel{
-		Mode:   types.StringValue(redis.StringValue(apiMaintenance.Mode)),
-		Window: windowList,
+	list, listDiags := types.ListValueFrom(ctx, maintenanceElemType, []MaintenanceModel{
+		{
+			Mode:   types.StringValue(redis.StringValue(apiMaintenance.Mode)),
+			Window: windowList,
+		},
 	})
-	diags.Append(maintenanceDiags...)
-	if diags.HasError() {
-		return nullMaintenanceListValue(), diags
-	}
-
-	list, listDiags := types.ListValue(maintenanceElemType, []attr.Value{maintenanceValue})
 	diags.Append(listDiags...)
 	if diags.HasError() {
 		return nullMaintenanceListValue(), diags
