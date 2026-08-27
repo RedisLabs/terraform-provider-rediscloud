@@ -304,11 +304,11 @@ func WaitForActiveActiveTransitGatewayAttachmentToBeAvailable(
 	return tgw, nil
 }
 
-func WaitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, api *client.ApiClient) error {
+func WaitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending:      []string{subscriptions.SubscriptionStatusPending},
 		Target:       []string{subscriptions.SubscriptionStatusEncryptionKeyPending, subscriptions.SubscriptionStatusActive},
-		Timeout:      SafetyTimeout,
+		Timeout:      timeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 

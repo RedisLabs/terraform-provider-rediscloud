@@ -65,6 +65,16 @@ func resourceRedisCloudPrivateServiceConnectEndpointAccepter() *schema.Resource 
 }
 
 func resourceRedisCloudPrivateServiceConnectEndpointAccepterCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	timeout := d.Timeout(schema.TimeoutCreate)
+	return resourceRedisCloudPrivateServiceConnectEndpointAccepterApply(ctx, d, meta, timeout)
+}
+
+func resourceRedisCloudPrivateServiceConnectEndpointAccepterUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	timeout := d.Timeout(schema.TimeoutUpdate)
+	return resourceRedisCloudPrivateServiceConnectEndpointAccepterApply(ctx, d, meta, timeout)
+}
+
+func resourceRedisCloudPrivateServiceConnectEndpointAccepterApply(ctx context.Context, d *schema.ResourceData, meta interface{}, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
@@ -113,7 +123,7 @@ func resourceRedisCloudPrivateServiceConnectEndpointAccepterCreate(ctx context.C
 	}
 
 	if redis.StringValue(endpoint.Status) == psc.EndpointStatusInitialized || redis.StringValue(endpoint.Status) == psc.EndpointStatusProcessing {
-		err = waitForPrivateServiceConnectServiceEndpointToBePending(ctx, refreshFunc)
+		err = waitForPrivateServiceConnectServiceEndpointToBePending(ctx, refreshFunc, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -129,12 +139,12 @@ func resourceRedisCloudPrivateServiceConnectEndpointAccepterCreate(ctx context.C
 	}
 
 	if action == psc.EndpointActionAccept {
-		err = waitForPrivateServiceConnectServiceEndpointToBeActive(ctx, refreshFunc)
+		err = waitForPrivateServiceConnectServiceEndpointToBeActive(ctx, refreshFunc, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 	} else {
-		err = waitForPrivateServiceConnectServiceEndpointToBeRejected(ctx, refreshFunc)
+		err = waitForPrivateServiceConnectServiceEndpointToBeRejected(ctx, refreshFunc, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -233,10 +243,6 @@ func ToPscEndpointAccepterId(id string) (*PrivateServiceConnectEndpointAccepterI
 	}, nil
 }
 
-func resourceRedisCloudPrivateServiceConnectEndpointAccepterUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	return resourceRedisCloudPrivateServiceConnectEndpointAccepterCreate(ctx, d, meta)
-}
-
 func resourceRedisCloudPrivateServiceConnectEndpointAccepterDelete(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	d.SetId("")
@@ -261,39 +267,39 @@ func refreshPrivateServiceConnectServiceEndpointStatus(ctx context.Context, subs
 	return redis.StringValue(endpoint.Status), redis.StringValue(endpoint.Status), nil
 }
 
-func waitForPrivateServiceConnectServiceEndpointToBePending(ctx context.Context, refreshFunc func(targetStatus string) (result interface{}, state string, err error)) error {
+func waitForPrivateServiceConnectServiceEndpointToBePending(ctx context.Context, refreshFunc func(targetStatus string) (result interface{}, state string, err error), timeout time.Duration) error {
 	targetStatus := psc.EndpointStatusPending
 	return waitForPrivateServiceConnectServiceEndpointToBeInStatus(ctx, func() (result interface{}, state string, err error) {
 		return refreshFunc(targetStatus)
 	}, targetStatus, []string{
 		psc.EndpointStatusInitialized,
-		psc.EndpointStatusProcessing})
+		psc.EndpointStatusProcessing}, timeout)
 }
 
-func waitForPrivateServiceConnectServiceEndpointToBeActive(ctx context.Context, refreshFunc func(targetStatus string) (result interface{}, state string, err error)) error {
+func waitForPrivateServiceConnectServiceEndpointToBeActive(ctx context.Context, refreshFunc func(targetStatus string) (result interface{}, state string, err error), timeout time.Duration) error {
 	targetStatus := psc.EndpointStatusActive
 	return waitForPrivateServiceConnectServiceEndpointToBeInStatus(ctx, func() (result interface{}, state string, err error) {
 		return refreshFunc(targetStatus)
 	}, targetStatus, []string{
 		psc.EndpointStatusPending,
-		psc.EndpointStatusAcceptPending})
+		psc.EndpointStatusAcceptPending}, timeout)
 }
 
-func waitForPrivateServiceConnectServiceEndpointToBeRejected(ctx context.Context, refreshFunc func(targetStatus string) (result interface{}, state string, err error)) error {
+func waitForPrivateServiceConnectServiceEndpointToBeRejected(ctx context.Context, refreshFunc func(targetStatus string) (result interface{}, state string, err error), timeout time.Duration) error {
 	targetStatus := psc.EndpointStatusRejected
 	return waitForPrivateServiceConnectServiceEndpointToBeInStatus(ctx, func() (result interface{}, state string, err error) {
 		return refreshFunc(targetStatus)
 	}, targetStatus, []string{
 		psc.EndpointStatusPending,
-		psc.EndpointStatusRejectPending})
+		psc.EndpointStatusRejectPending}, timeout)
 }
 
 func waitForPrivateServiceConnectServiceEndpointToBeInStatus(ctx context.Context,
-	refreshFunc func() (result interface{}, state string, err error), status string, pendingStatus []string) error {
+	refreshFunc func() (result interface{}, state string, err error), status string, pendingStatus []string, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending:      pendingStatus,
 		Target:       []string{status},
-		Timeout:      utils.SafetyTimeout,
+		Timeout:      timeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 

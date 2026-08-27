@@ -116,7 +116,7 @@ func resourceRedisCloudEssentialsSubscriptionCreate(ctx context.Context, d *sche
 	d.SetId(strconv.Itoa(subId))
 
 	// Confirm Subscription Active status
-	err = waitForEssentialsSubscriptionToBeActive(ctx, subId, api)
+	err = waitForEssentialsSubscriptionToBeActive(ctx, subId, api, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
 		return append(diags, diag.FromErr(err)...)
 	}
@@ -207,6 +207,7 @@ func resourceRedisCloudEssentialsSubscriptionUpdate(ctx context.Context, d *sche
 func resourceRedisCloudEssentialsSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutDelete)
 
 	subId, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -217,7 +218,7 @@ func resourceRedisCloudEssentialsSubscriptionDelete(ctx context.Context, d *sche
 	defer utils.SubscriptionMutex.Unlock(subId)
 
 	// Wait for the subscription to be active before deleting it.
-	if err := waitForEssentialsSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := waitForEssentialsSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -229,7 +230,7 @@ func resourceRedisCloudEssentialsSubscriptionDelete(ctx context.Context, d *sche
 
 	d.SetId("")
 
-	err = waitForEssentialsSubscriptionToBeDeleted(ctx, subId, api)
+	err = waitForEssentialsSubscriptionToBeDeleted(ctx, subId, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -237,12 +238,12 @@ func resourceRedisCloudEssentialsSubscriptionDelete(ctx context.Context, d *sche
 	return diags
 }
 
-func waitForEssentialsSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiClient) error {
+func waitForEssentialsSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{subscriptions.SubscriptionStatusPending},
 		Target:  []string{subscriptions.SubscriptionStatusActive},
-		Timeout: utils.SafetyTimeout,
+		Timeout: timeout,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for fixed subscription %d to be active", id)
@@ -262,12 +263,12 @@ func waitForEssentialsSubscriptionToBeActive(ctx context.Context, id int, api *c
 	return nil
 }
 
-func waitForEssentialsSubscriptionToBeDeleted(ctx context.Context, id int, api *client.ApiClient) error {
+func waitForEssentialsSubscriptionToBeDeleted(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Delay:   10 * time.Second,
 		Pending: []string{subscriptions.SubscriptionStatusDeleting},
 		Target:  []string{"deleted"},
-		Timeout: utils.SafetyTimeout,
+		Timeout: timeout,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for fixed subscription %d to be deleted", id)

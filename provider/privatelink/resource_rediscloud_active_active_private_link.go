@@ -182,7 +182,7 @@ func resourceRedisCloudActiveActivePrivateLinkCreate(ctx context.Context, d *sch
 		return diag.FromErr(err)
 	}
 
-	err = waitForActiveActivePrivateLinkToBeActive(ctx, api, subId, regionId)
+	err = waitForActiveActivePrivateLinkToBeActive(ctx, api, subId, regionId, d.Timeout(schema.TimeoutCreate))
 
 	if err != nil {
 		return diag.FromErr(err)

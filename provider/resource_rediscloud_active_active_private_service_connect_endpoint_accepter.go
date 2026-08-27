@@ -70,6 +70,16 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter() *sche
 }
 
 func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	timeout := d.Timeout(schema.TimeoutCreate)
+	return resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterApply(ctx, d, meta, timeout)
+}
+
+func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	timeout := d.Timeout(schema.TimeoutUpdate)
+	return resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterApply(ctx, d, meta, timeout)
+}
+
+func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterApply(ctx context.Context, d *schema.ResourceData, meta interface{}, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
@@ -119,7 +129,7 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterCreate(c
 	}
 
 	if redis.StringValue(endpoint.Status) == psc.EndpointStatusInitialized || redis.StringValue(endpoint.Status) == psc.EndpointStatusProcessing {
-		err = waitForPrivateServiceConnectServiceEndpointToBePending(ctx, refreshFunc)
+		err = waitForPrivateServiceConnectServiceEndpointToBePending(ctx, refreshFunc, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -135,12 +145,12 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterCreate(c
 	}
 
 	if action == psc.EndpointActionAccept {
-		err = waitForPrivateServiceConnectServiceEndpointToBeActive(ctx, refreshFunc)
+		err = waitForPrivateServiceConnectServiceEndpointToBeActive(ctx, refreshFunc, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 	} else {
-		err = waitForPrivateServiceConnectServiceEndpointToBeRejected(ctx, refreshFunc)
+		err = waitForPrivateServiceConnectServiceEndpointToBeRejected(ctx, refreshFunc, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -250,10 +260,6 @@ func ToPscEndpointActiveActiveAccepterId(id string) (*PrivateServiceConnectActiv
 		PscServiceId:   pscId,
 		EndpointId:     endpointId,
 	}, nil
-}
-
-func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	return resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterCreate(ctx, d, meta)
 }
 
 func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterDelete(_ context.Context, d *schema.ResourceData, _ interface{}) diag.Diagnostics {

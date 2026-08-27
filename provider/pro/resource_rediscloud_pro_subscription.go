@@ -635,7 +635,7 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 
 	// If in a CMK flow, verify the pending state
 	if cmkEnabled {
-		err = utils.WaitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api)
+		err = utils.WaitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api, timeout)
 		if err != nil {
 			return append(diags, diag.FromErr(err)...)
 		}
@@ -1015,7 +1015,7 @@ func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.Reso
 	// If already deleting (e.g. auto-deleted empty CMK subscription), wait for completion.
 	if *subscription.Status == subscriptions.SubscriptionStatusDeleting {
 		d.SetId("")
-		if err := WaitForSubscriptionToBeDeleted(ctx, subId, api); err != nil {
+		if err := WaitForSubscriptionToBeDeleted(ctx, subId, api, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 		return diags
@@ -1043,7 +1043,7 @@ func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.Reso
 
 	d.SetId("")
 
-	err = WaitForSubscriptionToBeDeleted(ctx, subId, api)
+	err = WaitForSubscriptionToBeDeleted(ctx, subId, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -1266,11 +1266,11 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 	return dbs
 }
 
-func WaitForSubscriptionToBeDeleted(ctx context.Context, id int, api *client.ApiClient) error {
+func WaitForSubscriptionToBeDeleted(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending:      []string{subscriptions.SubscriptionStatusDeleting},
 		Target:       []string{"deleted"}, // TODO: update this with deleted field in SDK
-		Timeout:      utils.SafetyTimeout,
+		Timeout:      timeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 

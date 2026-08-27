@@ -173,7 +173,7 @@ func resourceRedisCloudPrivateLinkCreate(ctx context.Context, d *schema.Resource
 
 	d.SetId(strconv.Itoa(subId))
 
-	err = waitForPrivateLinkToBeActive(ctx, api, subId)
+	err = waitForPrivateLinkToBeActive(ctx, api, subId, d.Timeout(schema.TimeoutCreate))
 
 	if err != nil {
 		return diag.FromErr(err)

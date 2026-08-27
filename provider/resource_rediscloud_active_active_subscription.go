@@ -428,7 +428,7 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 
 	// If in a CMK flow, verify the pending state
 	if cmkEnabled {
-		err = utils.WaitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api)
+		err = utils.WaitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -797,7 +797,7 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 	// If already deleting (e.g. auto-deleted empty CMK subscription), wait for completion.
 	if *subscription.Status == subscriptions.SubscriptionStatusDeleting {
 		d.SetId("")
-		if err := pro.WaitForSubscriptionToBeDeleted(ctx, subId, api); err != nil {
+		if err := pro.WaitForSubscriptionToBeDeleted(ctx, subId, api, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 		return diags
@@ -825,7 +825,7 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 
 	d.SetId("")
 
-	err = pro.WaitForSubscriptionToBeDeleted(ctx, subId, api)
+	err = pro.WaitForSubscriptionToBeDeleted(ctx, subId, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
