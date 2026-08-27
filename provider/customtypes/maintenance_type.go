@@ -13,8 +13,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
-// Compile-time assertions keep the custom list type and value aligned with the Framework interfaces.
+// Compile-time assertions keep the custom list types and values aligned with the Framework interfaces.
 var (
+	_ basetypes.ListTypable  = MaintenanceWindowListType{}
+	_ basetypes.ListValuable = MaintenanceWindowListValue{}
 	_ basetypes.ListTypable  = MaintenanceListType{}
 	_ basetypes.ListValuable = MaintenanceListValue{}
 )
@@ -28,8 +30,8 @@ type MaintenanceWindowModel struct {
 
 // MaintenanceModel represents the maintenance configuration used by subscriptions.
 type MaintenanceModel struct {
-	Mode   types.String `tfsdk:"mode"`
-	Window types.List   `tfsdk:"window"`
+	Mode   types.String               `tfsdk:"mode"`
+	Window MaintenanceWindowListValue `tfsdk:"window"`
 }
 
 // maintenanceWindowAttrTypes defines the Terraform attribute types for one maintenance window.
@@ -42,13 +44,80 @@ var maintenanceWindowAttrTypes = AttrTypesOf(MaintenanceWindowModel{
 var maintenanceWindowElemType = types.ObjectType{AttrTypes: maintenanceWindowAttrTypes}
 
 // maintenanceAttrTypes defines the Terraform attribute types for the maintenance block.
-// Seed Window with its element type so the derived list type matches the nested block schema.
-var maintenanceAttrTypes = AttrTypesOf(MaintenanceModel{
-	Window: types.ListNull(maintenanceWindowElemType),
-})
+var maintenanceAttrTypes = AttrTypesOf(MaintenanceModel{})
 
 // maintenanceElemType is the object type used for the entry in the outer maintenance list.
 var maintenanceElemType = types.ObjectType{AttrTypes: maintenanceAttrTypes}
+
+// MaintenanceWindowListType gives maintenance window lists their provider-specific value type.
+type MaintenanceWindowListType struct {
+	basetypes.ListType
+}
+
+// NewMaintenanceWindowListType returns the custom type for a maintenance window list.
+func NewMaintenanceWindowListType() MaintenanceWindowListType {
+	return MaintenanceWindowListType{ListType: basetypes.ListType{ElemType: maintenanceWindowElemType}}
+}
+
+func (t MaintenanceWindowListType) Equal(other attr.Type) bool {
+	otherType, ok := other.(MaintenanceWindowListType)
+	if !ok {
+		return false
+	}
+	return t.ListType.Equal(otherType.ListType)
+}
+
+func (t MaintenanceWindowListType) String() string {
+	return "rediscloud.customtypes.MaintenanceWindowListType"
+}
+
+func (t MaintenanceWindowListType) ValueFromList(_ context.Context, value basetypes.ListValue) (basetypes.ListValuable, diag.Diagnostics) {
+	return MaintenanceWindowListValue{ListValue: value}, nil
+}
+
+func (t MaintenanceWindowListType) ValueFromTerraform(ctx context.Context, value tftypes.Value) (attr.Value, error) {
+	terraformValue, err := t.ListType.ValueFromTerraform(ctx, value)
+	if err != nil {
+		return nil, err
+	}
+
+	listValue, ok := terraformValue.(basetypes.ListValue)
+	if !ok {
+		return nil, fmt.Errorf("unexpected value type %T, expected basetypes.ListValue", terraformValue)
+	}
+
+	return MaintenanceWindowListValue{ListValue: listValue}, nil
+}
+
+func (t MaintenanceWindowListType) ValueType(context.Context) attr.Value {
+	return MaintenanceWindowListValue{}
+}
+
+// MaintenanceWindowListValue stores a list of maintenance window definitions.
+type MaintenanceWindowListValue struct {
+	basetypes.ListValue
+}
+
+func (v MaintenanceWindowListValue) Equal(other attr.Value) bool {
+	otherValue, ok := other.(MaintenanceWindowListValue)
+	if !ok {
+		return false
+	}
+	return v.ListValue.Equal(otherValue.ListValue)
+}
+
+func (v MaintenanceWindowListValue) Type(context.Context) attr.Type {
+	return NewMaintenanceWindowListType()
+}
+
+// AsModels decodes each element of a known maintenance window list into its typed model.
+// Callers must handle null and unknown values first because a model slice cannot
+// represent either Terraform state without losing information.
+func (v MaintenanceWindowListValue) AsModels(ctx context.Context) ([]MaintenanceWindowModel, diag.Diagnostics) {
+	var models []MaintenanceWindowModel
+	diags := v.ElementsAs(ctx, &models, false)
+	return models, diags
+}
 
 // MaintenanceListType gives maintenance lists their provider-specific value type.
 type MaintenanceListType struct {
@@ -151,7 +220,7 @@ func NewMaintenanceList(ctx context.Context, apiMaintenance *maintenance.Mainten
 	list, listDiags := types.ListValueFrom(ctx, maintenanceElemType, []MaintenanceModel{
 		{
 			Mode:   types.StringValue(redis.StringValue(apiMaintenance.Mode)),
-			Window: windowList,
+			Window: MaintenanceWindowListValue{ListValue: windowList},
 		},
 	})
 	diags.Append(listDiags...)

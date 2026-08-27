@@ -58,8 +58,8 @@ func TestNewMaintenanceList(t *testing.T) {
 		require.Len(t, entries, 1)
 		assert.Equal(t, "manual", entries[0].Mode.ValueString())
 
-		var windows []customtypes.MaintenanceWindowModel
-		require.False(t, entries[0].Window.ElementsAs(ctx, &windows, false).HasError())
+		windows, windowDiags := entries[0].Window.AsModels(ctx)
+		require.False(t, windowDiags.HasError())
 		require.Len(t, windows, 2)
 		assert.EqualValues(t, 22, windows[0].StartHour.ValueInt64())
 		assert.EqualValues(t, 8, windows[0].DurationInHours.ValueInt64())
@@ -84,8 +84,16 @@ func TestNewMaintenanceList(t *testing.T) {
 		require.False(t, modelDiags.HasError())
 		require.Len(t, entries, 1)
 		assert.False(t, entries[0].Window.IsNull())
-		assert.Empty(t, entries[0].Window.Elements())
+
+		windows, windowDiags := entries[0].Window.AsModels(ctx)
+		require.False(t, windowDiags.HasError())
+		assert.Empty(t, windows)
 	})
+}
+
+func TestMaintenanceWindowListTypeEqual(t *testing.T) {
+	assert.True(t, customtypes.NewMaintenanceWindowListType().Equal(customtypes.NewMaintenanceWindowListType()))
+	assert.False(t, customtypes.NewMaintenanceWindowListType().Equal(types.ListType{}))
 }
 
 func TestMaintenanceListTypeEqual(t *testing.T) {

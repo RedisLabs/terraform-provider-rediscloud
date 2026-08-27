@@ -132,6 +132,7 @@ func (d *activeActiveSubscriptionDataSource) Schema(_ context.Context, _ datasou
 					Blocks: map[string]schema.Block{
 						"window": schema.ListNestedBlock{
 							Description: "A list of maintenance windows for manual-mode",
+							CustomType:  customtypes.NewMaintenanceWindowListType(),
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
 									"start_hour": schema.Int64Attribute{
