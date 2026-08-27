@@ -287,7 +287,7 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointDelete(ctx conte
 	// to happen, but we can't check the GCP resources from this provider
 	err = waitForPrivateServiceConnectServiceEndpointDisappear(ctx, func() (result interface{}, state string, err error) {
 		return refreshPrivateServiceConnectServiceActiveActiveEndpointDisappear(ctx, resId.subscriptionId, resId.regionId, resId.pscServiceId, resId.endpointId, api)
-	})
+	}, d.Timeout(schema.TimeoutDelete))
 	if err != nil {
 		return diag.FromErr(err)
 	}
