@@ -91,6 +91,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachment() *schema.Resource {
 
 func resourceRedisCloudActiveActiveTransitGatewayAttachmentCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutCreate)
 
 	subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
@@ -116,17 +117,22 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentCreate(ctx context.Co
 	}
 
 	// Wait for attachment to become available
-	_, err = utils.WaitForActiveActiveTransitGatewayAttachmentToBeAvailable(ctx, subscriptionId, regionId, tgwId, api)
+	_, err = utils.WaitForActiveActiveTransitGatewayAttachmentToBeAvailable(ctx, subscriptionId, regionId, tgwId, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	d.SetId(transitgateway.BuildActiveActiveTransitGatewayAttachmentId(subscriptionId, regionId, tgwId))
 
-	return resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx, d, meta)
+	return resourceRedisCloudActiveActiveTransitGatewayAttachmentReadWithTimeout(ctx, d, meta, timeout)
 }
 
 func resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	timeout := d.Timeout(schema.TimeoutRead)
+	return resourceRedisCloudActiveActiveTransitGatewayAttachmentReadWithTimeout(ctx, d, meta, timeout)
+}
+
+func resourceRedisCloudActiveActiveTransitGatewayAttachmentReadWithTimeout(ctx context.Context, d *schema.ResourceData, meta interface{}, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
@@ -146,7 +152,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx context.Cont
 	}
 
 	// Wait for Transit Gateway resource to become available (handles subscription provisioning delays)
-	tgwTask, err := utils.WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx, subId, regionId, api)
+	tgwTask, err := utils.WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx, subId, regionId, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -193,6 +199,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx context.Cont
 
 func resourceRedisCloudActiveActiveTransitGatewayAttachmentUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutUpdate)
 
 	subId, regionId, tgwId, err := transitgateway.ParseActiveActiveTransitGatewayAttachmentId(d.Id())
 	if err != nil {
@@ -209,7 +216,7 @@ func resourceRedisCloudActiveActiveTransitGatewayAttachmentUpdate(ctx context.Co
 		return diag.FromErr(err)
 	}
 
-	return resourceRedisCloudActiveActiveTransitGatewayAttachmentRead(ctx, d, meta)
+	return resourceRedisCloudActiveActiveTransitGatewayAttachmentReadWithTimeout(ctx, d, meta, timeout)
 }
 
 func resourceRedisCloudActiveActiveTransitGatewayAttachmentDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {

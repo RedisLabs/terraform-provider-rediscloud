@@ -700,7 +700,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 	// Verify public_endpoint_access has propagated if it was changed
 	if d.HasChange("public_endpoint_access") {
 		expected := d.Get("public_endpoint_access").(bool)
-		if err := utils.WaitForSubscriptionPublicEndpointAccess(ctx, subId, api, expected); err != nil {
+		if err := utils.WaitForSubscriptionPublicEndpointAccess(ctx, subId, api, expected, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 	}

@@ -86,6 +86,7 @@ func resourceRedisCloudTransitGatewayAttachment() *schema.Resource {
 
 func resourceRedisCloudTransitGatewayAttachmentCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutCreate)
 
 	subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	tgwId := d.Get("tgw_id").(int)
@@ -105,7 +106,7 @@ func resourceRedisCloudTransitGatewayAttachmentCreate(ctx context.Context, d *sc
 	}
 
 	// Wait for attachment to become available
-	_, err = utils.WaitForTransitGatewayAttachmentToBeAvailable(ctx, subscriptionId, tgwId, api)
+	_, err = utils.WaitForTransitGatewayAttachmentToBeAvailable(ctx, subscriptionId, tgwId, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
