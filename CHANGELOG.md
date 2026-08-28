@@ -9,7 +9,6 @@
 ### Fixed
 
 - `rediscloud_active_active_subscription` data source now sorts the `pricing` list by a stable key. `Pricing.List` returns entries in nondeterministic order, which otherwise produced a perpetual `tf plan` diff.
-- Added sorting in FlattenPricing - Pricing.List returns regions in nondeterministic order, which results in a potential perpetual `tf plan` diff
 
 ## 2.19.0 (17th August 2026)
 
