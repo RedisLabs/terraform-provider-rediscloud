@@ -53,6 +53,7 @@ func resourceRedisCloudAclRule() *schema.Resource {
 
 func resourceRedisCloudAclRuleCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutCreate)
 
 	name := d.Get("name").(string)
 	rule := d.Get("rule").(string)
@@ -69,7 +70,7 @@ func resourceRedisCloudAclRuleCreate(ctx context.Context, d *schema.ResourceData
 
 	d.SetId(strconv.Itoa(id))
 
-	err = waitForAclRuleToBeActive(ctx, id, api)
+	err = waitForAclRuleToBeActive(ctx, id, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -108,6 +109,7 @@ func resourceRedisCloudAclRuleRead(ctx context.Context, d *schema.ResourceData, 
 
 func resourceRedisCloudAclRuleUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutUpdate)
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -130,7 +132,7 @@ func resourceRedisCloudAclRuleUpdate(ctx context.Context, d *schema.ResourceData
 			return diag.FromErr(err)
 		}
 
-		err = waitForAclRuleToBeActive(ctx, id, api)
+		err = waitForAclRuleToBeActive(ctx, id, api, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -141,6 +143,7 @@ func resourceRedisCloudAclRuleUpdate(ctx context.Context, d *schema.ResourceData
 
 func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutDelete)
 	var diags diag.Diagnostics
 
 	id, err := strconv.Atoi(d.Id())
@@ -157,7 +160,7 @@ func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData
 	d.SetId("")
 
 	// Wait until it's really disappeared
-	err = retry.RetryContext(ctx, 5*time.Minute, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		rule, err := api.Client.RedisRules.Get(ctx, id)
 
 		if err != nil {
@@ -183,12 +186,12 @@ func resourceRedisCloudAclRuleDelete(ctx context.Context, d *schema.ResourceData
 	return diags
 }
 
-func waitForAclRuleToBeActive(ctx context.Context, id int, api *client.ApiClient) error {
+func waitForAclRuleToBeActive(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Delay:   5 * time.Second,
 		Pending: []string{redis_rules.StatusPending},
 		Target:  []string{redis_rules.StatusActive},
-		Timeout: 5 * time.Minute,
+		Timeout: timeout,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for rule %d to be active", id)

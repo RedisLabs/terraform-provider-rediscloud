@@ -584,7 +584,7 @@ func (r *activeActiveDatabaseResource) deleteDatabase(ctx context.Context, state
 	}
 
 	// Wait for deletion to complete
-	if err := waitForDatabaseToBeDeleted(ctx, subId, dbId, r.client); err != nil {
+	if err := waitForDatabaseToBeDeleted(ctx, subId, dbId, r.client, timeout); err != nil {
 		diagnostics.AddError("Database deletion failed", err.Error())
 		return
 	}
