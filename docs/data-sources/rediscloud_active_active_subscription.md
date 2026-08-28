@@ -34,9 +34,7 @@ output "rediscloud_active_active_subscription" {
 `id` is set to the ID of the found subscription.
 
 * `aws_account_id` - AWS account ID that the subscription is deployed in (AWS subscriptions only).
-* `payment_method` (Optional) The payment method for the requested subscription, (either `credit-card`
-  or `marketplace`). If `credit-card` is specified, `payment_method_id` must be defined. Default: 'credit-card'. **(
-  Changes to) this attribute are ignored after creation.**
+* `payment_method` - The payment method for the subscription, (either `credit-card` or `marketplace`).
 * `payment_method_id` - A valid payment method pre-defined in the current account
 * `cloud_provider` - The cloud provider used with the subscription, (either `AWS` or `GCP`).
 * `number_of_databases` - The number of databases that are linked to this subscription.
@@ -48,7 +46,7 @@ output "rediscloud_active_active_subscription" {
 * `public_endpoint_access` - Whether public endpoint access is enabled for databases in the subscription
 * `maintenance_windows` - Details about the subscription's maintenance window specification, documented below
 * `pricing` - A list of pricing objects, documented below
-* `resource_tags` - A string/string map of tags to assign to the cloud resources created by this subscription
+* `resource_tags` - A string/string map of tags assigned to the cloud resources created by this subscription
 
 The `maintenance_windows` object has these attributes:
 
@@ -65,10 +63,10 @@ The `pricing` object has these attributes:
 
 * `database_name` - The database this pricing entry applies to.
 * `type` - The type of cost e.g. 'Shards'.
-* `typeDetails` - Further detail e.g. 'micro'.
-* `quantity` - Self-explanatory.
-* `quantityMeasurement` - Self-explanatory.
-* `pricePerUnit` - Self-explanatory.
-* `priceCurrency` - Self-explanatory e.g. 'USD'.
-* `pricePeriod` - Self-explanatory e.g. 'hour'.
-* `region` - Self-explanatory, if the cost is associated with a particular region.
+* `type_details` - Further detail e.g. 'micro'.
+* `quantity` - The number of units this pricing entry covers.
+* `quantity_measurement` - The unit that `quantity` is measured in, e.g. 'shards'.
+* `price_per_unit` - The cost of a single unit.
+* `price_currency` - The currency the price is denominated in, e.g. 'USD'.
+* `price_period` - The billing period the price applies to, e.g. 'hour'.
+* `region` - The region this cost is associated with, if any.

@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.19.1 (TBD)
+
+### Changed
+
+- Migrated `rediscloud_active_active_subscription` data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no schema or behaviour changes.
+
+### Fixed
+
+- `rediscloud_active_active_subscription` data source now sorts the `pricing` list by a stable key. `Pricing.List` returns entries in nondeterministic order, which otherwise produced a perpetual `tf plan` diff.
+
 ## 2.19.0 (17th August 2026)
 
 ### Added

@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 func DataSourceRedisCloudProSubscription() *schema.Resource {
@@ -325,7 +326,7 @@ func dataSourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Reso
 	}
 
 	cmkEnabled := sub.PersistentStorageEncryptionType != nil &&
-		redis.StringValue(sub.PersistentStorageEncryptionType) == CMK_ENABLED_STRING
+		redis.StringValue(sub.PersistentStorageEncryptionType) == utils.CmkEnabledString
 	if err := d.Set("customer_managed_key_enabled", cmkEnabled); err != nil {
 		return diag.FromErr(err)
 	}
