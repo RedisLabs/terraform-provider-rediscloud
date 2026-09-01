@@ -25,8 +25,6 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
-const CMK_ENABLED_STRING = "customer-managed-key"
-
 func ResourceRedisCloudProSubscription() *schema.Resource {
 	return &schema.Resource{
 
@@ -619,7 +617,7 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 	cmkEnabled := d.Get("customer_managed_key_enabled").(bool)
 
 	if cmkEnabled {
-		createSubscriptionRequest.PersistentStorageEncryptionType = redis.String(CMK_ENABLED_STRING)
+		createSubscriptionRequest.PersistentStorageEncryptionType = redis.String(utils.CmkEnabledString)
 	}
 
 	publicEndpointAccess := d.Get("public_endpoint_access").(bool)
@@ -787,7 +785,7 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 	}
 
 	cmkEnabledFromAPI := subscription.PersistentStorageEncryptionType != nil &&
-		redis.StringValue(subscription.PersistentStorageEncryptionType) == CMK_ENABLED_STRING
+		redis.StringValue(subscription.PersistentStorageEncryptionType) == utils.CmkEnabledString
 	if err := d.Set("customer_managed_key_enabled", cmkEnabledFromAPI); err != nil {
 		return diag.FromErr(err)
 	}

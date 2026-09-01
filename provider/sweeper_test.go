@@ -22,7 +22,7 @@ import (
 )
 
 // testResourcePrefix is the prefix used for all test resource names.
-// Set TEST_RESOURCE_PREFIX env var to override (e.g. "tf-ci-pr7-42" in CI).
+// Set TEST_RESOURCE_PREFIX env var to override (e.g. "tf-ci-42" in CI).
 // This also controls which resources the sweeper targets.
 var testResourcePrefix = getTestResourcePrefix()
 

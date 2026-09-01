@@ -593,7 +593,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 	}
 
 	cmkEnabledFromAPI := subscription.PersistentStorageEncryptionType != nil &&
-		redis.StringValue(subscription.PersistentStorageEncryptionType) == pro.CMK_ENABLED_STRING
+		redis.StringValue(subscription.PersistentStorageEncryptionType) == utils.CmkEnabledString
 	if err := d.Set("customer_managed_key_enabled", cmkEnabledFromAPI); err != nil {
 		return diag.FromErr(err)
 	}
@@ -828,7 +828,7 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 
 func newCreateSubscription(name string, paymentMethodID *int, paymentMethod string, providers []*subscriptions.CreateCloudProvider, dbs []*subscriptions.CreateDatabase, cmkEnabled bool, publicEndpointAccess bool) subscriptions.CreateSubscription {
 	req := subscriptions.CreateSubscription{
-		DeploymentType:       redis.String("active-active"),
+		DeploymentType:       redis.String(subscriptions.SubscriptionDeploymentTypeActiveActive),
 		Name:                 redis.String(name),
 		DryRun:               redis.Bool(false),
 		PaymentMethodID:      paymentMethodID,
@@ -839,7 +839,7 @@ func newCreateSubscription(name string, paymentMethodID *int, paymentMethod stri
 	}
 
 	if cmkEnabled {
-		req.PersistentStorageEncryptionType = redis.String(pro.CMK_ENABLED_STRING)
+		req.PersistentStorageEncryptionType = redis.String(utils.CmkEnabledString)
 	}
 
 	return req

@@ -83,11 +83,6 @@ resource "rediscloud_active_active_subscription_database" "example" {
   }
 }
 
-
-data "rediscloud_active_active_subscription" "example" {
-  name = rediscloud_active_active_subscription.example.name
-}
-
 data "rediscloud_active_active_subscription_regions" "example" {
   subscription_name = rediscloud_active_active_subscription.example.name
 }
