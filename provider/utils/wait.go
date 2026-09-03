@@ -16,11 +16,11 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
-func WaitForSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiClient) error {
+func WaitForSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending:      []string{subscriptions.SubscriptionStatusPending},
 		Target:       []string{subscriptions.SubscriptionStatusActive},
-		Timeout:      SafetyTimeout,
+		Timeout:      timeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 
@@ -44,11 +44,11 @@ func WaitForSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiC
 
 // WaitForSubscriptionPublicEndpointAccess waits for the subscription's public_endpoint_access
 // property to match the expected value. This handles API eventual consistency after updates.
-func WaitForSubscriptionPublicEndpointAccess(ctx context.Context, id int, api *client.ApiClient, expected bool) error {
+func WaitForSubscriptionPublicEndpointAccess(ctx context.Context, id int, api *client.ApiClient, expected bool, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending:      []string{"waiting"},
 		Target:       []string{"matched"},
-		Timeout:      30 * time.Second,
+		Timeout:      timeout,
 		Delay:        2 * time.Second,
 		PollInterval: 5 * time.Second,
 
@@ -75,8 +75,7 @@ func WaitForSubscriptionPublicEndpointAccess(ctx context.Context, id int, api *c
 	return nil
 }
 
-// TODO: use configurable timeout, instead of SafetyTimeout
-func WaitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient) error {
+func WaitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending: []string{
 			databases.StatusDraft,
@@ -94,7 +93,7 @@ func WaitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.A
 			// TODO replace with api model string in next release
 		},
 		Target:       []string{databases.StatusActive},
-		Timeout:      SafetyTimeout,
+		Timeout:      timeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 
@@ -118,11 +117,11 @@ func WaitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.A
 
 // WaitForActiveActiveTransitGatewayResourceToBeAvailable waits for Active-Active Transit Gateway API resources
 // to become available. This handles the case where Response.Resource is nil during initial subscription provisioning.
-func WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx context.Context, subId int, regionId int, api *client.ApiClient) (*attachments.GetAttachmentsTask, error) {
+func WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx context.Context, subId int, regionId int, api *client.ApiClient, timeout time.Duration) (*attachments.GetAttachmentsTask, error) {
 	wait := &retry.StateChangeConf{
 		Pending:      []string{"provisioning"},
 		Target:       []string{"available"},
-		Timeout:      TransitGatewayProvisioningTimeout,
+		Timeout:      timeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 
@@ -188,11 +187,12 @@ func WaitForTransitGatewayAttachmentToBeAvailable(
 	subId int,
 	tgwId int,
 	api *client.ApiClient,
+	timeout time.Duration,
 ) (*attachments.TransitGatewayAttachment, error) {
 	wait := &retry.StateChangeConf{
 		Pending:      transitGatewayAttachmentPendingStates,
 		Target:       []string{TransitGatewayAttachmentStatusAvailable},
-		Timeout:      TransitGatewayProvisioningTimeout,
+		Timeout:      timeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 
@@ -251,11 +251,12 @@ func WaitForActiveActiveTransitGatewayAttachmentToBeAvailable(
 	regionId int,
 	tgwId int,
 	api *client.ApiClient,
+	timeout time.Duration,
 ) (*attachments.TransitGatewayAttachment, error) {
 	wait := &retry.StateChangeConf{
 		Pending:      transitGatewayAttachmentPendingStates,
 		Target:       []string{TransitGatewayAttachmentStatusAvailable},
-		Timeout:      TransitGatewayProvisioningTimeout,
+		Timeout:      timeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 
@@ -305,11 +306,11 @@ func WaitForActiveActiveTransitGatewayAttachmentToBeAvailable(
 	return tgw, nil
 }
 
-func WaitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, api *client.ApiClient) error {
+func WaitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending:      []string{subscriptions.SubscriptionStatusPending},
 		Target:       []string{subscriptions.SubscriptionStatusEncryptionKeyPending, subscriptions.SubscriptionStatusActive},
-		Timeout:      SafetyTimeout,
+		Timeout:      timeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 

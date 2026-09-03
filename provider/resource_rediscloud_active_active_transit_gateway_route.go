@@ -68,6 +68,7 @@ func resourceRedisCloudActiveActiveTransitGatewayRoute() *schema.Resource {
 
 func resourceRedisCloudActiveActiveTransitGatewayRouteCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutCreate)
 
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
@@ -88,10 +89,15 @@ func resourceRedisCloudActiveActiveTransitGatewayRouteCreate(ctx context.Context
 
 	d.SetId(transitgateway.BuildActiveActiveTransitGatewayAttachmentId(subId, regionId, tgwId))
 
-	return resourceRedisCloudActiveActiveTransitGatewayRouteRead(ctx, d, meta)
+	return resourceRedisCloudActiveActiveTransitGatewayRouteReadWithTimeout(ctx, d, meta, timeout)
 }
 
 func resourceRedisCloudActiveActiveTransitGatewayRouteRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	timeout := d.Timeout(schema.TimeoutRead)
+	return resourceRedisCloudActiveActiveTransitGatewayRouteReadWithTimeout(ctx, d, meta, timeout)
+}
+
+func resourceRedisCloudActiveActiveTransitGatewayRouteReadWithTimeout(ctx context.Context, d *schema.ResourceData, meta interface{}, timeout time.Duration) diag.Diagnostics {
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
@@ -111,7 +117,7 @@ func resourceRedisCloudActiveActiveTransitGatewayRouteRead(ctx context.Context, 
 	}
 
 	// Wait for Transit Gateway resource to become available (handles subscription provisioning delays)
-	tgwTask, err := utils.WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx, subId, regionId, api)
+	tgwTask, err := utils.WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx, subId, regionId, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -142,6 +148,7 @@ func resourceRedisCloudActiveActiveTransitGatewayRouteRead(ctx context.Context, 
 
 func resourceRedisCloudActiveActiveTransitGatewayRouteUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutUpdate)
 
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
@@ -160,7 +167,7 @@ func resourceRedisCloudActiveActiveTransitGatewayRouteUpdate(ctx context.Context
 		return diag.FromErr(err)
 	}
 
-	return resourceRedisCloudActiveActiveTransitGatewayRouteRead(ctx, d, meta)
+	return resourceRedisCloudActiveActiveTransitGatewayRouteReadWithTimeout(ctx, d, meta, timeout)
 }
 
 func resourceRedisCloudActiveActiveTransitGatewayRouteDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {

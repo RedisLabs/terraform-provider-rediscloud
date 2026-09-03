@@ -315,6 +315,7 @@ func resourceRedisCloudEssentialsDatabase() *schema.Resource {
 
 func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutCreate)
 
 	subId := d.Get("subscription_id").(int)
 
@@ -436,7 +437,7 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 	d.SetId(utils.BuildResourceId(subId, databaseId))
 
 	// Confirm Subscription Active status
-	err = waitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api)
+	err = waitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api, timeout)
 	if err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
@@ -446,7 +447,7 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 	// Run the subscription update function to apply any additional changes to the databases (enableDefaultUser)
 	// Others are omitted here _because_ the update will take care of them, such as tags
 	utils.SubscriptionMutex.Unlock(subId)
-	return resourceRedisCloudEssentialsDatabaseUpdate(ctx, d, meta)
+	return resourceRedisCloudEssentialsDatabaseUpdateWithTimeout(ctx, d, meta, timeout)
 }
 
 func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -620,6 +621,10 @@ func resourceRedisCloudEssentialsDatabaseRead(ctx context.Context, d *schema.Res
 }
 
 func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	return resourceRedisCloudEssentialsDatabaseUpdateWithTimeout(ctx, d, meta, d.Timeout(schema.TimeoutUpdate))
+}
+
+func resourceRedisCloudEssentialsDatabaseUpdateWithTimeout(ctx context.Context, d *schema.ResourceData, meta interface{}, timeout time.Duration) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
 
 	_, databaseId, err := pro.ToDatabaseId(d.Id())
@@ -639,7 +644,7 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 		// Only perform upgrade if both versions are non-empty (prevents unnecessary upgrades on creation)
 		//TODO(TF3.0) once redis_version goes write-only-by-convention (Computed dropped, not written from Read), drop the actualRedisVersion guard — DSF already makes it unreachable in normal operation. Kept today as belt-and-suspenders against DSF regressions.
 		if originalVersion.(string) != "" && newVersion.(string) != "" && actualRedisVersion.(string) != newVersion.(string) {
-			if upgradeDiags := upgradeRedisVersionEssentials(ctx, api, subId, databaseId, newVersion.(string)); upgradeDiags != nil {
+			if upgradeDiags := upgradeRedisVersionEssentials(ctx, api, subId, databaseId, newVersion.(string), timeout); upgradeDiags != nil {
 				return upgradeDiags
 			}
 		}
@@ -738,11 +743,11 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
-	if err := waitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api); err != nil {
+	if err := waitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
-	if err := waitForEssentialsSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := waitForEssentialsSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -757,6 +762,7 @@ func resourceRedisCloudEssentialsDatabaseUpdate(ctx context.Context, d *schema.R
 func resourceRedisCloudEssentialsDatabaseDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutDelete)
 
 	var diags diag.Diagnostics
 	subId := d.Get("subscription_id").(int)
@@ -769,7 +775,7 @@ func resourceRedisCloudEssentialsDatabaseDelete(ctx context.Context, d *schema.R
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
 
-	if err := waitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api); err != nil {
+	if err := waitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -780,7 +786,7 @@ func resourceRedisCloudEssentialsDatabaseDelete(ctx context.Context, d *schema.R
 	return diags
 }
 
-func upgradeRedisVersionEssentials(ctx context.Context, api *client.ApiClient, subId int, dbId int, newVersion string) diag.Diagnostics {
+func upgradeRedisVersionEssentials(ctx context.Context, api *client.ApiClient, subId int, dbId int, newVersion string, timeout time.Duration) diag.Diagnostics {
 	log.Printf("[INFO] Requesting Redis version change to %s...", newVersion)
 
 	upgrade := fixedDatabases.UpgradeRedisVersion{
@@ -794,19 +800,19 @@ func upgradeRedisVersionEssentials(ctx context.Context, api *client.ApiClient, s
 	log.Printf("[INFO] Redis version change request to %s accepted by API", newVersion)
 
 	// Wait for database to be active
-	if err := waitForEssentialsDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+	if err := waitForEssentialsDatabaseToBeActive(ctx, subId, dbId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
 	// Wait for subscription to be active
-	if err := waitForEssentialsSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := waitForEssentialsSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
 	return nil
 }
 
-func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient) error {
+func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Delay: 30 * time.Second,
 		Pending: []string{
@@ -822,7 +828,7 @@ func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api
 			databases.StatusDynamicEndpointsCreationPending,
 		},
 		Target:       []string{databases.StatusActive},
-		Timeout:      utils.SafetyTimeout,
+		Timeout:      timeout,
 		PollInterval: 30 * time.Second,
 
 		Refresh: func() (result interface{}, state string, err error) {
