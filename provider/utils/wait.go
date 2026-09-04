@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -15,6 +16,32 @@ import (
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
+
+// transientSubscriptionGetStatusCodes are HTTP status codes returned by subscription GET
+// calls that we treat as transient and safe to retry by continuing to poll.
+var transientSubscriptionGetStatusCodes = []string{
+	": 500 -", // Internal Server Error
+	": 502 -", // Bad Gateway
+	": 503 -", // Service Unavailable
+	": 504 -", // Gateway Timeout
+}
+
+// IsTransientSubscriptionGetError reports whether the given error from a subscription GET
+// call is a transient HTTP 5xx that can safely be retried by continuing to poll. The
+// rediscloud-go-api client's HTTPError type is unexported, but its Error() method formats
+// as "failed to <name>: <code> - <body>", so we detect the status by matching the code fragment.
+func IsTransientSubscriptionGetError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	for _, code := range transientSubscriptionGetStatusCodes {
+		if strings.Contains(msg, code) {
+			return true
+		}
+	}
+	return false
+}
 
 func WaitForSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiClient) error {
 	wait := &retry.StateChangeConf{
@@ -29,6 +56,10 @@ func WaitForSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiC
 
 			subscription, err := api.Client.Subscription.Get(ctx, id)
 			if err != nil {
+				if IsTransientSubscriptionGetError(err) {
+					log.Printf("[WARN] Transient 5xx while polling subscription %d, will continue polling: %s", id, err)
+					return nil, subscriptions.SubscriptionStatusPending, nil
+				}
 				return nil, "", err
 			}
 
@@ -318,6 +349,10 @@ func WaitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, ap
 
 			subscription, err := api.Client.Subscription.Get(ctx, id)
 			if err != nil {
+				if IsTransientSubscriptionGetError(err) {
+					log.Printf("[WARN] Transient 5xx while polling subscription %d, will continue polling: %s", id, err)
+					return nil, subscriptions.SubscriptionStatusPending, nil
+				}
 				return nil, "", err
 			}
 
