@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.21.0 (Unreleased)
+
+### Added
+
+- Added the `rediscloud_subscriptions` data source for fetching a list of Pro subscriptions, with an optional exact-name filter.
+
 ## 2.20.0 (4th November 2026)
 
 ### Added
