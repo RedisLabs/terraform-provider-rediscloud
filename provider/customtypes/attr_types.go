@@ -7,17 +7,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 )
 
-// AttrTypesOf derives attribute types from a flat model whose tagged fields implement attr.Value.
+// AttrTypesOf returns attribute types for tagged framework value fields.
+// AttrTypesOf works on models that embed value structs as well.
 func AttrTypesOf(model any) map[string]attr.Type {
 	v := reflect.ValueOf(model)
 	t := v.Type()
-	m := make(map[string]attr.Type, t.NumField())
-	for i := 0; i < t.NumField(); i++ {
-		tag := t.Field(i).Tag.Get("tfsdk")
+	fields := reflect.VisibleFields(t)
+	m := make(map[string]attr.Type, len(fields))
+	for _, field := range fields {
+		tag := field.Tag.Get("tfsdk")
 		if tag == "" || tag == "-" {
 			continue
 		}
-		m[tag] = v.Field(i).Interface().(attr.Value).Type(context.Background())
+		m[tag] = v.FieldByIndex(field.Index).Interface().(attr.Value).Type(context.Background())
 	}
 	return m
 }
