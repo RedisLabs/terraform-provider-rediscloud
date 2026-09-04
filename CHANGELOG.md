@@ -2,6 +2,10 @@
 
 ## 2.20.0 (Unreleased)
 
+### Added
+
+- Added the `rediscloud_subscriptions` data source for fetching a list of Pro subscriptions, with an optional exact-name filter.
+
 ### Changed
 
 - Raised the Go toolchain to 1.26.10 to pick up the fix for GO-2026-6809 in `crypto/x509`.
