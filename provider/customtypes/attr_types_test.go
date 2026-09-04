@@ -20,6 +20,13 @@ type sampleModel struct {
 	Enabled types.Bool    `tfsdk:"enabled"`
 }
 
+// embeddedSampleModel shows that models may reuse tagged fields through embedding.
+// AttrTypesOf must treat the promoted fields like fields declared directly on the model.
+type embeddedSampleModel struct {
+	sampleModel
+	Description types.String `tfsdk:"description"`
+}
+
 // TestAttrTypesOf is the canonical "what does this function do" example: model in,
 // attr-type map out — keyed by tfsdk tag, valued by each field's attr.Type.
 func TestAttrTypesOf(t *testing.T) {
@@ -30,6 +37,20 @@ func TestAttrTypesOf(t *testing.T) {
 		"count":    types.Int64Type,   // types.Int64   -> Int64Type
 		"ratio":    types.Float64Type, // types.Float64 -> Float64Type
 		"enabled":  types.BoolType,    // types.Bool    -> BoolType
+	}, got)
+}
+
+// TestAttrTypesOfEmbeddedModel verifies that AttrTypesOf includes both promoted and
+// directly declared tagged fields. The Plugin Framework reads both when converting a model.
+func TestAttrTypesOfEmbeddedModel(t *testing.T) {
+	got := customtypes.AttrTypesOf(embeddedSampleModel{})
+
+	assert.Equal(t, map[string]attr.Type{
+		"tag_name":    types.StringType,
+		"count":       types.Int64Type,
+		"ratio":       types.Float64Type,
+		"enabled":     types.BoolType,
+		"description": types.StringType,
 	}, got)
 }
 
