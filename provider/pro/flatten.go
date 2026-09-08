@@ -69,6 +69,8 @@ func isNil(i interface{}) bool {
 	return false
 }
 
+// FlattenCloudDetails maps cloud-provider state for SDKv2 subscription resources.
+// Keep this map-based helper until its remaining callers migrate to the Framework.
 func FlattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource bool) []map[string]interface{} {
 	var cdl []map[string]interface{}
 
@@ -196,6 +198,8 @@ func ReadPaymentMethodID(d *schema.ResourceData) (*int, error) {
 	return nil, nil
 }
 
+// FlattenPricing maps pricing state for SDKv2 subscription resources.
+// Keep this map-based helper until its remaining callers migrate to the Framework.
 func FlattenPricing(pricing []*pricing.Pricing) []map[string]interface{} {
 	var tfs = make([]map[string]interface{}, 0)
 	for _, p := range pricing {
@@ -217,6 +221,8 @@ func FlattenPricing(pricing []*pricing.Pricing) []map[string]interface{} {
 	return tfs
 }
 
+// FlattenMaintenance maps maintenance state for SDKv2 subscription resources.
+// Keep this map-based helper until its remaining callers migrate to the Framework.
 func FlattenMaintenance(m *maintenance.Maintenance) []map[string]interface{} {
 	var windows []map[string]interface{}
 	for _, w := range m.Windows {
