@@ -153,7 +153,7 @@ func dataSourceActiveActiveTransitGatewayRead(ctx context.Context, d *schema.Res
 		}
 	} else {
 		// No waiting - use existing behaviour that waits for resource to be available
-		tgwTask, err := utils.WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx, subId, regionId, api, utils.TransitGatewayProvisioningTimeout)
+		tgwTask, err := utils.WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx, subId, regionId, api, d.Timeout(schema.TimeoutRead))
 		if err != nil {
 			return diag.FromErr(err)
 		}

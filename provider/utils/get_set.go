@@ -1,15 +1,9 @@
 package utils
 
 import (
-	"time"
-
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
-
-// TransitGatewayProvisioningTimeout limits waits for Transit Gateway resources during subscription provisioning.
-// The limit keeps these waits within the 45-minute duration in which acceptance tests typically finish.
-const TransitGatewayProvisioningTimeout = 40 * time.Minute
 
 // GetString safely retrieves a string value from schema.ResourceData.
 func GetString(d *schema.ResourceData, key string) *string {

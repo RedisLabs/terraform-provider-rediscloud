@@ -70,13 +70,11 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter() *sche
 }
 
 func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	timeout := d.Timeout(schema.TimeoutCreate)
-	return resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterApply(ctx, d, meta, timeout)
+	return resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterApply(ctx, d, meta, d.Timeout(schema.TimeoutCreate))
 }
 
 func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	timeout := d.Timeout(schema.TimeoutUpdate)
-	return resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterApply(ctx, d, meta, timeout)
+	return resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterApply(ctx, d, meta, d.Timeout(schema.TimeoutUpdate))
 }
 
 func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterApply(ctx context.Context, d *schema.ResourceData, meta interface{}, timeout time.Duration) diag.Diagnostics {
