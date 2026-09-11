@@ -54,6 +54,7 @@ func resourceRedisCloudPrivateServiceConnect() *schema.Resource {
 
 func resourceRedisCloudPrivateServiceConnectCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutCreate)
 
 	subscriptionId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
@@ -71,12 +72,12 @@ func resourceRedisCloudPrivateServiceConnectCreate(ctx context.Context, d *schem
 
 	err = waitForPrivateServiceConnectServiceToBeActive(ctx, func() (result interface{}, state string, err error) {
 		return refreshPrivateServiceConnectServiceStatus(ctx, subscriptionId, api)
-	}, d.Timeout(schema.TimeoutCreate))
+	}, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api, d.Timeout(schema.TimeoutCreate))
+	err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}

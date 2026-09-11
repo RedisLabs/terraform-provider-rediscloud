@@ -137,13 +137,11 @@ func resourceRedisCloudActiveActiveRegionCreate(ctx context.Context, d *schema.R
 	}
 	d.SetId(strconv.Itoa(subId))
 
-	timeout := d.Timeout(schema.TimeoutCreate)
-	return resourceRedisCloudActiveActiveRegionApply(ctx, d, meta, timeout)
+	return resourceRedisCloudActiveActiveRegionApply(ctx, d, meta, d.Timeout(schema.TimeoutCreate))
 }
 
 func resourceRedisCloudActiveActiveRegionUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	timeout := d.Timeout(schema.TimeoutUpdate)
-	return resourceRedisCloudActiveActiveRegionApply(ctx, d, meta, timeout)
+	return resourceRedisCloudActiveActiveRegionApply(ctx, d, meta, d.Timeout(schema.TimeoutUpdate))
 }
 
 func resourceRedisCloudActiveActiveRegionApply(ctx context.Context, d *schema.ResourceData, meta interface{}, timeout time.Duration) diag.Diagnostics {

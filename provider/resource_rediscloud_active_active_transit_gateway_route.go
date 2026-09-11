@@ -93,8 +93,7 @@ func resourceRedisCloudActiveActiveTransitGatewayRouteCreate(ctx context.Context
 }
 
 func resourceRedisCloudActiveActiveTransitGatewayRouteRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	timeout := d.Timeout(schema.TimeoutRead)
-	return resourceRedisCloudActiveActiveTransitGatewayRouteReadWithTimeout(ctx, d, meta, timeout)
+	return resourceRedisCloudActiveActiveTransitGatewayRouteReadWithTimeout(ctx, d, meta, d.Timeout(schema.TimeoutRead))
 }
 
 func resourceRedisCloudActiveActiveTransitGatewayRouteReadWithTimeout(ctx context.Context, d *schema.ResourceData, meta interface{}, timeout time.Duration) diag.Diagnostics {
