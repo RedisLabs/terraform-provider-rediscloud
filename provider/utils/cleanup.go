@@ -15,11 +15,11 @@ import (
 // least one database in the subscription creation plan, but Terraform manages databases as separate
 // resources. This function is called during Create and UpdateCmk to clean up those creation-plan
 // placeholder databases before Terraform creates user-configured ones.
-func DeleteSubscriptionDatabases(ctx context.Context, subId int, api *client.ApiClient) diag.Diagnostics {
+func DeleteSubscriptionDatabases(ctx context.Context, subId int, api *client.ApiClient, timeout time.Duration) diag.Diagnostics {
 	// There is a timing issue where the subscription is marked as active before the creation-plan
 	// databases are visible via the List API. This sleep works around it.
 	time.Sleep(30 * time.Second) //lintignore:R018
-	if err := WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -33,7 +33,7 @@ func DeleteSubscriptionDatabases(ctx context.Context, subId int, api *client.Api
 		dbId := *dbList.Value().ID
 
 		log.Printf("[DEBUG] Waiting for database %d in subscription %d to be active before deletion", dbId, subId)
-		if err := WaitForDatabaseToBeActive(ctx, subId, dbId, api); err != nil {
+		if err := WaitForDatabaseToBeActive(ctx, subId, dbId, api, timeout); err != nil {
 			return diag.FromErr(fmt.Errorf("failed waiting for database %d to be active: %w", dbId, err))
 		}
 
@@ -46,7 +46,7 @@ func DeleteSubscriptionDatabases(ctx context.Context, subId int, api *client.Api
 		return diag.FromErr(fmt.Errorf("failed to list databases in subscription %d: %w", subId, dbList.Err()))
 	}
 
-	if err := WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 

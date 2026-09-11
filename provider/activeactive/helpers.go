@@ -295,12 +295,12 @@ func flattenBackupPlan(backup *databases.Backup, stateStorageType string) (types
 }
 
 // waitForDatabaseToBeDeleted waits for the database to be deleted using retry.StateChangeConf.
-func waitForDatabaseToBeDeleted(ctx context.Context, subId, dbId int, api *client.ApiClient) error {
+func waitForDatabaseToBeDeleted(ctx context.Context, subId, dbId int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Delay:        30 * time.Second,
 		Pending:      []string{"pending"},
 		Target:       []string{"deleted"},
-		Timeout:      10 * time.Minute,
+		Timeout:      timeout,
 		PollInterval: 30 * time.Second,
 
 		Refresh: func() (result interface{}, state string, err error) {

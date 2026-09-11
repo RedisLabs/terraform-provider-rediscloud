@@ -571,6 +571,7 @@ func getSubscription(ctx context.Context, diff *schema.ResourceDiff, meta interf
 
 func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutCreate)
 
 	// Create CloudProviders
 	providers, err := buildCreateCloudProviders(d.Get("cloud_provider"))
@@ -632,7 +633,7 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 
 	// If in a CMK flow, verify the pending state
 	if cmkEnabled {
-		err = utils.WaitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api)
+		err = utils.WaitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api, timeout)
 		if err != nil {
 			return append(diags, diag.FromErr(err)...)
 		}
@@ -640,14 +641,14 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 	}
 
 	// Confirm Subscription Active status
-	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout)
 
 	if err != nil {
 		return append(diags, diag.FromErr(err)...)
 	}
 
 	// Delete databases created by the subscription creation plan
-	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api); cleanupDiags != nil {
+	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api, timeout); cleanupDiags != nil {
 		return append(diags, cleanupDiags...)
 	}
 	if m, ok := d.GetOk("maintenance_windows"); ok {
@@ -681,7 +682,7 @@ func resourceRedisCloudProSubscriptionCreate(ctx context.Context, d *schema.Reso
 
 	// Some attributes on a database are not accessible by the subscription creation API.
 	// Run the subscription update function to apply any additional changes to the databases, such as password and so on.
-	return append(diags, resourceRedisCloudProSubscriptionUpdate(ctx, d, meta)...)
+	return append(diags, resourceRedisCloudProSubscriptionUpdateWithTimeout(ctx, d, meta, timeout)...)
 }
 
 func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -800,6 +801,10 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 }
 
 func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	return resourceRedisCloudProSubscriptionUpdateWithTimeout(ctx, d, meta, d.Timeout(schema.TimeoutUpdate))
+}
+
+func resourceRedisCloudProSubscriptionUpdateWithTimeout(ctx context.Context, d *schema.ResourceData, meta interface{}, timeout time.Duration) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Id())
@@ -820,7 +825,7 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 	// CMK flow
 	if *subscription.Status == subscriptions.SubscriptionStatusEncryptionKeyPending && cmkEnabled {
 		wasCmkPending = true
-		diags := resourceRedisCloudProSubscriptionUpdateCmk(ctx, d, api, subId)
+		diags := resourceRedisCloudProSubscriptionUpdateCmk(ctx, d, api, subId, timeout)
 
 		if diags != nil {
 			return diags
@@ -867,7 +872,7 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 			return diag.FromErr(err)
 		}
 
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -889,14 +894,14 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 		}
 	}
 
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
 	// Verify public_endpoint_access has propagated if it was changed
 	if d.HasChange("public_endpoint_access") {
 		expected := d.Get("public_endpoint_access").(bool)
-		if err := utils.WaitForSubscriptionPublicEndpointAccess(ctx, subId, api, expected); err != nil {
+		if err := utils.WaitForSubscriptionPublicEndpointAccess(ctx, subId, api, expected, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -934,7 +939,7 @@ func resourceRedisCloudProSubscriptionUpdate(ctx context.Context, d *schema.Reso
 	return resourceRedisCloudProSubscriptionRead(ctx, d, meta)
 }
 
-func resourceRedisCloudProSubscriptionUpdateCmk(ctx context.Context, d *schema.ResourceData, api *client.ApiClient, subId int) diag.Diagnostics {
+func resourceRedisCloudProSubscriptionUpdateCmk(ctx context.Context, d *schema.ResourceData, api *client.ApiClient, subId int, timeout time.Duration) diag.Diagnostics {
 
 	cmkResourcesRaw, exists := d.GetOk("customer_managed_key")
 	if !exists {
@@ -958,12 +963,12 @@ func resourceRedisCloudProSubscriptionUpdateCmk(ctx context.Context, d *schema.R
 		return diag.FromErr(err)
 	}
 
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
 	// After CMK activation, delete databases that were not cleaned up during Create
-	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api); cleanupDiags != nil {
+	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api, timeout); cleanupDiags != nil {
 		return cleanupDiags
 	}
 
@@ -988,6 +993,7 @@ func buildProCmks(cmkResources []interface{}) []subscriptions.CustomerManagedKey
 func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutDelete)
 
 	var diags diag.Diagnostics
 
@@ -1007,7 +1013,7 @@ func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.Reso
 	// If already deleting (e.g. auto-deleted empty CMK subscription), wait for completion.
 	if *subscription.Status == subscriptions.SubscriptionStatusDeleting {
 		d.SetId("")
-		if err := WaitForSubscriptionToBeDeleted(ctx, subId, api); err != nil {
+		if err := WaitForSubscriptionToBeDeleted(ctx, subId, api, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 		return diags
@@ -1015,14 +1021,14 @@ func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.Reso
 
 	if *subscription.Status != subscriptions.SubscriptionStatusEncryptionKeyPending {
 		// Wait for the subscription to be active before deleting it.
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 
 		// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 		// This additional wait ensures that the databases are deleted before the subscription is deleted.
 		time.Sleep(30 * time.Second) //lintignore:R018
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -1035,7 +1041,7 @@ func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.Reso
 
 	d.SetId("")
 
-	err = WaitForSubscriptionToBeDeleted(ctx, subId, api)
+	err = WaitForSubscriptionToBeDeleted(ctx, subId, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -1258,11 +1264,11 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 	return dbs
 }
 
-func WaitForSubscriptionToBeDeleted(ctx context.Context, id int, api *client.ApiClient) error {
+func WaitForSubscriptionToBeDeleted(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending:      []string{subscriptions.SubscriptionStatusDeleting},
 		Target:       []string{"deleted"}, // TODO: update this with deleted field in SDK
-		Timeout:      utils.SafetyTimeout,
+		Timeout:      timeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 
