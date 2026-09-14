@@ -145,7 +145,7 @@ func CloudProvidersFromAPI(ctx context.Context, cloudDetails []*subscriptions.Cl
 		models = append(models, CloudProviderModel{
 			Provider:       types.StringValue(redis.StringValue(cloudDetail.Provider)),
 			CloudAccountID: types.StringValue(strconv.Itoa(redis.IntValue(cloudDetail.CloudAccountID))),
-			AWSAccountID:   types.StringValue(redis.StringValue(cloudDetail.AWSAccountID)),
+			AWSAccountID:   types.StringPointerValue(cloudDetail.AWSAccountID),
 			ResourceTags:   resourceTags,
 			Region:         regions,
 		})
