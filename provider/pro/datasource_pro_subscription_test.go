@@ -1,7 +1,6 @@
 package pro_test
 
 import (
-	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -38,7 +37,7 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(dataSourceName, "name", name),
 					resource.TestCheckResourceAttr(dataSourceName, "payment_method", "credit-card"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "payment_method_id"),
-					resource.TestMatchResourceAttr(dataSourceName, "memory_storage", regexp.MustCompile("ram")),
+					resource.TestCheckResourceAttr(dataSourceName, "memory_storage", "ram"),
 					resource.TestCheckResourceAttr(dataSourceName, "number_of_databases", "1"),
 					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.provider", "AWS"),
 					resource.TestCheckResourceAttr(dataSourceName, "cloud_provider.0.cloud_account_id", "1"),
