@@ -49,6 +49,22 @@ func TestFilterSubscriptions(t *testing.T) {
 		assert.Equal(t, []*subscriptions.Subscription{aaAlpha}, got)
 	})
 
+	t.Run("deployment filters isolate same-name subscriptions", func(t *testing.T) {
+		activeActive := utils.FilterSubscriptions(subs, []utils.SubscriptionFilter{
+			utils.ActiveActiveSubscriptionFilter(),
+			namedAlpha,
+		})
+		require.Len(t, activeActive, 1)
+		assert.Same(t, aaAlpha, activeActive[0])
+
+		pro := utils.FilterSubscriptions(subs, []utils.SubscriptionFilter{
+			utils.ProSubscriptionFilter(),
+			namedAlpha,
+		})
+		require.Len(t, pro, 1)
+		assert.Same(t, singleAlpha, pro[0])
+	})
+
 	t.Run("a name filter keeps every match", func(t *testing.T) {
 		got := utils.FilterSubscriptions(subs, []utils.SubscriptionFilter{namedAlpha})
 		assert.Equal(t, []*subscriptions.Subscription{aaAlpha, singleAlpha}, got)
