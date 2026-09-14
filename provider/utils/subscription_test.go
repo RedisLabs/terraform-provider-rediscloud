@@ -296,8 +296,7 @@ func TestCloudProvidersFromAPI(t *testing.T) {
 
 		assert.Equal(t, "GCP", cps[0].Provider.ValueString())
 		assert.Equal(t, "0", cps[0].CloudAccountID.ValueString())
-		assert.False(t, cps[0].AwsAccountID.IsNull())
-		assert.Empty(t, cps[0].AwsAccountID.ValueString())
+		assert.True(t, cps[0].AwsAccountID.IsNull())
 		assert.False(t, cps[0].ResourceTags.IsNull())
 		assert.Empty(t, cps[0].ResourceTags.Elements())
 		assert.False(t, cps[0].Region.IsNull())
