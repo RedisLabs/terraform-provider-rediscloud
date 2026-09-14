@@ -38,7 +38,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             checkAASubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database creation
 			{
@@ -409,7 +409,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_optionalAttributes(t *testing
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             checkAASubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseOptionalAttributes, subscriptionName, name, password, portNumber),
@@ -431,7 +431,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_timeUtcRequiresValidInterval(
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             checkAASubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudActiveActiveDatabaseInvalidTimeUtc, cloudAccountName, name, password),
@@ -580,7 +580,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             checkAASubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database creation with auto_minor_version_upgrade set to false
 			{
@@ -618,7 +618,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_modulesImmutable(t *testing.T
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             checkAASubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create database with RedisJSON module
 			{

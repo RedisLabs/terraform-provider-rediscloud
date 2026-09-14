@@ -24,7 +24,7 @@ func TestAccDataSourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             checkProSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ConfigFile: config.StaticFile("testdata/pro_subscription_datasource_resource_tags.tf"),

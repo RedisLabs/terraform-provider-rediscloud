@@ -27,7 +27,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
-		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
+		CheckDestroy: testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
@@ -75,7 +75,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_gcp(t *testing.T) 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, gcpVPCProjectCheck, gcpVPCIdCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: tf,

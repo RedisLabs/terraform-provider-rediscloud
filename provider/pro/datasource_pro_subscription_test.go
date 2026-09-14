@@ -27,7 +27,7 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             checkProSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ConfigFile: config.StaticFile(proSubscriptionDataSourceConfigPath),
@@ -91,8 +91,8 @@ func TestAccDataSourceRedisCloudProSubscription_filterByDeploymentType(t *testin
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy: resource.ComposeTestCheckFunc(
-			checkProSubscriptionDestroy,
-			checkAASubscriptionDestroy,
+			testhelpers.CheckProSubscriptionDestroy,
+			testhelpers.CheckActiveActiveSubscriptionDestroy,
 		),
 		Steps: []resource.TestStep{
 			{

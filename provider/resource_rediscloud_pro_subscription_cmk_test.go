@@ -25,7 +25,7 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, gcpCmkResourceNameCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckProSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/cmk_gcp_step1.tf"),
@@ -82,7 +82,7 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
-		CheckDestroy: testAccCheckProSubscriptionDestroy,
+		CheckDestroy: testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				// Step 1: subscription enters encryption_key_pending; KMS key policy

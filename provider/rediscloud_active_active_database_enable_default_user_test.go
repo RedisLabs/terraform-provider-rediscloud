@@ -46,7 +46,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserInheritance(
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ConfigFile:      config.StaticFile("./activeactive/testdata/enable_default_user_inheritance.tf"),
@@ -87,7 +87,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: global=true, both regions inherit
 			{
