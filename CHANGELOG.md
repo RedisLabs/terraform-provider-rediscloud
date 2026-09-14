@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.19.2 (TBD)
+
+### Changed
+
+- Migrated `rediscloud_subscription` (pro/flexible) data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no schema or behaviour changes.
+
 ## 2.19.1 (3rd September 2026)
 
 ### Changed
