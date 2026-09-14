@@ -191,6 +191,8 @@ func cloudNetworksFromAPI(ctx context.Context, networks []*subscriptions.Network
 	models := make([]CloudNetworkModel, 0, len(networks))
 
 	for _, network := range networks {
+		// TODO(TF3.0): Use types.StringPointerValue when absent network values may
+		// change from empty strings to null.
 		models = append(models, CloudNetworkModel{
 			NetworkingSubnetID:       types.StringValue(redis.StringValue(network.SubnetID)),
 			NetworkingDeploymentCIDR: types.StringValue(redis.StringValue(network.DeploymentCIDR)),
