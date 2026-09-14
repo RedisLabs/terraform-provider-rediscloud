@@ -7,7 +7,6 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -195,28 +194,6 @@ func TestResourceTagsFromAPI(t *testing.T) {
 	})
 }
 
-type testNetwork struct {
-	NetworkingSubnetID       types.String `tfsdk:"networking_subnet_id"`
-	NetworkingDeploymentCIDR types.String `tfsdk:"networking_deployment_cidr"`
-	NetworkingVpcID          types.String `tfsdk:"networking_vpc_id"`
-}
-
-type testRegion struct {
-	Region                     types.String `tfsdk:"region"`
-	MultipleAvailabilityZones  types.Bool   `tfsdk:"multiple_availability_zones"`
-	PreferredAvailabilityZones types.List   `tfsdk:"preferred_availability_zones"`
-	NetworkingVpcID            types.String `tfsdk:"networking_vpc_id"`
-	Networks                   types.List   `tfsdk:"networks"`
-}
-
-type testCloudProvider struct {
-	Provider       types.String `tfsdk:"provider"`
-	CloudAccountID types.String `tfsdk:"cloud_account_id"`
-	AwsAccountID   types.String `tfsdk:"aws_account_id"`
-	ResourceTags   types.Map    `tfsdk:"resource_tags"`
-	Region         types.Set    `tfsdk:"region"`
-}
-
 func TestCloudProvidersFromAPI(t *testing.T) {
 	ctx := context.Background()
 
@@ -249,40 +226,40 @@ func TestCloudProvidersFromAPI(t *testing.T) {
 		require.False(t, diags.HasError())
 		require.False(t, list.IsNull())
 
-		var cps []testCloudProvider
+		var cps []utils.CloudProviderModel
 		require.False(t, list.ElementsAs(ctx, &cps, false).HasError())
 		require.Len(t, cps, 1)
 
 		assert.Equal(t, "AWS", cps[0].Provider.ValueString())
 		// cloud_account_id is always the stringified int, never null.
 		assert.Equal(t, "123", cps[0].CloudAccountID.ValueString())
-		assert.Equal(t, "123456789012", cps[0].AwsAccountID.ValueString())
+		assert.Equal(t, "123456789012", cps[0].AWSAccountID.ValueString())
 
 		var tags map[string]string
 		require.False(t, cps[0].ResourceTags.ElementsAs(ctx, &tags, false).HasError())
 		assert.Equal(t, map[string]string{"environment": "production", "team": "platform"}, tags)
 
-		var regions []testRegion
+		var regions []utils.CloudRegionModel
 		require.False(t, cps[0].Region.ElementsAs(ctx, &regions, false).HasError())
 		require.Len(t, regions, 1)
 		assert.Equal(t, "eu-west-1", regions[0].Region.ValueString())
 		assert.False(t, regions[0].MultipleAvailabilityZones.ValueBool())
-		assert.False(t, regions[0].NetworkingVpcID.IsNull())
-		assert.Empty(t, regions[0].NetworkingVpcID.ValueString())
+		assert.False(t, regions[0].NetworkingVPCID.IsNull())
+		assert.Empty(t, regions[0].NetworkingVPCID.ValueString())
 
 		var azs []string
 		require.False(t, regions[0].PreferredAvailabilityZones.ElementsAs(ctx, &azs, false).HasError())
 		assert.Equal(t, []string{"euw1-az1", "euw1-az2"}, azs)
 
-		var networks []testNetwork
+		var networks []utils.CloudNetworkModel
 		require.False(t, regions[0].Networks.ElementsAs(ctx, &networks, false).HasError())
 		require.Len(t, networks, 1)
 		assert.Equal(t, "subnet-abc", networks[0].NetworkingSubnetID.ValueString())
 		assert.Equal(t, "10.0.0.0/24", networks[0].NetworkingDeploymentCIDR.ValueString())
-		assert.Equal(t, "vpc-xyz", networks[0].NetworkingVpcID.ValueString())
+		assert.Equal(t, "vpc-xyz", networks[0].NetworkingVPCID.ValueString())
 	})
 
-	t.Run("nil optionals use known zero values", func(t *testing.T) {
+	t.Run("nil optionals preserve their compatibility values", func(t *testing.T) {
 		cd := &subscriptions.CloudDetail{
 			Provider: redis.String("GCP"),
 		}
@@ -290,13 +267,13 @@ func TestCloudProvidersFromAPI(t *testing.T) {
 		list, diags := utils.CloudProvidersFromAPI(ctx, []*subscriptions.CloudDetail{cd})
 		require.False(t, diags.HasError())
 
-		var cps []testCloudProvider
+		var cps []utils.CloudProviderModel
 		require.False(t, list.ElementsAs(ctx, &cps, false).HasError())
 		require.Len(t, cps, 1)
 
 		assert.Equal(t, "GCP", cps[0].Provider.ValueString())
 		assert.Equal(t, "0", cps[0].CloudAccountID.ValueString())
-		assert.True(t, cps[0].AwsAccountID.IsNull())
+		assert.True(t, cps[0].AWSAccountID.IsNull())
 		assert.False(t, cps[0].ResourceTags.IsNull())
 		assert.Empty(t, cps[0].ResourceTags.Elements())
 		assert.False(t, cps[0].Region.IsNull())
@@ -313,11 +290,11 @@ func TestCloudProvidersFromAPI(t *testing.T) {
 		list, diags := utils.CloudProvidersFromAPI(ctx, []*subscriptions.CloudDetail{cd})
 		require.False(t, diags.HasError())
 
-		var cloudProviders []testCloudProvider
+		var cloudProviders []utils.CloudProviderModel
 		require.False(t, list.ElementsAs(ctx, &cloudProviders, false).HasError())
 		require.Len(t, cloudProviders, 1)
 
-		var regions []testRegion
+		var regions []utils.CloudRegionModel
 		require.False(t, cloudProviders[0].Region.ElementsAs(ctx, &regions, false).HasError())
 		require.Len(t, regions, 1)
 		assert.False(t, regions[0].PreferredAvailabilityZones.IsNull())
