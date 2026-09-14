@@ -49,7 +49,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, envchecks.GCPProviderCheck),
-		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
+		CheckDestroy: testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				// Step 1: Create subscription with CMK enabled (enters encryption_key_pending state)
@@ -128,7 +128,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
-		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
+		CheckDestroy: testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				// Step 1: subscription enters encryption_key_pending; both key policies
