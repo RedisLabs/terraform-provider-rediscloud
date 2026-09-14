@@ -164,9 +164,10 @@ func cloudRegionsFromAPI(ctx context.Context, regions []*subscriptions.Region) (
 			return types.SetNull(regionType), diags
 		}
 
-		availabilityZones := make([]string, 0, len(region.PreferredAvailabilityZones))
-		for _, availabilityZone := range region.PreferredAvailabilityZones {
-			availabilityZones = append(availabilityZones, redis.StringValue(availabilityZone))
+		availabilityZones := redis.StringSliceValue(region.PreferredAvailabilityZones...)
+		if availabilityZones == nil {
+			// Keep an absent API collection as a known empty Terraform list.
+			availabilityZones = []string{}
 		}
 
 		preferredAZs, diags := types.ListValueFrom(ctx, types.StringType, availabilityZones)
