@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	proSubscriptionDataSourceConfigPath = "testdata/datasource/pro_subscription.tf"
-	subscriptionFiltersConfigPath       = "testdata/datasource/subscription_filters_by_deployment_type.tf"
+	proSubscriptionDataSourceConfigDirectory = "testdata/datasource/subscription"
+	subscriptionFiltersConfigPath            = "testdata/datasource/subscription_filters_by_deployment_type.tf"
 )
 
 func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
@@ -30,7 +30,7 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigFile: config.StaticFile(proSubscriptionDataSourceConfigPath),
+				ConfigDirectory: config.StaticDirectory(proSubscriptionDataSourceConfigDirectory),
 				ConfigVariables: config.Variables{
 					"subscription_name": config.StringVariable(name),
 				},

@@ -42,8 +42,3 @@ resource "rediscloud_subscription_database" "example" {
   throughput_measurement_by    = "operations-per-second"
   throughput_measurement_value = 1000
 }
-
-data "rediscloud_subscription" "example" {
-  name       = rediscloud_subscription.example.name
-  depends_on = [rediscloud_subscription_database.example]
-}
