@@ -115,6 +115,78 @@ func WaitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.A
 	return nil
 }
 
+const (
+	waitStateWaiting = "waiting"
+	waitStateFound   = "found"
+)
+
+// WaitForTransitGatewayResourceToMatchFilters waits until the selected Transit Gateway API response contains a
+// gateway that satisfies every filter. The region ID is only used for Active-Active subscriptions. An empty filter
+// list matches any gateway.
+func WaitForTransitGatewayResourceToMatchFilters(
+	ctx context.Context,
+	subId int,
+	api *client.ApiClient,
+	filters []func(tgw *attachments.TransitGatewayAttachment) bool,
+	timeout time.Duration,
+	subscriptionType string,
+	regionId int,
+) (*attachments.GetAttachmentsTask, error) {
+	gatewayName := "Transit Gateway"
+	location := fmt.Sprintf("subscription %d", subId)
+	if subscriptionType == subscriptions.SubscriptionDeploymentTypeActiveActive {
+		gatewayName = "Active-Active Transit Gateway"
+		location = fmt.Sprintf("subscription %d, region %d", subId, regionId)
+	}
+
+	wait := &retry.StateChangeConf{
+		Pending:      []string{waitStateWaiting},
+		Target:       []string{waitStateFound},
+		Timeout:      timeout,
+		Delay:        5 * time.Second,
+		PollInterval: 10 * time.Second,
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for %s resource to be available for %s", gatewayName, location)
+
+			var tgwTask *attachments.GetAttachmentsTask
+			var requestErr error
+			if subscriptionType == subscriptions.SubscriptionDeploymentTypeActiveActive {
+				tgwTask, requestErr = api.Client.TransitGatewayAttachments.GetActiveActive(ctx, subId, regionId)
+			} else {
+				tgwTask, requestErr = api.Client.TransitGatewayAttachments.Get(ctx, subId)
+			}
+			if requestErr != nil {
+				return nil, "", requestErr
+			}
+
+			if tgwTask == nil || tgwTask.Response == nil || tgwTask.Response.Resource == nil {
+				return nil, waitStateWaiting, nil
+			}
+
+			if !transitGatewayTaskMatchesFilters(tgwTask, filters) {
+				return nil, waitStateWaiting, nil
+			}
+
+			return tgwTask, waitStateFound, nil
+		},
+	}
+
+	result, err := wait.WaitForStateContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Timeout waiting for %s resource to become available for %s. "+
+			"This may indicate the subscription is still provisioning or there's an issue with the subscription setup. "+
+			"Original error: %w", gatewayName, location, err)
+	}
+
+	task, ok := result.(*attachments.GetAttachmentsTask)
+	if !ok {
+		return nil, fmt.Errorf("Internal error: unexpected result type from wait operation for %s", location)
+	}
+
+	return task, nil
+}
+
 // WaitForActiveActiveTransitGatewayResourceToBeAvailable waits for Active-Active Transit Gateway API resources
 // to become available. This handles the case where Response.Resource is nil during initial subscription provisioning.
 func WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx context.Context, subId int, regionId int, api *client.ApiClient, timeout time.Duration) (*attachments.GetAttachmentsTask, error) {
@@ -133,7 +205,6 @@ func WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx context.Context,
 				return nil, "", err
 			}
 
-			// Check for nil response structure during provisioning
 			if tgwTask == nil || tgwTask.Response == nil || tgwTask.Response.Resource == nil {
 				return nil, "provisioning", nil
 			}
@@ -155,6 +226,26 @@ func WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx context.Context,
 	}
 
 	return task, nil
+}
+
+func transitGatewayTaskMatchesFilters(
+	tgwTask *attachments.GetAttachmentsTask,
+	filters []func(tgw *attachments.TransitGatewayAttachment) bool,
+) bool {
+	for _, tgw := range tgwTask.Response.Resource.TransitGatewayAttachment {
+		matches := true
+		for _, filter := range filters {
+			if !filter(tgw) {
+				matches = false
+				break
+			}
+		}
+		if matches {
+			return true
+		}
+	}
+
+	return false
 }
 
 // TransitGatewayAttachmentStatusAvailable is the status indicating an attachment is ready for use.

@@ -2,14 +2,13 @@ package provider
 
 import (
 	"context"
-	"log"
 	"strconv"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
@@ -20,6 +19,9 @@ func dataSourceTransitGateway() *schema.Resource {
 	return &schema.Resource{
 		Description: "The Transit Gateway data source allows access to an available Transit Gateway within your Redis Enterprise Cloud Account.",
 		ReadContext: dataSourceTransitGatewayRead,
+		Timeouts: &schema.ResourceTimeout{
+			Read: schema.DefaultTimeout(20 * time.Minute),
+		},
 
 		Schema: map[string]*schema.Schema{
 			"subscription_id": {
@@ -40,11 +42,12 @@ func dataSourceTransitGateway() *schema.Resource {
 				Computed:    true,
 			},
 			"wait_for_tgw_timeout": {
-				Description: "When set, retry fetching until a Transit Gateway matching the filters is found or the specified timeout (in seconds) is reached. " +
-					"Useful when accepting a TGW invitation and querying the TGW in the same Terraform run.",
-				Type:     schema.TypeInt,
-				Optional: true,
-				Default:  0,
+				Description: "Overrides the read timeout, in seconds, while waiting for a Transit Gateway matching the configured filters.",
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Default:     0,
+				Deprecated: "Configure the `read` timeout in the `timeouts` block instead. " +
+					"This attribute will be removed in version 3.0 of the provider.",
 			},
 			"attachment_uid": {
 				Description: "A unique identifier for the Subscription/Transit Gateway attachment, if any",
@@ -104,65 +107,20 @@ func dataSourceTransitGatewayRead(ctx context.Context, d *schema.ResourceData, m
 
 	waitTimeoutSeconds := d.Get("wait_for_tgw_timeout").(int)
 
-	var filteredTgws []*attachments.TransitGatewayAttachment
-
+	timeout := d.Timeout(schema.TimeoutRead)
 	if waitTimeoutSeconds > 0 {
-		// Wait for a matching TGW to appear
-		wait := &retry.StateChangeConf{
-			Pending:      []string{"waiting"},
-			Target:       []string{"found"},
-			Timeout:      time.Duration(waitTimeoutSeconds) * time.Second,
-			Delay:        5 * time.Second,
-			PollInterval: 10 * time.Second,
-
-			Refresh: func() (result interface{}, state string, err error) {
-				log.Printf("[DEBUG] Waiting for Transit Gateway to appear for subscription %d", subId)
-
-				tgwTask, err := api.Client.TransitGatewayAttachments.Get(ctx, subId)
-				if err != nil {
-					return nil, "", err
-				}
-
-				if tgwTask == nil || tgwTask.Response == nil || tgwTask.Response.Resource == nil {
-					return nil, "waiting", nil
-				}
-
-				filtered := filterTgwAttachments(tgwTask, filters)
-				if len(filtered) == 0 {
-					return nil, "waiting", nil
-				}
-
-				return filtered, "found", nil
-			},
-		}
-
-		result, err := wait.WaitForStateContext(ctx)
-		if err != nil {
-			return diag.Errorf("Timeout waiting for Transit Gateway to appear for subscription %d: %s", subId, err)
-		}
-		var ok bool
-		filteredTgws, ok = result.([]*attachments.TransitGatewayAttachment)
-		if !ok {
-			return diag.Errorf("Internal error: unexpected result type from wait operation for subscription %d", subId)
-		}
-	} else {
-		tgwTask, err := api.Client.TransitGatewayAttachments.Get(ctx, subId)
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
-		if tgwTask == nil {
-			return diag.Errorf("Transit Gateway API returned nil task for subscription %d", subId)
-		}
-		if tgwTask.Response == nil {
-			return diag.Errorf("Transit Gateway API returned nil response for subscription %d", subId)
-		}
-		if tgwTask.Response.Resource == nil {
-			return diag.Errorf("Transit Gateway API returned nil resource for subscription %d - subscription may not be fully provisioned yet", subId)
-		}
-
-		filteredTgws = filterTgwAttachments(tgwTask, filters)
+		// Preserve the deprecated timeout as an override while configurations migrate to the read timeout.
+		timeout = time.Duration(waitTimeoutSeconds) * time.Second
 	}
+
+	// Always apply the filters during polling so the read completes only when its query can succeed.
+	tgwTask, err := utils.WaitForTransitGatewayResourceToMatchFilters(ctx, subId, api, filters, timeout, subscriptions.SubscriptionDeploymentTypeSingleRegion, 0)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	// The waiter uses the filters to determine readiness. Apply them again to obtain the data source result.
+	filteredTgws := filterTgwAttachments(tgwTask, filters)
 
 	if len(filteredTgws) == 0 {
 		return diag.Errorf("Your query returned no results. Please change your search criteria and try again.")
