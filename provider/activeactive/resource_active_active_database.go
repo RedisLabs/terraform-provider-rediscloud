@@ -677,7 +677,7 @@ func (r *activeActiveDatabaseResource) Create(ctx context.Context, req resource.
 	defer cancel()
 
 	// Call the CRUD implementation
-	r.createDatabase(ctx, &plan, &resp.Diagnostics)
+	r.createDatabase(ctx, &plan, &resp.Diagnostics, createTimeout)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -705,7 +705,7 @@ func (r *activeActiveDatabaseResource) Read(ctx context.Context, req resource.Re
 	defer cancel()
 
 	// Call the CRUD implementation
-	removed := r.readDatabase(ctx, &state, &resp.Diagnostics)
+	removed := r.readDatabase(ctx, &state, &resp.Diagnostics, readTimeout)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -749,13 +749,13 @@ func (r *activeActiveDatabaseResource) Update(ctx context.Context, req resource.
 	defer cancel()
 
 	// Call the CRUD implementation
-	r.updateDatabase(ctx, &plan, &state, &resp.Diagnostics)
+	r.updateDatabase(ctx, &plan, &state, &resp.Diagnostics, updateTimeout)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// Read back the state to get computed values
-	r.readDatabase(ctx, &plan, &resp.Diagnostics)
+	r.readDatabase(ctx, &plan, &resp.Diagnostics, updateTimeout)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -783,7 +783,7 @@ func (r *activeActiveDatabaseResource) Delete(ctx context.Context, req resource.
 	defer cancel()
 
 	// Call the CRUD implementation
-	r.deleteDatabase(ctx, &state, &resp.Diagnostics)
+	r.deleteDatabase(ctx, &state, &resp.Diagnostics, deleteTimeout)
 }
 
 // getAlertAttrTypes returns the attribute types for alert objects.

@@ -153,6 +153,7 @@ func resourceRedisCloudActiveActiveSubscriptionPeering() *schema.Resource {
 
 func resourceRedisCloudSubscriptionActiveActivePeeringCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutCreate)
 
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
 	if err != nil {
@@ -232,7 +233,7 @@ func resourceRedisCloudSubscriptionActiveActivePeeringCreate(ctx context.Context
 
 	d.SetId(utils.BuildResourceId(subId, peering))
 
-	err = waitForActiveActivePeeringToBeInitiated(ctx, subId, peering, api)
+	err = waitForActiveActivePeeringToBeInitiated(ctx, subId, peering, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -389,7 +390,7 @@ func findActiveActiveVpcPeering(id int, regions []*subscriptions.ActiveActiveVpc
 	return nil, nil
 }
 
-func waitForActiveActivePeeringToBeInitiated(ctx context.Context, subId, id int, api *client.ApiClient) error {
+func waitForActiveActivePeeringToBeInitiated(ctx context.Context, subId, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Delay: 30 * time.Second,
 		Pending: []string{
@@ -400,7 +401,7 @@ func waitForActiveActivePeeringToBeInitiated(ctx context.Context, subId, id int,
 			subscriptions.VPCPeeringStatusInactive,
 			subscriptions.VPCPeeringStatusPendingAcceptance,
 		},
-		Timeout:      10 * time.Minute,
+		Timeout:      timeout,
 		PollInterval: 30 * time.Second,
 
 		Refresh: func() (result interface{}, state string, err error) {

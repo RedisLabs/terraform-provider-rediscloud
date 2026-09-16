@@ -14,15 +14,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
-func waitForPrivateLinkToBeActive(ctx context.Context, client *client.ApiClient, subscriptionId int) error {
+func waitForPrivateLinkToBeActive(ctx context.Context, client *client.ApiClient, subscriptionId int, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending: []string{
 			pl.PrivateLinkStatusInitializing},
 		Target:       []string{pl.PrivateLinkStatusActive},
-		Timeout:      utils.SafetyTimeout,
+		Timeout:      timeout,
 		Delay:        10 * time.Second,
 		PollInterval: 10 * time.Second,
 		Refresh: func() (result interface{}, state string, err error) {
@@ -48,12 +47,12 @@ func waitForPrivateLinkToBeActive(ctx context.Context, client *client.ApiClient,
 	return nil
 }
 
-func waitForActiveActivePrivateLinkToBeActive(ctx context.Context, client *client.ApiClient, subscriptionId int, regionId int) error {
+func waitForActiveActivePrivateLinkToBeActive(ctx context.Context, client *client.ApiClient, subscriptionId int, regionId int, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending: []string{
 			pl.PrivateLinkStatusInitializing},
 		Target:       []string{pl.PrivateLinkStatusActive},
-		Timeout:      utils.SafetyTimeout,
+		Timeout:      timeout,
 		Delay:        10 * time.Second,
 		PollInterval: 10 * time.Second,
 		Refresh: func() (result interface{}, state string, err error) {
