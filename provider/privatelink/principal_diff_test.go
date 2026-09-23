@@ -51,15 +51,21 @@ func TestPrincipalChanges(t *testing.T) {
 	}
 }
 
+// apiPrincipalList builds the pointer-backed shape returned by the API. Each call
+// creates independent principal fields so API and Terraform fixtures do not share
+// pointer addresses.
 func apiPrincipalList(principals ...string) []*pl.PrivateLinkPrincipal {
-	result := make([]*pl.PrivateLinkPrincipal, 0, len(principals))
-	for _, principal := range principals {
-		value := privateLinkPrincipal(principal)
-		result = append(result, &value)
+	values := terraformPrincipalList(principals...)
+	result := make([]*pl.PrivateLinkPrincipal, len(values))
+	for i := range values {
+		result[i] = &values[i]
 	}
 	return result
 }
 
+// terraformPrincipalList builds the value-backed shape derived from Terraform
+// configuration. Each call creates independent principal fields so tests compare
+// equal strings stored at different addresses.
 func terraformPrincipalList(principals ...string) []pl.PrivateLinkPrincipal {
 	result := make([]pl.PrivateLinkPrincipal, 0, len(principals))
 	for _, principal := range principals {
