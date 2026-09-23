@@ -363,7 +363,7 @@ func findPrincipalsToCreate(apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipa
 	for _, tfPrincipal := range tfPrincipals {
 		found := false
 		for _, apiPrincipal := range apiPrincipals {
-			if tfPrincipal.Principal == apiPrincipal.Principal {
+			if redis.StringValue(tfPrincipal.Principal) == redis.StringValue(apiPrincipal.Principal) {
 				found = true
 				break
 			}
@@ -402,7 +402,7 @@ func findPrincipalsToDelete(apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipa
 	for _, apiPrincipal := range apiPrincipals {
 		found := false
 		for _, tfPrincipal := range tfPrincipals {
-			if apiPrincipal.Principal == tfPrincipal.Principal {
+			if redis.StringValue(apiPrincipal.Principal) == redis.StringValue(tfPrincipal.Principal) {
 				found = true
 				break
 			}
