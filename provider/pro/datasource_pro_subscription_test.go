@@ -3,6 +3,7 @@ package pro_test
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/compare"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
@@ -103,6 +104,16 @@ func TestAccDataSourceRedisCloudProSubscription_filterByDeploymentType(t *testin
 					resource.TestCheckResourceAttrPair(proDataSourceName, "id", proResourceName, "id"),
 					resource.TestCheckResourceAttrPair(activeActiveDataSourceName, "id", activeActiveResourceName, "id"),
 				),
+				// Distinct IDs prove that neither deployment-type filter leaked the other subscription.
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.CompareValuePairs(
+						proDataSourceName,
+						tfjsonpath.New("id"),
+						activeActiveDataSourceName,
+						tfjsonpath.New("id"),
+						compare.ValuesDiffer(),
+					),
+				},
 			},
 		},
 	})
