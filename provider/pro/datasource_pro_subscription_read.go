@@ -1,4 +1,4 @@
-package activeactive
+package pro
 
 import (
 	"context"
@@ -12,9 +12,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
-// Read refreshes the Terraform state with the latest data.
-func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	// Defensive nil check for client
+func (d *proSubscriptionDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
 	if d.client == nil {
 		resp.Diagnostics.AddError(
 			"Provider Not Configured",
@@ -23,7 +21,7 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 		return
 	}
 
-	var model ActiveActiveSubscriptionDataSourceModel
+	var model ProSubscriptionDataSourceModel
 	diags := req.Config.Get(ctx, &model)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -33,15 +31,15 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 	subs, err := d.client.Client.Subscription.List(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to Read Active-Active Subscriptions",
+			"Unable to Read Pro Subscriptions",
 			err.Error(),
 		)
 		return
 	}
 
-	// AA and pro subscriptions come from the same endpoint; keep only active-active.
+	// AA and pro subscriptions come from the same endpoint; keep only pro.
 	filters := []utils.SubscriptionFilter{
-		utils.ActiveActiveSubscriptionFilter(),
+		utils.ProSubscriptionFilter(),
 	}
 
 	if !model.Name.IsNull() && model.Name.ValueString() != "" {
@@ -52,7 +50,7 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 
 	if len(subs) == 0 {
 		resp.Diagnostics.AddError(
-			"No Active-Active Subscriptions Found",
+			"No Pro Subscriptions Found",
 			"Your query returned no results. Please change your search criteria and try again.",
 		)
 		return
@@ -60,7 +58,7 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 
 	if len(subs) > 1 {
 		resp.Diagnostics.AddError(
-			"Multiple Active-Active Subscriptions Found",
+			"Multiple Pro Subscriptions Found",
 			"Your query returned more than one result. Please change try a more specific search criteria and try again.",
 		)
 		return
@@ -70,26 +68,23 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 	subId := redis.IntValue(sub.ID)
 
 	model.ID = types.StringValue(strconv.Itoa(subId))
-	// The SDKv2 datasource set "" (never null) for every absent string value; preserve
-	// that so the Framework migration stays backward compatible.
-	//TODO(TF3.0) use StringPointerValue for name
 	model.Name = types.StringValue(redis.StringValue(sub.Name))
 
-	//TODO(TF3.0) make payment_method_id and payment_method nullable
 	paymentMethodID := ""
 	if sub.PaymentMethodID != nil {
 		paymentMethodID = strconv.Itoa(redis.IntValue(sub.PaymentMethodID))
 	}
 	model.PaymentMethodID = types.StringValue(paymentMethodID)
 	model.PaymentMethod = types.StringValue(redis.StringValue(sub.PaymentMethod))
+	model.MemoryStorage = types.StringValue(redis.StringValue(sub.MemoryStorage))
 	model.NumberOfDatabases = types.Int64Value(int64(redis.IntValue(sub.NumberOfDatabases)))
 	model.Status = types.StringValue(redis.StringValue(sub.Status))
+	model.PrometheusEndpoint = types.StringValue(redis.StringValue(sub.PrometheusEndpoint))
 
 	cmkEnabled := sub.PersistentStorageEncryptionType != nil &&
 		redis.StringValue(sub.PersistentStorageEncryptionType) == utils.CmkEnabledString
 	model.CustomerManagedKeyEnabled = types.BoolValue(cmkEnabled)
 
-	//TODO(TF3.0) make the customer_managed_key_* fields nullable
 	cmkServiceAccount := ""
 	cmkAwsRoleArn := ""
 	if sub.CustomerManagedKeyAccessDetails != nil {
@@ -108,31 +103,12 @@ func (d *activeActiveSubscriptionDataSource) Read(ctx context.Context, req datas
 	}
 	model.PublicEndpointAccess = types.BoolValue(publicEndpointAccess)
 
-	//TODO(TF3.0) make cloud_provider and aws_account_id nullable
-	cloudDetails := sub.CloudDetails
-	if len(cloudDetails) == 0 {
-		// A subscription with 0 databases has no CloudDetail blocks; the SDKv2 datasource
-		// left cloud_provider/aws_account_id as "" and resource_tags as an empty map.
-		model.CloudProvider = types.StringValue("")
-		model.AwsAccountID = types.StringValue("")
-		tags, diags := utils.ResourceTagsFromAPI(ctx, nil)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		model.ResourceTags = tags
-	} else {
-		cd := cloudDetails[0]
-		model.CloudProvider = types.StringValue(redis.StringValue(cd.Provider))
-		model.AwsAccountID = types.StringValue(redis.StringValue(cd.AWSAccountID))
-
-		tags, diags := utils.ResourceTagsFromAPI(ctx, cd.ResourceTags)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		model.ResourceTags = tags
+	cloudProvider, diags := utils.CloudProvidersFromAPI(ctx, sub.CloudDetails)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
+	model.CloudProvider = cloudProvider
 
 	m, err := d.client.Client.Maintenance.Get(ctx, subId)
 	if err != nil {

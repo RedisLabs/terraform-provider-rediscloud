@@ -47,7 +47,7 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 				VersionConstraint: "~> 0.14",
 			},
 		},
-		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
+		CheckDestroy: testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(

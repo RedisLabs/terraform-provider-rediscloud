@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/customtypes"
 )
 
 // CmkEnabledString is the value the API uses for PersistentStorageEncryptionType when
@@ -53,6 +52,15 @@ func ActiveActiveSubscriptionFilter() SubscriptionFilter {
 	}
 }
 
+// ProSubscriptionFilter matches pro subscriptions. The active-active
+// and pro data sources share the Subscription.List endpoint and split its results on
+// deployment type — this is the pro half.
+func ProSubscriptionFilter() SubscriptionFilter {
+	return func(sub *subscriptions.Subscription) bool {
+		return redis.StringValue(sub.DeploymentType) == subscriptions.SubscriptionDeploymentTypeSingleRegion
+	}
+}
+
 // SubscriptionNameFilter matches subscriptions with the given name.
 func SubscriptionNameFilter(name string) SubscriptionFilter {
 	return func(sub *subscriptions.Subscription) bool {
@@ -60,26 +68,11 @@ func SubscriptionNameFilter(name string) SubscriptionFilter {
 	}
 }
 
-// PricingModel represents one pricing entry returned by the subscription data sources.
-type PricingModel struct {
-	DatabaseName        types.String  `tfsdk:"database_name"`
-	Type                types.String  `tfsdk:"type"`
-	TypeDetails         types.String  `tfsdk:"type_details"`
-	Quantity            types.Int64   `tfsdk:"quantity"`
-	QuantityMeasurement types.String  `tfsdk:"quantity_measurement"`
-	PricePerUnit        types.Float64 `tfsdk:"price_per_unit"`
-	PriceCurrency       types.String  `tfsdk:"price_currency"`
-	PricePeriod         types.String  `tfsdk:"price_period"`
-	Region              types.String  `tfsdk:"region"`
-}
-
-var pricingAttrTypes = customtypes.AttrTypesOf(PricingModel{})
-
-// PricingListFromAPI converts a pricing API response into the pricing list expected by the
+// PricingFromAPI converts a pricing API response into the pricing list expected by the
 // subscription data sources. Entries are sorted by a composite key so the ordered list
 // is stable across reads. Pricing.List does not guarantee a consistent order, which
 // would otherwise churn the list and produce a perpetual plan diff.
-func PricingListFromAPI(ctx context.Context, prices []*pricing.Pricing) (types.List, diag.Diagnostics) {
+func PricingFromAPI(ctx context.Context, prices []*pricing.Pricing) (types.List, diag.Diagnostics) {
 	pricingType := types.ObjectType{AttrTypes: pricingAttrTypes}
 
 	sorted := make([]*pricing.Pricing, len(prices))
@@ -129,4 +122,84 @@ func ResourceTagsFromAPI(ctx context.Context, tags []*subscriptions.ResourceTag)
 		result[redis.StringValue(t.Key)] = redis.StringValue(t.Value)
 	}
 	return types.MapValueFrom(ctx, types.StringType, result)
+}
+
+// CloudProvidersFromAPI maps cloud details to the computed data-source shape.
+// The region-level VPC identifier remains a known empty string because this shape
+// exposes networking identifiers in the nested networks block.
+func CloudProvidersFromAPI(ctx context.Context, cloudDetails []*subscriptions.CloudDetail) (types.List, diag.Diagnostics) {
+	cloudProviderType := types.ObjectType{AttrTypes: cloudProviderAttrTypes}
+	models := make([]CloudProviderModel, 0, len(cloudDetails))
+
+	for _, cloudDetail := range cloudDetails {
+		regions, diags := cloudRegionsFromAPI(ctx, cloudDetail.Regions)
+		if diags.HasError() {
+			return types.ListNull(cloudProviderType), diags
+		}
+
+		resourceTags, diags := ResourceTagsFromAPI(ctx, cloudDetail.ResourceTags)
+		if diags.HasError() {
+			return types.ListNull(cloudProviderType), diags
+		}
+
+		models = append(models, CloudProviderModel{
+			Provider:       types.StringValue(redis.StringValue(cloudDetail.Provider)),
+			CloudAccountID: types.StringValue(strconv.Itoa(redis.IntValue(cloudDetail.CloudAccountID))),
+			AWSAccountID:   types.StringPointerValue(cloudDetail.AWSAccountID),
+			ResourceTags:   resourceTags,
+			Region:         regions,
+		})
+	}
+
+	return types.ListValueFrom(ctx, cloudProviderType, models)
+}
+
+func cloudRegionsFromAPI(ctx context.Context, regions []*subscriptions.Region) (types.Set, diag.Diagnostics) {
+	regionType := types.ObjectType{AttrTypes: cloudRegionAttrTypes}
+	models := make([]CloudRegionModel, 0, len(regions))
+
+	for _, region := range regions {
+		networks, diags := cloudNetworksFromAPI(ctx, region.Networking)
+		if diags.HasError() {
+			return types.SetNull(regionType), diags
+		}
+
+		availabilityZones := redis.StringSliceValue(region.PreferredAvailabilityZones...)
+		if availabilityZones == nil {
+			// Keep an absent API collection as a known empty Terraform list.
+			availabilityZones = []string{}
+		}
+
+		preferredAZs, diags := types.ListValueFrom(ctx, types.StringType, availabilityZones)
+		if diags.HasError() {
+			return types.SetNull(regionType), diags
+		}
+
+		models = append(models, CloudRegionModel{
+			Region:                     types.StringValue(redis.StringValue(region.Region)),
+			MultipleAvailabilityZones:  types.BoolValue(redis.BoolValue(region.MultipleAvailabilityZones)),
+			PreferredAvailabilityZones: preferredAZs,
+			NetworkingVPCID:            types.StringValue(""),
+			Networks:                   networks,
+		})
+	}
+
+	return types.SetValueFrom(ctx, regionType, models)
+}
+
+func cloudNetworksFromAPI(ctx context.Context, networks []*subscriptions.Networking) (types.List, diag.Diagnostics) {
+	networkType := types.ObjectType{AttrTypes: cloudNetworkAttrTypes}
+	models := make([]CloudNetworkModel, 0, len(networks))
+
+	for _, network := range networks {
+		// TODO(TF3.0): Use types.StringPointerValue when absent network values may
+		// change from empty strings to null.
+		models = append(models, CloudNetworkModel{
+			NetworkingSubnetID:       types.StringValue(redis.StringValue(network.SubnetID)),
+			NetworkingDeploymentCIDR: types.StringValue(redis.StringValue(network.DeploymentCIDR)),
+			NetworkingVPCID:          types.StringValue(redis.StringValue(network.VPCId)),
+		})
+	}
+
+	return types.ListValueFrom(ctx, networkType, models)
 }

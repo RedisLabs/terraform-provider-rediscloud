@@ -35,7 +35,7 @@ func TestAccResourceRedisCloudPrivateServiceConnectEndpointAccepter_Create(t *te
 				VersionConstraint: "~> 7.0",
 			},
 		},
-		CheckDestroy: testAccCheckProSubscriptionDestroy,
+		CheckDestroy: testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudPrivateServiceConnectEndpointAccepterPro, baseName, gcpProjectId),
