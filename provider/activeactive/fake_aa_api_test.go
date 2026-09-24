@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/hashicorp/go-version"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -24,20 +26,6 @@ import (
 
 // defaultRedisVersion is the version the API picks when a create request omits redisVersion.
 const defaultRedisVersion = "8.0"
-
-type databaseState struct {
-	id   int
-	name string
-	// globalPassword is whatever the last create or update request supplied, or a generated value when the
-	// create request omitted one. Read handlers have to echo it back, because the provider planned the
-	// password it sent, and returning anything else fails the apply with "inconsistent values for sensitive
-	// attribute".
-	globalPassword string
-	// actualRedisVersion is the version the database is actually running. It is the value the API reports back and
-	// the one redis_version_actual reflects. Use setRunningVersion to change it during a test, which
-	// simulates a background auto minor upgrade moving the version out from under Terraform.
-	actualRedisVersion string
-}
 
 type aaAPI struct {
 	fake *testhelpers.FakeAPI
@@ -47,7 +35,7 @@ type aaAPI struct {
 	// database is nil before create and after delete. It has to become nil on delete, because
 	// deleteDatabase waits for the API to answer 404, and a fixture that kept answering 200 would spin until
 	// that wait timed out.
-	database *databaseState
+	database *databases.ActiveActiveDatabase
 
 	// upgradeRequests records every target passed to the version-upgrade endpoint, in order, whether or not
 	// the fixture honoured it. Assert on it through getRequestedUpgrades when a test needs to prove that the
@@ -80,7 +68,9 @@ func (a *aaAPI) getNextID() int {
 // setRunningVersion simulates the running version changing out from under Terraform, the same way
 // a background auto minor upgrade would.
 func (a *aaAPI) setRunningVersion(redisVersion string) {
-	a.fake.WithHandlersPaused(func() { a.database.actualRedisVersion = redisVersion })
+	a.fake.WithHandlersPaused(func() {
+		a.database.RedisVersion = redis.String(redisVersion)
+	})
 }
 
 // getRequestedUpgrades returns the targets sent to the version-upgrade endpoint so far, in order.
@@ -90,10 +80,10 @@ func (a *aaAPI) getRequestedUpgrades() (targets []string) {
 }
 
 // getRequestedDatabase returns the fixture's database when a request addresses it and NotFound otherwise.
-func (a *aaAPI) getRequestedDatabase(r *http.Request) (*databaseState, error) {
+func (a *aaAPI) getRequestedDatabase(r *http.Request) (*databases.ActiveActiveDatabase, error) {
 	// Check the id rather than just returning the only database there is, so that a provider bug that
 	// addressed the wrong resource shows up as a failure instead of passing unnoticed
-	if a.database == nil || pathInt(r, "dbID") != a.database.id {
+	if a.database == nil || pathInt(r, "dbID") != redis.IntValue(a.database.ID) {
 		return nil, testhelpers.NotFound()
 	}
 	return a.database, nil
@@ -119,18 +109,14 @@ func (a *aaAPI) registerHandlers() {
 	})
 
 	a.fake.Handle("POST /subscriptions/{subID}/databases", func(r *http.Request) (any, error) {
-		var body struct {
-			Name         string  `json:"name"`
-			RedisVersion string  `json:"redisVersion"`
-			Password     *string `json:"password"`
-		}
+		var body databases.CreateActiveActiveDatabase
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			return nil, fmt.Errorf("decoding create request: %w", err)
 		}
 
 		// This mirrors the real create API. When redisVersion is omitted, the database is created at a
 		// server-chosen default rather than failing.
-		running := body.RedisVersion
+		running := redis.StringValue(body.RedisVersion)
 		if running == "" {
 			running = defaultRedisVersion
 		}
@@ -139,18 +125,35 @@ func (a *aaAPI) registerHandlers() {
 
 		// A supplied password is honoured verbatim, including an empty one, because createDatabase sends ""
 		// to mean passwordless. Only an absent field means "generate me one", which mirrors the real API.
-		// The generated value itself is the fixture's own business. It is per-database and non-empty, since
-		// an empty password would read back as passwordless, and no test asserts what it's actual value is.
-		password := fmt.Sprintf("generated-password-%d", id)
-		if body.Password != nil {
-			password = *body.Password
+		// The generated value is per-database and non-empty, since an empty password would read back as
+		// passwordless.
+		password := redis.String(fmt.Sprintf("generated-password-%d", id))
+		if body.GlobalPassword != nil {
+			password = body.GlobalPassword
 		}
 
-		a.database = &databaseState{
-			id:                 id,
-			name:               body.Name,
-			globalPassword:     password,
-			actualRedisVersion: running,
+		// Keep the stored response limited to behavior this fixture implements. Leave other SDK fields nil so
+		// GET omits them instead of implying unsupported API behavior.
+		a.database = &databases.ActiveActiveDatabase{
+			ID:                                  redis.Int(id),
+			Name:                                body.Name,
+			Status:                              redis.String("active"),
+			RedisVersion:                        redis.String(running),
+			SupportOSSClusterAPI:                body.SupportOSSClusterAPI,
+			UseExternalEndpointForOSSClusterAPI: body.UseExternalEndpointForOSSClusterAPI,
+			DataEvictionPolicy:                  body.DataEvictionPolicy,
+			GlobalDataPersistence:               body.GlobalDataPersistence,
+			GlobalPassword:                      password,
+			AutoMinorVersionUpgrade:             body.AutoMinorVersionUpgrade,
+			CrdbDatabases: []*databases.CrdbDatabase{
+				{
+					Region:          redis.String("us-east-1"),
+					PublicEndpoint:  redis.String("pub.example.com:12000"),
+					PrivateEndpoint: redis.String("priv.example.com:12000"),
+					MemoryLimitInGB: body.MemoryLimitInGB,
+					DatasetSizeInGB: body.DatasetSizeInGB,
+				},
+			},
 		}
 
 		return a.fake.RegisterTask("databaseCreateRequest", id), nil
@@ -158,33 +161,28 @@ func (a *aaAPI) registerHandlers() {
 
 	// Active-Active updates go to the per-database regions endpoint, not the database itself.
 	a.fake.Handle("PUT /subscriptions/{subID}/databases/{dbID}/regions", func(r *http.Request) (any, error) {
-		var body struct {
-			Name           *string `json:"name"`
-			GlobalPassword *string `json:"globalPassword"`
+		var body databases.UpdateActiveActiveDatabase
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			return nil, fmt.Errorf("decoding update request: %w", err)
 		}
-		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		db, err := a.getRequestedDatabase(r)
 		if err != nil {
 			return nil, err
 		}
-		// Apply what the request asked for. Otherwise tests will fail with "Provider produced inconsistent
-		// result after apply" when TF refreshes the state after the apply.
 		if body.Name != nil {
-			db.name = *body.Name
+			db.Name = body.Name
 		}
 		if body.GlobalPassword != nil {
-			db.globalPassword = *body.GlobalPassword
+			db.GlobalPassword = body.GlobalPassword
 		}
-		return a.fake.RegisterTask("databaseUpdateRequest", db.id), nil
+		return a.fake.RegisterTask("databaseUpdateRequest", redis.IntValue(db.ID)), nil
 	})
 
 	// The version-upgrade endpoint records every request, then honours it only when the target really is an
 	// upgrade, because no API moves a live database to a lower version in place.
 	a.fake.Handle("POST /subscriptions/{subID}/databases/{dbID}/upgrade", func(r *http.Request) (any, error) {
-		var body struct {
-			TargetRedisVersion string `json:"targetRedisVersion"`
-		}
+		var body databases.UpgradeRedisVersion
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			return nil, fmt.Errorf("decoding upgrade request: %w", err)
 		}
@@ -194,13 +192,14 @@ func (a *aaAPI) registerHandlers() {
 			return nil, err
 		}
 
-		a.upgradeRequests = append(a.upgradeRequests, body.TargetRedisVersion)
+		targetRedisVersion := redis.StringValue(body.TargetRedisVersion)
+		a.upgradeRequests = append(a.upgradeRequests, targetRedisVersion)
 
-		if isUpgrade(body.TargetRedisVersion, db.actualRedisVersion) {
-			db.actualRedisVersion = body.TargetRedisVersion
+		if isUpgrade(targetRedisVersion, redis.StringValue(db.RedisVersion)) {
+			db.RedisVersion = body.TargetRedisVersion
 		}
 
-		return a.fake.RegisterTask("databaseUpgradeRequest", db.id), nil
+		return a.fake.RegisterTask("databaseUpgradeRequest", redis.IntValue(db.ID)), nil
 	})
 
 	a.fake.Handle("PUT /subscriptions/{subID}/databases/{dbID}/tags", func(_ *http.Request) (any, error) {
@@ -218,7 +217,7 @@ func (a *aaAPI) registerHandlers() {
 		}
 		a.database = nil
 
-		return a.fake.RegisterTask("databaseDeleteRequest", db.id), nil
+		return a.fake.RegisterTask("databaseDeleteRequest", redis.IntValue(db.ID)), nil
 	})
 
 	// GetActiveActive reads this endpoint and WaitForDatabaseToBeActive polls it. Keep every field that the
@@ -230,33 +229,7 @@ func (a *aaAPI) registerHandlers() {
 			return nil, err
 		}
 
-		return map[string]any{
-			"databaseId":                          db.id,
-			"name":                                db.name,
-			"status":                              "active",
-			"redisVersion":                        db.actualRedisVersion,
-			"memoryLimitInGb":                     1,
-			"datasetSizeInGb":                     1,
-			"globalPassword":                      db.globalPassword,
-			"dataEvictionPolicy":                  "volatile-lru",
-			"supportOSSClusterApi":                false,
-			"useExternalEndpointForOSSClusterApi": false,
-			"crdbDatabases": []map[string]any{
-				{
-					"provider":               "AWS",
-					"region":                 "us-east-1",
-					"redisVersionCompliance": db.actualRedisVersion,
-					"publicEndpoint":         "pub.example.com:12000",
-					"privateEndpoint":        "priv.example.com:12000",
-					"dataPersistence":        "none",
-					"security": map[string]any{
-						"enableDefaultUser": true,
-						"sourceIps":         []string{"0.0.0.0/0"},
-					},
-					"alerts": []map[string]any{},
-				},
-			},
-		}, nil
+		return db, nil
 	})
 }
 
