@@ -220,12 +220,7 @@ func customMemoryTypesFromModel(models []AgentMemoryCustomMemoryTypeModel) []age
 	}
 	types := make([]agentmemoryapi.CustomMemoryType, 0, len(models))
 	for _, model := range models {
-		types = append(types, agentmemoryapi.CustomMemoryType{
-			Name:               stringFromValue(model.Name),
-			Description:        stringFromValue(model.Description),
-			Fields:             customFieldsFromModel(model.Fields),
-			ExtractionStrategy: customExtractionStrategyFromModel(model.ExtractionStrategy),
-		})
+		types = append(types, customMemoryTypeFromModel(model))
 	}
 	return types
 }
