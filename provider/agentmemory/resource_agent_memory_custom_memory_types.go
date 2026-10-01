@@ -131,8 +131,25 @@ func customMemoryTypeDefinitionEqual(left, right AgentMemoryCustomMemoryTypeMode
 	if len(left.Fields) != len(right.Fields) {
 		return false
 	}
-	for i := range left.Fields {
-		if !customMemoryFieldEqual(left.Fields[i], right.Fields[i]) {
+
+	leftFieldsByName := make(map[string]AgentMemoryCustomFieldModel, len(left.Fields))
+	for _, field := range left.Fields {
+		name, ok := knownString(field.Name)
+		if !ok {
+			return false
+		}
+		if _, exists := leftFieldsByName[name]; exists {
+			return false
+		}
+		leftFieldsByName[name] = field
+	}
+	for _, rightField := range right.Fields {
+		name, ok := knownString(rightField.Name)
+		if !ok {
+			return false
+		}
+		leftField, exists := leftFieldsByName[name]
+		if !exists || !customMemoryFieldEqual(leftField, rightField) {
 			return false
 		}
 	}
