@@ -286,7 +286,7 @@ func customMemoryTypesFromModel(models []AgentMemoryCustomMemoryTypeModel) []age
 	return types
 }
 
-func customMemoryTypesToModel(memoryTypes []agentmemoryapi.CustomMemoryType) []AgentMemoryCustomMemoryTypeModel {
+func customMemoryTypesToModel(memoryTypes []agentmemoryapi.CustomMemoryType, existing []AgentMemoryCustomMemoryTypeModel) []AgentMemoryCustomMemoryTypeModel {
 	if len(memoryTypes) == 0 {
 		return nil
 	}
@@ -299,7 +299,55 @@ func customMemoryTypesToModel(memoryTypes []agentmemoryapi.CustomMemoryType) []A
 			ExtractionStrategy: customExtractionStrategyToModel(memoryType.ExtractionStrategy),
 		})
 	}
+	if len(existing) > 0 {
+		models = orderCustomMemoryTypesLikeExisting(models, existing)
+	}
 	return models
+}
+
+func orderCustomMemoryTypesLikeExisting(models, existing []AgentMemoryCustomMemoryTypeModel) []AgentMemoryCustomMemoryTypeModel {
+	modelByName := make(map[string]AgentMemoryCustomMemoryTypeModel, len(models))
+	for _, model := range models {
+		name, ok := knownString(model.Name)
+		if !ok {
+			return models
+		}
+		if _, exists := modelByName[name]; exists {
+			return models
+		}
+		modelByName[name] = model
+	}
+
+	ordered := make([]AgentMemoryCustomMemoryTypeModel, 0, len(models))
+	used := make(map[string]struct{}, len(models))
+	for _, existingModel := range existing {
+		name, ok := knownString(existingModel.Name)
+		if !ok {
+			continue
+		}
+		model, exists := modelByName[name]
+		if !exists {
+			continue
+		}
+		if customMemoryTypeDefinitionEqual(existingModel, model) {
+			model.Fields = orderCustomFieldsLikeExisting(model.Fields, existingModel.Fields)
+		}
+		ordered = append(ordered, model)
+		used[name] = struct{}{}
+	}
+
+	for _, model := range models {
+		name, ok := knownString(model.Name)
+		if !ok {
+			return models
+		}
+		if _, exists := used[name]; exists {
+			continue
+		}
+		ordered = append(ordered, model)
+	}
+
+	return ordered
 }
 
 func customFieldsFromModel(models []AgentMemoryCustomFieldModel) []agentmemoryapi.CustomField {
@@ -330,6 +378,39 @@ func customFieldsToModel(fields []agentmemoryapi.CustomField) []AgentMemoryCusto
 		})
 	}
 	return models
+}
+
+func orderCustomFieldsLikeExisting(models, existing []AgentMemoryCustomFieldModel) []AgentMemoryCustomFieldModel {
+	if len(models) != len(existing) {
+		return models
+	}
+
+	modelByName := make(map[string]AgentMemoryCustomFieldModel, len(models))
+	for _, model := range models {
+		name, ok := knownString(model.Name)
+		if !ok {
+			return models
+		}
+		if _, exists := modelByName[name]; exists {
+			return models
+		}
+		modelByName[name] = model
+	}
+
+	ordered := make([]AgentMemoryCustomFieldModel, 0, len(models))
+	for _, existingModel := range existing {
+		name, ok := knownString(existingModel.Name)
+		if !ok {
+			return models
+		}
+		model, exists := modelByName[name]
+		if !exists {
+			return models
+		}
+		ordered = append(ordered, model)
+	}
+
+	return ordered
 }
 
 func customExtractionStrategyFromModel(model *AgentMemoryCustomExtractionStrategy) *agentmemoryapi.CustomExtractionStrategy {

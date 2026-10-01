@@ -78,6 +78,45 @@ func TestValidateCustomMemoryTypesPlanAllowsFieldReorder(t *testing.T) {
 	require.False(t, resp.Diagnostics.HasError(), resp.Diagnostics.Errors())
 }
 
+func TestOrderCustomMemoryTypesLikeExistingPreservesTerraformOrder(t *testing.T) {
+	apiModels := []AgentMemoryCustomMemoryTypeModel{
+		customMemoryTypeModel("support_case", []AgentMemoryCustomFieldModel{
+			customMemoryFieldModel("affected_region", "str", "cloud or application region affected by the issue"),
+			customMemoryFieldModel("case_priority", "int", "case priority from one to five"),
+		}),
+		customMemoryTypeModel("customer_profile", []AgentMemoryCustomFieldModel{
+			customMemoryFieldModel("region", "str", "preferred cloud region"),
+			customMemoryFieldModel("cloud", "str", "preferred cloud provider"),
+		}),
+	}
+	existing := []AgentMemoryCustomMemoryTypeModel{
+		customMemoryTypeModel("customer_profile", []AgentMemoryCustomFieldModel{
+			customMemoryFieldModel("cloud", "str", "preferred cloud provider"),
+			customMemoryFieldModel("region", "str", "preferred cloud region"),
+		}),
+		customMemoryTypeModel("support_case", []AgentMemoryCustomFieldModel{
+			customMemoryFieldModel("case_priority", "int", "case priority from one to five"),
+			customMemoryFieldModel("affected_region", "str", "cloud or application region affected by the issue"),
+		}),
+	}
+
+	ordered := orderCustomMemoryTypesLikeExisting(apiModels, existing)
+
+	require.Len(t, ordered, 2)
+	assert.Equal(t, "customer_profile", ordered[0].Name.ValueString())
+	assert.Equal(t, "cloud", ordered[0].Fields[0].Name.ValueString())
+	assert.Equal(t, "region", ordered[0].Fields[1].Name.ValueString())
+	assert.Equal(t, "support_case", ordered[1].Name.ValueString())
+	assert.Equal(t, "case_priority", ordered[1].Fields[0].Name.ValueString())
+	assert.Equal(t, "affected_region", ordered[1].Fields[1].Name.ValueString())
+}
+
+func customMemoryTypeModel(name string, fields []AgentMemoryCustomFieldModel) AgentMemoryCustomMemoryTypeModel {
+	model := customMemoryTypeModelWithFields(fields)
+	model.Name = types.StringValue(name)
+	return model
+}
+
 func customMemoryTypeModelWithFields(fields []AgentMemoryCustomFieldModel) AgentMemoryCustomMemoryTypeModel {
 	return AgentMemoryCustomMemoryTypeModel{
 		Name:        types.StringValue("custom_name"),
