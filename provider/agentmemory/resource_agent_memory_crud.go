@@ -51,7 +51,7 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 			"The Agent Memory service was created and its ID was saved, but the full object could not be read immediately: "+readErr.Error(),
 		)
 	} else {
-		readAgentMemoryIntoModel(ctx, store, &plan, &resp.Diagnostics)
+		readAgentMemoryIntoModel(ctx, store, &plan, false, &resp.Diagnostics)
 		if resp.Diagnostics.HasError() {
 			return
 		}
@@ -78,7 +78,7 @@ func (r *agentMemoryResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	readAgentMemoryIntoModel(ctx, store, &state, &resp.Diagnostics)
+	readAgentMemoryIntoModel(ctx, store, &state, false, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -133,7 +133,7 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 		resp.Diagnostics.AddError("Failed to read Agent Memory service after update", err.Error())
 		return
 	}
-	readAgentMemoryIntoModel(ctx, store, &plan, &resp.Diagnostics)
+	readAgentMemoryIntoModel(ctx, store, &plan, false, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -185,7 +185,7 @@ func extractionCadenceFromPlan(plan AgentMemoryResourceModel) *agentmemoryapi.Ex
 	return &agentmemoryapi.ExtractionCadenceConfig{ActiveIntervalSeconds: int(plan.ExtractionCadenceSeconds.ValueInt64())}
 }
 
-func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, state *AgentMemoryResourceModel, diags *diag.Diagnostics) {
+func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, state *AgentMemoryResourceModel, includeAPIOnlyConfig bool, diags *diag.Diagnostics) {
 	state.ID = types.StringValue(store.StoreID)
 	state.Name = types.StringValue(store.Name)
 	state.Status = types.StringValue(store.Status)
@@ -219,13 +219,16 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 	} else {
 		state.ExtractionCadenceSeconds = types.Int64Null()
 	}
-	if state.Summarization != nil || store.Summarization == nil {
+	// Terraform cannot add optional nested blocks during create/update refresh when
+	// they were absent from config. Import is the one path where we intentionally
+	// adopt advanced API config even when the previous state is empty.
+	if includeAPIOnlyConfig || state.Summarization != nil || store.Summarization == nil {
 		state.Summarization = summarizationToModel(store.Summarization)
 	}
-	if state.LongTermMemoryExclusions != nil || store.LongTermMemoryExclusions == nil {
+	if includeAPIOnlyConfig || state.LongTermMemoryExclusions != nil || store.LongTermMemoryExclusions == nil {
 		state.LongTermMemoryExclusions = exclusionsToModel(store.LongTermMemoryExclusions)
 	}
-	if state.CustomMemoryTypes != nil || len(store.CustomMemoryTypes) == 0 {
+	if includeAPIOnlyConfig || state.CustomMemoryTypes != nil || len(store.CustomMemoryTypes) == 0 {
 		state.CustomMemoryTypes = customMemoryTypesToModel(store.CustomMemoryTypes)
 	}
 
@@ -247,10 +250,7 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 }
 
 func readImportedAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, state *AgentMemoryResourceModel, diags *diag.Diagnostics) {
-	state.Summarization = &AgentMemorySummarizationModel{}
-	state.LongTermMemoryExclusions = &AgentMemoryExclusionsModel{}
-	state.CustomMemoryTypes = []AgentMemoryCustomMemoryTypeModel{}
-	readAgentMemoryIntoModel(ctx, store, state, diags)
+	readAgentMemoryIntoModel(ctx, store, state, true, diags)
 }
 
 func endpointsToModel(ctx context.Context, endpoints []agentmemoryapi.Endpoint, diags *diag.Diagnostics) types.List {

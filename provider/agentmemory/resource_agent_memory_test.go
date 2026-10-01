@@ -1067,6 +1067,69 @@ resource "rediscloud_agent_memory" "example" {
 	})
 }
 
+func TestAgentMemoryResource_mockedImportWithAdvancedConfig(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-advanced":
+			writeAdvancedStoreResponse(t, w, "store")
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testProviderConfig(server.URL) + `
+resource "rediscloud_agent_memory" "example" {
+  name                       = "store"
+  database_id                = 123
+  short_term_ttl_seconds     = 86400
+  long_term_ttl_seconds      = 604800
+  extraction_cadence_seconds = 300
+}
+`,
+				ResourceName:  "rediscloud_agent_memory.example",
+				ImportState:   true,
+				ImportStateId: "store-advanced",
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					attrs := states[0].Attributes
+					expected := map[string]string{
+						"summarization.enabled":                                      "true",
+						"summarization.trigger_strategy":                             "event_count",
+						"summarization.event_count.threshold":                        "21",
+						"summarization.event_count.retain_count":                     "11",
+						"long_term_memory_exclusions.enabled":                        "true",
+						"long_term_memory_exclusions.semantic.enabled":               "true",
+						"long_term_memory_exclusions.semantic.prompt":                "test",
+						"long_term_memory_exclusions.built_in_detectors.enabled":     "true",
+						"long_term_memory_exclusions.built_in_detectors.detectors.#": "2",
+						"long_term_memory_exclusions.custom_detectors.enabled":       "true",
+						"long_term_memory_exclusions.custom_detectors.detectors.#":   "1",
+						"custom_memory_types.#":                                      "1",
+						"custom_memory_types.0.name":                                 "custom_name",
+						"custom_memory_types.0.description":                          "test",
+						"custom_memory_types.0.fields.#":                             "1",
+						"custom_memory_types.0.fields.0.name":                        "field1",
+						"custom_memory_types.0.extraction_strategy.enabled":          "true",
+						"custom_memory_types.0.extraction_strategy.prompt":           "test",
+					}
+					for key, want := range expected {
+						if got := attrs[key]; got != want {
+							return fmt.Errorf("expected imported %s to be %q, got %q", key, want, got)
+						}
+					}
+					return nil
+				},
+			},
+		},
+	})
+}
+
 func TestAgentMemoryResource_rejectsInvalidExtractionCadence(t *testing.T) {
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
