@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"testing"
 
+	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
 	agentmemoryapi "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -68,7 +69,7 @@ func TestAgentMemoryResource_mockedCreateReadDelete(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory" "example" {
   name                       = "store"
   database_id                = 123
@@ -153,7 +154,7 @@ func TestAgentMemoryResource_mockedCreateWithAPIDefaults(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory" "example" {
   name        = "store"
   database_id = 123
@@ -246,7 +247,7 @@ func TestAgentMemoryResource_mockedCreateWithAdvancedConfig(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfig("store"),
+				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-advanced"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.enabled", "true"),
@@ -310,7 +311,7 @@ func TestAgentMemoryResource_mockedCreateWithModelConfig(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
+				Config: testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.provider", "openai"),
@@ -388,10 +389,10 @@ func TestAgentMemoryResource_mockedUpdateAdvancedConfig(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfig("store"),
+				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
 			},
 			{
-				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfigWithValues("store", 30, 12, "updated", "drop"),
+				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithValues("store", 30, 12, "updated", "drop"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-advanced"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.event_count.threshold", "30"),
@@ -455,10 +456,10 @@ func TestAgentMemoryResource_mockedUpdateCustomMemoryTypeStrategy(t *testing.T) 
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfig("store"),
+				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
 			},
 			{
-				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfigWithCustomMemoryStrategy("store", 21, 11, "test", "redact", "updated extraction prompt", false),
+				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithCustomMemoryStrategy("store", 21, 11, "test", "redact", "updated extraction prompt", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-advanced"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.prompt", "updated extraction prompt"),
@@ -521,10 +522,10 @@ func TestAgentMemoryResource_mockedAddCustomMemoryType(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfig("store"),
+				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
 			},
 			{
-				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfigWithAdditionalCustomMemoryType("store"),
+				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithAdditionalCustomMemoryType("store"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-advanced"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.#", "2"),
@@ -569,10 +570,10 @@ func TestAgentMemoryResource_rejectsCustomMemoryTypeRedefinition(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfig("store"),
+				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
 			},
 			{
-				Config:      testProviderConfig(server.URL) + advancedAgentMemoryConfigWithChangedCustomMemoryTypeField("store"),
+				Config:      testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithChangedCustomMemoryTypeField("store"),
 				ExpectError: regexp.MustCompile(`Unsupported Agent Memory custom memory type redefinition`),
 			},
 		},
@@ -611,10 +612,10 @@ func TestAgentMemoryResource_rejectsCustomMemoryTypeRemoval(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfig("store"),
+				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
 			},
 			{
-				Config:      testProviderConfig(server.URL) + advancedAgentMemoryConfigWithoutCustomMemoryTypes("store"),
+				Config:      testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithoutCustomMemoryTypes("store"),
 				ExpectError: regexp.MustCompile(`Unsupported Agent Memory custom memory type removal`),
 			},
 		},
@@ -680,10 +681,10 @@ func TestAgentMemoryResource_mockedUpdateDisablesAdvancedConfigWithStaleAPIChild
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfig("store"),
+				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
 			},
 			{
-				Config: testProviderConfig(server.URL) + disabledAdvancedAgentMemoryConfig("store-disabled"),
+				Config: testProviderConfig(t, server.URL) + disabledAdvancedAgentMemoryConfig("store-disabled"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "name", "store-disabled"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.enabled", "false"),
@@ -757,7 +758,7 @@ func TestAgentMemoryResource_mockedUpdate(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory" "example" {
   name                       = "store"
   database_id                = 123
@@ -775,7 +776,7 @@ resource "rediscloud_agent_memory" "example" {
 				),
 			},
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory" "example" {
   name                       = "store-updated"
   database_id                = 123
@@ -844,10 +845,10 @@ func TestAgentMemoryResource_mockedUpdateModelConfig(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
+				Config: testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
 			},
 			{
-				Config: testProviderConfig(server.URL) + agentMemoryModelConfig("store", "gpt-4.1-mini", "text-embedding-3-small", "llm-secret-2", "embedding-secret-2"),
+				Config: testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4.1-mini", "text-embedding-3-small", "llm-secret-2", "embedding-secret-2"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.model", "gpt-4.1-mini"),
@@ -919,7 +920,7 @@ func TestAgentMemoryResource_updateDoesNotReplaceDependentAPIKey(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory" "example" {
   name                       = "store"
   database_id                = 123
@@ -935,7 +936,7 @@ resource "rediscloud_agent_memory_api_key" "example" {
 `,
 			},
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory" "example" {
   name                       = "store-updated"
   database_id                = 123
@@ -983,7 +984,7 @@ func TestAgentMemoryResource_mockedImport(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory" "example" {
   name                       = "store"
   database_id                = 123
@@ -1019,7 +1020,7 @@ func TestAgentMemoryResource_mockedImportWithModelConfig(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory" "example" {
   name                       = "store"
   database_id                = 123
@@ -1084,7 +1085,7 @@ func TestAgentMemoryResource_mockedImportWithAdvancedConfig(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory" "example" {
   name                       = "store"
   database_id                = 123
@@ -1135,7 +1136,7 @@ func TestAgentMemoryResource_rejectsInvalidExtractionCadence(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig("http://127.0.0.1:1") + `
+				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
 resource "rediscloud_agent_memory" "example" {
   name                       = "store"
   database_id                = 123
@@ -1153,7 +1154,7 @@ func TestAgentMemoryResource_rejectsInvalidTTLs(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig("http://127.0.0.1:1") + `
+				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
 resource "rediscloud_agent_memory" "example" {
   name                   = "store"
   database_id            = 123
@@ -1164,7 +1165,7 @@ resource "rediscloud_agent_memory" "example" {
 				ExpectError: regexp.MustCompile(`1.*31536000|31536000.*1`),
 			},
 			{
-				Config: testProviderConfig("http://127.0.0.1:1") + `
+				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
 resource "rediscloud_agent_memory" "example" {
   name                   = "store"
   database_id            = 123
@@ -1183,7 +1184,7 @@ func TestAgentMemoryResource_rejectsIncompleteModelConfig(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig("https://example.invalid") + `
+				Config: testProviderConfig(t, "https://example.invalid") + `
 resource "rediscloud_agent_memory" "example" {
   name                  = "store"
   database_id           = 123
@@ -1211,7 +1212,7 @@ func TestAgentMemoryResource_rejectsModelConfigWithoutLongTermTTL(t *testing.T) 
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig("https://example.invalid") + `
+				Config: testProviderConfig(t, "https://example.invalid") + `
 resource "rediscloud_agent_memory" "example" {
   name        = "store"
   database_id = 123
@@ -1268,7 +1269,7 @@ func TestAgentMemoryResource_rejectsAddingModelConfigAfterCreate(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory" "example" {
   name                       = "store"
   database_id                = 123
@@ -1279,7 +1280,7 @@ resource "rediscloud_agent_memory" "example" {
 `,
 			},
 			{
-				Config:      testProviderConfig(server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
+				Config:      testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
 				ExpectError: regexp.MustCompile("Unsupported Agent Memory model configuration change"),
 			},
 		},
@@ -1311,10 +1312,10 @@ func TestAgentMemoryResource_rejectsEmbeddingModelChange(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
+				Config: testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
 			},
 			{
-				Config:      testProviderConfig(server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-large", "llm-secret", "embedding-secret"),
+				Config:      testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-large", "llm-secret", "embedding-secret"),
 				ExpectError: regexp.MustCompile("embedding.model as immutable after creation"),
 			},
 		},
@@ -1346,10 +1347,10 @@ func TestAgentMemoryResource_rejectsModelConfigRemoval(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
+				Config: testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
 			},
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory" "example" {
   name                       = "store"
   database_id                = 123
@@ -1369,7 +1370,7 @@ func TestAgentMemoryResource_rejectsInvalidNameAndDatabaseID(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig("http://127.0.0.1:1") + `
+				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
 resource "rediscloud_agent_memory" "example" {
   name        = "   "
   database_id = 0
@@ -1386,7 +1387,7 @@ func TestAgentMemoryResource_rejectsInvalidSummarizationThreshold(t *testing.T) 
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig("http://127.0.0.1:1") + `
+				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
 resource "rediscloud_agent_memory" "example" {
   name        = "store"
   database_id = 123
@@ -1413,7 +1414,7 @@ func TestAgentMemoryResource_rejectsInvalidDetectorConfiguration(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig("http://127.0.0.1:1") + `
+				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
 resource "rediscloud_agent_memory" "example" {
   name        = "store"
   database_id = 123
@@ -1436,7 +1437,7 @@ resource "rediscloud_agent_memory" "example" {
 				ExpectError: regexp.MustCompile(`redact|drop`),
 			},
 			{
-				Config: testProviderConfig("http://127.0.0.1:1") + `
+				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
 resource "rediscloud_agent_memory" "example" {
   name        = "store"
   database_id = 123
@@ -1467,7 +1468,7 @@ func TestAgentMemoryResource_rejectsDuplicateCustomMemoryTypeNames(t *testing.T)
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config:      testProviderConfig("http://127.0.0.1:1") + agentMemoryConfigWithDuplicateCustomMemoryTypeNames(),
+				Config:      testProviderConfig(t, "http://127.0.0.1:1") + agentMemoryConfigWithDuplicateCustomMemoryTypeNames(),
 				ExpectError: regexp.MustCompile(`Duplicate Agent Memory custom memory type`),
 			},
 		},
@@ -1511,7 +1512,7 @@ func TestAgentMemoryResource_deleteSucceedsWhenStoreAlreadyMissing(t *testing.T)
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory" "example" {
   name                       = "store"
   database_id                = 123
@@ -1525,7 +1526,7 @@ resource "rediscloud_agent_memory" "example" {
 				PreConfig: func() {
 					storeExists = false
 				},
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory" "example" {
   name                       = "store"
   database_id                = 123
@@ -1573,7 +1574,7 @@ func TestAgentMemoryResource_removesStateWhenStoreNotFound(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory" "example" {
   name                       = "store"
   database_id                = 123
@@ -1626,7 +1627,7 @@ func TestAgentMemoryAPIKeyResource_mockedCreateReadDelete(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory_api_key" "example" {
   store_id = "store-1"
   name     = "terraform"
@@ -1673,7 +1674,7 @@ func TestAgentMemoryAPIKeyResource_mockedImport(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory_api_key" "example" {
   store_id = "store-1"
   name     = "terraform"
@@ -1696,7 +1697,7 @@ func TestAgentMemoryAPIKeyResource_rejectsInvalidImportID(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig("http://127.0.0.1:1") + `
+				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
 resource "rediscloud_agent_memory_api_key" "example" {
   store_id = "store-1"
   name     = "terraform"
@@ -1716,7 +1717,7 @@ func TestAgentMemoryAPIKeyResource_rejectsInvalidStoreIDAndName(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig("http://127.0.0.1:1") + `
+				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
 resource "rediscloud_agent_memory_api_key" "example" {
   store_id = "store/1"
   name     = "invalid name"
@@ -1761,7 +1762,7 @@ func TestAgentMemoryAPIKeyResource_deleteSucceedsWhenKeyAlreadyMissing(t *testin
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory_api_key" "example" {
   store_id = "store-1"
   name     = "terraform"
@@ -1772,7 +1773,7 @@ resource "rediscloud_agent_memory_api_key" "example" {
 				PreConfig: func() {
 					apiKeyExists = false
 				},
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory_api_key" "example" {
   store_id = "store-1"
   name     = "terraform"
@@ -1813,7 +1814,7 @@ func TestAgentMemoryAPIKeyResource_removesStateWhenKeyNotFound(t *testing.T) {
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(server.URL) + `
+				Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory_api_key" "example" {
   store_id = "store-1"
   name     = "terraform"
@@ -1831,14 +1832,12 @@ resource "rediscloud_agent_memory_api_key" "example" {
 	})
 }
 
-func testProviderConfig(url string) string {
-	return `
-provider "rediscloud" {
-  url        = "` + url + `"
-  api_key    = "test-api-key"
-  secret_key = "test-secret-key"
-}
-`
+func testProviderConfig(t *testing.T, url string) string {
+	t.Helper()
+	t.Setenv(rediscloudapi.RedisCloudUrlEnvVar, url)
+	t.Setenv(rediscloudapi.AccessKeyEnvVar, "test-api-key")
+	t.Setenv(rediscloudapi.SecretKeyEnvVar, "test-secret-key")
+	return ""
 }
 
 func writeStoreResponse(t *testing.T, w http.ResponseWriter, name string, shortTTL, longTTL, cadence int) {
