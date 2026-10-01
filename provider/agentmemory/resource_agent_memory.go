@@ -314,12 +314,9 @@ func customDetectorsBlock() schema.SingleNestedBlock {
 
 func customMemoryTypesBlock() schema.ListNestedBlock {
 	return schema.ListNestedBlock{
-		Description: "Custom long-term memory types registered on the store. Changes require replacing the Agent Memory service because the API does not support full in-place redefinition of custom memory types.",
+		Description: "Custom long-term memory types registered on the store. New types and extraction strategy changes are updated in place; redefining or removing existing types is blocked because the API does not support it.",
 		Validators: []validator.List{
 			listvalidator.SizeAtMost(3),
-		},
-		PlanModifiers: []planmodifier.List{
-			listplanmodifier.RequiresReplace(),
 		},
 		NestedObject: schema.NestedBlockObject{
 			Attributes: map[string]schema.Attribute{
@@ -436,6 +433,16 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	var state AgentMemoryResourceModel
+	if !req.State.Raw.IsNull() {
+		resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
+	validateCustomMemoryTypesPlan(plan, state, resp)
 
 	if plan.Summarization == nil {
 		validateExclusionsPlan(plan, resp)

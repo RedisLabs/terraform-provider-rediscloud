@@ -341,6 +341,223 @@ func TestAgentMemoryResource_mockedUpdateAdvancedConfig(t *testing.T) {
 	assert.Equal(t, 1, patches)
 }
 
+func TestAgentMemoryResource_mockedUpdateCustomMemoryTypeStrategy(t *testing.T) {
+	customPrompt := "test"
+	customEnabled := true
+	creates := 0
+	patches := 0
+	deletes := 0
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			creates++
+			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
+			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-advanced"}}}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-advanced":
+			writeAdvancedStoreResponseWithCustomMemoryTypes(t, w, "store", 21, 11, "test", "redact", advancedCustomMemoryTypesResponse(customPrompt, customEnabled))
+		case r.Method == http.MethodPatch && r.URL.Path == "/memory-stores/store-advanced":
+			var request agentmemoryapi.UpdateStore
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
+			assert.Empty(t, request.AddCustomMemoryTypes)
+			require.Len(t, request.UpdateCustomMemoryTypeStrategies, 1)
+			assert.Equal(t, "custom_name", request.UpdateCustomMemoryTypeStrategies[0].TypeName)
+			assert.Equal(t, "updated extraction prompt", request.UpdateCustomMemoryTypeStrategies[0].Prompt)
+			require.NotNil(t, request.UpdateCustomMemoryTypeStrategies[0].Enabled)
+			assert.False(t, *request.UpdateCustomMemoryTypeStrategies[0].Enabled)
+
+			patches++
+			customPrompt = "updated extraction prompt"
+			customEnabled = false
+			_, _ = w.Write([]byte(`{"taskId":"update-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/update-task":
+			_, _ = w.Write([]byte(`{"taskId":"update-task","status":"processing-completed"}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-advanced":
+			deletes++
+			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfig("store"),
+			},
+			{
+				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfigWithCustomMemoryStrategy("store", 21, 11, "test", "redact", "updated extraction prompt", false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-advanced"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.prompt", "updated extraction prompt"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.enabled", "false"),
+				),
+			},
+		},
+	})
+
+	assert.Equal(t, 1, creates)
+	assert.Equal(t, 1, patches)
+	assert.Equal(t, 1, deletes)
+}
+
+func TestAgentMemoryResource_mockedAddCustomMemoryType(t *testing.T) {
+	customMemoryTypes := advancedCustomMemoryTypesResponse("test", true)
+	creates := 0
+	patches := 0
+	deletes := 0
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			creates++
+			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
+			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-advanced"}}}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-advanced":
+			writeAdvancedStoreResponseWithCustomMemoryTypes(t, w, "store", 21, 11, "test", "redact", customMemoryTypes)
+		case r.Method == http.MethodPatch && r.URL.Path == "/memory-stores/store-advanced":
+			var request agentmemoryapi.UpdateStore
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
+			assert.Empty(t, request.UpdateCustomMemoryTypeStrategies)
+			require.Len(t, request.AddCustomMemoryTypes, 1)
+			assert.Equal(t, "support_case", request.AddCustomMemoryTypes[0].Name)
+			assert.Equal(t, "Persistent support case details", request.AddCustomMemoryTypes[0].Description)
+			assert.Equal(t, []agentmemoryapi.CustomField{
+				{Name: "case_priority", Description: "case priority", Type: "int"},
+			}, request.AddCustomMemoryTypes[0].Fields)
+
+			patches++
+			customMemoryTypes = advancedCustomMemoryTypesResponseWithAdditional()
+			_, _ = w.Write([]byte(`{"taskId":"update-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/update-task":
+			_, _ = w.Write([]byte(`{"taskId":"update-task","status":"processing-completed"}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-advanced":
+			deletes++
+			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfig("store"),
+			},
+			{
+				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfigWithAdditionalCustomMemoryType("store"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-advanced"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.#", "2"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.1.name", "support_case"),
+				),
+			},
+		},
+	})
+
+	assert.Equal(t, 1, creates)
+	assert.Equal(t, 1, patches)
+	assert.Equal(t, 1, deletes)
+}
+
+func TestAgentMemoryResource_rejectsCustomMemoryTypeRedefinition(t *testing.T) {
+	patches := 0
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
+			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-advanced"}}}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-advanced":
+			writeAdvancedStoreResponse(t, w, "store")
+		case r.Method == http.MethodPatch && r.URL.Path == "/memory-stores/store-advanced":
+			patches++
+			_, _ = w.Write([]byte(`{"taskId":"update-task"}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-advanced":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfig("store"),
+			},
+			{
+				Config:      testProviderConfig(server.URL) + advancedAgentMemoryConfigWithChangedCustomMemoryTypeField("store"),
+				ExpectError: regexp.MustCompile(`Unsupported Agent Memory custom memory type redefinition`),
+			},
+		},
+	})
+
+	assert.Equal(t, 0, patches)
+}
+
+func TestAgentMemoryResource_rejectsCustomMemoryTypeRemoval(t *testing.T) {
+	patches := 0
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
+			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-advanced"}}}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-advanced":
+			writeAdvancedStoreResponse(t, w, "store")
+		case r.Method == http.MethodPatch && r.URL.Path == "/memory-stores/store-advanced":
+			patches++
+			_, _ = w.Write([]byte(`{"taskId":"update-task"}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-advanced":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testProviderConfig(server.URL) + advancedAgentMemoryConfig("store"),
+			},
+			{
+				Config:      testProviderConfig(server.URL) + advancedAgentMemoryConfigWithoutCustomMemoryTypes("store"),
+				ExpectError: regexp.MustCompile(`Unsupported Agent Memory custom memory type removal`),
+			},
+		},
+	})
+
+	assert.Equal(t, 0, patches)
+}
+
 func TestAgentMemoryResource_mockedUpdateDisablesAdvancedConfigWithStaleAPIChildren(t *testing.T) {
 	disabled := false
 	patches := 0
@@ -1193,13 +1410,49 @@ func writeStoreResponse(t *testing.T, w http.ResponseWriter, name string, shortT
 	}))
 }
 
+func advancedCustomMemoryTypesResponse(prompt string, enabled bool) []map[string]any {
+	return []map[string]any{
+		{
+			"name":        "custom_name",
+			"description": "test",
+			"fields": []map[string]any{
+				{"name": "field1", "description": "capture the field", "type": "str"},
+			},
+			"extractionStrategy": map[string]any{
+				"enabled": enabled,
+				"prompt":  prompt,
+			},
+		},
+	}
+}
+
+func advancedCustomMemoryTypesResponseWithAdditional() []map[string]any {
+	memoryTypes := advancedCustomMemoryTypesResponse("test", true)
+	memoryTypes = append(memoryTypes, map[string]any{
+		"name":        "support_case",
+		"description": "Persistent support case details",
+		"fields": []map[string]any{
+			{"name": "case_priority", "description": "case priority", "type": "int"},
+		},
+		"extractionStrategy": map[string]any{
+			"enabled": true,
+			"prompt":  "Extract durable support case details.",
+		},
+	})
+	return memoryTypes
+}
+
 func writeAdvancedStoreResponse(t *testing.T, w http.ResponseWriter, name string) {
 	writeAdvancedStoreResponseWithValues(t, w, name, 21, 11, "test", "redact")
 }
 
 func writeAdvancedStoreResponseWithValues(t *testing.T, w http.ResponseWriter, name string, threshold, retainCount int, semanticPrompt, emailAction string) {
 	t.Helper()
-	enabled := true
+	writeAdvancedStoreResponseWithCustomMemoryTypes(t, w, name, threshold, retainCount, semanticPrompt, emailAction, advancedCustomMemoryTypesResponse("test", true))
+}
+
+func writeAdvancedStoreResponseWithCustomMemoryTypes(t *testing.T, w http.ResponseWriter, name string, threshold, retainCount int, semanticPrompt, emailAction string, customMemoryTypes []map[string]any) {
+	t.Helper()
 	require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
 		"storeId":           "store-advanced",
 		"name":              name,
@@ -1243,20 +1496,8 @@ func writeAdvancedStoreResponseWithValues(t *testing.T, w http.ResponseWriter, n
 				},
 			},
 		},
-		"customMemoryTypes": []map[string]any{
-			{
-				"name":        "custom_name",
-				"description": "test",
-				"fields": []map[string]any{
-					{"name": "field1", "description": "capture the field", "type": "str"},
-				},
-				"extractionStrategy": map[string]any{
-					"enabled": enabled,
-					"prompt":  "test",
-				},
-			},
-		},
-		"endpoint": "https://aws-us-east-1.memory.redis.io",
+		"customMemoryTypes": customMemoryTypes,
+		"endpoint":          "https://aws-us-east-1.memory.redis.io",
 		"endpoints": []map[string]any{
 			{
 				"url":          "https://aws-us-east-1.memory.redis.io",
@@ -1350,6 +1591,10 @@ func advancedAgentMemoryConfig(name string) string {
 }
 
 func advancedAgentMemoryConfigWithValues(name string, threshold, retainCount int, semanticPrompt, emailAction string) string {
+	return advancedAgentMemoryConfigWithCustomMemoryStrategy(name, threshold, retainCount, semanticPrompt, emailAction, "test", true)
+}
+
+func advancedAgentMemoryConfigWithCustomMemoryStrategy(name string, threshold, retainCount int, semanticPrompt, emailAction, customMemoryPrompt string, customMemoryEnabled bool) string {
 	return `
 resource "rediscloud_agent_memory" "example" {
   name                       = "` + name + `"
@@ -1379,8 +1624,8 @@ resource "rediscloud_agent_memory" "example" {
     }
 
     extraction_strategy {
-      enabled = true
-      prompt  = "test"
+      enabled = ` + fmt.Sprint(customMemoryEnabled) + `
+      prompt  = "` + customMemoryPrompt + `"
     }
   }
 
@@ -1474,6 +1719,143 @@ resource "rediscloud_agent_memory" "example" {
       enabled = false
     }
   }
+}
+`
+}
+
+func advancedAgentMemoryConfigWithAdditionalCustomMemoryType(name string) string {
+	return `
+resource "rediscloud_agent_memory" "example" {
+  name                       = "` + name + `"
+  database_id                = 123
+  short_term_ttl_seconds     = 86400
+  long_term_ttl_seconds      = 604800
+  extraction_cadence_seconds = 300
+
+  summarization {
+    enabled          = true
+    trigger_strategy = "event_count"
+
+    event_count {
+      threshold    = 21
+      retain_count = 11
+    }
+  }
+
+  custom_memory_types {
+    name        = "custom_name"
+    description = "test"
+
+    fields {
+      name        = "field1"
+      type        = "str"
+      description = "capture the field"
+    }
+
+    extraction_strategy {
+      enabled = true
+      prompt  = "test"
+    }
+  }
+
+  custom_memory_types {
+    name        = "support_case"
+    description = "Persistent support case details"
+
+    fields {
+      name        = "case_priority"
+      type        = "int"
+      description = "case priority"
+    }
+
+    extraction_strategy {
+      enabled = true
+      prompt  = "Extract durable support case details."
+    }
+  }
+
+  long_term_memory_exclusions {
+    enabled = true
+
+    semantic {
+      enabled = true
+      prompt  = "test"
+    }
+
+    built_in_detectors {
+      enabled = true
+
+      detectors {
+        id      = "credit-card"
+        enabled = true
+        action  = "redact"
+      }
+
+      detectors {
+        id      = "email"
+        enabled = true
+        action  = "redact"
+      }
+    }
+
+    custom_detectors {
+      enabled = true
+
+      detectors {
+        name    = "detector"
+        enabled = true
+        action  = "redact"
+
+        matcher {
+          kind = "regex"
+
+          regex {
+            pattern = "ACCT-[9]"
+          }
+        }
+      }
+    }
+  }
+}
+`
+}
+
+func advancedAgentMemoryConfigWithChangedCustomMemoryTypeField(name string) string {
+	return `
+resource "rediscloud_agent_memory" "example" {
+  name                       = "` + name + `"
+  database_id                = 123
+  short_term_ttl_seconds     = 86400
+  long_term_ttl_seconds      = 604800
+  extraction_cadence_seconds = 300
+
+  custom_memory_types {
+    name        = "custom_name"
+    description = "test"
+
+    fields {
+      name        = "field1"
+      type        = "int"
+      description = "capture the field"
+    }
+
+    extraction_strategy {
+      enabled = true
+      prompt  = "test"
+    }
+  }
+}
+`
+}
+
+func advancedAgentMemoryConfigWithoutCustomMemoryTypes(name string) string {
+	return `
+resource "rediscloud_agent_memory" "example" {
+  name                       = "` + name + `"
+  database_id                = 123
+  short_term_ttl_seconds     = 86400
+  long_term_ttl_seconds      = 604800
+  extraction_cadence_seconds = 300
 }
 `
 }
