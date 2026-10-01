@@ -168,10 +168,16 @@ The following arguments are optional:
 
 All time-based arguments are expressed in seconds.
 
-Most configuration can be updated in place. Changing `database_id` or
-`custom_memory_types` replaces the Agent Memory service. Custom memory type
-replacement is conservative because the API does not support full in-place
-redefinition of custom type names, descriptions, and fields.
+Most configuration can be updated in place. Changing `database_id` replaces the
+Agent Memory service because it changes the backing database.
+
+For `custom_memory_types`, the provider follows the Agent Memory API behavior:
+new custom memory types can be added in place, and `extraction_strategy.prompt`
+or `extraction_strategy.enabled` can be updated for existing custom memory
+types. Removing an existing custom memory type, changing its description, or
+changing its fields is blocked during planning because the API does not support
+those operations in place. Terraform does not automatically replace the Agent
+Memory service for those changes.
 
 ## Attribute Reference
 
