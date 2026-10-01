@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -44,6 +45,7 @@ func TestAgentMemoryResource_mockedCreateReadDelete(t *testing.T) {
 				"shortMemory":{"ttlSeconds":86400},
 				"longTermMemory":{"ttlSeconds":31536000},
 				"extractionCadence":{"activeIntervalSeconds":300},
+				"extractionStrategy":"INSTRUCT",
 				"endpoint":"https://aws-us-east-1.memory.redis.io",
 				"endpoints":[
 					{"url":"https://gcp-us-east4.memory.redis.io","provider":"GCP","region":"us-east4","egressIps":[],"isAccessible":false},
@@ -82,6 +84,7 @@ resource "rediscloud_agent_memory" "example" {
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "short_term_ttl_seconds", "86400"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_ttl_seconds", "31536000"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "extraction_cadence_seconds", "300"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "extraction_strategy", "INSTRUCT"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "endpoint", "https://aws-us-east-1.memory.redis.io"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "endpoints.#", "2"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "endpoints.0.url", "https://aws-us-east-1.memory.redis.io"),
@@ -128,6 +131,7 @@ func TestAgentMemoryResource_mockedCreateWithAPIDefaults(t *testing.T) {
 				"shortMemory":{"ttlSeconds":86400},
 				"longTermMemory":{"ttlSeconds":31536000},
 				"extractionCadence":{"activeIntervalSeconds":300},
+				"extractionStrategy":"INSTRUCT",
 				"summarization":{"enabled":true,"triggerStrategy":"event_count","eventCount":{"threshold":20,"retainCount":10}},
 				"longTermMemoryExclusions":{"enabled":false,"semantic":{"enabled":false},"builtInDetectors":{"enabled":false},"customDetectors":{"enabled":false}},
 				"customMemoryTypes":[{"name":"api_default","description":"Returned by the API","fields":[{"name":"field1","description":"field","type":"str"}]}],
@@ -161,6 +165,7 @@ resource "rediscloud_agent_memory" "example" {
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "short_term_ttl_seconds", "86400"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_ttl_seconds", "31536000"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "extraction_cadence_seconds", "300"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "extraction_strategy", "INSTRUCT"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "endpoint", "https://aws-us-east-1.memory.redis.io"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "endpoints.#", "1"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "endpoints.0.egress_ips.0", "10.0.0.1"),
@@ -257,6 +262,66 @@ func TestAgentMemoryResource_mockedCreateWithAdvancedConfig(t *testing.T) {
 				ResourceName:      "rediscloud_agent_memory.example",
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAgentMemoryResource_mockedCreateWithModelConfig(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			var request agentmemoryapi.CreateStore
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
+			require.NotNil(t, request.LLM)
+			assert.Equal(t, "openai", request.LLM.Provider)
+			assert.Equal(t, "gpt-4o-mini", request.LLM.Model)
+			require.NotNil(t, request.LLM.Credentials)
+			assert.Equal(t, "apiKey", request.LLM.Credentials.Type)
+			assert.Equal(t, "llm-secret", request.LLM.Credentials.APIKey)
+
+			require.NotNil(t, request.LongTermMemory)
+			assert.Equal(t, 31536000, request.LongTermMemory.TTLSeconds)
+			require.NotNil(t, request.LongTermMemory.Embedding)
+			assert.Equal(t, "openai", request.LongTermMemory.Embedding.Provider)
+			assert.Equal(t, "text-embedding-3-small", request.LongTermMemory.Embedding.Model)
+			require.NotNil(t, request.LongTermMemory.Embedding.Credentials)
+			assert.Equal(t, "apiKey", request.LongTermMemory.Embedding.Credentials.Type)
+			assert.Equal(t, "embedding-secret", request.LongTermMemory.Embedding.Credentials.APIKey)
+
+			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
+			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
+			writeStoreResponseWithModelConfig(t, w, "store", "gpt-4o-mini", "text-embedding-3-small")
+		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testProviderConfig(server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.provider", "openai"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.model", "gpt-4o-mini"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.credentials.type", "apiKey"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.credentials.api_key", "llm-secret"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.provider", "openai"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.model", "text-embedding-3-small"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.credentials.type", "apiKey"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.credentials.api_key", "embedding-secret"),
+				),
 			},
 		},
 	})
@@ -731,6 +796,70 @@ resource "rediscloud_agent_memory" "example" {
 	})
 }
 
+func TestAgentMemoryResource_mockedUpdateModelConfig(t *testing.T) {
+	llmModel := "gpt-4o-mini"
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
+			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
+			writeStoreResponseWithModelConfig(t, w, "store", llmModel, "text-embedding-3-small")
+		case r.Method == http.MethodPatch && r.URL.Path == "/memory-stores/store-1":
+			var request agentmemoryapi.UpdateStore
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
+			require.NotNil(t, request.LLM)
+			assert.Equal(t, "openai", request.LLM.Provider)
+			assert.Equal(t, "gpt-4.1-mini", request.LLM.Model)
+			require.NotNil(t, request.LLM.Credentials)
+			assert.Equal(t, "llm-secret-2", request.LLM.Credentials.APIKey)
+
+			require.NotNil(t, request.LongTermMemory)
+			assert.Equal(t, 31536000, request.LongTermMemory.TTLSeconds)
+			require.NotNil(t, request.LongTermMemory.Embedding)
+			assert.Equal(t, "openai", request.LongTermMemory.Embedding.Provider)
+			assert.Equal(t, "text-embedding-3-small", request.LongTermMemory.Embedding.Model)
+			require.NotNil(t, request.LongTermMemory.Embedding.Credentials)
+			assert.Equal(t, "embedding-secret-2", request.LongTermMemory.Embedding.Credentials.APIKey)
+
+			llmModel = "gpt-4.1-mini"
+			_, _ = w.Write([]byte(`{"taskId":"update-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/update-task":
+			_, _ = w.Write([]byte(`{"taskId":"update-task","status":"processing-completed"}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testProviderConfig(server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
+			},
+			{
+				Config: testProviderConfig(server.URL) + agentMemoryModelConfig("store", "gpt-4.1-mini", "text-embedding-3-small", "llm-secret-2", "embedding-secret-2"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.model", "gpt-4.1-mini"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.credentials.api_key", "llm-secret-2"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.model", "text-embedding-3-small"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.credentials.api_key", "embedding-secret-2"),
+				),
+			},
+		},
+	})
+}
+
 func TestAgentMemoryResource_updateDoesNotReplaceDependentAPIKey(t *testing.T) {
 	name := "store"
 	apiKeyExists := false
@@ -873,6 +1002,71 @@ resource "rediscloud_agent_memory" "example" {
 	})
 }
 
+func TestAgentMemoryResource_mockedImportWithModelConfig(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
+			writeStoreResponseWithModelConfig(t, w, "store", "gpt-4o-mini", "text-embedding-3-small")
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testProviderConfig(server.URL) + `
+resource "rediscloud_agent_memory" "example" {
+  name                       = "store"
+  database_id                = 123
+  short_term_ttl_seconds     = 86400
+  long_term_ttl_seconds      = 31536000
+  extraction_cadence_seconds = 300
+
+  llm {
+    provider = "openai"
+    model    = "gpt-4o-mini"
+  }
+
+  embedding {
+    provider = "openai"
+    model    = "text-embedding-3-small"
+  }
+}
+`,
+				ResourceName:  "rediscloud_agent_memory.example",
+				ImportState:   true,
+				ImportStateId: "store-1",
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					attrs := states[0].Attributes
+					expected := map[string]string{
+						"llm.provider":       "openai",
+						"llm.model":          "gpt-4o-mini",
+						"embedding.provider": "openai",
+						"embedding.model":    "text-embedding-3-small",
+					}
+					for key, want := range expected {
+						if got := attrs[key]; got != want {
+							return fmt.Errorf("expected imported %s to be %q, got %q", key, want, got)
+						}
+					}
+					if _, ok := attrs["llm.credentials.api_key"]; ok {
+						return fmt.Errorf("imported llm credentials api_key should not be set because the Agent Memory API does not return it")
+					}
+					if _, ok := attrs["embedding.credentials.api_key"]; ok {
+						return fmt.Errorf("imported embedding credentials api_key should not be set because the Agent Memory API does not return it")
+					}
+					return nil
+				},
+			},
+		},
+	})
+}
+
 func TestAgentMemoryResource_rejectsInvalidExtractionCadence(t *testing.T) {
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
@@ -916,6 +1110,192 @@ resource "rediscloud_agent_memory" "example" {
 }
 `,
 				ExpectError: regexp.MustCompile(`1.*31536000|31536000.*1`),
+			},
+		},
+	})
+}
+
+func TestAgentMemoryResource_rejectsIncompleteModelConfig(t *testing.T) {
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testProviderConfig("https://example.invalid") + `
+resource "rediscloud_agent_memory" "example" {
+  name                  = "store"
+  database_id           = 123
+  long_term_ttl_seconds = 31536000
+
+  llm {
+    provider = "openai"
+    model    = "gpt-4o-mini"
+
+    credentials {
+      type    = "apiKey"
+      api_key = "llm-secret"
+    }
+  }
+}
+`,
+				ExpectError: regexp.MustCompile("embedding must be configured when llm is configured"),
+			},
+		},
+	})
+}
+
+func TestAgentMemoryResource_rejectsModelConfigWithoutLongTermTTL(t *testing.T) {
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testProviderConfig("https://example.invalid") + `
+resource "rediscloud_agent_memory" "example" {
+  name        = "store"
+  database_id = 123
+
+  llm {
+    provider = "openai"
+    model    = "gpt-4o-mini"
+
+    credentials {
+      type    = "apiKey"
+      api_key = "llm-secret"
+    }
+  }
+
+  embedding {
+    provider = "openai"
+    model    = "text-embedding-3-small"
+
+    credentials {
+      type    = "apiKey"
+      api_key = "embedding-secret"
+    }
+  }
+}
+`,
+				ExpectError: regexp.MustCompile("long_term_ttl_seconds must be configured when embedding is configured"),
+			},
+		},
+	})
+}
+
+func TestAgentMemoryResource_rejectsAddingModelConfigAfterCreate(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
+			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
+			writeStoreResponse(t, w, "store", 86400, 31536000, 300)
+		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testProviderConfig(server.URL) + `
+resource "rediscloud_agent_memory" "example" {
+  name                       = "store"
+  database_id                = 123
+  short_term_ttl_seconds     = 86400
+  long_term_ttl_seconds      = 31536000
+  extraction_cadence_seconds = 300
+}
+`,
+			},
+			{
+				Config:      testProviderConfig(server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
+				ExpectError: regexp.MustCompile("Unsupported Agent Memory model configuration change"),
+			},
+		},
+	})
+}
+
+func TestAgentMemoryResource_rejectsEmbeddingModelChange(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
+			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
+			writeStoreResponseWithModelConfig(t, w, "store", "gpt-4o-mini", "text-embedding-3-small")
+		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testProviderConfig(server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
+			},
+			{
+				Config:      testProviderConfig(server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-large", "llm-secret", "embedding-secret"),
+				ExpectError: regexp.MustCompile("embedding.model as immutable after creation"),
+			},
+		},
+	})
+}
+
+func TestAgentMemoryResource_rejectsModelConfigRemoval(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
+			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
+			writeStoreResponseWithModelConfig(t, w, "store", "gpt-4o-mini", "text-embedding-3-small")
+		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
+			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{
+				Config: testProviderConfig(server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
+			},
+			{
+				Config: testProviderConfig(server.URL) + `
+resource "rediscloud_agent_memory" "example" {
+  name                       = "store"
+  database_id                = 123
+  short_term_ttl_seconds     = 86400
+  long_term_ttl_seconds      = 31536000
+  extraction_cadence_seconds = 300
+}
+`,
+				ExpectError: regexp.MustCompile("Unsupported Agent Memory model configuration removal"),
 			},
 		},
 	})
@@ -1401,13 +1781,49 @@ provider "rediscloud" {
 func writeStoreResponse(t *testing.T, w http.ResponseWriter, name string, shortTTL, longTTL, cadence int) {
 	t.Helper()
 	require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
-		"storeId":           "store-1",
-		"name":              name,
-		"databaseId":        "123",
-		"shortMemory":       map[string]any{"ttlSeconds": shortTTL},
-		"longTermMemory":    map[string]any{"ttlSeconds": longTTL},
-		"extractionCadence": map[string]any{"activeIntervalSeconds": cadence},
-		"endpoint":          "https://aws-us-east-1.memory.redis.io",
+		"storeId":            "store-1",
+		"name":               name,
+		"databaseId":         "123",
+		"shortMemory":        map[string]any{"ttlSeconds": shortTTL},
+		"longTermMemory":     map[string]any{"ttlSeconds": longTTL},
+		"extractionCadence":  map[string]any{"activeIntervalSeconds": cadence},
+		"extractionStrategy": "INSTRUCT",
+		"endpoint":           "https://aws-us-east-1.memory.redis.io",
+		"endpoints": []map[string]any{
+			{
+				"url":          "https://aws-us-east-1.memory.redis.io",
+				"provider":     "AWS",
+				"region":       "us-east-1",
+				"egressIps":    []string{"10.0.0.1"},
+				"isAccessible": true,
+			},
+		},
+		"status":    "READY",
+		"createdAt": "2026-09-22T12:00:00Z",
+	}))
+}
+
+func writeStoreResponseWithModelConfig(t *testing.T, w http.ResponseWriter, name, llmModel, embeddingModel string) {
+	t.Helper()
+	require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+		"storeId":     "store-1",
+		"name":        name,
+		"databaseId":  "123",
+		"shortMemory": map[string]any{"ttlSeconds": 86400},
+		"longTermMemory": map[string]any{
+			"ttlSeconds": 31536000,
+			"embedding": map[string]any{
+				"provider": "openai",
+				"model":    embeddingModel,
+			},
+		},
+		"llm": map[string]any{
+			"provider": "openai",
+			"model":    llmModel,
+		},
+		"extractionCadence":  map[string]any{"activeIntervalSeconds": 300},
+		"extractionStrategy": "INSTRUCT",
+		"endpoint":           "https://aws-us-east-1.memory.redis.io",
 		"endpoints": []map[string]any{
 			{
 				"url":          "https://aws-us-east-1.memory.redis.io",
@@ -1438,6 +1854,38 @@ func advancedCustomMemoryTypesResponse(prompt string, enabled bool) []map[string
 	}
 }
 
+func agentMemoryModelConfig(name, llmModel, embeddingModel, llmAPIKey, embeddingAPIKey string) string {
+	return fmt.Sprintf(`
+resource "rediscloud_agent_memory" "example" {
+  name                       = %[1]q
+  database_id                = 123
+  short_term_ttl_seconds     = 86400
+  long_term_ttl_seconds      = 31536000
+  extraction_cadence_seconds = 300
+
+  llm {
+    provider = "openai"
+    model    = %[2]q
+
+    credentials {
+      type    = "apiKey"
+      api_key = %[4]q
+    }
+  }
+
+  embedding {
+    provider = "openai"
+    model    = %[3]q
+
+    credentials {
+      type    = "apiKey"
+      api_key = %[5]q
+    }
+  }
+}
+`, name, llmModel, embeddingModel, llmAPIKey, embeddingAPIKey)
+}
+
 func advancedCustomMemoryTypesResponseWithAdditional() []map[string]any {
 	memoryTypes := advancedCustomMemoryTypesResponse("test", true)
 	memoryTypes = append(memoryTypes, map[string]any{
@@ -1466,12 +1914,13 @@ func writeAdvancedStoreResponseWithValues(t *testing.T, w http.ResponseWriter, n
 func writeAdvancedStoreResponseWithCustomMemoryTypes(t *testing.T, w http.ResponseWriter, name string, threshold, retainCount int, semanticPrompt, emailAction string, customMemoryTypes []map[string]any) {
 	t.Helper()
 	require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
-		"storeId":           "store-advanced",
-		"name":              name,
-		"databaseId":        "123",
-		"shortMemory":       map[string]any{"ttlSeconds": 86400},
-		"longTermMemory":    map[string]any{"ttlSeconds": 604800},
-		"extractionCadence": map[string]any{"activeIntervalSeconds": 300},
+		"storeId":            "store-advanced",
+		"name":               name,
+		"databaseId":         "123",
+		"shortMemory":        map[string]any{"ttlSeconds": 86400},
+		"longTermMemory":     map[string]any{"ttlSeconds": 604800},
+		"extractionCadence":  map[string]any{"activeIntervalSeconds": 300},
+		"extractionStrategy": "INSTRUCT",
 		"summarization": map[string]any{
 			"enabled":         true,
 			"triggerStrategy": "event_count",
@@ -1528,12 +1977,13 @@ func writeAdvancedStoreResponseWithDisabledGroups(t *testing.T, w http.ResponseW
 	t.Helper()
 	enabled := true
 	require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
-		"storeId":           "store-advanced",
-		"name":              name,
-		"databaseId":        "123",
-		"shortMemory":       map[string]any{"ttlSeconds": 86400},
-		"longTermMemory":    map[string]any{"ttlSeconds": 604800},
-		"extractionCadence": map[string]any{"activeIntervalSeconds": 300},
+		"storeId":            "store-advanced",
+		"name":               name,
+		"databaseId":         "123",
+		"shortMemory":        map[string]any{"ttlSeconds": 86400},
+		"longTermMemory":     map[string]any{"ttlSeconds": 604800},
+		"extractionCadence":  map[string]any{"activeIntervalSeconds": 300},
+		"extractionStrategy": "INSTRUCT",
 		"summarization": map[string]any{
 			"enabled":         false,
 			"triggerStrategy": "event_count",
