@@ -229,7 +229,7 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 		state.LongTermMemoryExclusions = exclusionsToModel(store.LongTermMemoryExclusions)
 	}
 	if includeAPIOnlyConfig || state.CustomMemoryTypes != nil || len(store.CustomMemoryTypes) == 0 {
-		state.CustomMemoryTypes = customMemoryTypesToModel(store.CustomMemoryTypes)
+		state.CustomMemoryTypes = customMemoryTypesToModel(store.CustomMemoryTypes, state.CustomMemoryTypes)
 	}
 
 	switch {
