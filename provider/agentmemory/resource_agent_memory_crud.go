@@ -27,6 +27,8 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 		DatabaseID:               int(plan.DatabaseID.ValueInt64()),
 		ShortMemory:              shortMemoryFromPlan(plan),
 		LongTermMemory:           longTermMemoryFromPlan(plan),
+		LLM:                      modelConfigFromModel(plan.LLM),
+		ExtractionStrategy:       stringFromValue(plan.ExtractionStrategy),
 		ExtractionCadence:        extractionCadenceFromPlan(plan),
 		Summarization:            summarizationFromModel(plan.Summarization),
 		LongTermMemoryExclusions: exclusionsFromModel(plan.LongTermMemoryExclusions),
@@ -103,6 +105,12 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 	if !plan.LongTermTTLSeconds.Equal(state.LongTermTTLSeconds) {
 		update.LongTermMemory = longTermMemoryFromPlan(plan)
 	}
+	if !modelConfigEqual(plan.Embedding, state.Embedding) {
+		update.LongTermMemory = longTermMemoryFromPlan(plan)
+	}
+	if !modelConfigEqual(plan.LLM, state.LLM) {
+		update.LLM = modelConfigFromModel(plan.LLM)
+	}
 	if !plan.ExtractionCadenceSeconds.Equal(state.ExtractionCadenceSeconds) {
 		update.ExtractionCadence = extractionCadenceFromPlan(plan)
 	}
@@ -158,10 +166,16 @@ func shortMemoryFromPlan(plan AgentMemoryResourceModel) *agentmemoryapi.ShortMem
 }
 
 func longTermMemoryFromPlan(plan AgentMemoryResourceModel) *agentmemoryapi.LongTermMemoryConfig {
-	if plan.LongTermTTLSeconds.IsNull() || plan.LongTermTTLSeconds.IsUnknown() {
+	if (plan.LongTermTTLSeconds.IsNull() || plan.LongTermTTLSeconds.IsUnknown()) && plan.Embedding == nil {
 		return nil
 	}
-	return &agentmemoryapi.LongTermMemoryConfig{TTLSeconds: int(plan.LongTermTTLSeconds.ValueInt64())}
+	config := &agentmemoryapi.LongTermMemoryConfig{
+		Embedding: modelConfigFromModel(plan.Embedding),
+	}
+	if !plan.LongTermTTLSeconds.IsNull() && !plan.LongTermTTLSeconds.IsUnknown() {
+		config.TTLSeconds = int(plan.LongTermTTLSeconds.ValueInt64())
+	}
+	return config
 }
 
 func extractionCadenceFromPlan(plan AgentMemoryResourceModel) *agentmemoryapi.ExtractionCadenceConfig {
@@ -193,6 +207,13 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 	} else {
 		state.LongTermTTLSeconds = types.Int64Null()
 	}
+	state.ExtractionStrategy = stringValue(store.ExtractionStrategy)
+	state.LLM = modelConfigToModel(store.LLM, state.LLM)
+	var embedding *agentmemoryapi.ModelStatus
+	if store.LongTermMemory != nil {
+		embedding = store.LongTermMemory.Embedding
+	}
+	state.Embedding = modelConfigToModel(embedding, state.Embedding)
 	if store.ExtractionCadence != nil {
 		state.ExtractionCadenceSeconds = types.Int64Value(int64(store.ExtractionCadence.ActiveIntervalSeconds))
 	} else {

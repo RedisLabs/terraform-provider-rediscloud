@@ -33,9 +33,49 @@ resource "rediscloud_agent_memory" "example" {
 
   short_term_ttl_seconds     = 86400
   long_term_ttl_seconds      = 31536000
+  extraction_strategy        = "INSTRUCT"
   extraction_cadence_seconds = 300
 }
 ```
+
+### Service with customer-managed models
+
+```hcl
+resource "rediscloud_agent_memory" "example" {
+  name        = "example-memory"
+  database_id = rediscloud_subscription_database.example.db_id
+
+  short_term_ttl_seconds     = 86400
+  long_term_ttl_seconds      = 31536000
+  extraction_strategy        = "INSTRUCT"
+  extraction_cadence_seconds = 300
+
+  llm {
+    provider = "openai"
+    model    = "gpt-4o-mini"
+
+    credentials {
+      type    = "apiKey"
+      api_key = var.agent_memory_llm_api_key
+    }
+  }
+
+  embedding {
+    provider = "openai"
+    model    = "text-embedding-3-small"
+
+    credentials {
+      type    = "apiKey"
+      api_key = var.agent_memory_embedding_api_key
+    }
+  }
+}
+```
+
+Use sensitive variables for model provider credentials. `llm.credentials.api_key`
+and `embedding.credentials.api_key` can reference different keys, or the same
+key if the model provider credential is allowed to call both the LLM and
+embedding models. Redis Cloud stores these credentials as write-only values.
 
 ### Service with advanced memory configuration
 
@@ -46,6 +86,7 @@ resource "rediscloud_agent_memory" "example" {
 
   short_term_ttl_seconds     = 86400
   long_term_ttl_seconds      = 31536000
+  extraction_strategy        = "INSTRUCT"
   extraction_cadence_seconds = 300
 
   summarization {
@@ -127,8 +168,22 @@ The following arguments are optional:
 * `short_term_ttl_seconds` - Short-term memory TTL in seconds.
   The API accepts 1 second to 1 year.
 * `long_term_ttl_seconds` - Long-term memory TTL in seconds.
-  The API accepts 1 second to 1 year.
+  The API accepts 1 second to 1 year. This must be configured explicitly when `embedding` is configured.
+* `extraction_strategy` - How long-term memories are extracted from sessions.
+  Currently only `INSTRUCT` is supported by the Agent Memory API.
 * `extraction_cadence_seconds` - How often the extraction pipeline runs while a session is active. When configured, the API currently accepts 60-600 seconds.
+* `llm` - Customer-managed LLM configuration. If configured, `embedding` must also be configured.
+  * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service.
+  * `model` - Model name advertised by the provider.
+  * `credentials` - Provider credential configuration.
+    * `type` - Credential type. Currently only `apiKey` is supported.
+    * `api_key` - Provider API key. This value is sensitive and write-only in the Agent Memory API.
+* `embedding` - Customer-managed embedding model configuration for long-term memory. If configured, `llm` must also be configured.
+  * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service.
+  * `model` - Model name advertised by the provider.
+  * `credentials` - Provider credential configuration.
+    * `type` - Credential type. Currently only `apiKey` is supported.
+    * `api_key` - Provider API key. This value is sensitive and write-only in the Agent Memory API.
 * `summarization` - Automatic session summarization configuration.
   * `enabled` - Whether automatic summarization is enabled.
   * `trigger_strategy` - Summarization trigger strategy. Currently only `event_count` is supported.
@@ -171,6 +226,19 @@ All time-based arguments are expressed in seconds.
 Most configuration can be updated in place. Changing `database_id` replaces the
 Agent Memory service because it changes the backing database.
 
+For customer-managed models, `llm` and `embedding` must be configured together
+when the Agent Memory service is first created. The Agent Memory API does not
+allow a store created with platform-managed models to move to customer-managed
+models later. The provider blocks that plan instead of sending a request that
+the API will reject. After creation, `llm.provider`, `embedding.provider`, and
+`embedding.model` are immutable. `llm.model` can be updated within the existing
+provider, and model credentials can be rotated by updating `credentials.api_key`.
+Credentials are write-only and cannot be recovered from the API during import.
+The control-plane API stores model credentials, while data-plane operations
+such as long-term memory create/search validate them when the model provider is
+called. If a credential is missing or invalid, those data-plane operations can
+return an `Invalid Model Credentials` error.
+
 For `custom_memory_types`, the provider follows the Agent Memory API behavior:
 new custom memory types can be added in place, and `extraction_strategy.prompt`
 or `extraction_strategy.enabled` can be updated for existing custom memory
@@ -199,3 +267,13 @@ Memory service for those changes.
 ```shell
 $ terraform import rediscloud_agent_memory.example store-id
 ```
+
+For imported services with customer-managed models, the provider imports the
+model metadata returned by Redis Cloud, such as `llm.provider`, `llm.model`,
+`embedding.provider`, and `embedding.model`. Model provider credentials are not
+returned by the Agent Memory API, so they are not populated during import.
+If the Terraform configuration includes `credentials` blocks after import, the
+first plan can show an in-place update to send those write-only credentials
+back to Redis Cloud. This is expected and does not replace the Agent Memory
+service. To rotate credentials after import, update the relevant
+`credentials.api_key` values and run `terraform apply`.

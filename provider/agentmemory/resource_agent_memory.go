@@ -98,6 +98,14 @@ func (r *agentMemoryResource) Schema(_ context.Context, _ resource.SchemaRequest
 					int64validator.Between(1, 31536000),
 				},
 			},
+			"extraction_strategy": schema.StringAttribute{
+				Description: "How long-term memories are extracted from sessions. Currently only INSTRUCT is supported by the Agent Memory API.",
+				Optional:    true,
+				Computed:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("INSTRUCT"),
+				},
+			},
 			"extraction_cadence_seconds": schema.Int64Attribute{
 				Description: "How often the extraction pipeline runs while a session is active. When configured, the API currently accepts 60-600 seconds.",
 				Optional:    true,
@@ -129,12 +137,51 @@ func (r *agentMemoryResource) Schema(_ context.Context, _ resource.SchemaRequest
 			},
 		},
 		Blocks: map[string]schema.Block{
+			"llm":                         modelConfigBlock("Customer-managed LLM configuration. Configure this together with embedding to opt into customer-managed models."),
+			"embedding":                   modelConfigBlock("Customer-managed embedding model configuration for long-term memory. Configure this together with llm to opt into customer-managed models."),
 			"summarization":               summarizationBlock(),
 			"long_term_memory_exclusions": longTermMemoryExclusionsBlock(),
 			"custom_memory_types":         customMemoryTypesBlock(),
 		},
 	}
 
+}
+
+func modelConfigBlock(description string) schema.SingleNestedBlock {
+	return schema.SingleNestedBlock{
+		Description: description,
+		Attributes: map[string]schema.Attribute{
+			"provider": schema.StringAttribute{
+				Description: "Model provider. The Agent Memory API validates this against the providers supported by the service.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"model": schema.StringAttribute{
+				Description: "Model name advertised by the provider.",
+				Optional:    true,
+				Computed:    true,
+			},
+		},
+		Blocks: map[string]schema.Block{
+			"credentials": schema.SingleNestedBlock{
+				Description: "Customer-supplied model provider credentials. Credentials are write-only in the Agent Memory API and are preserved in Terraform state when configured.",
+				Attributes: map[string]schema.Attribute{
+					"type": schema.StringAttribute{
+						Description: "Credential type. Currently only apiKey is supported.",
+						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("apiKey"),
+						},
+					},
+					"api_key": schema.StringAttribute{
+						Description: "Provider API key.",
+						Optional:    true,
+						Sensitive:   true,
+					},
+				},
+			},
+		},
+	}
 }
 
 func summarizationBlock() schema.SingleNestedBlock {
@@ -435,14 +482,19 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 	}
 
 	var state AgentMemoryResourceModel
-	if !req.State.Raw.IsNull() {
+	hasState := !req.State.Raw.IsNull()
+	if hasState {
 		resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
 
+	validateModelConfigPlan(plan, state, hasState, resp)
 	validateCustomMemoryTypesPlan(plan, state, resp)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	if plan.Summarization == nil {
 		validateExclusionsPlan(plan, resp)
