@@ -12,6 +12,9 @@ type AgentMemoryResourceModel struct {
 	DatabaseID               types.Int64                        `tfsdk:"database_id"`
 	ShortTermTTLSeconds      types.Int64                        `tfsdk:"short_term_ttl_seconds"`
 	LongTermTTLSeconds       types.Int64                        `tfsdk:"long_term_ttl_seconds"`
+	LLM                      *AgentMemoryModelConfigModel       `tfsdk:"llm"`
+	Embedding                *AgentMemoryModelConfigModel       `tfsdk:"embedding"`
+	ExtractionStrategy       types.String                       `tfsdk:"extraction_strategy"`
 	ExtractionCadenceSeconds types.Int64                        `tfsdk:"extraction_cadence_seconds"`
 	Summarization            *AgentMemorySummarizationModel     `tfsdk:"summarization"`
 	LongTermMemoryExclusions *AgentMemoryExclusionsModel        `tfsdk:"long_term_memory_exclusions"`
@@ -36,6 +39,17 @@ var agentMemoryEndpointAttrTypes = customtypes.AttrTypesOf(AgentMemoryEndpointMo
 
 func agentMemoryEndpointObjectType() types.ObjectType {
 	return types.ObjectType{AttrTypes: agentMemoryEndpointAttrTypes}
+}
+
+type AgentMemoryModelConfigModel struct {
+	Provider    types.String                      `tfsdk:"provider"`
+	Model       types.String                      `tfsdk:"model"`
+	Credentials *AgentMemoryModelCredentialsModel `tfsdk:"credentials"`
+}
+
+type AgentMemoryModelCredentialsModel struct {
+	Type   types.String `tfsdk:"type"`
+	APIKey types.String `tfsdk:"api_key"`
 }
 
 type AgentMemorySummarizationModel struct {
