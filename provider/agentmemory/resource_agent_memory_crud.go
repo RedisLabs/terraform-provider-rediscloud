@@ -112,6 +112,7 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 	if plan.LongTermMemoryExclusions != nil {
 		update.LongTermMemoryExclusions = exclusionsFromModel(plan.LongTermMemoryExclusions)
 	}
+	update.AddCustomMemoryTypes, update.UpdateCustomMemoryTypeStrategies = customMemoryTypeUpdatesFromPlan(plan.CustomMemoryTypes, state.CustomMemoryTypes)
 
 	storeID := state.ID.ValueString()
 	if err := r.client.Client.AgentMemory.Update(ctx, storeID, update); err != nil {
