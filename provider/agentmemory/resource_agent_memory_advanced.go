@@ -5,6 +5,67 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+func modelConfigFromModel(model *AgentMemoryModelConfigModel) *agentmemoryapi.ModelConfig {
+	if model == nil {
+		return nil
+	}
+
+	config := &agentmemoryapi.ModelConfig{
+		Provider: stringFromValue(model.Provider),
+		Model:    stringFromValue(model.Model),
+	}
+	if model.Credentials != nil {
+		config.Credentials = &agentmemoryapi.ModelCredentials{
+			Type:   stringFromValue(model.Credentials.Type),
+			APIKey: stringFromValue(model.Credentials.APIKey),
+		}
+	}
+
+	return config
+}
+
+func modelConfigToModel(status *agentmemoryapi.ModelStatus, existing *AgentMemoryModelConfigModel) *AgentMemoryModelConfigModel {
+	if status == nil {
+		return existing
+	}
+
+	// Model provider credentials are write-only in Agent Memory, so preserve
+	// the value from Terraform state when it was configured by Terraform.
+	model := &AgentMemoryModelConfigModel{
+		Provider:    stringValue(status.Provider),
+		Model:       stringValue(status.Model),
+		Credentials: modelCredentialsFromExisting(existing),
+	}
+	return model
+}
+
+func modelCredentialsFromExisting(existing *AgentMemoryModelConfigModel) *AgentMemoryModelCredentialsModel {
+	if existing == nil || existing.Credentials == nil {
+		return nil
+	}
+	return &AgentMemoryModelCredentialsModel{
+		Type:   existing.Credentials.Type,
+		APIKey: existing.Credentials.APIKey,
+	}
+}
+
+func modelConfigEqual(left, right *AgentMemoryModelConfigModel) bool {
+	if left == nil || right == nil {
+		return left == nil && right == nil
+	}
+	if !left.Provider.Equal(right.Provider) || !left.Model.Equal(right.Model) {
+		return false
+	}
+	return modelCredentialsEqual(left.Credentials, right.Credentials)
+}
+
+func modelCredentialsEqual(left, right *AgentMemoryModelCredentialsModel) bool {
+	if left == nil || right == nil {
+		return left == nil && right == nil
+	}
+	return left.Type.Equal(right.Type) && left.APIKey.Equal(right.APIKey)
+}
+
 func summarizationFromModel(model *AgentMemorySummarizationModel) *agentmemoryapi.SummarizationConfig {
 	if model == nil {
 		return nil
