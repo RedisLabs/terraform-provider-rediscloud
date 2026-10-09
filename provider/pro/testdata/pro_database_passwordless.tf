@@ -1,3 +1,11 @@
+variable "team_name" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 variable "subscription_name" {
   type = string
 }
@@ -13,6 +21,11 @@ resource "rediscloud_subscription" "example" {
   public_endpoint_access = false
 
   cloud_provider {
+    resource_tags = {
+      team_name = var.team_name
+      owner     = var.owner
+    }
+
     provider = "AWS"
     region {
       region                     = "eu-west-1"

@@ -19,6 +19,7 @@ import (
 )
 
 func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	name := testRandomWithPrefix()
 	awsRegion := "eu-west-1"
@@ -26,13 +27,15 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 	const resourceName = "rediscloud_active_active_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
+		PreCheck:     envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
 		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				ConfigFile:               config.StaticFile("./peering/testdata/active_active_peering_aws.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(name),
 					"aws_region":        config.StringVariable(awsRegion),
 				},
@@ -51,6 +54,12 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 				),
 			},
 			{
+				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
+					"subscription_name": config.StringVariable(name),
+					"aws_region":        config.StringVariable(awsRegion),
+				},
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				ResourceName:             resourceName,
 				ImportState:              true,

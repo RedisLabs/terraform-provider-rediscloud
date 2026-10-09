@@ -12,7 +12,6 @@ import (
 )
 
 func TestAccDataSourceRedisCloudSubscriptionPeerings_basic(t *testing.T) {
-
 	name := testRandomWithPrefix()
 
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()

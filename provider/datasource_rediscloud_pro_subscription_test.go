@@ -9,6 +9,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -20,6 +21,7 @@ const (
 )
 
 func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	name := testRandomWithPrefix()
 
@@ -34,17 +36,25 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 	proSubDataConfig = fmt.Sprintf(proSubDataConfig, name)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: proSubConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "name", regexp.MustCompile(name)),
 				),
 			},
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: proSubDataConfig + proSubConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(dataSourceName, "name", regexp.MustCompile(name)),
@@ -81,6 +91,7 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 }
 
 func TestAccDataSourceRedisCloudProSubscription_ignoresAA(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
@@ -89,11 +100,15 @@ func TestAccDataSourceRedisCloudProSubscription_ignoresAA(t *testing.T) {
 	config = fmt.Sprintf(config, name+"-subscription", password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config:      config,
 				ExpectError: regexp.MustCompile("Your query returned no results. Please change your search criteria and try again."),
 			},

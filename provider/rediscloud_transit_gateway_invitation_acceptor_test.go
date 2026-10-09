@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -18,6 +19,7 @@ import (
 )
 
 func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	awsRegion, awsRegionCheck := envchecks.ValueAndCheck("AWS_REGION")
 	subscriptionName := testRandomWithPrefix() + "-pro-tgw"
@@ -28,7 +30,7 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 	const routeResourceName = "rediscloud_transit_gateway_route.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck, awsRegionCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck, awsRegionCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"aws": {
@@ -43,11 +45,19 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 		CheckDestroy: testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./transitgateway/testdata/pro_transit_gateway_invitation_acceptor.tf"),
 					subscriptionName, awsRegion),
 			},
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				RefreshState: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(invitationsDatasourceName, "subscription_id"),
@@ -75,6 +85,10 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 				),
 			},
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./transitgateway/testdata/pro_transit_gateway_route_update.tf"),
 					subscriptionName, awsRegion),
@@ -86,17 +100,29 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 				),
 			},
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				ResourceName:            acceptorResourceName,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"action"},
 			},
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				ResourceName:      attachmentResourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				ResourceName:      routeResourceName,
 				ImportState:       true,
 				ImportStateVerify: true,

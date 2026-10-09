@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
@@ -19,6 +20,7 @@ import (
 // changes. Users must explicitly set source_ips when changing public_endpoint_access.
 
 func TestAccRedisCloudProDatabase_DefaultSourceIPs_PrivateAccess(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	const databaseResource = "rediscloud_subscription_database.example"
 	const datasourceName = "data.rediscloud_database.example"
@@ -29,11 +31,15 @@ func TestAccRedisCloudProDatabase_DefaultSourceIPs_PrivateAccess(t *testing.T) {
 	configDisabled := fmt.Sprintf(contentDisabled, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: configDisabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify subscription has public_endpoint_access disabled
@@ -64,6 +70,7 @@ func TestAccRedisCloudProDatabase_DefaultSourceIPs_PrivateAccess(t *testing.T) {
 }
 
 func TestAccRedisCloudProDatabase_DefaultSourceIPs_PublicAccess(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	const databaseResource = "rediscloud_subscription_database.example"
 	const datasourceName = "data.rediscloud_database.example"
@@ -74,11 +81,15 @@ func TestAccRedisCloudProDatabase_DefaultSourceIPs_PublicAccess(t *testing.T) {
 	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: configEnabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify subscription has public_endpoint_access enabled

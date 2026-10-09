@@ -1,3 +1,11 @@
+variable "team_name" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 variable "rediscloud_cloud_account" {
   type = string
 }
@@ -25,6 +33,11 @@ resource "rediscloud_subscription" "example" {
   name              = var.rediscloud_subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider {
+    resource_tags = {
+      team_name = var.team_name
+      owner     = var.owner
+    }
+
     provider         = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
     region {

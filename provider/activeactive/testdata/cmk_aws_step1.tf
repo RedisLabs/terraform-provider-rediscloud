@@ -1,3 +1,11 @@
+variable "team_name" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 terraform {
   required_providers {
     aws = {
@@ -68,6 +76,11 @@ resource "aws_kms_replica_key" "cmk_replica" {
 # No customer_managed_key blocks yet, so the role ARN comes back in state
 # and key policies can reference it.
 resource "rediscloud_active_active_subscription" "example" {
+  resource_tags = {
+    team_name = var.team_name
+    owner     = var.owner
+  }
+
   name                         = var.name
   payment_method               = "credit-card"
   payment_method_id            = data.rediscloud_payment_method.card.id

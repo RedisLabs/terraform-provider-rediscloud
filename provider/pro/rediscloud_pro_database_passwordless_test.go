@@ -15,6 +15,7 @@ import (
 )
 
 func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	const databaseResource = "rediscloud_subscription_database.example"
 	const datasourceName = "data.rediscloud_database.example"
@@ -22,7 +23,7 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -30,6 +31,8 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -45,6 +48,8 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_password_only.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
 				},
@@ -58,6 +63,8 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -70,6 +77,8 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
 				ResourceName:            databaseResource,
@@ -82,6 +91,7 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 }
 
 func TestAccRedisCloudProDatabase_ExplicitPasswordFalseWithPassword(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	const databaseResource = "rediscloud_subscription_database.example"
 	const datasourceName = "data.rediscloud_database.example"
@@ -89,7 +99,7 @@ func TestAccRedisCloudProDatabase_ExplicitPasswordFalseWithPassword(t *testing.T
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -97,6 +107,8 @@ func TestAccRedisCloudProDatabase_ExplicitPasswordFalseWithPassword(t *testing.T
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_explicit_password.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
 				},
@@ -110,6 +122,8 @@ func TestAccRedisCloudProDatabase_ExplicitPasswordFalseWithPassword(t *testing.T
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -123,6 +137,7 @@ func TestAccRedisCloudProDatabase_ExplicitPasswordFalseWithPassword(t *testing.T
 }
 
 func TestAccRedisCloudProDatabase_PasswordToPasswordless(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	const databaseResource = "rediscloud_subscription_database.example"
 	const datasourceName = "data.rediscloud_database.example"
@@ -130,7 +145,7 @@ func TestAccRedisCloudProDatabase_PasswordToPasswordless(t *testing.T) {
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -138,6 +153,8 @@ func TestAccRedisCloudProDatabase_PasswordToPasswordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_password_only.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
 				},
@@ -151,6 +168,8 @@ func TestAccRedisCloudProDatabase_PasswordToPasswordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -164,11 +183,12 @@ func TestAccRedisCloudProDatabase_PasswordToPasswordless(t *testing.T) {
 }
 
 func TestAccRedisCloudProDatabase_PasswordlessDisableWithoutPassword(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	subscriptionName := utils.RandomWithPrefix()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -176,6 +196,8 @@ func TestAccRedisCloudProDatabase_PasswordlessDisableWithoutPassword(t *testing.
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
 			},
@@ -183,6 +205,8 @@ func TestAccRedisCloudProDatabase_PasswordlessDisableWithoutPassword(t *testing.
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless_disabled_no_password.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
 				ExpectError: regexp.MustCompile(`when disabling passwordless mode, you must provide a 'password'`),
@@ -192,12 +216,13 @@ func TestAccRedisCloudProDatabase_PasswordlessDisableWithoutPassword(t *testing.
 }
 
 func TestAccRedisCloudProDatabase_PasswordlessWithPasswordConflict(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	subscriptionName := utils.RandomWithPrefix()
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -205,6 +230,8 @@ func TestAccRedisCloudProDatabase_PasswordlessWithPasswordConflict(t *testing.T)
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless_with_password.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
 				},

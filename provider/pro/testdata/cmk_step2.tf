@@ -1,3 +1,11 @@
+variable "team_name" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 terraform {
   required_providers {
     google = {
@@ -82,6 +90,11 @@ resource "rediscloud_subscription" "example" {
   }
 
   cloud_provider {
+    resource_tags = {
+      team_name = var.team_name
+      owner     = var.owner
+    }
+
     provider = "GCP"
     region {
       region                     = "europe-west2"

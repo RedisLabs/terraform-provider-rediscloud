@@ -30,6 +30,8 @@ import (
 // Bug behaviour: us-east-1 incorrectly got enable_default_user = true
 // Fixed behaviour: us-east-1 should inherit false from global
 func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserInheritance(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+
 	subscriptionName := testRandomWithPrefix() + "-inherit-test"
 	databaseName := testRandomWithPrefix() + "-database"
 	password := acctest.RandString(20)
@@ -38,13 +40,15 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserInheritance(
 	const subscriptionResourceName = "rediscloud_active_active_subscription.test"
 
 	configVars := config.Variables{
+		"team_name":         config.StringVariable(resourceTags.TeamName),
+		"owner":             config.StringVariable(resourceTags.Owner),
 		"subscription_name": config.StringVariable(subscriptionName),
 		"database_name":     config.StringVariable(databaseName),
 		"password":          config.StringVariable(password),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -68,6 +72,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserInheritance(
 }
 
 func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+
 	subscriptionName := testRandomWithPrefix() + "-enable-default-user"
 	databaseName := testRandomWithPrefix() + "-database"
 	password := acctest.RandString(20)
@@ -76,6 +82,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 	const subscriptionResourceName = "rediscloud_active_active_subscription.test"
 
 	configVars := config.Variables{
+		"team_name":         config.StringVariable(resourceTags.TeamName),
+		"owner":             config.StringVariable(resourceTags.Owner),
 		"subscription_name": config.StringVariable(subscriptionName),
 		"database_name":     config.StringVariable(databaseName),
 		"password":          config.StringVariable(password),
@@ -85,7 +93,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 	var initialDbId string
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
