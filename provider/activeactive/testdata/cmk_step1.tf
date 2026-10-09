@@ -1,3 +1,11 @@
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 terraform {
   required_providers {
     google = {
@@ -50,6 +58,11 @@ resource "google_kms_crypto_key" "cmk" {
 
 # Create subscription (enters encryption_key_pending state)
 resource "rediscloud_active_active_subscription" "example" {
+  resource_tags = {
+    team  = var.team
+    owner = var.owner
+  }
+
   name                         = var.name
   payment_method_id            = data.rediscloud_payment_method.card.id
   customer_managed_key_enabled = true

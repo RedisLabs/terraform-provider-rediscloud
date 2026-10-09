@@ -18,18 +18,22 @@ import (
 func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 	t.Skip("developer-only: GCP_CMK_RESOURCE_NAME is not provided by CI (nor set anywhere in the repo) and the test needs a manual mid-run pause to grant CMK permissions; run locally with that var set. TODO: automate via the GCP provider (see above)")
 
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
 	gcpCmkResourceName, gcpCmkResourceNameCheck := envchecks.ValueAndCheck("GCP_CMK_RESOURCE_NAME")
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, gcpCmkResourceNameCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, gcpCmkResourceNameCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/cmk_gcp_step1.tf"),
 				ConfigVariables: config.Variables{
+					"team":              config.StringVariable(resourceTags.Team),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(name),
 				},
 				ExpectNonEmptyPlan: true,
@@ -48,6 +52,8 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/cmk_gcp_step1.tf"),
 				ConfigVariables: config.Variables{
+					"team":                  config.StringVariable(resourceTags.Team),
+					"owner":                 config.StringVariable(resourceTags.Owner),
 					"subscription_name":     config.StringVariable(name),
 					"gcp_cmk_resource_name": config.StringVariable(gcpCmkResourceName),
 				},
@@ -72,16 +78,19 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 // It uses the hashicorp/aws external provider to create the KMS key and key policy
 // in-fixture, removing the need for a pre-existing AWS_CMK_KEY_ARN.
 func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	name := testRandomWithPrefix() + "-pro-cmk-aws"
 	const resourceName = "rediscloud_subscription.example"
 
 	configVars := config.Variables{
-		"name": config.StringVariable(name),
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
+		"name":  config.StringVariable(name),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
+		PreCheck:     envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
 		CheckDestroy: testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{

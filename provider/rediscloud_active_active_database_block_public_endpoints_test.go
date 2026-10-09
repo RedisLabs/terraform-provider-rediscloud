@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
@@ -21,6 +22,7 @@ import (
 // source_ips are explicitly set and verifies they are preserved across public_endpoint_access changes.
 
 func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PrivateAccess(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	const databaseResource = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
@@ -31,11 +33,15 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PrivateAccess(t *t
 	configDisabled := fmt.Sprintf(contentDisabled, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: configDisabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify the subscription has public_endpoint_access disabled
@@ -65,6 +71,7 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PrivateAccess(t *t
 }
 
 func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PublicAccess(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	const databaseResource = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
@@ -75,11 +82,15 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PublicAccess(t *te
 	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: configEnabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify the subscription has public_endpoint_access enabled
@@ -103,6 +114,7 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PublicAccess(t *te
 }
 
 func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	const databaseResource = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
@@ -116,11 +128,15 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) 
 	configEnabled := fmt.Sprintf(contentEnabled, subscriptionName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: configDisabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify the subscription has public_endpoint_access disabled
@@ -158,6 +174,10 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) 
 				),
 			},
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: configEnabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify the subscription has public_endpoint_access enabled

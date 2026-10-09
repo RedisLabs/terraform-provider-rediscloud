@@ -23,11 +23,15 @@ import (
 func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 	t.Skip("developer-only: GCP CMK is not supported in CI. The CI service account behind GOOGLE_CREDENTIALS lacks `cloudkms.keyRings.create` on the test project, so the in-fixture key ring cannot be created. Run locally with credentials holding roles/cloudkms.admin.")
 
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
 	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
 
 	configVars := config.Variables{
+		"team":           config.StringVariable(resourceTags.Team),
+		"owner":          config.StringVariable(resourceTags.Owner),
 		"name":           config.StringVariable(name),
 		"gcp_project_id": config.StringVariable(gcpProjectId),
 		"maintenance_windows": config.ListVariable(config.ObjectVariable(
@@ -44,7 +48,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.GCPProviderCheck),
+		PreCheck:     envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, envchecks.GCPProviderCheck),
 		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
@@ -100,12 +104,15 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 // (primary in us-east-1, replica in us-east-2) and key policies in-fixture,
 // removing the need for a pre-existing AWS_CMK_KEY_ARN.
 func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	name := testRandomWithPrefix() + "-aa-cmk-aws"
 	const resourceName = "rediscloud_active_active_subscription.example"
 
 	configVars := config.Variables{
-		"name": config.StringVariable(name),
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
+		"name":  config.StringVariable(name),
 		"maintenance_windows": config.ListVariable(config.ObjectVariable(
 			map[string]config.Variable{
 				"mode": config.StringVariable("manual"),
@@ -120,7 +127,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
+		PreCheck:     envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
 		CheckDestroy: testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{

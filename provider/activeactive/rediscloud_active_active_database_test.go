@@ -23,6 +23,8 @@ import (
 
 // Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the database resource.
 func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+
 	subscriptionName := utils.RandomWithPrefix() + "-subscription"
 	databaseName := utils.RandomWithPrefix() + "-database"
 	databaseNameUpdated := databaseName + "-updated"
@@ -36,7 +38,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 	var subId, dbId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -44,6 +46,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("./testdata/database_crudi_create.tf"),
 				ConfigVariables: config.Variables{
+					"team":              config.StringVariable(resourceTags.Team),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"database_name":     config.StringVariable(databaseName),
 					"password":          config.StringVariable(password),
@@ -163,6 +167,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("./testdata/database_crudi_update.tf"),
 				ConfigVariables: config.Variables{
+					"team":              config.StringVariable(resourceTags.Team),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"database_name":     config.StringVariable(databaseNameUpdated),
 					"redis_version":     config.StringVariable("8.4"),
@@ -219,6 +225,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("./testdata/database_crudi_update.tf"),
 				ConfigVariables: config.Variables{
+					"team":              config.StringVariable(resourceTags.Team),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"database_name":     config.StringVariable(databaseNameUpdated),
 					"redis_version":     config.StringVariable("8.2"),
@@ -275,6 +283,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("./testdata/database_crudi_update.tf"),
 				ConfigVariables: config.Variables{
+					"team":              config.StringVariable(resourceTags.Team),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"database_name":     config.StringVariable(databaseNameUpdated),
 					"redis_version":     config.StringVariable("8.4"),
@@ -331,6 +341,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("./testdata/database_crudi_update_no_alerts.tf"),
 				ConfigVariables: config.Variables{
+					"team":              config.StringVariable(resourceTags.Team),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"database_name":     config.StringVariable(databaseNameUpdated),
 					"redis_version":     config.StringVariable("8.2"),
@@ -357,6 +369,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_CRUDI(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("./testdata/database_crudi_import.tf"),
 				ConfigVariables: config.Variables{
+					"team":              config.StringVariable(resourceTags.Team),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"database_name":     config.StringVariable(databaseNameUpdated),
 				},
@@ -572,19 +586,22 @@ resource "rediscloud_active_active_subscription_database" "example" {
 `
 
 func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	subscriptionName := utils.RandomWithPrefix() + "-subscription"
 	databaseName := utils.RandomWithPrefix() + "-database"
 	const resourceName = "rediscloud_active_active_subscription_database.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database creation with auto_minor_version_upgrade set to false
 			{
 				ConfigFile: config.StaticFile("./testdata/auto_minor_version_upgrade.tf"), ConfigVariables: config.Variables{
+					"team":                       config.StringVariable(resourceTags.Team),
+					"owner":                      config.StringVariable(resourceTags.Owner),
 					"subscription_name":          config.StringVariable(subscriptionName),
 					"database_name":              config.StringVariable(databaseName),
 					"auto_minor_version_upgrade": config.BoolVariable(false),
@@ -598,6 +615,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 			{
 				ConfigFile: config.StaticFile("./testdata/auto_minor_version_upgrade.tf"),
 				ConfigVariables: config.Variables{
+					"team":                       config.StringVariable(resourceTags.Team),
+					"owner":                      config.StringVariable(resourceTags.Owner),
 					"subscription_name":          config.StringVariable(subscriptionName),
 					"database_name":              config.StringVariable(databaseName),
 					"auto_minor_version_upgrade": config.BoolVariable(true),
@@ -611,12 +630,14 @@ func TestAccResourceRedisCloudActiveActiveDatabase_autoMinorVersionUpgrade(t *te
 }
 
 func TestAccResourceRedisCloudActiveActiveDatabase_modulesImmutable(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+
 	subscriptionName := utils.RandomWithPrefix() + "-modules-immutable"
 	databaseName := utils.RandomWithPrefix() + "-database"
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -624,6 +645,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_modulesImmutable(t *testing.T
 			{
 				ConfigFile: config.StaticFile("./testdata/modules_immutable_create.tf"),
 				ConfigVariables: config.Variables{
+					"team":              config.StringVariable(resourceTags.Team),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"database_name":     config.StringVariable(databaseName),
 					"password":          config.StringVariable(password),
@@ -637,6 +660,8 @@ func TestAccResourceRedisCloudActiveActiveDatabase_modulesImmutable(t *testing.T
 			{
 				ConfigFile: config.StaticFile("./testdata/modules_immutable_change.tf"),
 				ConfigVariables: config.Variables{
+					"team":              config.StringVariable(resourceTags.Team),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"database_name":     config.StringVariable(databaseName),
 					"password":          config.StringVariable(password),

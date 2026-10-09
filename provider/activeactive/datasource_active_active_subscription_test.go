@@ -19,18 +19,22 @@ const (
 )
 
 func TestAccDataSourceRedisCloudActiveActiveSubscription_basic(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const dataSourceName = "data.rediscloud_active_active_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ConfigFile: config.StaticFile(aaSubscriptionResourceConfigFile),
 				ConfigVariables: config.Variables{
+					"team":              config.StringVariable(resourceTags.Team),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(name),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -41,6 +45,8 @@ func TestAccDataSourceRedisCloudActiveActiveSubscription_basic(t *testing.T) {
 			{
 				ConfigDirectory: config.StaticDirectory(aaSubscriptionDataSourceConfigDirectory),
 				ConfigVariables: config.Variables{
+					"team":              config.StringVariable(resourceTags.Team),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(name),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(

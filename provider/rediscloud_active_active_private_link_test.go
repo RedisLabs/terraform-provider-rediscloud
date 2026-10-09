@@ -13,6 +13,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
 	pl "github.com/RedisLabs/rediscloud-go-api/service/privatelink"
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -22,6 +23,7 @@ const testActiveActivePrivateLinkConfigFile = "./privatelink/testdata/active_act
 const testActiveActivePrivateLinkConfigWithoutPrivateLinkFile = "./privatelink/testdata/active_active_private_link_without_privatelink.tf"
 
 func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	const resourceName = "rediscloud_active_active_private_link.aa_private_link"
 	const subscriptionResourceName = "rediscloud_active_active_subscription.aa_subscription"
@@ -38,12 +40,16 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 	terraformConfigWithoutPrivateLink := getRedisActiveActivePrivateLinkConfigWithoutPrivateLink(t, subName, cloudAccountName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create everything including privatelink
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: terraformConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -70,12 +76,20 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 			},
 			// Step 2: Import test
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 			// Step 3: Remove privatelink, verify deletion via API
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: terraformConfigWithoutPrivateLink,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(subscriptionResourceName, "id"),

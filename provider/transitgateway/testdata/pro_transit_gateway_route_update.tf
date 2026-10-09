@@ -1,3 +1,11 @@
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 locals {
   subscription_name = "%s"
   aws_region        = "%s"
@@ -19,6 +27,11 @@ resource "rediscloud_subscription" "example" {
   memory_storage    = "ram"
 
   cloud_provider {
+    resource_tags = {
+      team  = var.team
+      owner = var.owner
+    }
+
     provider         = "AWS"
     cloud_account_id = "1"
     region {

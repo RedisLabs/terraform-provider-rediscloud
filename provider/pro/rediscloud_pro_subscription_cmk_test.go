@@ -23,11 +23,15 @@ import (
 func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 	t.Skip("developer-only: GCP CMK is not supported in CI. The CI service account behind GOOGLE_CREDENTIALS lacks `cloudkms.keyRings.create` on the test project, so the in-fixture key ring cannot be created. Run locally with credentials holding roles/cloudkms.admin.")
 
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+
 	name := utils.RandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
 	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
 
 	configVars := config.Variables{
+		"team":           config.StringVariable(resourceTags.Team),
+		"owner":          config.StringVariable(resourceTags.Owner),
 		"name":           config.StringVariable(name),
 		"gcp_project_id": config.StringVariable(gcpProjectId),
 		"maintenance_windows": config.ListVariable(config.ObjectVariable(
@@ -44,7 +48,7 @@ func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:     envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, envchecks.GCPProviderCheck),
+		PreCheck:     envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, envchecks.GCPProviderCheck),
 		CheckDestroy: checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{

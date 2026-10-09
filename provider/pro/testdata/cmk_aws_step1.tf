@@ -1,3 +1,11 @@
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 terraform {
   required_providers {
     aws = {
@@ -44,6 +52,11 @@ resource "rediscloud_subscription" "example" {
   customer_managed_key_enabled = true
 
   cloud_provider {
+    resource_tags = {
+      team  = var.team
+      owner = var.owner
+    }
+
     provider = "AWS"
     region {
       region                     = "us-east-1"
