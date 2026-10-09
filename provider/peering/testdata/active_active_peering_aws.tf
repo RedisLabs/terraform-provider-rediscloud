@@ -1,3 +1,11 @@
+variable "team_name" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 terraform {
   required_providers {
     aws = {
@@ -37,6 +45,11 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_active_active_subscription" "example" {
+  resource_tags = {
+    team_name = var.team_name
+    owner     = var.owner
+  }
+
   name              = var.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider    = "AWS"

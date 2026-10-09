@@ -15,27 +15,36 @@ import (
 )
 
 func TestActiveActiveSubscriptionResourceTags_OnCreate_CRUDI(t *testing.T) {
+	byocResourceTags, byocResourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceName = "data.rediscloud_active_active_subscription.example"
 	resourceTags := map[string]config.Variable{
-		"env": config.StringVariable("dev"),
+		"team_name": config.StringVariable(byocResourceTags.TeamName),
+		"owner":     config.StringVariable(byocResourceTags.Owner),
+		"env":       config.StringVariable("dev"),
 	}
 	resourceTagsCheck := map[string]knownvalue.Check{
-		"env": knownvalue.StringExact("dev"),
+		"team_name": knownvalue.StringExact(byocResourceTags.TeamName),
+		"owner":     knownvalue.StringExact(byocResourceTags.Owner),
+		"env":       knownvalue.StringExact("dev"),
 	}
 
 	resourceTagsUpdate := map[string]config.Variable{
-		"env": config.StringVariable("prod"),
+		"team_name": config.StringVariable(byocResourceTags.TeamName),
+		"owner":     config.StringVariable(byocResourceTags.Owner),
+		"env":       config.StringVariable("prod"),
 	}
 	resourceTagsUpdateCheck := map[string]knownvalue.Check{
-		"env": knownvalue.StringExact("prod"),
+		"team_name": knownvalue.StringExact(byocResourceTags.TeamName),
+		"owner":     knownvalue.StringExact(byocResourceTags.Owner),
+		"env":       knownvalue.StringExact("prod"),
 	}
 
 	subscriptionName := testRandomWithPrefix()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, byocResourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -103,20 +112,25 @@ func TestActiveActiveSubscriptionResourceTags_OnCreate_CRUDI(t *testing.T) {
 }
 
 func TestActiveActiveSubscriptionResourceTags_CRUDI(t *testing.T) {
+	byocResourceTags, byocResourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceName = "data.rediscloud_active_active_subscription.example"
 	resourceTags := map[string]config.Variable{
-		"env": config.StringVariable("dev"),
+		"team_name": config.StringVariable(byocResourceTags.TeamName),
+		"owner":     config.StringVariable(byocResourceTags.Owner),
+		"env":       config.StringVariable("dev"),
 	}
 	resourceTagsCheck := map[string]knownvalue.Check{
-		"env": knownvalue.StringExact("dev"),
+		"team_name": knownvalue.StringExact(byocResourceTags.TeamName),
+		"owner":     knownvalue.StringExact(byocResourceTags.Owner),
+		"env":       knownvalue.StringExact("dev"),
 	}
 
 	subscriptionName := testRandomWithPrefix()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, byocResourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{

@@ -16,6 +16,7 @@ import (
 // TestAccActiveActiveDatabase_Passwordless creates a passwordless AA database,
 // transitions to password-protected, and transitions back.
 func TestAccActiveActiveDatabase_Passwordless(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	const databaseResource = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
@@ -23,7 +24,7 @@ func TestAccActiveActiveDatabase_Passwordless(t *testing.T) {
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -31,6 +32,8 @@ func TestAccActiveActiveDatabase_Passwordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -45,6 +48,8 @@ func TestAccActiveActiveDatabase_Passwordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless_to_password.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
 				},
@@ -58,6 +63,8 @@ func TestAccActiveActiveDatabase_Passwordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -73,18 +80,21 @@ func TestAccActiveActiveDatabase_Passwordless(t *testing.T) {
 // TestAccActiveActiveDatabase_PasswordlessWithPasswordConflict verifies that
 // setting both global_enable_passwordless=true and global_password produces a plan error.
 func TestAccActiveActiveDatabase_PasswordlessWithPasswordConflict(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	subscriptionName := testRandomWithPrefix()
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless_with_password.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
 				},
@@ -97,6 +107,7 @@ func TestAccActiveActiveDatabase_PasswordlessWithPasswordConflict(t *testing.T) 
 // TestAccActiveActiveDatabase_PasswordlessRegionOverride tests per-region passwordless
 // override with global password set.
 func TestAccActiveActiveDatabase_PasswordlessRegionOverride(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	const databaseResource = "rediscloud_active_active_subscription_database.example"
 	const datasourceName = "data.rediscloud_active_active_subscription_database.example"
@@ -104,7 +115,7 @@ func TestAccActiveActiveDatabase_PasswordlessRegionOverride(t *testing.T) {
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -112,6 +123,8 @@ func TestAccActiveActiveDatabase_PasswordlessRegionOverride(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless_override_region.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
 				},
@@ -136,11 +149,12 @@ func TestAccActiveActiveDatabase_PasswordlessRegionOverride(t *testing.T) {
 // TestAccActiveActiveDatabase_PasswordlessDisableWithoutPassword verifies that
 // transitioning from passwordless to password-protected without providing a password produces an error.
 func TestAccActiveActiveDatabase_PasswordlessDisableWithoutPassword(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	subscriptionName := testRandomWithPrefix()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -148,6 +162,8 @@ func TestAccActiveActiveDatabase_PasswordlessDisableWithoutPassword(t *testing.T
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -158,6 +174,8 @@ func TestAccActiveActiveDatabase_PasswordlessDisableWithoutPassword(t *testing.T
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless_disabled_no_password.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
 				ExpectError: regexp.MustCompile(`When disabling passwordless mode, you must provide a 'global_password'`),
@@ -170,18 +188,21 @@ func TestAccActiveActiveDatabase_PasswordlessDisableWithoutPassword(t *testing.T
 // setting both override_global_enable_passwordless=true and override_global_password in the
 // same region produces a plan error.
 func TestAccActiveActiveDatabase_PasswordlessRegionOverrideWithPasswordConflict(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	subscriptionName := testRandomWithPrefix()
 	password := acctest.RandString(20)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkAASubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless_override_with_password.tf"),
 				ConfigVariables: config.Variables{
+					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
 				},

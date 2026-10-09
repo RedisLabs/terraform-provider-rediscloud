@@ -1,3 +1,11 @@
+variable "team_name" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 terraform {
   required_providers {
     aws = {
@@ -106,6 +114,11 @@ resource "aws_kms_key_policy" "cmk_replica" {
 # Step 2: subscription now references both KMS key ARNs (per-region),
 # transitioning out of encryption_key_pending.
 resource "rediscloud_active_active_subscription" "example" {
+  resource_tags = {
+    team_name = var.team_name
+    owner     = var.owner
+  }
+
   name                         = var.name
   payment_method               = "credit-card"
   payment_method_id            = data.rediscloud_payment_method.card.id

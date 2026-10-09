@@ -18,7 +18,6 @@ import (
 )
 
 func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
-
 	prefix := testRandomWithPrefix()
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 	exampleSubscriptionName := prefix + "-subscription"

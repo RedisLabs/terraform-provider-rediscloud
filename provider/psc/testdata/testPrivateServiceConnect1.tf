@@ -1,3 +1,11 @@
+variable "team_name" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 locals {
   rediscloud_subscription_name = "%s"
 }
@@ -12,6 +20,11 @@ resource "rediscloud_subscription" "subscription_resource" {
   payment_method_id = data.rediscloud_payment_method.card.id
 
   cloud_provider {
+    resource_tags = {
+      team_name = var.team_name
+      owner     = var.owner
+    }
+
     provider = "GCP"
     region {
       region                     = "us-central1"

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -21,6 +22,7 @@ import (
 
 // checks that a redis 8 database can be provisioned
 func TestAccResourceRedisCloudProDatabase_Redis8(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
@@ -31,11 +33,15 @@ func TestAccResourceRedisCloudProDatabase_Redis8(t *testing.T) {
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: getRedis8DatabaseConfig(t, cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
@@ -99,6 +105,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
@@ -111,12 +118,16 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database and replica database creation
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_with_replica.tf"), cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
@@ -184,6 +195,10 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 			},
 			// Test database is updated successfully
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_update.tf"), cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example-updated"),
@@ -211,6 +226,10 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 			},
 			// Test that alerts are deleted
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_update_destroy_alerts.tf"), cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "alert.#", "0"),
@@ -218,6 +237,10 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 			},
 			// Test that a 32-character password is generated when no password is provided
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_no_password.tf"), cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.no_password_database", "ram_percentage", "20"),
@@ -232,6 +255,10 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 			},
 			// Test that that database is imported successfully
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				ResourceName:      "rediscloud_subscription_database.no_password_database",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -243,6 +270,7 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 
 // Checks that users can upgrade from 7.2 to 8.0
 func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
@@ -253,12 +281,16 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Test database and replica database creation with Redis 7.2
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: getRedis7DatabaseConfig(t, cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "example"),
@@ -319,6 +351,10 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 			},
 			// Test database is updated successfully to Redis 8.0
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: getRedis8DatabaseConfig(t, cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "redis_version", "8.2"),
@@ -330,6 +366,8 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 
 // Test that modules cannot be set on Redis 8.x
 func TestAccResourceRedisCloudProDatabase_Redis8_ModulesBlocked(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+
 	t.Skip("modules + Redis 8.0+ currently emits a warning, not a hard error; revive when block behaviour is implemented")
 
 	name := testRandomWithPrefix()
@@ -337,11 +375,15 @@ func TestAccResourceRedisCloudProDatabase_Redis8_ModulesBlocked(t *testing.T) {
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
+					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config:      getRedis8WithModulesConfig(t, cloudAccountName, name, password),
 				ExpectError: regexp.MustCompile(`"modules" cannot be explicitly set for Redis version 8\.0 as modules are bundled by default`),
 			},
