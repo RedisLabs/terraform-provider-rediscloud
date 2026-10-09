@@ -1,4 +1,4 @@
-variable "team_name" {
+variable "team" {
   type = string
 }
 
@@ -115,8 +115,8 @@ resource "aws_kms_key_policy" "cmk_replica" {
 # transitioning out of encryption_key_pending.
 resource "rediscloud_active_active_subscription" "example" {
   resource_tags = {
-    team_name = var.team_name
-    owner     = var.owner
+    team  = var.team
+    owner = var.owner
   }
 
   name                         = var.name

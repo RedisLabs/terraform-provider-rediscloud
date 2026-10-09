@@ -39,8 +39,8 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PrivateAccess(t *t
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: configDisabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -88,8 +88,8 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PublicAccess(t *te
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: configEnabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -134,8 +134,8 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) 
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: configDisabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -175,8 +175,8 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) 
 			},
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: configEnabled,
 				Check: resource.ComposeAggregateTestCheckFunc(

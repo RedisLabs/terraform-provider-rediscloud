@@ -40,7 +40,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUserInheritance(
 	const subscriptionResourceName = "rediscloud_active_active_subscription.test"
 
 	configVars := config.Variables{
-		"team_name":         config.StringVariable(resourceTags.TeamName),
+		"team":              config.StringVariable(resourceTags.Team),
 		"owner":             config.StringVariable(resourceTags.Owner),
 		"subscription_name": config.StringVariable(subscriptionName),
 		"database_name":     config.StringVariable(databaseName),
@@ -82,7 +82,7 @@ func TestAccResourceRedisCloudActiveActiveDatabase_enableDefaultUser(t *testing.
 	const subscriptionResourceName = "rediscloud_active_active_subscription.test"
 
 	configVars := config.Variables{
-		"team_name":         config.StringVariable(resourceTags.TeamName),
+		"team":              config.StringVariable(resourceTags.Team),
 		"owner":             config.StringVariable(resourceTags.Owner),
 		"subscription_name": config.StringVariable(subscriptionName),
 		"database_name":     config.StringVariable(databaseName),

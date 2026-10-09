@@ -1,4 +1,4 @@
-variable "team_name" {
+variable "team" {
   type = string
 }
 
@@ -59,8 +59,8 @@ resource "google_kms_crypto_key" "cmk" {
 # Create subscription (enters encryption_key_pending state)
 resource "rediscloud_active_active_subscription" "example" {
   resource_tags = {
-    team_name = var.team_name
-    owner     = var.owner
+    team  = var.team
+    owner = var.owner
   }
 
   name                         = var.name

@@ -30,7 +30,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
 
 	configVars := config.Variables{
-		"team_name":      config.StringVariable(resourceTags.TeamName),
+		"team":           config.StringVariable(resourceTags.Team),
 		"owner":          config.StringVariable(resourceTags.Owner),
 		"name":           config.StringVariable(name),
 		"gcp_project_id": config.StringVariable(gcpProjectId),
@@ -110,9 +110,9 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 	const resourceName = "rediscloud_active_active_subscription.example"
 
 	configVars := config.Variables{
-		"team_name": config.StringVariable(resourceTags.TeamName),
-		"owner":     config.StringVariable(resourceTags.Owner),
-		"name":      config.StringVariable(name),
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
+		"name":  config.StringVariable(name),
 		"maintenance_windows": config.ListVariable(config.ObjectVariable(
 			map[string]config.Variable{
 				"mode": config.StringVariable("manual"),

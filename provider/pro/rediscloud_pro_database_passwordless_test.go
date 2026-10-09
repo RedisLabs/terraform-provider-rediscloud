@@ -31,7 +31,7 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
@@ -48,7 +48,7 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_password_only.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
@@ -63,7 +63,7 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
@@ -77,7 +77,7 @@ func TestAccRedisCloudProDatabase_Passwordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
@@ -107,7 +107,7 @@ func TestAccRedisCloudProDatabase_ExplicitPasswordFalseWithPassword(t *testing.T
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_explicit_password.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
@@ -122,7 +122,7 @@ func TestAccRedisCloudProDatabase_ExplicitPasswordFalseWithPassword(t *testing.T
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
@@ -153,7 +153,7 @@ func TestAccRedisCloudProDatabase_PasswordToPasswordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_password_only.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
@@ -168,7 +168,7 @@ func TestAccRedisCloudProDatabase_PasswordToPasswordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
@@ -196,7 +196,7 @@ func TestAccRedisCloudProDatabase_PasswordlessDisableWithoutPassword(t *testing.
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
@@ -205,7 +205,7 @@ func TestAccRedisCloudProDatabase_PasswordlessDisableWithoutPassword(t *testing.
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless_disabled_no_password.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
@@ -230,7 +230,7 @@ func TestAccRedisCloudProDatabase_PasswordlessWithPasswordConflict(t *testing.T)
 			{
 				ConfigFile: config.StaticFile("testdata/pro_database_passwordless_with_password.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),

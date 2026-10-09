@@ -52,17 +52,17 @@ func AWSBYOCValueAndCheck() (string, func(t *testing.T) bool) {
 }
 
 type BYOCResourceTags struct {
-	TeamName string
-	Owner    string
+	Team  string
+	Owner string
 }
 
 func BYOCResourceTagsValueAndCheck() (BYOCResourceTags, func(t *testing.T) bool) {
-	teamName, teamCheck := ValueAndCheck("TEAM_RESOURCE_TAG")
+	team, teamCheck := ValueAndCheck("TEAM_RESOURCE_TAG")
 	owner, ownerCheck := ValueAndCheck("OWNER_RESOURCE_TAG")
 	check := func(t *testing.T) bool {
 		return composeChecks(t, teamCheck, ownerCheck)
 	}
-	return BYOCResourceTags{TeamName: teamName, Owner: owner}, check
+	return BYOCResourceTags{Team: team, Owner: owner}, check
 }
 
 func GCPProjectValueAndCheck() (string, func(t *testing.T) bool) {

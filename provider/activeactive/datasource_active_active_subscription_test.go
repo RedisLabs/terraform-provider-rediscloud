@@ -33,7 +33,7 @@ func TestAccDataSourceRedisCloudActiveActiveSubscription_basic(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile(aaSubscriptionResourceConfigFile),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(name),
 				},
@@ -45,7 +45,7 @@ func TestAccDataSourceRedisCloudActiveActiveSubscription_basic(t *testing.T) {
 			{
 				ConfigDirectory: config.StaticDirectory(aaSubscriptionDataSourceConfigDirectory),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(name),
 				},

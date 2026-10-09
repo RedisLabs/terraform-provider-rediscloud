@@ -20,25 +20,25 @@ func TestActiveActiveSubscriptionResourceTags_OnCreate_CRUDI(t *testing.T) {
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceName = "data.rediscloud_active_active_subscription.example"
 	resourceTags := map[string]config.Variable{
-		"team_name": config.StringVariable(byocResourceTags.TeamName),
-		"owner":     config.StringVariable(byocResourceTags.Owner),
-		"env":       config.StringVariable("dev"),
+		"team":  config.StringVariable(byocResourceTags.Team),
+		"owner": config.StringVariable(byocResourceTags.Owner),
+		"env":   config.StringVariable("dev"),
 	}
 	resourceTagsCheck := map[string]knownvalue.Check{
-		"team_name": knownvalue.StringExact(byocResourceTags.TeamName),
-		"owner":     knownvalue.StringExact(byocResourceTags.Owner),
-		"env":       knownvalue.StringExact("dev"),
+		"team":  knownvalue.StringExact(byocResourceTags.Team),
+		"owner": knownvalue.StringExact(byocResourceTags.Owner),
+		"env":   knownvalue.StringExact("dev"),
 	}
 
 	resourceTagsUpdate := map[string]config.Variable{
-		"team_name": config.StringVariable(byocResourceTags.TeamName),
-		"owner":     config.StringVariable(byocResourceTags.Owner),
-		"env":       config.StringVariable("prod"),
+		"team":  config.StringVariable(byocResourceTags.Team),
+		"owner": config.StringVariable(byocResourceTags.Owner),
+		"env":   config.StringVariable("prod"),
 	}
 	resourceTagsUpdateCheck := map[string]knownvalue.Check{
-		"team_name": knownvalue.StringExact(byocResourceTags.TeamName),
-		"owner":     knownvalue.StringExact(byocResourceTags.Owner),
-		"env":       knownvalue.StringExact("prod"),
+		"team":  knownvalue.StringExact(byocResourceTags.Team),
+		"owner": knownvalue.StringExact(byocResourceTags.Owner),
+		"env":   knownvalue.StringExact("prod"),
 	}
 
 	subscriptionName := testRandomWithPrefix()
@@ -117,14 +117,14 @@ func TestActiveActiveSubscriptionResourceTags_CRUDI(t *testing.T) {
 	const resourceName = "rediscloud_active_active_subscription.example"
 	const datasourceName = "data.rediscloud_active_active_subscription.example"
 	resourceTags := map[string]config.Variable{
-		"team_name": config.StringVariable(byocResourceTags.TeamName),
-		"owner":     config.StringVariable(byocResourceTags.Owner),
-		"env":       config.StringVariable("dev"),
+		"team":  config.StringVariable(byocResourceTags.Team),
+		"owner": config.StringVariable(byocResourceTags.Owner),
+		"env":   config.StringVariable("dev"),
 	}
 	resourceTagsCheck := map[string]knownvalue.Check{
-		"team_name": knownvalue.StringExact(byocResourceTags.TeamName),
-		"owner":     knownvalue.StringExact(byocResourceTags.Owner),
-		"env":       knownvalue.StringExact("dev"),
+		"team":  knownvalue.StringExact(byocResourceTags.Team),
+		"owner": knownvalue.StringExact(byocResourceTags.Owner),
+		"env":   knownvalue.StringExact("dev"),
 	}
 
 	subscriptionName := testRandomWithPrefix()

@@ -46,8 +46,8 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./transitgateway/testdata/pro_transit_gateway_invitation_acceptor.tf"),
@@ -55,8 +55,8 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 			},
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				RefreshState: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -86,8 +86,8 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 			},
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(
 					utils.GetTestConfig(t, "./transitgateway/testdata/pro_transit_gateway_route_update.tf"),
@@ -101,8 +101,8 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 			},
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				ResourceName:            acceptorResourceName,
 				ImportState:             true,
@@ -111,8 +111,8 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 			},
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				ResourceName:      attachmentResourceName,
 				ImportState:       true,
@@ -120,8 +120,8 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 			},
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				ResourceName:      routeResourceName,
 				ImportState:       true,

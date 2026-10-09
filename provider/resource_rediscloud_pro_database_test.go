@@ -41,8 +41,8 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 			// Test database and replica database creation
 			{
 				ConfigVariables: config.Variables{
-					"team_name": config.StringVariable(resourceTags.TeamName),
-					"owner":     config.StringVariable(resourceTags.Owner),
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_with_replica.tf"), cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -113,8 +113,8 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 			// Test database is updated successfully
 			{
 				ConfigVariables: config.Variables{
-					"team_name": config.StringVariable(resourceTags.TeamName),
-					"owner":     config.StringVariable(resourceTags.Owner),
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_update.tf"), cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -147,8 +147,8 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 			// Test that alerts are deleted
 			{
 				ConfigVariables: config.Variables{
-					"team_name": config.StringVariable(resourceTags.TeamName),
-					"owner":     config.StringVariable(resourceTags.Owner),
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_update_destroy_alerts.tf"), cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -158,8 +158,8 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 			// Test that a 32-character password is generated when no password is provided
 			{
 				ConfigVariables: config.Variables{
-					"team_name": config.StringVariable(resourceTags.TeamName),
-					"owner":     config.StringVariable(resourceTags.Owner),
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_no_password.tf"), cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -175,8 +175,8 @@ func TestAccResourceRedisCloudProDatabase_CRUDI(t *testing.T) {
 			// Test that that database is imported successfully
 			{
 				ConfigVariables: config.Variables{
-					"team_name": config.StringVariable(resourceTags.TeamName),
-					"owner":     config.StringVariable(resourceTags.Owner),
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				ResourceName:      "rediscloud_subscription_database.no_password_database",
 				ImportState:       true,
@@ -203,7 +203,7 @@ func TestAccResourceRedisCloudProDatabase_optionalAttributes(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_optional_attributes.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":                    config.StringVariable(resourceTags.TeamName),
+					"team":                         config.StringVariable(resourceTags.Team),
 					"owner":                        config.StringVariable(resourceTags.Owner),
 					"rediscloud_cloud_account":     config.StringVariable(cloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
@@ -231,8 +231,8 @@ func TestAccResourceRedisCloudProDatabase_timeUtcRequiresValidInterval(t *testin
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: config.Variables{
-					"team_name": config.StringVariable(resourceTags.TeamName),
-					"owner":     config.StringVariable(resourceTags.Owner),
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config:      fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_invalid_time_utc.tf"), cloudAccountName, name),
 				ExpectError: regexp.MustCompile("unexpected value at remote_backup\\.0\\.time_utc - time_utc can only be set when interval is either every-24-hours or every-12-hours"),
@@ -257,8 +257,8 @@ func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: config.Variables{
-					"team_name": config.StringVariable(resourceTags.TeamName),
-					"owner":     config.StringVariable(resourceTags.Owner),
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_database_multi_modules.tf"), cloudAccountName, name, dbName),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -270,8 +270,8 @@ func TestAccResourceRedisCloudProDatabase_MultiModules(t *testing.T) {
 			},
 			{
 				ConfigVariables: config.Variables{
-					"team_name": config.StringVariable(resourceTags.TeamName),
-					"owner":     config.StringVariable(resourceTags.Owner),
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				ResourceName:      resourceName,
 				ImportState:       true,
@@ -298,7 +298,7 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_resp_versions.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":                    config.StringVariable(resourceTags.TeamName),
+					"team":                         config.StringVariable(resourceTags.Team),
 					"owner":                        config.StringVariable(resourceTags.Owner),
 					"rediscloud_cloud_account":     config.StringVariable(cloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
@@ -312,7 +312,7 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_resp_versions.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":                    config.StringVariable(resourceTags.TeamName),
+					"team":                         config.StringVariable(resourceTags.Team),
 					"owner":                        config.StringVariable(resourceTags.Owner),
 					"rediscloud_cloud_account":     config.StringVariable(cloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
@@ -326,7 +326,7 @@ func TestAccResourceRedisCloudProDatabase_respversion(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_resp_versions.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":                    config.StringVariable(resourceTags.TeamName),
+					"team":                         config.StringVariable(resourceTags.Team),
 					"owner":                        config.StringVariable(resourceTags.Owner),
 					"rediscloud_cloud_account":     config.StringVariable(cloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
@@ -356,7 +356,7 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_auto_minor_version_upgrade.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":                    config.StringVariable(resourceTags.TeamName),
+					"team":                         config.StringVariable(resourceTags.Team),
 					"owner":                        config.StringVariable(resourceTags.Owner),
 					"rediscloud_cloud_account":     config.StringVariable(cloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
@@ -375,7 +375,7 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_auto_minor_version_upgrade.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":                    config.StringVariable(resourceTags.TeamName),
+					"team":                         config.StringVariable(resourceTags.Team),
 					"owner":                        config.StringVariable(resourceTags.Owner),
 					"rediscloud_cloud_account":     config.StringVariable(cloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
@@ -396,7 +396,7 @@ func TestAccResourceRedisCloudProDatabase_autoMinorVersionUpgrade(t *testing.T) 
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/pro_database_auto_minor_version_upgrade.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":                    config.StringVariable(resourceTags.TeamName),
+					"team":                         config.StringVariable(resourceTags.Team),
 					"owner":                        config.StringVariable(resourceTags.Owner),
 					"rediscloud_cloud_account":     config.StringVariable(cloudAccountName),
 					"rediscloud_subscription_name": config.StringVariable(name),
