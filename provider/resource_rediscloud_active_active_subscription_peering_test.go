@@ -34,7 +34,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				ConfigFile:               config.StaticFile("./peering/testdata/active_active_peering_aws.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(name),
 					"aws_region":        config.StringVariable(awsRegion),
@@ -55,7 +55,7 @@ func TestAccResourceRedisCloudActiveActiveSubscriptionPeering_aws(t *testing.T) 
 			},
 			{
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(name),
 					"aws_region":        config.StringVariable(awsRegion),

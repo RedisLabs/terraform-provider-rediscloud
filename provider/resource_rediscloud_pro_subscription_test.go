@@ -46,8 +46,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: testAccResourceRedisCloudProSubscriptionRedis7(t, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -99,8 +99,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 			{
 				// Checks if the changes in the creation plan are ignored.
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, cloudAccountName, name, "ram"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -117,8 +117,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 			{
 				// Checks if the changes to the payment_method are ignored.
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionChangedPaymentMethod, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -127,8 +127,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 			},
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				// Checks if the payment_method and creation_plan block are ignored after the IMPORT operation.
 				ResourceName: resourceName,
@@ -148,8 +148,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 			{
 				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config:       fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, cloudAccountName, name, "ram-and-flash"),
 				ResourceName: resourceName,
@@ -176,8 +176,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: testAccResourceRedisCloudProSubscriptionRedis8(t, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -226,8 +226,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 			{
 				// Checks if the changes in the creation plan are ignored.
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, cloudAccountName, name, "ram"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -244,8 +244,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 			{
 				// Checks if the changes to the payment_method are ignored.
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionChangedPaymentMethod, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -254,8 +254,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 			},
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				// Checks if the payment_method and creation_plan block are ignored after the IMPORT operation.
 				ResourceName: resourceName,
@@ -275,8 +275,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 			{
 				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config:       fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, cloudAccountName, name, "ram-and-flash"),
 				ResourceName: resourceName,
@@ -963,7 +963,7 @@ resource "rediscloud_subscription" "example" {
 `
 
 // TF config for provisioning a subscription without the creation_plan block.
-const testAccResourceRedisCloudProSubscriptionNoCreationPlan = `variable "team_name" {
+const testAccResourceRedisCloudProSubscriptionNoCreationPlan = `variable "team" {
   type = string
 }
 
@@ -995,7 +995,7 @@ resource "rediscloud_subscription" "example" {
 
   cloud_provider {
     resource_tags = {
-      team_name = var.team_name
+      team  = var.team
       owner = var.owner
     }
     provider = data.rediscloud_cloud_account.account.provider_type
@@ -1009,7 +1009,7 @@ resource "rediscloud_subscription" "example" {
 }
 `
 
-const testAccResourceRedisCloudSubscriptionChangedPaymentMethod = `variable "team_name" {
+const testAccResourceRedisCloudSubscriptionChangedPaymentMethod = `variable "team" {
   type = string
 }
 
@@ -1036,7 +1036,7 @@ resource "rediscloud_subscription" "example" {
 
   cloud_provider {
     resource_tags = {
-      team_name = var.team_name
+      team  = var.team
       owner = var.owner
     }
     provider = data.rediscloud_cloud_account.account.provider_type

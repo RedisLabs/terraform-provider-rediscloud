@@ -30,7 +30,7 @@ func TestAccRedisCloudProSubscription_CMK(t *testing.T) {
 	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
 
 	configVars := config.Variables{
-		"team_name":      config.StringVariable(resourceTags.TeamName),
+		"team":           config.StringVariable(resourceTags.Team),
 		"owner":          config.StringVariable(resourceTags.Owner),
 		"name":           config.StringVariable(name),
 		"gcp_project_id": config.StringVariable(gcpProjectId),

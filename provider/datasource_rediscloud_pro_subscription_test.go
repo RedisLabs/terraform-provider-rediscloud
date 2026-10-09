@@ -42,8 +42,8 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: proSubConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -52,8 +52,8 @@ func TestAccDataSourceRedisCloudProSubscription_basic(t *testing.T) {
 			},
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: proSubDataConfig + proSubConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -106,8 +106,8 @@ func TestAccDataSourceRedisCloudProSubscription_ignoresAA(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config:      config,
 				ExpectError: regexp.MustCompile("Your query returned no results. Please change your search criteria and try again."),

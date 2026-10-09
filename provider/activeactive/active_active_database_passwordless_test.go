@@ -32,7 +32,7 @@ func TestAccActiveActiveDatabase_Passwordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
@@ -48,7 +48,7 @@ func TestAccActiveActiveDatabase_Passwordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless_to_password.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
@@ -63,7 +63,7 @@ func TestAccActiveActiveDatabase_Passwordless(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
@@ -93,7 +93,7 @@ func TestAccActiveActiveDatabase_PasswordlessWithPasswordConflict(t *testing.T) 
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless_with_password.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
@@ -123,7 +123,7 @@ func TestAccActiveActiveDatabase_PasswordlessRegionOverride(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless_override_region.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),
@@ -162,7 +162,7 @@ func TestAccActiveActiveDatabase_PasswordlessDisableWithoutPassword(t *testing.T
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
@@ -174,7 +174,7 @@ func TestAccActiveActiveDatabase_PasswordlessDisableWithoutPassword(t *testing.T
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless_disabled_no_password.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 				},
@@ -201,7 +201,7 @@ func TestAccActiveActiveDatabase_PasswordlessRegionOverrideWithPasswordConflict(
 			{
 				ConfigFile: config.StaticFile("testdata/aa_database_passwordless_override_with_password.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(subscriptionName),
 					"password":          config.StringVariable(password),

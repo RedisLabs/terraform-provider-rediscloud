@@ -39,8 +39,8 @@ func TestAccResourceRedisCloudProDatabase_Redis8(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: getRedis8DatabaseConfig(t, cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -125,8 +125,8 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 			// Test database and replica database creation
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_with_replica.tf"), cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -196,8 +196,8 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 			// Test database is updated successfully
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_update.tf"), cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -227,8 +227,8 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 			// Test that alerts are deleted
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_update_destroy_alerts.tf"), cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -238,8 +238,8 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 			// Test that a 32-character password is generated when no password is provided
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(utils.GetTestConfig(t, "./pro/testdata/pro_ram_and_flash_database_redis_8_no_password.tf"), cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -256,8 +256,8 @@ func TestAccResourceRedisCloudProDatabase_Redis8_RamAndFlash_CRUDI(t *testing.T)
 			// Test that that database is imported successfully
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				ResourceName:      "rediscloud_subscription_database.no_password_database",
 				ImportState:       true,
@@ -288,8 +288,8 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 			// Test database and replica database creation with Redis 7.2
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: getRedis7DatabaseConfig(t, cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -352,8 +352,8 @@ func TestAccResourceRedisCloudProDatabase_Redis8_Upgrade(t *testing.T) {
 			// Test database is updated successfully to Redis 8.0
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: getRedis8DatabaseConfig(t, cloudAccountName, name, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -381,8 +381,8 @@ func TestAccResourceRedisCloudProDatabase_Redis8_ModulesBlocked(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config:      getRedis8WithModulesConfig(t, cloudAccountName, name, password),
 				ExpectError: regexp.MustCompile(`"modules" cannot be explicitly set for Redis version 8\.0 as modules are bundled by default`),

@@ -34,8 +34,8 @@ func TestAccDataSourceRedisCloudProDatabase_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{
-					"team_name": tfconfig.StringVariable(resourceTags.TeamName),
-					"owner":     tfconfig.StringVariable(resourceTags.Owner),
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
 				},
 				Config: config,
 				Check: resource.ComposeAggregateTestCheckFunc(

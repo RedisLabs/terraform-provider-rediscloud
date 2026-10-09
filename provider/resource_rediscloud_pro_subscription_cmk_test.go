@@ -32,7 +32,7 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/cmk_gcp_step1.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":         config.StringVariable(resourceTags.TeamName),
+					"team":              config.StringVariable(resourceTags.Team),
 					"owner":             config.StringVariable(resourceTags.Owner),
 					"subscription_name": config.StringVariable(name),
 				},
@@ -52,7 +52,7 @@ func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
 			{
 				ConfigFile: config.StaticFile("./pro/testdata/cmk_gcp_step1.tf"),
 				ConfigVariables: config.Variables{
-					"team_name":             config.StringVariable(resourceTags.TeamName),
+					"team":                  config.StringVariable(resourceTags.Team),
 					"owner":                 config.StringVariable(resourceTags.Owner),
 					"subscription_name":     config.StringVariable(name),
 					"gcp_cmk_resource_name": config.StringVariable(gcpCmkResourceName),
@@ -84,9 +84,9 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 	const resourceName = "rediscloud_subscription.example"
 
 	configVars := config.Variables{
-		"team_name": config.StringVariable(resourceTags.TeamName),
-		"owner":     config.StringVariable(resourceTags.Owner),
-		"name":      config.StringVariable(name),
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
+		"name":  config.StringVariable(name),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{

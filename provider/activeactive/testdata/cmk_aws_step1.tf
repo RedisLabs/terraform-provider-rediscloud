@@ -1,4 +1,4 @@
-variable "team_name" {
+variable "team" {
   type = string
 }
 
@@ -77,8 +77,8 @@ resource "aws_kms_replica_key" "cmk_replica" {
 # and key policies can reference it.
 resource "rediscloud_active_active_subscription" "example" {
   resource_tags = {
-    team_name = var.team_name
-    owner     = var.owner
+    team  = var.team
+    owner = var.owner
   }
 
   name                         = var.name

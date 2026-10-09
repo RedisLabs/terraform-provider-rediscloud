@@ -1,4 +1,4 @@
-variable "team_name" {
+variable "team" {
   type = string
 }
 
@@ -23,8 +23,8 @@ resource "rediscloud_subscription" "example" {
 
   cloud_provider {
     resource_tags = {
-      team_name = var.team_name
-      owner     = var.owner
+      team  = var.team
+      owner = var.owner
     }
 
     provider = "AWS"

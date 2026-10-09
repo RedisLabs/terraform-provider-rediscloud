@@ -1,4 +1,4 @@
-variable "team_name" {
+variable "team" {
   type = string
 }
 
@@ -38,8 +38,8 @@ resource "rediscloud_subscription" "example" {
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider {
     resource_tags = {
-      team_name = var.team_name
-      owner     = var.owner
+      team  = var.team
+      owner = var.owner
     }
 
     provider         = data.rediscloud_cloud_account.account.provider_type

@@ -1,4 +1,4 @@
-variable "team_name" {
+variable "team" {
   type = string
 }
 
@@ -12,8 +12,8 @@ locals {
 
 resource "rediscloud_active_active_subscription" "example" {
   resource_tags = {
-    team_name = var.team_name
-    owner     = var.owner
+    team  = var.team
+    owner = var.owner
   }
 
   name           = local.subscription_name
