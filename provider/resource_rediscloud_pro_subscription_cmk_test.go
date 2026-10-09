@@ -16,9 +16,9 @@ import (
 // to give the CMK the necessary permissions.
 // TODO(tests): integrate the GCP provider and set up these permissions automatically
 func TestAccResourceRedisCloudProSubscription_CMK(t *testing.T) {
-	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
-
 	t.Skip("developer-only: GCP_CMK_RESOURCE_NAME is not provided by CI (nor set anywhere in the repo) and the test needs a manual mid-run pause to grant CMK permissions; run locally with that var set. TODO: automate via the GCP provider (see above)")
+
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
