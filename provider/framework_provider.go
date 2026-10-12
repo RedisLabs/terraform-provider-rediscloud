@@ -21,6 +21,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/cloudaccount"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/datapersistence"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentialsplan"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentialssubscription"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/paymentmethod"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/regions"
@@ -181,6 +182,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 		activeactive.NewActiveActiveSubscriptionDataSource,
 		datapersistence.NewDataPersistenceDataSource,
 		essentialsplan.NewEssentialsPlanDataSource,
+		essentialssubscription.NewEssentialsSubscriptionDataSource,
 		paymentmethod.NewPaymentMethodDataSource,
 		cloudaccount.NewCloudAccountDataSource,
 		regions.NewRegionsDataSource,
