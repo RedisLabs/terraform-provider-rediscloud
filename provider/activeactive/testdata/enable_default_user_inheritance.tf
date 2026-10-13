@@ -1,3 +1,11 @@
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 variable "subscription_name" {
   type = string
 }
@@ -17,6 +25,11 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_active_active_subscription" "test" {
+  resource_tags = {
+    team  = var.team
+    owner = var.owner
+  }
+
   name              = var.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider    = "AWS"

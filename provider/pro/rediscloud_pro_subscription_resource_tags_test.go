@@ -13,6 +13,9 @@ import (
 )
 
 func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
+	t.Skip("temporarily disabled: explicitly tests removing all resource tags from a BYOC subscription")
+
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
@@ -20,7 +23,7 @@ func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 	const resourceName = "rediscloud_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             checkProSubscriptionDestroy,
 		Steps: []resource.TestStep{
@@ -31,14 +34,16 @@ func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 					"cloud_account_name": config.StringVariable(cloudAccountName),
 					"subscription_name":  config.StringVariable(name),
 					"resource_tags": config.MapVariable(map[string]config.Variable{
+						"team":        config.StringVariable(resourceTags.Team),
+						"owner":       config.StringVariable(resourceTags.Owner),
 						"environment": config.StringVariable("staging"),
-						"team":        config.StringVariable("platform"),
 					}),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.resource_tags.environment", "staging"),
-					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.resource_tags.team", "platform"),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.resource_tags.team", resourceTags.Team),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.resource_tags.owner", resourceTags.Owner),
 				),
 			},
 			{
@@ -48,18 +53,30 @@ func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 					"cloud_account_name": config.StringVariable(cloudAccountName),
 					"subscription_name":  config.StringVariable(name),
 					"resource_tags": config.MapVariable(map[string]config.Variable{
+						"team":        config.StringVariable(resourceTags.Team),
+						"owner":       config.StringVariable(resourceTags.Owner),
 						"environment": config.StringVariable("production"),
-						"team":        config.StringVariable("platform"),
 						"cost-centre": config.StringVariable("engineering"),
 					}),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.resource_tags.environment", "production"),
-					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.resource_tags.team", "platform"),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.resource_tags.team", resourceTags.Team),
+					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.resource_tags.owner", resourceTags.Owner),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.resource_tags.cost-centre", "engineering"),
 				),
 			},
 			{
+				ConfigVariables: config.Variables{
+					"cloud_account_name": config.StringVariable(cloudAccountName),
+					"subscription_name":  config.StringVariable(name),
+					"resource_tags": config.MapVariable(map[string]config.Variable{
+						"team":        config.StringVariable(resourceTags.Team),
+						"owner":       config.StringVariable(resourceTags.Owner),
+						"environment": config.StringVariable("production"),
+						"cost-centre": config.StringVariable("engineering"),
+					}),
+				},
 				// Step 3: Refresh-only step to prove the GET path now returns tags directly
 				// from the API (no drift after the update in Step 2).
 				RefreshState:       true,
@@ -85,6 +102,8 @@ func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 					"cloud_account_name": config.StringVariable(cloudAccountName),
 					"subscription_name":  config.StringVariable(name),
 					"resource_tags": config.MapVariable(map[string]config.Variable{
+						"team":        config.StringVariable(resourceTags.Team),
+						"owner":       config.StringVariable(resourceTags.Owner),
 						"environment": config.StringVariable("staging"),
 					}),
 				},
@@ -95,6 +114,8 @@ func TestAccResourceRedisCloudProSubscription_ResourceTags(t *testing.T) {
 					"cloud_account_name": config.StringVariable(cloudAccountName),
 					"subscription_name":  config.StringVariable(name),
 					"resource_tags": config.MapVariable(map[string]config.Variable{
+						"team":        config.StringVariable(resourceTags.Team),
+						"owner":       config.StringVariable(resourceTags.Owner),
 						"environment": config.StringVariable("staging"),
 					}),
 				},

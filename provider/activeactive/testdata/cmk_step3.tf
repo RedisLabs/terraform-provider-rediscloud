@@ -1,3 +1,11 @@
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 variable "name" {
   type = string
 }
@@ -35,6 +43,11 @@ resource "google_kms_crypto_key_iam_member" "viewer" {
 }
 
 resource "rediscloud_active_active_subscription" "example" {
+  resource_tags = {
+    team  = var.team
+    owner = var.owner
+  }
+
   name                         = var.name
   payment_method_id            = data.rediscloud_payment_method.card.id
   customer_managed_key_enabled = true
