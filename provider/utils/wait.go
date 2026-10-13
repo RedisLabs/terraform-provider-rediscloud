@@ -174,14 +174,14 @@ func WaitForTransitGatewayResourceToMatchFilters(
 
 	result, err := wait.WaitForStateContext(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Timeout waiting for %s resource to become available for %s. "+
+		return nil, fmt.Errorf("timeout waiting for %s resource to become available for %s. "+
 			"This may indicate the subscription is still provisioning or there's an issue with the subscription setup. "+
 			"Original error: %w", gatewayName, location, err)
 	}
 
 	task, ok := result.(*attachments.GetAttachmentsTask)
 	if !ok {
-		return nil, fmt.Errorf("Internal error: unexpected result type from wait operation for %s", location)
+		return nil, fmt.Errorf("internal error: unexpected result type from wait operation for %s", location)
 	}
 
 	return task, nil
