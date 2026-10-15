@@ -4,8 +4,8 @@ github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERo
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/ProtonMail/go-crypto v1.4.1 h1:9RfcZHqEQUvP8RzecWEUafnZVtEvrBVL9BiF67IQOfM=
 github.com/ProtonMail/go-crypto v1.4.1/go.mod h1:e1OaTyu5SYVrO9gKOEhTc+5UcXtTUa+P3uLudwcgPqo=
-github.com/RedisLabs/rediscloud-go-api v0.52.2-0.20261009181513-7ae7bef7c657 h1:GJkVypzTIDznNzYperX+EVLeHsncfVDM81CQ38hAhXM=
-github.com/RedisLabs/rediscloud-go-api v0.52.2-0.20261009181513-7ae7bef7c657/go.mod h1:J+eFOFQZTEa84L5/J7tFShMfVknANLMEfr5YYFmitLQ=
+github.com/RedisLabs/rediscloud-go-api v0.52.2-0.20261015194738-24f5866fcb91 h1:/H/HSjJLw+ii3ItcvBb2tC6BOozexdyIKHLDmJ2lvdY=
+github.com/RedisLabs/rediscloud-go-api v0.52.2-0.20261015194738-24f5866fcb91/go.mod h1:8d2F93qXzUvp6Mg/sep60+dt0eAVDPoHAbPoWS/wjjc=
 github.com/agext/levenshtein v1.2.3 h1:YB2fHEn0UJagG8T1rrWknE3ZQzWM06O8AMAatNn7lmo=
 github.com/agext/levenshtein v1.2.3/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki2W0IB5558=
 github.com/apparentlymart/go-textseg/v12 v12.0.0/go.mod h1:S/4uRK2UtaQttw1GenVJEynmyUenKwP++x/+DdGV/Ec=
