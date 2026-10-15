@@ -377,6 +377,7 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	//TODO fix mapping of empty objects to remove non-empty plan on refresh
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutCreate)
 
 	plan := d.Get("creation_plan").([]interface{})
 
@@ -427,21 +428,21 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 
 	// If in a CMK flow, verify the pending state
 	if cmkEnabled {
-		err = utils.WaitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api)
+		err = utils.WaitForSubscriptionToBeEncryptionKeyPending(ctx, subId, api, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		return resourceRedisCloudActiveActiveSubscriptionRead(ctx, d, meta)
+		return resourceRedisCloudActiveActiveSubscriptionReadWithTimeout(ctx, d, meta, timeout)
 	}
 
 	// Confirm Subscription Active status
-	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	// Delete databases created by the subscription creation plan
-	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api); cleanupDiags != nil {
+	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api, timeout); cleanupDiags != nil {
 		return cleanupDiags
 	}
 
@@ -474,10 +475,14 @@ func resourceRedisCloudActiveActiveSubscriptionCreate(ctx context.Context, d *sc
 		}
 	}
 
-	return resourceRedisCloudActiveActiveSubscriptionRead(ctx, d, meta)
+	return resourceRedisCloudActiveActiveSubscriptionReadWithTimeout(ctx, d, meta, timeout)
 }
 
 func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	return resourceRedisCloudActiveActiveSubscriptionReadWithTimeout(ctx, d, meta, d.Timeout(schema.TimeoutRead))
+}
+
+func resourceRedisCloudActiveActiveSubscriptionReadWithTimeout(ctx context.Context, d *schema.ResourceData, meta interface{}, timeout time.Duration) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
 
 	var diags diag.Diagnostics
@@ -499,7 +504,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 
 	// Skip active wait when in CMK pending state
 	if *subscription.Status != subscriptions.SubscriptionStatusEncryptionKeyPending {
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 
@@ -609,6 +614,7 @@ func resourceRedisCloudActiveActiveSubscriptionRead(ctx context.Context, d *sche
 
 func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutUpdate)
 
 	subId, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -628,7 +634,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 	// CMK flow
 	if *subscription.Status == subscriptions.SubscriptionStatusEncryptionKeyPending && cmkEnabled {
 		wasCmkPending = true
-		diags := resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx, d, api, subId)
+		diags := resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx, d, api, subId, timeout)
 
 		if diags != nil {
 			return diags
@@ -661,7 +667,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -682,19 +688,19 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 		if err != nil {
 			return diag.FromErr(err)
 		}
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
 	// Verify public_endpoint_access has propagated if it was changed
 	if d.HasChange("public_endpoint_access") {
 		expected := d.Get("public_endpoint_access").(bool)
-		if err := utils.WaitForSubscriptionPublicEndpointAccess(ctx, subId, api, expected); err != nil {
+		if err := utils.WaitForSubscriptionPublicEndpointAccess(ctx, subId, api, expected, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -729,10 +735,10 @@ func resourceRedisCloudActiveActiveSubscriptionUpdate(ctx context.Context, d *sc
 		}
 	}
 
-	return resourceRedisCloudActiveActiveSubscriptionRead(ctx, d, meta)
+	return resourceRedisCloudActiveActiveSubscriptionReadWithTimeout(ctx, d, meta, timeout)
 }
 
-func resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx context.Context, d *schema.ResourceData, api *client.ApiClient, subId int) diag.Diagnostics {
+func resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx context.Context, d *schema.ResourceData, api *client.ApiClient, subId int, timeout time.Duration) diag.Diagnostics {
 
 	cmkResourcesRaw, exists := d.GetOk("customer_managed_key")
 	if !exists {
@@ -756,12 +762,12 @@ func resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx context.Context, d 
 		return diag.FromErr(err)
 	}
 
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
 	// After CMK activation, delete databases that were not cleaned up during Create
-	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api); cleanupDiags != nil {
+	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api, timeout); cleanupDiags != nil {
 		return cleanupDiags
 	}
 
@@ -771,6 +777,7 @@ func resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx context.Context, d 
 func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutDelete)
 
 	var diags diag.Diagnostics
 
@@ -790,7 +797,7 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 	// If already deleting (e.g. auto-deleted empty CMK subscription), wait for completion.
 	if *subscription.Status == subscriptions.SubscriptionStatusDeleting {
 		d.SetId("")
-		if err := pro.WaitForSubscriptionToBeDeleted(ctx, subId, api); err != nil {
+		if err := pro.WaitForSubscriptionToBeDeleted(ctx, subId, api, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 		return diags
@@ -798,14 +805,14 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 
 	if *subscription.Status != subscriptions.SubscriptionStatusEncryptionKeyPending {
 		// Wait for the subscription to be active before deleting it.
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 
 		// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
 		// This additional wait ensures that the databases are deleted before the subscription is deleted.
 		time.Sleep(30 * time.Second) //lintignore:R018
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api); err != nil {
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 			return diag.FromErr(err)
 		}
 	}
@@ -818,7 +825,7 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 
 	d.SetId("")
 
-	err = pro.WaitForSubscriptionToBeDeleted(ctx, subId, api)
+	err = pro.WaitForSubscriptionToBeDeleted(ctx, subId, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	pl "github.com/RedisLabs/rediscloud-go-api/service/privatelink"
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -24,6 +25,7 @@ const testPrivateLinkConfigFile = "./privatelink/testdata/pro_private_link.tf"
 const testPrivateLinkConfigWithoutPrivateLinkFile = "./privatelink/testdata/pro_private_link_without_privatelink.tf"
 
 func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	const resourceName = "rediscloud_private_link.pro_private_link"
 	const subscriptionResourceName = "rediscloud_subscription.pro_subscription"
@@ -39,12 +41,16 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 	terraformConfigWithoutPrivateLink := getRedisPrivateLinkConfigWithoutPrivateLink(t, subName, cloudAccountName, password)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create everything including privatelink
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: terraformConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
@@ -69,12 +75,20 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 			},
 			// Step 2: Import test
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				ResourceName:      resourceName,
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
 			// Step 3: Remove privatelink, verify deletion via API
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: terraformConfigWithoutPrivateLink,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(subscriptionResourceName, "id"),
@@ -139,6 +153,7 @@ func testAccCheckPrivateLinkDeleted(subscriptionResourceName string) resource.Te
 // This test was added to catch a bug where the private link API returns a different port
 // than what's shown in the database's private_endpoint for Pro subscriptions.
 func TestAccResourceRedisCloudPrivateLink_PortConsistency(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	const databaseResourceName = "rediscloud_subscription_database.pro_database"
 	const privateLinkResourceName = "rediscloud_private_link.pro_private_link"
@@ -148,11 +163,15 @@ func TestAccResourceRedisCloudPrivateLink_PortConsistency(t *testing.T) {
 	terraformConfig := getRedisPrivateLinkConfig(t, cloudAccountName, shareName)
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: terraformConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify the private link has at least one database entry

@@ -22,7 +22,6 @@ var invalidSslCertificate = "I am not a valid certificate"
 
 // enable_tls=true, client_ssl_certificate=<valid>
 func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndSslCert(t *testing.T) {
-
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	const subscriptionName = "rediscloud_subscription.example"
@@ -124,7 +123,6 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 
 // enable_tls=true, client_ssl_certificate=""
 func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndEmptySslCert(t *testing.T) {
-
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	const subscriptionName = "rediscloud_subscription.example"
@@ -204,7 +202,6 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 
 // enable_tls=true, client_ssl_certificate=<invalid>
 func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndInvalidSslCert(t *testing.T) {
-
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
@@ -224,7 +221,6 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 
 // enable_tls=false, client_ssl_certificate=<invalid>
 func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseAndDisabledTlsAndInvalidCert(t *testing.T) {
-
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
@@ -244,7 +240,6 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseAndDisabledTlsAn
 
 // enable_tls=false, client_ssl_certificate="", client_tls_certificates=["something"]
 func TestAccResourceRedisCloudSubscriptionTls_createWithoutEnableTlsAndTlsCert(t *testing.T) {
-
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
@@ -263,7 +258,6 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithoutEnableTlsAndTlsCert(t
 }
 
 func TestAccResourceRedisCloudSubscriptionTls_createWithSslCertAndTlsCert(t *testing.T) {
-
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
@@ -283,7 +277,6 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithSslCertAndTlsCert(t *tes
 
 // enable_tls=true, client_ssl_certificate="", client_tls_certificates=["something"]
 func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndTlsCert(t *testing.T) {
-
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	const subscriptionName = "rediscloud_subscription.example"

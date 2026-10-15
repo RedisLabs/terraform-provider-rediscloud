@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -28,6 +29,7 @@ var activeActiveMarketplaceFlag = flag.Bool("activeActiveMarketplace", false,
 // Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the subscription resource with Redis 7.
 // Also checks active-active subscription regions.
 func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
@@ -36,11 +38,15 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: testAccResourceRedisCloudActiveActiveSubscriptionRedis7(t, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the subscription resource
@@ -157,6 +163,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 			},
 			{
 				// Checks if the changes in the creation plan are ignored.
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: testAccResourceRedisCloudActiveActiveSubscriptionUpdateRedis7(t, name, "AWS"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -194,6 +204,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 			},
 			{
 				// Checks if the changes to the payment_method are ignored.
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethodRedis7(t, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
@@ -201,6 +215,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 			},
 			{
 				// Checks if the payment_method and creation_plan block are ignored after the IMPORT operation.
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config:       testAccResourceRedisCloudActiveActiveSubscriptionImportRedis7(t, name),
 				ResourceName: resourceName,
 				ImportState:  true,
@@ -218,6 +236,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 			},
 			{
 				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config:       fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan, name, "GCP"),
 				ResourceName: resourceName,
 				ExpectError:  regexp.MustCompile(`Error: the "creation_plan" block is required`),
@@ -229,6 +251,7 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis7(t *testing.T
 // Checks CRUDI (CREATE, READ, UPDATE, IMPORT) operations on the subscription resource with Redis 8.
 // Also checks active-active subscription regions.
 func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
@@ -237,11 +260,15 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: testAccResourceRedisCloudActiveActiveSubscriptionRedis8(t, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the subscription resource
@@ -357,6 +384,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 			},
 			{
 				// Checks if the changes in the creation plan are ignored.
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: testAccResourceRedisCloudActiveActiveSubscriptionUpdateRedis8(t, name, "AWS"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -393,6 +424,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 			},
 			{
 				// Checks if the changes to the payment_method are ignored.
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethod, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),
@@ -400,6 +435,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 			},
 			{
 				// Checks if the payment_method and creation_plan block are ignored after the IMPORT operation.
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config:       testAccResourceRedisCloudActiveActiveSubscriptionImportRedis8(t, name),
 				ResourceName: resourceName,
 				ImportState:  true,
@@ -417,6 +456,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CRUDI_Redis8(t *testing.T
 			},
 			{
 				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config:       fmt.Sprintf(testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan, name, "GCP"),
 				ResourceName: resourceName,
 				ExpectError:  regexp.MustCompile(`Error: the "creation_plan" block is required`),
@@ -502,16 +545,21 @@ func TestAccResourceRedisCloudActiveActiveSubscription_createUpdateMarketplacePa
 }
 
 func TestAccResourceRedisCloudActiveActiveSubscription_PublicEndpointAccess(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointDisabled(t, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -519,6 +567,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_PublicEndpointAccess(t *t
 				),
 			},
 			{
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: testAccResourceRedisCloudActiveActiveSubscriptionPublicEndpointEnabled(t, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -560,7 +612,14 @@ func testAccCheckActiveActiveSubscriptionDestroy(s *terraform.State) error {
 	return nil
 }
 
-const testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan = `
+const testAccResourceRedisCloudActiveActiveSubscriptionNoCreationPlan = `variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
   
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
@@ -568,6 +627,10 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_active_active_subscription" "example" {
+  resource_tags = {
+    team  = var.team
+    owner = var.owner
+  }
 	name = "%s"
 	payment_method_id = data.rediscloud_payment_method.card.id
 	cloud_provider = "%s"
@@ -582,8 +645,19 @@ data "rediscloud_active_active_subscription" "example" {
 }
 `
 
-const testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethod = `
+const testAccResourceRedisCloudActiveActiveSubscriptionChangedPaymentMethod = `variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 resource "rediscloud_active_active_subscription" "example" {
+  resource_tags = {
+    team  = var.team
+    owner = var.owner
+  }
 	name = "%s"
     payment_method = "marketplace"
 	cloud_provider = "AWS"
@@ -706,6 +780,7 @@ func testAccResourceRedisCloudActiveActiveSubscriptionImportRedis8(t *testing.T,
 // TestAccResourceRedisCloudActiveActiveSubscription_RemoveRedisVersion tests that removing
 // the redis_version attribute from an existing subscription does NOT force replacement.
 func TestAccResourceRedisCloudActiveActiveSubscription_RemoveRedisVersion(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_active_active_subscription.example"
@@ -713,12 +788,16 @@ func TestAccResourceRedisCloudActiveActiveSubscription_RemoveRedisVersion(t *tes
 	var subIdStep1 int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				// Step 1: Create subscription WITH redis_version
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: testAccResourceRedisCloudActiveActiveSubscriptionRedisVersionRemoveStep1(t, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
@@ -737,6 +816,10 @@ func TestAccResourceRedisCloudActiveActiveSubscription_RemoveRedisVersion(t *tes
 			},
 			{
 				// Step 2: Remove redis_version from subscription - should NOT force replacement
+				ConfigVariables: tfconfig.Variables{
+					"team":  tfconfig.StringVariable(resourceTags.Team),
+					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				},
 				Config: testAccResourceRedisCloudActiveActiveSubscriptionRedisVersionRemoveStep2(t, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),

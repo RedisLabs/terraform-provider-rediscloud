@@ -1,3 +1,11 @@
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 locals {
   rediscloud_subscription_name = "%s"
   rediscloud_database_password = "%s"
@@ -14,6 +22,11 @@ resource "rediscloud_subscription" "example" {
   public_endpoint_access = true
 
   cloud_provider {
+    resource_tags = {
+      team  = var.team
+      owner = var.owner
+    }
+
     provider = "AWS"
     region {
       region                     = "eu-west-1"

@@ -51,6 +51,20 @@ func AWSBYOCValueAndCheck() (string, func(t *testing.T) bool) {
 	return ValueAndCheck("AWS_TEST_CLOUD_ACCOUNT_NAME")
 }
 
+type BYOCResourceTags struct {
+	Team  string
+	Owner string
+}
+
+func BYOCResourceTagsValueAndCheck() (BYOCResourceTags, func(t *testing.T) bool) {
+	team, teamCheck := ValueAndCheck("TEAM_RESOURCE_TAG")
+	owner, ownerCheck := ValueAndCheck("OWNER_RESOURCE_TAG")
+	check := func(t *testing.T) bool {
+		return composeChecks(t, teamCheck, ownerCheck)
+	}
+	return BYOCResourceTags{Team: team, Owner: owner}, check
+}
+
 func GCPProjectValueAndCheck() (string, func(t *testing.T) bool) {
 	return ValueAndCheck("GCP_PROJECT_ID")
 }

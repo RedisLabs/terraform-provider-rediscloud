@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.19.1 (TBD)
+## 2.19.1 (3rd September 2026)
 
 ### Changed
 
@@ -10,7 +10,7 @@
 
 - `rediscloud_active_active_subscription` data source now sorts the `pricing` list by a stable key. `Pricing.List` returns entries in nondeterministic order, which otherwise produced a perpetual `tf plan` diff.
 
-## 2.19.0 (17th August 2026)
+## 2.19.0 (24th August 2026)
 
 ### Added
 
