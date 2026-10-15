@@ -15,3 +15,9 @@ updates:
     schedule:
       # Check for updates to Go modules every weekday
       interval: "daily"
+
+  # Maintain dependencies for Nix Flake
+  - package-ecosystem: "nix"
+    directory: "/"
+    schedule:
+      interval: "monthly"
