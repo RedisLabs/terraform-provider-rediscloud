@@ -13,6 +13,13 @@ state as a sensitive value. Sensitive values are hidden from normal Terraform
 CLI output, but they are still stored in state and should be protected with an
 appropriate Terraform backend.
 
+## Operation limits
+
+API-key create, read and delete operations have an internal 5-minute limit. A
+shorter caller deadline or cancellation takes precedence. If creation times out
+after the API accepted it, identify and revoke the unrecoverable key before
+creating a replacement; a timeout does not prove the key was not created.
+
 ## Example Usage
 
 ```hcl

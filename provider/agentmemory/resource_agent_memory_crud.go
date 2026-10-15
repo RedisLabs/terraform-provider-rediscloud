@@ -18,6 +18,9 @@ import (
 )
 
 func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	ctx, cancel := context.WithTimeout(ctx, agentMemoryMutationTimeout)
+	defer cancel()
+
 	var plan AgentMemoryResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -79,6 +82,9 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 }
 
 func (r *agentMemoryResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	ctx, cancel := context.WithTimeout(ctx, agentMemoryReadTimeout)
+	defer cancel()
+
 	var state AgentMemoryResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -104,6 +110,9 @@ func (r *agentMemoryResource) Read(ctx context.Context, req resource.ReadRequest
 }
 
 func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	ctx, cancel := context.WithTimeout(ctx, agentMemoryMutationTimeout)
+	defer cancel()
+
 	var plan AgentMemoryResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	var state AgentMemoryResourceModel
@@ -159,6 +168,9 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 }
 
 func (r *agentMemoryResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	ctx, cancel := context.WithTimeout(ctx, agentMemoryMutationTimeout)
+	defer cancel()
+
 	var state AgentMemoryResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

@@ -587,6 +587,9 @@ func validateExclusionsPlan(plan AgentMemoryResourceModel, resp *resource.Modify
 }
 
 func (r *agentMemoryResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	ctx, cancel := context.WithTimeout(ctx, agentMemoryReadTimeout)
+	defer cancel()
+
 	if r.client == nil {
 		resp.Diagnostics.AddError("Missing Redis Cloud client", "The Redis Cloud client was not configured before import.")
 		return

@@ -10,6 +10,14 @@ Creates a Redis Agent Memory service backed by an existing Redis Cloud database.
 The resource manages the Agent Memory service configuration, not the memory
 entries stored through the Agent Memory data-plane API.
 
+## Operation limits
+
+Create, update and delete operations have an internal 30-minute limit, including
+SDK task polling. Reads and imports have a 5-minute limit. A shorter Terraform caller deadline
+or cancellation takes precedence. These limits do not add a configurable schema
+block or change existing state formats. If a timeout leaves a create outcome
+unknown, reconcile the service before retrying as described below.
+
 ## Recovering an interrupted operation
 
 If creation returns an error before an ID is saved, a timeout or lost task

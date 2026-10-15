@@ -12,6 +12,9 @@ import (
 )
 
 func (r *agentMemoryAPIKeyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	ctx, cancel := context.WithTimeout(ctx, agentMemoryAPIKeyTimeout)
+	defer cancel()
+
 	var plan AgentMemoryAPIKeyResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -32,6 +35,9 @@ func (r *agentMemoryAPIKeyResource) Create(ctx context.Context, req resource.Cre
 }
 
 func (r *agentMemoryAPIKeyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	ctx, cancel := context.WithTimeout(ctx, agentMemoryAPIKeyTimeout)
+	defer cancel()
+
 	var state AgentMemoryAPIKeyResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -62,6 +68,9 @@ func (r *agentMemoryAPIKeyResource) Update(_ context.Context, _ resource.UpdateR
 }
 
 func (r *agentMemoryAPIKeyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	ctx, cancel := context.WithTimeout(ctx, agentMemoryAPIKeyTimeout)
+	defer cancel()
+
 	var state AgentMemoryAPIKeyResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

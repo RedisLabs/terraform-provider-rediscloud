@@ -2,6 +2,7 @@ package agentmemory_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -47,11 +48,9 @@ func TestAccAgentMemory_AcceptedLostResponseRecovery(t *testing.T) {
 	target, err := url.Parse(baseURL)
 	require.NoError(t, err)
 
-	for _, loseKey := range []bool{false, true} {
-		caseName := "store"
-		if loseKey {
-			caseName = "key"
-		}
+	for _, caseName := range []string{"store", "key", "task-result"} {
+		loseKey := caseName == "key"
+		loseTask := caseName == "task-result"
 		t.Run(caseName, func(t *testing.T) {
 			prefix := basePrefix + "-lost-" + caseName
 			keyName := prefix + "-runtime"
@@ -66,6 +65,7 @@ func TestAccAgentMemory_AcceptedLostResponseRecovery(t *testing.T) {
 			}
 			var injected atomic.Bool
 			var storeCreates, keyCreates atomic.Int64
+			var createTaskID atomic.Value
 			proxy := &httputil.ReverseProxy{
 				Rewrite: func(req *httputil.ProxyRequest) {
 					// SetURL also rewrites Host for the upstream API gateway.
@@ -73,16 +73,42 @@ func TestAccAgentMemory_AcceptedLostResponseRecovery(t *testing.T) {
 				},
 			}
 			proxy.ModifyResponse = func(resp *http.Response) error {
-				if resp.Request.Method != http.MethodPost || resp.StatusCode < 200 || resp.StatusCode >= 300 {
+				if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 					return nil
 				}
-				storePost := strings.TrimSuffix(resp.Request.URL.Path, "/") == strings.TrimSuffix(target.Path, "/")+"/memory-stores"
-				keyPost := strings.HasSuffix(resp.Request.URL.Path, "/api-keys")
+				storePost := resp.Request.Method == http.MethodPost && strings.TrimSuffix(resp.Request.URL.Path, "/") == strings.TrimSuffix(target.Path, "/")+"/memory-stores"
+				keyPost := resp.Request.Method == http.MethodPost && strings.HasSuffix(resp.Request.URL.Path, "/api-keys")
 				if storePost {
 					storeCreates.Add(1)
 				}
 				if keyPost {
 					keyCreates.Add(1)
+				}
+				if loseTask {
+					taskID, _ := createTaskID.Load().(string)
+					taskGet := taskID != "" && resp.Request.Method == http.MethodGet && resp.Request.URL.Path == strings.TrimSuffix(target.Path, "/")+"/tasks/"+url.PathEscape(taskID)
+					if storePost || taskGet {
+						body, err := io.ReadAll(resp.Body)
+						_ = resp.Body.Close()
+						if err != nil {
+							return errors.New("could not inspect owned fixture task response")
+						}
+						var task struct {
+							ID     string `json:"taskId"`
+							Status string `json:"status"`
+						}
+						if err := json.Unmarshal(body, &task); err != nil {
+							return errors.New("owned fixture task response was not JSON")
+						}
+						if storePost {
+							createTaskID.Store(task.ID)
+						}
+						if taskGet && task.Status == "processing-completed" && injected.CompareAndSwap(false, true) {
+							body = []byte(`{"status":"processing-completed","response":{}}`)
+						}
+						replaceRecoveryResponseBody(resp, string(body))
+					}
+					return nil
 				}
 				if ((loseKey && keyPost) || (!loseKey && storePost)) && injected.CompareAndSwap(false, true) {
 					_, _ = io.Copy(io.Discard, resp.Body)
@@ -166,7 +192,11 @@ resource "rediscloud_agent_memory_api_key" "recovery" {
 					}
 				}
 			}
-			steps := []resource.TestStep{{Config: config, ExpectError: regexp.MustCompile("HTTP 503")}}
+			expectedError := "HTTP 503"
+			if loseTask {
+				expectedError = "Failed to create Agent Memory service"
+			}
+			steps := []resource.TestStep{{Config: config, ExpectError: regexp.MustCompile(expectedError)}}
 			if !loseKey {
 				steps = append(steps, resource.TestStep{
 					PreConfig: reconcile, ResourceName: "rediscloud_agent_memory.recovery",
@@ -214,4 +244,12 @@ resource "rediscloud_agent_memory_api_key" "recovery" {
 			})
 		})
 	}
+}
+
+func replaceRecoveryResponseBody(resp *http.Response, body string) {
+	resp.Body = io.NopCloser(strings.NewReader(body))
+	resp.ContentLength = int64(len(body))
+	resp.Header.Set("Content-Length", strconv.Itoa(len(body)))
+	resp.Header.Set("Content-Type", "application/json")
+	resp.Header.Del("Content-Encoding")
 }
