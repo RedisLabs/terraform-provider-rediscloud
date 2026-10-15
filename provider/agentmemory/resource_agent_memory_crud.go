@@ -3,10 +3,11 @@ package agentmemory
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 
 	agentmemoryapi "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -36,7 +37,7 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 		CustomMemoryTypes:        customMemoryTypesFromModel(plan.CustomMemoryTypes),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to create Agent Memory service", err.Error())
+		resp.Diagnostics.AddError("Failed to create Agent Memory service", client.SafeAPIError(err))
 		return
 	}
 
@@ -49,7 +50,7 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 	if readErr != nil {
 		resp.Diagnostics.AddWarning(
 			"Agent Memory service created but not yet readable",
-			"The Agent Memory service was created and its ID was saved, but the full object could not be read immediately: "+readErr.Error(),
+			"The Agent Memory service was created and its ID was saved, but the full object could not be read immediately: "+client.SafeAPIError(readErr),
 		)
 	} else {
 		readAgentMemoryIntoModel(ctx, store, &plan, false, &resp.Diagnostics)
@@ -70,7 +71,7 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 			return value, nil
 		})
 		if err != nil {
-			resp.Diagnostics.AddError("Failed to preserve Agent Memory recovery state", err.Error())
+			resp.Diagnostics.AddError("Failed to preserve Agent Memory recovery state", client.SafeAPIError(err))
 			return
 		}
 		resp.State.Raw = recovered
@@ -91,7 +92,7 @@ func (r *agentMemoryResource) Read(ctx context.Context, req resource.ReadRequest
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Failed to read Agent Memory service", err.Error())
+		resp.Diagnostics.AddError("Failed to read Agent Memory service", client.SafeAPIError(err))
 		return
 	}
 
@@ -141,13 +142,13 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 
 	storeID := state.ID.ValueString()
 	if err := r.client.Client.AgentMemory.Update(ctx, storeID, update); err != nil {
-		resp.Diagnostics.AddError("Failed to update Agent Memory service", err.Error())
+		resp.Diagnostics.AddError("Failed to update Agent Memory service", client.SafeAPIError(err))
 		return
 	}
 
 	store, err := r.client.Client.AgentMemory.Get(ctx, storeID)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to read Agent Memory service after update", err.Error())
+		resp.Diagnostics.AddError("Failed to read Agent Memory service after update", client.SafeAPIError(err))
 		return
 	}
 	readAgentMemoryIntoModel(ctx, store, &plan, false, &resp.Diagnostics)
@@ -172,7 +173,7 @@ func (r *agentMemoryResource) Delete(ctx context.Context, req resource.DeleteReq
 	if errors.As(err, &notFound) {
 		return
 	}
-	resp.Diagnostics.AddError("Failed to delete Agent Memory service", err.Error())
+	resp.Diagnostics.AddError("Failed to delete Agent Memory service", client.SafeAPIError(err))
 }
 
 func shortMemoryFromPlan(plan AgentMemoryResourceModel) *agentmemoryapi.ShortMemoryConfig {
@@ -209,7 +210,7 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 
 	databaseID, err := strconv.ParseInt(store.DatabaseID, 10, 64)
 	if err != nil {
-		diags.AddError("Unexpected Agent Memory database ID", fmt.Sprintf("Expected databaseId to be numeric, got %q.", store.DatabaseID))
+		diags.AddError("Unexpected Agent Memory database ID", "Expected the Redis Cloud API databaseId to be numeric. The invalid response value was omitted because it may contain credentials.")
 		return
 	}
 	state.DatabaseID = types.Int64Value(databaseID)

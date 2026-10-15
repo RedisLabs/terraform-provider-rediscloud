@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+
 	agentmemoryapi "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -18,7 +20,7 @@ func (r *agentMemoryAPIKeyResource) Create(ctx context.Context, req resource.Cre
 
 	created, err := r.client.Client.AgentMemory.CreateAPIKey(ctx, plan.StoreID.ValueString(), plan.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to create Agent Memory API key", err.Error())
+		resp.Diagnostics.AddError("Failed to create Agent Memory API key", client.SafeAPIError(err))
 		return
 	}
 
@@ -44,7 +46,7 @@ func (r *agentMemoryAPIKeyResource) Read(ctx context.Context, req resource.ReadR
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Failed to read Agent Memory API key", err.Error())
+		resp.Diagnostics.AddError("Failed to read Agent Memory API key", client.SafeAPIError(err))
 		return
 	}
 
@@ -74,5 +76,5 @@ func (r *agentMemoryAPIKeyResource) Delete(ctx context.Context, req resource.Del
 	if errors.As(err, &notFound) {
 		return
 	}
-	resp.Diagnostics.AddError("Failed to delete Agent Memory API key", err.Error())
+	resp.Diagnostics.AddError("Failed to delete Agent Memory API key", client.SafeAPIError(err))
 }

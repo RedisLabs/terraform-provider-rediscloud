@@ -9,9 +9,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
 
 // Additional isolated review: transient reads after acknowledged create retain ownership.
@@ -30,9 +31,9 @@ func TestReviewCreateTransientReadRetainsOwnership(t *testing.T) {
 					switch {
 					case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
 						creates++
-						json.NewEncoder(w).Encode(map[string]any{"taskId": "create-task"})
+						_ = json.NewEncoder(w).Encode(map[string]any{"taskId": "create-task"})
 					case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
-						json.NewEncoder(w).Encode(map[string]any{"taskId": "create-task", "status": "processing-completed", "response": map[string]any{"resource": map[string]any{"storeId": fmt.Sprintf("store-%d", creates)}}})
+						_ = json.NewEncoder(w).Encode(map[string]any{"taskId": "create-task", "status": "processing-completed", "response": map[string]any{"resource": map[string]any{"storeId": fmt.Sprintf("store-%d", creates)}}})
 					case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/memory-stores/"):
 						database := "123"
 						if malformed {
@@ -41,12 +42,12 @@ func TestReviewCreateTransientReadRetainsOwnership(t *testing.T) {
 							_, _ = w.Write([]byte(`{"message":"simulated transient read failure"}`))
 							return
 						}
-						json.NewEncoder(w).Encode(map[string]any{"storeId": strings.TrimPrefix(r.URL.Path, "/memory-stores/"), "name": "recovery-store", "databaseId": database, "status": "READY", "shortMemory": map[string]any{"ttlSeconds": 86400}, "longTermMemory": map[string]any{"ttlSeconds": 31536000}, "extractionCadence": map[string]any{"activeIntervalSeconds": 300}, "extractionStrategy": "INSTRUCT", "endpoint": "https://memory.example.test", "createdAt": "2026-09-22T12:00:00Z"})
+						_ = json.NewEncoder(w).Encode(map[string]any{"storeId": strings.TrimPrefix(r.URL.Path, "/memory-stores/"), "name": "recovery-store", "databaseId": database, "status": "READY", "shortMemory": map[string]any{"ttlSeconds": 86400}, "longTermMemory": map[string]any{"ttlSeconds": 31536000}, "extractionCadence": map[string]any{"activeIntervalSeconds": 300}, "extractionStrategy": "INSTRUCT", "endpoint": "https://memory.example.test", "createdAt": "2026-09-22T12:00:00Z"})
 					case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/memory-stores/"):
 						deletes++
-						json.NewEncoder(w).Encode(map[string]any{"taskId": "delete-task"})
+						_ = json.NewEncoder(w).Encode(map[string]any{"taskId": "delete-task"})
 					case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
-						json.NewEncoder(w).Encode(map[string]any{"taskId": "delete-task", "status": "processing-completed"})
+						_ = json.NewEncoder(w).Encode(map[string]any{"taskId": "delete-task", "status": "processing-completed"})
 					default:
 						http.NotFound(w, r)
 					}

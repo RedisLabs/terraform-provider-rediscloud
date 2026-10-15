@@ -68,10 +68,12 @@ func (p *redisCloudFrameworkProvider) Schema(_ context.Context, _ provider.Schem
 			"api_key": schema.StringAttribute{
 				MarkdownDescription: fmt.Sprintf("This is the Redis Cloud API key. It must be provided but can also be set by the `%s` environment variable.", rediscloudApi.AccessKeyEnvVar),
 				Optional:            true,
+				Sensitive:           true,
 			},
 			"secret_key": schema.StringAttribute{
 				MarkdownDescription: fmt.Sprintf("This is the Redis Cloud API secret key. It must be provided but can also be set by the `%s` environment variable.", rediscloudApi.SecretKeyEnvVar),
 				Optional:            true,
+				Sensitive:           true,
 			},
 		},
 	}
@@ -148,7 +150,7 @@ func (p *redisCloudFrameworkProvider) Configure(ctx context.Context, req provide
 			"Unable to Create Redis Cloud API Client",
 			"An unexpected error occurred when creating the Redis Cloud API client. "+
 				"If the error is not clear, please contact the provider developers.\n\n"+
-				"Error: "+err.Error(),
+				"Error: "+client.SafeAPIError(err),
 		)
 		return
 	}
@@ -195,9 +197,9 @@ type frameworkDebugLogger struct {
 }
 
 func (l *frameworkDebugLogger) Printf(format string, v ...interface{}) {
-	tflog.Debug(l.ctx, fmt.Sprintf("[rediscloud-go-api] "+format, v...))
+	tflog.Debug(l.ctx, "[rediscloud-go-api] "+client.SafeSDKLog(fmt.Sprintf(format, v...)))
 }
 
 func (l *frameworkDebugLogger) Println(v ...interface{}) {
-	tflog.Debug(l.ctx, fmt.Sprintf("[rediscloud-go-api] %v", v))
+	tflog.Debug(l.ctx, "[rediscloud-go-api] "+client.SafeSDKLog(fmt.Sprint(v...)))
 }

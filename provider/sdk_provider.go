@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/logging"
@@ -38,11 +37,13 @@ func NewSdkProvider(version string) func() *schema.Provider {
 					Type:        schema.TypeString,
 					Description: fmt.Sprintf("This is the Redis Cloud API key. It must be provided but can also be set by the `%s` environment variable.", rediscloudApi.AccessKeyEnvVar),
 					Optional:    true,
+					Sensitive:   true,
 				},
 				"secret_key": {
 					Type:        schema.TypeString,
 					Description: fmt.Sprintf("This is the Redis Cloud API secret key. It must be provided but can also be set by the `%s` environment variable.", rediscloudApi.SecretKeyEnvVar),
 					Optional:    true,
+					Sensitive:   true,
 				},
 			},
 			DataSourcesMap: map[string]*schema.Resource{
@@ -142,7 +143,7 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 
 		apiClient, err := rediscloudApi.NewClient(config...)
 		if err != nil {
-			return nil, diag.FromErr(err)
+			return nil, diag.Errorf("Unable to create Redis Cloud API client: %s", client.SafeAPIError(err))
 		}
 
 		return &client.ApiClient{
@@ -154,13 +155,9 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 type debugLogger struct{}
 
 func (d *debugLogger) Printf(format string, v ...interface{}) {
-	log.Printf("[DEBUG] [rediscloud-go-api] "+format, v...)
+	log.Printf("[DEBUG] [rediscloud-go-api] %s", client.SafeSDKLog(fmt.Sprintf(format, v...)))
 }
 
 func (d *debugLogger) Println(v ...interface{}) {
-	var items []string
-	for _, i := range v {
-		items = append(items, fmt.Sprintf("%s", i))
-	}
-	log.Printf("[DEBUG] [rediscloud-go-api] %s", strings.Join(items, " "))
+	log.Printf("[DEBUG] [rediscloud-go-api] %s", client.SafeSDKLog(fmt.Sprint(v...)))
 }
