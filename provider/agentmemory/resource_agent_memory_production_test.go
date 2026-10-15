@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
 	agentmemoryapi "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -33,8 +32,9 @@ func TestAccAgentMemory_ProductionReadiness_CRUDI(t *testing.T) {
 	require.Positive(t, databaseID)
 	prefix := os.Getenv("AGENT_MEMORY_TEST_PREFIX")
 	require.Regexp(t, regexp.MustCompile(`^tfacc-[a-z0-9-]{8,40}$`), prefix)
-	api, err := rediscloudapi.NewClient()
+	configuredClient, err := client.NewClient()
 	require.NoError(t, err)
+	api := configuredClient.Client
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	existing, listErr := api.AgentMemory.List(ctx)
