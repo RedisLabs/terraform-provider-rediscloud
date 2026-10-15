@@ -49,7 +49,6 @@ func TestAccAgentMemory_ProductionReadiness_CRUDI(t *testing.T) {
 	var storeID, firstKeyID string
 	config := func(ttl int, keyName string) string {
 		return fmt.Sprintf(`
-provider "rediscloud" {}
 resource "rediscloud_agent_memory" "readiness" {
   name                       = %q
   database_id                = %d
