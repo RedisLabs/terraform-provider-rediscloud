@@ -70,6 +70,9 @@ func TestAccAgentMemory_AcceptedLostResponseRecovery(t *testing.T) {
 				Rewrite: func(req *httputil.ProxyRequest) {
 					// SetURL also rewrites Host for the upstream API gateway.
 					req.SetURL(target)
+					// Let the proxy transport negotiate and decode compression;
+					// forwarding the SDK's header leaves gzip bytes in ModifyResponse.
+					req.Out.Header.Del("Accept-Encoding")
 				},
 			}
 			proxy.ModifyResponse = func(resp *http.Response) error {
