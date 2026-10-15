@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
@@ -601,7 +602,7 @@ func (r *agentMemoryResource) ImportState(ctx context.Context, req resource.Impo
 		return
 	}
 
-	var state AgentMemoryResourceModel
+	state := AgentMemoryResourceModel{ID: types.StringValue(req.ID)}
 	readImportedAgentMemoryIntoModel(ctx, store, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return

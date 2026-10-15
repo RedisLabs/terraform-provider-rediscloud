@@ -160,6 +160,7 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 		resp.Diagnostics.AddError("Failed to read Agent Memory service after update", client.SafeAPIError(err))
 		return
 	}
+	plan.ID = state.ID
 	readAgentMemoryIntoModel(ctx, store, &plan, false, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -216,6 +217,14 @@ func extractionCadenceFromPlan(plan AgentMemoryResourceModel) *agentmemoryapi.Ex
 }
 
 func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, state *AgentMemoryResourceModel, includeAPIOnlyConfig bool, diags *diag.Diagnostics) {
+	if store == nil || store.StoreID == "" {
+		diags.AddError("Invalid Agent Memory response", "The API response omitted the store ID. The tracked identity was preserved; refresh and investigate before retrying.")
+		return
+	}
+	if !state.ID.IsNull() && !state.ID.IsUnknown() && state.ID.ValueString() != "" && state.ID.ValueString() != store.StoreID {
+		diags.AddError("Invalid Agent Memory response", "The API response did not match the requested store ID. Identity values were omitted because the response may contain sensitive data; the tracked identity was preserved.")
+		return
+	}
 	state.ID = types.StringValue(store.StoreID)
 	state.Name = types.StringValue(store.Name)
 	state.Status = types.StringValue(store.Status)

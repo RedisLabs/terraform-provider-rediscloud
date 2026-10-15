@@ -5,7 +5,7 @@ go 1.26.0
 toolchain go1.26.9
 
 require (
-	github.com/RedisLabs/rediscloud-go-api v0.52.2-0.20261015194738-24f5866fcb91
+	github.com/RedisLabs/rediscloud-go-api v0.52.2-0.20261015203407-1850684adbca
 	github.com/hashicorp/go-cty v1.5.0
 	github.com/hashicorp/go-version v1.9.0
 	github.com/hashicorp/terraform-plugin-framework v1.19.0

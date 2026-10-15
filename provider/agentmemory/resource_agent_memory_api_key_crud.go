@@ -56,6 +56,10 @@ func (r *agentMemoryAPIKeyResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
+	if key.APIKeyID != state.ID.ValueString() || key.KeyName == "" {
+		resp.Diagnostics.AddError("Invalid Agent Memory API key response", "The API returned incomplete or mismatched key metadata. The tracked key and secret were preserved; refresh and investigate before retrying.")
+		return
+	}
 	state.ID = types.StringValue(key.APIKeyID)
 	state.Name = types.StringValue(key.KeyName)
 	state.ObfuscatedToken = types.StringValue(key.ObfuscatedToken)

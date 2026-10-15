@@ -33,6 +33,12 @@ the acknowledged ID is retained in state. Refresh and inspect the next plan;
 do not remove the resource from state to retry creation. A malformed response
 can leave the resource tainted, so verify any proposed replacement before apply.
 
+Reads, updates and imports reject a missing store ID or an ID that differs from
+the requested resource. These errors preserve the tracked identity rather than
+adopting another service or treating a malformed response as resource deletion.
+Authenticated SDK requests also reject redirects to a different origin; configure
+the intended final API endpoint explicitly when using a proxy or gateway.
+
 Diagnostics and SDK logs omit response bodies and arbitrary task descriptions
 because the service may echo credentials. HTTP status, cancellation and timeout
 guidance remain available. Use the service's administrative audit tools for
