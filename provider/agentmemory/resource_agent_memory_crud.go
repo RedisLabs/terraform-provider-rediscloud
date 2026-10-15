@@ -52,11 +52,12 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 		)
 	} else {
 		readAgentMemoryIntoModel(ctx, store, &plan, false, &resp.Diagnostics)
-		if resp.Diagnostics.HasError() {
-			return
-		}
 	}
 
+	// An acknowledged create must remain tracked even if its follow-up read
+	// reports invalid data. Terraform can then clean up a tainted resource on
+	// retry instead of leaving an orphan and issuing an untracked duplicate.
+	plan.ID = types.StringValue(storeID)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
