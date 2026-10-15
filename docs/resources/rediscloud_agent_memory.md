@@ -10,6 +10,26 @@ Creates a Redis Agent Memory service backed by an existing Redis Cloud database.
 The resource manages the Agent Memory service configuration, not the memory
 entries stored through the Agent Memory data-plane API.
 
+## Recovering an interrupted operation
+
+If creation returns an error before an ID is saved, a timeout or lost task
+response can leave an existing service outside Terraform state. Do not repeatedly
+apply the configuration: the API does not provide a documented idempotency key.
+Inspect the Agent Memory services in the same account and database, identify the
+service created by the interrupted request, and import its store ID into the
+intended resource address before planning again. Resolve ambiguous matches
+manually; a matching name alone does not establish ownership.
+
+If the provider reports that creation succeeded but the follow-up read failed,
+the acknowledged ID is retained in state. Refresh and inspect the next plan;
+do not remove the resource from state to retry creation. A malformed response
+can leave the resource tainted, so verify any proposed replacement before apply.
+
+Diagnostics and SDK logs omit response bodies and arbitrary task descriptions
+because the service may echo credentials. HTTP status, cancellation and timeout
+guidance remain available. Use the service's administrative audit tools for
+additional investigation without publishing raw payloads or Terraform state.
+
 ## Example Usage
 
 ### Minimal service

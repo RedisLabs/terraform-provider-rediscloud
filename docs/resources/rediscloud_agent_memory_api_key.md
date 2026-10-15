@@ -41,6 +41,21 @@ The following arguments are supported:
 
 Changing either argument replaces the API key.
 
+## Rotation and interrupted creation
+
+A replacement normally destroys the old key first. To overlap keys, use a new,
+unique name and `lifecycle { create_before_destroy = true }`. This controls the
+Terraform resource order; it does not distribute the new secret or coordinate
+application cutover. For a controlled cutover, manage a second key resource,
+deliver and verify its secret in the application, and then remove the old key.
+
+If a create response is lost, the service may have created a key even though
+Terraform has no ID or secret. Inspect the store's key list before retrying.
+Revoke only the key positively identified as belonging to the failed request,
+then create a new uniquely named key. Import recovers key metadata, but cannot
+recover the generated secret. Do not delete existing keys based only on a name
+when ownership is ambiguous.
+
 ## Attribute Reference
 
 * `id` - The API key ID.
