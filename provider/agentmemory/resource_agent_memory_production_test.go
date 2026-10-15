@@ -122,7 +122,45 @@ resource "rediscloud_agent_memory_api_key" "readiness" {
 		},
 		Steps: []resource.TestStep{
 			{Config: config(86400, prefix+"-key"), Check: verify(86400, false)},
-			{ResourceName: storeAddress, ImportState: true, ImportStateVerify: true},
+			{
+				ResourceName: storeAddress, ImportState: true, ImportStateVerify: true,
+				// Import adopts advanced API defaults omitted from the create config.
+				// Verify that block against the API, and compare every other field
+				// against the original state using ImportStateVerify.
+				ImportStateVerifyIgnore: []string{"summarization"},
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return errors.New("expected one imported store")
+					}
+					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+					defer cancel()
+					remote, readErr := api.AgentMemory.Get(ctx, storeID)
+					if readErr != nil {
+						return errors.New(client.SafeAPIError(readErr))
+					}
+					attrs := states[0].Attributes
+					if remote.Summarization == nil {
+						if attrs["summarization.enabled"] != "" {
+							return errors.New("import invented summarization absent from the API")
+						}
+						return nil
+					}
+					expected := map[string]string{
+						"summarization.enabled":          strconv.FormatBool(remote.Summarization.Enabled),
+						"summarization.trigger_strategy": remote.Summarization.TriggerStrategy,
+					}
+					if remote.Summarization.EventCount != nil {
+						expected["summarization.event_count.threshold"] = strconv.Itoa(remote.Summarization.EventCount.Threshold)
+						expected["summarization.event_count.retain_count"] = strconv.Itoa(remote.Summarization.EventCount.RetainCount)
+					}
+					for field, want := range expected {
+						if attrs[field] != want {
+							return fmt.Errorf("imported %s differs from the API", field)
+						}
+					}
+					return nil
+				},
+			},
 			{
 				ResourceName: keyAddress, ImportState: true, ImportStateVerify: true,
 				ImportStateVerifyIgnore: []string{"api_key"},

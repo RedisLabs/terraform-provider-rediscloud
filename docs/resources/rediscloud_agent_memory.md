@@ -288,6 +288,13 @@ Memory service for those changes.
 $ terraform import rediscloud_agent_memory.example store-id
 ```
 
+Import adopts advanced configuration returned by the API, including default
+summarization settings. These blocks can be present in imported state even if
+the original Terraform configuration omitted them. Review the first plan and
+include the returned settings in configuration when Terraform should manage
+them. Omission of an optional block is not an instruction to disable that feature
+in Redis Cloud; configure its `enabled` value explicitly when supported.
+
 For imported services with customer-managed models, the provider imports the
 model metadata returned by Redis Cloud, such as `llm.provider`, `llm.model`,
 `embedding.provider`, and `embedding.model`. Model provider credentials are not
