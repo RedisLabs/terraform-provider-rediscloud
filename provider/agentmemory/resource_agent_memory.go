@@ -377,7 +377,10 @@ func customMemoryTypesBlock() schema.ListNestedBlock {
 				"name": schema.StringAttribute{
 					Description: "Custom memory type name.",
 					Required:    true,
-					Validators:  customNameValidator(),
+					// The API reserves these names for built-in memory types.
+					Validators: append(customNameValidator(),
+						stringvalidator.NoneOf("semantic", "episodic", "message", "session_summary_view"),
+					),
 				},
 				"description": schema.StringAttribute{
 					Description: "Custom memory type description.",
