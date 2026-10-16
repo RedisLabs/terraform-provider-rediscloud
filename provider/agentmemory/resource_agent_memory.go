@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -205,6 +206,12 @@ func summarizationBlock() schema.SingleNestedBlock {
 		Blocks: map[string]schema.Block{
 			"event_count": schema.SingleNestedBlock{
 				Description: "Event-count based summarization thresholds.",
+				// Check configuration so computed or prior-state values cannot hide missing fields.
+				// Separate checks keep unknown values from hiding missing siblings.
+				Validators: []validator.Object{
+					objectvalidator.AlsoRequires(path.MatchRelative().AtName("threshold")),
+					objectvalidator.AlsoRequires(path.MatchRelative().AtName("retain_count")),
+				},
 				Attributes: map[string]schema.Attribute{
 					"threshold": schema.Int64Attribute{
 						Description: "Number of messages in a session before summarization runs.",
