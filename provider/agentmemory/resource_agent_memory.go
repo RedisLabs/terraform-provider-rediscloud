@@ -594,7 +594,7 @@ func (r *agentMemoryResource) ImportState(ctx context.Context, req resource.Impo
 
 	store, err := r.client.Client.AgentMemory.Get(ctx, req.ID)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to import Agent Memory service", err.Error())
+		resp.Diagnostics.AddError("Failed to import Agent Memory service", client.SafeAPIError(err))
 		return
 	}
 

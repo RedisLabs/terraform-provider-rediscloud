@@ -13,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
 func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -35,7 +37,7 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 		CustomMemoryTypes:        customMemoryTypesFromModel(plan.CustomMemoryTypes),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to create Agent Memory service", err.Error())
+		resp.Diagnostics.AddError("Failed to create Agent Memory service", client.SafeAPIError(err))
 		return
 	}
 
@@ -48,7 +50,7 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 	if readErr != nil {
 		resp.Diagnostics.AddWarning(
 			"Agent Memory service created but not yet readable",
-			"The Agent Memory service was created and its ID was saved, but the full object could not be read immediately: "+readErr.Error(),
+			"The Agent Memory service was created and its ID was saved, but the full object could not be read immediately: "+client.SafeAPIError(readErr),
 		)
 	} else {
 		readAgentMemoryIntoModel(ctx, store, &plan, false, &resp.Diagnostics)
@@ -74,7 +76,7 @@ func (r *agentMemoryResource) Read(ctx context.Context, req resource.ReadRequest
 			resp.State.RemoveResource(ctx)
 			return
 		}
-		resp.Diagnostics.AddError("Failed to read Agent Memory service", err.Error())
+		resp.Diagnostics.AddError("Failed to read Agent Memory service", client.SafeAPIError(err))
 		return
 	}
 
@@ -124,13 +126,13 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 
 	storeID := state.ID.ValueString()
 	if err := r.client.Client.AgentMemory.Update(ctx, storeID, update); err != nil {
-		resp.Diagnostics.AddError("Failed to update Agent Memory service", err.Error())
+		resp.Diagnostics.AddError("Failed to update Agent Memory service", client.SafeAPIError(err))
 		return
 	}
 
 	store, err := r.client.Client.AgentMemory.Get(ctx, storeID)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to read Agent Memory service after update", err.Error())
+		resp.Diagnostics.AddError("Failed to read Agent Memory service after update", client.SafeAPIError(err))
 		return
 	}
 	readAgentMemoryIntoModel(ctx, store, &plan, false, &resp.Diagnostics)
@@ -155,7 +157,7 @@ func (r *agentMemoryResource) Delete(ctx context.Context, req resource.DeleteReq
 	if errors.As(err, &notFound) {
 		return
 	}
-	resp.Diagnostics.AddError("Failed to delete Agent Memory service", err.Error())
+	resp.Diagnostics.AddError("Failed to delete Agent Memory service", client.SafeAPIError(err))
 }
 
 func shortMemoryFromPlan(plan AgentMemoryResourceModel) *agentmemoryapi.ShortMemoryConfig {
