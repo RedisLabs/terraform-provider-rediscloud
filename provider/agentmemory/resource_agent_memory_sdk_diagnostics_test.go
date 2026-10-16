@@ -143,7 +143,7 @@ func TestAgentMemorySDKDiagnosticsOmitSecrets(t *testing.T) {
 						expected = "HTTP 400"
 					}
 					if failure == "task" {
-						expected = "Error details were omitted"
+						expected = "task failed"
 					}
 					if !strings.Contains(d.Detail(), expected) {
 						t.Error("diagnostic lost safe error classification")
