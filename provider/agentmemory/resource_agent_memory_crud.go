@@ -23,6 +23,14 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
+	operationTimeout, diags := plan.Timeouts.Create(ctx, agentMemoryMutationDefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
+
 	storeID, err := r.client.Client.AgentMemory.Create(ctx, agentmemoryapi.CreateStore{
 		Name:                     plan.Name.ValueString(),
 		DatabaseID:               int(plan.DatabaseID.ValueInt64()),
@@ -82,6 +90,14 @@ func (r *agentMemoryResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
+	operationTimeout, diags := state.Timeouts.Read(ctx, agentMemoryReadDefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
+
 	store, err := r.client.Client.AgentMemory.Get(ctx, state.ID.ValueString())
 	if err != nil {
 		var notFound *agentmemoryapi.NotFound
@@ -108,6 +124,14 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	operationTimeout, diags := plan.Timeouts.Update(ctx, agentMemoryMutationDefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
 
 	update := agentmemoryapi.UpdateStore{}
 	if !plan.Name.Equal(state.Name) {
@@ -163,6 +187,14 @@ func (r *agentMemoryResource) Delete(ctx context.Context, req resource.DeleteReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	operationTimeout, diags := state.Timeouts.Delete(ctx, agentMemoryMutationDefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
 
 	err := r.client.Client.AgentMemory.Delete(ctx, state.ID.ValueString())
 	if err == nil {
