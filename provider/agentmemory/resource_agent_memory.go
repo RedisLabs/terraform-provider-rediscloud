@@ -511,7 +511,7 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 
 	modelConfig := plan
 	if !hasState {
-		// On create, configuration distinguishes omitted selectors from unknown expressions.
+		// On create, configuration distinguishes omitted values from unknown expressions.
 		resp.Diagnostics.Append(req.Config.Get(ctx, &modelConfig)...)
 		if resp.Diagnostics.HasError() {
 			return
