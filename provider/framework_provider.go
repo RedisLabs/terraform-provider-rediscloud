@@ -195,9 +195,9 @@ type frameworkDebugLogger struct {
 }
 
 func (l *frameworkDebugLogger) Printf(format string, v ...interface{}) {
-	tflog.Debug(l.ctx, fmt.Sprintf("[rediscloud-go-api] "+format, v...))
+	tflog.Debug(l.ctx, "[rediscloud-go-api] "+client.SafeSDKLog(fmt.Sprintf(format, v...)))
 }
 
 func (l *frameworkDebugLogger) Println(v ...interface{}) {
-	tflog.Debug(l.ctx, fmt.Sprintf("[rediscloud-go-api] %v", v))
+	tflog.Debug(l.ctx, "[rediscloud-go-api] "+client.SafeSDKLog(fmt.Sprint(v...)))
 }
