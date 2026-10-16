@@ -52,7 +52,7 @@ func dataSourceActiveActiveTransitGateway() *schema.Resource {
 				Optional:    true,
 				Default:     0,
 				Deprecated: "Configure the `read` timeout in the `timeouts` block instead. " +
-					"This attribute will be removed in version 3.0 of the provider.",
+					"This attribute will be removed in the next major version of the provider.",
 			},
 			"attachment_uid": {
 				Description: "A unique identifier for the Subscription/Transit Gateway attachment, if any",
@@ -125,7 +125,8 @@ func dataSourceActiveActiveTransitGatewayRead(ctx context.Context, d *schema.Res
 		return diag.FromErr(err)
 	}
 
-	// The waiter uses the filters to determine readiness. Apply them again to obtain the data source result.
+	// The waiter returns the full API response after confirming that a gateway matches.
+	// Apply the filters again to obtain the matching gateways for the data source result.
 	filteredTgws := filterTgwAttachments(tgwTask, filters)
 
 	if len(filteredTgws) == 0 {
