@@ -48,6 +48,27 @@ Changing either argument replaces the API key.
 * `obfuscated_token` - The obfuscated API key returned by the Admin API.
 * `created_at` - The API key creation timestamp.
 
+## Timeouts
+
+An optional `timeouts` block configures operation deadlines using duration strings
+such as `30s`, `5m`, or `1h`. Create, read, and delete each default to `5m`.
+
+```hcl
+timeouts {
+  create = "10m"
+  read   = "5m"
+  delete = "10m"
+}
+```
+
+Place this block inside the API key resource. Changing only timeout values keeps
+the existing key ID and secret; it does not rotate the key. Key import performs no
+network request, so it has no operation timeout.
+
+An earlier caller deadline or cancellation still applies. A timeout does not undo
+an operation already accepted by Redis Cloud. If key creation may have succeeded,
+verify and reconcile the remote keys before retrying.
+
 ## Import
 
 Import using the Agent Memory store ID and API key ID separated by `/`. The secret `api_key` value cannot be recovered during import.

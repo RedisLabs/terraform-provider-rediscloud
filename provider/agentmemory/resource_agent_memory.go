@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -16,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
@@ -55,7 +57,7 @@ func (r *agentMemoryResource) Configure(_ context.Context, req resource.Configur
 	r.client = c
 }
 
-func (r *agentMemoryResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	requiresReplace := []planmodifier.Int64{int64planmodifier.RequiresReplace()}
 	useStateForUnknown := []planmodifier.String{stringplanmodifier.UseStateForUnknown()}
 	useListStateForUnknown := []planmodifier.List{listplanmodifier.UseStateForUnknown()}
@@ -137,6 +139,7 @@ func (r *agentMemoryResource) Schema(_ context.Context, _ resource.SchemaRequest
 			},
 		},
 		Blocks: map[string]schema.Block{
+			"timeouts":                    timeouts.Block(ctx, timeouts.Opts{Create: true, Read: true, Update: true, Delete: true}),
 			"llm":                         modelConfigBlock("Customer-managed LLM configuration. Configure this together with embedding to opt into customer-managed models."),
 			"embedding":                   modelConfigBlock("Customer-managed embedding model configuration for long-term memory. Configure this together with llm to opt into customer-managed models."),
 			"summarization":               summarizationBlock(),
@@ -587,6 +590,10 @@ func validateExclusionsPlan(plan AgentMemoryResourceModel, resp *resource.Modify
 }
 
 func (r *agentMemoryResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Import has no timeout configuration to read until the resource enters state.
+	ctx, cancel := context.WithTimeout(ctx, agentMemoryReadDefaultTimeout)
+	defer cancel()
+
 	if r.client == nil {
 		resp.Diagnostics.AddError("Missing Redis Cloud client", "The Redis Cloud client was not configured before import.")
 		return
@@ -598,7 +605,9 @@ func (r *agentMemoryResource) ImportState(ctx context.Context, req resource.Impo
 		return
 	}
 
-	var state AgentMemoryResourceModel
+	// Import has no configuration; initialise the absent block with its custom type.
+	timeoutType := timeouts.BlockAll(ctx).Type().(timeouts.Type)
+	state := AgentMemoryResourceModel{Timeouts: timeouts.Value{Object: types.ObjectNull(timeoutType.AttrTypes)}}
 	readImportedAgentMemoryIntoModel(ctx, store, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return

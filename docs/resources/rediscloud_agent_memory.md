@@ -260,6 +260,36 @@ Memory service for those changes.
 * `status` - The current provisioning status.
 * `created_at` - The Agent Memory service creation timestamp.
 
+## Timeouts
+
+An optional `timeouts` block configures operation deadlines using duration strings
+such as `30s`, `5m`, or `1h`.
+
+| Operation | Default |
+| --- | --- |
+| `create` | `30m` |
+| `read` | `5m` |
+| `update` | `30m` |
+| `delete` | `30m` |
+
+```hcl
+timeouts {
+  create = "45m"
+  read   = "10m"
+  update = "45m"
+  delete = "45m"
+}
+```
+
+Place this block inside the Agent Memory resource. Each deadline covers the whole
+operation, including task polling and any follow-up read. An earlier caller
+deadline or cancellation still applies. Import uses a fixed `5m` deadline because
+resource configuration is not available during import.
+
+A timeout does not undo an operation already accepted by Redis Cloud. If creation
+may have succeeded without returning an ID, reconcile the remote store before
+retrying to avoid duplicates.
+
 ## Import
 
 `rediscloud_agent_memory` can be imported using its store ID:

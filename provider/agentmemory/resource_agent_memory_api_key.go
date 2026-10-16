@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -50,9 +51,10 @@ func (r *agentMemoryAPIKeyResource) Configure(_ context.Context, req resource.Co
 	r.client = c
 }
 
-func (r *agentMemoryAPIKeyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *agentMemoryAPIKeyResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	requiresReplace := []planmodifier.String{stringplanmodifier.RequiresReplace()}
 	resp.Schema = schema.Schema{
+		Blocks:      map[string]schema.Block{"timeouts": timeouts.Block(ctx, timeouts.Opts{Create: true, Read: true, Delete: true})},
 		Description: "Creates a data-plane API key for a Redis Agent Memory service.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
