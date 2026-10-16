@@ -47,10 +47,11 @@ func dataSourceActiveActiveTransitGateway() *schema.Resource {
 				Computed:    true,
 			},
 			"wait_for_tgw_timeout": {
-				Description: "Overrides the read timeout, in seconds, while waiting for a Transit Gateway matching the configured filters.",
-				Type:        schema.TypeInt,
-				Optional:    true,
-				Default:     0,
+				Description: "Sets the maximum wait, in seconds, for a Transit Gateway matching the configured filters. " +
+					"The wait cannot exceed the configured `read` timeout.",
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  0,
 				Deprecated: "Configure the `read` timeout in the `timeouts` block instead. " +
 					"This attribute will be removed in the next major version of the provider.",
 			},
