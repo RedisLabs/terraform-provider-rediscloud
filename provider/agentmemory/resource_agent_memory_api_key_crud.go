@@ -48,6 +48,11 @@ func (r *agentMemoryAPIKeyResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
+	// An incomplete name must not become drift that replaces a key with a write-only secret.
+	if key.KeyName == "" {
+		resp.Diagnostics.AddError("Invalid Agent Memory API key response", "The API response omitted the key name. The tracked key and stored secret were preserved.")
+		return
+	}
 	state.ID = types.StringValue(key.APIKeyID)
 	state.Name = types.StringValue(key.KeyName)
 	state.ObfuscatedToken = types.StringValue(key.ObfuscatedToken)
