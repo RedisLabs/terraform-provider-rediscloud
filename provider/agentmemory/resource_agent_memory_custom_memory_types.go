@@ -18,7 +18,11 @@ type customMemoryTypePlanEntry struct {
 
 func validateCustomMemoryTypesPlan(plan, state AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
 	planByName := make(map[string]customMemoryTypePlanEntry, len(plan.CustomMemoryTypes))
+	hasUnknownNames := false
 	for i, memoryType := range plan.CustomMemoryTypes {
+		if memoryType.Name.IsUnknown() {
+			hasUnknownNames = true
+		}
 		name, ok := knownString(memoryType.Name)
 		if !ok {
 			continue
@@ -45,6 +49,10 @@ func validateCustomMemoryTypesPlan(plan, state AgentMemoryResourceModel, resp *r
 		}
 		planned, exists := planByName[name]
 		if !exists {
+			// An unresolved name may still refer to this existing type.
+			if hasUnknownNames {
+				continue
+			}
 			resp.Diagnostics.AddAttributeError(
 				path.Root("custom_memory_types"),
 				"Unsupported Agent Memory custom memory type removal",
