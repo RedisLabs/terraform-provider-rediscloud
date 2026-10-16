@@ -346,6 +346,7 @@ func customDetectorsBlock() schema.SingleNestedBlock {
 											Required:    true,
 											Validators: []validator.String{
 												stringvalidator.LengthBetween(1, 512),
+												nonEmptyRegexMatchValidator{},
 											},
 										},
 									},
