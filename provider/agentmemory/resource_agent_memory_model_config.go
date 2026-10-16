@@ -65,14 +65,14 @@ func validateModelConfigBlock(blockName string, model *AgentMemoryModelConfigMod
 	if model == nil {
 		return
 	}
-	if missingModelString(model.Provider) {
+	if !model.Provider.IsUnknown() && missingModelString(model.Provider) {
 		resp.Diagnostics.AddAttributeError(
 			path.Root(blockName).AtName("provider"),
 			"Missing Agent Memory model provider",
 			fmt.Sprintf("%s.provider must be configured.", blockName),
 		)
 	}
-	if missingModelString(model.Model) {
+	if !model.Model.IsUnknown() && missingModelString(model.Model) {
 		resp.Diagnostics.AddAttributeError(
 			path.Root(blockName).AtName("model"),
 			"Missing Agent Memory model",
