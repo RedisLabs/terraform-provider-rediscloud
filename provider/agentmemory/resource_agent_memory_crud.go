@@ -3,7 +3,6 @@ package agentmemory
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sort"
 	"strconv"
 	"time"
@@ -192,7 +191,7 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 
 	databaseID, err := strconv.ParseInt(store.DatabaseID, 10, 64)
 	if err != nil {
-		diags.AddError("Unexpected Agent Memory database ID", fmt.Sprintf("Expected databaseId to be numeric, got %q.", store.DatabaseID))
+		diags.AddError("Unexpected Agent Memory database ID", "Expected the Redis Cloud API databaseId to be numeric. The invalid response value was omitted because it may contain credentials.")
 		return
 	}
 	state.DatabaseID = types.Int64Value(databaseID)
