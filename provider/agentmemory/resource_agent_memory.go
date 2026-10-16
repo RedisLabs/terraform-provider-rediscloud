@@ -509,7 +509,15 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 		}
 	}
 
-	validateModelConfigPlan(plan, state, hasState, resp)
+	modelConfig := plan
+	if !hasState {
+		// On create, configuration distinguishes omitted selectors from unknown expressions.
+		resp.Diagnostics.Append(req.Config.Get(ctx, &modelConfig)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+	validateModelConfigPlan(modelConfig, state, hasState, resp)
 	validateCustomMemoryTypesPlan(plan, state, resp)
 	if resp.Diagnostics.HasError() {
 		return
