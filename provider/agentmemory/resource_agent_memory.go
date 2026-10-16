@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -420,10 +421,14 @@ func customFieldsBlock() schema.ListNestedBlock {
 func customExtractionStrategyBlock() schema.SingleNestedBlock {
 	return schema.SingleNestedBlock{
 		Description: "Extraction strategy for this custom memory type.",
+		// Required child attributes would also make the absent block invalid.
+		Validators: []validator.Object{
+			objectvalidator.AlsoRequires(path.MatchRelative().AtName("prompt")),
+		},
 		Attributes: map[string]schema.Attribute{
 			"prompt": schema.StringAttribute{
 				Description: "Prompt used to extract this custom memory type.",
-				Required:    true,
+				Optional:    true,
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(1, 10000),
 				},
