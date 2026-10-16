@@ -151,9 +151,12 @@ func WaitForTransitGatewayResourceToMatchFilters(
 
 			var tgwTask *attachments.GetAttachmentsTask
 			var requestErr error
+			// Call the correct API endpoint, based on the TGW type
 			if subscriptionType == subscriptions.SubscriptionDeploymentTypeActiveActive {
+				// Active-Active subscriptions use the regional API endpoint.
 				tgwTask, requestErr = api.Client.TransitGatewayAttachments.GetActiveActive(ctx, subId, regionId)
 			} else {
+				// Single-region subscriptions use the subscription endpoint.
 				tgwTask, requestErr = api.Client.TransitGatewayAttachments.Get(ctx, subId)
 			}
 			if requestErr != nil {
