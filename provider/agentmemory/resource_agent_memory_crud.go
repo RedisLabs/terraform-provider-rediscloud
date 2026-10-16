@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
 func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -52,12 +53,26 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 		)
 	} else {
 		readAgentMemoryIntoModel(ctx, store, &plan, false, &resp.Diagnostics)
-		if resp.Diagnostics.HasError() {
-			return
-		}
 	}
 
+	// Keep the acknowledged ID tracked even if the follow-up read reports invalid data.
+	// Terraform can then destroy a tainted resource before retrying creation.
+	plan.ID = types.StringValue(storeID)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if readErr != nil || resp.Diagnostics.HasError() {
+		// Recovery state must preserve known values and replace unresolved computed values with null.
+		recovered, err := tftypes.Transform(resp.State.Raw, func(_ *tftypes.AttributePath, value tftypes.Value) (tftypes.Value, error) {
+			if !value.IsKnown() {
+				return tftypes.NewValue(value.Type(), nil), nil
+			}
+			return value, nil
+		})
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to preserve Agent Memory recovery state", err.Error())
+			return
+		}
+		resp.State.Raw = recovered
+	}
 }
 
 func (r *agentMemoryResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
