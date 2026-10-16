@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+
 	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -54,6 +56,7 @@ func TestAgentMemoryCreateRecoveryState(t *testing.T) {
 				var schema resource.SchemaResponse
 				r.Schema(ctx, resource.SchemaRequest{}, &schema)
 				model := AgentMemoryResourceModel{ID: types.StringUnknown(), Name: types.StringValue("recovery-store"), DatabaseID: types.Int64Value(123), ShortTermTTLSeconds: types.Int64Value(86400), LongTermTTLSeconds: types.Int64Value(31536000), ExtractionStrategy: types.StringValue("INSTRUCT"), ExtractionCadenceSeconds: types.Int64Value(300), Endpoint: types.StringUnknown(), Endpoints: types.ListUnknown(agentMemoryEndpointObjectType()), Status: types.StringUnknown(), CreatedAt: types.StringUnknown()}
+				model.Timeouts = timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(timeouts.Type).AttrTypes)}
 				if !unknownComputed {
 					model.LLM = &AgentMemoryModelConfigModel{Provider: types.StringValue("fake-provider"), Model: types.StringValue("fake-model"), Credentials: &AgentMemoryModelCredentialsModel{Type: types.StringValue("apiKey"), APIKey: types.StringValue("FAKE-MODEL-SECRET")}}
 					model.Embedding = &AgentMemoryModelConfigModel{Provider: types.StringValue("fake-provider"), Model: types.StringValue("fake-model"), Credentials: &AgentMemoryModelCredentialsModel{Type: types.StringValue("apiKey"), APIKey: types.StringValue("FAKE-MODEL-SECRET")}}
@@ -124,6 +127,7 @@ func TestAgentMemoryCreateRejectedHasNoRecoveryID(t *testing.T) {
 	r.Schema(ctx, resource.SchemaRequest{}, &schema)
 	plan := tfsdk.Plan{Schema: schema.Schema}
 	model := AgentMemoryResourceModel{Name: types.StringValue("rejected-store"), DatabaseID: types.Int64Value(123), Endpoints: types.ListNull(agentMemoryEndpointObjectType())}
+	model.Timeouts = timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(timeouts.Type).AttrTypes)}
 	if diags := plan.Set(ctx, &model); diags.HasError() {
 		t.Fatal(diags)
 	}
