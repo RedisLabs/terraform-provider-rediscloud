@@ -39,7 +39,7 @@ func validateModelConfigPlan(plan, state AgentMemoryResourceModel, hasState bool
 	validateModelConfigBlock("llm", plan.LLM, !hasState, resp)
 	validateModelConfigBlock("embedding", plan.Embedding, !hasState, resp)
 	if !hasState || resp.Diagnostics.HasError() {
-		if !hasState && (plan.Embedding != nil) && (plan.LongTermTTLSeconds.IsNull() || plan.LongTermTTLSeconds.IsUnknown()) {
+		if !hasState && (plan.Embedding != nil) && plan.LongTermTTLSeconds.IsNull() {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("long_term_ttl_seconds"),
 				"Missing Agent Memory long-term TTL",
