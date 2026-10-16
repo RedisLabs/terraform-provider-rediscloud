@@ -319,7 +319,10 @@ func customDetectorsBlock() schema.SingleNestedBlock {
 						"name": schema.StringAttribute{
 							Description: "Custom detector name.",
 							Required:    true,
-							Validators:  customNameValidator(),
+							// Custom detector names must not shadow built-in detector IDs.
+							Validators: append(customNameValidator(),
+								stringvalidator.NoneOf("credit-card", "email", "ip-address", "phone", "us-ssn"),
+							),
 						},
 						"enabled": schema.BoolAttribute{
 							Description: "Whether this detector is enabled.",
