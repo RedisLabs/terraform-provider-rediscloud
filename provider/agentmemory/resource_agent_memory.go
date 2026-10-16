@@ -481,6 +481,14 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 		return
 	}
 
+	// Optional+Computed flags become unknown in the plan when omitted.
+	// Read configuration to distinguish missing flags from unresolved expressions.
+	var config AgentMemoryResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	var state AgentMemoryResourceModel
 	hasState := !req.State.Raw.IsNull()
 	if hasState {
@@ -496,20 +504,27 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 		return
 	}
 
-	if plan.Summarization == nil {
-		validateExclusionsPlan(plan, resp)
+	validateSummarizationConfig(config, resp)
+	validateExclusionsConfig(config, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if plan.Summarization.Enabled.IsNull() || plan.Summarization.Enabled.IsUnknown() {
+	validateSummarizationPlan(plan, resp)
+}
+
+func validateSummarizationConfig(config AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
+	if config.Summarization != nil && config.Summarization.Enabled.IsNull() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("summarization").AtName("enabled"),
 			"Missing summarization enabled flag",
 			"summarization.enabled must be configured when the summarization block is present.",
 		)
 	}
-	if plan.Summarization.EventCount == nil {
-		validateExclusionsPlan(plan, resp)
+}
+
+func validateSummarizationPlan(plan AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
+	if plan.Summarization == nil || plan.Summarization.EventCount == nil {
 		return
 	}
 
@@ -526,41 +541,39 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 			"summarization.event_count.threshold must be greater than summarization.event_count.retain_count.",
 		)
 	}
-
-	validateExclusionsPlan(plan, resp)
 }
 
-func validateExclusionsPlan(plan AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
-	if plan.LongTermMemoryExclusions == nil {
+func validateExclusionsConfig(config AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
+	if config.LongTermMemoryExclusions == nil {
 		return
 	}
 
-	if plan.LongTermMemoryExclusions.Enabled.IsNull() || plan.LongTermMemoryExclusions.Enabled.IsUnknown() {
+	if config.LongTermMemoryExclusions.Enabled.IsNull() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("long_term_memory_exclusions").AtName("enabled"),
 			"Missing long-term memory exclusions enabled flag",
 			"long_term_memory_exclusions.enabled must be configured when the long_term_memory_exclusions block is present.",
 		)
 	}
-	if semantic := plan.LongTermMemoryExclusions.Semantic; semantic != nil && (semantic.Enabled.IsNull() || semantic.Enabled.IsUnknown()) {
+	if semantic := config.LongTermMemoryExclusions.Semantic; semantic != nil && semantic.Enabled.IsNull() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("long_term_memory_exclusions").AtName("semantic").AtName("enabled"),
 			"Missing semantic exclusion enabled flag",
 			"long_term_memory_exclusions.semantic.enabled must be configured when the semantic block is present.",
 		)
 	}
-	if builtIn := plan.LongTermMemoryExclusions.BuiltInDetectors; builtIn != nil && (builtIn.Enabled.IsNull() || builtIn.Enabled.IsUnknown()) {
+	if builtIn := config.LongTermMemoryExclusions.BuiltInDetectors; builtIn != nil && builtIn.Enabled.IsNull() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("long_term_memory_exclusions").AtName("built_in_detectors").AtName("enabled"),
 			"Missing built-in detectors enabled flag",
 			"long_term_memory_exclusions.built_in_detectors.enabled must be configured when the built_in_detectors block is present.",
 		)
 	}
-	custom := plan.LongTermMemoryExclusions.CustomDetectors
+	custom := config.LongTermMemoryExclusions.CustomDetectors
 	if custom == nil {
 		return
 	}
-	if custom.Enabled.IsNull() || custom.Enabled.IsUnknown() {
+	if custom.Enabled.IsNull() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("long_term_memory_exclusions").AtName("custom_detectors").AtName("enabled"),
 			"Missing custom detectors enabled flag",
