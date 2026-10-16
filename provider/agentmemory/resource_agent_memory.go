@@ -504,12 +504,16 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 		return
 	}
 
-	// Check exclusions even when summarization comparisons must wait for unknown values.
-	validateExclusionsPlan(config, resp)
-	if plan.Summarization == nil {
+	validateSummarizationConfig(config, resp)
+	validateExclusionsConfig(config, resp)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	validateSummarizationPlan(plan, resp)
+}
+
+func validateSummarizationConfig(config AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
 	if config.Summarization != nil && config.Summarization.Enabled.IsNull() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("summarization").AtName("enabled"),
@@ -517,7 +521,10 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 			"summarization.enabled must be configured when the summarization block is present.",
 		)
 	}
-	if plan.Summarization.EventCount == nil {
+}
+
+func validateSummarizationPlan(plan AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
+	if plan.Summarization == nil || plan.Summarization.EventCount == nil {
 		return
 	}
 
@@ -536,7 +543,7 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 	}
 }
 
-func validateExclusionsPlan(config AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
+func validateExclusionsConfig(config AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
 	if config.LongTermMemoryExclusions == nil {
 		return
 	}
