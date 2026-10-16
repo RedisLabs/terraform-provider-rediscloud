@@ -522,6 +522,7 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 	}
 	validateModelConfigPlan(modelConfig, state, hasState, resp)
 	validateCustomMemoryTypesPlan(plan, state, resp)
+	validateCustomDetectorNamesPlan(plan, resp)
 	if resp.Diagnostics.HasError() {
 		return
 	}
