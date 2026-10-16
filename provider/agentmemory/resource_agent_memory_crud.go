@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
 func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -21,6 +22,14 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	operationTimeout, diags := plan.Timeouts.Create(ctx, agentMemoryMutationDefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
 
 	storeID, err := r.client.Client.AgentMemory.Create(ctx, agentmemoryapi.CreateStore{
 		Name:                     plan.Name.ValueString(),
@@ -52,12 +61,26 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 		)
 	} else {
 		readAgentMemoryIntoModel(ctx, store, &plan, false, &resp.Diagnostics)
-		if resp.Diagnostics.HasError() {
-			return
-		}
 	}
 
+	// Keep the acknowledged ID tracked even if the follow-up read reports invalid data.
+	// Terraform can then destroy a tainted resource before retrying creation.
+	plan.ID = types.StringValue(storeID)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if readErr != nil || resp.Diagnostics.HasError() {
+		// Recovery state must preserve known values and replace unresolved computed values with null.
+		recovered, err := tftypes.Transform(resp.State.Raw, func(_ *tftypes.AttributePath, value tftypes.Value) (tftypes.Value, error) {
+			if !value.IsKnown() {
+				return tftypes.NewValue(value.Type(), nil), nil
+			}
+			return value, nil
+		})
+		if err != nil {
+			resp.Diagnostics.AddError("Failed to preserve Agent Memory recovery state", err.Error())
+			return
+		}
+		resp.State.Raw = recovered
+	}
 }
 
 func (r *agentMemoryResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -66,6 +89,14 @@ func (r *agentMemoryResource) Read(ctx context.Context, req resource.ReadRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	operationTimeout, diags := state.Timeouts.Read(ctx, agentMemoryReadDefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
 
 	store, err := r.client.Client.AgentMemory.Get(ctx, state.ID.ValueString())
 	if err != nil {
@@ -93,6 +124,14 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	operationTimeout, diags := plan.Timeouts.Update(ctx, agentMemoryMutationDefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
 
 	update := agentmemoryapi.UpdateStore{}
 	if !plan.Name.Equal(state.Name) {
@@ -133,6 +172,8 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 		resp.Diagnostics.AddError("Failed to read Agent Memory service after update", err.Error())
 		return
 	}
+	// Validate the response against the requested ID even when the plan ID is unknown.
+	plan.ID = state.ID
 	readAgentMemoryIntoModel(ctx, store, &plan, false, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -146,6 +187,14 @@ func (r *agentMemoryResource) Delete(ctx context.Context, req resource.DeleteReq
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	operationTimeout, diags := state.Timeouts.Delete(ctx, agentMemoryMutationDefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
 
 	err := r.client.Client.AgentMemory.Delete(ctx, state.ID.ValueString())
 	if err == nil {
@@ -186,6 +235,15 @@ func extractionCadenceFromPlan(plan AgentMemoryResourceModel) *agentmemoryapi.Ex
 }
 
 func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, state *AgentMemoryResourceModel, includeAPIOnlyConfig bool, diags *diag.Diagnostics) {
+	// Reject invalid identity before copying any response fields into the owned model.
+	if store == nil || store.StoreID == "" {
+		diags.AddError("Invalid Agent Memory response", "The API response omitted the store ID.")
+		return
+	}
+	if !state.ID.IsNull() && !state.ID.IsUnknown() && state.ID.ValueString() != "" && state.ID.ValueString() != store.StoreID {
+		diags.AddError("Invalid Agent Memory response", "The API response did not match the requested store ID.")
+		return
+	}
 	state.ID = types.StringValue(store.StoreID)
 	state.Name = types.StringValue(store.Name)
 	state.Status = types.StringValue(store.Status)

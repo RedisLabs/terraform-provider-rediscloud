@@ -39,7 +39,7 @@ func validateModelConfigPlan(plan, state AgentMemoryResourceModel, hasState bool
 	validateModelConfigBlock("llm", plan.LLM, !hasState, resp)
 	validateModelConfigBlock("embedding", plan.Embedding, !hasState, resp)
 	if !hasState || resp.Diagnostics.HasError() {
-		if !hasState && (plan.Embedding != nil) && (plan.LongTermTTLSeconds.IsNull() || plan.LongTermTTLSeconds.IsUnknown()) {
+		if !hasState && (plan.Embedding != nil) && plan.LongTermTTLSeconds.IsNull() {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("long_term_ttl_seconds"),
 				"Missing Agent Memory long-term TTL",
@@ -65,14 +65,14 @@ func validateModelConfigBlock(blockName string, model *AgentMemoryModelConfigMod
 	if model == nil {
 		return
 	}
-	if missingModelString(model.Provider) {
+	if !model.Provider.IsUnknown() && missingModelString(model.Provider) {
 		resp.Diagnostics.AddAttributeError(
 			path.Root(blockName).AtName("provider"),
 			"Missing Agent Memory model provider",
 			fmt.Sprintf("%s.provider must be configured.", blockName),
 		)
 	}
-	if missingModelString(model.Model) {
+	if !model.Model.IsUnknown() && missingModelString(model.Model) {
 		resp.Diagnostics.AddAttributeError(
 			path.Root(blockName).AtName("model"),
 			"Missing Agent Memory model",
@@ -90,14 +90,17 @@ func validateModelConfigBlock(blockName string, model *AgentMemoryModelConfigMod
 	if model.Credentials == nil {
 		return
 	}
-	if missingModelString(model.Credentials.Type) {
+	// The schema validates the credential type once the expression resolves.
+	if !model.Credentials.Type.IsUnknown() && missingModelString(model.Credentials.Type) {
 		resp.Diagnostics.AddAttributeError(
 			path.Root(blockName).AtName("credentials").AtName("type"),
 			"Missing Agent Memory model credential type",
 			fmt.Sprintf("%s.credentials.type must be configured when credentials are present.", blockName),
 		)
 	}
-	if missingModelString(model.Credentials.APIKey) {
+	// A configured key may depend on another resource and remain unknown during plan.
+	// Validate it once known; null and blank keys must still be rejected.
+	if !model.Credentials.APIKey.IsUnknown() && missingModelString(model.Credentials.APIKey) {
 		resp.Diagnostics.AddAttributeError(
 			path.Root(blockName).AtName("credentials").AtName("api_key"),
 			"Missing Agent Memory model API key",
