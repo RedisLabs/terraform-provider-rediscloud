@@ -1,12 +1,14 @@
 package agentmemory
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/customtypes"
 )
 
 type AgentMemoryResourceModel struct {
+	Timeouts                 timeouts.Value                     `tfsdk:"timeouts"`
 	ID                       types.String                       `tfsdk:"id"`
 	Name                     types.String                       `tfsdk:"name"`
 	DatabaseID               types.Int64                        `tfsdk:"database_id"`
