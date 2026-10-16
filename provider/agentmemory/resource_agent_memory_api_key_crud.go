@@ -16,6 +16,14 @@ func (r *agentMemoryAPIKeyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
+	operationTimeout, diags := plan.Timeouts.Create(ctx, agentMemoryAPIKeyDefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
+
 	created, err := r.client.Client.AgentMemory.CreateAPIKey(ctx, plan.StoreID.ValueString(), plan.Name.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create Agent Memory API key", err.Error())
@@ -35,6 +43,14 @@ func (r *agentMemoryAPIKeyResource) Read(ctx context.Context, req resource.ReadR
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	operationTimeout, diags := state.Timeouts.Read(ctx, agentMemoryAPIKeyDefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
 
 	key, err := r.client.Client.AgentMemory.GetAPIKey(ctx, state.StoreID.ValueString(), state.ID.ValueString())
 	if err != nil {
@@ -60,8 +76,20 @@ func (r *agentMemoryAPIKeyResource) Read(ctx context.Context, req resource.ReadR
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-func (r *agentMemoryAPIKeyResource) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.AddError("Unable to update Agent Memory API key", "Agent Memory API keys cannot be updated; configuration changes require replacement.")
+func (r *agentMemoryAPIKeyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan, state AgentMemoryAPIKeyResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !plan.StoreID.Equal(state.StoreID) || !plan.Name.Equal(state.Name) {
+		resp.Diagnostics.AddError("Unable to update Agent Memory API key", "Agent Memory API keys cannot be updated; configuration changes require replacement.")
+		return
+	}
+	// Timeout changes are local metadata; keep the existing ID and write-only secret.
+	state.Timeouts = plan.Timeouts
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (r *agentMemoryAPIKeyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -70,6 +98,14 @@ func (r *agentMemoryAPIKeyResource) Delete(ctx context.Context, req resource.Del
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	operationTimeout, diags := state.Timeouts.Delete(ctx, agentMemoryAPIKeyDefaultTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
 
 	err := r.client.Client.AgentMemory.DeleteAPIKey(ctx, state.StoreID.ValueString(), state.ID.ValueString())
 	if err == nil {
