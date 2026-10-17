@@ -54,20 +54,34 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 	plan.CreatedAt = types.StringNull()
 
 	store, readErr := r.client.Client.AgentMemory.Get(ctx, storeID)
+	needsRecovery := readErr != nil
 	if readErr != nil {
 		resp.Diagnostics.AddWarning(
 			"Agent Memory service created but not yet readable",
 			"The Agent Memory service was created and its ID was saved, but the full object could not be read immediately: "+readErr.Error(),
 		)
 	} else {
-		readAgentMemoryIntoModel(ctx, store, &plan, false, &resp.Diagnostics)
+		candidate := plan
+		var readDiags diag.Diagnostics
+		readAgentMemoryIntoModel(ctx, store, &candidate, false, &readDiags)
+		needsRecovery = readDiags.HasError()
+		if needsRecovery {
+			// An error after acknowledged creation taints the store and can trigger deletion on retry.
+			// Keep the original known inputs and surface only this hydration failure as warnings.
+			for _, diagnostic := range readDiags {
+				resp.Diagnostics.AddWarning(diagnostic.Summary(),
+					"The Agent Memory service was created and its ID was saved. Metadata was not adopted because the follow-up read was invalid. Refresh or investigate the existing store before retrying. "+diagnostic.Detail())
+			}
+		} else {
+			plan = candidate
+			resp.Diagnostics.Append(readDiags...)
+		}
 	}
 
-	// Keep the acknowledged ID tracked even if the follow-up read reports invalid data.
-	// Terraform can then destroy a tainted resource before retrying creation.
+	// Always retain the acknowledged identity rather than an invalid read response.
 	plan.ID = types.StringValue(storeID)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
-	if readErr != nil || resp.Diagnostics.HasError() {
+	if needsRecovery || resp.Diagnostics.HasError() {
 		// Recovery state must preserve known values and replace unresolved computed values with null.
 		recovered, err := tftypes.Transform(resp.State.Raw, func(_ *tftypes.AttributePath, value tftypes.Value) (tftypes.Value, error) {
 			if !value.IsKnown() {
