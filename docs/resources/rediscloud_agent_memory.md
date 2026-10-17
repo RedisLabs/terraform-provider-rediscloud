@@ -75,7 +75,10 @@ resource "rediscloud_agent_memory" "example" {
 Use sensitive variables for model provider credentials. `llm.credentials.api_key`
 and `embedding.credentials.api_key` can reference different keys, or the same
 key if the model provider credential is allowed to call both the LLM and
-embedding models. Redis Cloud stores these credentials as write-only values.
+embedding models. Redis Cloud does not return these credentials through the API. Terraform retains
+configured credentials in state; use an encrypted remote backend with restricted
+access. Marking a value sensitive hides it from normal CLI output but does not
+remove it from state.
 
 ### Service with advanced memory configuration
 
@@ -159,9 +162,9 @@ resource "rediscloud_agent_memory" "example" {
 The following arguments are required:
 
 * `name` - The name of the Agent Memory service.
-  Must be 1-64 characters and contain at least one non-whitespace character.
+  Must contain at least one non-whitespace character. Maximum length is validated by the Agent Memory API.
 * `database_id` - The ID of the Redis Cloud database that backs the Agent Memory service.
-  Must be greater than zero.
+  Must be an integer. Validity and access to the database are checked by the Agent Memory API.
 
 The following arguments are optional:
 
@@ -199,7 +202,7 @@ The following arguments are optional:
     * `description` - Non-empty field description. Maximum length is validated by the Agent Memory API.
   * `extraction_strategy` - Optional extraction strategy for this custom memory type.
     * `enabled` - Whether extraction is enabled for this custom type.
-    * `prompt` - Non-empty prompt used to extract memories of this custom type. Required when this extraction strategy block is present; maximum length is validated by the Agent Memory API.
+    * `prompt` - Non-empty prompt used to extract memories of this custom type. Required when this extraction strategy block is present. Additional limits are determined by the Agent Memory service.
 * `long_term_memory_exclusions` - Policy defining content that must not be kept in long-term memory.
   * `enabled` - Master toggle for long-term memory exclusions.
   * `built_in_detectors` - Built-in sensitive-data detector configuration.
@@ -207,7 +210,7 @@ The following arguments are optional:
     * `detectors` - Built-in detector selections.
       * `id` - Built-in detector ID. Supported values are `credit-card`, `email`, `ip-address`, `phone`, and `us-ssn`.
       * `enabled` - Whether this detector is enabled.
-      * `action` - Action when the detector matches. Accepted values are validated by the Agent Memory API; when omitted, the provider records the value returned by the API. Explicit empty strings are rejected.
+      * `action` - Action when the detector matches. Examples include `redact` and `drop`; accepted values are validated by the Agent Memory API. When omitted, the provider records the value returned by the API. Explicit empty strings are rejected.
   * `custom_detectors` - Custom regex detector configuration.
     * `enabled` - Whether custom detectors are enabled.
     * `detectors` - Custom detector definitions.
@@ -220,6 +223,11 @@ The following arguments are optional:
   * `semantic` - Semantic exclusion configuration.
     * `enabled` - Whether semantic exclusions are enabled.
     * `prompt` - Prompt describing concepts that should not be kept in long-term memory.
+
+Removing every `detectors` block from a configured detector group sends an empty
+list to clear its selections. Disabling a group preserves explicitly configured
+definitions so it can be enabled again later. Removing the optional group itself
+does not send a deletion request for its stored definitions.
 
 All time-based arguments are expressed in seconds.
 
