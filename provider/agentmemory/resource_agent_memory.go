@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -23,10 +24,11 @@ import (
 )
 
 var (
-	_ resource.Resource                = &agentMemoryResource{}
-	_ resource.ResourceWithConfigure   = &agentMemoryResource{}
-	_ resource.ResourceWithImportState = &agentMemoryResource{}
-	_ resource.ResourceWithModifyPlan  = &agentMemoryResource{}
+	_ resource.Resource                     = &agentMemoryResource{}
+	_ resource.ResourceWithConfigure        = &agentMemoryResource{}
+	_ resource.ResourceWithImportState      = &agentMemoryResource{}
+	_ resource.ResourceWithModifyPlan       = &agentMemoryResource{}
+	_ resource.ResourceWithConfigValidators = &agentMemoryResource{}
 )
 
 type agentMemoryResource struct {
@@ -471,6 +473,12 @@ func customNameValidator() []validator.String {
 
 func actionValidator() []validator.String {
 	return []validator.String{stringvalidator.OneOf("redact", "drop")}
+}
+
+func (r *agentMemoryResource) ConfigValidators(context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{
+		resourcevalidator.RequiredTogether(path.MatchRoot("llm"), path.MatchRoot("embedding")),
+	}
 }
 
 func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
