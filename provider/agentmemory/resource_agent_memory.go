@@ -161,11 +161,8 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 						Description: "Customer-supplied model provider credentials. Credentials are write-only in the Agent Memory API and are preserved in Terraform state when configured.",
 						Attributes: map[string]schema.Attribute{
 							"type": schema.StringAttribute{
-								Description: "Credential type. Currently only apiKey is supported.",
+								Description: "Credential type validated by the Agent Memory API.",
 								Optional:    true,
-								Validators: []validator.String{
-									stringvalidator.OneOf("apiKey"),
-								},
 							},
 							"api_key": schema.StringAttribute{
 								Description: "Provider API key.",
@@ -195,11 +192,8 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 						Description: "Customer-supplied model provider credentials. Credentials are write-only in the Agent Memory API and are preserved in Terraform state when configured.",
 						Attributes: map[string]schema.Attribute{
 							"type": schema.StringAttribute{
-								Description: "Credential type. Currently only apiKey is supported.",
+								Description: "Credential type validated by the Agent Memory API.",
 								Optional:    true,
-								Validators: []validator.String{
-									stringvalidator.OneOf("apiKey"),
-								},
 							},
 							"api_key": schema.StringAttribute{
 								Description: "Provider API key.",
