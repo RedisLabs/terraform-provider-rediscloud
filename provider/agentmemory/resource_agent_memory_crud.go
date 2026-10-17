@@ -222,7 +222,8 @@ func longTermMemoryFromPlan(plan AgentMemoryResourceModel) *agentmemoryapi.LongT
 		Embedding: modelConfigFromModel(plan.Embedding),
 	}
 	if !plan.LongTermTTLSeconds.IsNull() && !plan.LongTermTTLSeconds.IsUnknown() {
-		config.TTLSeconds = int(plan.LongTermTTLSeconds.ValueInt64())
+		ttl := int(plan.LongTermTTLSeconds.ValueInt64())
+		config.TTLSeconds = &ttl
 	}
 	return config
 }

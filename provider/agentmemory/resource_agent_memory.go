@@ -84,20 +84,14 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 			},
 			"short_term_ttl_seconds": schema.Int64Attribute{
-				Description: "Short-term memory TTL in seconds. The API accepts 1 second to 1 year.",
+				Description: "Short-term memory TTL in seconds.",
 				Optional:    true,
 				Computed:    true,
-				Validators: []validator.Int64{
-					int64validator.Between(1, 31536000),
-				},
 			},
 			"long_term_ttl_seconds": schema.Int64Attribute{
-				Description: "Long-term memory TTL in seconds. The API accepts 1 second to 1 year.",
+				Description: "Long-term memory TTL in seconds.",
 				Optional:    true,
 				Computed:    true,
-				Validators: []validator.Int64{
-					int64validator.Between(1, 31536000),
-				},
 			},
 			"extraction_strategy": schema.StringAttribute{
 				Description: "How long-term memories are extracted from sessions. Currently only INSTRUCT is supported by the Agent Memory API.",
