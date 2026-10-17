@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/RedisLabs/rediscloud-go-api/redis"
 	agentmemoryapi "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -32,8 +33,8 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 	defer cancel()
 
 	storeID, err := r.client.Client.AgentMemory.Create(ctx, agentmemoryapi.CreateStore{
-		Name:                     plan.Name.ValueString(),
-		DatabaseID:               int(plan.DatabaseID.ValueInt64()),
+		Name:                     redis.String(plan.Name.ValueString()),
+		DatabaseID:               redis.Int(int(plan.DatabaseID.ValueInt64())),
 		ShortMemory:              shortMemoryFromPlan(plan),
 		LongTermMemory:           longTermMemoryFromPlan(plan),
 		LLM:                      modelConfigFromModel(plan.LLM),
@@ -299,7 +300,7 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 		state.Summarization = summarizationToModel(store.Summarization)
 	}
 	if includeAPIOnlyConfig || state.LongTermMemoryExclusions != nil || store.LongTermMemoryExclusions == nil {
-		state.LongTermMemoryExclusions = exclusionsToModel(store.LongTermMemoryExclusions)
+		state.LongTermMemoryExclusions = exclusionsToModel(store.LongTermMemoryExclusions, state.LongTermMemoryExclusions, includeAPIOnlyConfig)
 	}
 	if includeAPIOnlyConfig || state.CustomMemoryTypes != nil || len(store.CustomMemoryTypes) == 0 {
 		state.CustomMemoryTypes = customMemoryTypesToModel(store.CustomMemoryTypes, state.CustomMemoryTypes)
