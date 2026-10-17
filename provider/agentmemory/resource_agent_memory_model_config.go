@@ -12,12 +12,12 @@ import (
 func validateModelConfigPlan(plan, state AgentMemoryResourceModel, hasState bool, resp *resource.ModifyPlanResponse) {
 	switch {
 	case plan.LLM == nil && plan.Embedding == nil:
-		if hasState && (state.LLM != nil || state.Embedding != nil) {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("llm"),
-				"Unsupported Agent Memory model configuration removal",
-				"The Agent Memory API does not support removing customer-managed model configuration after it has been configured.",
-			)
+		// Child plan modifiers are skipped when their entire block is removed.
+		if hasState && state.LLM != nil {
+			resp.RequiresReplace.Append(path.Root("llm").AtName("provider"))
+		}
+		if hasState && state.Embedding != nil {
+			resp.RequiresReplace.Append(path.Root("embedding").AtName("provider"))
 		}
 		return
 	case plan.LLM == nil:
@@ -38,27 +38,13 @@ func validateModelConfigPlan(plan, state AgentMemoryResourceModel, hasState bool
 
 	validateModelConfigBlock("llm", plan.LLM, !hasState, resp)
 	validateModelConfigBlock("embedding", plan.Embedding, !hasState, resp)
-	if !hasState || resp.Diagnostics.HasError() {
-		if !hasState && (plan.Embedding != nil) && plan.LongTermTTLSeconds.IsNull() {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("long_term_ttl_seconds"),
-				"Missing Agent Memory long-term TTL",
-				"long_term_ttl_seconds must be configured when embedding is configured because the Agent Memory API requires longTermMemory.ttlSeconds whenever longTermMemory.embedding is sent on create.",
-			)
-		}
-		return
-	}
-
-	if state.LLM == nil || state.Embedding == nil {
+	if !hasState && plan.LongTermTTLSeconds.IsNull() {
 		resp.Diagnostics.AddAttributeError(
-			path.Root("llm"),
-			"Unsupported Agent Memory model configuration change",
-			"The Agent Memory API does not allow a store created with platform-managed models to move to customer-managed models later. Configure llm and embedding when the store is first created.",
+			path.Root("long_term_ttl_seconds"),
+			"Missing Agent Memory long-term TTL",
+			"long_term_ttl_seconds must be configured when embedding is configured because the Agent Memory API requires longTermMemory.ttlSeconds whenever longTermMemory.embedding is sent on create.",
 		)
-		return
 	}
-	validateConfiguredModelConfigChange("llm", plan.LLM, state.LLM, true, resp)
-	validateConfiguredModelConfigChange("embedding", plan.Embedding, state.Embedding, false, resp)
 }
 
 func validateModelConfigBlock(blockName string, model *AgentMemoryModelConfigModel, requireCredentials bool, resp *resource.ModifyPlanResponse) {
@@ -108,41 +94,9 @@ func validateModelConfigBlock(blockName string, model *AgentMemoryModelConfigMod
 	}
 }
 
-func validateConfiguredModelConfigChange(blockName string, plan, state *AgentMemoryModelConfigModel, allowModelChange bool, resp *resource.ModifyPlanResponse) {
-	if plan == nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root(blockName),
-			"Unsupported Agent Memory model configuration removal",
-			fmt.Sprintf("The Agent Memory API does not support removing %s after customer-managed models have been configured.", blockName),
-		)
-		return
-	}
-	if !sameKnownString(plan.Provider, state.Provider) {
-		resp.Diagnostics.AddAttributeError(
-			path.Root(blockName).AtName("provider"),
-			"Unsupported Agent Memory model provider change",
-			fmt.Sprintf("The Agent Memory API treats %s.provider as immutable after creation.", blockName),
-		)
-	}
-	if !allowModelChange && !sameKnownString(plan.Model, state.Model) {
-		resp.Diagnostics.AddAttributeError(
-			path.Root(blockName).AtName("model"),
-			"Unsupported Agent Memory embedding model change",
-			"The Agent Memory API treats embedding.model as immutable after creation. Only the embedding credential can be rotated.",
-		)
-	}
-}
-
 func missingModelString(value types.String) bool {
 	if value.IsNull() || value.IsUnknown() {
 		return true
 	}
 	return strings.TrimSpace(value.ValueString()) == ""
-}
-
-func sameKnownString(left, right types.String) bool {
-	if left.IsNull() || left.IsUnknown() || right.IsNull() || right.IsUnknown() {
-		return true
-	}
-	return left.Equal(right)
 }
