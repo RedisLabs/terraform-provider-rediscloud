@@ -187,7 +187,7 @@ The following arguments are optional:
 * `summarization` - Automatic session summarization configuration.
   * `enabled` - Whether automatic summarization is enabled.
   * `trigger_strategy` - Summarization trigger strategy. Accepted values are validated by the Agent Memory API; when omitted, the provider records the value returned by the API. Explicit empty strings are rejected.
-  * `event_count` - Event-count thresholds.
+  * `event_count` - Event-count thresholds. Numeric limits are validated by the Agent Memory API. Both fields must be configured when this block is present.
     * `threshold` - Number of messages that triggers summarization. Must be greater than `retain_count`.
     * `retain_count` - Number of most recent messages retained in full.
 * `custom_memory_types` - Custom long-term memory types. A store can define up to 3 custom memory types.
