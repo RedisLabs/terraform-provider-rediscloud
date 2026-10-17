@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
+	"github.com/RedisLabs/rediscloud-go-api/redis"
 	agentmemoryapi "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -26,8 +27,8 @@ func TestAgentMemoryResource_mockedCreateReadDelete(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
 			var request agentmemoryapi.CreateStore
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
-			assert.Equal(t, "store", request.Name)
-			assert.Equal(t, 123, request.DatabaseID)
+			assert.Equal(t, "store", redis.StringValue(request.Name))
+			assert.Equal(t, 123, redis.IntValue(request.DatabaseID))
 			require.NotNil(t, request.ShortMemory)
 			assert.Equal(t, 86400, request.ShortMemory.TTLSeconds)
 			require.NotNil(t, request.LongTermMemory)
@@ -116,8 +117,8 @@ func TestAgentMemoryResource_mockedCreateWithAPIDefaults(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
 			var request agentmemoryapi.CreateStore
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
-			assert.Equal(t, "store", request.Name)
-			assert.Equal(t, 123, request.DatabaseID)
+			assert.Equal(t, "store", redis.StringValue(request.Name))
+			assert.Equal(t, 123, redis.IntValue(request.DatabaseID))
 			assert.Nil(t, request.ShortMemory)
 			assert.Nil(t, request.LongTermMemory)
 			assert.Nil(t, request.ExtractionCadence)
@@ -719,8 +720,8 @@ func TestAgentMemoryResource_mockedUpdate(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
 			var request agentmemoryapi.CreateStore
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
-			assert.Equal(t, name, request.Name)
-			assert.Equal(t, 123, request.DatabaseID)
+			assert.Equal(t, name, redis.StringValue(request.Name))
+			assert.Equal(t, 123, redis.IntValue(request.DatabaseID))
 
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
