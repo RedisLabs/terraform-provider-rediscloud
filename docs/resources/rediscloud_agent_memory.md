@@ -176,13 +176,13 @@ The following arguments are optional:
   * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service.
   * `model` - Model name advertised by the provider.
   * `credentials` - Provider credential configuration.
-    * `type` - Credential type. Currently only `apiKey` is supported.
+    * `type` - Credential type validated by the Agent Memory API.
     * `api_key` - Provider API key. This value is sensitive and write-only in the Agent Memory API.
 * `embedding` - Customer-managed embedding model configuration for long-term memory. If configured, `llm` must also be configured.
   * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service.
   * `model` - Model name advertised by the provider.
   * `credentials` - Provider credential configuration.
-    * `type` - Credential type. Currently only `apiKey` is supported.
+    * `type` - Credential type validated by the Agent Memory API.
     * `api_key` - Provider API key. This value is sensitive and write-only in the Agent Memory API.
 * `summarization` - Automatic session summarization configuration.
   * `enabled` - Whether automatic summarization is enabled.
