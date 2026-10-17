@@ -216,7 +216,7 @@ The following arguments are optional:
       * `action` - Action when the detector matches. Accepted values are validated by the Agent Memory API; when omitted, the provider records the value returned by the API. Explicit empty strings are rejected.
       * `matcher` - Detector matcher configuration.
         * `kind` - Matcher kind. Currently only `regex` is supported.
-        * `regex.pattern` - Regex pattern used by the matcher.
+        * `regex.pattern` - Non-empty regex pattern used by the matcher. Maximum length and syntax are validated by the Agent Memory API. Patterns known to match empty text are rejected locally.
   * `semantic` - Semantic exclusion configuration.
     * `enabled` - Whether semantic exclusions are enabled.
     * `prompt` - Prompt describing concepts that should not be kept in long-term memory.
