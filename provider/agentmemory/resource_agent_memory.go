@@ -151,16 +151,34 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 				Blocks: map[string]schema.Block{
 					"credentials": schema.SingleNestedBlock{
-						Description: "Customer-supplied model provider credentials. Credentials are write-only in the Agent Memory API and are preserved in Terraform state when configured.",
+						Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is stored in Terraform state; api_key_wo is not.",
 						Attributes: map[string]schema.Attribute{
 							"type": schema.StringAttribute{
 								Description: "Credential type validated by the Agent Memory API.",
 								Optional:    true,
 							},
 							"api_key": schema.StringAttribute{
-								Description: "Provider API key.",
+								Description: "Provider API key, stored in Terraform state. Use api_key_wo to avoid persisting it.",
 								Optional:    true,
 								Sensitive:   true,
+								Validators:  []validator.String{stringvalidator.ConflictsWith(path.MatchRoot("llm").AtName("credentials").AtName("api_key_wo"))},
+							},
+							"api_key_wo": schema.StringAttribute{
+								Description: "Provider API key omitted from plan and state. Requires Terraform 1.11 or later. Increment api_key_wo_version to rotate it.",
+								Optional:    true,
+								Sensitive:   true,
+								WriteOnly:   true,
+								Validators: []validator.String{
+									stringvalidator.AlsoRequires(path.MatchRoot("llm").AtName("credentials").AtName("api_key_wo_version")),
+								},
+							},
+							"api_key_wo_version": schema.Int64Attribute{
+								Description: "Positive version used to trigger an in-place write-only credential update. Change this value whenever api_key_wo changes.",
+								Optional:    true,
+								Validators: []validator.Int64{
+									int64validator.AtLeast(1),
+									int64validator.AlsoRequires(path.MatchRoot("llm").AtName("credentials").AtName("api_key_wo")),
+								},
 							},
 						},
 					},
@@ -182,16 +200,34 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 				Blocks: map[string]schema.Block{
 					"credentials": schema.SingleNestedBlock{
-						Description: "Customer-supplied model provider credentials. Credentials are write-only in the Agent Memory API and are preserved in Terraform state when configured.",
+						Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is stored in Terraform state; api_key_wo is not.",
 						Attributes: map[string]schema.Attribute{
 							"type": schema.StringAttribute{
 								Description: "Credential type validated by the Agent Memory API.",
 								Optional:    true,
 							},
 							"api_key": schema.StringAttribute{
-								Description: "Provider API key.",
+								Description: "Provider API key, stored in Terraform state. Use api_key_wo to avoid persisting it.",
 								Optional:    true,
 								Sensitive:   true,
+								Validators:  []validator.String{stringvalidator.ConflictsWith(path.MatchRoot("embedding").AtName("credentials").AtName("api_key_wo"))},
+							},
+							"api_key_wo": schema.StringAttribute{
+								Description: "Provider API key omitted from plan and state. Requires Terraform 1.11 or later. Increment api_key_wo_version to rotate it.",
+								Optional:    true,
+								Sensitive:   true,
+								WriteOnly:   true,
+								Validators: []validator.String{
+									stringvalidator.AlsoRequires(path.MatchRoot("embedding").AtName("credentials").AtName("api_key_wo_version")),
+								},
+							},
+							"api_key_wo_version": schema.Int64Attribute{
+								Description: "Positive version used to trigger an in-place write-only credential update. Change this value whenever api_key_wo changes.",
+								Optional:    true,
+								Validators: []validator.Int64{
+									int64validator.AtLeast(1),
+									int64validator.AlsoRequires(path.MatchRoot("embedding").AtName("credentials").AtName("api_key_wo")),
+								},
 							},
 						},
 					},
@@ -526,6 +562,9 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 			return
 		}
 	}
+	// Write-only values exist only in configuration, even when the rest comes from the plan.
+	modelConfig.LLM = modelConfigWithWriteOnlyValue(modelConfig.LLM, config.LLM)
+	modelConfig.Embedding = modelConfigWithWriteOnlyValue(modelConfig.Embedding, config.Embedding)
 	validateModelConfigPlan(modelConfig, state, hasState, resp)
 	validateCustomMemoryTypesPlan(plan, state, resp)
 	validateCustomDetectorNamesPlan(plan, resp)

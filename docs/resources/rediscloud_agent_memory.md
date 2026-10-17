@@ -77,6 +77,43 @@ and `embedding.credentials.api_key` can reference different keys, or the same
 key if the model provider credential is allowed to call both the LLM and
 embedding models. Redis Cloud stores these credentials as write-only values.
 
+### Model credentials without persisted secrets
+
+Terraform 1.11 or later supports `api_key_wo` for both model credential blocks.
+The value is read from configuration and is not stored in Terraform plan or
+state values. It can use an ephemeral sensitive variable:
+
+```hcl
+variable "llm_api_key" {
+  type      = string
+  sensitive = true
+  ephemeral = true
+}
+
+# Inside llm.credentials; the same fields are available in embedding.credentials.
+credentials {
+  type               = "apiKey"
+  api_key_wo         = var.llm_api_key
+  api_key_wo_version = 1
+}
+```
+
+Use this block in place of the `credentials` block in the model example above.
+Provide the ephemeral variable for both plan and apply. Configure exactly one
+of `api_key` and `api_key_wo`. The write-only key requires a positive
+`api_key_wo_version`, which is stored in state. Change the version whenever you
+rotate the key: changing only the secret cannot produce a Terraform diff.
+Each model has its own version, and rotation updates the existing store in place.
+Other updates that send that model configuration, such as an LLM model change,
+also send its configured credential.
+
+The existing sensitive `api_key` remains supported, including on Terraform
+versions before 1.11. To switch, replace `api_key` with `api_key_wo` and set its
+version, then apply. This removes the legacy key from the current resource state;
+it does not erase previous state versions or saved artifacts. Import cannot
+recover keys or write-only versions. The first apply after import sends the
+configured key and records its version without replacing the store.
+
 ### Service with advanced memory configuration
 
 ```hcl
@@ -177,13 +214,17 @@ The following arguments are optional:
   * `model` - Model name advertised by the provider.
   * `credentials` - Provider credential configuration.
     * `type` - Credential type validated by the Agent Memory API.
-    * `api_key` - Provider API key. This value is sensitive and write-only in the Agent Memory API.
+    * `api_key` - Provider API key. Sensitive but persisted in Terraform state; write-only in the Agent Memory API. Conflicts with `api_key_wo`.
+    * `api_key_wo` - Provider API key omitted from plan/state values. Requires Terraform 1.11 or later and `api_key_wo_version`.
+    * `api_key_wo_version` - Positive version for in-place credential rotation. Change it whenever the write-only key changes.
 * `embedding` - Customer-managed embedding model configuration for long-term memory. If configured, `llm` must also be configured.
   * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service.
   * `model` - Model name advertised by the provider.
   * `credentials` - Provider credential configuration.
     * `type` - Credential type validated by the Agent Memory API.
-    * `api_key` - Provider API key. This value is sensitive and write-only in the Agent Memory API.
+    * `api_key` - Provider API key. Sensitive but persisted in Terraform state; write-only in the Agent Memory API. Conflicts with `api_key_wo`.
+    * `api_key_wo` - Provider API key omitted from plan/state values. Requires Terraform 1.11 or later and `api_key_wo_version`.
+    * `api_key_wo_version` - Positive version for in-place credential rotation. Change it whenever the write-only key changes.
 * `summarization` - Automatic session summarization configuration.
   * `enabled` - Whether automatic summarization is enabled.
   * `trigger_strategy` - Summarization trigger strategy. Currently only `event_count` is supported.
