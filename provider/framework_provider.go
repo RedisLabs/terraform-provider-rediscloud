@@ -17,6 +17,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/aclrule"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/acluser"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/activeactive"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/agentmemory"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/cloudaccount"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/datapersistence"
@@ -168,6 +169,8 @@ func (p *redisCloudFrameworkProvider) Configure(ctx context.Context, req provide
 func (p *redisCloudFrameworkProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		activeactive.NewActiveActiveDatabaseResource,
+		agentmemory.NewAgentMemoryResource,
+		agentmemory.NewAgentMemoryAPIKeyResource,
 		cloudaccount.NewCloudAccountResource,
 	}
 }
