@@ -44,14 +44,14 @@ func TestAgentMemoryUnknownLongTermTTLValidation(t *testing.T) {
 		}
 		for _, c := range []struct{ name, expression, dependency, errorPattern string }{
 			{name: "known", expression: "86400"},
-			{name: "minimum", expression: "1"},
-			{name: "maximum", expression: "31536000"},
+			{name: "previous minimum", expression: "1"},
+			{name: "previous maximum", expression: "31536000"},
 			{name: "unknown", expression: "terraform_data.ttl.output", dependency: `resource "terraform_data" "ttl" { input=86400 }`},
 			{name: "omitted", expression: "OMIT_TTL"},
 			{name: "null", expression: "null"},
-			{name: "zero", expression: "0", errorPattern: "between"},
-			{name: "negative", expression: "-1", errorPattern: "between"},
-			{name: "oversized", expression: "31536001", errorPattern: "between"},
+			{name: "zero", expression: "0"},
+			{name: "negative", expression: "-1"},
+			{name: "oversized", expression: "31536001"},
 			{name: "fraction", expression: "1.5", errorPattern: "integer|Int64|whole"},
 		} {
 			t.Run(mode+"/"+c.name, func(t *testing.T) {
@@ -84,21 +84,43 @@ func TestAgentMemoryUnknownLongTermTTLValidation(t *testing.T) {
 func TestAgentMemoryUnknownLongTermTTLResolvesInvalid(t *testing.T) {
 	for _, c := range []struct{ name, input, expression, errorPattern string }{
 		{"null", "true", "terraform_data.ttl.output ? null : 86400", "Missing Agent Memory long-term TTL"},
-		{"zero", "0", "terraform_data.ttl.output", "between"},
-		{"negative", "-1", "terraform_data.ttl.output", "between"},
-		{"oversized", "31536001", "terraform_data.ttl.output", "between"},
+		{"zero", "0", "terraform_data.ttl.output", "Failed to create Agent Memory service"},
+		{"negative", "-1", "terraform_data.ttl.output", "Failed to create Agent Memory service"},
+		{"oversized", "31536001", "terraform_data.ttl.output", "Failed to create Agent Memory service"},
 		{"fraction", "1.5", "terraform_data.ttl.output", "integer|Int64|whole"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			var calls atomic.Int32
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				calls.Add(1)
-				http.Error(w, "invalid TTL must not call HTTP", 500)
+				if r.Method != http.MethodPost || r.URL.Path != "/memory-stores" {
+					t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+				}
+				var payload struct {
+					LongTermMemory struct {
+						TTLSeconds *int `json:"ttlSeconds"`
+					} `json:"longTermMemory"`
+				}
+				if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+					t.Error(err)
+				}
+				if payload.LongTermMemory.TTLSeconds == nil {
+					t.Error("resolved TTL missing from request")
+				} else if fmt.Sprint(*payload.LongTermMemory.TTLSeconds) != c.input {
+					t.Errorf("resolved TTL changed: got %d, want %s", *payload.LongTermMemory.TTLSeconds, c.input)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte(`{"message":"TTL rejected by the API"}`))
 			}))
 			defer server.Close()
 			defer func() {
-				if calls.Load() != 0 {
-					t.Error("invalid resolved TTL reached HTTP")
+				expectedCalls := int32(0)
+				if c.errorPattern == "Failed to create Agent Memory service" {
+					expectedCalls = 1
+				}
+				if calls.Load() != expectedCalls {
+					t.Errorf("unexpected API calls: got %d, want %d", calls.Load(), expectedCalls)
 				}
 			}()
 			config := testProviderConfig(t, server.URL) + unknownTTLConfig(c.expression, fmt.Sprintf(`resource "terraform_data" "ttl" { input=%s }`, c.input), true)
@@ -113,7 +135,7 @@ func TestAgentMemoryUnknownLongTermTTLResolvesInvalid(t *testing.T) {
 func TestAgentMemoryUnknownLongTermTTLLifecycle(t *testing.T) {
 	var mu sync.Mutex
 	var store map[string]any
-	creates, patches, deletes := 0, 0, 0
+	creates, patches, deletes, rejectedPatches := 0, 0, 0, 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		defer mu.Unlock()
@@ -133,6 +155,12 @@ func TestAgentMemoryUnknownLongTermTTLLifecycle(t *testing.T) {
 				return
 			}
 			ttl, ok := memory["ttlSeconds"].(float64)
+			if ok && r.Method == http.MethodPatch && ttl == 0 {
+				rejectedPatches++
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte(`{"message":"TTL rejected by the API"}`))
+				return
+			}
 			expected := float64(86400)
 			if r.Method == http.MethodPatch {
 				expected = 172800
@@ -179,8 +207,8 @@ func TestAgentMemoryUnknownLongTermTTLLifecycle(t *testing.T) {
 	defer func() {
 		mu.Lock()
 		defer mu.Unlock()
-		if creates != 1 || patches != 1 || deletes != 1 || store != nil {
-			t.Errorf("unexpected fixture counts: creates=%d patches=%d deletes=%d remaining=%t", creates, patches, deletes, store != nil)
+		if creates != 1 || patches != 1 || deletes != 1 || rejectedPatches != 1 || store != nil {
+			t.Errorf("unexpected fixture counts: creates=%d patches=%d deletes=%d rejectedPatches=%d remaining=%t", creates, patches, deletes, rejectedPatches, store != nil)
 		}
 	}()
 	prefix := testProviderConfig(t, server.URL)
@@ -196,5 +224,6 @@ func TestAgentMemoryUnknownLongTermTTLLifecycle(t *testing.T) {
 		{Config: changed, PlanOnly: true},
 		{Config: omitted, PlanOnly: true},
 		{Config: changed, PlanOnly: true},
+		{Config: config(0), ExpectError: regexp.MustCompile("Failed to update Agent Memory service")},
 	}})
 }
