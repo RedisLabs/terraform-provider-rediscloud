@@ -301,7 +301,7 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 	// they were absent from config. Import is the one path where we intentionally
 	// adopt advanced API config even when the previous state is empty.
 	if includeAPIOnlyConfig || state.Summarization != nil || store.Summarization == nil {
-		state.Summarization = summarizationToModel(store.Summarization)
+		state.Summarization = summarizationToModel(store.Summarization, state.Summarization, includeAPIOnlyConfig)
 	}
 	if includeAPIOnlyConfig || state.LongTermMemoryExclusions != nil || store.LongTermMemoryExclusions == nil {
 		state.LongTermMemoryExclusions = exclusionsToModel(store.LongTermMemoryExclusions, state.LongTermMemoryExclusions, includeAPIOnlyConfig)
