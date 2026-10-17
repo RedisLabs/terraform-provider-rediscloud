@@ -170,7 +170,7 @@ The following arguments are optional:
 * `long_term_ttl_seconds` - Long-term memory TTL in seconds.
   The API accepts 1 second to 1 year. This must be configured explicitly when `embedding` is configured.
 * `extraction_strategy` - How long-term memories are extracted from sessions.
-  Accepted values are validated by the Agent Memory API. Changing an explicitly configured strategy requires replacement.
+  Accepted values are validated by the Agent Memory API. Changing an existing store strategy is blocked during planning because the API does not support updating it in place.
 * `extraction_cadence_seconds` - How often the extraction pipeline runs while a session is active, in seconds. Accepted values are validated by the Agent Memory API.
 * `llm` - Customer-managed LLM configuration. If configured, `embedding` must also be configured.
   * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service.
@@ -223,8 +223,13 @@ The following arguments are optional:
 
 All time-based arguments are expressed in seconds.
 
-Most configuration can be updated in place. Changing `database_id` replaces the
-Agent Memory service because it changes the backing database.
+Most configuration can be updated in place. Changes to `database_id` or an
+explicitly configured `extraction_strategy` are blocked during planning. The
+provider does not automatically replace the store for these changes: a new store
+has a different identity and may no longer reference the existing agent context.
+Plan a migration and explicitly manage the old and new stores when needed.
+Explicit removal, destroy, or Terraform replacement commands can still delete a
+store; this validation is not a general deletion safeguard.
 
 For customer-managed models, `llm` and `embedding` must be configured together
 when the Agent Memory service is first created. The Agent Memory API does not
@@ -289,6 +294,13 @@ resource configuration is not available during import.
 A timeout does not undo an operation already accepted by Redis Cloud. If creation
 may have succeeded without returning an ID, reconcile the remote store before
 retrying to avoid duplicates.
+
+If creation returns a store ID but the immediate follow-up read fails or returns
+invalid metadata, the provider saves that ID and the known configuration and
+reports a warning. It does not adopt invalid metadata or return a creation error
+that would taint the acknowledged store. Investigate or refresh the existing
+store before retrying. Subsequent read and update failures remain errors; a
+persistent invalid API response can therefore block further operations.
 
 ## Import
 
