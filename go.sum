@@ -8,6 +8,8 @@ github.com/RedisLabs/rediscloud-go-api v0.52.2-0.20261017115725-e62be33961a0 h1:
 github.com/RedisLabs/rediscloud-go-api v0.52.2-0.20261017115725-e62be33961a0/go.mod h1:0Nouw50aVHyL4f6ls1o/T3weiS9OeY/yp70OCRF4zMo=
 github.com/RedisLabs/rediscloud-go-api v0.52.2-0.20261017172841-7944c7e4e754 h1:SjrRnxIeOLjIUuXEf7jo5Z9Y6j3VohoT5nT+c/ujk+k=
 github.com/RedisLabs/rediscloud-go-api v0.52.2-0.20261017172841-7944c7e4e754/go.mod h1:0Nouw50aVHyL4f6ls1o/T3weiS9OeY/yp70OCRF4zMo=
+github.com/RedisLabs/rediscloud-go-api v0.52.2-0.20261017174719-7929387c6b7a h1:Vr9Auz/GN3g1q+W+pBRuf/yEIhLOGH8gNqGesuDb9Aw=
+github.com/RedisLabs/rediscloud-go-api v0.52.2-0.20261017174719-7929387c6b7a/go.mod h1:0Nouw50aVHyL4f6ls1o/T3weiS9OeY/yp70OCRF4zMo=
 github.com/agext/levenshtein v1.2.3 h1:YB2fHEn0UJagG8T1rrWknE3ZQzWM06O8AMAatNn7lmo=
 github.com/agext/levenshtein v1.2.3/go.mod h1:JEDfjyjHDjOF/1e4FlBE/PkbqA9OfWu2ki2W0IB5558=
 github.com/apparentlymart/go-textseg/v12 v12.0.0/go.mod h1:S/4uRK2UtaQttw1GenVJEynmyUenKwP++x/+DdGV/Ec=
