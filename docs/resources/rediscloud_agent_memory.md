@@ -173,14 +173,14 @@ The following arguments are optional:
   Accepted values are validated by the Agent Memory API. Changing an explicitly configured strategy requires replacement.
 * `extraction_cadence_seconds` - How often the extraction pipeline runs while a session is active, in seconds. Accepted values are validated by the Agent Memory API.
 * `llm` - Customer-managed LLM configuration. If configured, `embedding` must also be configured.
-  * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service.
+  * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.
   * `model` - Model name advertised by the provider.
   * `credentials` - Provider credential configuration.
     * `type` - Credential type validated by the Agent Memory API.
     * `api_key` - Provider API key. This value is sensitive and write-only in the Agent Memory API.
 * `embedding` - Customer-managed embedding model configuration for long-term memory. If configured, `llm` must also be configured.
-  * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service.
-  * `model` - Model name advertised by the provider.
+  * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.
+  * `model` - Model name advertised by the provider. Changing an explicitly configured model requires replacement.
   * `credentials` - Provider credential configuration.
     * `type` - Credential type validated by the Agent Memory API.
     * `api_key` - Provider API key. This value is sensitive and write-only in the Agent Memory API.
@@ -227,13 +227,18 @@ Most configuration can be updated in place. Changing `database_id` replaces the
 Agent Memory service because it changes the backing database.
 
 For customer-managed models, `llm` and `embedding` must be configured together
-when the Agent Memory service is first created. The Agent Memory API does not
-allow a store created with platform-managed models to move to customer-managed
-models later. The provider blocks that plan instead of sending a request that
-the API will reject. After creation, `llm.provider`, `embedding.provider`, and
-`embedding.model` are immutable. `llm.model` can be updated within the existing
-provider, and model credentials can be rotated by updating `credentials.api_key`.
-Credentials are write-only and cannot be recovered from the API during import.
+on create. Adding or removing both blocks requires replacement. Changing
+`llm.provider`, `embedding.provider`, or `embedding.model` also requires
+replacement. `llm.model` can be updated within the existing provider, and model
+credentials can be rotated without replacement by updating `credentials.api_key`.
+A replacement destroys and recreates the store. Use `lifecycle.prevent_destroy`
+when destruction must be blocked.
+
+If an immutable selector depends on a value that is unknown during planning,
+Terraform may conservatively plan replacement even when that value later
+resolves to the previous value. Omitted selectors reuse known non-null values
+from state; explicitly unknown expressions remain unknown.
+
 The control-plane API stores model credentials, while data-plane operations
 such as long-term memory create/search validate them when the model provider is
 called. If a credential is missing or invalid, those data-plane operations can
