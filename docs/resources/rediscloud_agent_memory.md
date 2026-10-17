@@ -195,7 +195,7 @@ The following arguments are optional:
   * `description` - Non-empty custom type description. Maximum length is validated by the Agent Memory API.
   * `fields` - Structured fields for this custom memory type.
     * `name` - Non-empty field name. Format and maximum length are validated by the Agent Memory API.
-    * `type` - Field type. Supported values are `str`, `int`, `float`, `bool`, `list[str]`, `list[float]`, and `object`.
+    * `type` - Non-empty field type validated by the Agent Memory API. Examples include `str`, `int`, `float`, `bool`, `list[str]`, `list[float]`, and `object`.
     * `description` - Non-empty field description. Maximum length is validated by the Agent Memory API.
   * `extraction_strategy` - Optional extraction strategy for this custom memory type.
     * `enabled` - Whether extraction is enabled for this custom type.
