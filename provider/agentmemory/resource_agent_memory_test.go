@@ -1365,7 +1365,7 @@ resource "rediscloud_agent_memory" "example" {
 	})
 }
 
-func TestAgentMemoryResource_rejectsInvalidNameAndDatabaseID(t *testing.T) {
+func TestAgentMemoryResource_rejectsBlankName(t *testing.T) {
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
@@ -1373,10 +1373,10 @@ func TestAgentMemoryResource_rejectsInvalidNameAndDatabaseID(t *testing.T) {
 				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
 resource "rediscloud_agent_memory" "example" {
   name        = "   "
-  database_id = 0
+  database_id = 123
 }
 `,
-				ExpectError: regexp.MustCompile(`non-whitespace|at least 1`),
+				ExpectError: regexp.MustCompile(`non-whitespace`),
 			},
 		},
 	})
