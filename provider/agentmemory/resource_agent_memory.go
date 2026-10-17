@@ -262,9 +262,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 								Description: "Prompt describing concepts that should not be kept in long-term memory.",
 								Optional:    true,
 								Computed:    true,
-								Validators: []validator.String{
-									stringvalidator.LengthAtMost(2000),
-								},
 							},
 						},
 					},
