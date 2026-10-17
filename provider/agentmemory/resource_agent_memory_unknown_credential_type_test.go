@@ -55,7 +55,7 @@ func TestAgentMemoryUnknownCredentialTypeValidation(t *testing.T) {
 			{name: "null", expression: "null", invalid: true},
 			{name: "empty", expression: `""`, invalid: true},
 			{name: "whitespace", expression: `"   "`, invalid: true},
-			{name: "unsupported", expression: `"unsupported"`, invalid: true},
+			{name: "API-owned value", expression: `"unsupported"`},
 		} {
 			t.Run(selector.block+"/"+selector.field+"/"+c.name, func(t *testing.T) {
 				var calls atomic.Int32
@@ -72,7 +72,7 @@ func TestAgentMemoryUnknownCredentialTypeValidation(t *testing.T) {
 				config := testProviderConfig(t, server.URL) + credentialTypeConfig(selector.block, selector.field, c.expression, c.dependency)
 				step := resource.TestStep{Config: config, PlanOnly: true, ExpectNonEmptyPlan: true}
 				if c.invalid {
-					step.ExpectError = regexp.MustCompile("Missing Agent Memory model credential type|apiKey")
+					step.ExpectError = regexp.MustCompile("Missing Agent Memory model credential type")
 				}
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{step}})
 			})
@@ -86,7 +86,6 @@ func TestAgentMemoryUnknownCredentialTypeResolvesInvalid(t *testing.T) {
 			{"null", "true", `terraform_data.selector.output ? null : "fake"`},
 			{"empty", `""`, `tostring(terraform_data.selector.output)`},
 			{"whitespace", `"   "`, `tostring(terraform_data.selector.output)`},
-			{"unsupported", `"unsupported"`, `tostring(terraform_data.selector.output)`},
 		} {
 			t.Run(selector.block+"/"+selector.field+"/"+c.name, func(t *testing.T) {
 				var calls atomic.Int32
@@ -103,7 +102,7 @@ func TestAgentMemoryUnknownCredentialTypeResolvesInvalid(t *testing.T) {
 				config := testProviderConfig(t, server.URL) + credentialTypeConfig(selector.block, selector.field, c.expression, fmt.Sprintf(`resource "terraform_data" "selector" { input=%s }`, c.input))
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 					{Config: config, PlanOnly: true, ExpectNonEmptyPlan: true},
-					{Config: config, ExpectError: regexp.MustCompile("Missing Agent Memory model credential type|apiKey")},
+					{Config: config, ExpectError: regexp.MustCompile("Missing Agent Memory model credential type")},
 				}})
 			})
 		}
@@ -111,11 +110,16 @@ func TestAgentMemoryUnknownCredentialTypeResolvesInvalid(t *testing.T) {
 }
 
 func TestAgentMemoryUnknownCredentialTypeLifecycle(t *testing.T) {
-	for _, selector := range credentialTypeCases {
-		t.Run(selector.block+"/"+selector.field, func(t *testing.T) {
+	selectors := append([]struct{ block, field, value string }{}, credentialTypeCases...)
+	selectors = append(selectors,
+		struct{ block, field, value string }{"llm", "type", "FAKE-KEY-TYPE"},
+		struct{ block, field, value string }{"embedding", "type", "FAKE-KEY-TYPE"},
+	)
+	for _, selector := range selectors {
+		t.Run(selector.block+"/"+selector.field+"/"+selector.value, func(t *testing.T) {
 			var mu sync.Mutex
 			var store map[string]any
-			creates, deletes := 0, 0
+			creates, deletes, rejectedPatches := 0, 0, 0
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				mu.Lock()
 				defer mu.Unlock()
@@ -148,7 +152,21 @@ func TestAgentMemoryUnknownCredentialTypeLifecycle(t *testing.T) {
 						return
 					}
 					if len(payload) != 0 {
-						t.Errorf("unchanged selectors generated API changes: %v", payload)
+						var model map[string]any
+						if selector.block == "llm" {
+							model, _ = payload["llm"].(map[string]any)
+						} else {
+							memory, _ := payload["longTermMemory"].(map[string]any)
+							model, _ = memory["embedding"].(map[string]any)
+						}
+						credentials, _ := model["credentials"].(map[string]any)
+						if credentials["type"] != "unsupported" || credentials["apiKey"] != "FAKE-STATIC" {
+							t.Error("changed credential type was not preserved in update request")
+						}
+						rejectedPatches++
+						w.WriteHeader(http.StatusBadRequest)
+						_, _ = w.Write([]byte(`{"message":"Credential type rejected"}`))
+						return
 					}
 					_, _ = w.Write([]byte(`{"taskId":"fixture-task"}`))
 				case r.Method == http.MethodGet && r.URL.Path == "/tasks/fixture-task":
@@ -178,8 +196,8 @@ func TestAgentMemoryUnknownCredentialTypeLifecycle(t *testing.T) {
 			defer func() {
 				mu.Lock()
 				defer mu.Unlock()
-				if creates != 1 || deletes != 1 || store != nil {
-					t.Errorf("fixture not cleaned up: creates=%d deletes=%d remaining=%t", creates, deletes, store != nil)
+				if creates != 1 || deletes != 1 || rejectedPatches != 1 || store != nil {
+					t.Errorf("fixture not cleaned up: creates=%d deletes=%d rejectedPatches=%d remaining=%t", creates, deletes, rejectedPatches, store != nil)
 				}
 			}()
 			prefix := testProviderConfig(t, server.URL)
@@ -202,10 +220,10 @@ func TestAgentMemoryUnknownCredentialTypeLifecycle(t *testing.T) {
 				`tostring(terraform_data.selector.output)`, `resource "terraform_data" "selector" { input="unsupported" }`)
 			steps = append(steps,
 				resource.TestStep{Config: invalid, PlanOnly: true, ExpectNonEmptyPlan: true},
-				resource.TestStep{Config: invalid, ExpectError: regexp.MustCompile("apiKey")})
-			// Use a known valid type for cleanup even if the dependency resolved to an invalid type.
+				resource.TestStep{Config: invalid, ExpectError: regexp.MustCompile(`(?s)Failed to update Agent Memory service.*Credential\s+type\s+rejected`)})
+			// Restore the accepted type after the API rejects the update.
 			restored := prefix + credentialTypeConfig(selector.block, selector.field,
-				`"apiKey"`, `resource "terraform_data" "selector" { input="unsupported" }`)
+				fmt.Sprintf("%q", selector.value), `resource "terraform_data" "selector" { input="unsupported" }`)
 			steps = append(steps, resource.TestStep{Config: restored, PlanOnly: true})
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: steps})
 		})
