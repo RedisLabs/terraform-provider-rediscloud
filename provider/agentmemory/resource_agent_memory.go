@@ -349,17 +349,22 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 													Description: "Matcher kind.",
 													Required:    true,
 													Validators: []validator.String{
-														stringvalidator.OneOf("regex"),
+														// Empty kinds become null when the API response is read into state.
+														stringvalidator.LengthAtLeast(1),
 													},
 												},
 											},
 											Blocks: map[string]schema.Block{
 												"regex": schema.SingleNestedBlock{
 													Description: "Regex matcher configuration.",
+													// Required child attributes would also force this block for non-regex matchers.
+													Validators: []validator.Object{
+														objectvalidator.AlsoRequires(path.MatchRelative().AtName("pattern")),
+													},
 													Attributes: map[string]schema.Attribute{
 														"pattern": schema.StringAttribute{
 															Description: "Regex pattern used by the matcher.",
-															Required:    true,
+															Optional:    true,
 															Validators: []validator.String{
 																stringvalidator.LengthBetween(1, 512),
 																nonEmptyRegexMatchValidator{},
@@ -609,7 +614,8 @@ func validateExclusionsConfig(config AgentMemoryResourceModel, resp *resource.Mo
 			)
 			continue
 		}
-		if detector.Matcher.Regex == nil {
+		// An unresolved kind may resolve to a matcher that does not use a regex.
+		if !detector.Matcher.Kind.IsUnknown() && detector.Matcher.Kind.ValueString() == "regex" && detector.Matcher.Regex == nil {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("long_term_memory_exclusions").AtName("custom_detectors").AtName("detectors").AtListIndex(i).AtName("matcher").AtName("regex"),
 				"Missing custom detector regex",

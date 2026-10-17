@@ -215,7 +215,7 @@ The following arguments are optional:
       * `enabled` - Whether this detector is enabled.
       * `action` - Action when the detector matches. Accepted values are validated by the Agent Memory API; when omitted, the provider records the value returned by the API. Explicit empty strings are rejected.
       * `matcher` - Detector matcher configuration.
-        * `kind` - Matcher kind. Currently only `regex` is supported.
+        * `kind` - Non-empty matcher kind validated by the Agent Memory API. When `kind` is `regex`, the `regex` block is required. The current SDK/schema can represent only `kind` and the optional `regex` block; other kinds requiring additional fields need SDK/schema support.
         * `regex.pattern` - Regex pattern used by the matcher.
   * `semantic` - Semantic exclusion configuration.
     * `enabled` - Whether semantic exclusions are enabled.
