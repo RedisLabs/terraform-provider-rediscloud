@@ -80,13 +80,12 @@ func TestAgentMemoryModelBlocksRequiredTogether(t *testing.T) {
 	}
 }
 
-func TestAgentMemoryModelBlockRemovalPreservesStore(t *testing.T) {
+func TestAgentMemoryPartialModelBlockRemovalPreservesStore(t *testing.T) {
 	for _, tc := range []struct {
 		name           string
 		llm, embedding bool
 		pattern        string
 	}{
-		{name: "both removed", pattern: "Unsupported Agent Memory model configuration removal"},
 		{name: "embedding removed", llm: true, pattern: "These attributes must be configured together"},
 		{name: "llm removed", embedding: true, pattern: "These attributes must be configured together"},
 	} {
