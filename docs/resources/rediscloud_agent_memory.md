@@ -186,7 +186,7 @@ The following arguments are optional:
     * `api_key` - Provider API key. This value is sensitive and write-only in the Agent Memory API.
 * `summarization` - Automatic session summarization configuration.
   * `enabled` - Whether automatic summarization is enabled.
-  * `trigger_strategy` - Summarization trigger strategy. Currently only `event_count` is supported.
+  * `trigger_strategy` - Summarization trigger strategy. Accepted values are validated by the Agent Memory API; when omitted, the provider records the value returned by the API. Explicit empty strings are rejected.
   * `event_count` - Event-count thresholds.
     * `threshold` - Number of messages that triggers summarization. Must be greater than `retain_count`.
     * `retain_count` - Number of most recent messages retained in full.
