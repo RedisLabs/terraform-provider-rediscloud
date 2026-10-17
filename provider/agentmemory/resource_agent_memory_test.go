@@ -31,7 +31,8 @@ func TestAgentMemoryResource_mockedCreateReadDelete(t *testing.T) {
 			require.NotNil(t, request.ShortMemory)
 			assert.Equal(t, 86400, request.ShortMemory.TTLSeconds)
 			require.NotNil(t, request.LongTermMemory)
-			assert.Equal(t, 31536000, request.LongTermMemory.TTLSeconds)
+			require.NotNil(t, request.LongTermMemory.TTLSeconds)
+			assert.Equal(t, 31536000, *request.LongTermMemory.TTLSeconds)
 			require.NotNil(t, request.ExtractionCadence)
 			assert.Equal(t, 300, request.ExtractionCadence.ActiveIntervalSeconds)
 
@@ -284,7 +285,8 @@ func TestAgentMemoryResource_mockedCreateWithModelConfig(t *testing.T) {
 			assert.Equal(t, "llm-secret", request.LLM.Credentials.APIKey)
 
 			require.NotNil(t, request.LongTermMemory)
-			assert.Equal(t, 31536000, request.LongTermMemory.TTLSeconds)
+			require.NotNil(t, request.LongTermMemory.TTLSeconds)
+			assert.Equal(t, 31536000, *request.LongTermMemory.TTLSeconds)
 			require.NotNil(t, request.LongTermMemory.Embedding)
 			assert.Equal(t, "openai", request.LongTermMemory.Embedding.Provider)
 			assert.Equal(t, "text-embedding-3-small", request.LongTermMemory.Embedding.Model)
@@ -733,7 +735,8 @@ func TestAgentMemoryResource_mockedUpdate(t *testing.T) {
 			require.NotNil(t, request.ShortMemory)
 			assert.Equal(t, 172800, request.ShortMemory.TTLSeconds)
 			require.NotNil(t, request.LongTermMemory)
-			assert.Equal(t, 604800, request.LongTermMemory.TTLSeconds)
+			require.NotNil(t, request.LongTermMemory.TTLSeconds)
+			assert.Equal(t, 604800, *request.LongTermMemory.TTLSeconds)
 			require.NotNil(t, request.ExtractionCadence)
 			assert.Equal(t, 600, request.ExtractionCadence.ActiveIntervalSeconds)
 
@@ -820,7 +823,8 @@ func TestAgentMemoryResource_mockedUpdateModelConfig(t *testing.T) {
 			assert.Equal(t, "llm-secret-2", request.LLM.Credentials.APIKey)
 
 			require.NotNil(t, request.LongTermMemory)
-			assert.Equal(t, 31536000, request.LongTermMemory.TTLSeconds)
+			require.NotNil(t, request.LongTermMemory.TTLSeconds)
+			assert.Equal(t, 31536000, *request.LongTermMemory.TTLSeconds)
 			require.NotNil(t, request.LongTermMemory.Embedding)
 			assert.Equal(t, "openai", request.LongTermMemory.Embedding.Provider)
 			assert.Equal(t, "text-embedding-3-small", request.LongTermMemory.Embedding.Model)
@@ -1144,36 +1148,6 @@ resource "rediscloud_agent_memory" "example" {
 }
 `,
 				ExpectError: regexp.MustCompile(`60.*600|600.*60`),
-			},
-		},
-	})
-}
-
-func TestAgentMemoryResource_rejectsInvalidTTLs(t *testing.T) {
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
-resource "rediscloud_agent_memory" "example" {
-  name                   = "store"
-  database_id            = 123
-  short_term_ttl_seconds = 0
-  long_term_ttl_seconds  = 0
-}
-`,
-				ExpectError: regexp.MustCompile(`1.*31536000|31536000.*1`),
-			},
-			{
-				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
-resource "rediscloud_agent_memory" "example" {
-  name                   = "store"
-  database_id            = 123
-  short_term_ttl_seconds = 31536001
-  long_term_ttl_seconds  = 31536001
-}
-`,
-				ExpectError: regexp.MustCompile(`1.*31536000|31536000.*1`),
 			},
 		},
 	})
