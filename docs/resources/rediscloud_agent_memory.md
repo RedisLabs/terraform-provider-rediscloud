@@ -207,13 +207,13 @@ The following arguments are optional:
     * `detectors` - Built-in detector selections.
       * `id` - Built-in detector ID. Supported values are `credit-card`, `email`, `ip-address`, `phone`, and `us-ssn`.
       * `enabled` - Whether this detector is enabled.
-      * `action` - Action when the detector matches. Supported values are `redact` and `drop`.
+      * `action` - Action when the detector matches. Accepted values are validated by the Agent Memory API; when omitted, the provider records the value returned by the API. Explicit empty strings are rejected.
   * `custom_detectors` - Custom regex detector configuration.
     * `enabled` - Whether custom detectors are enabled.
     * `detectors` - Custom detector definitions.
       * `name` - Non-empty custom detector name. Format and maximum length are validated by the Agent Memory API.
       * `enabled` - Whether this detector is enabled.
-      * `action` - Action when the detector matches. Supported values are `redact` and `drop`.
+      * `action` - Action when the detector matches. Accepted values are validated by the Agent Memory API; when omitted, the provider records the value returned by the API. Explicit empty strings are rejected.
       * `matcher` - Detector matcher configuration.
         * `kind` - Matcher kind. Currently only `regex` is supported.
         * `regex.pattern` - Regex pattern used by the matcher.
