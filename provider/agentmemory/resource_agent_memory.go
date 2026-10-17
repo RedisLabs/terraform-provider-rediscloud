@@ -394,7 +394,8 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 							Description: "Custom memory type description.",
 							Required:    true,
 							Validators: []validator.String{
-								stringvalidator.LengthBetween(1, 200),
+								// Empty descriptions become null when the API response is read into state.
+								stringvalidator.LengthAtLeast(1),
 							},
 						},
 					},
@@ -415,7 +416,8 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 										Description: "Field description.",
 										Required:    true,
 										Validators: []validator.String{
-											stringvalidator.LengthBetween(1, 200),
+											// Empty descriptions become null when the API response is read into state.
+											stringvalidator.LengthAtLeast(1),
 										},
 									},
 									"type": schema.StringAttribute{
