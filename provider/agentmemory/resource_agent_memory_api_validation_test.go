@@ -16,15 +16,18 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
 
-func TestAgentMemoryNameLimitsAreValidatedByAPI(t *testing.T) {
+func TestAgentMemoryLimitsAreValidatedByAPI(t *testing.T) {
 	for _, tc := range []struct {
 		name         string
+		databaseID   int
 		storeID      string
 		resourceType string
 		resourceName string
 		errorTitle   string
 	}{
-		{name: "store name", resourceType: "rediscloud_agent_memory", resourceName: strings.Repeat("a", 65), errorTitle: "Failed to create Agent Memory service"},
+		{name: "store name", databaseID: 123, resourceType: "rediscloud_agent_memory", resourceName: strings.Repeat("a", 65), errorTitle: "Failed to create Agent Memory service"},
+		{name: "zero database ID", resourceType: "rediscloud_agent_memory", databaseID: 0, resourceName: "store", errorTitle: "Failed to create Agent Memory service"},
+		{name: "negative database ID", resourceType: "rediscloud_agent_memory", databaseID: -1, resourceName: "store", errorTitle: "Failed to create Agent Memory service"},
 		{name: "API key name", resourceType: "rediscloud_agent_memory_api_key", storeID: "store-1", resourceName: strings.Repeat("a", 101), errorTitle: "Failed to create Agent Memory API key"},
 		{name: "API key store ID", resourceType: "rediscloud_agent_memory_api_key", storeID: strings.Repeat("a", 65), resourceName: "runtime", errorTitle: "Failed to create Agent Memory API key"},
 	} {
@@ -51,12 +54,15 @@ func TestAgentMemoryNameLimitsAreValidatedByAPI(t *testing.T) {
 					nameField = "keyName"
 				}
 				assert.Equal(t, tc.resourceName, body[nameField])
+				if tc.storeID == "" {
+					assert.Equal(t, float64(tc.databaseID), body["databaseId"])
+				}
 				w.WriteHeader(http.StatusBadRequest)
-				_, _ = w.Write([]byte(`{"message":"Name or identifier exceeds the API limit"}`))
+				_, _ = w.Write([]byte(`{"message":"Value rejected by the API"}`))
 			}))
 			defer server.Close()
 
-			attributes := "database_id = 123"
+			attributes := fmt.Sprintf("database_id = %d", tc.databaseID)
 			if tc.storeID != "" {
 				attributes = fmt.Sprintf("store_id = %q", tc.storeID)
 			}
