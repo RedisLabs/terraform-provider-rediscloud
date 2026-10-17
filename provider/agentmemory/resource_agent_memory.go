@@ -73,7 +73,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				Description: "The name of the Agent Memory service.",
 				Required:    true,
 				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 64),
 					stringvalidator.RegexMatches(regexp.MustCompile(`.*\S.*`), "must contain at least one non-whitespace character"),
 				},
 			},
