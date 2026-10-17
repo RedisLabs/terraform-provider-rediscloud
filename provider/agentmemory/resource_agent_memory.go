@@ -94,11 +94,15 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				Computed:    true,
 			},
 			"extraction_strategy": schema.StringAttribute{
-				Description: "How long-term memories are extracted from sessions. Currently only INSTRUCT is supported by the Agent Memory API.",
+				Description: "How long-term memories are extracted from sessions. Changing an explicitly configured strategy requires replacement.",
 				Optional:    true,
 				Computed:    true,
 				Validators: []validator.String{
-					stringvalidator.OneOf("INSTRUCT"),
+					// The SDK omits empty strings, which would lose an explicitly configured value.
+					stringvalidator.LengthAtLeast(1),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
 			},
 			"extraction_cadence_seconds": schema.Int64Attribute{
