@@ -192,11 +192,11 @@ The following arguments are optional:
     * `retain_count` - Number of most recent messages retained in full.
 * `custom_memory_types` - Custom long-term memory types. Quantity limits are validated by the Agent Memory API.
   * `name` - Non-empty custom type name. Format and maximum length are validated by the Agent Memory API.
-  * `description` - Custom type description.
+  * `description` - Non-empty custom type description. Maximum length is validated by the Agent Memory API.
   * `fields` - Structured fields for this custom memory type.
     * `name` - Non-empty field name. Format and maximum length are validated by the Agent Memory API.
     * `type` - Field type. Supported values are `str`, `int`, `float`, `bool`, `list[str]`, `list[float]`, and `object`.
-    * `description` - Field description.
+    * `description` - Non-empty field description. Maximum length is validated by the Agent Memory API.
   * `extraction_strategy` - Optional extraction strategy for this custom memory type.
     * `enabled` - Whether extraction is enabled for this custom type.
     * `prompt` - Prompt used to extract memories of this custom type.
