@@ -88,7 +88,7 @@ func summarizationFromModel(model *AgentMemorySummarizationModel) *agentmemoryap
 	return config
 }
 
-func summarizationToModel(config *agentmemoryapi.SummarizationConfig) *AgentMemorySummarizationModel {
+func summarizationToModel(config *agentmemoryapi.SummarizationConfig, existing *AgentMemorySummarizationModel, includeAPIOnlyConfig bool) *AgentMemorySummarizationModel {
 	if config == nil {
 		return nil
 	}
@@ -97,10 +97,6 @@ func summarizationToModel(config *agentmemoryapi.SummarizationConfig) *AgentMemo
 		Enabled:         types.BoolPointerValue(config.Enabled),
 		TriggerStrategy: types.StringPointerValue(config.TriggerStrategy),
 	}
-	if config.Enabled != nil && !*config.Enabled {
-		model.TriggerStrategy = types.StringNull()
-		return model
-	}
 	if config.EventCount != nil {
 		model.EventCount = &AgentMemoryEventCountModel{
 			Threshold:   intPointerValue(config.EventCount.Threshold),
@@ -108,6 +104,16 @@ func summarizationToModel(config *agentmemoryapi.SummarizationConfig) *AgentMemo
 		}
 	}
 
+	// A disabled policy can still contain explicitly configured definitions.
+	// Omitted children must not acquire stale API-only values during refresh.
+	if config.Enabled != nil && !*config.Enabled && !includeAPIOnlyConfig {
+		if existing == nil || existing.TriggerStrategy.IsNull() || existing.TriggerStrategy.IsUnknown() {
+			model.TriggerStrategy = types.StringNull()
+		}
+		if existing == nil || existing.EventCount == nil {
+			model.EventCount = nil
+		}
+	}
 	return model
 }
 
