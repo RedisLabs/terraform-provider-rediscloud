@@ -201,6 +201,8 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 			},
 			"summarization": schema.SingleNestedBlock{
 				Description: "Session summarization configuration.",
+				// Required child attributes would also require an omitted single nested block.
+				Validators: []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("enabled"))},
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
 						Description: "Whether automatic session summarization is enabled.",
@@ -249,6 +251,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 			},
 			"long_term_memory_exclusions": schema.SingleNestedBlock{
 				Description: "Rules defining content that must not be retained in long-term memory.",
+				Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("enabled"))},
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
 						Description: "Whether long-term memory exclusions are enabled.",
@@ -259,6 +262,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				Blocks: map[string]schema.Block{
 					"semantic": schema.SingleNestedBlock{
 						Description: "Semantic exclusion configuration.",
+						Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("enabled"))},
 						Attributes: map[string]schema.Attribute{
 							"enabled": schema.BoolAttribute{
 								Description: "Whether semantic exclusions are enabled.",
@@ -277,6 +281,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 					},
 					"built_in_detectors": schema.SingleNestedBlock{
 						Description: "Built-in detector selections for common sensitive identifiers.",
+						Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("enabled"))},
 						Attributes: map[string]schema.Attribute{
 							"enabled": schema.BoolAttribute{
 								Description: "Whether built-in detectors are enabled.",
@@ -316,6 +321,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 					},
 					"custom_detectors": schema.SingleNestedBlock{
 						Description: "Custom regex detector configuration.",
+						Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("enabled"))},
 						Attributes: map[string]schema.Attribute{
 							"enabled": schema.BoolAttribute{
 								Description: "Whether custom detectors are enabled.",
@@ -353,6 +359,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 									Blocks: map[string]schema.Block{
 										"matcher": schema.SingleNestedBlock{
 											Description: "Custom detector matcher.",
+											Validators:  []validator.Object{objectvalidator.IsRequired()},
 											Attributes: map[string]schema.Attribute{
 												"kind": schema.StringAttribute{
 													Description: "Matcher kind.",
@@ -365,6 +372,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 											Blocks: map[string]schema.Block{
 												"regex": schema.SingleNestedBlock{
 													Description: "Regex matcher configuration.",
+													Validators:  []validator.Object{objectvalidator.IsRequired()},
 													Attributes: map[string]schema.Attribute{
 														"pattern": schema.StringAttribute{
 															Description: "Regex pattern used by the matcher.",
@@ -492,8 +500,7 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 		return
 	}
 
-	// Optional+Computed flags become unknown in the plan when omitted.
-	// Read configuration to distinguish missing flags from unresolved expressions.
+	// Configuration distinguishes an omitted strategy from its computed plan value.
 	var config AgentMemoryResourceModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
@@ -542,23 +549,7 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 		return
 	}
 
-	validateSummarizationConfig(config, resp)
-	validateExclusionsConfig(config, resp)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	validateSummarizationPlan(plan, resp)
-}
-
-func validateSummarizationConfig(config AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
-	if config.Summarization != nil && config.Summarization.Enabled.IsNull() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("summarization").AtName("enabled"),
-			"Missing summarization enabled flag",
-			"summarization.enabled must be configured when the summarization block is present.",
-		)
-	}
 }
 
 func validateSummarizationPlan(plan AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
@@ -578,62 +569,6 @@ func validateSummarizationPlan(plan AgentMemoryResourceModel, resp *resource.Mod
 			"Invalid summarization event count",
 			"summarization.event_count.threshold must be greater than summarization.event_count.retain_count.",
 		)
-	}
-}
-
-func validateExclusionsConfig(config AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
-	if config.LongTermMemoryExclusions == nil {
-		return
-	}
-
-	if config.LongTermMemoryExclusions.Enabled.IsNull() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("long_term_memory_exclusions").AtName("enabled"),
-			"Missing long-term memory exclusions enabled flag",
-			"long_term_memory_exclusions.enabled must be configured when the long_term_memory_exclusions block is present.",
-		)
-	}
-	if semantic := config.LongTermMemoryExclusions.Semantic; semantic != nil && semantic.Enabled.IsNull() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("long_term_memory_exclusions").AtName("semantic").AtName("enabled"),
-			"Missing semantic exclusion enabled flag",
-			"long_term_memory_exclusions.semantic.enabled must be configured when the semantic block is present.",
-		)
-	}
-	if builtIn := config.LongTermMemoryExclusions.BuiltInDetectors; builtIn != nil && builtIn.Enabled.IsNull() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("long_term_memory_exclusions").AtName("built_in_detectors").AtName("enabled"),
-			"Missing built-in detectors enabled flag",
-			"long_term_memory_exclusions.built_in_detectors.enabled must be configured when the built_in_detectors block is present.",
-		)
-	}
-	custom := config.LongTermMemoryExclusions.CustomDetectors
-	if custom == nil {
-		return
-	}
-	if custom.Enabled.IsNull() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("long_term_memory_exclusions").AtName("custom_detectors").AtName("enabled"),
-			"Missing custom detectors enabled flag",
-			"long_term_memory_exclusions.custom_detectors.enabled must be configured when the custom_detectors block is present.",
-		)
-	}
-	for i, detector := range custom.Detectors {
-		if detector.Matcher == nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("long_term_memory_exclusions").AtName("custom_detectors").AtName("detectors").AtListIndex(i).AtName("matcher"),
-				"Missing custom detector matcher",
-				"custom detector matcher must be configured.",
-			)
-			continue
-		}
-		if detector.Matcher.Regex == nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("long_term_memory_exclusions").AtName("custom_detectors").AtName("detectors").AtListIndex(i).AtName("matcher").AtName("regex"),
-				"Missing custom detector regex",
-				"custom detector matcher.regex must be configured when matcher.kind is regex.",
-			)
-		}
 	}
 }
 
