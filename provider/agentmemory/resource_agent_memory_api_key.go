@@ -64,7 +64,6 @@ func (r *agentMemoryAPIKeyResource) Schema(ctx context.Context, _ resource.Schem
 				Description: "The Agent Memory store ID.",
 				Required:    true,
 				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 64),
 					stringvalidator.RegexMatches(regexp.MustCompile(`^[A-Za-z0-9-]+$`), "must contain only letters, numbers, and hyphens"),
 				},
 				PlanModifiers: []planmodifier.String{
@@ -75,7 +74,6 @@ func (r *agentMemoryAPIKeyResource) Schema(ctx context.Context, _ resource.Schem
 				Description: "The name of the API key.",
 				Required:    true,
 				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 100),
 					stringvalidator.RegexMatches(regexp.MustCompile(`^\S+$`), "must not contain whitespace"),
 				},
 				PlanModifiers: []planmodifier.String{
