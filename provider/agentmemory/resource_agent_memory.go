@@ -293,7 +293,10 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 											Description: "Action applied when this detector matches.",
 											Optional:    true,
 											Computed:    true,
-											Validators:  actionValidator(),
+											Validators: []validator.String{
+												// The SDK omits empty strings, which would lose an explicitly configured action.
+												stringvalidator.LengthAtLeast(1),
+											},
 										},
 									},
 								},
@@ -332,7 +335,10 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 											Description: "Action applied when this detector matches.",
 											Optional:    true,
 											Computed:    true,
-											Validators:  actionValidator(),
+											Validators: []validator.String{
+												// The SDK omits empty strings, which would lose an explicitly configured action.
+												stringvalidator.LengthAtLeast(1),
+											},
 										},
 									},
 									Blocks: map[string]schema.Block{
@@ -449,10 +455,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 		},
 	}
 
-}
-
-func actionValidator() []validator.String {
-	return []validator.String{stringvalidator.OneOf("redact", "drop")}
 }
 
 func (r *agentMemoryResource) ConfigValidators(context.Context) []resource.ConfigValidator {
