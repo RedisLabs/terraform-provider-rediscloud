@@ -18,15 +18,17 @@ import (
 
 func TestAgentMemoryLimitsAreValidatedByAPI(t *testing.T) {
 	for _, tc := range []struct {
-		name         string
-		databaseID   int
-		storeID      string
-		resourceType string
-		resourceName string
-		errorTitle   string
-		ttlAttribute string
-		ttlValue     int
-		memoryField  string
+		name            string
+		databaseID      int
+		storeID         string
+		resourceType    string
+		resourceName    string
+		errorTitle      string
+		ttlAttribute    string
+		ttlValue        int
+		memoryField     string
+		strategy        string
+		unknownStrategy bool
 	}{
 		{name: "store name", databaseID: 123, resourceType: "rediscloud_agent_memory", resourceName: strings.Repeat("a", 65), errorTitle: "Failed to create Agent Memory service"},
 		{name: "zero database ID", resourceType: "rediscloud_agent_memory", databaseID: 0, resourceName: "store", errorTitle: "Failed to create Agent Memory service"},
@@ -37,6 +39,8 @@ func TestAgentMemoryLimitsAreValidatedByAPI(t *testing.T) {
 		{name: "long_term_ttl_seconds zero", resourceType: "rediscloud_agent_memory", databaseID: 123, resourceName: "store", errorTitle: "Failed to create Agent Memory service", ttlAttribute: "long_term_ttl_seconds", ttlValue: 0, memoryField: "longTermMemory"},
 		{name: "long_term_ttl_seconds negative", resourceType: "rediscloud_agent_memory", databaseID: 123, resourceName: "store", errorTitle: "Failed to create Agent Memory service", ttlAttribute: "long_term_ttl_seconds", ttlValue: -1, memoryField: "longTermMemory"},
 		{name: "long_term_ttl_seconds above previous maximum", resourceType: "rediscloud_agent_memory", databaseID: 123, resourceName: "store", errorTitle: "Failed to create Agent Memory service", ttlAttribute: "long_term_ttl_seconds", ttlValue: 31536001, memoryField: "longTermMemory"},
+		{name: "unrecognised extraction strategy", databaseID: 123, resourceType: "rediscloud_agent_memory", resourceName: "store", strategy: "FAKE-FUTURE-STRATEGY", errorTitle: "Failed to create Agent Memory service"},
+		{name: "unknown extraction strategy", databaseID: 123, resourceType: "rediscloud_agent_memory", resourceName: "store", strategy: "FAKE-FUTURE-STRATEGY", unknownStrategy: true, errorTitle: "Failed to create Agent Memory service"},
 		{name: "API key name", resourceType: "rediscloud_agent_memory_api_key", storeID: "store-1", resourceName: strings.Repeat("a", 101), errorTitle: "Failed to create Agent Memory API key"},
 		{name: "API key store ID", resourceType: "rediscloud_agent_memory_api_key", storeID: strings.Repeat("a", 65), resourceName: "runtime", errorTitle: "Failed to create Agent Memory API key"},
 	} {
@@ -69,6 +73,9 @@ func TestAgentMemoryLimitsAreValidatedByAPI(t *testing.T) {
 				if tc.ttlAttribute != "" {
 					assert.Equal(t, map[string]any{"ttlSeconds": float64(tc.ttlValue)}, body[tc.memoryField])
 				}
+				if tc.strategy != "" {
+					assert.Equal(t, tc.strategy, body["extractionStrategy"])
+				}
 				w.WriteHeader(http.StatusBadRequest)
 				_, _ = w.Write([]byte(`{"message":"Value rejected by the API"}`))
 			}))
@@ -81,7 +88,16 @@ func TestAgentMemoryLimitsAreValidatedByAPI(t *testing.T) {
 			if tc.storeID != "" {
 				attributes = fmt.Sprintf("store_id = %q", tc.storeID)
 			}
-			config := testProviderConfig(t, server.URL) + fmt.Sprintf(`
+			dependency := ""
+			if tc.strategy != "" {
+				expression := fmt.Sprintf("%q", tc.strategy)
+				if tc.unknownStrategy {
+					dependency = fmt.Sprintf(`resource "terraform_data" "strategy" { input = %q }`, tc.strategy)
+					expression = "terraform_data.strategy.output"
+				}
+				attributes += "\nextraction_strategy = " + expression
+			}
+			config := testProviderConfig(t, server.URL) + dependency + fmt.Sprintf(`
 resource %q "example" {
  name = %q
  %s
