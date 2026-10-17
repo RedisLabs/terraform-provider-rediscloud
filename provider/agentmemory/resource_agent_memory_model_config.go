@@ -10,29 +10,15 @@ import (
 )
 
 func validateModelConfigPlan(plan, state AgentMemoryResourceModel, hasState bool, resp *resource.ModifyPlanResponse) {
-	switch {
-	case plan.LLM == nil && plan.Embedding == nil:
-		if hasState && (state.LLM != nil || state.Embedding != nil) {
+	if plan.LLM == nil || plan.Embedding == nil {
+		// Configuration validators enforce the pair; state still guards removal of both.
+		if plan.LLM == nil && plan.Embedding == nil && hasState && (state.LLM != nil || state.Embedding != nil) {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("llm"),
 				"Unsupported Agent Memory model configuration removal",
 				"The Agent Memory API does not support removing customer-managed model configuration after it has been configured.",
 			)
 		}
-		return
-	case plan.LLM == nil:
-		resp.Diagnostics.AddAttributeError(
-			path.Root("llm"),
-			"Missing Agent Memory LLM model configuration",
-			"llm must be configured when embedding is configured. The Agent Memory API requires llm and embedding to be supplied together for customer-managed models.",
-		)
-		return
-	case plan.Embedding == nil:
-		resp.Diagnostics.AddAttributeError(
-			path.Root("embedding"),
-			"Missing Agent Memory embedding model configuration",
-			"embedding must be configured when llm is configured. The Agent Memory API requires llm and embedding to be supplied together for customer-managed models.",
-		)
 		return
 	}
 
