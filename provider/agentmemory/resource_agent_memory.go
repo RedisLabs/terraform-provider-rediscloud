@@ -424,7 +424,8 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 										Description: "Field type.",
 										Required:    true,
 										Validators: []validator.String{
-											stringvalidator.OneOf("str", "int", "float", "bool", "list[str]", "list[float]", "object"),
+											// Empty field types become null when the API response is read into state.
+											stringvalidator.LengthAtLeast(1),
 										},
 									},
 								},
