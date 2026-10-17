@@ -125,8 +125,8 @@ func customMemoryTypeUpdatesFromPlan(plan, state []AgentMemoryCustomMemoryTypeMo
 
 func customMemoryTypeFromModel(model AgentMemoryCustomMemoryTypeModel) agentmemoryapi.CustomMemoryType {
 	return agentmemoryapi.CustomMemoryType{
-		Name:               stringFromValue(model.Name),
-		Description:        stringFromValue(model.Description),
+		Name:               model.Name.ValueStringPointer(),
+		Description:        model.Description.ValueStringPointer(),
 		Fields:             customFieldsFromModel(model.Fields),
 		ExtractionStrategy: customExtractionStrategyFromModel(model.ExtractionStrategy),
 	}
