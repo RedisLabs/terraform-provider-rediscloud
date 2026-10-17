@@ -90,7 +90,6 @@ func validateModelConfigBlock(blockName string, model *AgentMemoryModelConfigMod
 	if model.Credentials == nil {
 		return
 	}
-	// The schema validates the credential type once the expression resolves.
 	if !model.Credentials.Type.IsUnknown() && missingModelString(model.Credentials.Type) {
 		resp.Diagnostics.AddAttributeError(
 			path.Root(blockName).AtName("credentials").AtName("type"),
