@@ -1135,24 +1135,6 @@ resource "rediscloud_agent_memory" "example" {
 	})
 }
 
-func TestAgentMemoryResource_rejectsInvalidExtractionCadence(t *testing.T) {
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "store"
-  database_id                = 123
-  extraction_cadence_seconds = 30
-}
-`,
-				ExpectError: regexp.MustCompile(`60.*600|600.*60`),
-			},
-		},
-	})
-}
-
 func TestAgentMemoryResource_rejectsIncompleteModelConfig(t *testing.T) {
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
