@@ -59,17 +59,15 @@ func (r *agentMemoryResource) Configure(_ context.Context, req resource.Configur
 }
 
 func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	requiresReplace := []planmodifier.Int64{int64planmodifier.RequiresReplace()}
-	useStateForUnknown := []planmodifier.String{stringplanmodifier.UseStateForUnknown()}
-	useListStateForUnknown := []planmodifier.List{listplanmodifier.UseStateForUnknown()}
-
 	resp.Schema = schema.Schema{
 		Description: "Creates a Redis Agent Memory service backed by an existing Redis Cloud database.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description:   "The Agent Memory store ID.",
-				Computed:      true,
-				PlanModifiers: useStateForUnknown,
+				Description: "The Agent Memory store ID.",
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Description: "The name of the Agent Memory service.",
@@ -80,10 +78,12 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 			},
 			"database_id": schema.Int64Attribute{
-				Description:   "The ID of the Redis Cloud database that backs the Agent Memory service.",
-				Required:      true,
-				Validators:    []validator.Int64{int64validator.AtLeast(1)},
-				PlanModifiers: requiresReplace,
+				Description: "The ID of the Redis Cloud database that backs the Agent Memory service.",
+				Required:    true,
+				Validators:  []validator.Int64{int64validator.AtLeast(1)},
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"short_term_ttl_seconds": schema.Int64Attribute{
 				Description: "Short-term memory TTL in seconds. The API accepts 1 second to 1 year.",
@@ -118,25 +118,33 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 			},
 			"endpoint": schema.StringAttribute{
-				Description:   "The primary data-plane API endpoint for the Agent Memory service.",
-				Computed:      true,
-				PlanModifiers: useStateForUnknown,
+				Description: "The primary data-plane API endpoint for the Agent Memory service.",
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"endpoints": schema.ListAttribute{
-				Description:   "Regional data-plane API endpoints for the Agent Memory service.",
-				Computed:      true,
-				ElementType:   agentMemoryEndpointObjectType(),
-				PlanModifiers: useListStateForUnknown,
+				Description: "Regional data-plane API endpoints for the Agent Memory service.",
+				Computed:    true,
+				ElementType: agentMemoryEndpointObjectType(),
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"status": schema.StringAttribute{
-				Description:   "The current Agent Memory provisioning status.",
-				Computed:      true,
-				PlanModifiers: useStateForUnknown,
+				Description: "The current Agent Memory provisioning status.",
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"created_at": schema.StringAttribute{
-				Description:   "The Agent Memory service creation timestamp.",
-				Computed:      true,
-				PlanModifiers: useStateForUnknown,
+				Description: "The Agent Memory service creation timestamp.",
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 		Blocks: map[string]schema.Block{
