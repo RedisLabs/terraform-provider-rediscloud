@@ -1157,7 +1157,7 @@ resource "rediscloud_agent_memory" "example" {
   }
 }
 `,
-				ExpectError: regexp.MustCompile("embedding must be configured when llm is configured"),
+				ExpectError: regexp.MustCompile("These attributes must be configured together"),
 			},
 		},
 	})
