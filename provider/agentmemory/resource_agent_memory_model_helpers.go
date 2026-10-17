@@ -140,7 +140,7 @@ func exclusionsFromModel(model *AgentMemoryExclusionsModel) *agentmemoryapi.Long
 	return config
 }
 
-func exclusionsToModel(config *agentmemoryapi.LongTermMemoryExclusions) *AgentMemoryExclusionsModel {
+func exclusionsToModel(config *agentmemoryapi.LongTermMemoryExclusions, existing *AgentMemoryExclusionsModel, includeAPIOnlyConfig bool) *AgentMemoryExclusionsModel {
 	if config == nil {
 		return nil
 	}
@@ -148,12 +148,14 @@ func exclusionsToModel(config *agentmemoryapi.LongTermMemoryExclusions) *AgentMe
 	model := &AgentMemoryExclusionsModel{
 		Enabled: types.BoolValue(config.Enabled),
 	}
+	// Disabled groups retain their stored definitions; keep explicitly configured
+	// children without importing stale API-only values into managed blocks.
 	if config.Semantic != nil {
 		model.Semantic = &AgentMemorySemanticExclusionModel{
 			Enabled: types.BoolValue(config.Semantic.Enabled),
 			Prompt:  stringValue(config.Semantic.Prompt),
 		}
-		if !config.Semantic.Enabled {
+		if !config.Semantic.Enabled && !includeAPIOnlyConfig && (existing == nil || existing.Semantic == nil || existing.Semantic.Prompt.IsNull() || existing.Semantic.Prompt.IsUnknown()) {
 			model.Semantic.Prompt = types.StringNull()
 		}
 	}
@@ -162,7 +164,7 @@ func exclusionsToModel(config *agentmemoryapi.LongTermMemoryExclusions) *AgentMe
 			Enabled:   types.BoolValue(config.BuiltInDetectors.Enabled),
 			Detectors: detectorSelectionsToModel(config.BuiltInDetectors.Detectors),
 		}
-		if !config.BuiltInDetectors.Enabled {
+		if !config.BuiltInDetectors.Enabled && !includeAPIOnlyConfig && (existing == nil || existing.BuiltInDetectors == nil || len(existing.BuiltInDetectors.Detectors) == 0) {
 			model.BuiltInDetectors.Detectors = nil
 		}
 	}
@@ -171,7 +173,7 @@ func exclusionsToModel(config *agentmemoryapi.LongTermMemoryExclusions) *AgentMe
 			Enabled:   types.BoolValue(config.CustomDetectors.Enabled),
 			Detectors: customDetectorsToModel(config.CustomDetectors.Detectors),
 		}
-		if !config.CustomDetectors.Enabled {
+		if !config.CustomDetectors.Enabled && !includeAPIOnlyConfig && (existing == nil || existing.CustomDetectors == nil || len(existing.CustomDetectors.Detectors) == 0) {
 			model.CustomDetectors.Detectors = nil
 		}
 	}
@@ -181,7 +183,8 @@ func exclusionsToModel(config *agentmemoryapi.LongTermMemoryExclusions) *AgentMe
 
 func detectorSelectionsFromModel(models []AgentMemoryDetectorSelectionModel) []agentmemoryapi.DetectorSelection {
 	if len(models) == 0 {
-		return nil
+		// An explicitly managed empty group must clear the stored selections.
+		return []agentmemoryapi.DetectorSelection{}
 	}
 	selections := make([]agentmemoryapi.DetectorSelection, 0, len(models))
 	for _, model := range models {
@@ -211,7 +214,7 @@ func detectorSelectionsToModel(selections []agentmemoryapi.DetectorSelection) []
 
 func customDetectorsFromModel(models []AgentMemoryCustomDetectorModel) []agentmemoryapi.CustomDetector {
 	if len(models) == 0 {
-		return nil
+		return []agentmemoryapi.CustomDetector{}
 	}
 	detectors := make([]agentmemoryapi.CustomDetector, 0, len(models))
 	for _, model := range models {
