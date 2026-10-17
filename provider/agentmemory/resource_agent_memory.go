@@ -144,226 +144,251 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"timeouts":                    timeouts.Block(ctx, timeouts.Opts{Create: true, Read: true, Update: true, Delete: true}),
-			"llm":                         modelConfigBlock("Customer-managed LLM configuration. Configure this together with embedding to opt into customer-managed models."),
-			"embedding":                   modelConfigBlock("Customer-managed embedding model configuration for long-term memory. Configure this together with llm to opt into customer-managed models."),
-			"summarization":               summarizationBlock(),
-			"long_term_memory_exclusions": longTermMemoryExclusionsBlock(),
-			"custom_memory_types":         customMemoryTypesBlock(),
-		},
-	}
-
-}
-
-func modelConfigBlock(description string) schema.SingleNestedBlock {
-	return schema.SingleNestedBlock{
-		Description: description,
-		Attributes: map[string]schema.Attribute{
-			"provider": schema.StringAttribute{
-				Description: "Model provider. The Agent Memory API validates this against the providers supported by the service.",
-				Optional:    true,
-				Computed:    true,
-			},
-			"model": schema.StringAttribute{
-				Description: "Model name advertised by the provider.",
-				Optional:    true,
-				Computed:    true,
-			},
-		},
-		Blocks: map[string]schema.Block{
-			"credentials": schema.SingleNestedBlock{
-				Description: "Customer-supplied model provider credentials. Credentials are write-only in the Agent Memory API and are preserved in Terraform state when configured.",
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{Create: true, Read: true, Update: true, Delete: true}),
+			"llm": schema.SingleNestedBlock{
+				Description: "Customer-managed LLM configuration. Configure this together with embedding to opt into customer-managed models.",
 				Attributes: map[string]schema.Attribute{
-					"type": schema.StringAttribute{
-						Description: "Credential type. Currently only apiKey is supported.",
+					"provider": schema.StringAttribute{
+						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service.",
 						Optional:    true,
+						Computed:    true,
+					},
+					"model": schema.StringAttribute{
+						Description: "Model name advertised by the provider.",
+						Optional:    true,
+						Computed:    true,
+					},
+				},
+				Blocks: map[string]schema.Block{
+					"credentials": schema.SingleNestedBlock{
+						Description: "Customer-supplied model provider credentials. Credentials are write-only in the Agent Memory API and are preserved in Terraform state when configured.",
+						Attributes: map[string]schema.Attribute{
+							"type": schema.StringAttribute{
+								Description: "Credential type. Currently only apiKey is supported.",
+								Optional:    true,
+								Validators: []validator.String{
+									stringvalidator.OneOf("apiKey"),
+								},
+							},
+							"api_key": schema.StringAttribute{
+								Description: "Provider API key.",
+								Optional:    true,
+								Sensitive:   true,
+							},
+						},
+					},
+				},
+			},
+			"embedding": schema.SingleNestedBlock{
+				Description: "Customer-managed embedding model configuration for long-term memory. Configure this together with llm to opt into customer-managed models.",
+				Attributes: map[string]schema.Attribute{
+					"provider": schema.StringAttribute{
+						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service.",
+						Optional:    true,
+						Computed:    true,
+					},
+					"model": schema.StringAttribute{
+						Description: "Model name advertised by the provider.",
+						Optional:    true,
+						Computed:    true,
+					},
+				},
+				Blocks: map[string]schema.Block{
+					"credentials": schema.SingleNestedBlock{
+						Description: "Customer-supplied model provider credentials. Credentials are write-only in the Agent Memory API and are preserved in Terraform state when configured.",
+						Attributes: map[string]schema.Attribute{
+							"type": schema.StringAttribute{
+								Description: "Credential type. Currently only apiKey is supported.",
+								Optional:    true,
+								Validators: []validator.String{
+									stringvalidator.OneOf("apiKey"),
+								},
+							},
+							"api_key": schema.StringAttribute{
+								Description: "Provider API key.",
+								Optional:    true,
+								Sensitive:   true,
+							},
+						},
+					},
+				},
+			},
+			"summarization": schema.SingleNestedBlock{
+				Description: "Session summarization configuration.",
+				Attributes: map[string]schema.Attribute{
+					"enabled": schema.BoolAttribute{
+						Description: "Whether automatic session summarization is enabled.",
+						Optional:    true,
+						Computed:    true,
+					},
+					"trigger_strategy": schema.StringAttribute{
+						Description: "What triggers a summarization cycle.",
+						Optional:    true,
+						Computed:    true,
 						Validators: []validator.String{
-							stringvalidator.OneOf("apiKey"),
+							stringvalidator.OneOf("event_count"),
 						},
 					},
-					"api_key": schema.StringAttribute{
-						Description: "Provider API key.",
-						Optional:    true,
-						Sensitive:   true,
+				},
+				Blocks: map[string]schema.Block{
+					"event_count": schema.SingleNestedBlock{
+						Description: "Event-count based summarization thresholds.",
+						// Check configuration so computed or prior-state values cannot hide missing fields.
+						// Separate checks keep unknown values from hiding missing siblings.
+						Validators: []validator.Object{
+							objectvalidator.AlsoRequires(path.MatchRelative().AtName("threshold")),
+							objectvalidator.AlsoRequires(path.MatchRelative().AtName("retain_count")),
+						},
+						Attributes: map[string]schema.Attribute{
+							"threshold": schema.Int64Attribute{
+								Description: "Number of messages in a session before summarization runs.",
+								Optional:    true,
+								Computed:    true,
+								Validators: []validator.Int64{
+									int64validator.Between(0, 10000),
+								},
+							},
+							"retain_count": schema.Int64Attribute{
+								Description: "Number of most recent messages retained in full after summarization.",
+								Optional:    true,
+								Computed:    true,
+								Validators: []validator.Int64{
+									int64validator.Between(0, 10000),
+								},
+							},
+						},
 					},
 				},
 			},
-		},
-	}
-}
-
-func summarizationBlock() schema.SingleNestedBlock {
-	return schema.SingleNestedBlock{
-		Description: "Session summarization configuration.",
-		Attributes: map[string]schema.Attribute{
-			"enabled": schema.BoolAttribute{
-				Description: "Whether automatic session summarization is enabled.",
-				Optional:    true,
-				Computed:    true,
-			},
-			"trigger_strategy": schema.StringAttribute{
-				Description: "What triggers a summarization cycle.",
-				Optional:    true,
-				Computed:    true,
-				Validators: []validator.String{
-					stringvalidator.OneOf("event_count"),
-				},
-			},
-		},
-		Blocks: map[string]schema.Block{
-			"event_count": schema.SingleNestedBlock{
-				Description: "Event-count based summarization thresholds.",
-				// Check configuration so computed or prior-state values cannot hide missing fields.
-				// Separate checks keep unknown values from hiding missing siblings.
-				Validators: []validator.Object{
-					objectvalidator.AlsoRequires(path.MatchRelative().AtName("threshold")),
-					objectvalidator.AlsoRequires(path.MatchRelative().AtName("retain_count")),
-				},
+			"long_term_memory_exclusions": schema.SingleNestedBlock{
+				Description: "Rules defining content that must not be retained in long-term memory.",
 				Attributes: map[string]schema.Attribute{
-					"threshold": schema.Int64Attribute{
-						Description: "Number of messages in a session before summarization runs.",
+					"enabled": schema.BoolAttribute{
+						Description: "Whether long-term memory exclusions are enabled.",
 						Optional:    true,
 						Computed:    true,
-						Validators: []validator.Int64{
-							int64validator.Between(0, 10000),
-						},
-					},
-					"retain_count": schema.Int64Attribute{
-						Description: "Number of most recent messages retained in full after summarization.",
-						Optional:    true,
-						Computed:    true,
-						Validators: []validator.Int64{
-							int64validator.Between(0, 10000),
-						},
 					},
 				},
-			},
-		},
-	}
-}
-
-func longTermMemoryExclusionsBlock() schema.SingleNestedBlock {
-	return schema.SingleNestedBlock{
-		Description: "Rules defining content that must not be retained in long-term memory.",
-		Attributes: map[string]schema.Attribute{
-			"enabled": schema.BoolAttribute{
-				Description: "Whether long-term memory exclusions are enabled.",
-				Optional:    true,
-				Computed:    true,
-			},
-		},
-		Blocks: map[string]schema.Block{
-			"semantic":           semanticExclusionBlock(),
-			"built_in_detectors": builtInDetectorsBlock(),
-			"custom_detectors":   customDetectorsBlock(),
-		},
-	}
-}
-
-func semanticExclusionBlock() schema.SingleNestedBlock {
-	return schema.SingleNestedBlock{
-		Description: "Semantic exclusion configuration.",
-		Attributes: map[string]schema.Attribute{
-			"enabled": schema.BoolAttribute{
-				Description: "Whether semantic exclusions are enabled.",
-				Optional:    true,
-				Computed:    true,
-			},
-			"prompt": schema.StringAttribute{
-				Description: "Prompt describing concepts that should not be kept in long-term memory.",
-				Optional:    true,
-				Computed:    true,
-				Validators: []validator.String{
-					stringvalidator.LengthAtMost(2000),
-				},
-			},
-		},
-	}
-}
-
-func builtInDetectorsBlock() schema.SingleNestedBlock {
-	return schema.SingleNestedBlock{
-		Description: "Built-in detector selections for common sensitive identifiers.",
-		Attributes: map[string]schema.Attribute{
-			"enabled": schema.BoolAttribute{
-				Description: "Whether built-in detectors are enabled.",
-				Optional:    true,
-				Computed:    true,
-			},
-		},
-		Blocks: map[string]schema.Block{
-			"detectors": schema.ListNestedBlock{
-				Description: "Built-in detectors selected for the store.",
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(5),
-				},
-				NestedObject: schema.NestedBlockObject{
-					Attributes: detectorSelectionAttributes(),
-				},
-			},
-		},
-	}
-}
-
-func customDetectorsBlock() schema.SingleNestedBlock {
-	return schema.SingleNestedBlock{
-		Description: "Custom regex detector configuration.",
-		Attributes: map[string]schema.Attribute{
-			"enabled": schema.BoolAttribute{
-				Description: "Whether custom detectors are enabled.",
-				Optional:    true,
-				Computed:    true,
-			},
-		},
-		Blocks: map[string]schema.Block{
-			"detectors": schema.ListNestedBlock{
-				Description: "Custom detectors for tenant-specific or application-specific sensitive data.",
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(32),
-				},
-				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"name": schema.StringAttribute{
-							Description: "Custom detector name.",
-							Required:    true,
-							// Custom detector names must not shadow built-in detector IDs.
-							Validators: append(customNameValidator(),
-								stringvalidator.NoneOf("credit-card", "email", "ip-address", "phone", "us-ssn"),
-							),
-						},
-						"enabled": schema.BoolAttribute{
-							Description: "Whether this detector is enabled.",
-							Required:    true,
-						},
-						"action": schema.StringAttribute{
-							Description: "Action applied when this detector matches.",
-							Optional:    true,
-							Computed:    true,
-							Validators:  actionValidator(),
+				Blocks: map[string]schema.Block{
+					"semantic": schema.SingleNestedBlock{
+						Description: "Semantic exclusion configuration.",
+						Attributes: map[string]schema.Attribute{
+							"enabled": schema.BoolAttribute{
+								Description: "Whether semantic exclusions are enabled.",
+								Optional:    true,
+								Computed:    true,
+							},
+							"prompt": schema.StringAttribute{
+								Description: "Prompt describing concepts that should not be kept in long-term memory.",
+								Optional:    true,
+								Computed:    true,
+								Validators: []validator.String{
+									stringvalidator.LengthAtMost(2000),
+								},
+							},
 						},
 					},
-					Blocks: map[string]schema.Block{
-						"matcher": schema.SingleNestedBlock{
-							Description: "Custom detector matcher.",
-							Attributes: map[string]schema.Attribute{
-								"kind": schema.StringAttribute{
-									Description: "Matcher kind.",
-									Required:    true,
-									Validators: []validator.String{
-										stringvalidator.OneOf("regex"),
+					"built_in_detectors": schema.SingleNestedBlock{
+						Description: "Built-in detector selections for common sensitive identifiers.",
+						Attributes: map[string]schema.Attribute{
+							"enabled": schema.BoolAttribute{
+								Description: "Whether built-in detectors are enabled.",
+								Optional:    true,
+								Computed:    true,
+							},
+						},
+						Blocks: map[string]schema.Block{
+							"detectors": schema.ListNestedBlock{
+								Description: "Built-in detectors selected for the store.",
+								Validators: []validator.List{
+									listvalidator.SizeAtMost(5),
+								},
+								NestedObject: schema.NestedBlockObject{
+									Attributes: map[string]schema.Attribute{
+										"id": schema.StringAttribute{
+											Description: "Built-in detector ID.",
+											Required:    true,
+											Validators: []validator.String{
+												stringvalidator.OneOf("credit-card", "email", "ip-address", "phone", "us-ssn"),
+											},
+										},
+										"enabled": schema.BoolAttribute{
+											Description: "Whether this detector is enabled.",
+											Required:    true,
+										},
+										"action": schema.StringAttribute{
+											Description: "Action applied when this detector matches.",
+											Optional:    true,
+											Computed:    true,
+											Validators:  actionValidator(),
+										},
 									},
 								},
 							},
-							Blocks: map[string]schema.Block{
-								"regex": schema.SingleNestedBlock{
-									Description: "Regex matcher configuration.",
+						},
+					},
+					"custom_detectors": schema.SingleNestedBlock{
+						Description: "Custom regex detector configuration.",
+						Attributes: map[string]schema.Attribute{
+							"enabled": schema.BoolAttribute{
+								Description: "Whether custom detectors are enabled.",
+								Optional:    true,
+								Computed:    true,
+							},
+						},
+						Blocks: map[string]schema.Block{
+							"detectors": schema.ListNestedBlock{
+								Description: "Custom detectors for tenant-specific or application-specific sensitive data.",
+								Validators: []validator.List{
+									listvalidator.SizeAtMost(32),
+								},
+								NestedObject: schema.NestedBlockObject{
 									Attributes: map[string]schema.Attribute{
-										"pattern": schema.StringAttribute{
-											Description: "Regex pattern used by the matcher.",
+										"name": schema.StringAttribute{
+											Description: "Custom detector name.",
 											Required:    true,
-											Validators: []validator.String{
-												stringvalidator.LengthBetween(1, 512),
-												nonEmptyRegexMatchValidator{},
+											// Custom detector names must not shadow built-in detector IDs.
+											Validators: append(customNameValidator(),
+												stringvalidator.NoneOf("credit-card", "email", "ip-address", "phone", "us-ssn"),
+											),
+										},
+										"enabled": schema.BoolAttribute{
+											Description: "Whether this detector is enabled.",
+											Required:    true,
+										},
+										"action": schema.StringAttribute{
+											Description: "Action applied when this detector matches.",
+											Optional:    true,
+											Computed:    true,
+											Validators:  actionValidator(),
+										},
+									},
+									Blocks: map[string]schema.Block{
+										"matcher": schema.SingleNestedBlock{
+											Description: "Custom detector matcher.",
+											Attributes: map[string]schema.Attribute{
+												"kind": schema.StringAttribute{
+													Description: "Matcher kind.",
+													Required:    true,
+													Validators: []validator.String{
+														stringvalidator.OneOf("regex"),
+													},
+												},
+											},
+											Blocks: map[string]schema.Block{
+												"regex": schema.SingleNestedBlock{
+													Description: "Regex matcher configuration.",
+													Attributes: map[string]schema.Attribute{
+														"pattern": schema.StringAttribute{
+															Description: "Regex pattern used by the matcher.",
+															Required:    true,
+															Validators: []validator.String{
+																stringvalidator.LengthBetween(1, 512),
+																nonEmptyRegexMatchValidator{},
+															},
+														},
+													},
+												},
 											},
 										},
 									},
@@ -373,115 +398,83 @@ func customDetectorsBlock() schema.SingleNestedBlock {
 					},
 				},
 			},
-		},
-	}
-}
-
-func customMemoryTypesBlock() schema.ListNestedBlock {
-	return schema.ListNestedBlock{
-		Description: "Custom long-term memory types registered on the store. New types and extraction strategy changes are updated in place; redefining or removing existing types is blocked because the API does not support it.",
-		Validators: []validator.List{
-			listvalidator.SizeAtMost(3),
-		},
-		NestedObject: schema.NestedBlockObject{
-			Attributes: map[string]schema.Attribute{
-				"name": schema.StringAttribute{
-					Description: "Custom memory type name.",
-					Required:    true,
-					// The API reserves these names for built-in memory types.
-					Validators: append(customNameValidator(),
-						stringvalidator.NoneOf("semantic", "episodic", "message", "session_summary_view"),
-					),
+			"custom_memory_types": schema.ListNestedBlock{
+				Description: "Custom long-term memory types registered on the store. New types and extraction strategy changes are updated in place; redefining or removing existing types is blocked because the API does not support it.",
+				Validators: []validator.List{
+					listvalidator.SizeAtMost(3),
 				},
-				"description": schema.StringAttribute{
-					Description: "Custom memory type description.",
-					Required:    true,
-					Validators: []validator.String{
-						stringvalidator.LengthBetween(1, 200),
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Description: "Custom memory type name.",
+							Required:    true,
+							// The API reserves these names for built-in memory types.
+							Validators: append(customNameValidator(),
+								stringvalidator.NoneOf("semantic", "episodic", "message", "session_summary_view"),
+							),
+						},
+						"description": schema.StringAttribute{
+							Description: "Custom memory type description.",
+							Required:    true,
+							Validators: []validator.String{
+								stringvalidator.LengthBetween(1, 200),
+							},
+						},
+					},
+					Blocks: map[string]schema.Block{
+						"fields": schema.ListNestedBlock{
+							Description: "Structured fields for this custom memory type.",
+							NestedObject: schema.NestedBlockObject{
+								Attributes: map[string]schema.Attribute{
+									"name": schema.StringAttribute{
+										Description: "Field name.",
+										Required:    true,
+										Validators:  customNameValidator(),
+									},
+									"description": schema.StringAttribute{
+										Description: "Field description.",
+										Required:    true,
+										Validators: []validator.String{
+											stringvalidator.LengthBetween(1, 200),
+										},
+									},
+									"type": schema.StringAttribute{
+										Description: "Field type.",
+										Required:    true,
+										Validators: []validator.String{
+											stringvalidator.OneOf("str", "int", "float", "bool", "list[str]", "list[float]", "object"),
+										},
+									},
+								},
+							},
+						},
+						"extraction_strategy": schema.SingleNestedBlock{
+							Description: "Extraction strategy for this custom memory type.",
+							// Required child attributes would also make the absent block invalid.
+							Validators: []validator.Object{
+								objectvalidator.AlsoRequires(path.MatchRelative().AtName("prompt")),
+							},
+							Attributes: map[string]schema.Attribute{
+								"prompt": schema.StringAttribute{
+									Description: "Prompt used to extract this custom memory type.",
+									Optional:    true,
+									Validators: []validator.String{
+										stringvalidator.LengthBetween(1, 10000),
+									},
+								},
+								"enabled": schema.BoolAttribute{
+									Description: "Whether extraction is enabled for this custom memory type.",
+									Optional:    true,
+									Computed:    true,
+								},
+							},
+						},
 					},
 				},
 			},
-			Blocks: map[string]schema.Block{
-				"fields":              customFieldsBlock(),
-				"extraction_strategy": customExtractionStrategyBlock(),
-			},
 		},
 	}
-}
 
-func customFieldsBlock() schema.ListNestedBlock {
-	return schema.ListNestedBlock{
-		Description: "Structured fields for this custom memory type.",
-		NestedObject: schema.NestedBlockObject{
-			Attributes: map[string]schema.Attribute{
-				"name": schema.StringAttribute{
-					Description: "Field name.",
-					Required:    true,
-					Validators:  customNameValidator(),
-				},
-				"description": schema.StringAttribute{
-					Description: "Field description.",
-					Required:    true,
-					Validators: []validator.String{
-						stringvalidator.LengthBetween(1, 200),
-					},
-				},
-				"type": schema.StringAttribute{
-					Description: "Field type.",
-					Required:    true,
-					Validators: []validator.String{
-						stringvalidator.OneOf("str", "int", "float", "bool", "list[str]", "list[float]", "object"),
-					},
-				},
-			},
-		},
-	}
-}
-
-func customExtractionStrategyBlock() schema.SingleNestedBlock {
-	return schema.SingleNestedBlock{
-		Description: "Extraction strategy for this custom memory type.",
-		// Required child attributes would also make the absent block invalid.
-		Validators: []validator.Object{
-			objectvalidator.AlsoRequires(path.MatchRelative().AtName("prompt")),
-		},
-		Attributes: map[string]schema.Attribute{
-			"prompt": schema.StringAttribute{
-				Description: "Prompt used to extract this custom memory type.",
-				Optional:    true,
-				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 10000),
-				},
-			},
-			"enabled": schema.BoolAttribute{
-				Description: "Whether extraction is enabled for this custom memory type.",
-				Optional:    true,
-				Computed:    true,
-			},
-		},
-	}
-}
-
-func detectorSelectionAttributes() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: "Built-in detector ID.",
-			Required:    true,
-			Validators: []validator.String{
-				stringvalidator.OneOf("credit-card", "email", "ip-address", "phone", "us-ssn"),
-			},
-		},
-		"enabled": schema.BoolAttribute{
-			Description: "Whether this detector is enabled.",
-			Required:    true,
-		},
-		"action": schema.StringAttribute{
-			Description: "Action applied when this detector matches.",
-			Optional:    true,
-			Computed:    true,
-			Validators:  actionValidator(),
-		},
-	}
 }
 
 func customNameValidator() []validator.String {
