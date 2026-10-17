@@ -361,7 +361,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 															Description: "Regex pattern used by the matcher.",
 															Required:    true,
 															Validators: []validator.String{
-																stringvalidator.LengthBetween(1, 512),
+																stringvalidator.LengthAtLeast(1),
 																nonEmptyRegexMatchValidator{},
 															},
 														},
