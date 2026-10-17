@@ -52,7 +52,6 @@ func (r *agentMemoryAPIKeyResource) Configure(_ context.Context, req resource.Co
 }
 
 func (r *agentMemoryAPIKeyResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	requiresReplace := []planmodifier.String{stringplanmodifier.RequiresReplace()}
 	resp.Schema = schema.Schema{
 		Blocks:      map[string]schema.Block{"timeouts": timeouts.Block(ctx, timeouts.Opts{Create: true, Read: true, Delete: true})},
 		Description: "Creates a data-plane API key for a Redis Agent Memory service.",
@@ -68,7 +67,9 @@ func (r *agentMemoryAPIKeyResource) Schema(ctx context.Context, _ resource.Schem
 					stringvalidator.LengthBetween(1, 64),
 					stringvalidator.RegexMatches(regexp.MustCompile(`^[A-Za-z0-9-]+$`), "must contain only letters, numbers, and hyphens"),
 				},
-				PlanModifiers: requiresReplace,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Description: "The name of the API key.",
@@ -77,7 +78,9 @@ func (r *agentMemoryAPIKeyResource) Schema(ctx context.Context, _ resource.Schem
 					stringvalidator.LengthBetween(1, 100),
 					stringvalidator.RegexMatches(regexp.MustCompile(`^\S+$`), "must not contain whitespace"),
 				},
-				PlanModifiers: requiresReplace,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"api_key": schema.StringAttribute{
 				Description: "The generated data-plane API key. The API returns this secret only during creation.",
