@@ -1384,13 +1384,13 @@ resource "rediscloud_agent_memory" "example" {
       detectors {
         id      = "email"
         enabled = true
-        action  = "mask"
+        action  = ""
       }
     }
   }
 }
 `,
-				ExpectError: regexp.MustCompile(`redact|drop`),
+				ExpectError: regexp.MustCompile(`length`),
 			},
 			{
 				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
