@@ -106,12 +106,9 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 			},
 			"extraction_cadence_seconds": schema.Int64Attribute{
-				Description: "How often the extraction pipeline runs while a session is active. When configured, the API currently accepts 60-600 seconds.",
+				Description: "How often the extraction pipeline runs while a session is active, in seconds.",
 				Optional:    true,
 				Computed:    true,
-				Validators: []validator.Int64{
-					int64validator.Between(60, 600),
-				},
 			},
 			"endpoint": schema.StringAttribute{
 				Description: "The primary data-plane API endpoint for the Agent Memory service.",
