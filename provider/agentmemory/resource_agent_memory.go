@@ -318,9 +318,11 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 											Description: "Custom detector name.",
 											Required:    true,
 											// Custom detector names must not shadow built-in detector IDs.
-											Validators: append(customNameValidator(),
+											Validators: []validator.String{
+												// Empty names cannot round-trip: API strings are read as null when empty.
+												stringvalidator.LengthAtLeast(1),
 												stringvalidator.NoneOf("credit-card", "email", "ip-address", "phone", "us-ssn"),
-											),
+											},
 										},
 										"enabled": schema.BoolAttribute{
 											Description: "Whether this detector is enabled.",
@@ -376,9 +378,11 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 							Description: "Custom memory type name.",
 							Required:    true,
 							// The API reserves these names for built-in memory types.
-							Validators: append(customNameValidator(),
+							Validators: []validator.String{
+								// Empty names cannot round-trip: API strings are read as null when empty.
+								stringvalidator.LengthAtLeast(1),
 								stringvalidator.NoneOf("semantic", "episodic", "message", "session_summary_view"),
-							),
+							},
 						},
 						"description": schema.StringAttribute{
 							Description: "Custom memory type description.",
@@ -396,7 +400,10 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 									"name": schema.StringAttribute{
 										Description: "Field name.",
 										Required:    true,
-										Validators:  customNameValidator(),
+										Validators: []validator.String{
+											// Empty names cannot round-trip: API strings are read as null when empty.
+											stringvalidator.LengthAtLeast(1),
+										},
 									},
 									"description": schema.StringAttribute{
 										Description: "Field description.",
@@ -442,13 +449,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 		},
 	}
 
-}
-
-func customNameValidator() []validator.String {
-	return []validator.String{
-		stringvalidator.LengthBetween(1, 64),
-		stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*$`), "must start with a letter and contain only letters, numbers, underscores, and hyphens"),
-	}
 }
 
 func actionValidator() []validator.String {

@@ -190,11 +190,11 @@ The following arguments are optional:
   * `event_count` - Event-count thresholds. Numeric limits are validated by the Agent Memory API. Both fields must be configured when this block is present.
     * `threshold` - Number of messages that triggers summarization. Must be greater than `retain_count`.
     * `retain_count` - Number of most recent messages retained in full.
-* `custom_memory_types` - Custom long-term memory types. A store can define up to 3 custom memory types.
-  * `name` - Custom type name. Must start with a letter and contain only letters, numbers, underscores, and hyphens.
+* `custom_memory_types` - Custom long-term memory types. Quantity limits are validated by the Agent Memory API.
+  * `name` - Non-empty custom type name. Format and maximum length are validated by the Agent Memory API.
   * `description` - Custom type description.
   * `fields` - Structured fields for this custom memory type.
-    * `name` - Field name.
+    * `name` - Non-empty field name. Format and maximum length are validated by the Agent Memory API.
     * `type` - Field type. Supported values are `str`, `int`, `float`, `bool`, `list[str]`, `list[float]`, and `object`.
     * `description` - Field description.
   * `extraction_strategy` - Optional extraction strategy for this custom memory type.
@@ -211,7 +211,7 @@ The following arguments are optional:
   * `custom_detectors` - Custom regex detector configuration.
     * `enabled` - Whether custom detectors are enabled.
     * `detectors` - Custom detector definitions.
-      * `name` - Custom detector name.
+      * `name` - Non-empty custom detector name. Format and maximum length are validated by the Agent Memory API.
       * `enabled` - Whether this detector is enabled.
       * `action` - Action when the detector matches. Supported values are `redact` and `drop`.
       * `matcher` - Detector matcher configuration.
