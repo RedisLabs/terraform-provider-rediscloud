@@ -206,11 +206,12 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 						Computed:    true,
 					},
 					"trigger_strategy": schema.StringAttribute{
-						Description: "What triggers a summarization cycle.",
+						Description: "What triggers a summarization cycle. Accepted values and omitted defaults are determined by the Agent Memory API.",
 						Optional:    true,
 						Computed:    true,
 						Validators: []validator.String{
-							stringvalidator.OneOf("event_count"),
+							// The SDK omits empty strings instead of sending the configured value.
+							stringvalidator.LengthAtLeast(1),
 						},
 					},
 				},
