@@ -6,7 +6,6 @@ import (
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
-	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
@@ -231,17 +230,11 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 								Description: "Number of messages in a session before summarization runs.",
 								Optional:    true,
 								Computed:    true,
-								Validators: []validator.Int64{
-									int64validator.Between(0, 10000),
-								},
 							},
 							"retain_count": schema.Int64Attribute{
 								Description: "Number of most recent messages retained in full after summarization.",
 								Optional:    true,
 								Computed:    true,
-								Validators: []validator.Int64{
-									int64validator.Between(0, 10000),
-								},
 							},
 						},
 					},
