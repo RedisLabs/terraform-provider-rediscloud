@@ -24,10 +24,19 @@ func TestAgentMemoryLimitsAreValidatedByAPI(t *testing.T) {
 		resourceType string
 		resourceName string
 		errorTitle   string
+		ttlAttribute string
+		ttlValue     int
+		memoryField  string
 	}{
 		{name: "store name", databaseID: 123, resourceType: "rediscloud_agent_memory", resourceName: strings.Repeat("a", 65), errorTitle: "Failed to create Agent Memory service"},
 		{name: "zero database ID", resourceType: "rediscloud_agent_memory", databaseID: 0, resourceName: "store", errorTitle: "Failed to create Agent Memory service"},
 		{name: "negative database ID", resourceType: "rediscloud_agent_memory", databaseID: -1, resourceName: "store", errorTitle: "Failed to create Agent Memory service"},
+		{name: "short_term_ttl_seconds zero", resourceType: "rediscloud_agent_memory", databaseID: 123, resourceName: "store", errorTitle: "Failed to create Agent Memory service", ttlAttribute: "short_term_ttl_seconds", ttlValue: 0, memoryField: "shortMemory"},
+		{name: "short_term_ttl_seconds negative", resourceType: "rediscloud_agent_memory", databaseID: 123, resourceName: "store", errorTitle: "Failed to create Agent Memory service", ttlAttribute: "short_term_ttl_seconds", ttlValue: -1, memoryField: "shortMemory"},
+		{name: "short_term_ttl_seconds above previous maximum", resourceType: "rediscloud_agent_memory", databaseID: 123, resourceName: "store", errorTitle: "Failed to create Agent Memory service", ttlAttribute: "short_term_ttl_seconds", ttlValue: 31536001, memoryField: "shortMemory"},
+		{name: "long_term_ttl_seconds zero", resourceType: "rediscloud_agent_memory", databaseID: 123, resourceName: "store", errorTitle: "Failed to create Agent Memory service", ttlAttribute: "long_term_ttl_seconds", ttlValue: 0, memoryField: "longTermMemory"},
+		{name: "long_term_ttl_seconds negative", resourceType: "rediscloud_agent_memory", databaseID: 123, resourceName: "store", errorTitle: "Failed to create Agent Memory service", ttlAttribute: "long_term_ttl_seconds", ttlValue: -1, memoryField: "longTermMemory"},
+		{name: "long_term_ttl_seconds above previous maximum", resourceType: "rediscloud_agent_memory", databaseID: 123, resourceName: "store", errorTitle: "Failed to create Agent Memory service", ttlAttribute: "long_term_ttl_seconds", ttlValue: 31536001, memoryField: "longTermMemory"},
 		{name: "API key name", resourceType: "rediscloud_agent_memory_api_key", storeID: "store-1", resourceName: strings.Repeat("a", 101), errorTitle: "Failed to create Agent Memory API key"},
 		{name: "API key store ID", resourceType: "rediscloud_agent_memory_api_key", storeID: strings.Repeat("a", 65), resourceName: "runtime", errorTitle: "Failed to create Agent Memory API key"},
 	} {
@@ -57,12 +66,18 @@ func TestAgentMemoryLimitsAreValidatedByAPI(t *testing.T) {
 				if tc.storeID == "" {
 					assert.Equal(t, float64(tc.databaseID), body["databaseId"])
 				}
+				if tc.ttlAttribute != "" {
+					assert.Equal(t, map[string]any{"ttlSeconds": float64(tc.ttlValue)}, body[tc.memoryField])
+				}
 				w.WriteHeader(http.StatusBadRequest)
 				_, _ = w.Write([]byte(`{"message":"Value rejected by the API"}`))
 			}))
 			defer server.Close()
 
 			attributes := fmt.Sprintf("database_id = %d", tc.databaseID)
+			if tc.ttlAttribute != "" {
+				attributes += fmt.Sprintf("\n%s = %d", tc.ttlAttribute, tc.ttlValue)
+			}
 			if tc.storeID != "" {
 				attributes = fmt.Sprintf("store_id = %q", tc.storeID)
 			}
