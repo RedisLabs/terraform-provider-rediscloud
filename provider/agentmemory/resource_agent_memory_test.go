@@ -30,12 +30,12 @@ func TestAgentMemoryResource_mockedCreateReadDelete(t *testing.T) {
 			assert.Equal(t, "store", redis.StringValue(request.Name))
 			assert.Equal(t, 123, redis.IntValue(request.DatabaseID))
 			require.NotNil(t, request.ShortMemory)
-			assert.Equal(t, 86400, request.ShortMemory.TTLSeconds)
+			assert.Equal(t, 86400, redis.IntValue(request.ShortMemory.TTLSeconds))
 			require.NotNil(t, request.LongTermMemory)
 			require.NotNil(t, request.LongTermMemory.TTLSeconds)
 			assert.Equal(t, 31536000, *request.LongTermMemory.TTLSeconds)
 			require.NotNil(t, request.ExtractionCadence)
-			assert.Equal(t, 300, request.ExtractionCadence.ActiveIntervalSeconds)
+			assert.Equal(t, 300, redis.IntValue(request.ExtractionCadence.ActiveIntervalSeconds))
 
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
@@ -188,45 +188,45 @@ func TestAgentMemoryResource_mockedCreateWithAdvancedConfig(t *testing.T) {
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
 
 			require.NotNil(t, request.Summarization)
-			assert.True(t, request.Summarization.Enabled)
-			assert.Equal(t, agentmemoryapi.SummarizationTriggerStrategyEventCount, request.Summarization.TriggerStrategy)
+			assert.True(t, redis.BoolValue(request.Summarization.Enabled))
+			assert.Equal(t, agentmemoryapi.SummarizationTriggerStrategyEventCount, redis.StringValue(request.Summarization.TriggerStrategy))
 			require.NotNil(t, request.Summarization.EventCount)
-			assert.Equal(t, 21, request.Summarization.EventCount.Threshold)
-			assert.Equal(t, 11, request.Summarization.EventCount.RetainCount)
+			assert.Equal(t, 21, redis.IntValue(request.Summarization.EventCount.Threshold))
+			assert.Equal(t, 11, redis.IntValue(request.Summarization.EventCount.RetainCount))
 
 			require.NotNil(t, request.LongTermMemoryExclusions)
-			assert.True(t, request.LongTermMemoryExclusions.Enabled)
+			assert.True(t, redis.BoolValue(request.LongTermMemoryExclusions.Enabled))
 			require.NotNil(t, request.LongTermMemoryExclusions.Semantic)
-			assert.True(t, request.LongTermMemoryExclusions.Semantic.Enabled)
-			assert.Equal(t, "test", request.LongTermMemoryExclusions.Semantic.Prompt)
+			assert.True(t, redis.BoolValue(request.LongTermMemoryExclusions.Semantic.Enabled))
+			assert.Equal(t, "test", redis.StringValue(request.LongTermMemoryExclusions.Semantic.Prompt))
 			require.NotNil(t, request.LongTermMemoryExclusions.BuiltInDetectors)
-			assert.True(t, request.LongTermMemoryExclusions.BuiltInDetectors.Enabled)
+			assert.True(t, redis.BoolValue(request.LongTermMemoryExclusions.BuiltInDetectors.Enabled))
 			assert.ElementsMatch(t, []agentmemoryapi.DetectorSelection{
-				{ID: "credit-card", Enabled: true, Action: "redact"},
-				{ID: "email", Enabled: true, Action: "redact"},
+				{ID: redis.String("credit-card"), Enabled: redis.Bool(true), Action: redis.String("redact")},
+				{ID: redis.String("email"), Enabled: redis.Bool(true), Action: redis.String("redact")},
 			}, request.LongTermMemoryExclusions.BuiltInDetectors.Detectors)
 			require.NotNil(t, request.LongTermMemoryExclusions.CustomDetectors)
-			assert.True(t, request.LongTermMemoryExclusions.CustomDetectors.Enabled)
+			assert.True(t, redis.BoolValue(request.LongTermMemoryExclusions.CustomDetectors.Enabled))
 			require.Len(t, request.LongTermMemoryExclusions.CustomDetectors.Detectors, 1)
 			assert.Equal(t, agentmemoryapi.CustomDetector{
-				Name:    "detector",
-				Enabled: true,
-				Action:  "redact",
+				Name:    redis.String("detector"),
+				Enabled: redis.Bool(true),
+				Action:  redis.String("redact"),
 				Matcher: &agentmemoryapi.MatcherSpec{
-					Kind:  "regex",
-					Regex: &agentmemoryapi.RegexSpec{Pattern: "ACCT-[9]"},
+					Kind:  redis.String("regex"),
+					Regex: &agentmemoryapi.RegexSpec{Pattern: redis.String("ACCT-[9]")},
 				},
 			}, request.LongTermMemoryExclusions.CustomDetectors.Detectors[0])
 
 			require.Len(t, request.CustomMemoryTypes, 1)
 			customType := request.CustomMemoryTypes[0]
-			assert.Equal(t, "custom_name", customType.Name)
-			assert.Equal(t, "test", customType.Description)
+			assert.Equal(t, "custom_name", redis.StringValue(customType.Name))
+			assert.Equal(t, "test", redis.StringValue(customType.Description))
 			assert.Equal(t, []agentmemoryapi.CustomField{
-				{Name: "field1", Description: "capture the field", Type: "str"},
+				{Name: redis.String("field1"), Description: redis.String("capture the field"), Type: redis.String("str")},
 			}, customType.Fields)
 			require.NotNil(t, customType.ExtractionStrategy)
-			assert.Equal(t, "test", customType.ExtractionStrategy.Prompt)
+			assert.Equal(t, "test", redis.StringValue(customType.ExtractionStrategy.Prompt))
 			require.NotNil(t, customType.ExtractionStrategy.Enabled)
 			assert.True(t, *customType.ExtractionStrategy.Enabled)
 
@@ -360,15 +360,15 @@ func TestAgentMemoryResource_mockedUpdateAdvancedConfig(t *testing.T) {
 
 			require.NotNil(t, request.Summarization)
 			require.NotNil(t, request.Summarization.EventCount)
-			assert.Equal(t, 30, request.Summarization.EventCount.Threshold)
-			assert.Equal(t, 12, request.Summarization.EventCount.RetainCount)
+			assert.Equal(t, 30, redis.IntValue(request.Summarization.EventCount.Threshold))
+			assert.Equal(t, 12, redis.IntValue(request.Summarization.EventCount.RetainCount))
 
 			require.NotNil(t, request.LongTermMemoryExclusions)
 			require.NotNil(t, request.LongTermMemoryExclusions.Semantic)
-			assert.Equal(t, "updated", request.LongTermMemoryExclusions.Semantic.Prompt)
+			assert.Equal(t, "updated", redis.StringValue(request.LongTermMemoryExclusions.Semantic.Prompt))
 			require.NotNil(t, request.LongTermMemoryExclusions.BuiltInDetectors)
 			require.Len(t, request.LongTermMemoryExclusions.BuiltInDetectors.Detectors, 2)
-			assert.Equal(t, "drop", request.LongTermMemoryExclusions.BuiltInDetectors.Detectors[1].Action)
+			assert.Equal(t, "drop", redis.StringValue(request.LongTermMemoryExclusions.BuiltInDetectors.Detectors[1].Action))
 
 			patches++
 			threshold = 30
@@ -499,10 +499,10 @@ func TestAgentMemoryResource_mockedAddCustomMemoryType(t *testing.T) {
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
 			assert.Empty(t, request.UpdateCustomMemoryTypeStrategies)
 			require.Len(t, request.AddCustomMemoryTypes, 1)
-			assert.Equal(t, "support_case", request.AddCustomMemoryTypes[0].Name)
-			assert.Equal(t, "Persistent support case details", request.AddCustomMemoryTypes[0].Description)
+			assert.Equal(t, "support_case", redis.StringValue(request.AddCustomMemoryTypes[0].Name))
+			assert.Equal(t, "Persistent support case details", redis.StringValue(request.AddCustomMemoryTypes[0].Description))
 			assert.Equal(t, []agentmemoryapi.CustomField{
-				{Name: "case_priority", Description: "case priority", Type: "int"},
+				{Name: redis.String("case_priority"), Description: redis.String("case priority"), Type: redis.String("int")},
 			}, request.AddCustomMemoryTypes[0].Fields)
 
 			patches++
@@ -650,19 +650,19 @@ func TestAgentMemoryResource_mockedUpdateDisablesAdvancedConfigWithStaleAPIChild
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
 
 			require.NotNil(t, request.Summarization)
-			assert.False(t, request.Summarization.Enabled)
+			assert.False(t, redis.BoolValue(request.Summarization.Enabled))
 			assert.Empty(t, request.Summarization.TriggerStrategy)
 			assert.Nil(t, request.Summarization.EventCount)
 
 			require.NotNil(t, request.LongTermMemoryExclusions)
 			require.NotNil(t, request.LongTermMemoryExclusions.Semantic)
-			assert.False(t, request.LongTermMemoryExclusions.Semantic.Enabled)
+			assert.False(t, redis.BoolValue(request.LongTermMemoryExclusions.Semantic.Enabled))
 			assert.Empty(t, request.LongTermMemoryExclusions.Semantic.Prompt)
 			require.NotNil(t, request.LongTermMemoryExclusions.BuiltInDetectors)
-			assert.False(t, request.LongTermMemoryExclusions.BuiltInDetectors.Enabled)
+			assert.False(t, redis.BoolValue(request.LongTermMemoryExclusions.BuiltInDetectors.Enabled))
 			assert.Empty(t, request.LongTermMemoryExclusions.BuiltInDetectors.Detectors)
 			require.NotNil(t, request.LongTermMemoryExclusions.CustomDetectors)
-			assert.False(t, request.LongTermMemoryExclusions.CustomDetectors.Enabled)
+			assert.False(t, redis.BoolValue(request.LongTermMemoryExclusions.CustomDetectors.Enabled))
 			assert.Empty(t, request.LongTermMemoryExclusions.CustomDetectors.Detectors)
 
 			patches++
@@ -734,12 +734,12 @@ func TestAgentMemoryResource_mockedUpdate(t *testing.T) {
 			require.NotNil(t, request.Name)
 			assert.Equal(t, "store-updated", *request.Name)
 			require.NotNil(t, request.ShortMemory)
-			assert.Equal(t, 172800, request.ShortMemory.TTLSeconds)
+			assert.Equal(t, 172800, redis.IntValue(request.ShortMemory.TTLSeconds))
 			require.NotNil(t, request.LongTermMemory)
 			require.NotNil(t, request.LongTermMemory.TTLSeconds)
 			assert.Equal(t, 604800, *request.LongTermMemory.TTLSeconds)
 			require.NotNil(t, request.ExtractionCadence)
-			assert.Equal(t, 600, request.ExtractionCadence.ActiveIntervalSeconds)
+			assert.Equal(t, 600, redis.IntValue(request.ExtractionCadence.ActiveIntervalSeconds))
 
 			name = "store-updated"
 			shortTTL = 172800
