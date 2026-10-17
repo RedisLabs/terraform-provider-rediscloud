@@ -79,7 +79,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 			"database_id": schema.Int64Attribute{
 				Description: "The ID of the Redis Cloud database that backs the Agent Memory service.",
 				Required:    true,
-				Validators:  []validator.Int64{int64validator.AtLeast(1)},
 				PlanModifiers: []planmodifier.Int64{
 					int64planmodifier.RequiresReplace(),
 				},
