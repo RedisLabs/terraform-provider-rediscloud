@@ -6,7 +6,6 @@ import (
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -277,9 +276,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 						Blocks: map[string]schema.Block{
 							"detectors": schema.ListNestedBlock{
 								Description: "Built-in detectors selected for the store.",
-								Validators: []validator.List{
-									listvalidator.SizeAtMost(5),
-								},
 								NestedObject: schema.NestedBlockObject{
 									Attributes: map[string]schema.Attribute{
 										"id": schema.StringAttribute{
@@ -316,9 +312,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 						Blocks: map[string]schema.Block{
 							"detectors": schema.ListNestedBlock{
 								Description: "Custom detectors for tenant-specific or application-specific sensitive data.",
-								Validators: []validator.List{
-									listvalidator.SizeAtMost(32),
-								},
 								NestedObject: schema.NestedBlockObject{
 									Attributes: map[string]schema.Attribute{
 										"name": schema.StringAttribute{
@@ -377,9 +370,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 			},
 			"custom_memory_types": schema.ListNestedBlock{
 				Description: "Custom long-term memory types registered on the store. New types and extraction strategy changes are updated in place; redefining or removing existing types is blocked because the API does not support it.",
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(3),
-				},
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
