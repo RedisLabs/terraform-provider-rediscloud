@@ -199,7 +199,7 @@ The following arguments are optional:
     * `description` - Non-empty field description. Maximum length is validated by the Agent Memory API.
   * `extraction_strategy` - Optional extraction strategy for this custom memory type.
     * `enabled` - Whether extraction is enabled for this custom type.
-    * `prompt` - Prompt used to extract memories of this custom type.
+    * `prompt` - Non-empty prompt used to extract memories of this custom type. Required when this extraction strategy block is present; maximum length is validated by the Agent Memory API.
 * `long_term_memory_exclusions` - Policy defining content that must not be kept in long-term memory.
   * `enabled` - Master toggle for long-term memory exclusions.
   * `built_in_detectors` - Built-in sensitive-data detector configuration.

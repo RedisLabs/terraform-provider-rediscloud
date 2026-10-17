@@ -442,7 +442,8 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 									Description: "Prompt used to extract this custom memory type.",
 									Optional:    true,
 									Validators: []validator.String{
-										stringvalidator.LengthBetween(1, 10000),
+										// The SDK omits empty prompts, which would lose an explicitly configured value.
+										stringvalidator.LengthAtLeast(1),
 									},
 								},
 								"enabled": schema.BoolAttribute{
