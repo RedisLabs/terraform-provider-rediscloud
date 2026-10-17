@@ -171,7 +171,7 @@ The following arguments are optional:
   The API accepts 1 second to 1 year. This must be configured explicitly when `embedding` is configured.
 * `extraction_strategy` - How long-term memories are extracted from sessions.
   Accepted values are validated by the Agent Memory API. Changing an explicitly configured strategy requires replacement.
-* `extraction_cadence_seconds` - How often the extraction pipeline runs while a session is active. When configured, the API currently accepts 60-600 seconds.
+* `extraction_cadence_seconds` - How often the extraction pipeline runs while a session is active, in seconds. Accepted values are validated by the Agent Memory API.
 * `llm` - Customer-managed LLM configuration. If configured, `embedding` must also be configured.
   * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service.
   * `model` - Model name advertised by the provider.
