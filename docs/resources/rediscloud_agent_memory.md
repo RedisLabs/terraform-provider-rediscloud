@@ -170,7 +170,7 @@ The following arguments are optional:
 * `long_term_ttl_seconds` - Long-term memory TTL in seconds.
   The API accepts 1 second to 1 year. This must be configured explicitly when `embedding` is configured.
 * `extraction_strategy` - How long-term memories are extracted from sessions.
-  Currently only `INSTRUCT` is supported by the Agent Memory API.
+  Accepted values are validated by the Agent Memory API. Changing an explicitly configured strategy requires replacement.
 * `extraction_cadence_seconds` - How often the extraction pipeline runs while a session is active. When configured, the API currently accepts 60-600 seconds.
 * `llm` - Customer-managed LLM configuration. If configured, `embedding` must also be configured.
   * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service.
