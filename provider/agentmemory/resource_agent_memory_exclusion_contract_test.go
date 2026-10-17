@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/RedisLabs/rediscloud-go-api/redis"
 	api "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -28,7 +29,7 @@ func TestExclusionListClearingWireContract(t *testing.T) {
 
 func TestReadPreservesConfiguredInactiveExclusions(t *testing.T) {
 	model := AgentMemoryResourceModel{ID: types.StringValue("store-1"), LongTermMemoryExclusions: &AgentMemoryExclusionsModel{Enabled: types.BoolValue(false), Semantic: &AgentMemorySemanticExclusionModel{Enabled: types.BoolValue(false), Prompt: types.StringValue("Keep this instruction")}, BuiltInDetectors: &AgentMemoryBuiltInDetectorsModel{Enabled: types.BoolValue(false), Detectors: []AgentMemoryDetectorSelectionModel{{ID: types.StringValue("email"), Enabled: types.BoolValue(false), Action: types.StringValue("redact")}}}, CustomDetectors: &AgentMemoryCustomDetectorsModel{Enabled: types.BoolValue(false), Detectors: []AgentMemoryCustomDetectorModel{{Name: types.StringValue("ticket"), Enabled: types.BoolValue(false), Action: types.StringValue("redact"), Matcher: &AgentMemoryMatcherSpecModel{Kind: types.StringValue("regex"), Regex: &AgentMemoryRegexSpecModel{Pattern: types.StringValue("ticket+")}}}}}}}
-	response := &api.Store{StoreID: "store-1", Name: "fixture", DatabaseID: "123", Status: "READY", LongTermMemoryExclusions: exclusionsFromModel(model.LongTermMemoryExclusions)}
+	response := &api.Store{StoreID: redis.String("store-1"), Name: redis.String("fixture"), DatabaseID: redis.String("123"), Status: redis.String("READY"), LongTermMemoryExclusions: exclusionsFromModel(model.LongTermMemoryExclusions)}
 	var diags diag.Diagnostics
 	readAgentMemoryIntoModel(context.Background(), response, &model, false, &diags)
 	require.False(t, diags.HasError(), diags)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/RedisLabs/rediscloud-go-api/redis"
 	agentmemoryapi "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -30,10 +31,10 @@ func (r *agentMemoryAPIKeyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	plan.ID = types.StringValue(created.Info.APIKeyID)
+	plan.ID = types.StringPointerValue(created.Info.APIKeyID)
 	plan.APIKey = types.StringValue(created.APIKey)
-	plan.ObfuscatedToken = types.StringValue(created.Info.ObfuscatedToken)
-	plan.CreatedAt = types.Int64Value(created.Info.CreatedAt)
+	plan.ObfuscatedToken = types.StringPointerValue(created.Info.ObfuscatedToken)
+	plan.CreatedAt = types.Int64PointerValue(created.Info.CreatedAt)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
@@ -65,14 +66,14 @@ func (r *agentMemoryAPIKeyResource) Read(ctx context.Context, req resource.ReadR
 	}
 
 	// An incomplete name must not become drift that replaces a key with a write-only secret.
-	if key.KeyName == "" {
+	if redis.StringValue(key.KeyName) == "" {
 		resp.Diagnostics.AddError("Invalid Agent Memory API key response", "The API response omitted the key name. The tracked key and stored secret were preserved.")
 		return
 	}
-	state.ID = types.StringValue(key.APIKeyID)
-	state.Name = types.StringValue(key.KeyName)
-	state.ObfuscatedToken = types.StringValue(key.ObfuscatedToken)
-	state.CreatedAt = types.Int64Value(key.CreatedAt)
+	state.ID = types.StringPointerValue(key.APIKeyID)
+	state.Name = types.StringPointerValue(key.KeyName)
+	state.ObfuscatedToken = types.StringPointerValue(key.ObfuscatedToken)
+	state.CreatedAt = types.Int64PointerValue(key.CreatedAt)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
