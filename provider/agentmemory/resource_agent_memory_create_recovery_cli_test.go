@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -30,7 +29,7 @@ func TestAgentMemoryCreateReadRecoveryLifecycle(t *testing.T) {
 					w.Header().Set("Content-Type", "application/json")
 					switch {
 					case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
-						// A tainted resource must be removed before its replacement is created.
+						// Recovery must reuse the acknowledged store rather than create another one.
 						if len(live) != 0 {
 							t.Error("new create attempted while an earlier fixture remains live")
 						}
@@ -92,24 +91,20 @@ func TestAgentMemoryCreateReadRecoveryLifecycle(t *testing.T) {
 					ttl = "short_term_ttl_seconds=86400\nlong_term_ttl_seconds=31536000\nextraction_cadence_seconds=300\n"
 				}
 				config := prefix + fmt.Sprintf("resource \"rediscloud_agent_memory\" \"example\" {\nname=\"recovery-store\"\ndatabase_id=123\n%s}\n", ttl)
-				first := resource.TestStep{Config: config}
-				if scenario == "malformed" {
-					first.ExpectError = regexp.MustCompile("Unexpected Agent Memory database ID")
-				}
 				check := func(state *terraform.State) error {
 					mu.Lock()
 					defer mu.Unlock()
 					expectedCreates, expectedDeletes := 1, 0
-					if scenario == "malformed" {
-						expectedCreates, expectedDeletes = 2, 1
-					}
 					if creates != expectedCreates || deletes != expectedDeletes || len(live) != 1 {
 						return fmt.Errorf("unexpected recovery: creates=%d deletes=%d live=%d", creates, deletes, len(live))
+					}
+					if state.RootModule().Resources["rediscloud_agent_memory.example"].Primary.Tainted {
+						return fmt.Errorf("acknowledged store was tainted after a follow-up read failure")
 					}
 					return resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", fmt.Sprintf("store-%d", creates))(state)
 				}
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-					first,
+					{Config: config, Check: check},
 					{Config: config, Check: check},
 					{Config: config, PlanOnly: true},
 				}})

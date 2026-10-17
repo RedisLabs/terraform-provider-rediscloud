@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -78,30 +77,24 @@ resource "rediscloud_agent_memory" "example" {
 `, name, attribute)
 	}
 	const address = "rediscloud_agent_memory.example"
-	initial, renamed := config("store", ""), config("renamed", "")
-	future := config("renamed", "FAKE-FUTURE-STRATEGY")
+	initial, renamed := config("store", "FAKE-FUTURE-STRATEGY"), config("renamed", "FAKE-FUTURE-STRATEGY")
+	changed := config("renamed", "INSTRUCT")
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
-			{Config: initial, Check: resource.TestCheckResourceAttr(address, "extraction_strategy", "INSTRUCT")},
+			{Config: initial, Check: resource.TestCheckResourceAttr(address, "extraction_strategy", "FAKE-FUTURE-STRATEGY")},
 			{Config: initial, PlanOnly: true},
 			{Config: renamed, Check: resource.TestCheckResourceAttr(address, "id", "store-1")},
-			{Config: config("renamed", "INSTRUCT"), PlanOnly: true},
-			{Config: future, ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
-				plancheck.ExpectResourceAction(address, plancheck.ResourceActionDestroyBeforeCreate),
-			}}, Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(address, "id", "store-2"),
-				resource.TestCheckResourceAttr(address, "extraction_strategy", "FAKE-FUTURE-STRATEGY"),
-			)},
-			{Config: future, PlanOnly: true},
+			{Config: config("renamed", ""), PlanOnly: true},
+			{Config: changed, ExpectError: regexp.MustCompile("strategy change requires an explicit migration")},
 			{Config: renamed, PlanOnly: true},
 		},
 	})
 	mu.Lock()
 	defer mu.Unlock()
-	assert.Equal(t, 2, creates)
+	assert.Equal(t, 1, creates)
 	assert.Equal(t, 1, patches)
-	assert.Equal(t, 2, deletes)
+	assert.Equal(t, 1, deletes)
 	assert.Nil(t, store)
 }
 
