@@ -226,7 +226,7 @@ func shortMemoryFromPlan(plan AgentMemoryResourceModel) *agentmemoryapi.ShortMem
 	if plan.ShortTermTTLSeconds.IsNull() || plan.ShortTermTTLSeconds.IsUnknown() {
 		return nil
 	}
-	return &agentmemoryapi.ShortMemoryConfig{TTLSeconds: int(plan.ShortTermTTLSeconds.ValueInt64())}
+	return &agentmemoryapi.ShortMemoryConfig{TTLSeconds: redis.Int(int(plan.ShortTermTTLSeconds.ValueInt64()))}
 }
 
 func longTermMemoryFromPlan(plan AgentMemoryResourceModel) *agentmemoryapi.LongTermMemoryConfig {
@@ -247,41 +247,45 @@ func extractionCadenceFromPlan(plan AgentMemoryResourceModel) *agentmemoryapi.Ex
 	if plan.ExtractionCadenceSeconds.IsNull() || plan.ExtractionCadenceSeconds.IsUnknown() {
 		return nil
 	}
-	return &agentmemoryapi.ExtractionCadenceConfig{ActiveIntervalSeconds: int(plan.ExtractionCadenceSeconds.ValueInt64())}
+	return &agentmemoryapi.ExtractionCadenceConfig{ActiveIntervalSeconds: redis.Int(int(plan.ExtractionCadenceSeconds.ValueInt64()))}
 }
 
 func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, state *AgentMemoryResourceModel, includeAPIOnlyConfig bool, diags *diag.Diagnostics) {
 	// Reject invalid identity before copying any response fields into the owned model.
-	if store == nil || store.StoreID == "" {
+	if store == nil || redis.StringValue(store.StoreID) == "" {
 		diags.AddError("Invalid Agent Memory response", "The API response omitted the store ID.")
 		return
 	}
-	if !state.ID.IsNull() && !state.ID.IsUnknown() && state.ID.ValueString() != "" && state.ID.ValueString() != store.StoreID {
+	if !state.ID.IsNull() && !state.ID.IsUnknown() && state.ID.ValueString() != "" && state.ID.ValueString() != redis.StringValue(store.StoreID) {
 		diags.AddError("Invalid Agent Memory response", "The API response did not match the requested store ID.")
 		return
 	}
-	state.ID = types.StringValue(store.StoreID)
-	state.Name = types.StringValue(store.Name)
-	state.Status = types.StringValue(store.Status)
+	if redis.StringValue(store.Name) == "" {
+		diags.AddError("Unexpected Agent Memory name", "The API response omitted the store name. The tracked store was preserved.")
+		return
+	}
+	state.ID = types.StringPointerValue(store.StoreID)
+	state.Name = types.StringPointerValue(store.Name)
+	state.Status = types.StringPointerValue(store.Status)
 
-	databaseID, err := strconv.ParseInt(store.DatabaseID, 10, 64)
+	databaseID, err := strconv.ParseInt(redis.StringValue(store.DatabaseID), 10, 64)
 	if err != nil {
-		diags.AddError("Unexpected Agent Memory database ID", fmt.Sprintf("Expected databaseId to be numeric, got %q.", store.DatabaseID))
+		diags.AddError("Unexpected Agent Memory database ID", fmt.Sprintf("Expected databaseId to be numeric, got %q.", redis.StringValue(store.DatabaseID)))
 		return
 	}
 	state.DatabaseID = types.Int64Value(databaseID)
 
 	if store.ShortMemory != nil {
-		state.ShortTermTTLSeconds = types.Int64Value(int64(store.ShortMemory.TTLSeconds))
+		state.ShortTermTTLSeconds = intPointerValue(store.ShortMemory.TTLSeconds)
 	} else {
 		state.ShortTermTTLSeconds = types.Int64Null()
 	}
 	if store.LongTermMemory != nil {
-		state.LongTermTTLSeconds = types.Int64Value(int64(store.LongTermMemory.TTLSeconds))
+		state.LongTermTTLSeconds = intPointerValue(store.LongTermMemory.TTLSeconds)
 	} else {
 		state.LongTermTTLSeconds = types.Int64Null()
 	}
-	state.ExtractionStrategy = stringValue(store.ExtractionStrategy)
+	state.ExtractionStrategy = types.StringPointerValue(store.ExtractionStrategy)
 	state.LLM = modelConfigToModel(store.LLM, state.LLM)
 	var embedding *agentmemoryapi.ModelStatus
 	if store.LongTermMemory != nil {
@@ -289,7 +293,7 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 	}
 	state.Embedding = modelConfigToModel(embedding, state.Embedding)
 	if store.ExtractionCadence != nil {
-		state.ExtractionCadenceSeconds = types.Int64Value(int64(store.ExtractionCadence.ActiveIntervalSeconds))
+		state.ExtractionCadenceSeconds = intPointerValue(store.ExtractionCadence.ActiveIntervalSeconds)
 	} else {
 		state.ExtractionCadenceSeconds = types.Int64Null()
 	}
@@ -307,10 +311,10 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 	}
 
 	switch {
-	case store.Endpoint != "":
-		state.Endpoint = types.StringValue(store.Endpoint)
+	case redis.StringValue(store.Endpoint) != "":
+		state.Endpoint = types.StringPointerValue(store.Endpoint)
 	case len(store.Endpoints) > 0:
-		state.Endpoint = types.StringValue(store.Endpoints[0].URL)
+		state.Endpoint = types.StringPointerValue(store.Endpoints[0].URL)
 	default:
 		state.Endpoint = types.StringNull()
 	}
@@ -335,13 +339,13 @@ func endpointsToModel(ctx context.Context, endpoints []agentmemoryapi.Endpoint, 
 
 	sortedEndpoints := append([]agentmemoryapi.Endpoint(nil), endpoints...)
 	sort.SliceStable(sortedEndpoints, func(i, j int) bool {
-		if sortedEndpoints[i].Provider != sortedEndpoints[j].Provider {
-			return sortedEndpoints[i].Provider < sortedEndpoints[j].Provider
+		if redis.StringValue(sortedEndpoints[i].Provider) != redis.StringValue(sortedEndpoints[j].Provider) {
+			return redis.StringValue(sortedEndpoints[i].Provider) < redis.StringValue(sortedEndpoints[j].Provider)
 		}
-		if sortedEndpoints[i].Region != sortedEndpoints[j].Region {
-			return sortedEndpoints[i].Region < sortedEndpoints[j].Region
+		if redis.StringValue(sortedEndpoints[i].Region) != redis.StringValue(sortedEndpoints[j].Region) {
+			return redis.StringValue(sortedEndpoints[i].Region) < redis.StringValue(sortedEndpoints[j].Region)
 		}
-		return sortedEndpoints[i].URL < sortedEndpoints[j].URL
+		return redis.StringValue(sortedEndpoints[i].URL) < redis.StringValue(sortedEndpoints[j].URL)
 	})
 
 	values := make([]attr.Value, 0, len(sortedEndpoints))
@@ -357,11 +361,11 @@ func endpointsToModel(ctx context.Context, endpoints []agentmemoryapi.Endpoint, 
 		}
 
 		value, valueDiags := types.ObjectValue(agentMemoryEndpointAttrTypes, map[string]attr.Value{
-			"url":           types.StringValue(endpoint.URL),
-			"provider":      types.StringValue(endpoint.Provider),
-			"region":        types.StringValue(endpoint.Region),
+			"url":           types.StringPointerValue(endpoint.URL),
+			"provider":      types.StringPointerValue(endpoint.Provider),
+			"region":        types.StringPointerValue(endpoint.Region),
 			"egress_ips":    egressIPs,
-			"is_accessible": types.BoolValue(endpoint.IsAccessible),
+			"is_accessible": types.BoolPointerValue(endpoint.IsAccessible),
 		})
 		diags.Append(valueDiags...)
 		if diags.HasError() {
