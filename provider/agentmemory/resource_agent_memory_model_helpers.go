@@ -96,7 +96,8 @@ func summarizationToModel(config *agentmemoryapi.SummarizationConfig, existing *
 		Enabled:         types.BoolPointerValue(config.Enabled),
 		TriggerStrategy: types.StringPointerValue(config.TriggerStrategy),
 	}
-	if config.EventCount != nil {
+	// Managed reads must not add optional blocks absent from the plan or state.
+	if config.EventCount != nil && (includeAPIOnlyConfig || (existing != nil && existing.EventCount != nil)) {
 		model.EventCount = &AgentMemoryEventCountModel{
 			Threshold:   intPointerValue(config.EventCount.Threshold),
 			RetainCount: intPointerValue(config.EventCount.RetainCount),
@@ -108,9 +109,6 @@ func summarizationToModel(config *agentmemoryapi.SummarizationConfig, existing *
 	if config.Enabled != nil && !*config.Enabled && !includeAPIOnlyConfig {
 		if existing == nil || existing.TriggerStrategy.IsNull() || existing.TriggerStrategy.IsUnknown() {
 			model.TriggerStrategy = types.StringNull()
-		}
-		if existing == nil || existing.EventCount == nil {
-			model.EventCount = nil
 		}
 	}
 	return model
@@ -154,9 +152,8 @@ func exclusionsToModel(config *agentmemoryapi.LongTermMemoryExclusions, existing
 	model := &AgentMemoryExclusionsModel{
 		Enabled: types.BoolPointerValue(config.Enabled),
 	}
-	// Disabled groups retain their stored definitions; keep explicitly configured
-	// children without importing stale API-only values into managed blocks.
-	if config.Semantic != nil {
+	// The API retains omitted groups. Only import should adopt unconfigured blocks.
+	if config.Semantic != nil && (includeAPIOnlyConfig || (existing != nil && existing.Semantic != nil)) {
 		model.Semantic = &AgentMemorySemanticExclusionModel{
 			Enabled: types.BoolPointerValue(config.Semantic.Enabled),
 			Prompt:  types.StringPointerValue(config.Semantic.Prompt),
@@ -165,7 +162,7 @@ func exclusionsToModel(config *agentmemoryapi.LongTermMemoryExclusions, existing
 			model.Semantic.Prompt = types.StringNull()
 		}
 	}
-	if config.BuiltInDetectors != nil {
+	if config.BuiltInDetectors != nil && (includeAPIOnlyConfig || (existing != nil && existing.BuiltInDetectors != nil)) {
 		model.BuiltInDetectors = &AgentMemoryBuiltInDetectorsModel{
 			Enabled:   types.BoolPointerValue(config.BuiltInDetectors.Enabled),
 			Detectors: detectorSelectionsToModel(config.BuiltInDetectors.Detectors),
@@ -174,7 +171,7 @@ func exclusionsToModel(config *agentmemoryapi.LongTermMemoryExclusions, existing
 			model.BuiltInDetectors.Detectors = nil
 		}
 	}
-	if config.CustomDetectors != nil {
+	if config.CustomDetectors != nil && (includeAPIOnlyConfig || (existing != nil && existing.CustomDetectors != nil)) {
 		model.CustomDetectors = &AgentMemoryCustomDetectorsModel{
 			Enabled:   types.BoolPointerValue(config.CustomDetectors.Enabled),
 			Detectors: customDetectorsToModel(config.CustomDetectors.Detectors),
