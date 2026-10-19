@@ -140,7 +140,7 @@ func resourceRedisCloudPrivateServiceConnectEndpointCreate(ctx context.Context, 
 
 	d.SetId(buildPrivateServiceConnectEndpointId(subscriptionId, pscServiceId, endpointId))
 
-	err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subscriptionId, api, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -274,7 +274,7 @@ func resourceRedisCloudPrivateServiceConnectEndpointDelete(ctx context.Context, 
 	// to happen, but we can't check the GCP resources from this provider
 	err = waitForPrivateServiceConnectServiceEndpointDisappear(ctx, func() (result interface{}, state string, err error) {
 		return refreshPrivateServiceConnectServiceEndpointDisappear(ctx, resId.subscriptionId, resId.pscServiceId, resId.endpointId, api)
-	})
+	}, d.Timeout(schema.TimeoutDelete))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -374,7 +374,7 @@ func flattenPrivateServiceConnectEndpointServiceAttachments(serviceAttachments [
 	return rl
 }
 
-func waitForPrivateServiceConnectServiceEndpointDisappear(ctx context.Context, refreshFunc func() (result interface{}, state string, err error)) error {
+func waitForPrivateServiceConnectServiceEndpointDisappear(ctx context.Context, refreshFunc func() (result interface{}, state string, err error), timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending: []string{
 			psc.EndpointStatusProcessing,
@@ -387,7 +387,7 @@ func waitForPrivateServiceConnectServiceEndpointDisappear(ctx context.Context, r
 			psc.EndpointStatusFailed,
 		},
 		Target:       []string{placeholderStatusDisappear},
-		Timeout:      utils.SafetyTimeout,
+		Timeout:      timeout,
 		Delay:        10 * time.Second,
 		PollInterval: 30 * time.Second,
 

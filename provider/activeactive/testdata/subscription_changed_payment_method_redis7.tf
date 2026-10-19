@@ -1,8 +1,21 @@
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 locals {
   subscription_name = "%s"
 }
 
 resource "rediscloud_active_active_subscription" "example" {
+  resource_tags = {
+    team  = var.team
+    owner = var.owner
+  }
+
   name           = local.subscription_name
   payment_method = "marketplace"
   cloud_provider = "AWS"

@@ -1,3 +1,11 @@
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 variable "subscription_name" {
   type = string
 }
@@ -19,6 +27,11 @@ resource "rediscloud_subscription" "example" {
   customer_managed_key_enabled = true
 
   cloud_provider {
+    resource_tags = {
+      team  = var.team
+      owner = var.owner
+    }
+
     provider = "GCP"
     region {
       region                     = "europe-west2"

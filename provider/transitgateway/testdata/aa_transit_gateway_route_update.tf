@@ -1,3 +1,11 @@
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 locals {
   subscription_name = "%s"
   database_name     = "%s"
@@ -19,6 +27,11 @@ data "rediscloud_regions" "aws" {
 }
 
 resource "rediscloud_active_active_subscription" "test" {
+  resource_tags = {
+    team  = var.team
+    owner = var.owner
+  }
+
   name              = local.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider    = "AWS"

@@ -27,6 +27,8 @@ permissions:
   contents: read
 
 env:
+  TEAM_RESOURCE_TAG: ${{ vars.TEAM_RESOURCE_TAG }}
+  OWNER_RESOURCE_TAG: ${{ vars.OWNER_RESOURCE_TAG }}
   # REDISCLOUD_URL / REDISCLOUD_ACCESS_KEY / REDISCLOUD_SECRET_KEY are intentionally absent here:
   # they are produced per-run by the ephemeral account and live only as shell
   # variables inside the single "Run tests with ephemeral credentials" step.
@@ -78,7 +80,7 @@ jobs:
       # used to dispatch its workflows and download the encrypted artifact.
       - name: Mint GitHub App token (Create Account)
         id: app-token-create-account
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ vars.TF_PROVIDER_REDISCLOUD_CREDS_CLIENT_ID }}
           private-key: ${{ secrets.TF_PROVIDER_REDISCLOUD_CREDS_PRIVATE_KEY }}
@@ -107,7 +109,7 @@ jobs:
       # with our public key. Waits for the run and exposes its runId.
       - name: Create ephemeral credentials
         id: create
-        uses: benc-uk/workflow-dispatch@31e2b3319479a63f0ab15bf800eff9e913504e26 # v1.3.2
+        uses: benc-uk/workflow-dispatch@d004979be141727c7a17c28f603e2facc40d0855 # v1.3.3
         with:
           workflow: create-credentials.yml
           repo: ${{ env.PRIVATE_OWNER }}/${{ env.PRIVATE_REPO }}
@@ -122,7 +124,7 @@ jobs:
             }
 
       - name: Download encrypted credentials
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           github-token: ${{ steps.app-token-create-account.outputs.token }}
           repository: ${{ env.PRIVATE_OWNER }}/${{ env.PRIVATE_REPO }}
@@ -212,7 +214,7 @@ jobs:
       - name: Mint GitHub App token (Delete Account)
         id: app-token-delete-account
         if: always() && steps.creds.outputs.token != ''
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ vars.TF_PROVIDER_REDISCLOUD_CREDS_CLIENT_ID }}
           private-key: ${{ secrets.TF_PROVIDER_REDISCLOUD_CREDS_PRIVATE_KEY }}
@@ -224,7 +226,7 @@ jobs:
       # the private repo's own key, so only that repo can act on it.
       - name: Delete ephemeral credentials
         if: always() && steps.creds.outputs.token != ''
-        uses: benc-uk/workflow-dispatch@31e2b3319479a63f0ab15bf800eff9e913504e26 # v1.3.2
+        uses: benc-uk/workflow-dispatch@d004979be141727c7a17c28f603e2facc40d0855 # v1.3.3
         with:
           workflow: delete-credentials.yml
           repo: ${{ env.PRIVATE_OWNER }}/${{ env.PRIVATE_REPO }}

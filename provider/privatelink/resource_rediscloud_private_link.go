@@ -173,7 +173,7 @@ func resourceRedisCloudPrivateLinkCreate(ctx context.Context, d *schema.Resource
 
 	d.SetId(strconv.Itoa(subId))
 
-	err = waitForPrivateLinkToBeActive(ctx, api, subId)
+	err = waitForPrivateLinkToBeActive(ctx, api, subId, d.Timeout(schema.TimeoutCreate))
 
 	if err != nil {
 		return diag.FromErr(err)
@@ -191,7 +191,7 @@ func resourceRedisCloudPrivateLinkCreate(ctx context.Context, d *schema.Resource
 	//	return diag.FromErr(err)
 	//}
 
-	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -332,7 +332,7 @@ func resourceRedisCloudPrivateLinkDelete(ctx context.Context, d *schema.Resource
 
 	d.SetId("")
 
-	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api)
+	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api, d.Timeout(schema.TimeoutDelete))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -363,7 +363,7 @@ func findPrincipalsToCreate(apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipa
 	for _, tfPrincipal := range tfPrincipals {
 		found := false
 		for _, apiPrincipal := range apiPrincipals {
-			if tfPrincipal.Principal == apiPrincipal.Principal {
+			if redis.StringValue(tfPrincipal.Principal) == redis.StringValue(apiPrincipal.Principal) {
 				found = true
 				break
 			}
@@ -402,7 +402,7 @@ func findPrincipalsToDelete(apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipa
 	for _, apiPrincipal := range apiPrincipals {
 		found := false
 		for _, tfPrincipal := range tfPrincipals {
-			if apiPrincipal.Principal == tfPrincipal.Principal {
+			if redis.StringValue(apiPrincipal.Principal) == redis.StringValue(tfPrincipal.Principal) {
 				found = true
 				break
 			}

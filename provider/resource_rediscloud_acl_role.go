@@ -92,6 +92,7 @@ func resourceRedisCloudAclRole() *schema.Resource {
 
 func resourceRedisCloudAclRoleCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutCreate)
 
 	name := d.Get("name").(string)
 	associateWithRules := extractRules(d)
@@ -109,7 +110,7 @@ func resourceRedisCloudAclRoleCreate(ctx context.Context, d *schema.ResourceData
 
 	d.SetId(strconv.Itoa(id))
 
-	err = waitForAclRoleToBeActive(ctx, id, api)
+	err = waitForAclRoleToBeActive(ctx, id, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -119,7 +120,7 @@ func resourceRedisCloudAclRoleCreate(ctx context.Context, d *schema.ResourceData
 	// TODO Ultimately this is an API problem
 	time.Sleep(15 * time.Second) //lintignore:R018
 
-	err = waitForAclRoleToBeActive(ctx, id, api)
+	err = waitForAclRoleToBeActive(ctx, id, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -157,6 +158,7 @@ func resourceRedisCloudAclRoleRead(ctx context.Context, d *schema.ResourceData, 
 
 func resourceRedisCloudAclRoleUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutUpdate)
 
 	id, err := strconv.Atoi(d.Id())
 	if err != nil {
@@ -176,7 +178,7 @@ func resourceRedisCloudAclRoleUpdate(ctx context.Context, d *schema.ResourceData
 			return diag.FromErr(err)
 		}
 
-		err = waitForAclRoleToBeActive(ctx, id, api)
+		err = waitForAclRoleToBeActive(ctx, id, api, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -186,7 +188,7 @@ func resourceRedisCloudAclRoleUpdate(ctx context.Context, d *schema.ResourceData
 		// TODO Ultimately this is an API problem
 		time.Sleep(15 * time.Second) //lintignore:R018
 
-		err = waitForAclRoleToBeActive(ctx, id, api)
+		err = waitForAclRoleToBeActive(ctx, id, api, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -197,6 +199,7 @@ func resourceRedisCloudAclRoleUpdate(ctx context.Context, d *schema.ResourceData
 
 func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	api := meta.(*client.ApiClient)
+	timeout := d.Timeout(schema.TimeoutDelete)
 	var diags diag.Diagnostics
 
 	id, err := strconv.Atoi(d.Id())
@@ -207,7 +210,7 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 	// Sometimes ACL Users and Roles flip between Active and Pending a few times after creation/update.
 	// This delay gives the API a chance to settle
 	// TODO Ultimately this is an API problem
-	err = waitForAclRoleToBeActive(ctx, id, api)
+	err = waitForAclRoleToBeActive(ctx, id, api, timeout)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -221,7 +224,7 @@ func resourceRedisCloudAclRoleDelete(ctx context.Context, d *schema.ResourceData
 	d.SetId("")
 
 	// Wait until it's really disappeared
-	err = retry.RetryContext(ctx, 5*time.Minute, func() *retry.RetryError {
+	err = retry.RetryContext(ctx, timeout, func() *retry.RetryError {
 		role, err := api.Client.Roles.Get(ctx, id)
 
 		if err != nil {
@@ -317,12 +320,12 @@ func flattenDatabases(databases []*roles.GetDatabaseInRuleInRoleResponse) []map[
 	return tfs
 }
 
-func waitForAclRoleToBeActive(ctx context.Context, id int, api *client.ApiClient) error {
+func waitForAclRoleToBeActive(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Delay:   5 * time.Second,
 		Pending: []string{roles.StatusPending},
 		Target:  []string{roles.StatusActive},
-		Timeout: 5 * time.Minute,
+		Timeout: timeout,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for role %d to be active", id)
