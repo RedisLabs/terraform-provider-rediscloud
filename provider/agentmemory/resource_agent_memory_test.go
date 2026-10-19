@@ -543,7 +543,7 @@ func TestAgentMemoryResource_mockedAddCustomMemoryType(t *testing.T) {
 	assert.Equal(t, 1, deletes)
 }
 
-func TestAgentMemoryResource_rejectsCustomMemoryTypeRedefinition(t *testing.T) {
+func TestAgentMemoryResource_plansCustomMemoryTypeRedefinition(t *testing.T) {
 	patches := 0
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -576,8 +576,9 @@ func TestAgentMemoryResource_rejectsCustomMemoryTypeRedefinition(t *testing.T) {
 				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
 			},
 			{
-				Config:      testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithChangedCustomMemoryTypeField("store"),
-				ExpectError: regexp.MustCompile(`Unsupported Agent Memory custom memory type redefinition`),
+				Config:             testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithChangedCustomMemoryTypeField("store"),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
@@ -585,7 +586,7 @@ func TestAgentMemoryResource_rejectsCustomMemoryTypeRedefinition(t *testing.T) {
 	assert.Equal(t, 0, patches)
 }
 
-func TestAgentMemoryResource_rejectsCustomMemoryTypeRemoval(t *testing.T) {
+func TestAgentMemoryResource_plansCustomMemoryTypeRemoval(t *testing.T) {
 	patches := 0
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -618,8 +619,9 @@ func TestAgentMemoryResource_rejectsCustomMemoryTypeRemoval(t *testing.T) {
 				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
 			},
 			{
-				Config:      testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithoutCustomMemoryTypes("store"),
-				ExpectError: regexp.MustCompile(`Unsupported Agent Memory custom memory type removal`),
+				Config:             testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithoutCustomMemoryTypes("store"),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

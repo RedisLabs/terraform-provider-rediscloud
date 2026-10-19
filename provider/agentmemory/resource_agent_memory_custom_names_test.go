@@ -24,9 +24,10 @@ func customNamesConfig(names []string, unknown bool) string {
 	}
 	dependency := ""
 	if unknown {
-		dependency = fmt.Sprintf("resource \"terraform_data\" \"names\" { input=[%s] }\n", strings.Join(expressions, ","))
-		for i := range expressions {
-			expressions[i] = fmt.Sprintf("terraform_data.names.output[%d]", i)
+		// Adding a type must not invalidate the known names of existing types.
+		for i, value := range expressions {
+			dependency += fmt.Sprintf("resource \"terraform_data\" \"name_%d\" { input=%s }\n", i, value)
+			expressions[i] = fmt.Sprintf("terraform_data.name_%d.output", i)
 		}
 	}
 	var types []string

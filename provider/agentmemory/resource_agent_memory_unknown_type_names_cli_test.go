@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
 	"sync"
 	"testing"
 
@@ -17,13 +18,14 @@ import (
 func TestCustomTypeUnknownNameLifecycle(t *testing.T) {
 	for _, scenario := range []struct{ name, input, errorPattern string }{
 		{name: "same-name", input: "preference:after"},
-		{name: "resolved-rename", input: "renamed:after", errorPattern: "Unsupported Agent Memory custom memory type removal"},
+		{name: "resolved-rename", input: "renamed:after"},
 		{name: "resolved-duplicate", input: "support:after", errorPattern: "Duplicate Agent Memory custom memory type"},
 	} {
 		t.Run(scenario.name, func(t *testing.T) {
 			var mu sync.Mutex
 			var created map[string]any
 			var creates, deletes, patches int
+			lastID := ""
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				mu.Lock()
 				defer mu.Unlock()
@@ -36,10 +38,11 @@ func TestCustomTypeUnknownNameLifecycle(t *testing.T) {
 						return
 					}
 					creates++
+					lastID = fmt.Sprintf("store-%d", creates)
 					_, _ = w.Write([]byte(`{"taskId":"fixture-task"}`))
 				case r.Method == http.MethodGet && r.URL.Path == "/tasks/fixture-task":
-					_, _ = w.Write([]byte(`{"taskId":"fixture-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
-				case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
+					_ = json.NewEncoder(w).Encode(map[string]any{"taskId": "fixture-task", "status": "processing-completed", "response": map[string]any{"resource": map[string]any{"storeId": lastID}}})
+				case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/"+lastID:
 					if created == nil {
 						http.NotFound(w, r)
 						return
@@ -48,7 +51,7 @@ func TestCustomTypeUnknownNameLifecycle(t *testing.T) {
 					for k, v := range created {
 						response[k] = v
 					}
-					response["storeId"] = "store-1"
+					response["storeId"] = lastID
 					response["databaseId"] = "123"
 					response["status"] = "READY"
 					response["extractionStrategy"] = "INSTRUCT"
@@ -56,7 +59,7 @@ func TestCustomTypeUnknownNameLifecycle(t *testing.T) {
 					response["endpoint"] = "https://memory.example.test"
 					response["endpoints"] = []map[string]any{{"url": "https://memory.example.test", "provider": "AWS", "region": "us-east-1", "egressIps": []string{}, "isAccessible": true}}
 					_ = json.NewEncoder(w).Encode(response)
-				case r.Method == http.MethodPatch && r.URL.Path == "/memory-stores/store-1":
+				case r.Method == http.MethodPatch && r.URL.Path == "/memory-stores/"+lastID:
 					var payload map[string]any
 					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 						t.Error(err)
@@ -68,7 +71,7 @@ func TestCustomTypeUnknownNameLifecycle(t *testing.T) {
 					}
 					patches++
 					_, _ = w.Write([]byte(`{"taskId":"fixture-task"}`))
-				case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
+				case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/"+lastID:
 					created = nil
 					deletes++
 					_, _ = w.Write([]byte(`{"taskId":"fixture-task"}`))
@@ -81,10 +84,14 @@ func TestCustomTypeUnknownNameLifecycle(t *testing.T) {
 				mu.Lock()
 				defer mu.Unlock()
 				t.Logf("LOCAL MOCK ONLY: creates=%d deletes=%d remaining=%t", creates, deletes, created != nil)
-				if created != nil || creates != 1 || deletes != 1 {
-					t.Error("expected one create/delete and no remaining local fixture")
+				expected := 2
+				if scenario.errorPattern != "" {
+					expected = 1
 				}
-				if scenario.errorPattern != "" && patches != 0 {
+				if created != nil || creates != expected || deletes != expected {
+					t.Error("unexpected replacement counts or remaining local fixture")
+				}
+				if patches != 0 {
 					t.Errorf("invalid resolved names reached API update: %d", patches)
 				}
 			}()
@@ -122,13 +129,13 @@ resource "rediscloud_agent_memory" "audit" {
 }
 `, input)
 			}
-			// Both values in the valid scenario resolve to the same name, despite an unknown plan.
+			// Unknown existing names conservatively plan replacement, even when unchanged.
 			initial := config("preference:before")
 			changed := config(scenario.input)
 			check := resource.ComposeTestCheckFunc(
-				resource.TestCheckResourceAttr("rediscloud_agent_memory.audit", "id", "store-1"),
-				resource.TestCheckResourceAttr("rediscloud_agent_memory.audit", "custom_memory_types.0.name", "preference"))
-			steps := []resource.TestStep{{Config: initial, Check: check}, {Config: changed, PlanOnly: true, ExpectNonEmptyPlan: true}}
+				resource.TestCheckResourceAttr("rediscloud_agent_memory.audit", "id", "store-2"),
+				resource.TestCheckResourceAttr("rediscloud_agent_memory.audit", "custom_memory_types.0.name", strings.Split(scenario.input, ":")[0]))
+			steps := []resource.TestStep{{Config: initial, Check: resource.TestCheckResourceAttr("rediscloud_agent_memory.audit", "id", "store-1")}, {Config: changed, PlanOnly: true, ExpectNonEmptyPlan: true}}
 			if scenario.errorPattern == "" {
 				steps = append(steps, resource.TestStep{Config: changed, Check: check}, resource.TestStep{Config: changed, PlanOnly: true})
 			} else {
