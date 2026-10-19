@@ -7,7 +7,7 @@ lifecycle of their subscriptions and related Redis databases.
 Requirements
 ------------
 
--	[Terraform](https://www.terraform.io/downloads.html) >= 1.0
+-	[Terraform](https://www.terraform.io/downloads.html) >= 1.11.1
 -	[Go](https://golang.org/doc/install) >= 1.25
 
 Quick Starts

@@ -29,7 +29,7 @@ resource "rediscloud_agent_memory" "example" {
  extraction_cadence_seconds=300
 }
 `
-	rotated := strings.ReplaceAll(base, "FAKE-STATIC", "FAKE-ROTATED")
+	rotated := strings.ReplaceAll(strings.ReplaceAll(base, "FAKE-STATIC", "FAKE-ROTATED"), "api_key_version=1", "api_key_version=2")
 	omitted := strings.ReplaceAll(rotated, "provider=\"fake-provider\"\n", "")
 	omitted = strings.ReplaceAll(omitted, "model=\"fake-embedding\"\n", "")
 	for _, tc := range []struct {
