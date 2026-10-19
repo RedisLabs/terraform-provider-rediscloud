@@ -10,6 +10,15 @@ Creates a Redis Agent Memory service backed by an existing Redis Cloud database.
 The resource manages the Agent Memory service configuration, not the memory
 entries stored through the Agent Memory data-plane API.
 
+## Prerequisites
+
+The backing database must meet the current
+[Agent Memory service prerequisites](https://redis.io/docs/latest/operate/iris/agent-memory/create-service/#prerequisites-and-limitations).
+During public preview, its `default` user must be enabled. Redis Flex databases,
+databases using AWS PrivateLink, and Active-Active databases are not supported.
+Check the linked service documentation for changes to these limitations before
+selecting a backing database.
+
 ## Example Usage
 
 ### Minimal service
