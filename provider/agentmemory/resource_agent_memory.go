@@ -136,6 +136,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 			"timeouts": timeouts.Block(ctx, timeouts.Opts{Create: true, Read: true, Update: true, Delete: true}),
 			"llm": schema.SingleNestedBlock{
 				Description: "Customer-managed LLM configuration. Configure this together with embedding to opt into customer-managed models.",
+				Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("provider"), path.MatchRelative().AtName("model"))},
 				Attributes: map[string]schema.Attribute{
 					"provider": schema.StringAttribute{
 						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.",
@@ -155,6 +156,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				Blocks: map[string]schema.Block{
 					"credentials": schema.SingleNestedBlock{
 						Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is write-only and is not persisted in Terraform plan or state.",
+						Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("type"), path.MatchRelative().AtName("api_key"), path.MatchRelative().AtName("api_key_version"))},
 						Attributes: map[string]schema.Attribute{
 							"type": schema.StringAttribute{
 								Description: "Credential type validated by the Agent Memory API.",
@@ -165,16 +167,12 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 								Optional:    true,
 								Sensitive:   true,
 								WriteOnly:   true,
-								Validators: []validator.String{
-									stringvalidator.AlsoRequires(path.MatchRoot("llm").AtName("credentials").AtName("api_key_version")),
-								},
 							},
 							"api_key_version": schema.Int64Attribute{
 								Description: "Positive version used to trigger an in-place write-only credential update. Change this value whenever api_key changes.",
 								Optional:    true,
 								Validators: []validator.Int64{
 									int64validator.AtLeast(1),
-									int64validator.AlsoRequires(path.MatchRoot("llm").AtName("credentials").AtName("api_key")),
 								},
 							},
 						},
@@ -183,6 +181,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 			},
 			"embedding": schema.SingleNestedBlock{
 				Description: "Customer-managed embedding model configuration for long-term memory. Configure this together with llm to opt into customer-managed models.",
+				Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("provider"), path.MatchRelative().AtName("model"))},
 				Attributes: map[string]schema.Attribute{
 					"provider": schema.StringAttribute{
 						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.",
@@ -206,6 +205,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				Blocks: map[string]schema.Block{
 					"credentials": schema.SingleNestedBlock{
 						Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is write-only and is not persisted in Terraform plan or state.",
+						Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("type"), path.MatchRelative().AtName("api_key"), path.MatchRelative().AtName("api_key_version"))},
 						Attributes: map[string]schema.Attribute{
 							"type": schema.StringAttribute{
 								Description: "Credential type validated by the Agent Memory API.",
@@ -216,16 +216,12 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 								Optional:    true,
 								Sensitive:   true,
 								WriteOnly:   true,
-								Validators: []validator.String{
-									stringvalidator.AlsoRequires(path.MatchRoot("embedding").AtName("credentials").AtName("api_key_version")),
-								},
 							},
 							"api_key_version": schema.Int64Attribute{
 								Description: "Positive version used to trigger an in-place write-only credential update. Change this value whenever api_key changes.",
 								Optional:    true,
 								Validators: []validator.Int64{
 									int64validator.AtLeast(1),
-									int64validator.AlsoRequires(path.MatchRoot("embedding").AtName("credentials").AtName("api_key")),
 								},
 							},
 						},
