@@ -20,7 +20,7 @@ func unknownTTLConfig(expression, dependency string, customerModels bool) string
 	models := ""
 	if customerModels {
 		for _, block := range []string{"llm", "embedding"} {
-			models += fmt.Sprintf("%s {\nprovider=\"fake-provider\"\nmodel=\"fake-model\"\ncredentials {\ntype=\"apiKey\"\napi_key=\"FAKE-STATIC\"\n}\n}\n", block)
+			models += fmt.Sprintf("%s {\nprovider=\"fake-provider\"\nmodel=\"fake-model\"\ncredentials {\ntype=\"apiKey\"\napi_key=\"FAKE-STATIC\"\napi_key_version=1\n}\n}\n", block)
 		}
 	}
 	config := dependency + fmt.Sprintf(`

@@ -28,7 +28,7 @@ func credentialTypeConfig(block, field, expression, dependency string) string {
 		if name == block {
 			typeExpression = expression
 		}
-		models += fmt.Sprintf("%s {\nprovider=\"fake-provider\"\nmodel=\"fake-model\"\ncredentials {\ntype=%s\napi_key=\"FAKE-STATIC\"\n}\n}\n", name, typeExpression)
+		models += fmt.Sprintf("%s {\nprovider=\"fake-provider\"\nmodel=\"fake-model\"\ncredentials {\ntype=%s\napi_key=\"FAKE-STATIC\"\napi_key_version=1\n}\n}\n", name, typeExpression)
 	}
 	models = strings.ReplaceAll(models, "type=OMIT_SELECTOR\n", "")
 	return dependency + fmt.Sprintf(`
@@ -73,6 +73,9 @@ func TestAgentMemoryUnknownCredentialTypeValidation(t *testing.T) {
 				step := resource.TestStep{Config: config, PlanOnly: true, ExpectNonEmptyPlan: true}
 				if c.invalid {
 					step.ExpectError = regexp.MustCompile("Missing Agent Memory model credential type")
+					if c.name == "omitted" || c.name == "null" {
+						step.ExpectError = regexp.MustCompile("Invalid Attribute Combination")
+					}
 				}
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{step}})
 			})
@@ -100,9 +103,13 @@ func TestAgentMemoryUnknownCredentialTypeResolvesInvalid(t *testing.T) {
 					}
 				}()
 				config := testProviderConfig(t, server.URL) + credentialTypeConfig(selector.block, selector.field, c.expression, fmt.Sprintf(`resource "terraform_data" "selector" { input=%s }`, c.input))
+				pattern := "Missing Agent Memory model credential type"
+				if c.name == "null" {
+					pattern = "Invalid Attribute Combination"
+				}
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 					{Config: config, PlanOnly: true, ExpectNonEmptyPlan: true},
-					{Config: config, ExpectError: regexp.MustCompile("Missing Agent Memory model credential type")},
+					{Config: config, ExpectError: regexp.MustCompile(pattern)},
 				}})
 			})
 		}
@@ -206,14 +213,14 @@ func TestAgentMemoryUnknownCredentialTypeLifecycle(t *testing.T) {
 			}
 			first, changed := config("before"), config("after")
 			check := resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", selector.block+".credentials."+selector.field, selector.value))
-			// Unlike model selectors, credential type is not computed and remains required on update.
+			// A configured credentials block requires its type on updates as well.
 			omitted := prefix + credentialTypeConfig(selector.block, selector.field, "OMIT_SELECTOR", fmt.Sprintf(`resource "terraform_data" "selector" { input=%q }`, selector.value+":after"))
 			steps := []resource.TestStep{
 				{Config: first, Check: check},
 				{Config: changed, PlanOnly: true, ExpectNonEmptyPlan: true},
 				{Config: changed, Check: check},
 				{Config: changed, PlanOnly: true},
-				{Config: omitted, PlanOnly: true, ExpectError: regexp.MustCompile("Missing Agent Memory model credential type")},
+				{Config: omitted, PlanOnly: true, ExpectError: regexp.MustCompile("Invalid Attribute Combination")},
 				{Config: changed, PlanOnly: true},
 			}
 			invalid := prefix + credentialTypeConfig(selector.block, selector.field,

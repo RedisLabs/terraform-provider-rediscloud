@@ -74,7 +74,7 @@ func TestAgentMemoryEnabledFlagValidation(t *testing.T) {
 				prefix := testProviderConfig(t, server.URL)
 				step := resource.TestStep{Config: prefix + enabledFlagConfig(flag.name, flag.block, test.expression, test.dependency), PlanOnly: true, ExpectNonEmptyPlan: true}
 				if test.invalid {
-					step.ExpectError = regexp.MustCompile("Missing .*enabled flag")
+					step.ExpectError = regexp.MustCompile("Invalid Attribute Combination")
 				}
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{step}})
 			})
@@ -101,7 +101,7 @@ func TestAgentMemoryEnabledFlagUnknownResolvesNull(t *testing.T) {
 			config := prefix + enabledFlagConfig(flag.name, flag.block, `terraform_data.flag.output ? null : false`, `resource "terraform_data" "flag" { input=true }`)
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 				{Config: config, PlanOnly: true, ExpectNonEmptyPlan: true},
-				{Config: config, ExpectError: regexp.MustCompile("Missing .*enabled flag")},
+				{Config: config, ExpectError: regexp.MustCompile("Invalid Attribute Combination")},
 			}})
 		})
 	}
@@ -155,7 +155,7 @@ resource "rediscloud_agent_memory" "example" {
  long_term_memory_exclusions {}
 }`
 	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-		{Config: config, PlanOnly: true, ExpectNonEmptyPlan: true, ExpectError: regexp.MustCompile("Missing long-term memory exclusions enabled flag")},
+		{Config: config, PlanOnly: true, ExpectNonEmptyPlan: true, ExpectError: regexp.MustCompile("Invalid Attribute Combination")},
 	}})
 }
 
@@ -250,7 +250,7 @@ func TestAgentMemoryEnabledFlagLifecycle(t *testing.T) {
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 				{Config: on, Check: resource.TestCheckResourceAttr("rediscloud_agent_memory.example", flag.attribute, "true")},
 				// Optional+Computed may reuse a prior value; configuration must still require the flag.
-				{Config: config("", `resource "terraform_data" "flag" { input=true }`), PlanOnly: true, ExpectError: regexp.MustCompile("Missing .*enabled flag")},
+				{Config: config("", `resource "terraform_data" "flag" { input=true }`), PlanOnly: true, ExpectError: regexp.MustCompile("Invalid Attribute Combination")},
 				{Config: off, Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", flag.attribute, "false"))},
 				{Config: off, PlanOnly: true},
 			}})

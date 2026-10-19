@@ -50,8 +50,9 @@ type AgentMemoryModelConfigModel struct {
 }
 
 type AgentMemoryModelCredentialsModel struct {
-	Type   types.String `tfsdk:"type"`
-	APIKey types.String `tfsdk:"api_key"`
+	Type          types.String `tfsdk:"type"`
+	APIKey        types.String `tfsdk:"api_key"`
+	APIKeyVersion types.Int64  `tfsdk:"api_key_version"`
 }
 
 type AgentMemorySummarizationModel struct {
