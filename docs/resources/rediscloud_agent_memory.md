@@ -203,7 +203,7 @@ The following arguments are optional:
   * `extraction_strategy` - Optional extraction strategy for this custom memory type.
     * `enabled` - Whether extraction is enabled for this custom type.
     * `prompt` - Non-empty prompt used to extract memories of this custom type. Required when this extraction strategy block is present. Additional limits are determined by the Agent Memory service.
-* `long_term_memory_exclusions` - Policy defining content that must not be kept in long-term memory.
+* `long_term_memory_exclusions` - Exclusion policy applied to newly extracted long-term memories.
   * `enabled` - Master toggle for long-term memory exclusions.
   * `built_in_detectors` - Built-in sensitive-data detector configuration.
     * `enabled` - Whether built-in detectors are enabled.
@@ -223,6 +223,13 @@ The following arguments are optional:
   * `semantic` - Semantic exclusion configuration.
     * `enabled` - Whether semantic exclusions are enabled.
     * `prompt` - Prompt describing concepts that should not be kept in long-term memory.
+
+Exclusions apply when the service extracts new long-term memories from sessions.
+They do not filter session events or summaries, or long-term memories written
+directly by the application. Changes do not re-evaluate existing memories.
+Semantic exclusions guide the extraction model but do not guarantee exclusion.
+See the [service exclusion documentation](https://redis.io/docs/latest/operate/iris/agent-memory/create-service/#sensitive-data-exclusions)
+for scope and limitations.
 
 Removing every `detectors` block from a configured detector group sends an empty
 list to clear its selections. Disabling a group preserves explicitly configured
