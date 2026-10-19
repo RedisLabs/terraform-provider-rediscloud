@@ -38,6 +38,9 @@ func listLimitConfig(kind string, count int, unknown bool) string {
 		expression := fmt.Sprintf("%q", name)
 		if unknown {
 			expression = fmt.Sprintf("terraform_data.names.output[%d]", i)
+			if kind == "custom-types" {
+				expression = fmt.Sprintf("terraform_data.type_name_%d.output", i)
+			}
 		}
 		switch kind {
 		case "built-in":
@@ -74,7 +77,14 @@ func listLimitConfig(kind string, count int, unknown bool) string {
 	}
 	dependency := ""
 	if unknown {
-		dependency = fmt.Sprintf("resource \"terraform_data\" \"names\" { input=[%s] }\n", strings.Join(names, ","))
+		if kind == "custom-types" {
+			// An appended type should not make existing immutable names unknown.
+			for i, value := range names {
+				dependency += fmt.Sprintf("resource \"terraform_data\" \"type_name_%d\" { input=%s }\n", i, value)
+			}
+		} else {
+			dependency = fmt.Sprintf("resource \"terraform_data\" \"names\" { input=[%s] }\n", strings.Join(names, ","))
+		}
 	}
 	return dependency + fmt.Sprintf(`resource "rediscloud_agent_memory" "example" {
  name="list-limits-store"

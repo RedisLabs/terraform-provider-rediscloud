@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestValidateCustomMemoryTypesPlanRejectsStrategyRemoval(t *testing.T) {
+func TestValidateCustomMemoryTypesPlanReplacesStrategyRemoval(t *testing.T) {
 	enabled := types.BoolValue(true)
 	state := AgentMemoryResourceModel{
 		CustomMemoryTypes: []AgentMemoryCustomMemoryTypeModel{
@@ -49,9 +49,9 @@ func TestValidateCustomMemoryTypesPlanRejectsStrategyRemoval(t *testing.T) {
 	var resp resource.ModifyPlanResponse
 	validateCustomMemoryTypesPlan(plan, state, &resp)
 
-	require.True(t, resp.Diagnostics.HasError())
-	require.Len(t, resp.Diagnostics.Errors(), 1)
-	assert.Equal(t, "Unsupported Agent Memory custom memory type strategy removal", resp.Diagnostics.Errors()[0].Summary())
+	require.False(t, resp.Diagnostics.HasError(), resp.Diagnostics.Errors())
+	require.Len(t, resp.RequiresReplace, 1)
+	assert.Equal(t, "custom_memory_types[0].extraction_strategy", resp.RequiresReplace[0].String())
 }
 
 func TestValidateCustomMemoryTypesPlanAllowsFieldReorder(t *testing.T) {
@@ -76,6 +76,7 @@ func TestValidateCustomMemoryTypesPlanAllowsFieldReorder(t *testing.T) {
 	validateCustomMemoryTypesPlan(plan, state, &resp)
 
 	require.False(t, resp.Diagnostics.HasError(), resp.Diagnostics.Errors())
+	require.Empty(t, resp.RequiresReplace)
 }
 
 func TestOrderCustomMemoryTypesLikeExistingPreservesTerraformOrder(t *testing.T) {

@@ -27,14 +27,16 @@ func fieldTypesConfig(fieldTypes []string, unknown bool) string {
 	for i, value := range values {
 		expression := value
 		if unknown {
-			expression = fmt.Sprintf("terraform_data.field_types.output[%d]", i)
+			expression = fmt.Sprintf("terraform_data.field_type_%d.output", i)
 		}
 		parts[i] += "type=" + expression
 	}
 	config = strings.Join(parts, "")
 	if unknown {
-		config = fmt.Sprintf(`resource "terraform_data" "field_types" { input=[%s] }
-`, strings.Join(values, ",")) + config
+		// Independent dependencies keep existing definitions known when a type is added.
+		for i, value := range values {
+			config = fmt.Sprintf("resource \"terraform_data\" \"field_type_%d\" { input=%s }\n", i, value) + config
+		}
 	}
 	return config
 }
@@ -136,8 +138,8 @@ func TestAgentMemoryFieldTypesByAPI(t *testing.T) {
 				{Config: config(3), Check: check(3)},
 				{Config: config(4), ExpectError: regexp.MustCompile("Failed to update Agent Memory service")},
 				{Config: config(3), Check: check(3)},
-				{Config: redefined, ExpectError: regexp.MustCompile("Unsupported Agent Memory custom memory type redefinition")},
-				{Config: config(1), ExpectError: regexp.MustCompile("Unsupported Agent Memory custom memory type removal")},
+				{Config: redefined, PlanOnly: true, ExpectNonEmptyPlan: true},
+				{Config: config(1), PlanOnly: true, ExpectNonEmptyPlan: true},
 				{Config: config(3), Check: check(3)},
 				{Config: config(3), PlanOnly: true},
 			}})
