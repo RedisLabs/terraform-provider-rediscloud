@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -75,8 +76,11 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 			},
 			"database_id": schema.Int64Attribute{
-				Description: "The ID of the Redis Cloud database that backs the Agent Memory service.",
+				Description: "The ID of the Redis Cloud database that backs the Agent Memory service. Changing it requires replacement.",
 				Required:    true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"short_term_ttl_seconds": schema.Int64Attribute{
 				Description: "Short-term memory TTL in seconds.",
@@ -89,9 +93,13 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				Computed:    true,
 			},
 			"extraction_strategy": schema.StringAttribute{
-				Description: "How long-term memories are extracted from sessions. Changing an existing store strategy is not supported in place.",
+				Description: "How long-term memories are extracted from sessions. Changing an explicitly configured strategy requires replacement.",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseNonNullStateForUnknown(),
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
 				Validators: []validator.String{
 					// The SDK omits empty strings, which would lose an explicitly configured value.
 					stringvalidator.LengthAtLeast(1),
@@ -494,24 +502,6 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 		resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 		if resp.Diagnostics.HasError() {
 			return
-		}
-	}
-
-	if hasState {
-		// These fields are create-only; replacing a store can lose its memory context.
-		if !plan.DatabaseID.IsUnknown() && !plan.DatabaseID.Equal(state.DatabaseID) {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("database_id"),
-				"Agent Memory database change requires an explicit migration",
-				"database_id cannot be changed in place. This provider will not automatically destroy and recreate the store. Plan a migration and explicitly manage the old and new stores.",
-			)
-		}
-		if !config.ExtractionStrategy.IsNull() && !plan.ExtractionStrategy.IsUnknown() && !plan.ExtractionStrategy.Equal(state.ExtractionStrategy) {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("extraction_strategy"),
-				"Agent Memory strategy change requires an explicit migration",
-				"extraction_strategy cannot be changed in place. This provider will not automatically destroy and recreate the store. Plan a migration and explicitly manage the old and new stores.",
-			)
 		}
 	}
 
