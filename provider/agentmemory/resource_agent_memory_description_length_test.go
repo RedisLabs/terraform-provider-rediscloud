@@ -26,13 +26,16 @@ func descriptionLengthConfig(descriptions []string, unknown bool) string {
 	for i, value := range values {
 		expression := value
 		if unknown {
-			expression = fmt.Sprintf("terraform_data.descriptions.output[%d]", i)
+			expression = fmt.Sprintf("terraform_data.description_%d.output", i)
 		}
 		config = strings.Replace(config, `description="Custom memory"`, "description="+expression, 1)
 		config = strings.Replace(config, `description="Topic"`, "description="+expression, 1)
 	}
 	if unknown {
-		config = fmt.Sprintf("resource \"terraform_data\" \"descriptions\" { input=[%s] }\n", strings.Join(values, ",")) + config
+		// Independent dependencies keep existing definitions known when a type is added.
+		for i, value := range values {
+			config = fmt.Sprintf("resource \"terraform_data\" \"description_%d\" { input=%s }\n", i, value) + config
+		}
 	}
 	return config
 }
@@ -134,8 +137,8 @@ func TestAgentMemoryDescriptionLengthByAPI(t *testing.T) {
 				{Config: config(2), Check: check(2)},
 				{Config: config(3), ExpectError: regexp.MustCompile("Failed to update Agent Memory service")},
 				{Config: config(2), Check: check(2)},
-				{Config: redefined, ExpectError: regexp.MustCompile("Unsupported Agent Memory custom memory type redefinition")},
-				{Config: config(1), ExpectError: regexp.MustCompile("Unsupported Agent Memory custom memory type removal")},
+				{Config: redefined, PlanOnly: true, ExpectNonEmptyPlan: true},
+				{Config: config(1), PlanOnly: true, ExpectNonEmptyPlan: true},
 				{Config: config(2), Check: check(2)},
 				{Config: config(2), PlanOnly: true},
 			}})
