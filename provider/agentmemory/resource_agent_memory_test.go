@@ -1299,7 +1299,7 @@ resource "rediscloud_agent_memory" "example" {
   }
 }
 `,
-				ExpectError: regexp.MustCompile(`Missing Configuration for Required Attribute|matcher\.kind|matcher\.regex\.pattern`),
+				ExpectError: regexp.MustCompile(`Invalid Block|Missing Configuration for Required Attribute|matcher\.kind|matcher\.regex\.pattern`),
 			},
 		},
 	})
