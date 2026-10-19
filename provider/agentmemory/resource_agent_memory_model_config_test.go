@@ -41,14 +41,14 @@ resource "rediscloud_agent_memory" "example" {
 		{name: "embedding model", before: base, after: selectorConfig("embedding", "model", `"other-model"`, ""), replace: true},
 		{name: "llm model", before: base, after: selectorConfig("llm", "model", `"other-model"`, "")},
 		{name: "credential rotation", before: base, after: rotated},
-		{name: "rotation with omitted immutable selectors", before: base, after: omitted},
+		{name: "rotation with omitted immutable selectors", before: base, after: omitted, errorPattern: "Invalid Attribute Combination"},
 		{name: "platform to customer models", before: platform, after: base, replace: true},
 		{name: "customer to platform models", before: base, after: platform, replace: true},
 		{name: "unknown provider resolving unchanged", before: base, after: selectorConfig("llm", "provider", `tostring(terraform_data.provider.output)`, `resource "terraform_data" "provider" { input="fake-provider" }`), replace: true},
 		{name: "unknown provider resolving changed", before: base, after: selectorConfig("llm", "provider", `tostring(terraform_data.provider.output)`, `resource "terraform_data" "provider" { input="other-provider" }`), replace: true},
 		{name: "replacement without credentials", before: base, after: regexp.MustCompile(`credentials \{[^}]*\}\n`).ReplaceAllString(selectorConfig("llm", "provider", `"other-provider"`, ""), ""), errorPattern: "Missing Agent Memory model credentials"},
 		{name: "adding models without credentials", before: platform, after: regexp.MustCompile(`credentials \{[^}]*\}\n`).ReplaceAllString(base, ""), errorPattern: "Missing Agent Memory model credentials"},
-		{name: "adding models without immutable selectors", before: platform, after: strings.ReplaceAll(strings.ReplaceAll(base, "provider=\"fake-provider\"\n", ""), "model=\"fake-embedding\"\n", ""), errorPattern: "Missing Agent Memory model provider"},
+		{name: "adding models without immutable selectors", before: platform, after: strings.ReplaceAll(strings.ReplaceAll(base, "provider=\"fake-provider\"\n", ""), "model=\"fake-embedding\"\n", ""), errorPattern: "Invalid Attribute Combination"},
 		{name: "prevent destroy", before: base, after: strings.Replace(selectorConfig("llm", "provider", `"other-provider"`, ""), `database_id=123`, `database_id=123
  lifecycle { prevent_destroy=true }`, 1), errorPattern: "prevent_destroy|cannot be destroyed"},
 	} {
