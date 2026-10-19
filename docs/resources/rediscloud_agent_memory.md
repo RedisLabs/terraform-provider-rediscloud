@@ -248,6 +248,14 @@ A replacement destroys and recreates the store with a new store ID. It does not
 migrate the existing agent context to that new identity. Use
 `lifecycle.prevent_destroy` when destruction must be blocked.
 
+Deleting a store, including during replacement, is destructive. The
+[Agent Memory service documentation](https://redis.io/docs/latest/operate/iris/agent-memory/view-service/#delete-service)
+states that deletion permanently removes the associated memory data, service
+configuration, search index, and stored model provider key, and revokes the
+service API keys. The replacement creates a new store from the Terraform
+configuration; it does not migrate existing memories or preserve the old
+service API keys.
+
 If an immutable selector depends on a value that is unknown during planning,
 Terraform may conservatively plan replacement even when that value later
 resolves to the previous value. Omitted selectors reuse known non-null values
