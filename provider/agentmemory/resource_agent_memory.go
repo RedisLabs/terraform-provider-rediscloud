@@ -129,9 +129,13 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				Description: "Customer-managed LLM configuration. Configure this together with embedding to opt into customer-managed models.",
 				Attributes: map[string]schema.Attribute{
 					"provider": schema.StringAttribute{
-						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service.",
+						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.",
 						Optional:    true,
 						Computed:    true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseNonNullStateForUnknown(),
+							stringplanmodifier.RequiresReplaceIfConfigured(),
+						},
 					},
 					"model": schema.StringAttribute{
 						Description: "Model name advertised by the provider.",
@@ -160,14 +164,22 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				Description: "Customer-managed embedding model configuration for long-term memory. Configure this together with llm to opt into customer-managed models.",
 				Attributes: map[string]schema.Attribute{
 					"provider": schema.StringAttribute{
-						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service.",
+						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.",
 						Optional:    true,
 						Computed:    true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseNonNullStateForUnknown(),
+							stringplanmodifier.RequiresReplaceIfConfigured(),
+						},
 					},
 					"model": schema.StringAttribute{
-						Description: "Model name advertised by the provider.",
+						Description: "Model name advertised by the provider. Changing an explicitly configured model requires replacement.",
 						Optional:    true,
 						Computed:    true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseNonNullStateForUnknown(),
+							stringplanmodifier.RequiresReplaceIfConfigured(),
+						},
 					},
 				},
 				Blocks: map[string]schema.Block{
@@ -504,8 +516,9 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 	}
 
 	modelConfig := plan
-	if !hasState {
-		// On create, configuration distinguishes omitted values from unknown expressions.
+	if !hasState || state.LLM == nil || state.Embedding == nil {
+		// New model blocks have no prior selectors to reuse. Configuration keeps
+		// omitted selectors distinct from expressions that are still unknown.
 		resp.Diagnostics.Append(req.Config.Get(ctx, &modelConfig)...)
 		if resp.Diagnostics.HasError() {
 			return
