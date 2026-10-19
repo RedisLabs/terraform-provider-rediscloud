@@ -164,3 +164,44 @@ func TestAgentMemoryExistingModelsWithoutCredentials(t *testing.T) {
 		t.Fatalf("unexpected create/cleanup counts %d/%d", creates, deletes)
 	}
 }
+
+// A deferred sibling must not hide a field that is already known to be absent.
+func TestAgentMemoryRequiredModelFieldsWithUnknownSibling(t *testing.T) {
+	for _, block := range []string{"llm", "embedding"} {
+		for _, fields := range [][]string{{"provider", "model"}, {"type", "api_key", "api_key_version"}} {
+			for _, missing := range fields {
+				for _, unknown := range fields {
+					if missing == unknown {
+						continue
+					}
+					for _, absent := range []string{"omitted", "null"} {
+						t.Run(block+"/"+missing+"/"+absent+"/unknown_"+unknown, func(t *testing.T) {
+							var calls atomic.Int32
+							server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { calls.Add(1); w.WriteHeader(500) }))
+							defer server.Close()
+							config := selectorConfig("llm", "provider", `"fake-provider"`, "")
+							start := strings.Index(config, block+" {\n")
+							end := start + strings.Index(config[start:], "\n}\n") + 1
+							part := config[start:end]
+							replacement := ""
+							if absent == "null" {
+								replacement = missing + "=null\n"
+							}
+							part = regexp.MustCompile(`(?m)^`+missing+`=[^\n]*\n`).ReplaceAllString(part, replacement)
+							expression := "tostring(terraform_data.sibling.output)"
+							if unknown == "api_key_version" {
+								expression = "tonumber(terraform_data.sibling.output)"
+							}
+							part = regexp.MustCompile(`(?m)^`+unknown+`=[^\n]*\n`).ReplaceAllString(part, unknown+"="+expression+"\n")
+							config = `resource "terraform_data" "sibling" { input="1" }` + config[:start] + part + config[end:]
+							resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{{Config: testProviderConfig(t, server.URL) + config, PlanOnly: true, ExpectError: regexp.MustCompile("Invalid Attribute Combination")}}})
+							if calls.Load() != 0 {
+								t.Fatal("invalid configuration reached API")
+							}
+						})
+					}
+				}
+			}
+		}
+	}
+}
