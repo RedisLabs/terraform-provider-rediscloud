@@ -45,10 +45,10 @@ func TestAgentMemoryReservedTypeNameValidation(t *testing.T) {
 	cases := []struct{ name, expression, fieldName, errorPattern string }{
 		{name: "custom-name", expression: `"preference"`},
 		{name: "maximum-length", expression: fmt.Sprintf("%q", strings.Repeat("a", 64))},
-		{name: "oversized-name", expression: fmt.Sprintf("%q", strings.Repeat("a", 65)), errorPattern: "length"},
+		{name: "above-former-length-deferred-to-api", expression: fmt.Sprintf("%q", strings.Repeat("a", 65))},
 		{name: "empty-name", expression: `""`, errorPattern: "length"},
 		{name: "null-name", expression: "null", errorPattern: "Missing Configuration for Required Attribute|Missing required argument"},
-		{name: "invalid-format", expression: `"1preference"`, errorPattern: "start with a letter"},
+		{name: "format-deferred-to-api", expression: `"1preference"`},
 	}
 	for _, name := range []string{"semantic", "episodic", "message", "session_summary_view"} {
 		cases = append(cases,
