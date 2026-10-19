@@ -1,6 +1,7 @@
 package agentmemory
 
 import (
+	"github.com/RedisLabs/rediscloud-go-api/redis"
 	agentmemoryapi "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -16,8 +17,7 @@ func modelConfigFromModel(model *AgentMemoryModelConfigModel) *agentmemoryapi.Mo
 	}
 	if model.Credentials != nil {
 		config.Credentials = &agentmemoryapi.ModelCredentials{
-			Type:   stringFromValue(model.Credentials.Type),
-			APIKey: stringFromValue(model.Credentials.APIKey),
+			Type: stringFromValue(model.Credentials.Type),
 		}
 	}
 
@@ -29,11 +29,11 @@ func modelConfigToModel(status *agentmemoryapi.ModelStatus, existing *AgentMemor
 		return existing
 	}
 
-	// Model provider credentials are write-only in Agent Memory, so preserve
-	// the value from Terraform state when it was configured by Terraform.
+	// The API does not return credentials. Preserve only the credential type and
+	// rotation version; write-only secrets must never enter refreshed state.
 	model := &AgentMemoryModelConfigModel{
-		Provider:    stringValue(status.Provider),
-		Model:       stringValue(status.Model),
+		Provider:    types.StringPointerValue(status.Provider),
+		Model:       types.StringPointerValue(status.Model),
 		Credentials: modelCredentialsFromExisting(existing),
 	}
 	return model
@@ -44,8 +44,8 @@ func modelCredentialsFromExisting(existing *AgentMemoryModelConfigModel) *AgentM
 		return nil
 	}
 	return &AgentMemoryModelCredentialsModel{
-		Type:   existing.Credentials.Type,
-		APIKey: existing.Credentials.APIKey,
+		Type:          existing.Credentials.Type,
+		APIKeyVersion: existing.Credentials.APIKeyVersion,
 	}
 }
 
@@ -63,7 +63,7 @@ func modelCredentialsEqual(left, right *AgentMemoryModelCredentialsModel) bool {
 	if left == nil || right == nil {
 		return left == nil && right == nil
 	}
-	return left.Type.Equal(right.Type) && left.APIKey.Equal(right.APIKey)
+	return left.Type.Equal(right.Type) && left.APIKeyVersion.Equal(right.APIKeyVersion)
 }
 
 func summarizationFromModel(model *AgentMemorySummarizationModel) *agentmemoryapi.SummarizationConfig {
@@ -72,41 +72,47 @@ func summarizationFromModel(model *AgentMemorySummarizationModel) *agentmemoryap
 	}
 
 	config := &agentmemoryapi.SummarizationConfig{
-		Enabled: model.Enabled.ValueBool(),
+		Enabled: redis.Bool(model.Enabled.ValueBool()),
 	}
 	if !model.TriggerStrategy.IsNull() && !model.TriggerStrategy.IsUnknown() {
-		config.TriggerStrategy = model.TriggerStrategy.ValueString()
+		config.TriggerStrategy = model.TriggerStrategy.ValueStringPointer()
 	}
 	if model.EventCount != nil {
 		config.EventCount = &agentmemoryapi.SummarizationThresholdConfig{
-			Threshold:   int(model.EventCount.Threshold.ValueInt64()),
-			RetainCount: int(model.EventCount.RetainCount.ValueInt64()),
+			Threshold:   redis.Int(int(model.EventCount.Threshold.ValueInt64())),
+			RetainCount: redis.Int(int(model.EventCount.RetainCount.ValueInt64())),
 		}
 	}
 
 	return config
 }
 
-func summarizationToModel(config *agentmemoryapi.SummarizationConfig) *AgentMemorySummarizationModel {
+func summarizationToModel(config *agentmemoryapi.SummarizationConfig, existing *AgentMemorySummarizationModel, includeAPIOnlyConfig bool) *AgentMemorySummarizationModel {
 	if config == nil {
 		return nil
 	}
 
 	model := &AgentMemorySummarizationModel{
-		Enabled:         types.BoolValue(config.Enabled),
-		TriggerStrategy: stringValue(config.TriggerStrategy),
-	}
-	if !config.Enabled {
-		model.TriggerStrategy = types.StringNull()
-		return model
+		Enabled:         types.BoolPointerValue(config.Enabled),
+		TriggerStrategy: types.StringPointerValue(config.TriggerStrategy),
 	}
 	if config.EventCount != nil {
 		model.EventCount = &AgentMemoryEventCountModel{
-			Threshold:   types.Int64Value(int64(config.EventCount.Threshold)),
-			RetainCount: types.Int64Value(int64(config.EventCount.RetainCount)),
+			Threshold:   intPointerValue(config.EventCount.Threshold),
+			RetainCount: intPointerValue(config.EventCount.RetainCount),
 		}
 	}
 
+	// A disabled policy can still contain explicitly configured definitions.
+	// Omitted children must not acquire stale API-only values during refresh.
+	if config.Enabled != nil && !*config.Enabled && !includeAPIOnlyConfig {
+		if existing == nil || existing.TriggerStrategy.IsNull() || existing.TriggerStrategy.IsUnknown() {
+			model.TriggerStrategy = types.StringNull()
+		}
+		if existing == nil || existing.EventCount == nil {
+			model.EventCount = nil
+		}
+	}
 	return model
 }
 
@@ -116,23 +122,23 @@ func exclusionsFromModel(model *AgentMemoryExclusionsModel) *agentmemoryapi.Long
 	}
 
 	config := &agentmemoryapi.LongTermMemoryExclusions{
-		Enabled: model.Enabled.ValueBool(),
+		Enabled: redis.Bool(model.Enabled.ValueBool()),
 	}
 	if model.Semantic != nil {
 		config.Semantic = &agentmemoryapi.SemanticExclusion{
-			Enabled: model.Semantic.Enabled.ValueBool(),
-			Prompt:  stringFromValue(model.Semantic.Prompt),
+			Enabled: redis.Bool(model.Semantic.Enabled.ValueBool()),
+			Prompt:  stringPointerFromValue(model.Semantic.Prompt),
 		}
 	}
 	if model.BuiltInDetectors != nil {
 		config.BuiltInDetectors = &agentmemoryapi.BuiltInDetectorsConfig{
-			Enabled:   model.BuiltInDetectors.Enabled.ValueBool(),
+			Enabled:   redis.Bool(model.BuiltInDetectors.Enabled.ValueBool()),
 			Detectors: detectorSelectionsFromModel(model.BuiltInDetectors.Detectors),
 		}
 	}
 	if model.CustomDetectors != nil {
 		config.CustomDetectors = &agentmemoryapi.CustomDetectorsConfig{
-			Enabled:   model.CustomDetectors.Enabled.ValueBool(),
+			Enabled:   redis.Bool(model.CustomDetectors.Enabled.ValueBool()),
 			Detectors: customDetectorsFromModel(model.CustomDetectors.Detectors),
 		}
 	}
@@ -140,38 +146,40 @@ func exclusionsFromModel(model *AgentMemoryExclusionsModel) *agentmemoryapi.Long
 	return config
 }
 
-func exclusionsToModel(config *agentmemoryapi.LongTermMemoryExclusions) *AgentMemoryExclusionsModel {
+func exclusionsToModel(config *agentmemoryapi.LongTermMemoryExclusions, existing *AgentMemoryExclusionsModel, includeAPIOnlyConfig bool) *AgentMemoryExclusionsModel {
 	if config == nil {
 		return nil
 	}
 
 	model := &AgentMemoryExclusionsModel{
-		Enabled: types.BoolValue(config.Enabled),
+		Enabled: types.BoolPointerValue(config.Enabled),
 	}
+	// Disabled groups retain their stored definitions; keep explicitly configured
+	// children without importing stale API-only values into managed blocks.
 	if config.Semantic != nil {
 		model.Semantic = &AgentMemorySemanticExclusionModel{
-			Enabled: types.BoolValue(config.Semantic.Enabled),
-			Prompt:  stringValue(config.Semantic.Prompt),
+			Enabled: types.BoolPointerValue(config.Semantic.Enabled),
+			Prompt:  types.StringPointerValue(config.Semantic.Prompt),
 		}
-		if !config.Semantic.Enabled {
+		if (config.Semantic.Enabled != nil && !*config.Semantic.Enabled) && !includeAPIOnlyConfig && (existing == nil || existing.Semantic == nil || existing.Semantic.Prompt.IsNull() || existing.Semantic.Prompt.IsUnknown()) {
 			model.Semantic.Prompt = types.StringNull()
 		}
 	}
 	if config.BuiltInDetectors != nil {
 		model.BuiltInDetectors = &AgentMemoryBuiltInDetectorsModel{
-			Enabled:   types.BoolValue(config.BuiltInDetectors.Enabled),
+			Enabled:   types.BoolPointerValue(config.BuiltInDetectors.Enabled),
 			Detectors: detectorSelectionsToModel(config.BuiltInDetectors.Detectors),
 		}
-		if !config.BuiltInDetectors.Enabled {
+		if (config.BuiltInDetectors.Enabled != nil && !*config.BuiltInDetectors.Enabled) && !includeAPIOnlyConfig && (existing == nil || existing.BuiltInDetectors == nil || len(existing.BuiltInDetectors.Detectors) == 0) {
 			model.BuiltInDetectors.Detectors = nil
 		}
 	}
 	if config.CustomDetectors != nil {
 		model.CustomDetectors = &AgentMemoryCustomDetectorsModel{
-			Enabled:   types.BoolValue(config.CustomDetectors.Enabled),
+			Enabled:   types.BoolPointerValue(config.CustomDetectors.Enabled),
 			Detectors: customDetectorsToModel(config.CustomDetectors.Detectors),
 		}
-		if !config.CustomDetectors.Enabled {
+		if (config.CustomDetectors.Enabled != nil && !*config.CustomDetectors.Enabled) && !includeAPIOnlyConfig && (existing == nil || existing.CustomDetectors == nil || len(existing.CustomDetectors.Detectors) == 0) {
 			model.CustomDetectors.Detectors = nil
 		}
 	}
@@ -181,14 +189,15 @@ func exclusionsToModel(config *agentmemoryapi.LongTermMemoryExclusions) *AgentMe
 
 func detectorSelectionsFromModel(models []AgentMemoryDetectorSelectionModel) []agentmemoryapi.DetectorSelection {
 	if len(models) == 0 {
-		return nil
+		// An explicitly managed empty group must clear the stored selections.
+		return []agentmemoryapi.DetectorSelection{}
 	}
 	selections := make([]agentmemoryapi.DetectorSelection, 0, len(models))
 	for _, model := range models {
 		selections = append(selections, agentmemoryapi.DetectorSelection{
-			ID:      stringFromValue(model.ID),
-			Enabled: model.Enabled.ValueBool(),
-			Action:  stringFromValue(model.Action),
+			ID:      model.ID.ValueStringPointer(),
+			Enabled: redis.Bool(model.Enabled.ValueBool()),
+			Action:  stringPointerFromValue(model.Action),
 		})
 	}
 	return selections
@@ -201,9 +210,9 @@ func detectorSelectionsToModel(selections []agentmemoryapi.DetectorSelection) []
 	models := make([]AgentMemoryDetectorSelectionModel, 0, len(selections))
 	for _, selection := range selections {
 		models = append(models, AgentMemoryDetectorSelectionModel{
-			ID:      stringValue(selection.ID),
-			Enabled: types.BoolValue(selection.Enabled),
-			Action:  stringValue(selection.Action),
+			ID:      types.StringPointerValue(selection.ID),
+			Enabled: types.BoolPointerValue(selection.Enabled),
+			Action:  types.StringPointerValue(selection.Action),
 		})
 	}
 	return models
@@ -211,14 +220,14 @@ func detectorSelectionsToModel(selections []agentmemoryapi.DetectorSelection) []
 
 func customDetectorsFromModel(models []AgentMemoryCustomDetectorModel) []agentmemoryapi.CustomDetector {
 	if len(models) == 0 {
-		return nil
+		return []agentmemoryapi.CustomDetector{}
 	}
 	detectors := make([]agentmemoryapi.CustomDetector, 0, len(models))
 	for _, model := range models {
 		detectors = append(detectors, agentmemoryapi.CustomDetector{
-			Name:    stringFromValue(model.Name),
-			Enabled: model.Enabled.ValueBool(),
-			Action:  stringFromValue(model.Action),
+			Name:    model.Name.ValueStringPointer(),
+			Enabled: redis.Bool(model.Enabled.ValueBool()),
+			Action:  stringPointerFromValue(model.Action),
 			Matcher: matcherFromModel(model.Matcher),
 		})
 	}
@@ -232,9 +241,9 @@ func customDetectorsToModel(detectors []agentmemoryapi.CustomDetector) []AgentMe
 	models := make([]AgentMemoryCustomDetectorModel, 0, len(detectors))
 	for _, detector := range detectors {
 		models = append(models, AgentMemoryCustomDetectorModel{
-			Name:    stringValue(detector.Name),
-			Enabled: types.BoolValue(detector.Enabled),
-			Action:  stringValue(detector.Action),
+			Name:    types.StringPointerValue(detector.Name),
+			Enabled: types.BoolPointerValue(detector.Enabled),
+			Action:  types.StringPointerValue(detector.Action),
 			Matcher: matcherToModel(detector.Matcher),
 		})
 	}
@@ -246,7 +255,7 @@ func matcherFromModel(model *AgentMemoryMatcherSpecModel) *agentmemoryapi.Matche
 		return nil
 	}
 	return &agentmemoryapi.MatcherSpec{
-		Kind:  stringFromValue(model.Kind),
+		Kind:  model.Kind.ValueStringPointer(),
 		Regex: regexFromModel(model.Regex),
 	}
 }
@@ -256,7 +265,7 @@ func matcherToModel(matcher *agentmemoryapi.MatcherSpec) *AgentMemoryMatcherSpec
 		return nil
 	}
 	return &AgentMemoryMatcherSpecModel{
-		Kind:  stringValue(matcher.Kind),
+		Kind:  types.StringPointerValue(matcher.Kind),
 		Regex: regexToModel(matcher.Regex),
 	}
 }
@@ -265,14 +274,14 @@ func regexFromModel(model *AgentMemoryRegexSpecModel) *agentmemoryapi.RegexSpec 
 	if model == nil {
 		return nil
 	}
-	return &agentmemoryapi.RegexSpec{Pattern: stringFromValue(model.Pattern)}
+	return &agentmemoryapi.RegexSpec{Pattern: model.Pattern.ValueStringPointer()}
 }
 
 func regexToModel(regex *agentmemoryapi.RegexSpec) *AgentMemoryRegexSpecModel {
 	if regex == nil {
 		return nil
 	}
-	return &AgentMemoryRegexSpecModel{Pattern: stringValue(regex.Pattern)}
+	return &AgentMemoryRegexSpecModel{Pattern: types.StringPointerValue(regex.Pattern)}
 }
 
 func customMemoryTypesFromModel(models []AgentMemoryCustomMemoryTypeModel) []agentmemoryapi.CustomMemoryType {
@@ -293,8 +302,8 @@ func customMemoryTypesToModel(memoryTypes []agentmemoryapi.CustomMemoryType, exi
 	models := make([]AgentMemoryCustomMemoryTypeModel, 0, len(memoryTypes))
 	for _, memoryType := range memoryTypes {
 		models = append(models, AgentMemoryCustomMemoryTypeModel{
-			Name:               stringValue(memoryType.Name),
-			Description:        stringValue(memoryType.Description),
+			Name:               types.StringPointerValue(memoryType.Name),
+			Description:        types.StringPointerValue(memoryType.Description),
 			Fields:             customFieldsToModel(memoryType.Fields),
 			ExtractionStrategy: customExtractionStrategyToModel(memoryType.ExtractionStrategy),
 		})
@@ -357,9 +366,9 @@ func customFieldsFromModel(models []AgentMemoryCustomFieldModel) []agentmemoryap
 	fields := make([]agentmemoryapi.CustomField, 0, len(models))
 	for _, model := range models {
 		fields = append(fields, agentmemoryapi.CustomField{
-			Name:        stringFromValue(model.Name),
-			Description: stringFromValue(model.Description),
-			Type:        stringFromValue(model.Type),
+			Name:        model.Name.ValueStringPointer(),
+			Description: model.Description.ValueStringPointer(),
+			Type:        model.Type.ValueStringPointer(),
 		})
 	}
 	return fields
@@ -372,9 +381,9 @@ func customFieldsToModel(fields []agentmemoryapi.CustomField) []AgentMemoryCusto
 	models := make([]AgentMemoryCustomFieldModel, 0, len(fields))
 	for _, field := range fields {
 		models = append(models, AgentMemoryCustomFieldModel{
-			Name:        stringValue(field.Name),
-			Description: stringValue(field.Description),
-			Type:        stringValue(field.Type),
+			Name:        types.StringPointerValue(field.Name),
+			Description: types.StringPointerValue(field.Description),
+			Type:        types.StringPointerValue(field.Type),
 		})
 	}
 	return models
@@ -418,7 +427,7 @@ func customExtractionStrategyFromModel(model *AgentMemoryCustomExtractionStrateg
 		return nil
 	}
 	strategy := &agentmemoryapi.CustomExtractionStrategy{
-		Prompt: stringFromValue(model.Prompt),
+		Prompt: model.Prompt.ValueStringPointer(),
 	}
 	if !model.Enabled.IsNull() && !model.Enabled.IsUnknown() {
 		enabled := model.Enabled.ValueBool()
@@ -432,7 +441,7 @@ func customExtractionStrategyToModel(strategy *agentmemoryapi.CustomExtractionSt
 		return nil
 	}
 	model := &AgentMemoryCustomExtractionStrategy{
-		Prompt: stringValue(strategy.Prompt),
+		Prompt: types.StringPointerValue(strategy.Prompt),
 	}
 	if strategy.Enabled != nil {
 		model.Enabled = types.BoolValue(*strategy.Enabled)
@@ -449,9 +458,18 @@ func stringFromValue(value types.String) string {
 	return value.ValueString()
 }
 
-func stringValue(value string) types.String {
-	if value == "" {
-		return types.StringNull()
+func intPointerValue(value *int) types.Int64 {
+	if value == nil {
+		return types.Int64Null()
 	}
-	return types.StringValue(value)
+	return types.Int64Value(int64(*value))
+}
+
+// Optional computed strings may still be unknown during creation. Do not turn
+// them into explicit empty strings that suppress service defaults.
+func stringPointerFromValue(value types.String) *string {
+	if value.IsUnknown() {
+		return nil
+	}
+	return value.ValueStringPointer()
 }

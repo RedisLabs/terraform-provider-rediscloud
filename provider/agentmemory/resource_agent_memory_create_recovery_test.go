@@ -58,8 +58,8 @@ func TestAgentMemoryCreateRecoveryState(t *testing.T) {
 				model := AgentMemoryResourceModel{ID: types.StringUnknown(), Name: types.StringValue("recovery-store"), DatabaseID: types.Int64Value(123), ShortTermTTLSeconds: types.Int64Value(86400), LongTermTTLSeconds: types.Int64Value(31536000), ExtractionStrategy: types.StringValue("INSTRUCT"), ExtractionCadenceSeconds: types.Int64Value(300), Endpoint: types.StringUnknown(), Endpoints: types.ListUnknown(agentMemoryEndpointObjectType()), Status: types.StringUnknown(), CreatedAt: types.StringUnknown()}
 				model.Timeouts = timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(timeouts.Type).AttrTypes)}
 				if !unknownComputed {
-					model.LLM = &AgentMemoryModelConfigModel{Provider: types.StringValue("fake-provider"), Model: types.StringValue("fake-model"), Credentials: &AgentMemoryModelCredentialsModel{Type: types.StringValue("apiKey"), APIKey: types.StringValue("FAKE-MODEL-SECRET")}}
-					model.Embedding = &AgentMemoryModelConfigModel{Provider: types.StringValue("fake-provider"), Model: types.StringValue("fake-model"), Credentials: &AgentMemoryModelCredentialsModel{Type: types.StringValue("apiKey"), APIKey: types.StringValue("FAKE-MODEL-SECRET")}}
+					model.LLM = &AgentMemoryModelConfigModel{Provider: types.StringValue("fake-provider"), Model: types.StringValue("fake-model"), Credentials: &AgentMemoryModelCredentialsModel{Type: types.StringValue("apiKey"), APIKey: types.StringValue("FAKE-MODEL-SECRET"), APIKeyVersion: types.Int64Value(1)}}
+					model.Embedding = &AgentMemoryModelConfigModel{Provider: types.StringValue("fake-provider"), Model: types.StringValue("fake-model"), Credentials: &AgentMemoryModelCredentialsModel{Type: types.StringValue("apiKey"), APIKey: types.StringValue("FAKE-MODEL-SECRET"), APIKeyVersion: types.Int64Value(1)}}
 				}
 				if unknownComputed {
 					model.ShortTermTTLSeconds = types.Int64Unknown()
@@ -72,8 +72,16 @@ func TestAgentMemoryCreateRecoveryState(t *testing.T) {
 				if diags := plan.Set(ctx, &model); diags.HasError() {
 					t.Fatal(diags)
 				}
+				config := tfsdk.Config{Schema: schema.Schema, Raw: plan.Raw}
+				if !unknownComputed {
+					model.LLM.Credentials.APIKey = types.StringNull()
+					model.Embedding.Credentials.APIKey = types.StringNull()
+					if diags := plan.Set(ctx, &model); diags.HasError() {
+						t.Fatal(diags)
+					}
+				}
 				response := resource.CreateResponse{State: tfsdk.State{Schema: schema.Schema}}
-				r.Create(ctx, resource.CreateRequest{Plan: plan}, &response)
+				r.Create(ctx, resource.CreateRequest{Plan: plan, Config: config}, &response)
 				if response.Diagnostics.HasError() {
 					t.Fatalf("unexpected error/warning semantics: %v", response.Diagnostics)
 				}
@@ -103,8 +111,8 @@ func TestAgentMemoryCreateRecoveryState(t *testing.T) {
 				} else if recovered.ShortTermTTLSeconds.ValueInt64() != 86400 || recovered.LongTermTTLSeconds.ValueInt64() != 31536000 {
 					t.Fatal("known TTL inputs were not preserved")
 				}
-				if !unknownComputed && (recovered.LLM == nil || recovered.LLM.Credentials == nil || recovered.LLM.Credentials.APIKey.ValueString() != "FAKE-MODEL-SECRET" || recovered.Embedding == nil || recovered.Embedding.Credentials == nil || recovered.Embedding.Credentials.APIKey.ValueString() != "FAKE-MODEL-SECRET") {
-					t.Fatal("known model credentials were not preserved")
+				if !unknownComputed && (recovered.LLM == nil || recovered.LLM.Credentials == nil || !recovered.LLM.Credentials.APIKey.IsNull() || recovered.LLM.Credentials.APIKeyVersion.ValueInt64() != 1 || recovered.Embedding == nil || recovered.Embedding.Credentials == nil || !recovered.Embedding.Credentials.APIKey.IsNull() || recovered.Embedding.Credentials.APIKeyVersion.ValueInt64() != 1) {
+					t.Fatal("rotation version was lost or a write-only secret entered state")
 				}
 			})
 		}
