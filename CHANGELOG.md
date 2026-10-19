@@ -1,10 +1,21 @@
 # Changelog
 
-## 2.19.2 (TBD)
+## 2.19.2 (19 October 2026)
 
 ### Changed
 
-- Migrated `rediscloud_subscription` (pro/flexible) data source from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no schema or behaviour changes.
+- Migrated `rediscloud_subscription` (pro/flexible) data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+- `rediscloud_subscription` data source now requires the `single-region` deployment type instead of accepting all deployment types other than `active-active`.
+- Raised the minimum Go version to 1.26.0 and the Go toolchain to 1.26.9; upgraded Go dependencies, GitHub Actions, and the Nix development environment.
+- Added team/owner tags to acceptance-test resources and consolidated subscription cleanup test helpers.
+- Added monthly Dependabot checks for Nix dependencies.
+- Clarified pricing field descriptions in the `rediscloud_subscription` data source documentation.
+
+### Fixed
+
+- Resource wait functions now respect user-configured timeouts instead of hardcoded limits.
+- `rediscloud_private_link` and `rediscloud_active_active_private_link` resources now compare principals by value instead of pointer identity, preventing incorrect change detection.
+- `rediscloud_subscription` data source now sorts the `pricing` list by a stable key, preventing plan diffs caused by nondeterministic API response ordering.
 
 ## 2.19.1 (3rd September 2026)
 
