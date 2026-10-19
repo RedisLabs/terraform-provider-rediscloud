@@ -30,3 +30,24 @@ func validateCustomDetectorNamesPlan(plan AgentMemoryResourceModel, resp *resour
 		names[name] = i
 	}
 }
+
+func validateCustomDetectorMatchersConfig(config AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
+	if config.LongTermMemoryExclusions == nil || config.LongTermMemoryExclusions.CustomDetectors == nil {
+		return
+	}
+	for i, detector := range config.LongTermMemoryExclusions.CustomDetectors.Detectors {
+		// Presence is checked by the schema.
+		if detector.Matcher == nil {
+			continue
+		}
+		// Defer unknown kinds: only regex matchers require this block.
+		kind, known := knownString(detector.Matcher.Kind)
+		if known && kind == "regex" && detector.Matcher.Regex == nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("long_term_memory_exclusions").AtName("custom_detectors").AtName("detectors").AtListIndex(i).AtName("matcher").AtName("regex"),
+				"Missing custom detector regex",
+				"custom detector matcher.regex must be configured when matcher.kind is regex.",
+			)
+		}
+	}
+}
