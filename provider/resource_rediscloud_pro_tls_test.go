@@ -33,7 +33,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckProSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, cloudAccountName, name, 1, password, sslCertificate),
@@ -134,7 +134,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckProSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndWithoutCert, cloudAccountName, name, 1, password),
@@ -209,7 +209,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckProSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, cloudAccountName, name, 1, password, invalidSslCertificate),
@@ -228,7 +228,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseAndDisabledTlsAn
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckProSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithoutEnableTlsAndWithCert, cloudAccountName, name, 1, password, invalidSslCertificate),
@@ -247,7 +247,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithoutEnableTlsAndTlsCert(t
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckProSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(testAccResourceRedisCloudWithoutEnableTlsAndWithTlsCert, cloudAccountName, name, 1, password, sslCertificate),
@@ -265,7 +265,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithSslCertAndTlsCert(t *tes
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckProSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config:      fmt.Sprintf(bothSslAndTls, cloudAccountName, name, 1, password, sslCertificate, sslCertificate),
@@ -288,7 +288,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckProSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndTlsCert, cloudAccountName, name, 1, password, sslCertificate),

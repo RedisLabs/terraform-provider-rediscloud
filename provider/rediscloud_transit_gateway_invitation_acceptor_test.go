@@ -42,7 +42,7 @@ func TestAccResourceRedisCloudTransitGatewayInvitationAcceptor_CRUDI(t *testing.
 				VersionConstraint: "~> 0.14",
 			},
 		},
-		CheckDestroy: testAccCheckProSubscriptionDestroy,
+		CheckDestroy: testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{

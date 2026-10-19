@@ -43,7 +43,7 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckProSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create everything including privatelink
 			{
@@ -165,7 +165,7 @@ func TestAccResourceRedisCloudPrivateLink_PortConsistency(t *testing.T) {
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckProSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{

@@ -24,7 +24,7 @@ func TestAccResourceRedisCloudPrivateServiceConnectEndpoint_CRUDI(t *testing.T) 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, gcpProjectCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckProSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudPrivateServiceConnectEndpointProStep1, baseName, gcpProjectId, gcpVPCName, gcpVPCSubnetName),

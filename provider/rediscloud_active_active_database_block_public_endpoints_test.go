@@ -35,7 +35,7 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PrivateAccess(t *t
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{
@@ -84,7 +84,7 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PublicAccess(t *te
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{
@@ -130,7 +130,7 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckActiveActiveSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				ConfigVariables: tfconfig.Variables{
