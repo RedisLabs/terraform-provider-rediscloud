@@ -215,17 +215,17 @@ The following arguments are optional:
 * `extraction_strategy` - How long-term memories are extracted from sessions.
   Accepted values are validated by the Agent Memory API. Changing an explicitly configured strategy requires replacement because the API does not support updating it in place.
 * `extraction_cadence_seconds` - How often the extraction pipeline runs while a session is active, in seconds. Accepted values are validated by the Agent Memory API.
-* `llm` - Customer-managed LLM configuration. If configured, `embedding` must also be configured.
+* `llm` - Customer-managed LLM configuration. If configured, `embedding` must also be configured. Both `provider` and `model` must be explicitly configured.
   * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.
   * `model` - Model name advertised by the provider.
-  * `credentials` - Provider credential configuration.
+  * `credentials` - Required when creating a store with customer-managed models; optional on existing/imported stores. When present, `type`, `api_key`, and `api_key_version` must be configured.
     * `type` - Credential type validated by the Agent Memory API.
     * `api_key` - Provider API key omitted from plan/state values. Requires Terraform 1.11.1 or later and `api_key_version`.
     * `api_key_version` - Positive version for in-place credential rotation. Change it whenever the write-only key changes.
-* `embedding` - Customer-managed embedding model configuration for long-term memory. If configured, `llm` must also be configured.
+* `embedding` - Customer-managed embedding model configuration for long-term memory. If configured, `llm` must also be configured. Both `provider` and `model` must be explicitly configured.
   * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.
   * `model` - Model name advertised by the provider. Changing an explicitly configured model requires replacement.
-  * `credentials` - Provider credential configuration.
+  * `credentials` - Required when creating a store with customer-managed models; optional on existing/imported stores. When present, `type`, `api_key`, and `api_key_version` must be configured.
     * `type` - Credential type validated by the Agent Memory API.
     * `api_key` - Provider API key omitted from plan/state values. Requires Terraform 1.11.1 or later and `api_key_version`.
     * `api_key_version` - Positive version for in-place credential rotation. Change it whenever the write-only key changes.
@@ -308,8 +308,8 @@ service API keys.
 
 If an immutable selector depends on a value that is unknown during planning,
 Terraform may conservatively plan replacement even when that value later
-resolves to the previous value. Omitted selectors reuse known non-null values
-from state; explicitly unknown expressions remain unknown.
+resolves to the previous value. Model blocks must explicitly configure their provider and model selectors.
+Explicitly unknown expressions remain unknown.
 
 A replacement plan is not a validation dry run. If replacement inputs resolve to
 invalid values only during apply, the old store may already have been destroyed
