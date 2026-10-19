@@ -32,12 +32,21 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
 	defer cancel()
 
+	llm := modelConfigForRequest(ctx, req.Config, "llm", plan.LLM, &resp.Diagnostics)
+	embedding := modelConfigForRequest(ctx, req.Config, "embedding", plan.Embedding, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	longTermMemory := longTermMemoryFromPlan(plan)
+	if longTermMemory != nil {
+		longTermMemory.Embedding = embedding
+	}
 	storeID, err := r.client.Client.AgentMemory.Create(ctx, agentmemoryapi.CreateStore{
 		Name:                     redis.String(plan.Name.ValueString()),
 		DatabaseID:               redis.Int(int(plan.DatabaseID.ValueInt64())),
 		ShortMemory:              shortMemoryFromPlan(plan),
-		LongTermMemory:           longTermMemoryFromPlan(plan),
-		LLM:                      modelConfigFromModel(plan.LLM),
+		LongTermMemory:           longTermMemory,
+		LLM:                      llm,
 		ExtractionStrategy:       stringFromValue(plan.ExtractionStrategy),
 		ExtractionCadence:        extractionCadenceFromPlan(plan),
 		Summarization:            summarizationFromModel(plan.Summarization),
@@ -161,9 +170,18 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 	if !modelConfigEqual(plan.Embedding, state.Embedding) {
 		update.LongTermMemory = longTermMemoryFromPlan(plan)
+		if update.LongTermMemory != nil {
+			update.LongTermMemory.Embedding = modelConfigForRequest(ctx, req.Config, "embedding", plan.Embedding, &resp.Diagnostics)
+		}
+	} else if update.LongTermMemory != nil {
+		// A TTL-only update must not resend an unchanged write-only credential.
+		update.LongTermMemory.Embedding = nil
 	}
 	if !modelConfigEqual(plan.LLM, state.LLM) {
-		update.LLM = modelConfigFromModel(plan.LLM)
+		update.LLM = modelConfigForRequest(ctx, req.Config, "llm", plan.LLM, &resp.Diagnostics)
+	}
+	if resp.Diagnostics.HasError() {
+		return
 	}
 	if !plan.ExtractionCadenceSeconds.Equal(state.ExtractionCadenceSeconds) {
 		update.ExtractionCadence = extractionCadenceFromPlan(plan)

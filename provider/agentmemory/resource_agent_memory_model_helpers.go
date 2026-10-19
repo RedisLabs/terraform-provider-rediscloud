@@ -17,8 +17,7 @@ func modelConfigFromModel(model *AgentMemoryModelConfigModel) *agentmemoryapi.Mo
 	}
 	if model.Credentials != nil {
 		config.Credentials = &agentmemoryapi.ModelCredentials{
-			Type:   stringFromValue(model.Credentials.Type),
-			APIKey: stringFromValue(model.Credentials.APIKey),
+			Type: stringFromValue(model.Credentials.Type),
 		}
 	}
 
@@ -30,8 +29,8 @@ func modelConfigToModel(status *agentmemoryapi.ModelStatus, existing *AgentMemor
 		return existing
 	}
 
-	// Model provider credentials are write-only in Agent Memory, so preserve
-	// the value from Terraform state when it was configured by Terraform.
+	// The API does not return credentials. Preserve only the credential type and
+	// rotation version; write-only secrets must never enter refreshed state.
 	model := &AgentMemoryModelConfigModel{
 		Provider:    types.StringPointerValue(status.Provider),
 		Model:       types.StringPointerValue(status.Model),
@@ -45,8 +44,8 @@ func modelCredentialsFromExisting(existing *AgentMemoryModelConfigModel) *AgentM
 		return nil
 	}
 	return &AgentMemoryModelCredentialsModel{
-		Type:   existing.Credentials.Type,
-		APIKey: existing.Credentials.APIKey,
+		Type:          existing.Credentials.Type,
+		APIKeyVersion: existing.Credentials.APIKeyVersion,
 	}
 }
 
@@ -64,7 +63,7 @@ func modelCredentialsEqual(left, right *AgentMemoryModelCredentialsModel) bool {
 	if left == nil || right == nil {
 		return left == nil && right == nil
 	}
-	return left.Type.Equal(right.Type) && left.APIKey.Equal(right.APIKey)
+	return left.Type.Equal(right.Type) && left.APIKeyVersion.Equal(right.APIKeyVersion)
 }
 
 func summarizationFromModel(model *AgentMemorySummarizationModel) *agentmemoryapi.SummarizationConfig {

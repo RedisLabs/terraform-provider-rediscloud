@@ -36,6 +36,7 @@ resource "rediscloud_agent_memory" "example" {
   credentials {
    type="apiKey"
    api_key=%s
+   api_key_version = 1
   }
  }
  embedding {
@@ -44,6 +45,7 @@ resource "rediscloud_agent_memory" "example" {
   credentials {
    type="apiKey"
    api_key=%s
+   api_key_version = 1
   }
  }
 }
@@ -80,7 +82,7 @@ func TestAgentMemoryModelAPIKeyValidation(t *testing.T) {
 				prefix := testProviderConfig(t, server.URL)
 				step := resource.TestStep{Config: prefix + unknownKeyConfig(block, test.expression, test.dependency), PlanOnly: true, ExpectNonEmptyPlan: true}
 				if test.invalid {
-					step.ExpectError = regexp.MustCompile("Missing Agent Memory model API key")
+					step.ExpectError = regexp.MustCompile("Missing Agent Memory (model|write-only) API key|Invalid Attribute Combination")
 				}
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{step}})
 			})
@@ -112,7 +114,7 @@ func TestAgentMemoryModelAPIKeyUnknownResolvesInvalid(t *testing.T) {
 				config := prefix + unknownKeyConfig(block, test.expression, fmt.Sprintf(`resource "terraform_data" "key" { input=%s }`, test.input))
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 					{Config: config, PlanOnly: true, ExpectNonEmptyPlan: true},
-					{Config: config, ExpectError: regexp.MustCompile("Missing Agent Memory model API key")},
+					{Config: config, ExpectError: regexp.MustCompile("Missing Agent Memory (model|write-only) API key|Invalid Attribute Combination")},
 				}})
 			})
 		}
@@ -210,11 +212,15 @@ func TestAgentMemoryModelAPIKeyUnknownCreateAndUpdate(t *testing.T) {
 			}()
 			prefix := testProviderConfig(t, server.URL)
 			config := func(value string) string {
-				return prefix + unknownKeyConfig(block, `tostring(terraform_data.key.output)`, fmt.Sprintf(`resource "terraform_data" "key" { input=%q }`, value))
+				cfg := prefix + unknownKeyConfig(block, `tostring(terraform_data.key.output)`, fmt.Sprintf(`resource "terraform_data" "key" { input=%q }`, value))
+				if value == "FAKE-ROTATED" {
+					cfg = strings.ReplaceAll(cfg, "api_key_version = 1", "api_key_version = 2")
+				}
+				return cfg
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config("FAKE-FIRST"), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", block+".credentials.api_key", "FAKE-FIRST"))},
-				{Config: config("FAKE-ROTATED"), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", block+".credentials.api_key", "FAKE-ROTATED"))},
+				{Config: config("FAKE-FIRST"), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", block+".credentials.api_key"))},
+				{Config: config("FAKE-ROTATED"), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", block+".credentials.api_key"))},
 				{Config: config("FAKE-ROTATED"), PlanOnly: true},
 			}})
 		})
