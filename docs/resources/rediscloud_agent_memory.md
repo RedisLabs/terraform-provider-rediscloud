@@ -253,6 +253,11 @@ Terraform may conservatively plan replacement even when that value later
 resolves to the previous value. Omitted selectors reuse known non-null values
 from state; explicitly unknown expressions remain unknown.
 
+A replacement plan is not a validation dry run. If replacement inputs resolve to
+invalid values only during apply, the old store may already have been destroyed
+before the error is reported. Use values known during planning or
+`lifecycle.prevent_destroy` instead of relying on late validation to preserve it.
+
 The control-plane API stores model credentials, while data-plane operations
 such as long-term memory create/search validate them when the model provider is
 called. If a credential is missing or invalid, those data-plane operations can
@@ -262,9 +267,13 @@ For `custom_memory_types`, the provider follows the Agent Memory API behavior:
 new custom memory types can be added in place, and `extraction_strategy.prompt`
 or `extraction_strategy.enabled` can be updated for existing custom memory
 types. Removing an existing custom memory type, changing its description, or
-changing its fields is blocked during planning because the API does not support
-those operations in place. Terraform does not automatically replace the Agent
-Memory service for those changes.
+changing its fields, or removing its extraction strategy requires replacement of
+the entire Agent Memory service because the API cannot apply those changes in place.
+To disable extraction without replacement, keep the strategy and set `enabled = false`.
+Reordering types or fields does not require replacement. Unknown existing names or
+immutable definitions can conservatively require replacement, even if they later
+resolve to their previous values; unknown values belonging only to new types do
+not make existing definitions immutable changes.
 
 ## Attribute Reference
 
