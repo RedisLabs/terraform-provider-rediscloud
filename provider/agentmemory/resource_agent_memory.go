@@ -336,7 +336,8 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 											Description: "Built-in detector ID.",
 											Required:    true,
 											Validators: []validator.String{
-												stringvalidator.OneOf("credit-card", "email", "ip-address", "phone", "us-ssn"),
+												// The API owns the detector catalogue; blank IDs are never valid.
+												stringvalidator.RegexMatches(regexp.MustCompile(`.*\S.*`), "must contain at least one non-whitespace character"),
 											},
 										},
 										"enabled": schema.BoolAttribute{
@@ -375,11 +376,10 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 										"name": schema.StringAttribute{
 											Description: "Custom detector name.",
 											Required:    true,
-											// Custom detector names must not shadow built-in detector IDs.
+											// Name format and reserved names are validated by the API.
 											Validators: []validator.String{
 												// Empty names cannot round-trip: API strings are read as null when empty.
 												stringvalidator.LengthAtLeast(1),
-												stringvalidator.NoneOf("credit-card", "email", "ip-address", "phone", "us-ssn"),
 											},
 										},
 										"enabled": schema.BoolAttribute{
