@@ -9,8 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-const unsupportedCustomMemoryTypeChangeMessage = "The Agent Memory API can add new custom memory types and update extraction strategy prompt/enabled for existing custom memory types, but it cannot remove or redefine an existing custom memory type. Terraform blocks this change instead of replacing the Agent Memory service automatically."
-
 type customMemoryTypePlanEntry struct {
 	index int
 	model AgentMemoryCustomMemoryTypeModel
@@ -18,11 +16,7 @@ type customMemoryTypePlanEntry struct {
 
 func validateCustomMemoryTypesPlan(plan, state AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
 	planByName := make(map[string]customMemoryTypePlanEntry, len(plan.CustomMemoryTypes))
-	hasUnknownNames := false
 	for i, memoryType := range plan.CustomMemoryTypes {
-		if memoryType.Name.IsUnknown() {
-			hasUnknownNames = true
-		}
 		name, ok := knownString(memoryType.Name)
 		if !ok {
 			continue
@@ -49,34 +43,17 @@ func validateCustomMemoryTypesPlan(plan, state AgentMemoryResourceModel, resp *r
 		}
 		planned, exists := planByName[name]
 		if !exists {
-			// An unresolved name may still refer to this existing type.
-			if hasUnknownNames {
-				continue
-			}
-			resp.Diagnostics.AddAttributeError(
-				path.Root("custom_memory_types"),
-				"Unsupported Agent Memory custom memory type removal",
-				fmt.Sprintf("custom_memory_types contains an existing type named %q that is not present in the new configuration. %s", name, unsupportedCustomMemoryTypeChangeMessage),
-			)
+			// An unknown name can resolve to a rename; replacement must be visible
+			// in the initial plan, before Terraform resolves it during apply.
+			resp.RequiresReplace.Append(path.Root("custom_memory_types"))
 			continue
 		}
-		if customMemoryTypeDefinitionHasUnknown(planned.model) {
-			continue
-		}
-		if !customMemoryTypeDefinitionEqual(planned.model, existing) {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("custom_memory_types").AtListIndex(planned.index),
-				"Unsupported Agent Memory custom memory type redefinition",
-				fmt.Sprintf("custom_memory_types.%d changes the description or fields for existing type %q. %s", planned.index, name, unsupportedCustomMemoryTypeChangeMessage),
-			)
+		if customMemoryTypeDefinitionHasUnknown(planned.model) || !customMemoryTypeDefinitionEqual(planned.model, existing) {
+			resp.RequiresReplace.Append(path.Root("custom_memory_types").AtListIndex(planned.index))
 			continue
 		}
 		if existing.ExtractionStrategy != nil && planned.model.ExtractionStrategy == nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("custom_memory_types").AtListIndex(planned.index).AtName("extraction_strategy"),
-				"Unsupported Agent Memory custom memory type strategy removal",
-				fmt.Sprintf("custom_memory_types.%d removes the extraction_strategy for existing type %q. %s", planned.index, name, unsupportedCustomMemoryTypeChangeMessage),
-			)
+			resp.RequiresReplace.Append(path.Root("custom_memory_types").AtListIndex(planned.index).AtName("extraction_strategy"))
 		}
 	}
 }
