@@ -163,7 +163,7 @@ The following arguments are required:
 
 * `name` - The name of the Agent Memory service.
   Must contain at least one non-whitespace character. Maximum length is validated by the Agent Memory API.
-* `database_id` - The ID of the Redis Cloud database that backs the Agent Memory service.
+* `database_id` - The ID of the Redis Cloud database that backs the Agent Memory service. Changing it requires replacement.
   Must be an integer. Validity and access to the database are checked by the Agent Memory API.
 
 The following arguments are optional:
@@ -173,7 +173,7 @@ The following arguments are optional:
 * `long_term_ttl_seconds` - Long-term memory TTL in seconds.
   The API accepts 1 second to 1 year. This must be configured explicitly when `embedding` is configured.
 * `extraction_strategy` - How long-term memories are extracted from sessions.
-  Accepted values are validated by the Agent Memory API. Changing an existing store strategy is blocked during planning because the API does not support updating it in place.
+  Accepted values are validated by the Agent Memory API. Changing an explicitly configured strategy requires replacement because the API does not support updating it in place.
 * `extraction_cadence_seconds` - How often the extraction pipeline runs while a session is active, in seconds. Accepted values are validated by the Agent Memory API.
 * `llm` - Customer-managed LLM configuration. If configured, `embedding` must also be configured.
   * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.
@@ -232,18 +232,18 @@ does not send a deletion request for its stored definitions.
 All time-based arguments are expressed in seconds.
 
 Most configuration can be updated in place. Changes to `database_id` or an
-explicitly configured `extraction_strategy` are blocked during planning. The
-provider does not automatically replace the store for these changes: a new store
-has a different identity and may no longer reference the existing agent context.
-Plan a migration and explicitly manage the old and new stores when needed.
-Explicit removal, destroy, or Terraform replacement commands can still delete a
-store; this validation is not a general deletion safeguard.
+explicitly configured `extraction_strategy` require store replacement because the
+API only accepts these settings on create. Omitting `extraction_strategy` keeps
+the existing strategy; it does not reset it to the service default. A configured
+value that remains unknown during planning can conservatively require replacement,
+even if it later resolves to the previous value.
 
 For customer-managed models, `llm` and `embedding` must be configured together
 on create. Adding or removing both blocks requires replacement. Changing
 `llm.provider`, `embedding.provider`, or `embedding.model` also requires
 replacement. `llm.model` can be updated within the existing provider, and model
 credentials can be rotated without replacement by updating `credentials.api_key`.
+
 A replacement destroys and recreates the store with a new store ID. It does not
 migrate the existing agent context to that new identity. Use
 `lifecycle.prevent_destroy` when destruction must be blocked.
