@@ -48,7 +48,7 @@ resource "rediscloud_agent_memory" "example" {
 `, builtin, name)
 }
 
-func TestAgentMemoryReservedDetectorNameValidation(t *testing.T) {
+func TestAgentMemoryDetectorNameValidationByAPI(t *testing.T) {
 	cases := []struct{ name, expression, builtinID, errorPattern string }{
 		{name: "custom-name", expression: `"preference"`},
 		{name: "memory-type-name-not-detector-id", expression: `"semantic"`},
@@ -60,9 +60,9 @@ func TestAgentMemoryReservedDetectorNameValidation(t *testing.T) {
 	}
 	for _, name := range []string{"credit-card", "email", "ip-address", "phone", "us-ssn"} {
 		cases = append(cases,
-			struct{ name, expression, builtinID, errorPattern string }{name: "reserved-" + name, expression: fmt.Sprintf("%q", name), errorPattern: "none of"},
+			struct{ name, expression, builtinID, errorPattern string }{name: "reserved-" + name, expression: fmt.Sprintf("%q", name)},
 			struct{ name, expression, builtinID, errorPattern string }{name: "custom-suffix-" + name, expression: fmt.Sprintf("%q", name+"_custom")},
-			// Built-in IDs remain valid selections; only custom detector names are restricted.
+			// Known catalogue entries and colliding custom names are checked by the API.
 			struct{ name, expression, builtinID, errorPattern string }{name: "builtin-selection-" + name, expression: `"ticket"`, builtinID: name},
 		)
 	}
@@ -90,36 +90,8 @@ func TestAgentMemoryReservedDetectorNameValidation(t *testing.T) {
 	}
 }
 
-func TestAgentMemoryReservedDetectorNameUnknown(t *testing.T) {
-	for _, name := range []string{"credit-card", "email", "ip-address", "phone", "us-ssn"} {
-		t.Run(name, func(t *testing.T) {
-			var calls atomic.Int32
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				calls.Add(1)
-				http.Error(w, "reserved name must not call HTTP", 400)
-			}))
-			defer server.Close()
-			defer func() {
-				if calls.Load() != 0 {
-					t.Error("reserved resolved name reached HTTP")
-				}
-			}()
-			prefix := testProviderConfig(t, server.URL)
-			dependency := fmt.Sprintf(`resource "terraform_data" "name" { input=%q }`, name)
-			config := prefix + reservedDetectorConfig("tostring(terraform_data.name.output)", dependency, "")
-			// Restore valid configuration so schema validation does not block harness cleanup.
-			restored := prefix + reservedDetectorConfig(`"preference"`, dependency, "")
-			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config, PlanOnly: true, ExpectNonEmptyPlan: true},
-				{Config: config, ExpectError: regexp.MustCompile("none of")},
-				{Config: restored, PlanOnly: true, ExpectNonEmptyPlan: true},
-			}})
-		})
-	}
-}
-
-func TestAgentMemoryReservedDetectorNameValidLifecycle(t *testing.T) {
-	for _, name := range []string{"preference", "email_custom"} {
+func TestAgentMemoryDetectorNameLifecycleByAPI(t *testing.T) {
+	for _, name := range []string{"preference", "email_custom", "email"} {
 		t.Run(name, func(t *testing.T) {
 			var mu sync.Mutex
 			var store map[string]any
@@ -191,7 +163,7 @@ func TestAgentMemoryReservedDetectorNameValidLifecycle(t *testing.T) {
 	}
 }
 
-func TestAgentMemoryReservedDetectorNameDisabled(t *testing.T) {
+func TestAgentMemoryDetectorNameDisabledByAPI(t *testing.T) {
 	for _, c := range []struct{ name, from, to string }{
 		{"detector", "    enabled=true", "    enabled=false"},
 		{"group", "  custom_detectors {\n   enabled=true", "  custom_detectors {\n   enabled=false"},
@@ -215,7 +187,7 @@ func TestAgentMemoryReservedDetectorNameDisabled(t *testing.T) {
 			}
 			config = strings.Replace(config, c.from, c.to, 1)
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config, PlanOnly: true, ExpectNonEmptyPlan: true, ExpectError: regexp.MustCompile("none of")},
+				{Config: config, PlanOnly: true, ExpectNonEmptyPlan: true},
 			}})
 		})
 	}
