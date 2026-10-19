@@ -250,7 +250,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 			},
 			"long_term_memory_exclusions": schema.SingleNestedBlock{
-				Description: "Rules defining content that must not be retained in long-term memory.",
+				Description: "Exclusion rules applied to newly extracted long-term memories. They do not filter session events, summaries, or memories written directly by the application, and do not re-evaluate existing memories. Semantic exclusions guide the extraction model but do not guarantee exclusion.",
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
 						Description: "Whether long-term memory exclusions are enabled.",
