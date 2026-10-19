@@ -136,7 +136,11 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 			"timeouts": timeouts.Block(ctx, timeouts.Opts{Create: true, Read: true, Update: true, Delete: true}),
 			"llm": schema.SingleNestedBlock{
 				Description: "Customer-managed LLM configuration. Configure this together with embedding to opt into customer-managed models.",
-				Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("provider"), path.MatchRelative().AtName("model"))},
+				// Separate checks keep unknown values from hiding missing siblings.
+				Validators: []validator.Object{
+					objectvalidator.AlsoRequires(path.MatchRelative().AtName("provider")),
+					objectvalidator.AlsoRequires(path.MatchRelative().AtName("model")),
+				},
 				Attributes: map[string]schema.Attribute{
 					"provider": schema.StringAttribute{
 						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.",
@@ -156,7 +160,12 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				Blocks: map[string]schema.Block{
 					"credentials": schema.SingleNestedBlock{
 						Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is write-only and is not persisted in Terraform plan or state.",
-						Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("type"), path.MatchRelative().AtName("api_key"), path.MatchRelative().AtName("api_key_version"))},
+						// Separate checks keep unknown values from hiding missing siblings.
+						Validators: []validator.Object{
+							objectvalidator.AlsoRequires(path.MatchRelative().AtName("type")),
+							objectvalidator.AlsoRequires(path.MatchRelative().AtName("api_key")),
+							objectvalidator.AlsoRequires(path.MatchRelative().AtName("api_key_version")),
+						},
 						Attributes: map[string]schema.Attribute{
 							"type": schema.StringAttribute{
 								Description: "Credential type validated by the Agent Memory API.",
@@ -181,7 +190,11 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 			},
 			"embedding": schema.SingleNestedBlock{
 				Description: "Customer-managed embedding model configuration for long-term memory. Configure this together with llm to opt into customer-managed models.",
-				Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("provider"), path.MatchRelative().AtName("model"))},
+				// Separate checks keep unknown values from hiding missing siblings.
+				Validators: []validator.Object{
+					objectvalidator.AlsoRequires(path.MatchRelative().AtName("provider")),
+					objectvalidator.AlsoRequires(path.MatchRelative().AtName("model")),
+				},
 				Attributes: map[string]schema.Attribute{
 					"provider": schema.StringAttribute{
 						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.",
@@ -205,7 +218,12 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				Blocks: map[string]schema.Block{
 					"credentials": schema.SingleNestedBlock{
 						Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is write-only and is not persisted in Terraform plan or state.",
-						Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("type"), path.MatchRelative().AtName("api_key"), path.MatchRelative().AtName("api_key_version"))},
+						// Separate checks keep unknown values from hiding missing siblings.
+						Validators: []validator.Object{
+							objectvalidator.AlsoRequires(path.MatchRelative().AtName("type")),
+							objectvalidator.AlsoRequires(path.MatchRelative().AtName("api_key")),
+							objectvalidator.AlsoRequires(path.MatchRelative().AtName("api_key_version")),
+						},
 						Attributes: map[string]schema.Attribute{
 							"type": schema.StringAttribute{
 								Description: "Credential type validated by the Agent Memory API.",
