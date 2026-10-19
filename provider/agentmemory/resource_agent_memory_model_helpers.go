@@ -17,8 +17,7 @@ func modelConfigFromModel(model *AgentMemoryModelConfigModel) *agentmemoryapi.Mo
 	}
 	if model.Credentials != nil {
 		config.Credentials = &agentmemoryapi.ModelCredentials{
-			Type:   stringFromValue(model.Credentials.Type),
-			APIKey: stringFromValue(model.Credentials.APIKey),
+			Type: stringFromValue(model.Credentials.Type),
 		}
 	}
 
@@ -30,8 +29,8 @@ func modelConfigToModel(status *agentmemoryapi.ModelStatus, existing *AgentMemor
 		return existing
 	}
 
-	// The API does not return credentials. Preserve the legacy key and rotation
-	// version from state, but never copy a write-only secret into refreshed state.
+	// The API does not return credentials. Preserve only the credential type and
+	// rotation version; write-only secrets must never enter refreshed state.
 	model := &AgentMemoryModelConfigModel{
 		Provider:    types.StringPointerValue(status.Provider),
 		Model:       types.StringPointerValue(status.Model),
@@ -45,9 +44,8 @@ func modelCredentialsFromExisting(existing *AgentMemoryModelConfigModel) *AgentM
 		return nil
 	}
 	return &AgentMemoryModelCredentialsModel{
-		Type:            existing.Credentials.Type,
-		APIKey:          existing.Credentials.APIKey,
-		APIKeyWOVersion: existing.Credentials.APIKeyWOVersion,
+		Type:          existing.Credentials.Type,
+		APIKeyVersion: existing.Credentials.APIKeyVersion,
 	}
 }
 
@@ -65,7 +63,7 @@ func modelCredentialsEqual(left, right *AgentMemoryModelCredentialsModel) bool {
 	if left == nil || right == nil {
 		return left == nil && right == nil
 	}
-	return left.Type.Equal(right.Type) && left.APIKey.Equal(right.APIKey) && left.APIKeyWOVersion.Equal(right.APIKeyWOVersion)
+	return left.Type.Equal(right.Type) && left.APIKeyVersion.Equal(right.APIKeyVersion)
 }
 
 func summarizationFromModel(model *AgentMemorySummarizationModel) *agentmemoryapi.SummarizationConfig {

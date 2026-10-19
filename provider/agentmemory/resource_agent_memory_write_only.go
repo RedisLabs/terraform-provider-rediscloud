@@ -16,25 +16,25 @@ func modelConfigWithWriteOnlyValue(model, config *AgentMemoryModelConfigModel) *
 	}
 	result := *model
 	credentials := *model.Credentials
-	credentials.APIKeyWO = config.Credentials.APIKeyWO
+	credentials.APIKey = config.Credentials.APIKey
 	result.Credentials = &credentials
 	return &result
 }
 
 func modelConfigForRequest(ctx context.Context, config tfsdk.Config, block string, model *AgentMemoryModelConfigModel, diags *diag.Diagnostics) *agentmemoryapi.ModelConfig {
 	result := modelConfigFromModel(model)
-	if model == nil || model.Credentials == nil || model.Credentials.APIKeyWOVersion.IsNull() {
+	if model == nil || model.Credentials == nil {
 		return result
 	}
 	// Write-only secrets must be read from configuration, never from plan or state.
-	keyPath := path.Root(block).AtName("credentials").AtName("api_key_wo")
+	keyPath := path.Root(block).AtName("credentials").AtName("api_key")
 	var key types.String
 	diags.Append(config.GetAttribute(ctx, keyPath, &key)...)
 	if diags.HasError() {
 		return nil
 	}
 	if missingModelString(key) {
-		diags.AddAttributeError(keyPath, "Missing Agent Memory write-only API key", "api_key_wo must resolve to a non-blank value before sending model credentials to the API.")
+		diags.AddAttributeError(keyPath, "Missing Agent Memory write-only API key", "api_key must resolve to a non-blank value before sending model credentials to the API.")
 		return nil
 	}
 	result.Credentials.APIKey = key.ValueString()
