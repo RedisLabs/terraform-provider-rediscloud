@@ -53,10 +53,10 @@ func TestAgentMemoryReservedDetectorNameValidation(t *testing.T) {
 		{name: "custom-name", expression: `"preference"`},
 		{name: "memory-type-name-not-detector-id", expression: `"semantic"`},
 		{name: "maximum-length", expression: fmt.Sprintf("%q", strings.Repeat("a", 64))},
-		{name: "oversized-name", expression: fmt.Sprintf("%q", strings.Repeat("a", 65)), errorPattern: "length"},
+		{name: "above-former-length-deferred-to-api", expression: fmt.Sprintf("%q", strings.Repeat("a", 65))},
 		{name: "empty-name", expression: `""`, errorPattern: "length"},
 		{name: "null-name", expression: "null", errorPattern: "Missing Configuration for Required Attribute|Missing required argument"},
-		{name: "invalid-format", expression: `"1preference"`, errorPattern: "start with a letter"},
+		{name: "format-deferred-to-api", expression: `"1preference"`},
 	}
 	for _, name := range []string{"credit-card", "email", "ip-address", "phone", "us-ssn"} {
 		cases = append(cases,

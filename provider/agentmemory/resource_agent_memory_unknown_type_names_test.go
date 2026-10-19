@@ -22,14 +22,15 @@ func TestCustomTypeUnknownNameValidation(t *testing.T) {
 		name         string
 		planned      []AgentMemoryCustomMemoryTypeModel
 		errorSummary string
+		replace      bool
 	}{
 		{name: "unchanged", planned: []AgentMemoryCustomMemoryTypeModel{existing}},
-		{name: "unknown-existing-name", planned: []AgentMemoryCustomMemoryTypeModel{unknown}},
+		{name: "unknown-existing-name", planned: []AgentMemoryCustomMemoryTypeModel{unknown}, replace: true},
 		{name: "known-existing-and-unknown-addition", planned: []AgentMemoryCustomMemoryTypeModel{existing, unknown}},
-		{name: "all-removed", errorSummary: "Unsupported Agent Memory custom memory type removal"},
-		{name: "known-rename", planned: []AgentMemoryCustomMemoryTypeModel{renamed}, errorSummary: "Unsupported Agent Memory custom memory type removal"},
-		{name: "redefinition-with-unknown-addition", planned: []AgentMemoryCustomMemoryTypeModel{redefined, unknown}, errorSummary: "Unsupported Agent Memory custom memory type redefinition"},
-		{name: "strategy-removal-with-unknown-addition", planned: []AgentMemoryCustomMemoryTypeModel{withoutStrategy, unknown}, errorSummary: "Unsupported Agent Memory custom memory type strategy removal"},
+		{name: "all-removed", replace: true},
+		{name: "known-rename", planned: []AgentMemoryCustomMemoryTypeModel{renamed}, replace: true},
+		{name: "redefinition-with-unknown-addition", planned: []AgentMemoryCustomMemoryTypeModel{redefined, unknown}, replace: true},
+		{name: "strategy-removal-with-unknown-addition", planned: []AgentMemoryCustomMemoryTypeModel{withoutStrategy, unknown}, replace: true},
 		{name: "duplicate-with-unknown-addition", planned: []AgentMemoryCustomMemoryTypeModel{existing, existing, unknown}, errorSummary: "Duplicate Agent Memory custom memory type"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
@@ -37,6 +38,7 @@ func TestCustomTypeUnknownNameValidation(t *testing.T) {
 			validateCustomMemoryTypesPlan(AgentMemoryResourceModel{CustomMemoryTypes: c.planned}, AgentMemoryResourceModel{CustomMemoryTypes: []AgentMemoryCustomMemoryTypeModel{existing}}, &resp)
 			if c.errorSummary == "" {
 				require.False(t, resp.Diagnostics.HasError(), resp.Diagnostics.Errors())
+				require.Equal(t, c.replace, len(resp.RequiresReplace) > 0)
 				return
 			}
 			require.True(t, resp.Diagnostics.HasError())
