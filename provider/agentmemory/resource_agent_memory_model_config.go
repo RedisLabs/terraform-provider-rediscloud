@@ -73,17 +73,11 @@ func validateModelConfigBlock(blockName string, model *AgentMemoryModelConfigMod
 	}
 	// A configured key may depend on another resource and remain unknown during plan.
 	// Validate it once known; null and blank keys must still be rejected.
-	key := model.Credentials.APIKey
-	keyName := "api_key"
-	if !model.Credentials.APIKeyWO.IsNull() {
-		key = model.Credentials.APIKeyWO
-		keyName = "api_key_wo"
-	}
-	if !key.IsUnknown() && missingModelString(key) {
+	if !model.Credentials.APIKey.IsUnknown() && missingModelString(model.Credentials.APIKey) {
 		resp.Diagnostics.AddAttributeError(
-			path.Root(blockName).AtName("credentials").AtName(keyName),
+			path.Root(blockName).AtName("credentials").AtName("api_key"),
 			"Missing Agent Memory model API key",
-			fmt.Sprintf("%s.credentials.%s must be configured when credentials are present.", blockName, keyName),
+			fmt.Sprintf("%s.credentials.api_key must be configured when credentials are present.", blockName),
 		)
 	}
 }
