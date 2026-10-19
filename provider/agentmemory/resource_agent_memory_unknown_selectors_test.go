@@ -83,6 +83,9 @@ func TestAgentMemoryUnknownSelectorValidation(t *testing.T) {
 				step := resource.TestStep{Config: config, PlanOnly: true, ExpectNonEmptyPlan: true}
 				if c.invalid {
 					step.ExpectError = regexp.MustCompile("Missing Agent Memory model")
+					if c.name == "omitted" || c.name == "null" {
+						step.ExpectError = regexp.MustCompile("Invalid Attribute Combination")
+					}
 				}
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{step}})
 			})
@@ -110,9 +113,13 @@ func TestAgentMemoryUnknownSelectorResolvesInvalid(t *testing.T) {
 					}
 				}()
 				config := testProviderConfig(t, server.URL) + selectorConfig(selector.block, selector.field, c.expression, fmt.Sprintf(`resource "terraform_data" "selector" { input=%s }`, c.input))
+				pattern := "Missing Agent Memory model"
+				if c.name == "null" {
+					pattern = "Invalid Attribute Combination"
+				}
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 					{Config: config, PlanOnly: true, ExpectNonEmptyPlan: true},
-					{Config: config, ExpectError: regexp.MustCompile("Missing Agent Memory model")},
+					{Config: config, ExpectError: regexp.MustCompile(pattern)},
 				}})
 			})
 		}
@@ -200,14 +207,14 @@ func TestAgentMemoryUnknownSelectorLifecycle(t *testing.T) {
 			}
 			first, changed := config("before"), config("after")
 			check := resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", selector.block+"."+selector.field, selector.value))
-			// Omitting a selector on update must still reuse its stored value.
+			// Configured model blocks require explicit selectors on updates as well.
 			omitted := prefix + selectorConfig(selector.block, selector.field, "OMIT_SELECTOR", fmt.Sprintf(`resource "terraform_data" "selector" { input=%q }`, selector.value+":after"))
 			steps := []resource.TestStep{
 				{Config: first, Check: check},
 				{Config: changed, PlanOnly: true, ExpectNonEmptyPlan: true},
 				{Config: changed, Check: check},
 				{Config: changed, PlanOnly: true},
-				{Config: omitted, PlanOnly: true},
+				{Config: omitted, PlanOnly: true, ExpectError: regexp.MustCompile("Invalid Attribute Combination")},
 				{Config: changed, PlanOnly: true},
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: steps})
