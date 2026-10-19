@@ -6,14 +6,13 @@ import (
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
-	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -23,10 +22,11 @@ import (
 )
 
 var (
-	_ resource.Resource                = &agentMemoryResource{}
-	_ resource.ResourceWithConfigure   = &agentMemoryResource{}
-	_ resource.ResourceWithImportState = &agentMemoryResource{}
-	_ resource.ResourceWithModifyPlan  = &agentMemoryResource{}
+	_ resource.Resource                     = &agentMemoryResource{}
+	_ resource.ResourceWithConfigure        = &agentMemoryResource{}
+	_ resource.ResourceWithImportState      = &agentMemoryResource{}
+	_ resource.ResourceWithModifyPlan       = &agentMemoryResource{}
+	_ resource.ResourceWithConfigValidators = &agentMemoryResource{}
 )
 
 type agentMemoryResource struct {
@@ -76,8 +76,11 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 			},
 			"database_id": schema.Int64Attribute{
-				Description: "The ID of the Redis Cloud database that backs the Agent Memory service.",
+				Description: "The ID of the Redis Cloud database that backs the Agent Memory service. Changing it requires replacement.",
 				Required:    true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 			"short_term_ttl_seconds": schema.Int64Attribute{
 				Description: "Short-term memory TTL in seconds.",
@@ -90,9 +93,13 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				Computed:    true,
 			},
 			"extraction_strategy": schema.StringAttribute{
-				Description: "How long-term memories are extracted from sessions. Changing an existing store strategy is not supported in place.",
+				Description: "How long-term memories are extracted from sessions. Changing an explicitly configured strategy requires replacement.",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseNonNullStateForUnknown(),
+					stringplanmodifier.RequiresReplaceIfConfigured(),
+				},
 				Validators: []validator.String{
 					// The SDK omits empty strings, which would lose an explicitly configured value.
 					stringvalidator.LengthAtLeast(1),
@@ -106,24 +113,15 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 			"endpoint": schema.StringAttribute{
 				Description: "The primary data-plane API endpoint for the Agent Memory service.",
 				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"endpoints": schema.ListAttribute{
 				Description: "Regional data-plane API endpoints for the Agent Memory service.",
 				Computed:    true,
 				ElementType: agentMemoryEndpointObjectType(),
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"status": schema.StringAttribute{
 				Description: "The current Agent Memory provisioning status.",
 				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"created_at": schema.StringAttribute{
 				Description: "The Agent Memory service creation timestamp.",
@@ -139,9 +137,13 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				Description: "Customer-managed LLM configuration. Configure this together with embedding to opt into customer-managed models.",
 				Attributes: map[string]schema.Attribute{
 					"provider": schema.StringAttribute{
-						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service.",
+						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.",
 						Optional:    true,
 						Computed:    true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseNonNullStateForUnknown(),
+							stringplanmodifier.RequiresReplaceIfConfigured(),
+						},
 					},
 					"model": schema.StringAttribute{
 						Description: "Model name advertised by the provider.",
@@ -188,14 +190,22 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				Description: "Customer-managed embedding model configuration for long-term memory. Configure this together with llm to opt into customer-managed models.",
 				Attributes: map[string]schema.Attribute{
 					"provider": schema.StringAttribute{
-						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service.",
+						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.",
 						Optional:    true,
 						Computed:    true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseNonNullStateForUnknown(),
+							stringplanmodifier.RequiresReplaceIfConfigured(),
+						},
 					},
 					"model": schema.StringAttribute{
-						Description: "Model name advertised by the provider.",
+						Description: "Model name advertised by the provider. Changing an explicitly configured model requires replacement.",
 						Optional:    true,
 						Computed:    true,
+						PlanModifiers: []planmodifier.String{
+							stringplanmodifier.UseNonNullStateForUnknown(),
+							stringplanmodifier.RequiresReplaceIfConfigured(),
+						},
 					},
 				},
 				Blocks: map[string]schema.Block{
@@ -242,11 +252,12 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 						Computed:    true,
 					},
 					"trigger_strategy": schema.StringAttribute{
-						Description: "What triggers a summarization cycle.",
+						Description: "What triggers a summarization cycle. Accepted values and omitted defaults are determined by the Agent Memory API.",
 						Optional:    true,
 						Computed:    true,
 						Validators: []validator.String{
-							stringvalidator.OneOf("event_count"),
+							// The SDK omits empty strings instead of sending the configured value.
+							stringvalidator.LengthAtLeast(1),
 						},
 					},
 				},
@@ -264,24 +275,18 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 								Description: "Number of messages in a session before summarization runs.",
 								Optional:    true,
 								Computed:    true,
-								Validators: []validator.Int64{
-									int64validator.Between(0, 10000),
-								},
 							},
 							"retain_count": schema.Int64Attribute{
 								Description: "Number of most recent messages retained in full after summarization.",
 								Optional:    true,
 								Computed:    true,
-								Validators: []validator.Int64{
-									int64validator.Between(0, 10000),
-								},
 							},
 						},
 					},
 				},
 			},
 			"long_term_memory_exclusions": schema.SingleNestedBlock{
-				Description: "Rules defining content that must not be retained in long-term memory.",
+				Description: "Exclusion rules applied to newly extracted long-term memories. They do not filter session events, summaries, or memories written directly by the application, and do not re-evaluate existing memories. Semantic exclusions guide the extraction model but do not guarantee exclusion.",
 				Attributes: map[string]schema.Attribute{
 					"enabled": schema.BoolAttribute{
 						Description: "Whether long-term memory exclusions are enabled.",
@@ -302,9 +307,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 								Description: "Prompt describing concepts that should not be kept in long-term memory.",
 								Optional:    true,
 								Computed:    true,
-								Validators: []validator.String{
-									stringvalidator.LengthAtMost(2000),
-								},
 							},
 						},
 					},
@@ -320,9 +322,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 						Blocks: map[string]schema.Block{
 							"detectors": schema.ListNestedBlock{
 								Description: "Built-in detectors selected for the store.",
-								Validators: []validator.List{
-									listvalidator.SizeAtMost(5),
-								},
 								NestedObject: schema.NestedBlockObject{
 									Attributes: map[string]schema.Attribute{
 										"id": schema.StringAttribute{
@@ -340,7 +339,10 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 											Description: "Action applied when this detector matches.",
 											Optional:    true,
 											Computed:    true,
-											Validators:  actionValidator(),
+											Validators: []validator.String{
+												// The SDK omits empty strings, which would lose an explicitly configured action.
+												stringvalidator.LengthAtLeast(1),
+											},
 										},
 									},
 								},
@@ -359,18 +361,17 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 						Blocks: map[string]schema.Block{
 							"detectors": schema.ListNestedBlock{
 								Description: "Custom detectors for tenant-specific or application-specific sensitive data.",
-								Validators: []validator.List{
-									listvalidator.SizeAtMost(32),
-								},
 								NestedObject: schema.NestedBlockObject{
 									Attributes: map[string]schema.Attribute{
 										"name": schema.StringAttribute{
 											Description: "Custom detector name.",
 											Required:    true,
 											// Custom detector names must not shadow built-in detector IDs.
-											Validators: append(customNameValidator(),
+											Validators: []validator.String{
+												// Empty names cannot round-trip: API strings are read as null when empty.
+												stringvalidator.LengthAtLeast(1),
 												stringvalidator.NoneOf("credit-card", "email", "ip-address", "phone", "us-ssn"),
-											),
+											},
 										},
 										"enabled": schema.BoolAttribute{
 											Description: "Whether this detector is enabled.",
@@ -380,7 +381,10 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 											Description: "Action applied when this detector matches.",
 											Optional:    true,
 											Computed:    true,
-											Validators:  actionValidator(),
+											Validators: []validator.String{
+												// The SDK omits empty strings, which would lose an explicitly configured action.
+												stringvalidator.LengthAtLeast(1),
+											},
 										},
 									},
 									Blocks: map[string]schema.Block{
@@ -403,7 +407,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 															Description: "Regex pattern used by the matcher.",
 															Required:    true,
 															Validators: []validator.String{
-																stringvalidator.LengthBetween(1, 512),
+																stringvalidator.LengthAtLeast(1),
 																nonEmptyRegexMatchValidator{},
 															},
 														},
@@ -419,25 +423,25 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 			},
 			"custom_memory_types": schema.ListNestedBlock{
-				Description: "Custom long-term memory types registered on the store. New types and extraction strategy changes are updated in place; redefining or removing existing types is blocked because the API does not support it.",
-				Validators: []validator.List{
-					listvalidator.SizeAtMost(3),
-				},
+				Description: "Custom long-term memory types registered on the store. Adding types and adding or updating their extraction strategies are supported in place. Removing or redefining existing types, or removing their extraction strategies, requires replacement of the entire Agent Memory service.",
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
 							Description: "Custom memory type name.",
 							Required:    true,
 							// The API reserves these names for built-in memory types.
-							Validators: append(customNameValidator(),
+							Validators: []validator.String{
+								// Empty names cannot round-trip: API strings are read as null when empty.
+								stringvalidator.LengthAtLeast(1),
 								stringvalidator.NoneOf("semantic", "episodic", "message", "session_summary_view"),
-							),
+							},
 						},
 						"description": schema.StringAttribute{
 							Description: "Custom memory type description.",
 							Required:    true,
 							Validators: []validator.String{
-								stringvalidator.LengthBetween(1, 200),
+								// Empty descriptions become null when the API response is read into state.
+								stringvalidator.LengthAtLeast(1),
 							},
 						},
 					},
@@ -449,20 +453,25 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 									"name": schema.StringAttribute{
 										Description: "Field name.",
 										Required:    true,
-										Validators:  customNameValidator(),
+										Validators: []validator.String{
+											// Empty names cannot round-trip: API strings are read as null when empty.
+											stringvalidator.LengthAtLeast(1),
+										},
 									},
 									"description": schema.StringAttribute{
 										Description: "Field description.",
 										Required:    true,
 										Validators: []validator.String{
-											stringvalidator.LengthBetween(1, 200),
+											// Empty descriptions become null when the API response is read into state.
+											stringvalidator.LengthAtLeast(1),
 										},
 									},
 									"type": schema.StringAttribute{
 										Description: "Field type.",
 										Required:    true,
 										Validators: []validator.String{
-											stringvalidator.OneOf("str", "int", "float", "bool", "list[str]", "list[float]", "object"),
+											// Empty field types become null when the API response is read into state.
+											stringvalidator.LengthAtLeast(1),
 										},
 									},
 								},
@@ -479,7 +488,8 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 									Description: "Prompt used to extract this custom memory type.",
 									Optional:    true,
 									Validators: []validator.String{
-										stringvalidator.LengthBetween(1, 10000),
+										// The SDK omits empty prompts, which would lose an explicitly configured value.
+										stringvalidator.LengthAtLeast(1),
 									},
 								},
 								"enabled": schema.BoolAttribute{
@@ -497,15 +507,10 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 
 }
 
-func customNameValidator() []validator.String {
-	return []validator.String{
-		stringvalidator.LengthBetween(1, 64),
-		stringvalidator.RegexMatches(regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*$`), "must start with a letter and contain only letters, numbers, underscores, and hyphens"),
+func (r *agentMemoryResource) ConfigValidators(context.Context) []resource.ConfigValidator {
+	return []resource.ConfigValidator{
+		resourcevalidator.RequiredTogether(path.MatchRoot("llm"), path.MatchRoot("embedding")),
 	}
-}
-
-func actionValidator() []validator.String {
-	return []validator.String{stringvalidator.OneOf("redact", "drop")}
 }
 
 func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
@@ -536,27 +541,10 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 		}
 	}
 
-	if hasState {
-		// These fields are create-only; replacing a store can lose its memory context.
-		if !plan.DatabaseID.IsUnknown() && !plan.DatabaseID.Equal(state.DatabaseID) {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("database_id"),
-				"Agent Memory database change requires an explicit migration",
-				"database_id cannot be changed in place. This provider will not automatically destroy and recreate the store. Plan a migration and explicitly manage the old and new stores.",
-			)
-		}
-		if !config.ExtractionStrategy.IsNull() && !plan.ExtractionStrategy.IsUnknown() && !plan.ExtractionStrategy.Equal(state.ExtractionStrategy) {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("extraction_strategy"),
-				"Agent Memory strategy change requires an explicit migration",
-				"extraction_strategy cannot be changed in place. This provider will not automatically destroy and recreate the store. Plan a migration and explicitly manage the old and new stores.",
-			)
-		}
-	}
-
 	modelConfig := plan
-	if !hasState {
-		// On create, configuration distinguishes omitted values from unknown expressions.
+	if !hasState || state.LLM == nil || state.Embedding == nil {
+		// New model blocks have no prior selectors to reuse. Configuration keeps
+		// omitted selectors distinct from expressions that are still unknown.
 		resp.Diagnostics.Append(req.Config.Get(ctx, &modelConfig)...)
 		if resp.Diagnostics.HasError() {
 			return

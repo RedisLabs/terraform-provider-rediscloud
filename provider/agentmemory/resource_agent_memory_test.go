@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
+	"github.com/RedisLabs/rediscloud-go-api/redis"
 	agentmemoryapi "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -26,15 +27,15 @@ func TestAgentMemoryResource_mockedCreateReadDelete(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
 			var request agentmemoryapi.CreateStore
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
-			assert.Equal(t, "store", request.Name)
-			assert.Equal(t, 123, request.DatabaseID)
+			assert.Equal(t, "store", redis.StringValue(request.Name))
+			assert.Equal(t, 123, redis.IntValue(request.DatabaseID))
 			require.NotNil(t, request.ShortMemory)
-			assert.Equal(t, 86400, request.ShortMemory.TTLSeconds)
+			assert.Equal(t, 86400, redis.IntValue(request.ShortMemory.TTLSeconds))
 			require.NotNil(t, request.LongTermMemory)
 			require.NotNil(t, request.LongTermMemory.TTLSeconds)
 			assert.Equal(t, 31536000, *request.LongTermMemory.TTLSeconds)
 			require.NotNil(t, request.ExtractionCadence)
-			assert.Equal(t, 300, request.ExtractionCadence.ActiveIntervalSeconds)
+			assert.Equal(t, 300, redis.IntValue(request.ExtractionCadence.ActiveIntervalSeconds))
 
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
@@ -116,8 +117,8 @@ func TestAgentMemoryResource_mockedCreateWithAPIDefaults(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
 			var request agentmemoryapi.CreateStore
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
-			assert.Equal(t, "store", request.Name)
-			assert.Equal(t, 123, request.DatabaseID)
+			assert.Equal(t, "store", redis.StringValue(request.Name))
+			assert.Equal(t, 123, redis.IntValue(request.DatabaseID))
 			assert.Nil(t, request.ShortMemory)
 			assert.Nil(t, request.LongTermMemory)
 			assert.Nil(t, request.ExtractionCadence)
@@ -187,45 +188,45 @@ func TestAgentMemoryResource_mockedCreateWithAdvancedConfig(t *testing.T) {
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
 
 			require.NotNil(t, request.Summarization)
-			assert.True(t, request.Summarization.Enabled)
-			assert.Equal(t, agentmemoryapi.SummarizationTriggerStrategyEventCount, request.Summarization.TriggerStrategy)
+			assert.True(t, redis.BoolValue(request.Summarization.Enabled))
+			assert.Equal(t, agentmemoryapi.SummarizationTriggerStrategyEventCount, redis.StringValue(request.Summarization.TriggerStrategy))
 			require.NotNil(t, request.Summarization.EventCount)
-			assert.Equal(t, 21, request.Summarization.EventCount.Threshold)
-			assert.Equal(t, 11, request.Summarization.EventCount.RetainCount)
+			assert.Equal(t, 21, redis.IntValue(request.Summarization.EventCount.Threshold))
+			assert.Equal(t, 11, redis.IntValue(request.Summarization.EventCount.RetainCount))
 
 			require.NotNil(t, request.LongTermMemoryExclusions)
-			assert.True(t, request.LongTermMemoryExclusions.Enabled)
+			assert.True(t, redis.BoolValue(request.LongTermMemoryExclusions.Enabled))
 			require.NotNil(t, request.LongTermMemoryExclusions.Semantic)
-			assert.True(t, request.LongTermMemoryExclusions.Semantic.Enabled)
-			assert.Equal(t, "test", request.LongTermMemoryExclusions.Semantic.Prompt)
+			assert.True(t, redis.BoolValue(request.LongTermMemoryExclusions.Semantic.Enabled))
+			assert.Equal(t, "test", redis.StringValue(request.LongTermMemoryExclusions.Semantic.Prompt))
 			require.NotNil(t, request.LongTermMemoryExclusions.BuiltInDetectors)
-			assert.True(t, request.LongTermMemoryExclusions.BuiltInDetectors.Enabled)
+			assert.True(t, redis.BoolValue(request.LongTermMemoryExclusions.BuiltInDetectors.Enabled))
 			assert.ElementsMatch(t, []agentmemoryapi.DetectorSelection{
-				{ID: "credit-card", Enabled: true, Action: "redact"},
-				{ID: "email", Enabled: true, Action: "redact"},
+				{ID: redis.String("credit-card"), Enabled: redis.Bool(true), Action: redis.String("redact")},
+				{ID: redis.String("email"), Enabled: redis.Bool(true), Action: redis.String("redact")},
 			}, request.LongTermMemoryExclusions.BuiltInDetectors.Detectors)
 			require.NotNil(t, request.LongTermMemoryExclusions.CustomDetectors)
-			assert.True(t, request.LongTermMemoryExclusions.CustomDetectors.Enabled)
+			assert.True(t, redis.BoolValue(request.LongTermMemoryExclusions.CustomDetectors.Enabled))
 			require.Len(t, request.LongTermMemoryExclusions.CustomDetectors.Detectors, 1)
 			assert.Equal(t, agentmemoryapi.CustomDetector{
-				Name:    "detector",
-				Enabled: true,
-				Action:  "redact",
+				Name:    redis.String("detector"),
+				Enabled: redis.Bool(true),
+				Action:  redis.String("redact"),
 				Matcher: &agentmemoryapi.MatcherSpec{
-					Kind:  "regex",
-					Regex: &agentmemoryapi.RegexSpec{Pattern: "ACCT-[9]"},
+					Kind:  redis.String("regex"),
+					Regex: &agentmemoryapi.RegexSpec{Pattern: redis.String("ACCT-[9]")},
 				},
 			}, request.LongTermMemoryExclusions.CustomDetectors.Detectors[0])
 
 			require.Len(t, request.CustomMemoryTypes, 1)
 			customType := request.CustomMemoryTypes[0]
-			assert.Equal(t, "custom_name", customType.Name)
-			assert.Equal(t, "test", customType.Description)
+			assert.Equal(t, "custom_name", redis.StringValue(customType.Name))
+			assert.Equal(t, "test", redis.StringValue(customType.Description))
 			assert.Equal(t, []agentmemoryapi.CustomField{
-				{Name: "field1", Description: "capture the field", Type: "str"},
+				{Name: redis.String("field1"), Description: redis.String("capture the field"), Type: redis.String("str")},
 			}, customType.Fields)
 			require.NotNil(t, customType.ExtractionStrategy)
-			assert.Equal(t, "test", customType.ExtractionStrategy.Prompt)
+			assert.Equal(t, "test", redis.StringValue(customType.ExtractionStrategy.Prompt))
 			require.NotNil(t, customType.ExtractionStrategy.Enabled)
 			assert.True(t, *customType.ExtractionStrategy.Enabled)
 
@@ -359,15 +360,15 @@ func TestAgentMemoryResource_mockedUpdateAdvancedConfig(t *testing.T) {
 
 			require.NotNil(t, request.Summarization)
 			require.NotNil(t, request.Summarization.EventCount)
-			assert.Equal(t, 30, request.Summarization.EventCount.Threshold)
-			assert.Equal(t, 12, request.Summarization.EventCount.RetainCount)
+			assert.Equal(t, 30, redis.IntValue(request.Summarization.EventCount.Threshold))
+			assert.Equal(t, 12, redis.IntValue(request.Summarization.EventCount.RetainCount))
 
 			require.NotNil(t, request.LongTermMemoryExclusions)
 			require.NotNil(t, request.LongTermMemoryExclusions.Semantic)
-			assert.Equal(t, "updated", request.LongTermMemoryExclusions.Semantic.Prompt)
+			assert.Equal(t, "updated", redis.StringValue(request.LongTermMemoryExclusions.Semantic.Prompt))
 			require.NotNil(t, request.LongTermMemoryExclusions.BuiltInDetectors)
 			require.Len(t, request.LongTermMemoryExclusions.BuiltInDetectors.Detectors, 2)
-			assert.Equal(t, "drop", request.LongTermMemoryExclusions.BuiltInDetectors.Detectors[1].Action)
+			assert.Equal(t, "drop", redis.StringValue(request.LongTermMemoryExclusions.BuiltInDetectors.Detectors[1].Action))
 
 			patches++
 			threshold = 30
@@ -498,10 +499,10 @@ func TestAgentMemoryResource_mockedAddCustomMemoryType(t *testing.T) {
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
 			assert.Empty(t, request.UpdateCustomMemoryTypeStrategies)
 			require.Len(t, request.AddCustomMemoryTypes, 1)
-			assert.Equal(t, "support_case", request.AddCustomMemoryTypes[0].Name)
-			assert.Equal(t, "Persistent support case details", request.AddCustomMemoryTypes[0].Description)
+			assert.Equal(t, "support_case", redis.StringValue(request.AddCustomMemoryTypes[0].Name))
+			assert.Equal(t, "Persistent support case details", redis.StringValue(request.AddCustomMemoryTypes[0].Description))
 			assert.Equal(t, []agentmemoryapi.CustomField{
-				{Name: "case_priority", Description: "case priority", Type: "int"},
+				{Name: redis.String("case_priority"), Description: redis.String("case priority"), Type: redis.String("int")},
 			}, request.AddCustomMemoryTypes[0].Fields)
 
 			patches++
@@ -542,7 +543,7 @@ func TestAgentMemoryResource_mockedAddCustomMemoryType(t *testing.T) {
 	assert.Equal(t, 1, deletes)
 }
 
-func TestAgentMemoryResource_rejectsCustomMemoryTypeRedefinition(t *testing.T) {
+func TestAgentMemoryResource_plansCustomMemoryTypeRedefinition(t *testing.T) {
 	patches := 0
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -575,8 +576,9 @@ func TestAgentMemoryResource_rejectsCustomMemoryTypeRedefinition(t *testing.T) {
 				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
 			},
 			{
-				Config:      testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithChangedCustomMemoryTypeField("store"),
-				ExpectError: regexp.MustCompile(`Unsupported Agent Memory custom memory type redefinition`),
+				Config:             testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithChangedCustomMemoryTypeField("store"),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
@@ -584,7 +586,7 @@ func TestAgentMemoryResource_rejectsCustomMemoryTypeRedefinition(t *testing.T) {
 	assert.Equal(t, 0, patches)
 }
 
-func TestAgentMemoryResource_rejectsCustomMemoryTypeRemoval(t *testing.T) {
+func TestAgentMemoryResource_plansCustomMemoryTypeRemoval(t *testing.T) {
 	patches := 0
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -617,8 +619,9 @@ func TestAgentMemoryResource_rejectsCustomMemoryTypeRemoval(t *testing.T) {
 				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
 			},
 			{
-				Config:      testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithoutCustomMemoryTypes("store"),
-				ExpectError: regexp.MustCompile(`Unsupported Agent Memory custom memory type removal`),
+				Config:             testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithoutCustomMemoryTypes("store"),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
@@ -649,19 +652,19 @@ func TestAgentMemoryResource_mockedUpdateDisablesAdvancedConfigWithStaleAPIChild
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
 
 			require.NotNil(t, request.Summarization)
-			assert.False(t, request.Summarization.Enabled)
+			assert.False(t, redis.BoolValue(request.Summarization.Enabled))
 			assert.Empty(t, request.Summarization.TriggerStrategy)
 			assert.Nil(t, request.Summarization.EventCount)
 
 			require.NotNil(t, request.LongTermMemoryExclusions)
 			require.NotNil(t, request.LongTermMemoryExclusions.Semantic)
-			assert.False(t, request.LongTermMemoryExclusions.Semantic.Enabled)
+			assert.False(t, redis.BoolValue(request.LongTermMemoryExclusions.Semantic.Enabled))
 			assert.Empty(t, request.LongTermMemoryExclusions.Semantic.Prompt)
 			require.NotNil(t, request.LongTermMemoryExclusions.BuiltInDetectors)
-			assert.False(t, request.LongTermMemoryExclusions.BuiltInDetectors.Enabled)
+			assert.False(t, redis.BoolValue(request.LongTermMemoryExclusions.BuiltInDetectors.Enabled))
 			assert.Empty(t, request.LongTermMemoryExclusions.BuiltInDetectors.Detectors)
 			require.NotNil(t, request.LongTermMemoryExclusions.CustomDetectors)
-			assert.False(t, request.LongTermMemoryExclusions.CustomDetectors.Enabled)
+			assert.False(t, redis.BoolValue(request.LongTermMemoryExclusions.CustomDetectors.Enabled))
 			assert.Empty(t, request.LongTermMemoryExclusions.CustomDetectors.Detectors)
 
 			patches++
@@ -719,8 +722,8 @@ func TestAgentMemoryResource_mockedUpdate(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
 			var request agentmemoryapi.CreateStore
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
-			assert.Equal(t, name, request.Name)
-			assert.Equal(t, 123, request.DatabaseID)
+			assert.Equal(t, name, redis.StringValue(request.Name))
+			assert.Equal(t, 123, redis.IntValue(request.DatabaseID))
 
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
@@ -733,12 +736,12 @@ func TestAgentMemoryResource_mockedUpdate(t *testing.T) {
 			require.NotNil(t, request.Name)
 			assert.Equal(t, "store-updated", *request.Name)
 			require.NotNil(t, request.ShortMemory)
-			assert.Equal(t, 172800, request.ShortMemory.TTLSeconds)
+			assert.Equal(t, 172800, redis.IntValue(request.ShortMemory.TTLSeconds))
 			require.NotNil(t, request.LongTermMemory)
 			require.NotNil(t, request.LongTermMemory.TTLSeconds)
 			assert.Equal(t, 604800, *request.LongTermMemory.TTLSeconds)
 			require.NotNil(t, request.ExtractionCadence)
-			assert.Equal(t, 600, request.ExtractionCadence.ActiveIntervalSeconds)
+			assert.Equal(t, 600, redis.IntValue(request.ExtractionCadence.ActiveIntervalSeconds))
 
 			name = "store-updated"
 			shortTTL = 172800
@@ -1157,7 +1160,7 @@ resource "rediscloud_agent_memory" "example" {
   }
 }
 `,
-				ExpectError: regexp.MustCompile("embedding must be configured when llm is configured"),
+				ExpectError: regexp.MustCompile("These attributes must be configured together"),
 			},
 		},
 	})
@@ -1195,127 +1198,6 @@ resource "rediscloud_agent_memory" "example" {
 }
 `,
 				ExpectError: regexp.MustCompile("long_term_ttl_seconds must be configured when embedding is configured"),
-			},
-		},
-	})
-}
-
-func TestAgentMemoryResource_rejectsAddingModelConfigAfterCreate(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
-			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
-			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
-			writeStoreResponse(t, w, "store", 86400, 31536000, 300)
-		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
-			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
-			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "store"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 31536000
-  extraction_cadence_seconds = 300
-}
-`,
-			},
-			{
-				Config:      testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
-				ExpectError: regexp.MustCompile("Unsupported Agent Memory model configuration change"),
-			},
-		},
-	})
-}
-
-func TestAgentMemoryResource_rejectsEmbeddingModelChange(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
-			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
-			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
-			writeStoreResponseWithModelConfig(t, w, "store", "gpt-4o-mini", "text-embedding-3-small")
-		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
-			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
-			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
-			},
-			{
-				Config:      testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-large", "llm-secret", "embedding-secret"),
-				ExpectError: regexp.MustCompile("embedding.model as immutable after creation"),
-			},
-		},
-	})
-}
-
-func TestAgentMemoryResource_rejectsModelConfigRemoval(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
-			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
-			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
-			writeStoreResponseWithModelConfig(t, w, "store", "gpt-4o-mini", "text-embedding-3-small")
-		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
-			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
-		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
-			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
-
-	resource.UnitTest(t, resource.TestCase{
-		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		Steps: []resource.TestStep{
-			{
-				Config: testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
-			},
-			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "store"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 31536000
-  extraction_cadence_seconds = 300
-}
-`,
-				ExpectError: regexp.MustCompile("Unsupported Agent Memory model configuration removal"),
 			},
 		},
 	})
@@ -1384,13 +1266,13 @@ resource "rediscloud_agent_memory" "example" {
       detectors {
         id      = "email"
         enabled = true
-        action  = "mask"
+        action  = ""
       }
     }
   }
 }
 `,
-				ExpectError: regexp.MustCompile(`redact|drop`),
+				ExpectError: regexp.MustCompile(`length`),
 			},
 			{
 				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
