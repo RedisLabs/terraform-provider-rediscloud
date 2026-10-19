@@ -387,7 +387,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 			},
 			"custom_memory_types": schema.ListNestedBlock{
-				Description: "Custom long-term memory types registered on the store. New types and extraction strategy changes are updated in place; redefining or removing existing types is blocked because the API does not support it.",
+				Description: "Custom long-term memory types registered on the store. Adding types and adding or updating their extraction strategies are supported in place. Removing or redefining existing types, or removing their extraction strategies, requires replacement of the entire Agent Memory service.",
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
 						"name": schema.StringAttribute{
