@@ -46,6 +46,7 @@ func pairedModelsConfig(llm, embedding, unknown bool) string {
  credentials {
   type="apiKey"
   api_key=%s
+   api_key_version = 1
  }
 }
 `, model.name, provider, selector, key)

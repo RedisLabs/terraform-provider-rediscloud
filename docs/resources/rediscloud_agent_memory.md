@@ -66,6 +66,7 @@ resource "rediscloud_agent_memory" "example" {
     credentials {
       type    = "apiKey"
       api_key = var.agent_memory_llm_api_key
+      api_key_version = 1
     }
   }
 
@@ -76,18 +77,48 @@ resource "rediscloud_agent_memory" "example" {
     credentials {
       type    = "apiKey"
       api_key = var.agent_memory_embedding_api_key
+      api_key_version = 1
     }
   }
 }
 ```
 
-Use sensitive variables for model provider credentials. `llm.credentials.api_key`
-and `embedding.credentials.api_key` can reference different keys, or the same
-key if the model provider credential is allowed to call both the LLM and
-embedding models. Redis Cloud does not return these credentials through the API. Terraform retains
-configured credentials in state; use an encrypted remote backend with restricted
-access. Marking a value sensitive hides it from normal CLI output but does not
-remove it from state.
+### Write-only model credentials
+
+Model `credentials.api_key` is write-only and requires Terraform 1.11.1 or later.
+Terraform 1.11.0 has a [serialization bug](https://github.com/hashicorp/terraform/releases/tag/v1.11.1)
+when ephemeral and sensitive values are combined; it was fixed in 1.11.1.
+Redis Cloud does not return it, and Terraform does not persist its resource
+attribute value in plan or state. Use an ephemeral sensitive variable to avoid
+persisting the input variable value as well:
+
+```hcl
+variable "llm_api_key" {
+  type      = string
+  sensitive = true
+  ephemeral = true
+}
+
+# Inside llm.credentials; the same fields are available in embedding.credentials.
+credentials {
+  type            = "apiKey"
+  api_key         = var.llm_api_key
+  api_key_version = 1
+}
+```
+
+Provide ephemeral variables for both plan and apply. Each configured key requires
+an `api_key_version` greater than zero. Change that version whenever you rotate
+the key: changing only the secret cannot produce a Terraform diff. LLM and
+embedding credentials have independent versions and may reference the same key
+or different keys. Rotation updates the existing store in place. Other updates
+that send a model configuration, such as an LLM model change, also send that
+model's configured credential. TTL-only updates do not resend unchanged keys.
+
+Import cannot recover keys or their Terraform-only versions. The first apply
+with configured credentials after import sends the key and records its version
+without replacing the store. Upgrading from an earlier development build does
+not erase secrets from historical state versions or previously saved artifacts.
 
 ### Service with advanced memory configuration
 
@@ -189,13 +220,15 @@ The following arguments are optional:
   * `model` - Model name advertised by the provider.
   * `credentials` - Provider credential configuration.
     * `type` - Credential type validated by the Agent Memory API.
-    * `api_key` - Provider API key. This value is sensitive and write-only in the Agent Memory API.
+    * `api_key` - Provider API key omitted from plan/state values. Requires Terraform 1.11.1 or later and `api_key_version`.
+    * `api_key_version` - Positive version for in-place credential rotation. Change it whenever the write-only key changes.
 * `embedding` - Customer-managed embedding model configuration for long-term memory. If configured, `llm` must also be configured.
   * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.
   * `model` - Model name advertised by the provider. Changing an explicitly configured model requires replacement.
   * `credentials` - Provider credential configuration.
     * `type` - Credential type validated by the Agent Memory API.
-    * `api_key` - Provider API key. This value is sensitive and write-only in the Agent Memory API.
+    * `api_key` - Provider API key omitted from plan/state values. Requires Terraform 1.11.1 or later and `api_key_version`.
+    * `api_key_version` - Positive version for in-place credential rotation. Change it whenever the write-only key changes.
 * `summarization` - Automatic session summarization configuration.
   * `enabled` - Whether automatic summarization is enabled.
   * `trigger_strategy` - Summarization trigger strategy. Accepted values are validated by the Agent Memory API; when omitted, the provider records the value returned by the API. Explicit empty strings are rejected.
@@ -258,7 +291,8 @@ For customer-managed models, `llm` and `embedding` must be configured together
 on create. Adding or removing both blocks requires replacement. Changing
 `llm.provider`, `embedding.provider`, or `embedding.model` also requires
 replacement. `llm.model` can be updated within the existing provider, and model
-credentials can be rotated without replacement by updating `credentials.api_key`.
+credentials can be rotated without replacement by updating `credentials.api_key`
+and changing `credentials.api_key_version`.
 
 A replacement destroys and recreates the store with a new store ID. It does not
 migrate the existing agent context to that new identity. Use
@@ -365,4 +399,5 @@ If the Terraform configuration includes `credentials` blocks after import, the
 first plan can show an in-place update to send those write-only credentials
 back to Redis Cloud. This is expected and does not replace the Agent Memory
 service. To rotate credentials after import, update the relevant
-`credentials.api_key` values and run `terraform apply`.
+`credentials.api_key` values and change their `credentials.api_key_version`
+values, then run `terraform apply`.

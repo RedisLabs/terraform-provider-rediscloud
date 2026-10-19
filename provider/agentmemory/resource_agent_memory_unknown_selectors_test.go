@@ -38,7 +38,7 @@ func selectorConfig(block, field, expression, dependency string) string {
 				modelExpr = expression
 			}
 		}
-		models += fmt.Sprintf("%s {\nprovider=%s\nmodel=%s\ncredentials {\ntype=\"apiKey\"\napi_key=\"FAKE-STATIC\"\n}\n}\n", name, providerExpr, modelExpr)
+		models += fmt.Sprintf("%s {\nprovider=%s\nmodel=%s\ncredentials {\ntype=\"apiKey\"\napi_key=\"FAKE-STATIC\"\napi_key_version=1\n}\n}\n", name, providerExpr, modelExpr)
 	}
 	models = strings.ReplaceAll(models, "provider=OMIT_SELECTOR\n", "")
 	models = strings.ReplaceAll(models, "model=OMIT_SELECTOR\n", "")
