@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -86,15 +87,16 @@ resource "rediscloud_agent_memory" "example" {
 			{Config: initial, PlanOnly: true},
 			{Config: renamed, Check: resource.TestCheckResourceAttr(address, "id", "store-1")},
 			{Config: config("renamed", ""), PlanOnly: true},
-			{Config: changed, ExpectError: regexp.MustCompile("strategy change requires an explicit migration")},
-			{Config: renamed, PlanOnly: true},
+			{Config: config("omitted-strategy", ""), ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate)}}, Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr(address, "id", "store-1"), resource.TestCheckResourceAttr(address, "extraction_strategy", "FAKE-FUTURE-STRATEGY"))},
+			{Config: changed, ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionDestroyBeforeCreate)}}, Check: resource.TestCheckResourceAttr(address, "id", "store-2")},
+			{Config: changed, PlanOnly: true},
 		},
 	})
 	mu.Lock()
 	defer mu.Unlock()
-	assert.Equal(t, 1, creates)
-	assert.Equal(t, 1, patches)
-	assert.Equal(t, 1, deletes)
+	assert.Equal(t, 2, creates)
+	assert.Equal(t, 2, patches)
+	assert.Equal(t, 2, deletes)
 	assert.Nil(t, store)
 }
 
