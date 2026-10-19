@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 
 	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
+	"github.com/RedisLabs/rediscloud-go-api/redis"
 	agentmemoryapi "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -129,14 +130,14 @@ func TestAgentMemoryIdentityGuardBeforeModelMutation(t *testing.T) {
 	for _, scenario := range []string{"nil", "missing", "mismatched", "matching"} {
 		t.Run(scenario, func(t *testing.T) {
 			model := AgentMemoryResourceModel{ID: types.StringValue("store-1"), Name: types.StringValue("prior-name"), DatabaseID: types.Int64Value(123)}
-			store := &agentmemoryapi.Store{StoreID: "store-1", Name: "fresh-name", DatabaseID: "456"}
+			store := &agentmemoryapi.Store{StoreID: redis.String("store-1"), Name: redis.String("fresh-name"), DatabaseID: redis.String("456")}
 			switch scenario {
 			case "nil":
 				store = nil
 			case "missing":
-				store.StoreID = ""
+				store.StoreID = redis.String("")
 			case "mismatched":
-				store.StoreID = "unrelated-store"
+				store.StoreID = redis.String("unrelated-store")
 			}
 			var diagnostics diag.Diagnostics
 			// A malformed SDK object must not panic or partially overwrite the owned model.
