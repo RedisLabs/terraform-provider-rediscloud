@@ -250,13 +250,13 @@ The following arguments are optional:
   * `built_in_detectors` - Built-in sensitive-data detector configuration.
     * `enabled` - Whether built-in detectors are enabled.
     * `detectors` - Built-in detector selections.
-      * `id` - Built-in detector ID. Supported values are `credit-card`, `email`, `ip-address`, `phone`, and `us-ssn`.
+      * `id` - Non-blank built-in detector ID validated by the Agent Memory API. Examples include `credit-card`, `email`, `ip-address`, `phone`, and `us-ssn`; the available catalogue is managed by the service.
       * `enabled` - Whether this detector is enabled.
       * `action` - Action when the detector matches. Examples include `redact` and `drop`; accepted values are validated by the Agent Memory API. When omitted, the provider records the value returned by the API. Explicit empty strings are rejected.
   * `custom_detectors` - Custom regex detector configuration.
     * `enabled` - Whether custom detectors are enabled.
     * `detectors` - Custom detector definitions.
-      * `name` - Non-empty custom detector name. Format and maximum length are validated by the Agent Memory API.
+      * `name` - Non-empty custom detector name. Format, maximum length and conflicts with built-in detector names are validated by the Agent Memory API.
       * `enabled` - Whether this detector is enabled.
       * `action` - Action when the detector matches. Accepted values are validated by the Agent Memory API; when omitted, the provider records the value returned by the API. Explicit empty strings are rejected.
       * `matcher` - Detector matcher configuration.
