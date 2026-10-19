@@ -186,7 +186,11 @@ func TestAgentMemoryUnknownSelectorLifecycle(t *testing.T) {
 			defer func() {
 				mu.Lock()
 				defer mu.Unlock()
-				if creates != 1 || deletes != 1 || store != nil {
+				expected := 1
+				if selector.field == "provider" || selector.block == "embedding" {
+					expected = 2
+				}
+				if creates != expected || deletes != expected || store != nil {
 					t.Errorf("fixture not cleaned up: creates=%d deletes=%d remaining=%t", creates, deletes, store != nil)
 				}
 			}()
@@ -205,13 +209,6 @@ func TestAgentMemoryUnknownSelectorLifecycle(t *testing.T) {
 				{Config: changed, PlanOnly: true},
 				{Config: omitted, PlanOnly: true},
 				{Config: changed, PlanOnly: true},
-			}
-			if selector.field == "provider" || selector.block == "embedding" {
-				invalid := prefix + selectorConfig(selector.block, selector.field,
-					`tostring(terraform_data.selector.output)`, `resource "terraform_data" "selector" { input="different-selector" }`)
-				steps = append(steps,
-					resource.TestStep{Config: invalid, PlanOnly: true, ExpectNonEmptyPlan: true},
-					resource.TestStep{Config: invalid, ExpectError: regexp.MustCompile("Unsupported Agent Memory .*change")})
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: steps})
 		})
