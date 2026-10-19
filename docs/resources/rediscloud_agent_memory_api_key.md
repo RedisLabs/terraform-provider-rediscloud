@@ -36,8 +36,8 @@ output "agent_memory_api_key" {
 
 The following arguments are supported:
 
-* `store_id` - (Required) The Agent Memory store ID. Must be 1-64 characters and contain only letters, numbers, and hyphens.
-* `name` - (Required) The name of the API key. Must be 1-100 characters and must not contain whitespace.
+* `store_id` - (Required) The Agent Memory store ID. Must contain only letters, numbers, and hyphens. The Agent Memory API validates the referenced store.
+* `name` - (Required) The name of the API key. Must be non-empty and must not contain whitespace. Maximum length is validated by the Agent Memory API.
 
 Changing either argument replaces the API key.
 
