@@ -102,7 +102,7 @@ func TestAgentMemoryEmptyRegexBoundaries(t *testing.T) {
 		{name: "empty-pattern", expression: `""`, errorPattern: "length"},
 		{name: "former-maximum-length", expression: fmt.Sprintf("%q", strings.Repeat("a", 512))},
 		{name: "above-former-maximum-deferred-to-api", expression: fmt.Sprintf("%q", strings.Repeat("a", 513))},
-		{name: "null-pattern", expression: "null", errorPattern: "Missing Configuration for Required Attribute|Missing required argument"},
+		{name: "null-pattern", expression: "null", errorPattern: "Invalid Attribute Combination"},
 		{name: "disabled-detector", expression: `".*"`, errorPattern: "Regex matches empty text", disabled: true},
 		// This validator does not impose Go's syntax rules on the API's RE2 compiler.
 		{name: "syntax-validation-deferred", expression: `"["`},

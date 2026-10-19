@@ -405,18 +405,20 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 													Description: "Matcher kind.",
 													Required:    true,
 													Validators: []validator.String{
-														stringvalidator.OneOf("regex"),
+														// The API validates supported kinds; empty values cannot round-trip.
+														stringvalidator.LengthAtLeast(1),
 													},
 												},
 											},
 											Blocks: map[string]schema.Block{
 												"regex": schema.SingleNestedBlock{
 													Description: "Regex matcher configuration.",
-													Validators:  []validator.Object{objectvalidator.IsRequired()},
+													// Pattern is required only when this optional block is configured.
+													Validators: []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("pattern"))},
 													Attributes: map[string]schema.Attribute{
 														"pattern": schema.StringAttribute{
 															Description: "Regex pattern used by the matcher.",
-															Required:    true,
+															Optional:    true,
 															Validators: []validator.String{
 																stringvalidator.LengthAtLeast(1),
 																nonEmptyRegexMatchValidator{},
@@ -566,6 +568,7 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 	validateModelConfigPlan(modelConfig, state, hasState, resp)
 	validateCustomMemoryTypesPlan(plan, state, resp)
 	validateCustomDetectorNamesPlan(plan, resp)
+	validateCustomDetectorMatchersConfig(config, resp)
 	if resp.Diagnostics.HasError() {
 		return
 	}

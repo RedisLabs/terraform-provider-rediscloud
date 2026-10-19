@@ -17,8 +17,8 @@ import (
 func TestAgentMemoryRequiredMatcherBlocks(t *testing.T) {
 	for _, tc := range []struct{ name, matcher, dependency, pattern string }{
 		{name: "missing matcher", pattern: "Invalid Block"},
-		{name: "missing regex", matcher: `matcher { kind="regex" }`, pattern: "Invalid Block"},
-		{name: "unknown kind missing regex", matcher: `matcher { kind=terraform_data.value.output }`, dependency: `resource "terraform_data" "value" { input="regex" }`, pattern: "Invalid Block"},
+		{name: "missing regex", matcher: `matcher { kind="regex" }`, pattern: "Missing custom detector regex"},
+		{name: "unknown kind missing regex", matcher: `matcher { kind=terraform_data.value.output }`, dependency: `resource "terraform_data" "value" { input="regex" }`},
 		{name: "valid", matcher: "matcher {\nkind=\"regex\"\nregex { pattern=\"ticket-[0-9]+\" }\n}"},
 		{name: "unknown pattern", matcher: "matcher {\nkind=\"regex\"\nregex { pattern=terraform_data.value.output }\n}", dependency: `resource "terraform_data" "value" { input="ticket-[0-9]+" }`},
 	} {
