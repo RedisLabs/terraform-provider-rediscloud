@@ -28,7 +28,7 @@ func credentialTypeConfig(block, field, expression, dependency string) string {
 		if name == block {
 			typeExpression = expression
 		}
-		models += fmt.Sprintf("%s {\nprovider=\"fake-provider\"\nmodel=\"fake-model\"\ncredentials {\ntype=%s\napi_key=\"FAKE-STATIC\"\n}\n}\n", name, typeExpression)
+		models += fmt.Sprintf("%s {\nprovider=\"fake-provider\"\nmodel=\"fake-model\"\ncredentials {\ntype=%s\napi_key=\"FAKE-STATIC\"\napi_key_version=1\n}\n}\n", name, typeExpression)
 	}
 	models = strings.ReplaceAll(models, "type=OMIT_SELECTOR\n", "")
 	return dependency + fmt.Sprintf(`
