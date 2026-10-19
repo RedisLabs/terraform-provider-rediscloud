@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -38,8 +39,8 @@ func (writeOnlyPlanCheck) CheckPlan(_ context.Context, req plancheck.CheckPlanRe
 
 func writeOnlyModelConfig(llmVersion, embeddingVersion, ttl int) string {
 	config := agentMemoryModelConfig("wo-store", "gpt-4o-mini", "text-embedding-3-small", "LLM_PLACEHOLDER", "EMBED_PLACEHOLDER")
-	config = strings.Replace(config, `api_key = "LLM_PLACEHOLDER"`, fmt.Sprintf("api_key_wo = var.llm_key\napi_key_wo_version = %d", llmVersion), 1)
-	config = strings.Replace(config, `api_key = "EMBED_PLACEHOLDER"`, fmt.Sprintf("api_key_wo = var.embedding_key\napi_key_wo_version = %d", embeddingVersion), 1)
+	config = strings.Replace(config, "api_key = \"LLM_PLACEHOLDER\"\n   api_key_version = 1", fmt.Sprintf("api_key = var.llm_key\napi_key_version = %d", llmVersion), 1)
+	config = strings.Replace(config, "api_key = \"EMBED_PLACEHOLDER\"\n   api_key_version = 1", fmt.Sprintf("api_key = var.embedding_key\napi_key_version = %d", embeddingVersion), 1)
 	config = strings.Replace(config, "long_term_ttl_seconds      = 31536000", fmt.Sprintf("long_term_ttl_seconds      = %d", ttl), 1)
 	return `
 variable "llm_key" {
@@ -56,7 +57,7 @@ variable "embedding_key" {
 }
 
 func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
-	for _, scenario := range []string{"create", "migrate legacy", "create read recovery"} {
+	for _, scenario := range []string{"create", "create read recovery"} {
 		t.Run(scenario, func(t *testing.T) {
 			t.Setenv("TF_VAR_llm_key", writeOnlyTestSecrets[0])
 			t.Setenv("TF_VAR_embedding_key", writeOnlyTestSecrets[2])
@@ -164,10 +165,6 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 			planChecks := resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{writeOnlyPlanCheck{}}}
 			firstCount := 1
 			var steps []resource.TestStep
-			if scenario == "migrate legacy" {
-				steps = append(steps, resource.TestStep{Config: prefix + agentMemoryModelConfig("wo-store", "gpt-4o-mini", "text-embedding-3-small", "LEGACY-LLM", "LEGACY-EMBED")})
-				firstCount = 2
-			}
 			steps = append(steps,
 				resource.TestStep{Config: config(1, 1, 31536000), ConfigPlanChecks: planChecks, Check: check(firstCount, firstCount, writeOnlyTestSecrets[0], writeOnlyTestSecrets[2])},
 				resource.TestStep{Config: config(1, 1, 31536000), PlanOnly: true, ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}}},
@@ -191,7 +188,7 @@ removed {
 				resource.TestStep{Config: config(2, 2, 172800), ResourceName: "rediscloud_agent_memory.example", ImportStateId: "store-1", ImportState: true, ImportStateVerify: false, ImportStatePersist: true, ImportStateCheck: func(states []*terraform.InstanceState) error {
 					for _, state := range states {
 						for name, value := range state.Attributes {
-							if strings.HasSuffix(name, "api_key") || strings.HasSuffix(name, "api_key_wo") {
+							if strings.HasSuffix(name, "api_key") {
 								if value != "" {
 									return fmt.Errorf("import populated model credential")
 								}
@@ -203,7 +200,7 @@ removed {
 				resource.TestStep{Config: config(2, 2, 172800), ConfigPlanChecks: planChecks, Check: check(firstCount+2, firstCount+2, writeOnlyTestSecrets[1], writeOnlyTestSecrets[3])},
 				resource.TestStep{Config: config(2, 2, 172800), PlanOnly: true, ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}}},
 				resource.TestStep{
-					Config:           strings.Replace(config(3, 2, 172800), "api_key_wo_version = 3", "api_key_wo_version = terraform_data.version.output", 1) + `resource "terraform_data" "version" { input = 3 }`,
+					Config:           strings.Replace(config(3, 2, 172800), "api_key_version = 3", "api_key_version = terraform_data.version.output", 1) + `resource "terraform_data" "version" { input = 3 }`,
 					ConfigPlanChecks: planChecks,
 					Check:            check(firstCount+3, firstCount+2, writeOnlyTestSecrets[1], writeOnlyTestSecrets[3]),
 				},
@@ -215,9 +212,6 @@ removed {
 				t.Errorf("expected one creation and explicit cleanup, got %d/%d", creates, deletes)
 			}
 			expectedPatches := 5
-			if scenario == "migrate legacy" {
-				expectedPatches++
-			}
 			if patches != expectedPatches {
 				t.Errorf("expected %d patches, got %d", expectedPatches, patches)
 			}
@@ -228,17 +222,43 @@ removed {
 func TestAgentMemoryWriteOnlyCredentialsValidation(t *testing.T) {
 	for _, block := range []string{"llm", "embedding"} {
 		for _, tc := range []struct{ name, attributes, pattern string }{
-			{"missing version", `api_key_wo="FAKE-WO"`, "Invalid Attribute Combination"},
-			{"missing key", `api_key_wo_version=1`, "Invalid Attribute Combination"},
-			{"both keys", "api_key=\"FAKE\"\napi_key_wo=\"FAKE-WO\"\napi_key_wo_version=1", "Invalid Attribute Combination"},
-			{"zero version", "api_key_wo=\"FAKE-WO\"\napi_key_wo_version=0", "at least 1"},
-			{"blank key", "api_key_wo=\"  \"\napi_key_wo_version=1", "Missing Agent Memory model API key"},
+			{"missing version", `api_key="FAKE-WO"`, "Invalid Attribute Combination"},
+			{"missing key", `api_key_version=1`, "Invalid Attribute Combination"},
+			{"zero version", "api_key=\"FAKE-WO\"\napi_key_version=0", "at least 1"},
+			{"blank key", "api_key=\"  \"\napi_key_version=1", "Missing Agent Memory model API key"},
 		} {
 			t.Run(block+"/"+tc.name, func(t *testing.T) {
 				prefix := testProviderConfig(t, "http://127.0.0.1:1")
 				cfg := unknownKeyConfig(block, "REPLACE_ME", "")
-				cfg = strings.Replace(cfg, "api_key=REPLACE_ME", tc.attributes, 1)
+				cfg = strings.Replace(cfg, "api_key=REPLACE_ME\n   api_key_version = 1", tc.attributes, 1)
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{{Config: prefix + cfg, PlanOnly: true, ExpectError: regexp.MustCompile(tc.pattern)}}})
+			})
+		}
+	}
+}
+
+func TestAgentMemoryWriteOnlyVersionUnknownInvalid(t *testing.T) {
+	for _, block := range []string{"llm", "embedding"} {
+		for _, tc := range []struct{ name, input, expression string }{
+			{"zero", "0", "terraform_data.version.output"},
+			{"null", "true", "terraform_data.version.output ? null : 1"},
+		} {
+			t.Run(block+"/"+tc.name, func(t *testing.T) {
+				var requests atomic.Int32
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					requests.Add(1)
+					w.WriteHeader(http.StatusInternalServerError)
+				}))
+				defer server.Close()
+				cfg := unknownKeyConfig(block, `"FAKE-KNOWN"`, fmt.Sprintf(`resource "terraform_data" "version" { input = %s }`, tc.input))
+				cfg = strings.Replace(cfg, "api_key=\"FAKE-KNOWN\"\n   api_key_version = 1", "api_key=\"FAKE-KNOWN\"\n   api_key_version = "+tc.expression, 1)
+				resource.UnitTest(t, resource.TestCase{
+					ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+					Steps:                    []resource.TestStep{{Config: testProviderConfig(t, server.URL) + cfg, ExpectError: regexp.MustCompile("Invalid Attribute Combination|at least 1")}},
+				})
+				if requests.Load() != 0 {
+					t.Fatalf("invalid version reached the API: %d requests", requests.Load())
+				}
 			})
 		}
 	}

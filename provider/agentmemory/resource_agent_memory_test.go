@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
 	"testing"
 
 	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
@@ -320,11 +321,11 @@ func TestAgentMemoryResource_mockedCreateWithModelConfig(t *testing.T) {
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.provider", "openai"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.model", "gpt-4o-mini"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.credentials.type", "apiKey"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.credentials.api_key", "llm-secret"),
+					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "llm.credentials.api_key"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.provider", "openai"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.model", "text-embedding-3-small"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.credentials.type", "apiKey"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.credentials.api_key", "embedding-secret"),
+					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "embedding.credentials.api_key"),
 				),
 			},
 		},
@@ -855,13 +856,13 @@ func TestAgentMemoryResource_mockedUpdateModelConfig(t *testing.T) {
 				Config: testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
 			},
 			{
-				Config: testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4.1-mini", "text-embedding-3-small", "llm-secret-2", "embedding-secret-2"),
+				Config: testProviderConfig(t, server.URL) + strings.ReplaceAll(agentMemoryModelConfig("store", "gpt-4.1-mini", "text-embedding-3-small", "llm-secret-2", "embedding-secret-2"), "api_key_version = 1", "api_key_version = 2"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.model", "gpt-4.1-mini"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.credentials.api_key", "llm-secret-2"),
+					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "llm.credentials.api_key"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.model", "text-embedding-3-small"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.credentials.api_key", "embedding-secret-2"),
+					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "embedding.credentials.api_key"),
 				),
 			},
 		},
@@ -1156,6 +1157,7 @@ resource "rediscloud_agent_memory" "example" {
     credentials {
       type    = "apiKey"
       api_key = "llm-secret"
+   api_key_version = 1
     }
   }
 }
@@ -1183,6 +1185,7 @@ resource "rediscloud_agent_memory" "example" {
     credentials {
       type    = "apiKey"
       api_key = "llm-secret"
+   api_key_version = 1
     }
   }
 
@@ -1193,6 +1196,7 @@ resource "rediscloud_agent_memory" "example" {
     credentials {
       type    = "apiKey"
       api_key = "embedding-secret"
+   api_key_version = 1
     }
   }
 }
@@ -1770,6 +1774,7 @@ resource "rediscloud_agent_memory" "example" {
     credentials {
       type    = "apiKey"
       api_key = %[4]q
+   api_key_version = 1
     }
   }
 
@@ -1780,6 +1785,7 @@ resource "rediscloud_agent_memory" "example" {
     credentials {
       type    = "apiKey"
       api_key = %[5]q
+   api_key_version = 1
     }
   }
 }

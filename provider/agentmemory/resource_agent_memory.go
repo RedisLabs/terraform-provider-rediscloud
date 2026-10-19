@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -153,33 +154,27 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 				Blocks: map[string]schema.Block{
 					"credentials": schema.SingleNestedBlock{
-						Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is stored in Terraform state; api_key_wo is not.",
+						Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is write-only and is not persisted in Terraform plan or state.",
 						Attributes: map[string]schema.Attribute{
 							"type": schema.StringAttribute{
 								Description: "Credential type validated by the Agent Memory API.",
 								Optional:    true,
 							},
 							"api_key": schema.StringAttribute{
-								Description: "Provider API key, stored in Terraform state. Use api_key_wo to avoid persisting it.",
-								Optional:    true,
-								Sensitive:   true,
-								Validators:  []validator.String{stringvalidator.ConflictsWith(path.MatchRoot("llm").AtName("credentials").AtName("api_key_wo"))},
-							},
-							"api_key_wo": schema.StringAttribute{
-								Description: "Provider API key omitted from plan and state. Requires Terraform 1.11 or later. Increment api_key_wo_version to rotate it.",
+								Description: "Provider API key omitted from plan and state. Requires Terraform 1.11.1 or later. Increment api_key_version to rotate it.",
 								Optional:    true,
 								Sensitive:   true,
 								WriteOnly:   true,
 								Validators: []validator.String{
-									stringvalidator.AlsoRequires(path.MatchRoot("llm").AtName("credentials").AtName("api_key_wo_version")),
+									stringvalidator.AlsoRequires(path.MatchRoot("llm").AtName("credentials").AtName("api_key_version")),
 								},
 							},
-							"api_key_wo_version": schema.Int64Attribute{
-								Description: "Positive version used to trigger an in-place write-only credential update. Change this value whenever api_key_wo changes.",
+							"api_key_version": schema.Int64Attribute{
+								Description: "Positive version used to trigger an in-place write-only credential update. Change this value whenever api_key changes.",
 								Optional:    true,
 								Validators: []validator.Int64{
 									int64validator.AtLeast(1),
-									int64validator.AlsoRequires(path.MatchRoot("llm").AtName("credentials").AtName("api_key_wo")),
+									int64validator.AlsoRequires(path.MatchRoot("llm").AtName("credentials").AtName("api_key")),
 								},
 							},
 						},
@@ -210,33 +205,27 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 				Blocks: map[string]schema.Block{
 					"credentials": schema.SingleNestedBlock{
-						Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is stored in Terraform state; api_key_wo is not.",
+						Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is write-only and is not persisted in Terraform plan or state.",
 						Attributes: map[string]schema.Attribute{
 							"type": schema.StringAttribute{
 								Description: "Credential type validated by the Agent Memory API.",
 								Optional:    true,
 							},
 							"api_key": schema.StringAttribute{
-								Description: "Provider API key, stored in Terraform state. Use api_key_wo to avoid persisting it.",
-								Optional:    true,
-								Sensitive:   true,
-								Validators:  []validator.String{stringvalidator.ConflictsWith(path.MatchRoot("embedding").AtName("credentials").AtName("api_key_wo"))},
-							},
-							"api_key_wo": schema.StringAttribute{
-								Description: "Provider API key omitted from plan and state. Requires Terraform 1.11 or later. Increment api_key_wo_version to rotate it.",
+								Description: "Provider API key omitted from plan and state. Requires Terraform 1.11.1 or later. Increment api_key_version to rotate it.",
 								Optional:    true,
 								Sensitive:   true,
 								WriteOnly:   true,
 								Validators: []validator.String{
-									stringvalidator.AlsoRequires(path.MatchRoot("embedding").AtName("credentials").AtName("api_key_wo_version")),
+									stringvalidator.AlsoRequires(path.MatchRoot("embedding").AtName("credentials").AtName("api_key_version")),
 								},
 							},
-							"api_key_wo_version": schema.Int64Attribute{
-								Description: "Positive version used to trigger an in-place write-only credential update. Change this value whenever api_key_wo changes.",
+							"api_key_version": schema.Int64Attribute{
+								Description: "Positive version used to trigger an in-place write-only credential update. Change this value whenever api_key changes.",
 								Optional:    true,
 								Validators: []validator.Int64{
 									int64validator.AtLeast(1),
-									int64validator.AlsoRequires(path.MatchRoot("embedding").AtName("credentials").AtName("api_key_wo")),
+									int64validator.AlsoRequires(path.MatchRoot("embedding").AtName("credentials").AtName("api_key")),
 								},
 							},
 						},
