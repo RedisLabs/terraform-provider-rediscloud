@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	pl "github.com/RedisLabs/rediscloud-go-api/service/privatelink"
-	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -47,9 +47,9 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Step 1: Create everything including privatelink
 			{
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: terraformConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -75,9 +75,9 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 			},
 			// Step 2: Import test
 			{
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				ResourceName:      resourceName,
 				ImportState:       true,
@@ -85,9 +85,9 @@ func TestAccResourceRedisCloudPrivateLink_CRUDI(t *testing.T) {
 			},
 			// Step 3: Remove privatelink, verify deletion via API
 			{
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: terraformConfigWithoutPrivateLink,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -168,9 +168,9 @@ func TestAccResourceRedisCloudPrivateLink_PortConsistency(t *testing.T) {
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: terraformConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
