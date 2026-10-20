@@ -37,6 +37,6 @@ func modelConfigForRequest(ctx context.Context, config tfsdk.Config, block strin
 		diags.AddAttributeError(keyPath, "Missing Agent Memory write-only API key", "api_key must resolve to a non-blank value before sending model credentials to the API.")
 		return nil
 	}
-	result.Credentials.APIKey = key.ValueString()
+	result.Credentials.APIKey = key.ValueStringPointer()
 	return result
 }
