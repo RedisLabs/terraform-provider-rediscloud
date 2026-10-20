@@ -454,13 +454,6 @@ func customExtractionStrategyToModel(strategy *agentmemoryapi.CustomExtractionSt
 	return model
 }
 
-func stringFromValue(value types.String) string {
-	if value.IsNull() || value.IsUnknown() {
-		return ""
-	}
-	return value.ValueString()
-}
-
 func intPointerValue(value *int) types.Int64 {
 	if value == nil {
 		return types.Int64Null()
