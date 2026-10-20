@@ -137,7 +137,13 @@ as in the following example, to configure this.
 $ TEST_PARALLELISM=2 make testacc
 ```
 
-A core set of Acceptance tests are executed through the build pipeline, (considered short tests).  
+Acceptance tests run in CI based on the PR's target branch:
+
+- PRs targeting `main` or `develop` run the broader acceptance-test suite via `Terraform Provider Checks - main branch`.
+- PRs targeting `release/*` run the smoke-focused tests via `Terraform Provider Checks - PR workflow`, subject to its existing draft, changed-file, and `skip-tests` gates.
+
+These provider test workflows no longer run on pushes. The broader suite can also be run manually using `workflow_dispatch`.
+
 Functionality that requires additional setup or environment variables can be executed using the following flags.
 
 | Flag        | Description                                       |

@@ -1,7 +1,7 @@
 name: Terraform Provider Checks - main branch
 
 on:
-  push:
+  pull_request:
     branches:
       - main
       - develop
