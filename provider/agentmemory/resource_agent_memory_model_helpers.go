@@ -167,6 +167,9 @@ func exclusionsToModel(config *agentmemoryapi.LongTermMemoryExclusions, existing
 			Enabled:   types.BoolPointerValue(config.BuiltInDetectors.Enabled),
 			Detectors: detectorSelectionsToModel(config.BuiltInDetectors.Detectors),
 		}
+		if existing != nil && existing.BuiltInDetectors != nil {
+			model.BuiltInDetectors.Detectors = orderDetectorSelectionsLikeExisting(model.BuiltInDetectors.Detectors, existing.BuiltInDetectors.Detectors)
+		}
 		if (config.BuiltInDetectors.Enabled != nil && !*config.BuiltInDetectors.Enabled) && !includeAPIOnlyConfig && (existing == nil || existing.BuiltInDetectors == nil || len(existing.BuiltInDetectors.Detectors) == 0) {
 			model.BuiltInDetectors.Detectors = nil
 		}
@@ -175,6 +178,9 @@ func exclusionsToModel(config *agentmemoryapi.LongTermMemoryExclusions, existing
 		model.CustomDetectors = &AgentMemoryCustomDetectorsModel{
 			Enabled:   types.BoolPointerValue(config.CustomDetectors.Enabled),
 			Detectors: customDetectorsToModel(config.CustomDetectors.Detectors),
+		}
+		if existing != nil && existing.CustomDetectors != nil {
+			model.CustomDetectors.Detectors = orderCustomDetectorsLikeExisting(model.CustomDetectors.Detectors, existing.CustomDetectors.Detectors)
 		}
 		if (config.CustomDetectors.Enabled != nil && !*config.CustomDetectors.Enabled) && !includeAPIOnlyConfig && (existing == nil || existing.CustomDetectors == nil || len(existing.CustomDetectors.Detectors) == 0) {
 			model.CustomDetectors.Detectors = nil
