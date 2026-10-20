@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"testing"
 
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
@@ -16,6 +17,14 @@ import (
 // Generates the base Terraform config for a Pro Subscription with QPF
 func proSubscriptionQPFBoilerplate(name, cloudAccountName, qpf string) string {
 	return fmt.Sprintf(`
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
 	last_four_numbers = "5556"
@@ -38,6 +47,11 @@ resource "rediscloud_subscription" "example" {
   }
 
   cloud_provider {
+    resource_tags = {
+      team  = var.team
+      owner = var.owner
+    }
+
     provider = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
     region {
@@ -97,31 +111,45 @@ resource "rediscloud_subscription_database" "example" {
 
 // Generic test helper for error cases
 func testErrorCase(t *testing.T, config string, cloudAccountCheck func(t *testing.T) bool, expectedError *regexp.Regexp) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := tfconfig.Variables{
+		"team":  tfconfig.StringVariable(resourceTags.Team),
+		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	}
+
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      config,
-				ExpectError: expectedError,
+				ConfigVariables: tagVariables,
+				Config:          config,
+				ExpectError:     expectedError,
 			},
 		},
 	})
 }
 
 func TestAccResourceRedisCloudProDatabase_qpf(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := tfconfig.Variables{
+		"team":  tfconfig.StringVariable(resourceTags.Team),
+		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	}
+
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: formatDatabaseConfig(name, cloudAccountName, password, "4x", ""),
+				ConfigVariables: tagVariables,
+				Config:          formatDatabaseConfig(name, cloudAccountName, password, "4x", ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "name", "example"),
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "protocol", "redis"),
@@ -134,7 +162,8 @@ func TestAccResourceRedisCloudProDatabase_qpf(t *testing.T) {
 
 			// Test that query_performance_factor can be updated without forcing replacement
 			{
-				Config: formatDatabaseConfig(name, cloudAccountName, password, "2x", ""),
+				ConfigVariables: tagVariables,
+				Config:          formatDatabaseConfig(name, cloudAccountName, password, "2x", ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "name", "example"),
 					resource.TestCheckResourceAttr("rediscloud_subscription_database.example", "query_performance_factor", "2x"),
