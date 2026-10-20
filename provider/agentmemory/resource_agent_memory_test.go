@@ -1453,7 +1453,7 @@ func TestAgentMemoryAPIKeyResource_mockedCreateReadDelete(t *testing.T) {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores/store-1/api-keys":
 			var request agentmemoryapi.CreateAPIKeyRequest
 			require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
-			assert.Equal(t, "terraform", request.KeyName)
+			assert.Equal(t, "terraform", redis.StringValue(request.KeyName))
 			apiKeyCreated = true
 
 			_, _ = w.Write([]byte(`{"apiKey":"secret-token"}`))
