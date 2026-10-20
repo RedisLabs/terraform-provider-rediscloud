@@ -35,7 +35,7 @@ func TestAgentMemoryCreateOnlyReplacementLifecycle(t *testing.T) {
 		{name: "strategy prevent destroy", database: "123", strategy: `"FAKE-FUTURE-STRATEGY"`, preventDestroy: true, errorPattern: "prevent_destroy|cannot be destroyed"},
 		{name: "unknown database prevent destroy", database: "terraform_data.value.output", strategy: `"INSTRUCT"`, dependency: `resource "terraform_data" "value" { input=123 }`, preventDestroy: true, errorPattern: "prevent_destroy|cannot be destroyed"},
 		{name: "unknown strategy prevent destroy", database: "123", strategy: "terraform_data.value.output", dependency: `resource "terraform_data" "value" { input="INSTRUCT" }`, preventDestroy: true, errorPattern: "prevent_destroy|cannot be destroyed"},
-		{name: "empty strategy", database: "123", strategy: `""`, errorPattern: "at least 1"},
+		{name: "empty strategy prevent destroy", database: "123", strategy: `""`, preventDestroy: true, errorPattern: "prevent_destroy|cannot be destroyed"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var mu sync.Mutex
