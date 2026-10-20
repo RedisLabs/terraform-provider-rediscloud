@@ -47,7 +47,7 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 		ShortMemory:              shortMemoryFromPlan(plan),
 		LongTermMemory:           longTermMemory,
 		LLM:                      llm,
-		ExtractionStrategy:       stringFromValue(plan.ExtractionStrategy),
+		ExtractionStrategy:       stringPointerFromValue(plan.ExtractionStrategy),
 		ExtractionCadence:        extractionCadenceFromPlan(plan),
 		Summarization:            summarizationFromModel(plan.Summarization),
 		LongTermMemoryExclusions: exclusionsFromModel(plan.LongTermMemoryExclusions),

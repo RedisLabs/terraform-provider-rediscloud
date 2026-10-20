@@ -86,10 +86,8 @@ func customMemoryTypeUpdatesFromPlan(plan, state []AgentMemoryCustomMemoryTypeMo
 			continue
 		}
 
-		update := agentmemoryapi.MemoryTypeStrategyUpdate{TypeName: name}
-		if !planned.ExtractionStrategy.Prompt.IsNull() && !planned.ExtractionStrategy.Prompt.IsUnknown() {
-			update.Prompt = planned.ExtractionStrategy.Prompt.ValueString()
-		}
+		update := agentmemoryapi.MemoryTypeStrategyUpdate{TypeName: planned.Name.ValueStringPointer()}
+		update.Prompt = stringPointerFromValue(planned.ExtractionStrategy.Prompt)
 		if !planned.ExtractionStrategy.Enabled.IsNull() && !planned.ExtractionStrategy.Enabled.IsUnknown() {
 			enabled := planned.ExtractionStrategy.Enabled.ValueBool()
 			update.Enabled = &enabled

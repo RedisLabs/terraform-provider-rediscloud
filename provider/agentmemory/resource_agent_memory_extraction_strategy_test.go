@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -100,17 +101,33 @@ resource "rediscloud_agent_memory" "example" {
 	assert.Nil(t, store)
 }
 
-func TestAgentMemoryExtractionStrategyRejectsEmptyString(t *testing.T) {
+func TestAgentMemoryExtractionStrategyEmptyStringReachesAPI(t *testing.T) {
+	var creates atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, "/memory-stores", r.URL.Path)
+		var payload map[string]any
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
+		value, present := payload["extractionStrategy"]
+		assert.True(t, present)
+		assert.Equal(t, "", value)
+		creates.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"message":"extractionStrategy cannot be empty"}`))
+	}))
+	defer server.Close()
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{{
-			Config: testProviderConfig(t, "http://127.0.0.1:1") + `
+			Config: testProviderConfig(t, server.URL) + `
 resource "rediscloud_agent_memory" "example" {
  name = "store"
  database_id = 123
  extraction_strategy = ""
 }
-`, PlanOnly: true, ExpectError: regexp.MustCompile("at least 1"),
+`, ExpectError: regexp.MustCompile(`extractionStrategy\s+cannot be empty`),
 		}},
 	})
+	assert.EqualValues(t, 1, creates.Load())
 }
