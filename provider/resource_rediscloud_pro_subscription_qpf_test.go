@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
@@ -14,6 +15,14 @@ import (
 // Generates the base Terraform config for a Pro Subscription with QPF
 func formatSubscriptionConfig(name, cloudAccountName, qpf, extraConfig string) string {
 	return fmt.Sprintf(`
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
 	last_four_numbers = "5556"
@@ -37,6 +46,11 @@ resource "rediscloud_subscription" "example" {
   }
 
   cloud_provider {
+    resource_tags = {
+      team  = var.team
+      owner = var.owner
+    }
+
     provider = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
     region {
@@ -61,17 +75,24 @@ resource "rediscloud_subscription" "example" {
 }
 
 func TestAccResourceRedisCloudProSubscription_qpf(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := tfconfig.Variables{
+		"team":  tfconfig.StringVariable(resourceTags.Team),
+		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	}
+
 	name := testRandomWithPrefix()
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 	const resourceName = "rediscloud_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: formatSubscriptionConfig(name, cloudAccountName, "2x", `modules = ["RediSearch"]`),
+				ConfigVariables: tagVariables,
+				Config:          formatSubscriptionConfig(name, cloudAccountName, "2x", `modules = ["RediSearch"]`),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "payment_method", "credit-card"),

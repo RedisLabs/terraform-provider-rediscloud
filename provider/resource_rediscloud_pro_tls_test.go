@@ -12,6 +12,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -22,6 +23,12 @@ var invalidSslCertificate = "I am not a valid certificate"
 
 // enable_tls=true, client_ssl_certificate=<valid>
 func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndSslCert(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := tfconfig.Variables{
+		"team":  tfconfig.StringVariable(resourceTags.Team),
+		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	}
+
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	const subscriptionName = "rediscloud_subscription.example"
@@ -31,12 +38,13 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, cloudAccountName, name, 1, password, sslCertificate),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, cloudAccountName, name, 1, password, sslCertificate),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(subscriptionName, "name", name),
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
@@ -85,7 +93,8 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 			},
 			// Ensure that SSL users can upgrade to TLS
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndTlsCert, cloudAccountName, name, 1, password, sslCertificate),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndTlsCert, cloudAccountName, name, 1, password, sslCertificate),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(subscriptionName, "name", name),
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
@@ -99,7 +108,8 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 			},
 			// And that mTLS can be switched off altogether
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndNoCert, cloudAccountName, name, 1, password),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndNoCert, cloudAccountName, name, 1, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(subscriptionName, "name", name),
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
@@ -113,6 +123,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 			},
 			{
 				ResourceName:            databaseName,
+				ConfigVariables:         tagVariables,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"client_ssl_certificate", "client_tls_certificates"},
@@ -123,6 +134,12 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 
 // enable_tls=true, client_ssl_certificate=""
 func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndEmptySslCert(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := tfconfig.Variables{
+		"team":  tfconfig.StringVariable(resourceTags.Team),
+		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	}
+
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	const subscriptionName = "rediscloud_subscription.example"
@@ -132,12 +149,13 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndWithoutCert, cloudAccountName, name, 1, password),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndWithoutCert, cloudAccountName, name, 1, password),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(subscriptionName, "name", name),
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
@@ -189,6 +207,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 			},
 			{
 				ResourceName:      subscriptionName,
+				ConfigVariables:   tagVariables,
 				ImportState:       true,
 				ImportStateVerify: true,
 				// TODO(tests): Investigate why this fails — `pricing` and `prometheus_endpoint`
@@ -202,18 +221,25 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 
 // enable_tls=true, client_ssl_certificate=<invalid>
 func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndInvalidSslCert(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := tfconfig.Variables{
+		"team":  tfconfig.StringVariable(resourceTags.Team),
+		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	}
+
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, cloudAccountName, name, 1, password, invalidSslCertificate),
-				ExpectError: regexp.MustCompile("Error: 400 BAD_REQUEST - DATABASE_INVALID_CERT: Database certificate is invalid"),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, cloudAccountName, name, 1, password, invalidSslCertificate),
+				ExpectError:     regexp.MustCompile("Error: 400 BAD_REQUEST - DATABASE_INVALID_CERT: Database certificate is invalid"),
 			},
 		},
 	})
@@ -221,18 +247,25 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 
 // enable_tls=false, client_ssl_certificate=<invalid>
 func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseAndDisabledTlsAndInvalidCert(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := tfconfig.Variables{
+		"team":  tfconfig.StringVariable(resourceTags.Team),
+		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	}
+
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithoutEnableTlsAndWithCert, cloudAccountName, name, 1, password, invalidSslCertificate),
-				ExpectError: regexp.MustCompile("Error: 400 BAD_REQUEST - DATABASE_INVALID_CERT: Database certificate is invalid"),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithoutEnableTlsAndWithCert, cloudAccountName, name, 1, password, invalidSslCertificate),
+				ExpectError:     regexp.MustCompile("Error: 400 BAD_REQUEST - DATABASE_INVALID_CERT: Database certificate is invalid"),
 			},
 		},
 	})
@@ -240,36 +273,50 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseAndDisabledTlsAn
 
 // enable_tls=false, client_ssl_certificate="", client_tls_certificates=["something"]
 func TestAccResourceRedisCloudSubscriptionTls_createWithoutEnableTlsAndTlsCert(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := tfconfig.Variables{
+		"team":  tfconfig.StringVariable(resourceTags.Team),
+		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	}
+
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudWithoutEnableTlsAndWithTlsCert, cloudAccountName, name, 1, password, sslCertificate),
-				ExpectError: regexp.MustCompile("TLS certificates may not be provided while enable_tls is false"),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudWithoutEnableTlsAndWithTlsCert, cloudAccountName, name, 1, password, sslCertificate),
+				ExpectError:     regexp.MustCompile("TLS certificates may not be provided while enable_tls is false"),
 			},
 		},
 	})
 }
 
 func TestAccResourceRedisCloudSubscriptionTls_createWithSslCertAndTlsCert(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := tfconfig.Variables{
+		"team":  tfconfig.StringVariable(resourceTags.Team),
+		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	}
+
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config:      fmt.Sprintf(bothSslAndTls, cloudAccountName, name, 1, password, sslCertificate, sslCertificate),
-				ExpectError: regexp.MustCompile("Conflicting configuration arguments"),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(bothSslAndTls, cloudAccountName, name, 1, password, sslCertificate, sslCertificate),
+				ExpectError:     regexp.MustCompile("Conflicting configuration arguments"),
 			},
 		},
 	})
@@ -277,6 +324,12 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithSslCertAndTlsCert(t *tes
 
 // enable_tls=true, client_ssl_certificate="", client_tls_certificates=["something"]
 func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndTlsCert(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := tfconfig.Variables{
+		"team":  tfconfig.StringVariable(resourceTags.Team),
+		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	}
+
 	name := testRandomWithPrefix()
 	password := acctest.RandString(20)
 	const subscriptionName = "rediscloud_subscription.example"
@@ -286,12 +339,13 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 	var subId int
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndTlsCert, cloudAccountName, name, 1, password, sslCertificate),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndTlsCert, cloudAccountName, name, 1, password, sslCertificate),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(subscriptionName, "name", name),
 					resource.TestCheckResourceAttr(subscriptionName, "cloud_provider.0.provider", "AWS"),
@@ -340,6 +394,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 			},
 			{
 				ResourceName:            databaseName,
+				ConfigVariables:         tagVariables,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"client_tls_certificates"},
@@ -349,6 +404,14 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 }
 
 const subscriptionBoilerplate = `
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
 	last_four_numbers = "5556"
@@ -372,6 +435,11 @@ resource "rediscloud_subscription" "example" {
   }
 
   cloud_provider {
+    resource_tags = {
+      team  = var.team
+      owner = var.owner
+    }
+
     provider = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
     region {

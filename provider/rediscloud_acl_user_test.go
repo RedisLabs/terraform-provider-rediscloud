@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -18,6 +19,12 @@ import (
 )
 
 func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := tfconfig.Variables{
+		"team":  tfconfig.StringVariable(resourceTags.Team),
+		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	}
+
 	prefix := testRandomWithPrefix()
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 	exampleSubscriptionName := prefix + "-subscription"
@@ -54,13 +61,14 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 	const AclUserTestData = "data.rediscloud_acl_user.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testAccCheckAclUserDestroy,
 		Steps: []resource.TestStep{
 			// Test user creation
 			{
-				Config: testCreateTerraform,
+				ConfigVariables: tagVariables,
+				Config:          testCreateTerraform,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test resource
 					resource.TestCheckResourceAttr(AclUserTest, "name", testUserName),
@@ -107,7 +115,8 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 			},
 			// Test user update, id should not have changed
 			{
-				Config: testUpdateTerraform,
+				ConfigVariables: tagVariables,
+				Config:          testUpdateTerraform,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test resource
 					resource.TestCheckResourceAttr(AclUserTest, "name", testUserName),
@@ -131,7 +140,8 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 			// Test user is updated successfully. A name change should forcibly generate a new entity with a new id
 			// Take a snapshot of this new id
 			{
-				Config: testNewNameTerraform,
+				ConfigVariables: tagVariables,
+				Config:          testNewNameTerraform,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[AclUserTest]
@@ -145,7 +155,8 @@ func TestAccResourceRedisCloudAclUser_CRUDI(t *testing.T) {
 			},
 			// Test user is updated successfully. A password change should forcibly generate a new entity with a new id
 			{
-				Config: testNewPasswordTerraform,
+				ConfigVariables: tagVariables,
+				Config:          testNewPasswordTerraform,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					func(s *terraform.State) error {
 						r := s.RootModule().Resources[AclUserTest]
@@ -225,6 +236,14 @@ func testAccCheckAclUserDestroy(s *terraform.State) error {
 }
 
 const testAccResourceRedisCloudProDatabaseAcl = `
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 data "rediscloud_payment_method" "card" {
   card_type = "Visa"
   last_four_numbers = "5556"
@@ -240,6 +259,11 @@ resource "rediscloud_subscription" "example" {
   name = "%s"
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider {
+    resource_tags = {
+      team  = var.team
+      owner = var.owner
+    }
+
     provider = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
     region {

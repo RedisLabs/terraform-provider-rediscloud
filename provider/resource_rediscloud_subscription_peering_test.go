@@ -9,10 +9,17 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := tfconfig.Variables{
+		"team":  tfconfig.StringVariable(resourceTags.Team),
+		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	}
+
 	name := testRandomWithPrefix()
 
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
@@ -38,7 +45,7 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 	const resourceName = "rediscloud_subscription_peering.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: envchecks.ComposePreChecks(t,
+		PreCheck: envchecks.ComposePreChecks(t, resourceTagsCheck,
 			envchecks.RedisCloudCheck,
 			awsPeeringCheck,
 			cloudAccountCheck,
@@ -59,7 +66,8 @@ func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: tf,
+				ConfigVariables: tagVariables,
+				Config:          tf,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^\\d*/\\d*$")),
 					resource.TestCheckResourceAttrSet(resourceName, "status"),
@@ -139,6 +147,14 @@ func cidrRangesOverlap(cidr1 string, cidr2 string) (bool, error) {
 }
 
 const testAccResourceRedisCloudSubscriptionPeeringAWS = `
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
 	last_four_numbers = "5556"
@@ -156,6 +172,11 @@ resource "rediscloud_subscription" "example" {
   memory_storage = "ram"
 
   cloud_provider {
+    resource_tags = {
+      team  = var.team
+      owner = var.owner
+    }
+
     provider = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
     region {

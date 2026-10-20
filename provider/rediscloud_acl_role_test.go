@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -19,6 +20,12 @@ import (
 )
 
 func TestAccResourceRedisCloudAclRole_CRUDI(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := tfconfig.Variables{
+		"team":  tfconfig.StringVariable(resourceTags.Team),
+		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	}
+
 	prefix := testRandomWithPrefix()
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 	exampleSubscriptionName := prefix + "-subscription"
@@ -43,14 +50,15 @@ func TestAccResourceRedisCloudAclRole_CRUDI(t *testing.T) {
 	const testAclRoleData = "data.rediscloud_acl_role.test"
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		// Sometimes after deletion, the entity 'flickers'
 		CheckDestroy: nil,
 		Steps: []resource.TestStep{
 			// Test role creation including association with database
 			{
-				Config: testCreateTerraform,
+				ConfigVariables: tagVariables,
+				Config:          testCreateTerraform,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttr(testAclRole, "name", testRoleName),
@@ -97,7 +105,8 @@ func TestAccResourceRedisCloudAclRole_CRUDI(t *testing.T) {
 			},
 			// Test role update
 			{
-				Config: testUpdateTerraform,
+				ConfigVariables: tagVariables,
+				Config:          testUpdateTerraform,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Test the resource
 					resource.TestCheckResourceAttr(testAclRole, "name", testRoleNameUpdated),
