@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
@@ -36,9 +36,9 @@ func TestAccRedisCloudProDatabase_DefaultSourceIPs_PrivateAccess(t *testing.T) {
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: configDisabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -86,9 +86,9 @@ func TestAccRedisCloudProDatabase_DefaultSourceIPs_PublicAccess(t *testing.T) {
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: configEnabled,
 				Check: resource.ComposeAggregateTestCheckFunc(

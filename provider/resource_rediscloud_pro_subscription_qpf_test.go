@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
@@ -76,9 +76,9 @@ resource "rediscloud_subscription" "example" {
 
 func TestAccResourceRedisCloudProSubscription_qpf(t *testing.T) {
 	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
-	tagVariables := tfconfig.Variables{
-		"team":  tfconfig.StringVariable(resourceTags.Team),
-		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
 	name := testRandomWithPrefix()

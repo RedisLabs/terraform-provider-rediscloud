@@ -12,7 +12,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -24,9 +24,9 @@ var invalidSslCertificate = "I am not a valid certificate"
 // enable_tls=true, client_ssl_certificate=<valid>
 func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndSslCert(t *testing.T) {
 	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
-	tagVariables := tfconfig.Variables{
-		"team":  tfconfig.StringVariable(resourceTags.Team),
-		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
 	name := testRandomWithPrefix()
@@ -135,9 +135,9 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 // enable_tls=true, client_ssl_certificate=""
 func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndEmptySslCert(t *testing.T) {
 	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
-	tagVariables := tfconfig.Variables{
-		"team":  tfconfig.StringVariable(resourceTags.Team),
-		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
 	name := testRandomWithPrefix()
@@ -222,9 +222,9 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 // enable_tls=true, client_ssl_certificate=<invalid>
 func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndInvalidSslCert(t *testing.T) {
 	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
-	tagVariables := tfconfig.Variables{
-		"team":  tfconfig.StringVariable(resourceTags.Team),
-		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
 	name := testRandomWithPrefix()
@@ -248,9 +248,9 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 // enable_tls=false, client_ssl_certificate=<invalid>
 func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseAndDisabledTlsAndInvalidCert(t *testing.T) {
 	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
-	tagVariables := tfconfig.Variables{
-		"team":  tfconfig.StringVariable(resourceTags.Team),
-		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
 	name := testRandomWithPrefix()
@@ -274,9 +274,9 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseAndDisabledTlsAn
 // enable_tls=false, client_ssl_certificate="", client_tls_certificates=["something"]
 func TestAccResourceRedisCloudSubscriptionTls_createWithoutEnableTlsAndTlsCert(t *testing.T) {
 	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
-	tagVariables := tfconfig.Variables{
-		"team":  tfconfig.StringVariable(resourceTags.Team),
-		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
 	name := testRandomWithPrefix()
@@ -299,9 +299,9 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithoutEnableTlsAndTlsCert(t
 
 func TestAccResourceRedisCloudSubscriptionTls_createWithSslCertAndTlsCert(t *testing.T) {
 	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
-	tagVariables := tfconfig.Variables{
-		"team":  tfconfig.StringVariable(resourceTags.Team),
-		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
 	name := testRandomWithPrefix()
@@ -325,9 +325,9 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithSslCertAndTlsCert(t *tes
 // enable_tls=true, client_ssl_certificate="", client_tls_certificates=["something"]
 func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAndTlsCert(t *testing.T) {
 	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
-	tagVariables := tfconfig.Variables{
-		"team":  tfconfig.StringVariable(resourceTags.Team),
-		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
 	name := testRandomWithPrefix()

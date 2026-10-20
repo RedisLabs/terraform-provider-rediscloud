@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
-	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -21,9 +21,9 @@ import (
 
 func TestAccResourceRedisCloudAclRole_CRUDI(t *testing.T) {
 	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
-	tagVariables := tfconfig.Variables{
-		"team":  tfconfig.StringVariable(resourceTags.Team),
-		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
 	prefix := testRandomWithPrefix()

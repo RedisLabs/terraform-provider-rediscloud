@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
@@ -38,9 +38,9 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PrivateAccess(t *t
 		CheckDestroy:             testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: configDisabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -87,9 +87,9 @@ func TestAccActiveActiveSubscriptionDatabase_DefaultSourceIPs_PublicAccess(t *te
 		CheckDestroy:             testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: configEnabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -133,9 +133,9 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) 
 		CheckDestroy:             testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: configDisabled,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -174,9 +174,9 @@ func TestAccActiveActiveSubscriptionDatabase_BlockPublicEndpoints(t *testing.T) 
 				),
 			},
 			{
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: configEnabled,
 				Check: resource.ComposeAggregateTestCheckFunc(

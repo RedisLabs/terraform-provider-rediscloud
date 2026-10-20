@@ -9,15 +9,15 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 
-	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccResourceRedisCloudSubscriptionPeering_aws(t *testing.T) {
 	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
-	tagVariables := tfconfig.Variables{
-		"team":  tfconfig.StringVariable(resourceTags.Team),
-		"owner": tfconfig.StringVariable(resourceTags.Owner),
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
 	name := testRandomWithPrefix()
