@@ -32,7 +32,7 @@ func (r *agentMemoryAPIKeyResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	plan.ID = types.StringPointerValue(created.Info.APIKeyID)
-	plan.APIKey = types.StringValue(created.APIKey)
+	plan.APIKey = types.StringPointerValue(created.APIKey)
 	plan.ObfuscatedToken = types.StringPointerValue(created.Info.ObfuscatedToken)
 	plan.CreatedAt = types.Int64PointerValue(created.Info.CreatedAt)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)

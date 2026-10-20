@@ -101,10 +101,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 					stringplanmodifier.UseNonNullStateForUnknown(),
 					stringplanmodifier.RequiresReplaceIfConfigured(),
 				},
-				Validators: []validator.String{
-					// The SDK omits empty strings, which would lose an explicitly configured value.
-					stringvalidator.LengthAtLeast(1),
-				},
 			},
 			"extraction_cadence_seconds": schema.Int64Attribute{
 				Description: "How often the extraction pipeline runs while a session is active, in seconds.",
@@ -261,7 +257,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 						Optional:    true,
 						Computed:    true,
 						Validators: []validator.String{
-							// The SDK omits empty strings instead of sending the configured value.
 							stringvalidator.LengthAtLeast(1),
 						},
 					},
@@ -349,7 +344,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 											Optional:    true,
 											Computed:    true,
 											Validators: []validator.String{
-												// The SDK omits empty strings, which would lose an explicitly configured action.
 												stringvalidator.LengthAtLeast(1),
 											},
 										},
@@ -391,7 +385,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 											Optional:    true,
 											Computed:    true,
 											Validators: []validator.String{
-												// The SDK omits empty strings, which would lose an explicitly configured action.
 												stringvalidator.LengthAtLeast(1),
 											},
 										},
@@ -501,7 +494,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 									Description: "Prompt used to extract this custom memory type.",
 									Optional:    true,
 									Validators: []validator.String{
-										// The SDK omits empty prompts, which would lose an explicitly configured value.
+										// The create API requires a non-blank custom extraction prompt.
 										stringvalidator.LengthAtLeast(1),
 									},
 								},

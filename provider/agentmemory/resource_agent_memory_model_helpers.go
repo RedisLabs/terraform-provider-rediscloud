@@ -12,12 +12,12 @@ func modelConfigFromModel(model *AgentMemoryModelConfigModel) *agentmemoryapi.Mo
 	}
 
 	config := &agentmemoryapi.ModelConfig{
-		Provider: stringFromValue(model.Provider),
-		Model:    stringFromValue(model.Model),
+		Provider: stringPointerFromValue(model.Provider),
+		Model:    stringPointerFromValue(model.Model),
 	}
 	if model.Credentials != nil {
 		config.Credentials = &agentmemoryapi.ModelCredentials{
-			Type: stringFromValue(model.Credentials.Type),
+			Type: stringPointerFromValue(model.Credentials.Type),
 		}
 	}
 
@@ -452,13 +452,6 @@ func customExtractionStrategyToModel(strategy *agentmemoryapi.CustomExtractionSt
 		model.Enabled = types.BoolNull()
 	}
 	return model
-}
-
-func stringFromValue(value types.String) string {
-	if value.IsNull() || value.IsUnknown() {
-		return ""
-	}
-	return value.ValueString()
 }
 
 func intPointerValue(value *int) types.Int64 {
