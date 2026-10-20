@@ -23,7 +23,8 @@ func (d *essentialsSubscriptionDataSource) Read(ctx context.Context, req datasou
 	}
 
 	var model EssentialsSubscriptionModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+	diags := req.Config.Get(ctx, &model)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

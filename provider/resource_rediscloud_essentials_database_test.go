@@ -24,9 +24,9 @@ func TestAccResourceRedisCloudEssentialsDatabase_CRUDI(t *testing.T) {
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
+		PreCheck:                 envchecks.ComposePreChecks(t, testhelpers.PreCheckNoEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseBasic, subscriptionName, databaseName),
@@ -194,10 +194,6 @@ resource "rediscloud_essentials_subscription" "example" {
 	# payment_method_id = data.rediscloud_payment_method.card.id
 }
 
-data "rediscloud_essentials_subscription" "example" {
-	name = rediscloud_essentials_subscription.example.name
-}
-
 resource "rediscloud_essentials_database" "example" {
 	subscription_id = rediscloud_essentials_subscription.example.id
 	name = "%s"
@@ -280,9 +276,9 @@ func TestAccResourceRedisCloudEssentialsDatabase_DisableDefaultUser(t *testing.T
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
+		PreCheck:                 envchecks.ComposePreChecks(t, testhelpers.PreCheckNoEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudEssentialsDatabaseDisableDefaultUserCreate, subscriptionName, databaseName),
@@ -345,9 +341,9 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersion(t *testing.T) {
 	const datasourceName = "data.rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
+		PreCheck:                 envchecks.ComposePreChecks(t, testhelpers.PreCheckNoEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: getEssentialsDatabaseConfigRedisVersion(t, subscriptionName, databaseName),
@@ -379,9 +375,9 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionUpgrade(t *testing.
 	const resourceName = "rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
+		PreCheck:                 envchecks.ComposePreChecks(t, testhelpers.PreCheckNoEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create database with Redis 8.2
 			{
@@ -421,9 +417,9 @@ func TestAccResourceRedisCloudEssentialsDatabase_RedisVersionAutoMinorUpgrade(t 
 	const resourceName = "rediscloud_essentials_database.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
+		PreCheck:                 envchecks.ComposePreChecks(t, testhelpers.PreCheckNoEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create database with Redis 8.4
 			{

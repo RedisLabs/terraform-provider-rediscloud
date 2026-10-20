@@ -1,52 +1,20 @@
 package provider_test
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"regexp"
-	"strconv"
 	"testing"
 
-	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
 
 var essentialsMarketplaceFlag = flag.Bool("essentialsMarketplace", false,
 	"Add this flag '-essentialsMarketplace' to run tests for marketplace associated accounts")
-
-// testAccPreCheckEssentialsSubscription checks if an essentials subscription already exists
-// and fails fast to avoid the test failing after provisioning attempts
-func testAccPreCheckEssentialsSubscription(t *testing.T) bool {
-	t.Helper()
-	if !envchecks.RedisCloudCheck(t) {
-		return false
-	}
-
-	apiClient, err := client.GetTestClient()
-	if err != nil {
-		t.Errorf("Failed to create API client: %v", err)
-		return false
-	}
-
-	subs, err := apiClient.Client.FixedSubscriptions.List(context.TODO())
-	if err != nil {
-		t.Errorf("Failed to list essentials subscriptions: %v", err)
-		return false
-	}
-
-	if len(subs) > 0 {
-		t.Errorf("Essentials subscription already exists (ID: %d). Redis Cloud allows only 1 essentials subscription per account. Please delete the existing subscription before running this test.", redis.IntValue(subs[0].ID))
-		return false
-	}
-	return true
-}
 
 func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 
@@ -54,12 +22,11 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 	subscriptionNameUpdated := subscriptionName + "-updated"
 
 	const resourceName = "rediscloud_essentials_subscription.example"
-	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
+		PreCheck:                 envchecks.ComposePreChecks(t, testhelpers.PreCheckNoEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudFreeEssentialsSubscription, subscriptionName),
@@ -71,14 +38,6 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "plan_id"),
 					resource.TestCheckResourceAttr(resourceName, "payment_method_id", "0"),
 					resource.TestCheckResourceAttrSet(resourceName, "creation_date"),
-
-					// Test the datasource
-					resource.TestCheckResourceAttrSet(datasourceName, "id"),
-					resource.TestCheckResourceAttr(datasourceName, "name", subscriptionName),
-					resource.TestCheckResourceAttr(datasourceName, "status", "active"),
-					resource.TestCheckResourceAttrSet(datasourceName, "plan_id"),
-					resource.TestCheckResourceAttr(resourceName, "payment_method_id", "0"),
-					resource.TestCheckResourceAttrSet(datasourceName, "creation_date"),
 				),
 			},
 			{
@@ -91,14 +50,6 @@ func TestAccResourceRedisCloudEssentialsSubscription_Free_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "plan_id"),
 					resource.TestCheckResourceAttr(resourceName, "payment_method_id", "0"),
 					resource.TestCheckResourceAttrSet(resourceName, "creation_date"),
-
-					// Test the datasource
-					resource.TestCheckResourceAttrSet(datasourceName, "id"),
-					resource.TestCheckResourceAttr(datasourceName, "name", subscriptionNameUpdated),
-					resource.TestCheckResourceAttr(datasourceName, "status", "active"),
-					resource.TestCheckResourceAttrSet(datasourceName, "plan_id"),
-					resource.TestCheckResourceAttr(resourceName, "payment_method_id", "0"),
-					resource.TestCheckResourceAttrSet(datasourceName, "creation_date"),
 				),
 			},
 			{
@@ -117,12 +68,11 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 	subscriptionNameUpdated := subscriptionName + "-updated"
 
 	const resourceName = "rediscloud_essentials_subscription.example"
-	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
+		PreCheck:                 envchecks.ComposePreChecks(t, testhelpers.PreCheckNoEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudPaidCreditCardEssentialsSubscription, subscriptionName),
@@ -135,14 +85,6 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method"),
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "creation_date"),
-
-					// Test the datasource
-					resource.TestCheckResourceAttrSet(datasourceName, "id"),
-					resource.TestCheckResourceAttr(datasourceName, "name", subscriptionName),
-					resource.TestCheckResourceAttr(datasourceName, "status", "active"),
-					resource.TestCheckResourceAttrSet(datasourceName, "plan_id"),
-					resource.TestCheckResourceAttrSet(datasourceName, "payment_method_id"),
-					resource.TestCheckResourceAttrSet(datasourceName, "creation_date"),
 				),
 			},
 			{
@@ -155,14 +97,6 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_CreditCard_CRUDI(t *te
 					resource.TestCheckResourceAttrSet(resourceName, "plan_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "creation_date"),
-
-					// Test the datasource
-					resource.TestCheckResourceAttrSet(datasourceName, "id"),
-					resource.TestCheckResourceAttr(datasourceName, "name", subscriptionNameUpdated),
-					resource.TestCheckResourceAttr(datasourceName, "status", "active"),
-					resource.TestCheckResourceAttrSet(datasourceName, "plan_id"),
-					resource.TestCheckResourceAttrSet(datasourceName, "payment_method_id"),
-					resource.TestCheckResourceAttrSet(datasourceName, "creation_date"),
 				),
 			},
 			{
@@ -181,12 +115,11 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 	subscriptionNameUpdated := subscriptionName + "-updated"
 
 	const resourceName = "rediscloud_essentials_subscription.example"
-	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
+		PreCheck:                 envchecks.ComposePreChecks(t, testhelpers.PreCheckNoEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudPaidNoPaymentTypeEssentialsSubscription, subscriptionName),
@@ -199,14 +132,6 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method"),
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "creation_date"),
-
-					// Test the datasource
-					resource.TestCheckResourceAttrSet(datasourceName, "id"),
-					resource.TestCheckResourceAttr(datasourceName, "name", subscriptionName),
-					resource.TestCheckResourceAttr(datasourceName, "status", "active"),
-					resource.TestCheckResourceAttrSet(datasourceName, "plan_id"),
-					resource.TestCheckResourceAttrSet(datasourceName, "payment_method_id"),
-					resource.TestCheckResourceAttrSet(datasourceName, "creation_date"),
 				),
 			},
 			{
@@ -219,14 +144,6 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_NoPaymentType_CRUDI(t 
 					resource.TestCheckResourceAttrSet(resourceName, "plan_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "creation_date"),
-
-					// Test the datasource
-					resource.TestCheckResourceAttrSet(datasourceName, "id"),
-					resource.TestCheckResourceAttr(datasourceName, "name", subscriptionNameUpdated),
-					resource.TestCheckResourceAttr(datasourceName, "status", "active"),
-					resource.TestCheckResourceAttrSet(datasourceName, "plan_id"),
-					resource.TestCheckResourceAttrSet(datasourceName, "payment_method_id"),
-					resource.TestCheckResourceAttrSet(datasourceName, "creation_date"),
 				),
 			},
 			{
@@ -254,9 +171,9 @@ func TestAccResourceRedisCloudEssentialsSubscription_Paid_Marketplace_CRUDI(t *t
 	const datasourceName = "data.rediscloud_essentials_subscription.example"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, testAccPreCheckEssentialsSubscription),
+		PreCheck:                 envchecks.ComposePreChecks(t, testhelpers.PreCheckNoEssentialsSubscription),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckEssentialsSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: fmt.Sprintf(testAccResourceRedisCloudPaidMarketplaceEssentialsSubscription, subscriptionName),
@@ -316,7 +233,7 @@ func TestAccResourceRedisCloudEssentialsSubscription_Incorrect_PaymentIdForType(
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
-		CheckDestroy:             testAccCheckEssentialsSubscriptionDestroy,
+		CheckDestroy:             testhelpers.CheckEssentialsSubscriptionDestroy,
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
@@ -344,10 +261,6 @@ resource "rediscloud_essentials_subscription" "example" {
 	plan_id = data.rediscloud_essentials_plan.example.id
 	# payment_method = "credit-card"
 	# payment_method_id = data.rediscloud_payment_method.card.id
-}
-
-data "rediscloud_essentials_subscription" "example" {
-	name = rediscloud_essentials_subscription.example.name
 }
 `
 
@@ -387,10 +300,6 @@ resource "rediscloud_essentials_subscription" "example" {
 	payment_method_id = data.rediscloud_payment_method.card.id
 	payment_method = "credit-card"
 }
-
-data "rediscloud_essentials_subscription" "example" {
-	name = rediscloud_essentials_subscription.example.name
-}
 `
 
 // doesn't contain credit-card, tests for default
@@ -411,10 +320,6 @@ resource "rediscloud_essentials_subscription" "example" {
 	plan_id = data.rediscloud_essentials_plan.example.id
 	payment_method_id = data.rediscloud_payment_method.card.id
 }
-
-data "rediscloud_essentials_subscription" "example" {
-	name = rediscloud_essentials_subscription.example.name
-}
 `
 
 const testAccResourceRedisCloudPaidIncorrectPaymentTypeEssentialsSubscription = `
@@ -430,39 +335,4 @@ resource "rediscloud_essentials_subscription" "example" {
 	payment_method = "marketplace"
 	payment_method_id = 999999999
 }
-
-data "rediscloud_essentials_subscription" "example" {
-	name = rediscloud_essentials_subscription.example.name
-}
 `
-
-func testAccCheckEssentialsSubscriptionDestroy(s *terraform.State) error {
-	apiClient, err := client.GetTestClient()
-	if err != nil {
-		return err
-	}
-
-	for _, r := range s.RootModule().Resources {
-		if r.Type != "rediscloud_essentials_subscription" {
-			continue
-		}
-
-		subId, err := strconv.Atoi(r.Primary.ID)
-		if err != nil {
-			return err
-		}
-
-		subs, err := apiClient.Client.FixedSubscriptions.List(context.TODO())
-		if err != nil {
-			return err
-		}
-
-		for _, sub := range subs {
-			if redis.IntValue(sub.ID) == subId {
-				return fmt.Errorf("fixed subscription %d still exists", subId)
-			}
-		}
-	}
-
-	return nil
-}
