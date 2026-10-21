@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.19.2 (19 October 2026)
+## 2.19.2 (20 October 2026)
 
 ### Changed
 
@@ -8,6 +8,7 @@
 - `rediscloud_subscription` data source now requires the `single-region` deployment type instead of accepting all deployment types other than `active-active`.
 - Raised the minimum Go version to 1.26.0 and the Go toolchain to 1.26.9; upgraded Go dependencies, GitHub Actions, and the Nix development environment.
 - Added team/owner tags to acceptance-test resources and consolidated subscription cleanup test helpers.
+- Moved acceptance tests from pushes to PRs targeting `main` and `develop`, restricted the existing PR test workflow to `release/*` targets, and selected test-resource prefixes by PR target branch.
 - Added monthly Dependabot checks for Nix dependencies.
 - Clarified pricing field descriptions in the `rediscloud_subscription` data source documentation.
 

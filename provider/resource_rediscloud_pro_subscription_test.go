@@ -10,7 +10,7 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
@@ -45,9 +45,9 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: testAccResourceRedisCloudProSubscriptionRedis7(t, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -98,9 +98,9 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 			},
 			{
 				// Checks if the changes in the creation plan are ignored.
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, cloudAccountName, name, "ram"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -116,9 +116,9 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 			},
 			{
 				// Checks if the changes to the payment_method are ignored.
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionChangedPaymentMethod, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -126,9 +126,9 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 				),
 			},
 			{
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				// Checks if the payment_method and creation_plan block are ignored after the IMPORT operation.
 				ResourceName: resourceName,
@@ -147,9 +147,9 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 			},
 			{
 				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config:       fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, cloudAccountName, name, "ram-and-flash"),
 				ResourceName: resourceName,
@@ -175,9 +175,9 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: testAccResourceRedisCloudProSubscriptionRedis8(t, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -225,9 +225,9 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 			},
 			{
 				// Checks if the changes in the creation plan are ignored.
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, cloudAccountName, name, "ram"),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -243,9 +243,9 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 			},
 			{
 				// Checks if the changes to the payment_method are ignored.
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionChangedPaymentMethod, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -253,9 +253,9 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 				),
 			},
 			{
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				// Checks if the payment_method and creation_plan block are ignored after the IMPORT operation.
 				ResourceName: resourceName,
@@ -274,9 +274,9 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 			},
 			{
 				// Checks if an error is raised when a ForceNew attribute is changed and the creation_plan block is not defined.
-				ConfigVariables: tfconfig.Variables{
-					"team":  tfconfig.StringVariable(resourceTags.Team),
-					"owner": tfconfig.StringVariable(resourceTags.Owner),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
 				},
 				Config:       fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, cloudAccountName, name, "ram-and-flash"),
 				ResourceName: resourceName,
@@ -287,17 +287,24 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
+	}
+
 	name := testRandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPreferredAZsModulesOptional, cloudAccountName, name),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudProSubscriptionPreferredAZsModulesOptional, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.region.0.preferred_availability_zones.#", "1"),
@@ -308,9 +315,14 @@ func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *tes
 }
 
 func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *testing.T) {
-
 	if !*contractFlag {
 		t.Skip("The '-contract' parameter wasn't provided in the test command.")
+	}
+
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
 	name := testRandomWithPrefix()
@@ -319,12 +331,13 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionContractPayment, cloudAccountName, name),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudProSubscriptionContractPayment, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -334,7 +347,8 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionContractPayment, cloudAccountName, updatedName),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudProSubscriptionContractPayment, cloudAccountName, updatedName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "payment_method_id"),
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
@@ -345,9 +359,14 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 }
 
 func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *testing.T) {
-
 	if !*marketplaceFlag {
 		t.Skip("The '-marketplace' parameter wasn't provided in the test command.")
+	}
+
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
 	name := testRandomWithPrefix()
@@ -356,12 +375,13 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, cloudAccountName, name),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, cloudAccountName, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "cloud_provider.0.provider", "AWS"),
@@ -370,7 +390,8 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, cloudAccountName, updatedName),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudSubscriptionMarketplacePayment, cloudAccountName, updatedName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", updatedName),
 				),
@@ -380,18 +401,25 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 }
 
 func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
+	}
+
 	name := testRandomWithPrefix()
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	identifier := ""
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionWithRedisVersion, cloudAccountName, name, ""),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudProSubscriptionWithRedisVersion, cloudAccountName, name, ""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Take a snapshot of the ID
 					func(s *terraform.State) error {
@@ -402,7 +430,8 @@ func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionWithRedisVersion, cloudAccountName, name, "redis_version = \"latest\""),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudProSubscriptionWithRedisVersion, cloudAccountName, name, "redis_version = \"latest\""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Take a snapshot of the ID
 					func(s *terraform.State) error {
@@ -416,6 +445,7 @@ func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 			},
 			{
 				ResourceName:            "rediscloud_subscription.test",
+				ConfigVariables:         tagVariables,
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"creation_plan", "redis_version"},
@@ -425,6 +455,12 @@ func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
+	}
+
 	name := testRandomWithPrefix() + "-mw"
 	resourceName := "rediscloud_subscription.example"
 	datasourceName := "data.rediscloud_subscription.example"
@@ -470,12 +506,13 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 	}`
 
 	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck, cloudAccountCheck),
+		PreCheck:                 envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, cloudAccountCheck),
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, defaultMW),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, defaultMW),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
@@ -487,7 +524,8 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, autoMw),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, autoMw),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
@@ -497,7 +535,8 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, manualMw),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, manualMw),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "1"),
@@ -517,15 +556,18 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 				),
 			},
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, errorManualMw),
-				ExpectError: regexp.MustCompile("Must provide at least one maintenance window with manual maintenance mode"),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, errorManualMw),
+				ExpectError:     regexp.MustCompile("Must provide at least one maintenance window with manual maintenance mode"),
 			},
 			{
-				Config:      fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, errorAutoMw),
-				ExpectError: regexp.MustCompile("Automatic mode cannot be set with a manual maintenance window"),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, errorAutoMw),
+				ExpectError:     regexp.MustCompile("Automatic mode cannot be set with a manual maintenance window"),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, multipleManualMw),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, multipleManualMw),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "manual"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "2"),
@@ -561,7 +603,8 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 				),
 			},
 			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, autoMw),
+				ConfigVariables: tagVariables,
+				Config:          fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, autoMw),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
@@ -842,6 +885,14 @@ func TestUnitFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *test
 }
 
 const testAccResourceRedisCloudProSubscriptionWithRedisVersion = `
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
 	last_four_numbers = "5556"
@@ -867,6 +918,11 @@ resource "rediscloud_subscription" "test" {
   }
 
   cloud_provider {
+    resource_tags = {
+      team  = var.team
+      owner = var.owner
+    }
+
     provider = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
     region {
@@ -889,6 +945,14 @@ resource "rediscloud_subscription" "test" {
 `
 
 const testAccResourceRedisCloudProSubscriptionPreferredAZsModulesOptional = `
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
 	last_four_numbers = "5556"
@@ -912,6 +976,11 @@ resource "rediscloud_subscription" "example" {
   }
 
   cloud_provider {
+    resource_tags = {
+      team  = var.team
+      owner = var.owner
+    }
+
     provider = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
     region {
@@ -1030,6 +1099,14 @@ resource "rediscloud_subscription" "example" {
 `
 
 const testAccResourceRedisCloudProSubscriptionContractPayment = `
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
@@ -1048,6 +1125,11 @@ resource "rediscloud_subscription" "example" {
   }
 
   cloud_provider {
+    resource_tags = {
+      team  = var.team
+      owner = var.owner
+    }
+
     provider = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
     region {
@@ -1070,6 +1152,14 @@ resource "rediscloud_subscription" "example" {
 `
 
 const testAccResourceRedisCloudSubscriptionMarketplacePayment = `
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
@@ -1089,6 +1179,11 @@ resource "rediscloud_subscription" "example" {
   }
 
   cloud_provider {
+    resource_tags = {
+      team  = var.team
+      owner = var.owner
+    }
+
     provider = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
     region {
@@ -1111,6 +1206,14 @@ resource "rediscloud_subscription" "example" {
 `
 
 const testAccResourceRedisCloudProSubscriptionMaintenanceWindows = `
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
 data "rediscloud_payment_method" "card" {
 	card_type = "Visa"
 	last_four_numbers = "5556"
@@ -1130,6 +1233,11 @@ resource "rediscloud_subscription" "example" {
   memory_storage = "ram"
 
   cloud_provider {
+    resource_tags = {
+      team  = var.team
+      owner = var.owner
+    }
+
     provider = data.rediscloud_cloud_account.account.provider_type
     cloud_account_id = data.rediscloud_cloud_account.account.id
     region {

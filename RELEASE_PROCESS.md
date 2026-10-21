@@ -21,11 +21,11 @@ Create a PR with your changes targeting the `main` branch. The PR should:
 
 You should get someone to test and review your changes manually before releasing.
 
-### 2. Wait for Smoke Tests to Pass
+### 2. Wait for CI and Acceptance Tests to Pass
 
-The PR will automatically run smoke tests via the `Terraform Provider Checks - PR workflow` workflow. 
+PRs targeting `main` or `develop` automatically run the broader acceptance-test suite via the `Terraform Provider Checks - main branch` workflow.
 
-The smoke tests consist of acceptance tests that will check the major resources to ensure that your changes did not cause any major regressions. They will typically take between 30 and 60 minutes.
+PRs targeting `release/*` branches run the smoke-focused acceptance tests via the `Terraform Provider Checks - PR workflow` workflow, subject to its existing draft, changed-file, and `skip-tests` gates.
 
 Additionally, these checks must pass:
 - `go build` - ensures the provider compiles
@@ -33,11 +33,11 @@ Additionally, these checks must pass:
 - `terraform providers schema` - validates schema generation
 - `go unit test` - runs unit tests
 
-**Do not merge until all smoke tests pass.**
+**Do not merge until CI and all acceptance-test jobs for the PR to `main` pass.**
 
 ### 3. Merge the Pull Request
 
-Once the smoke tests pass, merge the PR to `main`.
+Once CI and all acceptance-test jobs pass, merge the PR to `main`.
 
 ### 4. Tag and Push
 
