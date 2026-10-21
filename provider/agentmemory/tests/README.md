@@ -21,5 +21,5 @@ mkdir -p bin
 go test -coverpkg=./provider/agentmemory -coverprofile=bin/agent-memory-coverage.out ./provider/agentmemory/...
 ```
 
-Use `acceptance/` for future tests that provision real Redis Cloud resources,
-following the repository's `TestAcc` naming and `TF_ACC` execution conventions.
+[`acceptance/`](acceptance/README.md) contains tests against real Redis Cloud
+resources, following the repository's `TestAcc` naming and `TF_ACC` conventions.
