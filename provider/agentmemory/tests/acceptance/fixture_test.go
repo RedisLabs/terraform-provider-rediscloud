@@ -61,6 +61,14 @@ func (f fixture) step(vars config.Variables, checks ...resource.TestCheckFunc) r
 	return resource.TestStep{Config: f.config, ConfigVariables: values, Check: resource.ComposeAggregateTestCheckFunc(checks...)}
 }
 
+func (f fixture) importStep(vars config.Variables, resourceName string) resource.TestStep {
+	step := f.step(vars)
+	step.Check = nil
+	step.ResourceName = resourceName
+	step.ImportState, step.ImportStateVerify = true, true
+	return step
+}
+
 func (f fixture) testCase(owned *trackedResources, steps []resource.TestStep) resource.TestCase {
 	return resource.TestCase{
 		PreCheck:                 f.check,
