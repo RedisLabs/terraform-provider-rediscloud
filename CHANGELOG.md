@@ -5,13 +5,13 @@
 ### Changed
 
 - Raised the Go toolchain to 1.26.10 to pick up the fix for GO-2026-6809 in `crypto/x509`.
+- Migrated `rediscloud_essentials_subscription` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 
 ## 2.19.2 (20 October 2026)
 
 ### Changed
 
 - Migrated `rediscloud_subscription` (pro/flexible) data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
-- Migrated `rediscloud_essentials_subscription` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 - `rediscloud_subscription` data source now requires the `single-region` deployment type instead of accepting all deployment types other than `active-active`.
 - Raised the minimum Go version to 1.26.0 and the Go toolchain to 1.26.9; upgraded Go dependencies, GitHub Actions, and the Nix development environment.
 - Added team/owner tags to acceptance-test resources and consolidated subscription cleanup test helpers.
