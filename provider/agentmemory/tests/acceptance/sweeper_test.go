@@ -47,7 +47,7 @@ func sweepAgentMemory(_ string) error {
 	owned := make(map[string]string)
 	for _, sub := range subscriptions {
 		name := redis.StringValue(sub.Name)
-		if strings.HasPrefix(name, utils.TestResourcePrefix()+"-") && strings.HasSuffix(name, "-am") {
+		if sweepOwnsSubscription(name, utils.TestResourcePrefix()) {
 			owned[strconv.Itoa(redis.IntValue(sub.ID))] = name
 		}
 	}
@@ -75,11 +75,35 @@ func sweepAgentMemory(_ string) error {
 	return errors.Join(failures...)
 }
 
+func sweepOwnsSubscription(name, prefix string) bool {
+	return strings.HasPrefix(name, prefix+"-") && strings.HasSuffix(name, "-am")
+}
+
 func sweepOwnsStore(store api.StoreSummary, subscriptions map[string]string, cutoff time.Time) bool {
 	name, owned := subscriptions[redis.StringValue(store.SubscriptionID)]
 	// A matching store name alone must never authorize deletion in another subscription.
 	return owned && redis.StringValue(store.StoreID) != "" && store.CreatedAt != nil &&
 		!store.CreatedAt.After(cutoff) && strings.HasPrefix(redis.StringValue(store.Name), name+"-")
+}
+
+func TestSweepAgentMemoryFixtureIsolation(t *testing.T) {
+	for _, tc := range []struct {
+		name, prefix string
+		want         bool
+	}{
+		{"tf-test-abcdef-am", "tf-test-abcdef", true},
+		{"tf-test-ghijkl-am", "tf-test-abcdef", false},
+		{"tf-test-abcdef-am", "tf-test", true},
+		{"tf-testing-abcdef-am", "tf-test", false},
+		{"customer-prod", "tf-test", false},
+		{"tf-test-abcdef", "tf-test", false},
+	} {
+		t.Run(tc.name+"/"+tc.prefix, func(t *testing.T) {
+			if got := sweepOwnsSubscription(tc.name, tc.prefix); got != tc.want {
+				t.Fatalf("subscription ownership=%t, want %t", got, tc.want)
+			}
+		})
+	}
 }
 
 func TestSweepAgentMemoryOwnership(t *testing.T) {

@@ -62,6 +62,7 @@ func (f fixture) step(vars config.Variables, checks ...resource.TestCheckFunc) r
 }
 
 func (f fixture) importStep(vars config.Variables, resourceName string) resource.TestStep {
+	// Import steps do not reuse the previous step's variable file.
 	step := f.step(vars)
 	step.Check = nil
 	step.ResourceName = resourceName
