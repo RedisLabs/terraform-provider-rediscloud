@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.filter.outputs.code }}
+      agent_memory: ${{ steps.filter.outputs.agent_memory }}
     steps:
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
@@ -31,6 +32,11 @@ jobs:
               - 'provider/**/testdata/**'
               - '.github/**'
               - 'scripts/**'
+            agent_memory:
+              - 'provider/agentmemory/**'
+              - 'go.mod'
+              - 'go.sum'
+              - '.github/workflows/testacc.yml'
 
   # Gate job: all non-test checks (golangci-lint, go mod tidy, terraform fmt,
   # govulncheck, tfproviderlint, docs, build, schema, unit tests) run via
@@ -158,6 +164,17 @@ jobs:
       create_account_sleep_seconds: 300
     secrets: inherit
 
+  testacc-agent-memory:
+    name: Acceptance Tests (Agent Memory)
+    needs: [pre-test, detect-changes]
+    if: needs.detect-changes.outputs.agent_memory == 'true'
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: '^TestAccResourceRedisCloudAgentMemory_'
+      create_account_sleep_seconds: 330
+      sweep_agent_memory: true
+    secrets: inherit
+
   status:
     name: Status
     runs-on: ubuntu-latest
@@ -174,6 +191,7 @@ jobs:
       - testacc-smoke-misc
       - testacc-pro-db-upgrade
       - testacc-block-public-endpoints
+      - testacc-agent-memory
     if: always()
     steps:
       - name: Check CI status

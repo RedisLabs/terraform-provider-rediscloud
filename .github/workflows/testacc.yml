@@ -22,6 +22,11 @@ on:
         description: 'Seconds to sleep (stagger) ephemeral account creation'
         required: true
         type: number
+      sweep_agent_memory:
+        description: 'Remove Agent Memory test stores before sweeping their databases'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -189,6 +194,8 @@ jobs:
       - name: Sweep ephemeral account
         if: always() && steps.creds.outputs.token != ''
         shell: nix develop --command bash -e {0}
+        env:
+          SWEEP_AGENT_MEMORY: ${{ inputs.sweep_agent_memory }}
         run: |
           set -euo pipefail
 
@@ -204,6 +211,12 @@ jobs:
           export REDISCLOUD_URL="$cloud_url"
           export REDISCLOUD_ACCESS_KEY="$access_key"
           export REDISCLOUD_SECRET_KEY="$access_secret"
+
+          if [ "$SWEEP_AGENT_MEMORY" = 'true' ]; then
+            if ! SWEEP_AGE_THRESHOLD='0s' go test ./provider/agentmemory/tests/acceptance -run='^$' -sweep=ALL -sweep-run=rediscloud_agent_memory -timeout=20m; then
+              echo "::warning::Agent Memory cleanup completed with errors"
+            fi
+          fi
 
           if ! SWEEP_AGE_THRESHOLD='0s' make sweep 2>&1; then
             echo "::warning::Sweep of prefix '$TEST_RESOURCE_PREFIX' completed with errors - some resources may not have been cleaned up"
