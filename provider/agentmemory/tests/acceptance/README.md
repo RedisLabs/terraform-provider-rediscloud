@@ -9,7 +9,8 @@ The suite covers:
 
 - Store creation, in-place updates, import and an unchanged plan.
 - API key creation, import without recovering its secret, and replacement.
-- Recovery after a store is deleted outside Terraform.
+- API rejection of an invalid TTL without changing the existing store.
+- Real sweeper cleanup and recovery after a store is deleted outside Terraform.
 - Store and dependent key replacement when the database or custom field type changes.
 - Customer-managed models and credential version updates, when model keys are supplied.
 - API verification of tracked IDs, metadata and deletion, including superseded resources.

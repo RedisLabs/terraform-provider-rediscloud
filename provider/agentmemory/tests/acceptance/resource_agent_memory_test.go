@@ -3,9 +3,11 @@ package acceptance
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 	"time"
 
+	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
@@ -22,17 +24,38 @@ func TestAccResourceRedisCloudAgentMemory_CRUDI(t *testing.T) {
 	rotated := config.Variables{"store_suffix": config.StringVariable("updated"), "short_ttl": config.IntegerVariable(172800), "key_suffix": config.StringVariable("rotated")}
 	noop := f.step(updated)
 	noop.PlanOnly = true
+	invalid := f.step(config.Variables{"store_suffix": config.StringVariable("updated"), "short_ttl": config.IntegerVariable(0)})
+	invalid.Check = nil
+	invalid.ExpectError = regexp.MustCompile(`(?s)Failed to update Agent Memory service.*(Bad Request|400).*(shortMemory|ttlSeconds)`)
+	afterRejection := f.step(updated, tracked.remember(false, false), checkRemoteResources)
+	afterRejection.PreConfig = func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		store, err := client.MustTestClient(t).Client.AgentMemory.Get(ctx, tracked.storeID)
+		if err != nil {
+			t.Fatalf("read store after rejected update: %s", err)
+		}
+		if store.ShortMemory == nil || redis.IntValue(store.ShortMemory.TTLSeconds) != 172800 {
+			t.Fatal("rejected update changed the remote short-term TTL")
+		}
+	}
 	rotatePlan := f.step(rotated)
 	rotatePlan.PlanOnly, rotatePlan.ExpectNonEmptyPlan = true, true
 	rotatePlan.ConfigPlanChecks = resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{
 		plancheck.ExpectResourceAction(keyResource, plancheck.ResourceActionDestroyBeforeCreate),
 	}}
+	keyImport := f.importStep(updated, keyResource)
+	keyImport.ImportStateVerifyIgnore = []string{"api_key"}
+	keyImport.ImportStateIdFunc = keyImportID
+	keyImport.ImportStateCheck = importedKeyHasNoSecret
 	resource.Test(t, f.testCase(tracked, []resource.TestStep{
 		f.step(initial, tracked.remember(false, false), checkRemoteResources),
 		f.step(updated, tracked.remember(false, false), checkRemoteResources),
 		noop,
-		{ResourceName: storeResource, ImportState: true, ImportStateVerify: true},
-		{ResourceName: keyResource, ImportState: true, ImportStateVerify: true, ImportStateVerifyIgnore: []string{"api_key"}, ImportStateIdFunc: keyImportID, ImportStateCheck: importedKeyHasNoSecret},
+		invalid,
+		afterRejection,
+		f.importStep(updated, storeResource),
+		keyImport,
 		f.step(updated, tracked.remember(false, false), checkRemoteResources),
 		rotatePlan,
 		f.step(rotated, tracked.remember(false, true), checkRemoteResources, tracked.checkSuperseded),
@@ -41,8 +64,12 @@ func TestAccResourceRedisCloudAgentMemory_CRUDI(t *testing.T) {
 			PreConfig: func() {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 				defer cancel()
-				if err := client.MustTestClient(t).Client.AgentMemory.Delete(ctx, tracked.storeID); err != nil {
-					t.Fatalf("delete test store outside Terraform: %s", err)
+				t.Setenv("SWEEP_AGE_THRESHOLD", "0s")
+				if err := sweepAgentMemory(""); err != nil {
+					t.Fatalf("sweep interrupted-run fixture: %s", err)
+				}
+				if err := storeAbsent(ctx, client.MustTestClient(t), tracked.storeID); err != nil {
+					t.Fatalf("fixture was not removed by the sweeper: %s", err)
 				}
 			},
 			Check: resource.ComposeAggregateTestCheckFunc(tracked.remember(true, true), checkRemoteResources, tracked.checkSuperseded),
