@@ -27,7 +27,8 @@ func TestAccResourceRedisCloudAgentMemory_CRUDI(t *testing.T) {
 	noop.PlanOnly = true
 	invalid := f.step(config.Variables{"store_suffix": config.StringVariable("updated"), "short_ttl": config.IntegerVariable(0)})
 	invalid.Check = nil
-	invalid.ExpectError = regexp.MustCompile(`(?s)Failed to update Agent Memory service.*(Bad Request|400).*(shortMemory|ttlSeconds)`)
+	// Some validation responses omit the field name; verify HTTP 400 and read back the TTL separately.
+	invalid.ExpectError = regexp.MustCompile(`(?s)Failed to update Agent Memory service.*: 400 -`)
 	afterRejection := f.step(updated, tracked.remember(false, false), checkRemoteResources)
 	afterRejection.PreConfig = func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
