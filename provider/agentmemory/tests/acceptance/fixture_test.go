@@ -24,7 +24,7 @@ type fixture struct {
 	check  func()
 }
 
-func newFixture(t *testing.T) fixture {
+func newFixture(t *testing.T, storeConfig string) fixture {
 	t.Helper()
 	name := utils.RandomWithPrefix() + "-am"
 	checks := []func(*testing.T) bool{envchecks.RedisCloudCheck}
@@ -36,7 +36,7 @@ func newFixture(t *testing.T) fixture {
 	}
 	return fixture{
 		name:   name,
-		config: utils.GetTestConfig(t, "testdata/infrastructure.tf") + "\n" + utils.GetTestConfig(t, "testdata/store.tf"),
+		config: utils.GetTestConfig(t, "testdata/infrastructure.tf") + "\n" + utils.GetTestConfig(t, storeConfig),
 		vars: config.Variables{
 			"name":               config.StringVariable(name),
 			"region":             config.StringVariable(envDefault("AGENT_MEMORY_TEST_REGION", "us-east-1")),

@@ -155,7 +155,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 				Blocks: map[string]schema.Block{
 					"credentials": schema.SingleNestedBlock{
-						Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is write-only and is not persisted in Terraform plan or state.",
+						Description: "Customer-supplied model provider credentials. The API does not return secrets. Terraform stores api_key as a sensitive value in plan and state.",
 						// Separate checks keep unknown values from hiding missing siblings.
 						Validators: []validator.Object{
 							objectvalidator.AlsoRequires(path.MatchRelative().AtName("type")),
@@ -168,13 +168,12 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 								Optional:    true,
 							},
 							"api_key": schema.StringAttribute{
-								Description: "Provider API key omitted from plan and state. Requires Terraform 1.11.1 or later. Increment api_key_version to rotate it.",
+								Description: "Provider API key stored as a sensitive value in Terraform plan and state.",
 								Optional:    true,
 								Sensitive:   true,
-								WriteOnly:   true,
 							},
 							"api_key_version": schema.Int64Attribute{
-								Description: "Positive version used to trigger an in-place write-only credential update. Change this value whenever api_key changes.",
+								Description: "Positive credential revision. Increment to resend the key in place; changing api_key also triggers an update.",
 								Optional:    true,
 								Validators: []validator.Int64{
 									int64validator.AtLeast(1),
@@ -213,7 +212,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 				Blocks: map[string]schema.Block{
 					"credentials": schema.SingleNestedBlock{
-						Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is write-only and is not persisted in Terraform plan or state.",
+						Description: "Customer-supplied model provider credentials. The API does not return secrets. Terraform stores api_key as a sensitive value in plan and state.",
 						// Separate checks keep unknown values from hiding missing siblings.
 						Validators: []validator.Object{
 							objectvalidator.AlsoRequires(path.MatchRelative().AtName("type")),
@@ -226,13 +225,12 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 								Optional:    true,
 							},
 							"api_key": schema.StringAttribute{
-								Description: "Provider API key omitted from plan and state. Requires Terraform 1.11.1 or later. Increment api_key_version to rotate it.",
+								Description: "Provider API key stored as a sensitive value in Terraform plan and state.",
 								Optional:    true,
 								Sensitive:   true,
-								WriteOnly:   true,
 							},
 							"api_key_version": schema.Int64Attribute{
-								Description: "Positive version used to trigger an in-place write-only credential update. Change this value whenever api_key changes.",
+								Description: "Positive credential revision. Increment to resend the key in place; changing api_key also triggers an update.",
 								Optional:    true,
 								Validators: []validator.Int64{
 									int64validator.AtLeast(1),
@@ -555,9 +553,6 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 			return
 		}
 	}
-	// Write-only values exist only in configuration, even when the rest comes from the plan.
-	modelConfig.LLM = modelConfigWithWriteOnlyValue(modelConfig.LLM, config.LLM)
-	modelConfig.Embedding = modelConfigWithWriteOnlyValue(modelConfig.Embedding, config.Embedding)
 	validateModelConfigPlan(modelConfig, state, hasState, resp)
 	validateCustomMemoryTypesPlan(plan, state, resp)
 	validateCustomDetectorNamesPlan(plan, resp)

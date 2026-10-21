@@ -29,8 +29,8 @@ func modelConfigToModel(status *agentmemoryapi.ModelStatus, existing *AgentMemor
 		return existing
 	}
 
-	// The API does not return credentials. Preserve only the credential type and
-	// rotation version; write-only secrets must never enter refreshed state.
+	// The API does not return credentials. Preserve configured values across refresh;
+	// an imported store has no credentials to recover.
 	model := &AgentMemoryModelConfigModel{
 		Provider:    types.StringPointerValue(status.Provider),
 		Model:       types.StringPointerValue(status.Model),
@@ -45,6 +45,7 @@ func modelCredentialsFromExisting(existing *AgentMemoryModelConfigModel) *AgentM
 	}
 	return &AgentMemoryModelCredentialsModel{
 		Type:          existing.Credentials.Type,
+		APIKey:        existing.Credentials.APIKey,
 		APIKeyVersion: existing.Credentials.APIKeyVersion,
 	}
 }
@@ -63,7 +64,7 @@ func modelCredentialsEqual(left, right *AgentMemoryModelCredentialsModel) bool {
 	if left == nil || right == nil {
 		return left == nil && right == nil
 	}
-	return left.Type.Equal(right.Type) && left.APIKeyVersion.Equal(right.APIKeyVersion)
+	return left.Type.Equal(right.Type) && left.APIKey.Equal(right.APIKey) && left.APIKeyVersion.Equal(right.APIKeyVersion)
 }
 
 func summarizationFromModel(model *AgentMemorySummarizationModel) *agentmemoryapi.SummarizationConfig {
