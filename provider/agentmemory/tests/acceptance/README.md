@@ -28,6 +28,8 @@ TEST_RESOURCE_PREFIX=tf-am-local-unique TF_LOG= \
 
 `go test ./...` skips the live tests unless `TF_ACC` is set. It still runs the
 sweeper ownership checks without cloud credentials.
+The live cases run serially because credential inputs and the cleanup rehearsal
+use process environment variables.
 
 Optional settings:
 
@@ -46,6 +48,11 @@ The customer-managed model case uses ephemeral Terraform input variables and
 checks that the model secrets are absent from plan and state. Its version update
 resubmits the same valid keys; it does not claim to test rotation to different
 provider credentials. It skips when either model key is missing.
+
+The invalid-TTL case checks HTTP 400 and reads the existing TTL back before
+another apply. Validation responses can contain only a generic `Bad Request`,
+without the rejected field or constraint; the test does not assume those details
+are available.
 
 ## Cleanup after interruption
 
