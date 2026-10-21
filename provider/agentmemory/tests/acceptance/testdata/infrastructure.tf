@@ -1,7 +1,3 @@
-terraform {
-  required_version = ">= 1.11.1"
-}
-
 variable "name" { type = string }
 variable "region" { type = string }
 variable "cloud_account_name" { type = string }

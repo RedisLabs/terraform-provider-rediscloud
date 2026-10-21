@@ -113,11 +113,12 @@ func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
 			config := func(values []string, action string) string {
 				return testProviderConfig(t, server.URL) + detectorOrderConfig(kind, values, action)
 			}
+			expectedDeletes := 0
 			check := func(values []string, action string) resource.TestCheckFunc {
 				return func(state *terraform.State) error {
 					mu.Lock()
 					defer mu.Unlock()
-					if creates != 1 || deletes != 0 {
+					if creates != 1 || deletes != expectedDeletes {
 						return fmt.Errorf("store was replaced")
 					}
 					prefix := "long_term_memory_exclusions." + group + ".detectors"
@@ -130,17 +131,30 @@ func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
 			}
 			reordered := []string{names[2], names[0], names[1]}
 			var importedOrder []string
+			var importStore map[string]any
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 				{Config: config(names[:2], "redact"), Check: check(names[:2], "redact")},
 				{Config: config(names[:2], "redact"), PlanOnly: true},
 				{Config: config(names, "redact"), Check: check(names, "redact")},
 				{Config: config(reordered, "drop"), Check: check(reordered, "drop")},
 				{Config: config(reordered, "drop"), PlanOnly: true},
-				{Config: config(names[:2], "drop"), Check: check(names[:2], "drop")},
-				{Config: testProviderConfig(t, server.URL) + `removed {
- from=rediscloud_agent_memory.example
- lifecycle { destroy=false }
-}`},
+				{Config: config(names[:2], "drop"), Check: resource.ComposeTestCheckFunc(check(names[:2], "drop"), func(*terraform.State) error {
+					mu.Lock()
+					defer mu.Unlock()
+					importStore = store
+					return nil
+				})},
+			}})
+			mu.Lock()
+			if deletes != 1 || store != nil {
+				t.Error("initial lifecycle did not clean up its store")
+			}
+			// Import the fixture into a fresh Terraform state without a removed block.
+			store = importStore
+			expectedDeletes = 1
+			mu.Unlock()
+			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
+
 				{Config: config(names[:2], "drop"), ResourceName: "rediscloud_agent_memory.example", ImportState: true, ImportStateId: "store-1", ImportStatePersist: true, ImportStateCheck: func(states []*terraform.InstanceState) error {
 					if len(states) != 1 {
 						return fmt.Errorf("unexpected imported resource count")
@@ -162,7 +176,7 @@ func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
 			mu.Lock()
 			defer mu.Unlock()
 			require.Equal(t, 1, creates)
-			require.Equal(t, 1, deletes)
+			require.Equal(t, 2, deletes)
 			require.Nil(t, store)
 		})
 	}

@@ -97,7 +97,7 @@ func TestAgentMemoryAPIKeyReadMetadata(t *testing.T) {
 					t.Fatal(diags)
 				}
 				if !retained.ID.Equal(model.ID) || !retained.StoreID.Equal(model.StoreID) || !retained.APIKey.Equal(model.APIKey) {
-					t.Error("successful metadata read changed ownership or the write-only secret")
+					t.Error("successful metadata read changed ownership or the generated secret")
 				}
 				wantName := "runtime"
 				if scenario.name == "renamed" {
