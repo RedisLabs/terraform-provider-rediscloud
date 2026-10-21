@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.20.0 (Unreleased)
+
+### Changed
+
+- Raised the Go toolchain to 1.26.10 to pick up the fix for GO-2026-6809 in `crypto/x509`.
+
 ## 2.19.2 (20 October 2026)
 
 ### Changed
