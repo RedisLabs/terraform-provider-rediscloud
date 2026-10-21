@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -64,6 +65,8 @@ func TestAccResourceRedisCloudAgentMemory_CRUDI(t *testing.T) {
 			PreConfig: func() {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 				defer cancel()
+				// Keep the cleanup rehearsal isolated from concurrent fixtures using the default prefix.
+				t.Setenv("TEST_RESOURCE_PREFIX", strings.TrimSuffix(f.name, "-am"))
 				t.Setenv("SWEEP_AGE_THRESHOLD", "0s")
 				if err := sweepAgentMemory(""); err != nil {
 					t.Fatalf("sweep interrupted-run fixture: %s", err)
