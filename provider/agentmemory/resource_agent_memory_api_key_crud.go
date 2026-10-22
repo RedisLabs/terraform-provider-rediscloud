@@ -65,7 +65,7 @@ func (r *agentMemoryAPIKeyResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	// An incomplete name must not become drift that replaces a key with a write-only secret.
+	// An incomplete name must not become drift that replaces a key with a generated secret.
 	if redis.StringValue(key.KeyName) == "" {
 		resp.Diagnostics.AddError("Invalid Agent Memory API key response", "The API response omitted the key name. The tracked key and stored secret were preserved.")
 		return
@@ -88,7 +88,7 @@ func (r *agentMemoryAPIKeyResource) Update(ctx context.Context, req resource.Upd
 		resp.Diagnostics.AddError("Unable to update Agent Memory API key", "Agent Memory API keys cannot be updated; configuration changes require replacement.")
 		return
 	}
-	// Timeout changes are local metadata; keep the existing ID and write-only secret.
+	// Timeout changes are local metadata; keep the existing ID and generated secret.
 	state.Timeouts = plan.Timeouts
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }

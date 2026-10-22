@@ -133,11 +133,12 @@ func TestAgentMemoryExistingModelsWithoutCredentials(t *testing.T) {
 	changedModel := strings.Replace(noCredentials, "gpt-4o-mini", "gpt-4.1-mini", 1)
 	changedTTL := strings.Replace(changedModel, "31536000", "172800", 1)
 	afterImport := strings.Replace(changedTTL, "gpt-4.1-mini", "gpt-4.1", 1)
+	expectedDeletes := 0
 	check := func(want int) resource.TestCheckFunc {
 		return func(state *terraform.State) error {
 			mu.Lock()
 			defer mu.Unlock()
-			if creates != 1 || deletes != 0 || patches != want {
+			if creates != 1 || deletes != expectedDeletes || patches != want {
 				return fmt.Errorf("unexpected lifecycle: creates=%d patches=%d deletes=%d", creates, patches, deletes)
 			}
 			return resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1")(state)
@@ -149,10 +150,17 @@ func TestAgentMemoryExistingModelsWithoutCredentials(t *testing.T) {
 		{Config: noCredentials, PlanOnly: true},
 		{Config: changedModel, Check: check(2)},
 		{Config: changedTTL, Check: check(3)},
-		{Config: prefix + `removed {
- from=rediscloud_agent_memory.example
- lifecycle { destroy=false }
-}`},
+	}})
+	mu.Lock()
+	if deletes != 1 || exists {
+		t.Error("initial lifecycle did not clean up its store")
+	}
+	// Seed an existing store for import into an empty Terraform state.
+	exists = true
+	expectedDeletes = 1
+	mu.Unlock()
+	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
+
 		{Config: changedTTL, ResourceName: "rediscloud_agent_memory.example", ImportState: true, ImportStateId: "store-1", ImportStatePersist: true},
 		{Config: changedTTL, PlanOnly: true},
 		{Config: afterImport, Check: check(4)},
@@ -160,7 +168,7 @@ func TestAgentMemoryExistingModelsWithoutCredentials(t *testing.T) {
 	}})
 	mu.Lock()
 	defer mu.Unlock()
-	if creates != 1 || deletes != 1 {
+	if creates != 1 || deletes != 2 {
 		t.Fatalf("unexpected create/cleanup counts %d/%d", creates, deletes)
 	}
 }
