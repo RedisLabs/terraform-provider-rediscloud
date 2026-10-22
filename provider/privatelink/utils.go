@@ -22,8 +22,8 @@ func waitForPrivateLinkToBeActive(ctx context.Context, client *client.ApiClient,
 			pl.PrivateLinkStatusInitializing},
 		Target:       []string{pl.PrivateLinkStatusActive},
 		Timeout:      timeout,
-		Delay:        10 * time.Second,
-		PollInterval: 10 * time.Second,
+		Delay:        client.WaitDelay(10 * time.Second),
+		PollInterval: client.WaitPollInterval(10 * time.Second),
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for private link %d to be active", subscriptionId)
 
@@ -53,8 +53,8 @@ func waitForActiveActivePrivateLinkToBeActive(ctx context.Context, client *clien
 			pl.PrivateLinkStatusInitializing},
 		Target:       []string{pl.PrivateLinkStatusActive},
 		Timeout:      timeout,
-		Delay:        10 * time.Second,
-		PollInterval: 10 * time.Second,
+		Delay:        client.WaitDelay(10 * time.Second),
+		PollInterval: client.WaitPollInterval(10 * time.Second),
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for private link %d to be active", subscriptionId)
 

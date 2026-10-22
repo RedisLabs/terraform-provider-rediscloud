@@ -240,10 +240,11 @@ func resourceRedisCloudEssentialsSubscriptionDelete(ctx context.Context, d *sche
 
 func waitForEssentialsSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
-		Delay:   10 * time.Second,
-		Pending: []string{subscriptions.SubscriptionStatusPending},
-		Target:  []string{subscriptions.SubscriptionStatusActive},
-		Timeout: timeout,
+		PollInterval: api.WaitPollInterval(0),
+		Delay:        api.WaitDelay(10 * time.Second),
+		Pending:      []string{subscriptions.SubscriptionStatusPending},
+		Target:       []string{subscriptions.SubscriptionStatusActive},
+		Timeout:      timeout,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for fixed subscription %d to be active", id)
@@ -265,10 +266,11 @@ func waitForEssentialsSubscriptionToBeActive(ctx context.Context, id int, api *c
 
 func waitForEssentialsSubscriptionToBeDeleted(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
-		Delay:   10 * time.Second,
-		Pending: []string{subscriptions.SubscriptionStatusDeleting},
-		Target:  []string{"deleted"},
-		Timeout: timeout,
+		PollInterval: api.WaitPollInterval(0),
+		Delay:        api.WaitDelay(10 * time.Second),
+		Pending:      []string{subscriptions.SubscriptionStatusDeleting},
+		Target:       []string{"deleted"},
+		Timeout:      timeout,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for fixed subscription %d to be deleted", id)
