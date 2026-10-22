@@ -33,17 +33,18 @@ import (
 // per-resource fixture that registers handlers with Handle — see fake_aa_api_test.go in
 // provider/activeactive for a working example.
 //
-// Concurrency: Terraform and the plugin framework call handlers from several goroutines, so handlerMu
+// Concurrency: Terraform and the plugin framework call handlers from several goroutines, so fixtureMu
 // serialises handler invocation. A fixture's state is therefore touched by one goroutine at a time and
 // needs no locking of its own. Test code that needs to read or write fixture state outside of a handler
 // should use WithHandlersPaused.
 type FakeAPI struct {
 	mux *http.ServeMux
 
-	// handlerMu serialises handler invocation, as described in the note on concurrency above
-	handlerMu sync.Mutex
+	fixtureMu sync.Mutex
 
-	// taskResourceIDs maps a task id to the resource id that the task it about
+	// tasksMu protects taskResourceIDs and nextTaskID. Handlers acquire fixtureMu before tasksMu.
+	// Code holding tasksMu must not acquire fixtureMu, because that would reverse the lock order.
+	tasksMu         sync.Mutex
 	taskResourceIDs map[string]int
 	nextTaskID      int
 }
@@ -60,7 +61,9 @@ func NewFakeAPI() *FakeAPI {
 	f.Handle("GET /tasks/{taskID}", func(r *http.Request) (any, error) {
 		taskID := r.PathValue("taskID")
 
+		f.tasksMu.Lock()
 		resourceID, ok := f.taskResourceIDs[taskID]
+		f.tasksMu.Unlock()
 		if !ok {
 			return nil, fmt.Errorf("unknown task %q — tasks must be created with RegisterTask", taskID)
 		}
@@ -163,11 +166,9 @@ func (f *FakeAPI) Handle(pattern string, handler HandlerFunc) *FakeAPI {
 	return f
 }
 
-// invoke runs handler under a handlerMu lock
 func (f *FakeAPI) invoke(handler HandlerFunc, r *http.Request) (payload any, err error) {
-	f.handlerMu.Lock()
-	// make sure the mutex is unlocked even if the handler panics
-	defer f.handlerMu.Unlock()
+	f.fixtureMu.Lock()
+	defer f.fixtureMu.Unlock()
 
 	// convert a panic into an error
 	defer func() {
@@ -184,12 +185,12 @@ func (f *FakeAPI) invoke(handler HandlerFunc, r *http.Request) (payload any, err
 // The SDK client then polls GET /tasks/{taskID}, which NewFakeAPI already serves, so a fixture needs
 // to do nothing else to complete a mutation.
 //
-// Call RegisterTask from inside a handler, or from WithHandlersPaused, because it touches state that handlerMu
-// covers.
-//
 // Every task completes immediately and succeeds, so no test can exercise a failed task or the SDK Client's
 // retry mechanisms.
 func (f *FakeAPI) RegisterTask(commandType string, resourceID int) map[string]any {
+	f.tasksMu.Lock()
+	defer f.tasksMu.Unlock()
+
 	f.nextTaskID++
 	id := fmt.Sprintf("task-%d", f.nextTaskID)
 	f.taskResourceIDs[id] = resourceID
@@ -205,9 +206,8 @@ func (f *FakeAPI) RegisterTask(commandType string, resourceID int) map[string]an
 // WithHandlersPaused runs fn() with handler invocation suspended. Use it whenever test code needs to read or write
 // fixture state outside a handler, so that data access doesn't race between test code and handlers.
 func (f *FakeAPI) WithHandlersPaused(fn func()) {
-	f.handlerMu.Lock()
-	// make sure the mutex is unlocked even if fn() panics
-	defer f.handlerMu.Unlock()
+	f.fixtureMu.Lock()
+	defer f.fixtureMu.Unlock()
 
 	fn()
 }

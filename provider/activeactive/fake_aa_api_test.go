@@ -24,7 +24,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
 
-// defaultRedisVersion is the version the API picks when a create request omits redisVersion.
+// defaultRedisVersion is the version that the API picks when a create request omits redisVersion.
 const defaultRedisVersion = "8.0"
 
 type aaAPI struct {
