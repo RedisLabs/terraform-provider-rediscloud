@@ -814,7 +814,7 @@ func upgradeRedisVersionEssentials(ctx context.Context, api *client.ApiClient, s
 
 func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
-		Delay: 30 * time.Second,
+		Delay: api.WaitDelay(30 * time.Second),
 		Pending: []string{
 			databases.StatusDraft,
 			databases.StatusPending,
@@ -829,7 +829,7 @@ func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api
 		},
 		Target:       []string{databases.StatusActive},
 		Timeout:      timeout,
-		PollInterval: 30 * time.Second,
+		PollInterval: api.WaitPollInterval(30 * time.Second),
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for fixed database %d to be active", id)
