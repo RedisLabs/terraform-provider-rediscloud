@@ -18,67 +18,12 @@ variable "field_type" {
   type    = string
   default = "str"
 }
-variable "customer_models" {
-  type    = bool
-  default = false
-}
-variable "llm_model" {
-  type    = string
-  default = "gpt-4o-mini"
-}
-variable "embedding_model" {
-  type    = string
-  default = "text-embedding-3-small"
-}
-variable "key_version" {
-  type    = number
-  default = 1
-}
-variable "llm_api_key" {
-  type      = string
-  sensitive = true
-  ephemeral = true
-  default   = null
-}
-variable "embedding_api_key" {
-  type      = string
-  sensitive = true
-  ephemeral = true
-  default   = null
-}
-
 resource "rediscloud_agent_memory" "test" {
   name                       = "${var.name}-${var.store_suffix}"
   database_id                = rediscloud_subscription_database.test[var.database_index].db_id
   short_term_ttl_seconds     = var.short_ttl
   long_term_ttl_seconds      = 31536000
   extraction_cadence_seconds = 300
-
-  dynamic "llm" {
-    for_each = var.customer_models ? [true] : []
-    content {
-      provider = "openai"
-      model    = var.llm_model
-      credentials {
-        type            = "apiKey"
-        api_key         = var.llm_api_key
-        api_key_version = var.key_version
-      }
-    }
-  }
-
-  dynamic "embedding" {
-    for_each = var.customer_models ? [true] : []
-    content {
-      provider = "openai"
-      model    = var.embedding_model
-      credentials {
-        type            = "apiKey"
-        api_key         = var.embedding_api_key
-        api_key_version = var.key_version
-      }
-    }
-  }
 
   summarization {
     enabled          = true

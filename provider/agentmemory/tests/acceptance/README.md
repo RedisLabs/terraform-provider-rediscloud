@@ -18,7 +18,8 @@ The suite covers:
 ## Run
 
 Set `REDISCLOUD_URL`, `REDISCLOUD_ACCESS_KEY` and `REDISCLOUD_SECRET_KEY` for a test
-account. Use Terraform 1.11.1 or later. From the repository root:
+account. The managed and customer-model fixtures use the repository's default
+Terraform CLI. From the repository root:
 
 ```sh
 make testacc-check TEST_PATTERN='^TestAccResourceRedisCloudAgentMemory_'
@@ -44,10 +45,11 @@ Optional settings:
 | `AGENT_MEMORY_MODEL` | `gpt-4o-mini` |
 | `AGENT_MEMORY_EMBEDDING_MODEL` | `text-embedding-3-small` |
 
-The customer-managed model case uses ephemeral Terraform input variables and
-checks that the model secrets are absent from plan and state. Its version update
-resubmits the same valid keys; it does not claim to test rotation to different
-provider credentials. It skips when either model key is missing.
+The customer-managed model case uses sensitive Terraform input variables. Model
+keys are stored in plan and state and checked for sensitive marking. Its version
+update resubmits the same valid keys; it does not claim to test rotation to
+different provider credentials. It skips when either model key is missing.
+The managed fixture contains no model credential variables.
 
 The invalid-TTL case checks HTTP 400 and reads the existing TTL back before
 another apply. Validation responses can contain only a generic `Bad Request`,

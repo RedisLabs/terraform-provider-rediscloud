@@ -18,7 +18,7 @@ import (
 )
 
 func TestAccResourceRedisCloudAgentMemory_CRUDI(t *testing.T) {
-	f := newFixture(t)
+	f := newFixture(t, "testdata/store.tf")
 	tracked := &trackedResources{}
 	initial := config.Variables{}
 	updated := config.Variables{"store_suffix": config.StringVariable("updated"), "short_ttl": config.IntegerVariable(172800)}
@@ -82,7 +82,7 @@ func TestAccResourceRedisCloudAgentMemory_CRUDI(t *testing.T) {
 }
 
 func TestAccResourceRedisCloudAgentMemory_Replacement(t *testing.T) {
-	f := newFixture(t)
+	f := newFixture(t, "testdata/store.tf")
 	tracked := &trackedResources{}
 	initial := config.Variables{"database_count": config.IntegerVariable(2)}
 	moved := config.Variables{"database_count": config.IntegerVariable(2), "database_index": config.IntegerVariable(1)}
