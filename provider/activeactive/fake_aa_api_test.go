@@ -132,8 +132,8 @@ func (a *aaAPI) registerHandlers() {
 			password = body.GlobalPassword
 		}
 
-		// Keep the stored response limited to behavior this fixture implements. Leave other SDK fields nil so
-		// GET omits them instead of implying unsupported API behavior.
+		// Keep the stored response limited to behaviour this fixture implements. Leave other SDK fields nil so
+		// GET omits them instead of implying unsupported API behaviour.
 		a.database = &databases.ActiveActiveDatabase{
 			ID:                                  redis.Int(id),
 			Name:                                body.Name,
