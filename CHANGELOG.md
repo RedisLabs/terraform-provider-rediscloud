@@ -5,6 +5,7 @@
 ### Changed
 
 - Raised the Go toolchain to 1.26.10 to pick up the fix for GO-2026-6809 in `crypto/x509`.
+- Migrated `rediscloud_essentials_subscription` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 
 ## 2.19.2 (20 October 2026)
 
