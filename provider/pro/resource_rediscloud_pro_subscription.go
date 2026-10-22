@@ -1269,8 +1269,8 @@ func WaitForSubscriptionToBeDeleted(ctx context.Context, id int, api *client.Api
 		Pending:      []string{subscriptions.SubscriptionStatusDeleting},
 		Target:       []string{"deleted"}, // TODO: update this with deleted field in SDK
 		Timeout:      timeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        api.WaitDelay(10 * time.Second),
+		PollInterval: api.WaitPollInterval(30 * time.Second),
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for subscription %d to be deleted", id)
