@@ -5,6 +5,7 @@
 ### Changed
 
 - Raised the Go toolchain to 1.26.10 to pick up the fix for GO-2026-6809 in `crypto/x509`.
+- Updated nixpkgs from `3181085` to `319e4ce` for the Nix development and CI environment.
 
 ## 2.19.2 (20 October 2026)
 
