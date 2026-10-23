@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - 'release/*'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -12,6 +13,7 @@ concurrency:
 jobs:
   detect-changes:
     name: Detect Changes
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.filter.outputs.code }}
@@ -38,7 +40,7 @@ jobs:
   ci:
     name: CI
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-nix
@@ -50,9 +52,12 @@ jobs:
     name: Pre-test Gate
     needs: [ci, detect-changes]
     if: >
-      github.event.pull_request.draft == false &&
-      needs.detect-changes.outputs.code == 'true' &&
-      !contains(github.event.pull_request.labels.*.name, 'skip-tests')
+      always() && !cancelled() &&
+      needs.ci.result == 'success' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.pull_request.draft == false &&
+        needs.detect-changes.outputs.code == 'true' &&
+        !contains(github.event.pull_request.labels.*.name, 'skip-tests')))
     runs-on: ubuntu-latest
     steps:
       - run: echo "Gate passed - running acceptance tests"
