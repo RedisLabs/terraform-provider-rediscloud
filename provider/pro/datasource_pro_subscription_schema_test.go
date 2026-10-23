@@ -29,7 +29,9 @@ func TestProSubscriptionDataSourceSchemaMatchesModel(t *testing.T) {
 	require.False(t, diags.HasError())
 
 	modelType := types.ObjectType{AttrTypes: customtypes.AttrTypesOf(pro.ProSubscriptionDataSourceModel{
-		CloudProvider:      cloudProviders,
+		ProSubscriptionModel: pro.ProSubscriptionModel{
+			CloudProvider: cloudProviders,
+		},
 		MaintenanceWindows: maintenance,
 		Pricing:            pricing,
 	})}
