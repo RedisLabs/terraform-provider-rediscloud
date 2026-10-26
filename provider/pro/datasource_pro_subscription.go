@@ -6,10 +6,10 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/customtypes"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 var (
@@ -105,158 +105,24 @@ func (d *proSubscriptionDataSource) Schema(_ context.Context, _ datasource.Schem
 				Description: "The Prometheus scrape endpoint for databases in this subscription. Use this to configure your Prometheus server to scrape metrics from your Redis Cloud databases.",
 				Computed:    true,
 			},
-		},
-		// Keep object collections as blocks because the protocol-v5 mux cannot serve
-		// protocol-v6 nested attributes. Keep region as a set to preserve its public shape.
-		Blocks: map[string]schema.Block{
-			"cloud_provider": schema.ListNestedBlock{
+			// Object collections are computed list attributes, not blocks: a deferred read
+			// plans blocks as empty lists instead of unknown, which breaks [0] references.
+			// Nested attributes are not an option because the mux serves protocol v5.
+			"cloud_provider": schema.ListAttribute{
 				Description: "A cloud provider object",
-				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"provider": schema.StringAttribute{
-							Description: "The cloud provider to use with the subscription, (either `AWS` or `GCP`)",
-							Computed:    true,
-						},
-						"cloud_account_id": schema.StringAttribute{
-							Description: "Cloud account identifier, (A Cloud Account Id = 1 implies using Redis Labs internal cloud account)",
-							Computed:    true,
-						},
-						"aws_account_id": schema.StringAttribute{
-							Description: "AWS account ID associated with the subscription (only applicable for AWS subscriptions)",
-							Computed:    true,
-						},
-						"resource_tags": schema.MapAttribute{
-							Description: "A map of resource tags associated with this subscription.",
-							Computed:    true,
-							ElementType: types.StringType,
-						},
-					},
-					Blocks: map[string]schema.Block{
-						"region": schema.SetNestedBlock{
-							Description: "Cloud networking details, per region",
-							NestedObject: schema.NestedBlockObject{
-								Attributes: map[string]schema.Attribute{
-									"region": schema.StringAttribute{
-										Description: "Deployment region as defined by cloud provider",
-										Computed:    true,
-									},
-									"multiple_availability_zones": schema.BoolAttribute{
-										Description: "Support deployment on multiple availability zones within the selected region",
-										Computed:    true,
-									},
-									"preferred_availability_zones": schema.ListAttribute{
-										Description: "List of availability zones used",
-										Computed:    true,
-										ElementType: types.StringType,
-									},
-									"networking_vpc_id": schema.StringAttribute{
-										Description: "The ID of the VPC where the Redis Cloud subscription is deployed",
-										Computed:    true,
-									},
-								},
-								Blocks: map[string]schema.Block{
-									"networks": schema.ListNestedBlock{
-										Description: "List of networks used",
-										NestedObject: schema.NestedBlockObject{
-											Attributes: map[string]schema.Attribute{
-												"networking_subnet_id": schema.StringAttribute{
-													Description: "The subnet that the subscription deploys into",
-													Computed:    true,
-												},
-												"networking_deployment_cidr": schema.StringAttribute{
-													Description: "Deployment CIDR mask",
-													Computed:    true,
-												},
-												"networking_vpc_id": schema.StringAttribute{
-													Description: "Either an existing VPC Id (already exists in the specific region) or create a new VPC (if no VPC is specified)",
-													Computed:    true,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				Computed:    true,
+				ElementType: utils.CloudProviderElemType,
 			},
-			"maintenance_windows": schema.ListNestedBlock{
+			"maintenance_windows": schema.ListAttribute{
 				Description: "Details about the subscription's maintenance window specification",
+				Computed:    true,
 				CustomType:  customtypes.NewMaintenanceListType(),
-				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"mode": schema.StringAttribute{
-							Description: "Either automatic (Redis specified) or manual (User specified)",
-							Computed:    true,
-						},
-					},
-					Blocks: map[string]schema.Block{
-						"window": schema.ListNestedBlock{
-							Description: "A list of maintenance windows for manual-mode",
-							CustomType:  customtypes.NewMaintenanceWindowListType(),
-							NestedObject: schema.NestedBlockObject{
-								Attributes: map[string]schema.Attribute{
-									"start_hour": schema.Int64Attribute{
-										Description: "What hour in the day (0-23) may maintenance start",
-										Computed:    true,
-									},
-									"duration_in_hours": schema.Int64Attribute{
-										Description: "How long maintenance may take",
-										Computed:    true,
-									},
-									"days": schema.ListAttribute{
-										Description: "A list of days on which the window is open ('Monday', 'Tuesday' etc)",
-										Computed:    true,
-										ElementType: types.StringType,
-									},
-								},
-							},
-						},
-					},
-				},
+				ElementType: customtypes.NewMaintenanceListType().ElementType(),
 			},
-			"pricing": schema.ListNestedBlock{
+			"pricing": schema.ListAttribute{
 				Description: "Pricing details totalled over this Subscription",
-				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"database_name": schema.StringAttribute{
-							Description: "The database this pricing entry applies to",
-							Computed:    true,
-						},
-						"type": schema.StringAttribute{
-							Description: "The type of cost e.g. 'Shards'",
-							Computed:    true,
-						},
-						"type_details": schema.StringAttribute{
-							Description: "Further detail e.g. 'micro'",
-							Computed:    true,
-						},
-						"quantity": schema.Int64Attribute{
-							Description: "The number of units this pricing entry covers",
-							Computed:    true,
-						},
-						"quantity_measurement": schema.StringAttribute{
-							Description: "The unit that 'quantity' is measured in, e.g. 'shards'",
-							Computed:    true,
-						},
-						"price_per_unit": schema.Float64Attribute{
-							Description: "The cost of a single unit",
-							Computed:    true,
-						},
-						"price_currency": schema.StringAttribute{
-							Description: "The currency the price is denominated in, e.g. 'USD'",
-							Computed:    true,
-						},
-						"price_period": schema.StringAttribute{
-							Description: "The billing period the price applies to, e.g. 'hour'",
-							Computed:    true,
-						},
-						"region": schema.StringAttribute{
-							Description: "The region this cost is associated with, if any",
-							Computed:    true,
-						},
-					},
-				},
+				Computed:    true,
+				ElementType: utils.PricingElemType,
 			},
 		},
 	}
