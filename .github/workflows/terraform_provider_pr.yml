@@ -13,12 +13,12 @@ concurrency:
 jobs:
   detect-changes:
     name: Detect Changes
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.filter.outputs.code }}
     steps:
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        if: github.event_name == 'pull_request'
         id: filter
         with:
           filters: |
@@ -52,12 +52,10 @@ jobs:
     name: Pre-test Gate
     needs: [ci, detect-changes]
     if: >
-      always() && !cancelled() &&
-      needs.ci.result == 'success' &&
-      (github.event_name == 'workflow_dispatch' ||
-       (github.event.pull_request.draft == false &&
-        needs.detect-changes.outputs.code == 'true' &&
-        !contains(github.event.pull_request.labels.*.name, 'skip-tests')))
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.draft == false &&
+       needs.detect-changes.outputs.code == 'true' &&
+       !contains(github.event.pull_request.labels.*.name, 'skip-tests'))
     runs-on: ubuntu-latest
     steps:
       - run: echo "Gate passed - running acceptance tests"
