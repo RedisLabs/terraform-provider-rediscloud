@@ -1,11 +1,16 @@
 # Changelog
 
-## 2.20.0 (Unreleased)
+## 2.19.3 (Unreleased)
 
 ### Changed
 
 - Raised the Go toolchain to 1.26.10 to pick up the fix for GO-2026-6809 in `crypto/x509`.
 - Migrated `rediscloud_essentials_subscription` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+
+### Fixed
+
+- `rediscloud_subscription` data source: `cloud_provider`, `maintenance_windows` and `pricing` are computed attributes again instead of blocks, so they are unknown (not empty) at plan when the read is deferred to apply. Since 2.19.2, references such as `cloud_provider[0].aws_account_id` failed with `Invalid index` when the subscription name was unknown at plan.
+- `rediscloud_active_active_subscription` data source: same fix for `maintenance_windows` and `pricing`, broken the same way since 2.19.1.
 
 ## 2.19.2 (20 October 2026)
 

@@ -10,6 +10,7 @@ import (
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/customtypes"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -113,89 +114,19 @@ func (d *activeActiveSubscriptionDataSource) Schema(_ context.Context, _ datasou
 				Computed:    true,
 				ElementType: types.StringType,
 			},
-		},
-		// maintenance_windows and pricing are blocks (not nested attributes) because the
-		// original SDKv2 schema used TypeList with Elem: &schema.Resource{}, which is a
-		// block in protocol v5. Using a nested attribute would cause a runtime panic in
-		// the muxed provider.
-		Blocks: map[string]schema.Block{
-			"maintenance_windows": schema.ListNestedBlock{
+			// Object collections are computed list attributes, not blocks: a deferred read
+			// plans blocks as empty lists instead of unknown, which breaks [0] references.
+			// Nested attributes are not an option because the mux serves protocol v5.
+			"maintenance_windows": schema.ListAttribute{
 				Description: "Details about the subscription's maintenance window specification",
+				Computed:    true,
 				CustomType:  customtypes.NewMaintenanceListType(),
-				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"mode": schema.StringAttribute{
-							Description: "Either automatic (Redis specified) or manual (User specified)",
-							Computed:    true,
-						},
-					},
-					Blocks: map[string]schema.Block{
-						"window": schema.ListNestedBlock{
-							Description: "A list of maintenance windows for manual-mode",
-							CustomType:  customtypes.NewMaintenanceWindowListType(),
-							NestedObject: schema.NestedBlockObject{
-								Attributes: map[string]schema.Attribute{
-									"start_hour": schema.Int64Attribute{
-										Description: "What hour in the day (0-23) the window opens",
-										Computed:    true,
-									},
-									"duration_in_hours": schema.Int64Attribute{
-										Description: "How long the window is open",
-										Computed:    true,
-									},
-									"days": schema.ListAttribute{
-										Description: "A list of weekdays on which the window is open ('Monday', 'Tuesday' etc)",
-										Computed:    true,
-										ElementType: types.StringType,
-									},
-								},
-							},
-						},
-					},
-				},
+				ElementType: customtypes.NewMaintenanceListType().ElementType(),
 			},
-			"pricing": schema.ListNestedBlock{
+			"pricing": schema.ListAttribute{
 				Description: "Pricing details totalled over this Subscription",
-				NestedObject: schema.NestedBlockObject{
-					Attributes: map[string]schema.Attribute{
-						"database_name": schema.StringAttribute{
-							Description: "The database this pricing entry applies to",
-							Computed:    true,
-						},
-						"type": schema.StringAttribute{
-							Description: "The type of cost e.g. 'Shards'",
-							Computed:    true,
-						},
-						"type_details": schema.StringAttribute{
-							Description: "Further detail e.g. 'micro'",
-							Computed:    true,
-						},
-						"quantity": schema.Int64Attribute{
-							Description: "The number of units this pricing entry covers",
-							Computed:    true,
-						},
-						"quantity_measurement": schema.StringAttribute{
-							Description: "The unit that 'quantity' is measured in, e.g. 'shards'",
-							Computed:    true,
-						},
-						"price_per_unit": schema.Float64Attribute{
-							Description: "The cost of a single unit",
-							Computed:    true,
-						},
-						"price_currency": schema.StringAttribute{
-							Description: "The currency the price is denominated in, e.g. 'USD'",
-							Computed:    true,
-						},
-						"price_period": schema.StringAttribute{
-							Description: "The billing period the price applies to, e.g. 'hour'",
-							Computed:    true,
-						},
-						"region": schema.StringAttribute{
-							Description: "The region this cost is associated with, if any",
-							Computed:    true,
-						},
-					},
-				},
+				Computed:    true,
+				ElementType: utils.PricingElemType,
 			},
 		},
 	}
