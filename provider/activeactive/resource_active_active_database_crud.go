@@ -60,14 +60,18 @@ func (r *activeActiveDatabaseResource) createDatabase(ctx context.Context, plan 
 		return
 	}
 
-	localThroughputs := make([]*databases.LocalThroughput, 0, len(regions.Regions))
-	for _, region := range regions.Regions {
-		localThroughputs = append(localThroughputs, &databases.LocalThroughput{
-			Region:                   redis.String(*region.Region),
-			WriteOperationsPerSecond: redis.Int(1000),
-			ReadOperationsPerSecond:  redis.Int(1000),
-		})
+	overrides, overrideDiags := overrideRegionsByName(ctx, plan)
+	diagnostics.Append(overrideDiags...)
+	if diagnostics.HasError() {
+		utils.SubscriptionMutex.Unlock(subId)
+		return
 	}
+
+	regionNames := make([]string, 0, len(regions.Regions))
+	for _, region := range regions.Regions {
+		regionNames = append(regionNames, *region.Region)
+	}
+	localThroughputs := buildCreateLocalThroughputs(regionNames, overrides)
 
 	// Build create request
 	createDatabase := databases.CreateActiveActiveDatabase{
@@ -681,6 +685,8 @@ func (r *activeActiveDatabaseResource) buildRegionsFromPlan(ctx context.Context,
 			regionProps.RemoteBackup = backupConfig
 		}
 
+		setLocalThroughput(regionProps, region)
+
 		regions = append(regions, regionProps)
 	}
 
@@ -701,6 +707,8 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 		"override_global_source_ips":          types.SetType{ElemType: types.StringType},
 		"override_global_data_persistence":    types.StringType,
 		"enable_default_user":                 types.BoolType,
+		"local_read_operations_per_second":    types.Int64Type,
+		"local_write_operations_per_second":   types.Int64Type,
 		"remote_backup":                       types.ListType{ElemType: types.ObjectType{AttrTypes: remoteBackupAttrTypes}},
 	}
 
@@ -833,6 +841,10 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 		backupList, diags := flattenBackupPlan(regionDb.Backup, stateStorageType)
 		allDiags.Append(diags...)
 		regionConfig["remote_backup"] = backupList
+
+		readOps, writeOps := localThroughputStateValues(*stateRegion, regionDb.ReadOperationsPerSecond, regionDb.WriteOperationsPerSecond)
+		regionConfig["local_read_operations_per_second"] = readOps
+		regionConfig["local_write_operations_per_second"] = writeOps
 
 		regionObj, diags := types.ObjectValue(overrideRegionAttrTypes, regionConfig)
 		allDiags.Append(diags...)
