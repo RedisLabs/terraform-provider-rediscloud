@@ -1,9 +1,11 @@
 package agentmemory
 
 import (
+	"context"
 	"fmt"
 
 	agentmemoryapi "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -14,9 +16,22 @@ type customMemoryTypePlanEntry struct {
 	model AgentMemoryCustomMemoryTypeModel
 }
 
-func validateCustomMemoryTypesPlan(plan, state AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
-	planByName := make(map[string]customMemoryTypePlanEntry, len(plan.CustomMemoryTypes))
-	for i, memoryType := range plan.CustomMemoryTypes {
+func validateCustomMemoryTypesPlan(ctx context.Context, plan, state AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
+	if plan.CustomMemoryTypes.IsUnknown() {
+		// Unknown definitions may remove or redefine an existing type. Reserve replacement
+		// in the initial plan rather than discovering an immutable edit during apply.
+		if len(state.CustomMemoryTypes.Elements()) > 0 {
+			resp.RequiresReplace.Append(path.Root("custom_memory_types"))
+		}
+		return
+	}
+	plannedTypes := customMemoryTypeModels(ctx, plan.CustomMemoryTypes, &resp.Diagnostics)
+	existingTypes := customMemoryTypeModels(ctx, state.CustomMemoryTypes, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	planByName := make(map[string]customMemoryTypePlanEntry, len(plannedTypes))
+	for i, memoryType := range plannedTypes {
 		name, ok := knownString(memoryType.Name)
 		if !ok {
 			continue
@@ -36,7 +51,7 @@ func validateCustomMemoryTypesPlan(plan, state AgentMemoryResourceModel, resp *r
 		return
 	}
 
-	for _, existing := range state.CustomMemoryTypes {
+	for _, existing := range existingTypes {
 		name, ok := knownString(existing.Name)
 		if !ok {
 			continue
@@ -48,7 +63,7 @@ func validateCustomMemoryTypesPlan(plan, state AgentMemoryResourceModel, resp *r
 			resp.RequiresReplace.Append(path.Root("custom_memory_types"))
 			continue
 		}
-		if customMemoryTypeDefinitionHasUnknown(planned.model) || !customMemoryTypeDefinitionEqual(planned.model, existing) {
+		if customMemoryTypeDefinitionHasUnknown(ctx, planned.model, &resp.Diagnostics) || !customMemoryTypeDefinitionEqual(ctx, planned.model, existing, &resp.Diagnostics) {
 			resp.RequiresReplace.Append(path.Root("custom_memory_types").AtListIndex(planned.index))
 			continue
 		}
@@ -58,9 +73,11 @@ func validateCustomMemoryTypesPlan(plan, state AgentMemoryResourceModel, resp *r
 	}
 }
 
-func customMemoryTypeUpdatesFromPlan(plan, state []AgentMemoryCustomMemoryTypeModel) ([]agentmemoryapi.CustomMemoryType, []agentmemoryapi.MemoryTypeStrategyUpdate) {
-	stateByName := make(map[string]AgentMemoryCustomMemoryTypeModel, len(state))
-	for _, memoryType := range state {
+func customMemoryTypeUpdatesFromPlan(ctx context.Context, plan, state CustomMemoryTypeListValue, diags *diag.Diagnostics) ([]agentmemoryapi.CustomMemoryType, []agentmemoryapi.MemoryTypeStrategyUpdate) {
+	plannedTypes := customMemoryTypeModels(ctx, plan, diags)
+	existingTypes := customMemoryTypeModels(ctx, state, diags)
+	stateByName := make(map[string]AgentMemoryCustomMemoryTypeModel, len(existingTypes))
+	for _, memoryType := range existingTypes {
 		name, ok := knownString(memoryType.Name)
 		if ok {
 			stateByName[name] = memoryType
@@ -69,14 +86,14 @@ func customMemoryTypeUpdatesFromPlan(plan, state []AgentMemoryCustomMemoryTypeMo
 
 	var addTypes []agentmemoryapi.CustomMemoryType
 	var updateStrategies []agentmemoryapi.MemoryTypeStrategyUpdate
-	for _, planned := range plan {
+	for _, planned := range plannedTypes {
 		name, ok := knownString(planned.Name)
 		if !ok {
 			continue
 		}
 		existing, exists := stateByName[name]
 		if !exists {
-			addTypes = append(addTypes, customMemoryTypeFromModel(planned))
+			addTypes = append(addTypes, customMemoryTypeFromModel(ctx, planned, diags))
 			continue
 		}
 		if customExtractionStrategyEqual(planned.ExtractionStrategy, existing.ExtractionStrategy) {
@@ -98,25 +115,33 @@ func customMemoryTypeUpdatesFromPlan(plan, state []AgentMemoryCustomMemoryTypeMo
 	return addTypes, updateStrategies
 }
 
-func customMemoryTypeFromModel(model AgentMemoryCustomMemoryTypeModel) agentmemoryapi.CustomMemoryType {
+func customMemoryTypeFromModel(ctx context.Context, model AgentMemoryCustomMemoryTypeModel, diags *diag.Diagnostics) agentmemoryapi.CustomMemoryType {
 	return agentmemoryapi.CustomMemoryType{
 		Name:               model.Name.ValueStringPointer(),
 		Description:        model.Description.ValueStringPointer(),
-		Fields:             customFieldsFromModel(model.Fields),
+		Fields:             customFieldsFromModel(ctx, model.Fields, diags),
 		ExtractionStrategy: customExtractionStrategyFromModel(model.ExtractionStrategy),
 	}
 }
 
-func customMemoryTypeDefinitionEqual(left, right AgentMemoryCustomMemoryTypeModel) bool {
+func customMemoryTypeDefinitionEqual(ctx context.Context, left, right AgentMemoryCustomMemoryTypeModel, diags *diag.Diagnostics) bool {
+	if left.Fields.IsUnknown() || right.Fields.IsUnknown() {
+		return false
+	}
+	leftFields := customFieldModels(ctx, left.Fields, diags)
+	rightFields := customFieldModels(ctx, right.Fields, diags)
+	if diags.HasError() {
+		return false
+	}
 	if !left.Description.Equal(right.Description) {
 		return false
 	}
-	if len(left.Fields) != len(right.Fields) {
+	if len(leftFields) != len(rightFields) {
 		return false
 	}
 
-	leftFieldsByName := make(map[string]AgentMemoryCustomFieldModel, len(left.Fields))
-	for _, field := range left.Fields {
+	leftFieldsByName := make(map[string]AgentMemoryCustomFieldModel, len(leftFields))
+	for _, field := range leftFields {
 		name, ok := knownString(field.Name)
 		if !ok {
 			return false
@@ -126,7 +151,7 @@ func customMemoryTypeDefinitionEqual(left, right AgentMemoryCustomMemoryTypeMode
 		}
 		leftFieldsByName[name] = field
 	}
-	for _, rightField := range right.Fields {
+	for _, rightField := range rightFields {
 		name, ok := knownString(rightField.Name)
 		if !ok {
 			return false
@@ -139,11 +164,11 @@ func customMemoryTypeDefinitionEqual(left, right AgentMemoryCustomMemoryTypeMode
 	return true
 }
 
-func customMemoryTypeDefinitionHasUnknown(memoryType AgentMemoryCustomMemoryTypeModel) bool {
-	if memoryType.Description.IsUnknown() {
+func customMemoryTypeDefinitionHasUnknown(ctx context.Context, memoryType AgentMemoryCustomMemoryTypeModel, diags *diag.Diagnostics) bool {
+	if memoryType.Description.IsUnknown() || memoryType.Fields.IsUnknown() {
 		return true
 	}
-	for _, field := range memoryType.Fields {
+	for _, field := range customFieldModels(ctx, memoryType.Fields, diags) {
 		if field.Name.IsUnknown() || field.Description.IsUnknown() || field.Type.IsUnknown() {
 			return true
 		}

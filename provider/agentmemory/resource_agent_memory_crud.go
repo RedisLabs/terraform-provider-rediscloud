@@ -41,7 +41,7 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 	if longTermMemory != nil {
 		longTermMemory.Embedding = embedding
 	}
-	storeID, err := r.client.Client.AgentMemory.Create(ctx, agentmemoryapi.CreateStore{
+	request := agentmemoryapi.CreateStore{
 		Name:                     redis.String(plan.Name.ValueString()),
 		DatabaseID:               redis.Int(int(plan.DatabaseID.ValueInt64())),
 		ShortMemory:              shortMemoryFromPlan(plan),
@@ -50,9 +50,13 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 		ExtractionStrategy:       stringPointerFromValue(plan.ExtractionStrategy),
 		ExtractionCadence:        extractionCadenceFromPlan(plan),
 		Summarization:            summarizationFromModel(plan.Summarization),
-		LongTermMemoryExclusions: exclusionsFromModel(plan.LongTermMemoryExclusions),
-		CustomMemoryTypes:        customMemoryTypesFromModel(plan.CustomMemoryTypes),
-	})
+		LongTermMemoryExclusions: exclusionsFromModel(ctx, plan.LongTermMemoryExclusions, &resp.Diagnostics),
+		CustomMemoryTypes:        customMemoryTypesFromModel(ctx, plan.CustomMemoryTypes, &resp.Diagnostics),
+	}
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	storeID, err := r.client.Client.AgentMemory.Create(ctx, request)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create Agent Memory service", err.Error())
 		return
@@ -190,10 +194,13 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 		update.Summarization = summarizationFromModel(plan.Summarization)
 	}
 	if plan.LongTermMemoryExclusions != nil {
-		update.LongTermMemoryExclusions = exclusionsFromModel(plan.LongTermMemoryExclusions)
+		update.LongTermMemoryExclusions = exclusionsFromModel(ctx, plan.LongTermMemoryExclusions, &resp.Diagnostics)
 	}
-	update.AddCustomMemoryTypes, update.UpdateCustomMemoryTypeStrategies = customMemoryTypeUpdatesFromPlan(plan.CustomMemoryTypes, state.CustomMemoryTypes)
+	update.AddCustomMemoryTypes, update.UpdateCustomMemoryTypeStrategies = customMemoryTypeUpdatesFromPlan(ctx, plan.CustomMemoryTypes, state.CustomMemoryTypes, &resp.Diagnostics)
 
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	storeID := state.ID.ValueString()
 	if err := r.client.Client.AgentMemory.Update(ctx, storeID, update); err != nil {
 		resp.Diagnostics.AddError("Failed to update Agent Memory service", err.Error())
@@ -322,10 +329,14 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 		state.Summarization = summarizationToModel(store.Summarization, state.Summarization, includeAPIOnlyConfig)
 	}
 	if includeAPIOnlyConfig || state.LongTermMemoryExclusions != nil || store.LongTermMemoryExclusions == nil {
-		state.LongTermMemoryExclusions = exclusionsToModel(store.LongTermMemoryExclusions, state.LongTermMemoryExclusions, includeAPIOnlyConfig)
+		state.LongTermMemoryExclusions = exclusionsToModel(ctx, store.LongTermMemoryExclusions, state.LongTermMemoryExclusions, includeAPIOnlyConfig, diags)
 	}
-	if includeAPIOnlyConfig || state.CustomMemoryTypes != nil || len(store.CustomMemoryTypes) == 0 {
-		state.CustomMemoryTypes = customMemoryTypesToModel(store.CustomMemoryTypes, state.CustomMemoryTypes)
+	if includeAPIOnlyConfig || !state.CustomMemoryTypes.IsNull() || len(store.CustomMemoryTypes) == 0 {
+		existing := customMemoryTypeModels(ctx, state.CustomMemoryTypes, diags)
+		models := customMemoryTypesToModel(ctx, store.CustomMemoryTypes, existing, diags)
+		list, listDiags := NewCustomMemoryTypeList(ctx, models)
+		diags.Append(listDiags...)
+		state.CustomMemoryTypes = list
 	}
 
 	switch {

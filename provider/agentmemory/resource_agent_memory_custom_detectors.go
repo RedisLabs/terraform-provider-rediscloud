@@ -1,17 +1,22 @@
 package agentmemory
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-func validateCustomDetectorNamesPlan(plan AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
+func validateCustomDetectorNamesPlan(ctx context.Context, plan AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
 	if plan.LongTermMemoryExclusions == nil || plan.LongTermMemoryExclusions.CustomDetectors == nil {
 		return
 	}
-	detectors := plan.LongTermMemoryExclusions.CustomDetectors.Detectors
+	list := plan.LongTermMemoryExclusions.CustomDetectors.Detectors
+	if list.IsUnknown() {
+		return
+	}
+	detectors := customDetectorModels(ctx, list, &resp.Diagnostics)
 	names := make(map[string]int, len(detectors))
 	// Disabled detectors remain stored, so their names must also be unique.
 	for i, detector := range detectors {
@@ -31,11 +36,15 @@ func validateCustomDetectorNamesPlan(plan AgentMemoryResourceModel, resp *resour
 	}
 }
 
-func validateCustomDetectorMatchersConfig(config AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
+func validateCustomDetectorMatchersConfig(ctx context.Context, config AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
 	if config.LongTermMemoryExclusions == nil || config.LongTermMemoryExclusions.CustomDetectors == nil {
 		return
 	}
-	for i, detector := range config.LongTermMemoryExclusions.CustomDetectors.Detectors {
+	list := config.LongTermMemoryExclusions.CustomDetectors.Detectors
+	if list.IsUnknown() {
+		return
+	}
+	for i, detector := range customDetectorModels(ctx, list, &resp.Diagnostics) {
 		// Presence is checked by the schema.
 		if detector.Matcher == nil {
 			continue

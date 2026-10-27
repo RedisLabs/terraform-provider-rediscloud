@@ -56,11 +56,11 @@ func TestCustomMemoryTypeUpdatePromptPresence(t *testing.T) {
 		{"configured", types.StringValue("updated prompt"), true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			state := customMemoryTypeModel("preference", nil)
+			state := customMemoryTypeModel(t, "preference", nil)
 			state.ExtractionStrategy = &AgentMemoryCustomExtractionStrategy{Prompt: types.StringValue("initial prompt"), Enabled: types.BoolValue(true)}
 			plan := state
 			plan.ExtractionStrategy = &AgentMemoryCustomExtractionStrategy{Prompt: tc.prompt, Enabled: types.BoolValue(false)}
-			added, updates := customMemoryTypeUpdatesFromPlan([]AgentMemoryCustomMemoryTypeModel{plan}, []AgentMemoryCustomMemoryTypeModel{state})
+			added, updates := customMemoryTypeUpdatesFromPlan(t.Context(), mustCustomMemoryTypeList(t, []AgentMemoryCustomMemoryTypeModel{plan}), mustCustomMemoryTypeList(t, []AgentMemoryCustomMemoryTypeModel{state}), testAgentMemoryDiags(t))
 			require.Empty(t, added)
 			require.Len(t, updates, 1)
 			encoded, err := json.Marshal(updates[0])

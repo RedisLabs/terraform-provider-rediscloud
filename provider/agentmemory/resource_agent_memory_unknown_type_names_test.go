@@ -35,7 +35,7 @@ func TestCustomTypeUnknownNameValidation(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			var resp resource.ModifyPlanResponse
-			validateCustomMemoryTypesPlan(AgentMemoryResourceModel{CustomMemoryTypes: c.planned}, AgentMemoryResourceModel{CustomMemoryTypes: []AgentMemoryCustomMemoryTypeModel{existing}}, &resp)
+			validateCustomMemoryTypesPlan(t.Context(), AgentMemoryResourceModel{CustomMemoryTypes: mustCustomMemoryTypeList(t, c.planned)}, AgentMemoryResourceModel{CustomMemoryTypes: mustCustomMemoryTypeList(t, []AgentMemoryCustomMemoryTypeModel{existing})}, &resp)
 			if c.errorSummary == "" {
 				require.False(t, resp.Diagnostics.HasError(), resp.Diagnostics.Errors())
 				require.Equal(t, c.replace, len(resp.RequiresReplace) > 0)
