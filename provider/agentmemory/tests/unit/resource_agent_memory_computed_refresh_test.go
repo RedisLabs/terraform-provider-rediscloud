@@ -36,6 +36,10 @@ func TestAgentMemoryMutableComputedMetadata(t *testing.T) {
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/fixture":
 			_, _ = w.Write([]byte(`{"taskId":"fixture","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
+			if deletes > 0 {
+				http.NotFound(w, r)
+				return
+			}
 			name, status, endpoint := "before", "READY", "https://old.example.test"
 			if updated {
 				name, endpoint = "after", "https://new.example.test"

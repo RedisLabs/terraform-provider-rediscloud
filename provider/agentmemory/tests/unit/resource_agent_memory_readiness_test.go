@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/agentmemory"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
 
@@ -125,14 +126,14 @@ func newReadinessFixture(t *testing.T, statuses ...string) *readinessFixture {
 	return f
 }
 
-func readinessResource(t *testing.T, f *readinessFixture, duration string) (resource.Resource, tfsdk.Plan, tfsdk.State) {
+func configuredAgentMemoryResource(t *testing.T, c *client.ApiClient, duration string) (resource.Resource, tfsdk.Plan, tfsdk.State) {
 	t.Helper()
 	ctx := t.Context()
 	r := agentmemory.NewAgentMemoryResource()
 	var schema resource.SchemaResponse
 	r.Schema(ctx, resource.SchemaRequest{}, &schema)
 	require.False(t, schema.Diagnostics.HasError(), schema.Diagnostics)
-	r.(resource.ResourceWithConfigure).Configure(ctx, resource.ConfigureRequest{ProviderData: testhelpers.NewAPIClient(t, f.api)}, &resource.ConfigureResponse{})
+	r.(resource.ResourceWithConfigure).Configure(ctx, resource.ConfigureRequest{ProviderData: c}, &resource.ConfigureResponse{})
 	model := agentmemory.AgentMemoryResourceModel{
 		ID:                       types.StringValue("store-1"),
 		Name:                     types.StringValue("store"),
@@ -151,6 +152,7 @@ func readinessResource(t *testing.T, f *readinessFixture, duration string) (reso
 		values[name] = types.StringNull()
 	}
 	values["create"], values["update"] = types.StringValue(duration), types.StringValue(duration)
+	values["delete"] = types.StringValue(duration)
 	timeoutList, diags := agentmemory.NewMemoryTimeoutsList(ctx, []timeouts.Value{{Object: types.ObjectValueMust(typ.AttrTypes, values)}})
 	require.False(t, diags.HasError(), diags)
 	model.Timeouts = timeoutList
@@ -165,7 +167,7 @@ func TestAgentMemoryWaitsForReadyAfterTask(t *testing.T) {
 	for _, operation := range []string{"create", "update"} {
 		t.Run(operation, func(t *testing.T) {
 			f := newReadinessFixture(t, api.StatusProvisioning, api.StatusProvisioning, api.StatusReady)
-			r, plan, state := readinessResource(t, f, "500ms")
+			r, plan, state := configuredAgentMemoryResource(t, testhelpers.NewAPIClient(t, f.api), "500ms")
 			var result tfsdk.State
 			if operation == "create" {
 				resp := resource.CreateResponse{State: tfsdk.State{Schema: state.Schema}}
@@ -210,7 +212,7 @@ func TestAgentMemoryReadinessFailurePreservesIdentity(t *testing.T) {
 				f := newReadinessFixture(t, scenario.status)
 				f.failure, f.failureAfter = scenario.failure, scenario.failureAfter
 				f.postDelay = 10 * time.Millisecond
-				r, plan, state := readinessResource(t, f, "60ms")
+				r, plan, state := configuredAgentMemoryResource(t, testhelpers.NewAPIClient(t, f.api), "60ms")
 				var result tfsdk.State
 				if operation == "create" {
 					resp := resource.CreateResponse{State: tfsdk.State{Schema: state.Schema}}
@@ -254,7 +256,7 @@ func TestAgentMemoryReadinessRetriesPostTaskNotFound(t *testing.T) {
 		t.Run(operation, func(t *testing.T) {
 			f := newReadinessFixture(t, api.StatusProvisioning, api.StatusProvisioning, api.StatusProvisioning, api.StatusReady)
 			f.failure, f.failureCount = http.StatusNotFound, 2
-			r, plan, state := readinessResource(t, f, "500ms")
+			r, plan, state := configuredAgentMemoryResource(t, testhelpers.NewAPIClient(t, f.api), "500ms")
 			var result tfsdk.State
 			if operation == "create" {
 				resp := resource.CreateResponse{State: tfsdk.State{Schema: state.Schema}}

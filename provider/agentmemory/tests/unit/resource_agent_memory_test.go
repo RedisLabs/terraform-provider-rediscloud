@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
@@ -21,7 +22,12 @@ import (
 )
 
 func TestAgentMemoryResource_mockedCreateReadDelete(t *testing.T) {
+	var storeDeleted atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1" && storeDeleted.Load() {
+			http.NotFound(w, r)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
@@ -38,6 +44,7 @@ func TestAgentMemoryResource_mockedCreateReadDelete(t *testing.T) {
 			require.NotNil(t, request.ExtractionCadence)
 			assert.Equal(t, 300, redis.IntValue(request.ExtractionCadence.ActiveIntervalSeconds))
 
+			storeDeleted.Store(false)
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
 			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
@@ -59,6 +66,7 @@ func TestAgentMemoryResource_mockedCreateReadDelete(t *testing.T) {
 				"createdAt":"2026-09-22T12:00:00Z"
 			}`))
 		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
+			storeDeleted.Store(true)
 			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
 			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
@@ -111,7 +119,12 @@ resource "rediscloud_agent_memory" "example" {
 }
 
 func TestAgentMemoryResource_mockedCreateWithAPIDefaults(t *testing.T) {
+	var storeDeleted atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1" && storeDeleted.Load() {
+			http.NotFound(w, r)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
@@ -124,6 +137,7 @@ func TestAgentMemoryResource_mockedCreateWithAPIDefaults(t *testing.T) {
 			assert.Nil(t, request.LongTermMemory)
 			assert.Nil(t, request.ExtractionCadence)
 
+			storeDeleted.Store(false)
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
 			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
@@ -144,6 +158,7 @@ func TestAgentMemoryResource_mockedCreateWithAPIDefaults(t *testing.T) {
 				"createdAt":"2026-09-22T12:00:00Z"
 			}`))
 		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
+			storeDeleted.Store(true)
 			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
 			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
@@ -180,7 +195,12 @@ resource "rediscloud_agent_memory" "example" {
 }
 
 func TestAgentMemoryResource_mockedCreateWithAdvancedConfig(t *testing.T) {
+	var storeDeleted atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-advanced" && storeDeleted.Load() {
+			http.NotFound(w, r)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
@@ -231,12 +251,14 @@ func TestAgentMemoryResource_mockedCreateWithAdvancedConfig(t *testing.T) {
 			require.NotNil(t, customType.ExtractionStrategy.Enabled)
 			assert.True(t, *customType.ExtractionStrategy.Enabled)
 
+			storeDeleted.Store(false)
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
 			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-advanced"}}}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-advanced":
 			writeAdvancedStoreResponse(t, w, "store")
 		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-advanced":
+			storeDeleted.Store(true)
 			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
 			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
@@ -272,7 +294,12 @@ func TestAgentMemoryResource_mockedCreateWithAdvancedConfig(t *testing.T) {
 }
 
 func TestAgentMemoryResource_mockedCreateWithModelConfig(t *testing.T) {
+	var storeDeleted atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1" && storeDeleted.Load() {
+			http.NotFound(w, r)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
@@ -296,12 +323,14 @@ func TestAgentMemoryResource_mockedCreateWithModelConfig(t *testing.T) {
 			assert.Equal(t, "apiKey", redis.StringValue(request.LongTermMemory.Embedding.Credentials.Type))
 			assert.Equal(t, "embedding-secret", redis.StringValue(request.LongTermMemory.Embedding.Credentials.APIKey))
 
+			storeDeleted.Store(false)
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
 			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
 			writeStoreResponseWithModelConfig(t, w, "store", "gpt-4o-mini", "text-embedding-3-small")
 		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
+			storeDeleted.Store(true)
 			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
 			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
@@ -339,11 +368,17 @@ func TestAgentMemoryResource_mockedUpdateAdvancedConfig(t *testing.T) {
 	emailAction := "redact"
 	patches := 0
 
+	var storeDeleted atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-advanced" && storeDeleted.Load() {
+			http.NotFound(w, r)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			storeDeleted.Store(false)
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
 			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-advanced"}}}`))
@@ -380,6 +415,7 @@ func TestAgentMemoryResource_mockedUpdateAdvancedConfig(t *testing.T) {
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/update-task":
 			_, _ = w.Write([]byte(`{"taskId":"update-task","status":"processing-completed"}`))
 		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-advanced":
+			storeDeleted.Store(true)
 			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
 			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
@@ -418,12 +454,18 @@ func TestAgentMemoryResource_mockedUpdateCustomMemoryTypeStrategy(t *testing.T) 
 	patches := 0
 	deletes := 0
 
+	var storeDeleted atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-advanced" && storeDeleted.Load() {
+			http.NotFound(w, r)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
 			creates++
+			storeDeleted.Store(false)
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
 			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-advanced"}}}`))
@@ -446,6 +488,7 @@ func TestAgentMemoryResource_mockedUpdateCustomMemoryTypeStrategy(t *testing.T) 
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/update-task":
 			_, _ = w.Write([]byte(`{"taskId":"update-task","status":"processing-completed"}`))
 		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-advanced":
+			storeDeleted.Store(true)
 			deletes++
 			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
@@ -484,12 +527,18 @@ func TestAgentMemoryResource_mockedAddCustomMemoryType(t *testing.T) {
 	patches := 0
 	deletes := 0
 
+	var storeDeleted atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-advanced" && storeDeleted.Load() {
+			http.NotFound(w, r)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
 			creates++
+			storeDeleted.Store(false)
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
 			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-advanced"}}}`))
@@ -512,6 +561,7 @@ func TestAgentMemoryResource_mockedAddCustomMemoryType(t *testing.T) {
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/update-task":
 			_, _ = w.Write([]byte(`{"taskId":"update-task","status":"processing-completed"}`))
 		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-advanced":
+			storeDeleted.Store(true)
 			deletes++
 			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
@@ -547,11 +597,17 @@ func TestAgentMemoryResource_mockedAddCustomMemoryType(t *testing.T) {
 func TestAgentMemoryResource_plansCustomMemoryTypeRedefinition(t *testing.T) {
 	patches := 0
 
+	var storeDeleted atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-advanced" && storeDeleted.Load() {
+			http.NotFound(w, r)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			storeDeleted.Store(false)
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
 			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-advanced"}}}`))
@@ -561,6 +617,7 @@ func TestAgentMemoryResource_plansCustomMemoryTypeRedefinition(t *testing.T) {
 			patches++
 			_, _ = w.Write([]byte(`{"taskId":"update-task"}`))
 		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-advanced":
+			storeDeleted.Store(true)
 			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
 			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
@@ -590,11 +647,17 @@ func TestAgentMemoryResource_plansCustomMemoryTypeRedefinition(t *testing.T) {
 func TestAgentMemoryResource_plansCustomMemoryTypeRemoval(t *testing.T) {
 	patches := 0
 
+	var storeDeleted atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-advanced" && storeDeleted.Load() {
+			http.NotFound(w, r)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			storeDeleted.Store(false)
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
 			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-advanced"}}}`))
@@ -604,6 +667,7 @@ func TestAgentMemoryResource_plansCustomMemoryTypeRemoval(t *testing.T) {
 			patches++
 			_, _ = w.Write([]byte(`{"taskId":"update-task"}`))
 		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-advanced":
+			storeDeleted.Store(true)
 			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
 			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
@@ -634,11 +698,17 @@ func TestAgentMemoryResource_mockedUpdateDisablesAdvancedConfigWithStaleAPIChild
 	disabled := false
 	patches := 0
 
+	var storeDeleted atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-advanced" && storeDeleted.Load() {
+			http.NotFound(w, r)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			storeDeleted.Store(false)
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
 			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-advanced"}}}`))
@@ -674,6 +744,7 @@ func TestAgentMemoryResource_mockedUpdateDisablesAdvancedConfigWithStaleAPIChild
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/update-task":
 			_, _ = w.Write([]byte(`{"taskId":"update-task","status":"processing-completed"}`))
 		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-advanced":
+			storeDeleted.Store(true)
 			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
 			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
@@ -716,7 +787,12 @@ func TestAgentMemoryResource_mockedUpdate(t *testing.T) {
 	longTTL := 31536000
 	cadence := 300
 
+	var storeDeleted atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1" && storeDeleted.Load() {
+			http.NotFound(w, r)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
@@ -726,6 +802,7 @@ func TestAgentMemoryResource_mockedUpdate(t *testing.T) {
 			assert.Equal(t, name, redis.StringValue(request.Name))
 			assert.Equal(t, 123, redis.IntValue(request.DatabaseID))
 
+			storeDeleted.Store(false)
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
 			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
@@ -752,6 +829,7 @@ func TestAgentMemoryResource_mockedUpdate(t *testing.T) {
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/update-task":
 			_, _ = w.Write([]byte(`{"taskId":"update-task","status":"processing-completed"}`))
 		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
+			storeDeleted.Store(true)
 			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
 			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
@@ -807,11 +885,17 @@ resource "rediscloud_agent_memory" "example" {
 func TestAgentMemoryResource_mockedUpdateModelConfig(t *testing.T) {
 	llmModel := "gpt-4o-mini"
 
+	var storeDeleted atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1" && storeDeleted.Load() {
+			http.NotFound(w, r)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			storeDeleted.Store(false)
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
 			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
@@ -840,6 +924,7 @@ func TestAgentMemoryResource_mockedUpdateModelConfig(t *testing.T) {
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/update-task":
 			_, _ = w.Write([]byte(`{"taskId":"update-task","status":"processing-completed"}`))
 		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
+			storeDeleted.Store(true)
 			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
 			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
@@ -876,11 +961,17 @@ func TestAgentMemoryResource_updateDoesNotReplaceDependentAPIKey(t *testing.T) {
 	apiKeyDeletes := 0
 	storePatches := 0
 
+	var storeDeleted atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1" && storeDeleted.Load() {
+			http.NotFound(w, r)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			storeDeleted.Store(false)
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
 			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
@@ -915,6 +1006,7 @@ func TestAgentMemoryResource_updateDoesNotReplaceDependentAPIKey(t *testing.T) {
 			apiKeyExists = false
 			w.WriteHeader(http.StatusNoContent)
 		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
+			storeDeleted.Store(true)
 			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
 			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))
@@ -968,17 +1060,24 @@ resource "rediscloud_agent_memory_api_key" "example" {
 }
 
 func TestAgentMemoryResource_mockedImport(t *testing.T) {
+	var storeDeleted atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1" && storeDeleted.Load() {
+			http.NotFound(w, r)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+			storeDeleted.Store(false)
 			_, _ = w.Write([]byte(`{"taskId":"create-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/create-task":
 			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
 			writeStoreResponse(t, w, "store", 86400, 31536000, 300)
 		case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
+			storeDeleted.Store(true)
 			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/delete-task":
 			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))

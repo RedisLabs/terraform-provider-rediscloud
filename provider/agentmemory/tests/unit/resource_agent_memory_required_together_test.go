@@ -107,6 +107,10 @@ func TestAgentMemoryPartialModelBlockRemovalPreservesStore(t *testing.T) {
 				case r.Method == http.MethodGet && r.URL.Path == "/tasks/fixture-task":
 					_, _ = w.Write([]byte(`{"taskId":"fixture-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
 				case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
+					if deletes > 0 {
+						http.NotFound(w, r)
+						return
+					}
 					writeStoreResponseWithModelConfig(t, w, "paired-model-store", "gpt-4o-mini", "text-embedding-3-small")
 				case r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
 					deletes++

@@ -47,6 +47,10 @@ func TestAgentMemoryOptionalSummarizationThresholdsLifecycle(t *testing.T) {
 		case "GET /tasks/fixture-task":
 			_, _ = w.Write([]byte(`{"taskId":"fixture-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
 		case "GET /memory-stores/store-1":
+			if deletes > 0 {
+				http.NotFound(w, r)
+				return
+			}
 			_ = json.NewEncoder(w).Encode(map[string]any{"storeId": "store-1", "name": "summary-defaults", "databaseId": "123", "status": "READY", "summarization": policy})
 		case "DELETE /memory-stores/store-1":
 			deletes++
