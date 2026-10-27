@@ -68,6 +68,11 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 			invalidRead := false
 			exists := false
 			expectedDeletes := 0
+			expectedCreates := 1
+			if scenario == "create read recovery" {
+				expectedCreates = 2
+				expectedDeletes = 1
+			}
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				mu.Lock()
 				defer mu.Unlock()
@@ -102,7 +107,7 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 					if r.Method == http.MethodPost {
 						creates++
 						exists = true
-						invalidRead = scenario == "create read recovery"
+						invalidRead = scenario == "create read recovery" && creates == 1
 					} else {
 						patches++
 					}
@@ -116,7 +121,7 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 					}
 					if invalidRead {
 						invalidRead = false
-						_, _ = w.Write([]byte(`{"storeId":"store-1","databaseId":"invalid","status":"READY"}`))
+						_, _ = w.Write([]byte(`{"storeId":"store-1","name":"credential-store","databaseId":"invalid","status":"READY"}`))
 						return
 					}
 					// This endpoint returns metadata only, as the real API does for model credentials.0.
@@ -145,7 +150,7 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 				return func(state *terraform.State) error {
 					mu.Lock()
 					defer mu.Unlock()
-					if creates != 1 || deletes != expectedDeletes {
+					if creates != expectedCreates || deletes != expectedDeletes {
 						return fmt.Errorf("store replaced: creates=%d deletes=%d", creates, deletes)
 					}
 					if len(observed[0]) != llmCount || len(observed[1]) != embeddingCount {
@@ -173,6 +178,27 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 			planChecks := resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{writeOnlyPlanCheck{}}}
 			firstCount := 1
 			var steps []resource.TestStep
+			if scenario == "create read recovery" {
+				firstCount++
+				steps = append(steps,
+					resource.TestStep{
+						Config:           config(1, 1, 31536000),
+						ConfigPlanChecks: planChecks,
+						ExpectError:      regexp.MustCompile("Unexpected Agent Memory database ID"),
+					},
+					resource.TestStep{
+						Config:             config(1, 1, 31536000),
+						PlanOnly:           true,
+						ExpectNonEmptyPlan: true,
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PostApplyPostRefresh: []plancheck.PlanCheck{
+								writeOnlyPlanCheck{},
+								plancheck.ExpectResourceAction("rediscloud_agent_memory.example", plancheck.ResourceActionDestroyBeforeCreate),
+							},
+						},
+					},
+				)
+			}
 			steps = append(steps,
 				resource.TestStep{Config: config(1, 1, 31536000), ConfigPlanChecks: planChecks, Check: check(firstCount, firstCount, modelTestSecrets[0], modelTestSecrets[2])},
 				resource.TestStep{Config: config(1, 1, 31536000), PlanOnly: true, ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}}},
@@ -189,12 +215,12 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 			)
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: steps})
 			mu.Lock()
-			if creates != 1 || deletes != 1 || exists {
+			if creates != expectedCreates || deletes != expectedCreates || exists {
 				t.Error("initial lifecycle did not clean up its store")
 			}
 			// Seed an existing store; persisted import must start with an empty Terraform state.
 			exists = true
-			expectedDeletes = 1
+			expectedDeletes = expectedCreates
 			mu.Unlock()
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 				{Config: config(3, 2, 172800), ResourceName: "rediscloud_agent_memory.example", ImportStateId: "store-1", ImportState: true, ImportStateVerify: false, ImportStatePersist: true, ImportStateCheck: func(states []*terraform.InstanceState) error {
@@ -213,7 +239,7 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 
 			mu.Lock()
 			defer mu.Unlock()
-			if creates != 1 || deletes != 2 {
+			if creates != expectedCreates || deletes != expectedCreates+1 {
 				t.Errorf("expected initial and imported store cleanup, got %d/%d", creates, deletes)
 			}
 			expectedPatches := 5

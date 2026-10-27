@@ -82,16 +82,9 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 		var readDiags diag.Diagnostics
 		readAgentMemoryIntoModel(ctx, store, &candidate, false, &readDiags)
 		needsRecovery = readDiags.HasError()
-		if needsRecovery {
-			// An error after acknowledged creation taints the store and can trigger deletion on retry.
-			// Keep the original known inputs and surface only this hydration failure as warnings.
-			for _, diagnostic := range readDiags {
-				resp.Diagnostics.AddWarning(diagnostic.Summary(),
-					"The Agent Memory service was created and its ID was saved. Metadata was not adopted because the follow-up read was invalid. Refresh or investigate the existing store before retrying. "+diagnostic.Detail())
-			}
-		} else {
+		resp.Diagnostics.Append(readDiags...)
+		if !needsRecovery {
 			plan = candidate
-			resp.Diagnostics.Append(readDiags...)
 		}
 	}
 

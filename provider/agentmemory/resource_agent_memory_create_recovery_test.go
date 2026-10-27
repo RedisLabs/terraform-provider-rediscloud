@@ -32,7 +32,7 @@ func TestAgentMemoryCreateRecoveryState(t *testing.T) {
 					case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
 						switch scenario {
 						case "malformed":
-							_, _ = w.Write([]byte(`{"storeId":"store-1","name":"recovery-store","databaseId":"not-a-number","status":"READY"}`))
+							_, _ = w.Write([]byte(`{"storeId":"store-1","name":"unexpected-response-name","databaseId":"not-a-number","status":"READY"}`))
 						case "404":
 							w.WriteHeader(404)
 						case "500":
@@ -89,8 +89,17 @@ func TestAgentMemoryCreateRecoveryState(t *testing.T) {
 				}
 				response := resource.CreateResponse{State: tfsdk.State{Schema: schema.Schema}}
 				r.Create(ctx, resource.CreateRequest{Plan: plan, Config: config}, &response)
-				if response.Diagnostics.HasError() != (scenario != "malformed") {
+				if !response.Diagnostics.HasError() {
 					t.Fatalf("unexpected readiness/recovery diagnostics: %v", response.Diagnostics)
+				}
+				if len(response.Diagnostics.Warnings()) != 0 {
+					t.Fatal("failed create downgraded an error to a warning")
+				}
+				if scenario == "malformed" {
+					original := response.Diagnostics.Errors()[0]
+					if original.Summary() != "Unexpected Agent Memory database ID" || original.Detail() != `Expected databaseId to be numeric, got "not-a-number".` {
+						t.Fatalf("mapping diagnostic was not preserved: %v", original)
+					}
 				}
 				if len(response.Diagnostics) == 0 {
 					t.Fatal("read failure produced no diagnostic")
@@ -107,6 +116,9 @@ func TestAgentMemoryCreateRecoveryState(t *testing.T) {
 				}
 				if recovered.ID.ValueString() != "store-1" || recovered.Name.ValueString() != "recovery-store" || recovered.DatabaseID.ValueInt64() != 123 {
 					t.Fatal("recovery lost identity or known inputs")
+				}
+				if scenario == "malformed" && recovered.Status.ValueString() != "READY" {
+					t.Fatal("recovery lost the last observed status")
 				}
 				if unknownComputed {
 					if !recovered.ShortTermTTLSeconds.IsNull() || !recovered.LongTermTTLSeconds.IsNull() {
