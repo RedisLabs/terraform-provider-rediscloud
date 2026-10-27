@@ -6,16 +6,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/stretchr/testify/require"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
 // subscriptionSequence repeats its final response until the waiter finishes.
-// FakeAPI serializes calls to this handler.
+// FakeAPI serialises calls to this handler.
 func subscriptionSequence(states []string) testhelpers.HandlerFunc {
 	index := 0
 	return func(r *http.Request) (any, error) {

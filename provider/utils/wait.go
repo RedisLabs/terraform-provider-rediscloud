@@ -19,6 +19,7 @@ import (
 )
 
 // SubscriptionStatusDeleted represents an absent subscription or an explicit deleted status.
+// TODO move and export via rediscloud-go-api
 const SubscriptionStatusDeleted = "deleted"
 
 func WaitForSubscriptionToBeDeleted(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
