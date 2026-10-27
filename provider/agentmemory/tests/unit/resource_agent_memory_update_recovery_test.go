@@ -44,7 +44,7 @@ func TestAgentMemoryAcceptedUpdateReadFailureRecovers(t *testing.T) {
 							w.WriteHeader(500)
 							_, _ = w.Write([]byte(`{"message":"simulated read failure"}`))
 						} else {
-							_, _ = w.Write([]byte(`{"storeId":"store-1","name":"update-recovery","databaseId":"not-a-number"}`))
+							_, _ = w.Write([]byte(`{"storeId":"store-1","name":"update-recovery","databaseId":"not-a-number","status":"READY"}`))
 						}
 						return
 					}
@@ -70,7 +70,7 @@ resource "rediscloud_agent_memory" "example" {
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 				{Config: config(86400)},
-				{Config: config(172800), ExpectError: regexp.MustCompile("Failed to read Agent Memory service after update|Unexpected Agent Memory database ID")},
+				{Config: config(172800), ExpectError: regexp.MustCompile("Agent Memory service failed to become ready after update|Unexpected Agent Memory database ID")},
 				// A failed refresh must preserve identity so retry can read the accepted update.
 				{Config: config(172800), Check: func(state *terraform.State) error {
 					mu.Lock()
