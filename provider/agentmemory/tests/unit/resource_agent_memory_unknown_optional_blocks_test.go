@@ -97,7 +97,11 @@ func newOptionalBlockTestServer(t *testing.T) *httptest.Server {
 			_, _ = w.Write([]byte(`{"taskId":"fixture-task"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/fixture-task":
 			_ = json.NewEncoder(w).Encode(map[string]any{"taskId": "fixture-task", "status": "processing-completed", "response": map[string]any{"resource": map[string]any{"storeId": lastID}}})
-		case r.Method == http.MethodGet && store != nil && r.URL.Path == "/memory-stores/"+lastID:
+		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/"+lastID:
+			if store == nil {
+				http.NotFound(w, r)
+				return
+			}
 			_ = json.NewEncoder(w).Encode(store)
 		case r.Method == http.MethodPatch && store != nil && r.URL.Path == "/memory-stores/"+lastID:
 			var patch map[string]any
