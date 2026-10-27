@@ -32,6 +32,7 @@ type readinessFixture struct {
 	reads, creates, updates, deletes int
 	failure                          int
 	failureAfter                     int
+	failureCount                     int
 	postDelay                        time.Duration
 	deadline                         time.Time
 	changedDeadline                  bool
@@ -98,7 +99,7 @@ func newReadinessFixture(t *testing.T, statuses ...string) *readinessFixture {
 			f.changedDeadline = true
 		}
 		f.reads++
-		if f.failure != 0 && f.reads > f.failureAfter {
+		if f.failure != 0 && f.reads > f.failureAfter && (f.failureCount == 0 || f.reads <= f.failureAfter+f.failureCount) {
 			return nil, testhelpers.StatusError{Code: f.failure, Body: map[string]any{"description": "fixture read failure"}}
 		}
 		status := f.statuses[min(f.reads-1, len(f.statuses)-1)]
@@ -190,20 +191,24 @@ func TestAgentMemoryWaitsForReadyAfterTask(t *testing.T) {
 }
 
 func TestAgentMemoryReadinessFailurePreservesIdentity(t *testing.T) {
+	scenarios := []struct {
+		name         string
+		status       string
+		failure      int
+		failureAfter int
+	}{
+		{name: "timeout", status: api.StatusProvisioning},
+		{name: "unavailable", status: api.StatusUnavailable},
+		{name: "not-found", status: api.StatusProvisioning, failure: http.StatusNotFound},
+		{name: "forbidden", status: api.StatusProvisioning, failure: http.StatusForbidden},
+		{name: "read-error", status: api.StatusProvisioning, failure: http.StatusInternalServerError},
+		{name: "read-error-after-provisioning", status: api.StatusProvisioning, failure: http.StatusInternalServerError, failureAfter: 1},
+	}
 	for _, operation := range []string{"create", "update"} {
-		for _, scenario := range []string{"timeout", "unavailable", "read-error", "read-error-after-provisioning"} {
-			t.Run(operation+"/"+scenario, func(t *testing.T) {
-				status := api.StatusProvisioning
-				if scenario == "unavailable" {
-					status = api.StatusUnavailable
-				}
-				f := newReadinessFixture(t, status)
-				if scenario == "read-error" || scenario == "read-error-after-provisioning" {
-					f.failure = http.StatusInternalServerError
-				}
-				if scenario == "read-error-after-provisioning" {
-					f.failureAfter = 1
-				}
+		for _, scenario := range scenarios {
+			t.Run(operation+"/"+scenario.name, func(t *testing.T) {
+				f := newReadinessFixture(t, scenario.status)
+				f.failure, f.failureAfter = scenario.failure, scenario.failureAfter
 				f.postDelay = 10 * time.Millisecond
 				r, plan, state := readinessResource(t, f, "60ms")
 				var result tfsdk.State
@@ -223,11 +228,8 @@ func TestAgentMemoryReadinessFailurePreservesIdentity(t *testing.T) {
 				var model agentmemory.AgentMemoryResourceModel
 				require.False(t, result.Get(context.Background(), &model).HasError())
 				assert.Equal(t, "store-1", model.ID.ValueString())
-				wantStatus := status
-				if scenario == "read-error" && operation == "create" {
-					wantStatus = api.StatusProvisioning
-				}
-				if scenario == "read-error" && operation == "update" {
+				wantStatus := scenario.status
+				if scenario.failure != 0 && scenario.failureAfter == 0 && operation == "update" {
 					wantStatus = api.StatusReady
 				}
 				assert.Equal(t, wantStatus, model.Status.ValueString())
@@ -235,9 +237,47 @@ func TestAgentMemoryReadinessFailurePreservesIdentity(t *testing.T) {
 					assert.False(t, f.changedDeadline)
 					assert.Equal(t, 1, f.creates+f.updates)
 					assert.Zero(t, f.deletes)
+					if scenario.failure != 0 && scenario.failure != http.StatusNotFound {
+						assert.Equal(t, scenario.failureAfter+1, f.reads)
+					}
+					if scenario.failure == http.StatusNotFound {
+						assert.Greater(t, f.reads, 1)
+					}
 				})
 			})
 		}
+	}
+}
+
+func TestAgentMemoryReadinessRetriesPostTaskNotFound(t *testing.T) {
+	for _, operation := range []string{"create", "update"} {
+		t.Run(operation, func(t *testing.T) {
+			f := newReadinessFixture(t, api.StatusProvisioning, api.StatusProvisioning, api.StatusProvisioning, api.StatusReady)
+			f.failure, f.failureCount = http.StatusNotFound, 2
+			r, plan, state := readinessResource(t, f, "500ms")
+			var result tfsdk.State
+			if operation == "create" {
+				resp := resource.CreateResponse{State: tfsdk.State{Schema: state.Schema}}
+				r.Create(t.Context(), resource.CreateRequest{Plan: plan}, &resp)
+				require.False(t, resp.Diagnostics.HasError(), resp.Diagnostics)
+				result = resp.State
+			} else {
+				resp := resource.UpdateResponse{State: state}
+				r.Update(t.Context(), resource.UpdateRequest{Plan: plan, State: state}, &resp)
+				require.False(t, resp.Diagnostics.HasError(), resp.Diagnostics)
+				result = resp.State
+			}
+			var model agentmemory.AgentMemoryResourceModel
+			require.False(t, result.Get(t.Context(), &model).HasError())
+			assert.Equal(t, "store-1", model.ID.ValueString())
+			assert.Equal(t, api.StatusReady, model.Status.ValueString())
+			f.api.WithHandlersPaused(func() {
+				assert.Equal(t, 4, f.reads)
+				assert.False(t, f.changedDeadline)
+				assert.Equal(t, 1, f.creates+f.updates)
+				assert.Zero(t, f.deletes)
+			})
+		})
 	}
 }
 
@@ -265,6 +305,7 @@ func (f *readinessFixture) registerDependentKey() {
 
 func TestAgentMemoryReadinessTerraformLifecycle(t *testing.T) {
 	f := newReadinessFixture(t, api.StatusProvisioning, api.StatusProvisioning, api.StatusReady)
+	f.failure, f.failureCount = http.StatusNotFound, 1
 	f.registerDependentKey()
 	testingresource.UnitTest(t, testingresource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.FrameworkProviderFactories(testhelpers.NewAPIClient(t, f.api), agentmemory.NewAgentMemoryResource, agentmemory.NewAgentMemoryAPIKeyResource),

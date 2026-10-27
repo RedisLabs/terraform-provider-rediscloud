@@ -2,6 +2,7 @@ package agentmemory
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -19,16 +20,24 @@ import (
 func waitForAgentMemoryToBeReady(ctx context.Context, id string, c *client.ApiClient, timeout time.Duration) (*api.Store, error) {
 	var mu sync.Mutex
 	var lastStore *api.Store
+	pollInterval := c.WaitPollInterval(5 * time.Second)
 	wait := &retry.StateChangeConf{
 		Pending: []string{api.StatusProvisioning},
 		Target:  []string{api.StatusReady},
 		Timeout: timeout,
 		// Check immediately: the API task has already completed.
-		PollInterval: c.WaitPollInterval(5 * time.Second),
+		PollInterval: pollInterval,
+		// Bound replica propagation retries by the operation deadline, not the default 20 misses.
+		NotFoundChecks: int(timeout/pollInterval) + 1,
 		Refresh: func() (interface{}, string, error) {
 			log.Printf("[DEBUG] Waiting for Agent Memory store %s to be ready", id)
 			store, err := c.Client.AgentMemory.Get(ctx, id)
 			if err != nil {
+				var notFound *api.NotFound
+				if errors.As(err, &notFound) {
+					// CAPI's read replica may not see the acknowledged store yet.
+					return nil, api.StatusProvisioning, nil
+				}
 				return nil, "", err
 			}
 			if store == nil || redis.StringValue(store.StoreID) != id {

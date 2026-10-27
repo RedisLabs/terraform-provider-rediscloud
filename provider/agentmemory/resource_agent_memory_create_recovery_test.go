@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 
@@ -51,12 +52,13 @@ func TestAgentMemoryCreateRecoveryState(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+				c.WaitPollIntervalOverride = time.Millisecond
 				ctx := context.Background()
 				r := &agentMemoryResource{client: c}
 				var schema resource.SchemaResponse
 				r.Schema(ctx, resource.SchemaRequest{}, &schema)
 				model := AgentMemoryResourceModel{ID: types.StringUnknown(), Name: types.StringValue("recovery-store"), DatabaseID: types.Int64Value(123), ShortTermTTLSeconds: types.Int64Value(86400), LongTermTTLSeconds: types.Int64Value(31536000), ExtractionStrategy: types.StringValue("INSTRUCT"), ExtractionCadenceSeconds: types.Int64Value(300), Endpoint: types.StringUnknown(), Endpoints: types.ListUnknown(agentMemoryEndpointObjectType()), Status: types.StringUnknown(), CreatedAt: types.StringUnknown()}
-				model.Timeouts = testMemoryTimeoutsList(t, timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(MemoryTimeoutsListType).ElemType.(timeouts.Type).AttrTypes)})
+				model.Timeouts = testMemoryTimeoutsList(t, configuredTestTimeouts(schema.Schema.Blocks["timeouts"].Type().(MemoryTimeoutsListType).ElemType.(timeouts.Type), "create", "1s"))
 				if !unknownComputed {
 					model.LLM = mustModelConfigList(t, &AgentMemoryModelConfigModel{Provider: types.StringValue("fake-provider"), Model: types.StringValue("fake-model"), Credentials: mustModelCredentialsList(t, &AgentMemoryModelCredentialsModel{Type: types.StringValue("apiKey"), APIKey: types.StringValue("FAKE-MODEL-SECRET"), APIKeyVersion: types.Int64Value(1)})})
 					model.Embedding = mustModelConfigList(t, &AgentMemoryModelConfigModel{Provider: types.StringValue("fake-provider"), Model: types.StringValue("fake-model"), Credentials: mustModelCredentialsList(t, &AgentMemoryModelCredentialsModel{Type: types.StringValue("apiKey"), APIKey: types.StringValue("FAKE-MODEL-SECRET"), APIKeyVersion: types.Int64Value(1)})})

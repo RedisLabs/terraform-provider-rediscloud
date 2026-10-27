@@ -116,7 +116,7 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 					}
 					if invalidRead {
 						invalidRead = false
-						_, _ = w.Write([]byte(`{"storeId":"store-1","databaseId":"invalid"}`))
+						_, _ = w.Write([]byte(`{"storeId":"store-1","databaseId":"invalid","status":"READY"}`))
 						return
 					}
 					// This endpoint returns metadata only, as the real API does for model credentials.0.
