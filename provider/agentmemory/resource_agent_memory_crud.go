@@ -174,7 +174,7 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 			update.LongTermMemory.Embedding = modelConfigForRequest(ctx, req.Config, "embedding", plan.Embedding, &resp.Diagnostics)
 		}
 	} else if update.LongTermMemory != nil {
-		// A TTL-only update must not resend unchanged model credentials.
+		// A TTL-only update must not resend an unchanged write-only credential.
 		update.LongTermMemory.Embedding = nil
 	}
 	if !modelConfigEqual(plan.LLM, state.LLM) {

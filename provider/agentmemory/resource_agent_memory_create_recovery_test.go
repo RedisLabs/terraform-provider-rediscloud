@@ -73,6 +73,13 @@ func TestAgentMemoryCreateRecoveryState(t *testing.T) {
 					t.Fatal(diags)
 				}
 				config := tfsdk.Config{Schema: schema.Schema, Raw: plan.Raw}
+				if !unknownComputed {
+					model.LLM.Credentials.APIKey = types.StringNull()
+					model.Embedding.Credentials.APIKey = types.StringNull()
+					if diags := plan.Set(ctx, &model); diags.HasError() {
+						t.Fatal(diags)
+					}
+				}
 				response := resource.CreateResponse{State: tfsdk.State{Schema: schema.Schema}}
 				r.Create(ctx, resource.CreateRequest{Plan: plan, Config: config}, &response)
 				if response.Diagnostics.HasError() {
@@ -104,8 +111,8 @@ func TestAgentMemoryCreateRecoveryState(t *testing.T) {
 				} else if recovered.ShortTermTTLSeconds.ValueInt64() != 86400 || recovered.LongTermTTLSeconds.ValueInt64() != 31536000 {
 					t.Fatal("known TTL inputs were not preserved")
 				}
-				if !unknownComputed && (recovered.LLM == nil || recovered.LLM.Credentials == nil || recovered.LLM.Credentials.APIKey.ValueString() != "FAKE-MODEL-SECRET" || recovered.LLM.Credentials.APIKeyVersion.ValueInt64() != 1 || recovered.Embedding == nil || recovered.Embedding.Credentials == nil || recovered.Embedding.Credentials.APIKey.ValueString() != "FAKE-MODEL-SECRET" || recovered.Embedding.Credentials.APIKeyVersion.ValueInt64() != 1) {
-					t.Fatal("configured model credentials or revision were lost during recovery")
+				if !unknownComputed && (recovered.LLM == nil || recovered.LLM.Credentials == nil || !recovered.LLM.Credentials.APIKey.IsNull() || recovered.LLM.Credentials.APIKeyVersion.ValueInt64() != 1 || recovered.Embedding == nil || recovered.Embedding.Credentials == nil || !recovered.Embedding.Credentials.APIKey.IsNull() || recovered.Embedding.Credentials.APIKeyVersion.ValueInt64() != 1) {
+					t.Fatal("rotation version was lost or a write-only secret entered state")
 				}
 			})
 		}

@@ -1,6 +1,7 @@
 package unit_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,30 +14,30 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
-	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
-	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
 
 var modelTestSecrets = []string{"FAKE-WO-LLM-FIRST", "FAKE-WO-LLM-ROTATED", "FAKE-WO-EMBED-FIRST", "FAKE-WO-EMBED-ROTATED"}
 
-func sensitiveModelPlanChecks() []plancheck.PlanCheck {
-	return []plancheck.PlanCheck{
-		plancheck.ExpectSensitiveValue("rediscloud_agent_memory.example", tfjsonpath.New("llm").AtMapKey("credentials").AtMapKey("api_key")),
-		plancheck.ExpectSensitiveValue("rediscloud_agent_memory.example", tfjsonpath.New("embedding").AtMapKey("credentials").AtMapKey("api_key")),
+type writeOnlyPlanCheck struct{}
+
+func (writeOnlyPlanCheck) CheckPlan(_ context.Context, req plancheck.CheckPlanRequest, resp *plancheck.CheckPlanResponse) {
+	data, err := json.Marshal(req.Plan)
+	if err != nil {
+		resp.Error = err
+		return
+	}
+	for _, secret := range modelTestSecrets {
+		if strings.Contains(string(data), secret) {
+			resp.Error = fmt.Errorf("ephemeral model secret persisted in plan JSON")
+			return
+		}
 	}
 }
 
-func sensitiveModelStateChecks() []statecheck.StateCheck {
-	return []statecheck.StateCheck{
-		statecheck.ExpectSensitiveValue("rediscloud_agent_memory.example", tfjsonpath.New("llm").AtMapKey("credentials").AtMapKey("api_key")),
-		statecheck.ExpectSensitiveValue("rediscloud_agent_memory.example", tfjsonpath.New("embedding").AtMapKey("credentials").AtMapKey("api_key")),
-	}
-}
-
-func sensitiveModelConfig(llmVersion, embeddingVersion, ttl int) string {
+func writeOnlyModelConfig(llmVersion, embeddingVersion, ttl int) string {
 	config := agentMemoryModelConfig("credential-store", "gpt-4o-mini", "text-embedding-3-small", "LLM_PLACEHOLDER", "EMBED_PLACEHOLDER")
 	config = strings.Replace(config, "api_key = \"LLM_PLACEHOLDER\"\n   api_key_version = 1", fmt.Sprintf("api_key = var.llm_key\napi_key_version = %d", llmVersion), 1)
 	config = strings.Replace(config, "api_key = \"EMBED_PLACEHOLDER\"\n   api_key_version = 1", fmt.Sprintf("api_key = var.embedding_key\napi_key_version = %d", embeddingVersion), 1)
@@ -45,15 +46,17 @@ func sensitiveModelConfig(llmVersion, embeddingVersion, ttl int) string {
 variable "llm_key" {
  type = string
  sensitive = true
+ ephemeral = true
 }
 variable "embedding_key" {
  type = string
  sensitive = true
+ ephemeral = true
 }
 ` + config
 }
 
-func TestAgentMemorySensitiveCredentialsLifecycle(t *testing.T) {
+func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 	for _, scenario := range []string{"create", "create read recovery"} {
 		t.Run(scenario, func(t *testing.T) {
 			t.Setenv("TF_VAR_llm_key", modelTestSecrets[0])
@@ -137,7 +140,7 @@ func TestAgentMemorySensitiveCredentialsLifecycle(t *testing.T) {
 			}))
 			defer server.Close()
 			prefix := testProviderConfig(t, server.URL)
-			config := func(lv, ev, ttl int) string { return prefix + sensitiveModelConfig(lv, ev, ttl) }
+			config := func(lv, ev, ttl int) string { return prefix + writeOnlyModelConfig(lv, ev, ttl) }
 			check := func(llmCount, embeddingCount int, lastLLM, lastEmbedding string) resource.TestCheckFunc {
 				return func(state *terraform.State) error {
 					mu.Lock()
@@ -151,32 +154,38 @@ func TestAgentMemorySensitiveCredentialsLifecycle(t *testing.T) {
 					if observed[0][llmCount-1] != lastLLM || observed[1][embeddingCount-1] != lastEmbedding {
 						return fmt.Errorf("incorrect credential sent to API")
 					}
-					rs := state.RootModule().Resources["rediscloud_agent_memory.example"]
-					if rs.Primary.Attributes["llm.credentials.api_key"] != lastLLM || rs.Primary.Attributes["embedding.credentials.api_key"] != lastEmbedding {
-						return fmt.Errorf("configured credentials were not preserved in state")
+					data, err := json.Marshal(state)
+					if err != nil {
+						return err
 					}
+					for _, secret := range modelTestSecrets {
+						if strings.Contains(string(data), secret) {
+							return fmt.Errorf("write-only secret persisted in state")
+						}
+					}
+					rs := state.RootModule().Resources["rediscloud_agent_memory.example"]
 					if rs.Primary.Tainted {
 						return fmt.Errorf("store tainted")
 					}
 					return resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1")(state)
 				}
 			}
-			planChecks := resource.ConfigPlanChecks{PreApply: sensitiveModelPlanChecks()}
+			planChecks := resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{writeOnlyPlanCheck{}}}
 			firstCount := 1
 			var steps []resource.TestStep
 			steps = append(steps,
-				resource.TestStep{Config: config(1, 1, 31536000), ConfigPlanChecks: planChecks, ConfigStateChecks: sensitiveModelStateChecks(), Check: check(firstCount, firstCount, modelTestSecrets[0], modelTestSecrets[2])},
-				resource.TestStep{Config: config(1, 1, 31536000), PlanOnly: true},
-				// A changed sensitive key rotates in place even when its revision is unchanged.
-				resource.TestStep{PreConfig: func() { t.Setenv("TF_VAR_llm_key", modelTestSecrets[1]) }, Config: config(1, 1, 31536000), ConfigPlanChecks: planChecks, ConfigStateChecks: sensitiveModelStateChecks(), Check: check(firstCount+1, firstCount, modelTestSecrets[1], modelTestSecrets[2])},
-				resource.TestStep{Config: config(1, 1, 31536000), PlanOnly: true},
-				resource.TestStep{Config: config(2, 1, 31536000), ConfigPlanChecks: planChecks, Check: check(firstCount+2, firstCount, modelTestSecrets[1], modelTestSecrets[2])},
-				resource.TestStep{Config: config(2, 1, 172800), ConfigPlanChecks: planChecks, Check: check(firstCount+2, firstCount, modelTestSecrets[1], modelTestSecrets[2])},
-				resource.TestStep{PreConfig: func() { t.Setenv("TF_VAR_embedding_key", modelTestSecrets[3]) }, Config: config(2, 1, 172800), ConfigPlanChecks: planChecks, Check: check(firstCount+2, firstCount+1, modelTestSecrets[1], modelTestSecrets[3])},
-				resource.TestStep{Config: config(2, 2, 172800), ConfigPlanChecks: planChecks, Check: check(firstCount+2, firstCount+2, modelTestSecrets[1], modelTestSecrets[3])},
-				resource.TestStep{Config: config(2, 2, 172800), PlanOnly: true},
-
-				resource.TestStep{Config: strings.Replace(config(3, 2, 172800), "api_key_version = 3", "api_key_version = terraform_data.version.output", 1) + `resource "terraform_data" "version" { input = 3 }`, ConfigPlanChecks: planChecks, Check: check(firstCount+3, firstCount+2, modelTestSecrets[1], modelTestSecrets[3])},
+				resource.TestStep{Config: config(1, 1, 31536000), ConfigPlanChecks: planChecks, Check: check(firstCount, firstCount, modelTestSecrets[0], modelTestSecrets[2])},
+				resource.TestStep{Config: config(1, 1, 31536000), PlanOnly: true, ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}}},
+				// Write-only values do not create a diff; each model rotates with its own revision.
+				resource.TestStep{PreConfig: func() {
+					t.Setenv("TF_VAR_llm_key", modelTestSecrets[1])
+					t.Setenv("TF_VAR_embedding_key", modelTestSecrets[3])
+				}, Config: config(1, 1, 31536000), PlanOnly: true, ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}}},
+				resource.TestStep{Config: config(2, 1, 31536000), ConfigPlanChecks: planChecks, Check: check(firstCount+1, firstCount, modelTestSecrets[1], modelTestSecrets[2])},
+				resource.TestStep{Config: config(2, 1, 172800), ConfigPlanChecks: planChecks, Check: check(firstCount+1, firstCount, modelTestSecrets[1], modelTestSecrets[2])},
+				resource.TestStep{Config: config(2, 2, 172800), ConfigPlanChecks: planChecks, Check: check(firstCount+1, firstCount+1, modelTestSecrets[1], modelTestSecrets[3])},
+				resource.TestStep{Config: config(2, 2, 172800), PlanOnly: true, ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}}},
+				resource.TestStep{Config: strings.Replace(config(3, 2, 172800), "api_key_version = 3", "api_key_version = terraform_data.version.output", 1) + `resource "terraform_data" "version" { input = 3 }`, ConfigPlanChecks: planChecks, Check: check(firstCount+2, firstCount+1, modelTestSecrets[1], modelTestSecrets[3])},
 			)
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: steps})
 			mu.Lock()
@@ -198,8 +207,8 @@ func TestAgentMemorySensitiveCredentialsLifecycle(t *testing.T) {
 					}
 					return nil
 				}},
-				{Config: config(3, 2, 172800), ConfigPlanChecks: planChecks, ConfigStateChecks: sensitiveModelStateChecks(), Check: check(firstCount+4, firstCount+3, modelTestSecrets[1], modelTestSecrets[3])},
-				{Config: config(3, 2, 172800), PlanOnly: true},
+				{Config: config(3, 2, 172800), ConfigPlanChecks: planChecks, Check: check(firstCount+3, firstCount+2, modelTestSecrets[1], modelTestSecrets[3])},
+				{Config: config(3, 2, 172800), PlanOnly: true, ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}}},
 			}})
 
 			mu.Lock()
@@ -207,7 +216,7 @@ func TestAgentMemorySensitiveCredentialsLifecycle(t *testing.T) {
 			if creates != 1 || deletes != 2 {
 				t.Errorf("expected initial and imported store cleanup, got %d/%d", creates, deletes)
 			}
-			expectedPatches := 7
+			expectedPatches := 5
 			if patches != expectedPatches {
 				t.Errorf("expected %d patches, got %d", expectedPatches, patches)
 			}
@@ -215,7 +224,7 @@ func TestAgentMemorySensitiveCredentialsLifecycle(t *testing.T) {
 	}
 }
 
-func TestAgentMemorySensitiveCredentialsValidation(t *testing.T) {
+func TestAgentMemoryWriteOnlyCredentialsValidation(t *testing.T) {
 	for _, block := range []string{"llm", "embedding"} {
 		for _, tc := range []struct{ name, attributes, pattern string }{
 			{"missing version", `api_key="FAKE-WO"`, "Invalid Attribute Combination"},
@@ -233,7 +242,7 @@ func TestAgentMemorySensitiveCredentialsValidation(t *testing.T) {
 	}
 }
 
-func TestAgentMemorySensitiveVersionUnknownInvalid(t *testing.T) {
+func TestAgentMemoryWriteOnlyVersionUnknownInvalid(t *testing.T) {
 	for _, block := range []string{"llm", "embedding"} {
 		for _, tc := range []struct{ name, input, expression string }{
 			{"zero", "0", "terraform_data.version.output"},
