@@ -34,19 +34,25 @@ func newFixture(t *testing.T, storeConfig string) fixture {
 			return envchecks.RequireEnvVars(t, "TEAM_RESOURCE_TAG", "OWNER_RESOURCE_TAG")
 		})
 	}
+	vars := config.Variables{
+		"name":               config.StringVariable(name),
+		"region":             config.StringVariable(envDefault("AGENT_MEMORY_TEST_REGION", "us-east-1")),
+		"cloud_account_name": config.StringVariable(cloudAccount),
+		"team":               config.StringVariable(os.Getenv("TEAM_RESOURCE_TAG")),
+		"owner":              config.StringVariable(os.Getenv("OWNER_RESOURCE_TAG")),
+		"card_type":          config.StringVariable(envDefault("AGENT_MEMORY_TEST_CARD_TYPE", "Visa")),
+		"card_last_four":     config.StringVariable(envDefault("AGENT_MEMORY_TEST_CARD_LAST_FOUR", "5556")),
+	}
+	// Leave the database version unset unless a test explicitly needs one.
+	// Available versions differ between the integration and customer accounts.
+	if version := os.Getenv("AGENT_MEMORY_TEST_REDIS_VERSION"); version != "" {
+		vars["redis_version"] = config.StringVariable(version)
+	}
 	return fixture{
 		name:   name,
 		config: utils.GetTestConfig(t, "testdata/infrastructure.tf") + "\n" + utils.GetTestConfig(t, storeConfig),
-		vars: config.Variables{
-			"name":               config.StringVariable(name),
-			"region":             config.StringVariable(envDefault("AGENT_MEMORY_TEST_REGION", "us-east-1")),
-			"cloud_account_name": config.StringVariable(cloudAccount),
-			"team":               config.StringVariable(os.Getenv("TEAM_RESOURCE_TAG")),
-			"owner":              config.StringVariable(os.Getenv("OWNER_RESOURCE_TAG")),
-			"card_type":          config.StringVariable(envDefault("AGENT_MEMORY_TEST_CARD_TYPE", "Visa")),
-			"card_last_four":     config.StringVariable(envDefault("AGENT_MEMORY_TEST_CARD_LAST_FOUR", "5556")),
-		},
-		check: envchecks.ComposePreChecks(t, checks...),
+		vars:   vars,
+		check:  envchecks.ComposePreChecks(t, checks...),
 	}
 }
 

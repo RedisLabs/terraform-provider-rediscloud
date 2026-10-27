@@ -9,6 +9,10 @@ variable "team" { type = string }
 variable "owner" { type = string }
 variable "card_type" { type = string }
 variable "card_last_four" { type = string }
+variable "redis_version" {
+  type    = string
+  default = null
+}
 variable "database_count" {
   type    = number
   default = 1
@@ -56,7 +60,7 @@ resource "rediscloud_subscription_database" "test" {
   subscription_id              = rediscloud_subscription.test.id
   name                         = "${var.name}-db-${count.index}"
   dataset_size_in_gb           = 1
-  redis_version                = "8.6"
+  redis_version                = var.redis_version
   throughput_measurement_by    = "operations-per-second"
   throughput_measurement_value = 1000
   replication                  = true
