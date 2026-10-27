@@ -324,6 +324,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 						},
 						Blocks: map[string]schema.Block{
 							"detectors": schema.ListNestedBlock{
+								CustomType:  NewDetectorSelectionListType(),
 								Description: "Built-in detectors selected for the store.",
 								NestedObject: schema.NestedBlockObject{
 									Attributes: map[string]schema.Attribute{
@@ -364,6 +365,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 						},
 						Blocks: map[string]schema.Block{
 							"detectors": schema.ListNestedBlock{
+								CustomType:  NewCustomDetectorListType(),
 								Description: "Custom detectors for tenant-specific or application-specific sensitive data.",
 								NestedObject: schema.NestedBlockObject{
 									Attributes: map[string]schema.Attribute{
@@ -429,6 +431,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 				},
 			},
 			"custom_memory_types": schema.ListNestedBlock{
+				CustomType:  NewCustomMemoryTypeListType(),
 				Description: "Custom long-term memory types registered on the store. Adding types and adding or updating their extraction strategies are supported in place. Removing or redefining existing types, or removing their extraction strategies, requires replacement of the entire Agent Memory service.",
 				NestedObject: schema.NestedBlockObject{
 					Attributes: map[string]schema.Attribute{
@@ -453,6 +456,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 					},
 					Blocks: map[string]schema.Block{
 						"fields": schema.ListNestedBlock{
+							CustomType:  NewCustomFieldListType(),
 							Description: "Structured fields for this custom memory type.",
 							NestedObject: schema.NestedBlockObject{
 								Attributes: map[string]schema.Attribute{
@@ -559,9 +563,9 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 	modelConfig.LLM = modelConfigWithWriteOnlyValue(modelConfig.LLM, config.LLM)
 	modelConfig.Embedding = modelConfigWithWriteOnlyValue(modelConfig.Embedding, config.Embedding)
 	validateModelConfigPlan(modelConfig, state, hasState, resp)
-	validateCustomMemoryTypesPlan(plan, state, resp)
-	validateCustomDetectorNamesPlan(plan, resp)
-	validateCustomDetectorMatchersConfig(config, resp)
+	validateCustomMemoryTypesPlan(ctx, plan, state, resp)
+	validateCustomDetectorNamesPlan(ctx, plan, resp)
+	validateCustomDetectorMatchersConfig(ctx, config, resp)
 	if resp.Diagnostics.HasError() {
 		return
 	}
