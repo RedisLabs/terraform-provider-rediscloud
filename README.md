@@ -7,7 +7,7 @@ lifecycle of their subscriptions and related Redis databases.
 Requirements
 ------------
 
--	[Terraform](https://www.terraform.io/downloads.html) >= 1.11.1
+-	[Terraform](https://www.terraform.io/downloads.html) >= 1.16.7
 -	[Go](https://golang.org/doc/install) >= 1.25
 
 Quick Starts
@@ -91,7 +91,7 @@ terraform {
       source = "RedisLabs/rediscloud"
     }
   }
-  required_version = "~> 1.0"
+  required_version = ">= 1.16.7"
 }
 ``` 
 

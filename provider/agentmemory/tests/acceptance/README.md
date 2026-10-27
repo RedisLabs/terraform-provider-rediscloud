@@ -18,8 +18,8 @@ The suite covers:
 ## Run
 
 Set `REDISCLOUD_URL`, `REDISCLOUD_ACCESS_KEY` and `REDISCLOUD_SECRET_KEY` for a test
-account. Managed-model cases use the repository's default Terraform CLI; the
-customer-model case requires Terraform 1.11.1 or later. From the repository root:
+account. All cases use Terraform 1.16.7 or later, provided by the repository's Nix
+development shell. From the repository root:
 
 ```sh
 make testacc-check TEST_PATTERN='^TestAccResourceRedisCloudAgentMemory_'
@@ -48,19 +48,15 @@ Optional settings:
 The customer-managed model case uses ephemeral sensitive input variables and
 checks that model secrets are absent from plan and state. Its version update
 resubmits the same valid keys; it does not claim to test rotation to different
-provider credentials. It skips when either key is missing or the selected CLI
-is below 1.11.1. The managed fixture contains no model credential variables.
+provider credentials. It skips when either key is missing. The managed fixture
+contains no model credential variables.
 
-To select the minimum supported CLI for the BYOK case, supply the two model keys
-and run:
+To run only the BYOK case, supply the two model keys and run:
 
 ```sh
-TF_ACC_TERRAFORM_VERSION=1.11.1 TEST_RESOURCE_PREFIX=tf-am-byok-unique TF_LOG= \
+TEST_RESOURCE_PREFIX=tf-am-byok-unique TF_LOG= \
   make testacc TEST_PATTERN='^TestAccResourceRedisCloudAgentMemory_CustomerModels$'
 ```
-
-Unset `TF_ACC_TERRAFORM_PATH` when selecting a downloadable version; an explicit
-binary path takes precedence.
 
 The invalid-TTL case checks HTTP 400 and reads the existing TTL back before
 another apply. Validation responses can contain only a generic `Bad Request`,

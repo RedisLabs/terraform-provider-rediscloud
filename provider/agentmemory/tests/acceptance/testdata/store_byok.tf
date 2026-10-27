@@ -1,7 +1,3 @@
-terraform {
-  required_version = ">= 1.11.1"
-}
-
 variable "llm_model" { type = string }
 variable "embedding_model" { type = string }
 variable "key_version" {

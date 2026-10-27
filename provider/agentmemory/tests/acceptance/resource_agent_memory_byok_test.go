@@ -8,12 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
-	"github.com/hashicorp/terraform-plugin-testing/tfversion"
 )
 
 func TestAccResourceRedisCloudAgentMemory_CustomerModels(t *testing.T) {
@@ -38,9 +36,7 @@ func TestAccResourceRedisCloudAgentMemory_CustomerModels(t *testing.T) {
 	noop := f.step(values)
 	noop.PlanOnly = true
 	noop.ConfigPlanChecks = resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{keys}}
-	testCase := f.testCase(tracked, []resource.TestStep{create, update, noop})
-	testCase.TerraformVersionChecks = []tfversion.TerraformVersionCheck{tfversion.SkipBelow(version.Must(version.NewVersion("1.11.1")))}
-	resource.Test(t, testCase)
+	resource.Test(t, f.testCase(tracked, []resource.TestStep{create, update, noop}))
 }
 
 type modelKeys []string
