@@ -39,8 +39,8 @@ func TestAgentMemoryInactiveSummarizationDefinitions(t *testing.T) {
 }`
 	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 		{Config: config, Check: resource.ComposeTestCheckFunc(
-			resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.trigger_strategy", "event_count"),
-			resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.event_count.threshold", "20"),
+			resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.trigger_strategy", "event_count"),
+			resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.threshold", "20"),
 		)},
 		{ResourceName: "rediscloud_agent_memory.example", ImportState: true, ImportStateVerify: true},
 		{Config: config, PlanOnly: true},

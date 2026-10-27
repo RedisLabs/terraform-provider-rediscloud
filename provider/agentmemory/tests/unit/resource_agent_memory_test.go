@@ -253,11 +253,11 @@ func TestAgentMemoryResource_mockedCreateWithAdvancedConfig(t *testing.T) {
 				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-advanced"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.enabled", "true"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.event_count.threshold", "21"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.event_count.retain_count", "11"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.enabled", "true"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.semantic.prompt", "test"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.enabled", "true"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.threshold", "21"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.retain_count", "11"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.enabled", "true"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.semantic.0.prompt", "test"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.#", "1"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.name", "custom_name"),
 				),
@@ -318,14 +318,14 @@ func TestAgentMemoryResource_mockedCreateWithModelConfig(t *testing.T) {
 				Config: testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.provider", "openai"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.model", "gpt-4o-mini"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.credentials.type", "apiKey"),
-					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "llm.credentials.api_key"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.provider", "openai"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.model", "text-embedding-3-small"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.credentials.type", "apiKey"),
-					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "embedding.credentials.api_key"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.0.provider", "openai"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.0.model", "gpt-4o-mini"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.0.credentials.0.type", "apiKey"),
+					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "llm.0.credentials.0.api_key"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.0.provider", "openai"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.0.model", "text-embedding-3-small"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.0.credentials.0.type", "apiKey"),
+					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "embedding.0.credentials.0.api_key"),
 				),
 			},
 		},
@@ -399,10 +399,10 @@ func TestAgentMemoryResource_mockedUpdateAdvancedConfig(t *testing.T) {
 				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithValues("store", 30, 12, "updated", "drop"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-advanced"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.event_count.threshold", "30"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.event_count.retain_count", "12"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.semantic.prompt", "updated"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.built_in_detectors.detectors.1.action", "drop"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.threshold", "30"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.retain_count", "12"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.semantic.0.prompt", "updated"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.built_in_detectors.0.detectors.1.action", "drop"),
 				),
 			},
 		},
@@ -466,8 +466,8 @@ func TestAgentMemoryResource_mockedUpdateCustomMemoryTypeStrategy(t *testing.T) 
 				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithCustomMemoryStrategy("store", 21, 11, "test", "redact", "updated extraction prompt", false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-advanced"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.prompt", "updated extraction prompt"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.enabled", "false"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.0.prompt", "updated extraction prompt"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.0.enabled", "false"),
 				),
 			},
 		},
@@ -693,15 +693,15 @@ func TestAgentMemoryResource_mockedUpdateDisablesAdvancedConfigWithStaleAPIChild
 				Config: testProviderConfig(t, server.URL) + disabledAdvancedAgentMemoryConfig("store-disabled"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "name", "store-disabled"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.enabled", "false"),
-					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "summarization.trigger_strategy"),
-					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "summarization.event_count.threshold"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.semantic.enabled", "false"),
-					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.semantic.prompt"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.built_in_detectors.enabled", "false"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.built_in_detectors.detectors.#", "0"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.custom_detectors.enabled", "false"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.custom_detectors.detectors.#", "0"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.enabled", "false"),
+					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "summarization.0.trigger_strategy"),
+					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.threshold"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.semantic.0.enabled", "false"),
+					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.semantic.0.prompt"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.built_in_detectors.0.enabled", "false"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.built_in_detectors.0.detectors.#", "0"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.enabled", "false"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.detectors.#", "0"),
 				),
 			},
 		},
@@ -859,10 +859,10 @@ func TestAgentMemoryResource_mockedUpdateModelConfig(t *testing.T) {
 				Config: testProviderConfig(t, server.URL) + strings.ReplaceAll(agentMemoryModelConfig("store", "gpt-4.1-mini", "text-embedding-3-small", "llm-secret-2", "embedding-secret-2"), "api_key_version = 1", "api_key_version = 2"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.model", "gpt-4.1-mini"),
-					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "llm.credentials.api_key"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.model", "text-embedding-3-small"),
-					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "embedding.credentials.api_key"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.0.model", "gpt-4.1-mini"),
+					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "llm.0.credentials.0.api_key"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.0.model", "text-embedding-3-small"),
+					resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "embedding.0.credentials.0.api_key"),
 				),
 			},
 		},
@@ -1053,20 +1053,20 @@ resource "rediscloud_agent_memory" "example" {
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
 					attrs := states[0].Attributes
 					expected := map[string]string{
-						"llm.provider":       "openai",
-						"llm.model":          "gpt-4o-mini",
-						"embedding.provider": "openai",
-						"embedding.model":    "text-embedding-3-small",
+						"llm.0.provider":       "openai",
+						"llm.0.model":          "gpt-4o-mini",
+						"embedding.0.provider": "openai",
+						"embedding.0.model":    "text-embedding-3-small",
 					}
 					for key, want := range expected {
 						if got := attrs[key]; got != want {
 							return fmt.Errorf("expected imported %s to be %q, got %q", key, want, got)
 						}
 					}
-					if _, ok := attrs["llm.credentials.api_key"]; ok {
+					if _, ok := attrs["llm.0.credentials.0.api_key"]; ok {
 						return fmt.Errorf("imported llm credentials api_key should not be set because the Agent Memory API does not return it")
 					}
-					if _, ok := attrs["embedding.credentials.api_key"]; ok {
+					if _, ok := attrs["embedding.0.credentials.0.api_key"]; ok {
 						return fmt.Errorf("imported embedding credentials api_key should not be set because the Agent Memory API does not return it")
 					}
 					return nil
@@ -1108,24 +1108,24 @@ resource "rediscloud_agent_memory" "example" {
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
 					attrs := states[0].Attributes
 					expected := map[string]string{
-						"summarization.enabled":                                      "true",
-						"summarization.trigger_strategy":                             "event_count",
-						"summarization.event_count.threshold":                        "21",
-						"summarization.event_count.retain_count":                     "11",
-						"long_term_memory_exclusions.enabled":                        "true",
-						"long_term_memory_exclusions.semantic.enabled":               "true",
-						"long_term_memory_exclusions.semantic.prompt":                "test",
-						"long_term_memory_exclusions.built_in_detectors.enabled":     "true",
-						"long_term_memory_exclusions.built_in_detectors.detectors.#": "2",
-						"long_term_memory_exclusions.custom_detectors.enabled":       "true",
-						"long_term_memory_exclusions.custom_detectors.detectors.#":   "1",
-						"custom_memory_types.#":                                      "1",
-						"custom_memory_types.0.name":                                 "custom_name",
-						"custom_memory_types.0.description":                          "test",
-						"custom_memory_types.0.fields.#":                             "1",
-						"custom_memory_types.0.fields.0.name":                        "field1",
-						"custom_memory_types.0.extraction_strategy.enabled":          "true",
-						"custom_memory_types.0.extraction_strategy.prompt":           "test",
+						"summarization.0.enabled":                                        "true",
+						"summarization.0.trigger_strategy":                               "event_count",
+						"summarization.0.event_count.0.threshold":                        "21",
+						"summarization.0.event_count.0.retain_count":                     "11",
+						"long_term_memory_exclusions.0.enabled":                          "true",
+						"long_term_memory_exclusions.0.semantic.0.enabled":               "true",
+						"long_term_memory_exclusions.0.semantic.0.prompt":                "test",
+						"long_term_memory_exclusions.0.built_in_detectors.0.enabled":     "true",
+						"long_term_memory_exclusions.0.built_in_detectors.0.detectors.#": "2",
+						"long_term_memory_exclusions.0.custom_detectors.0.enabled":       "true",
+						"long_term_memory_exclusions.0.custom_detectors.0.detectors.#":   "1",
+						"custom_memory_types.#":                                          "1",
+						"custom_memory_types.0.name":                                     "custom_name",
+						"custom_memory_types.0.description":                              "test",
+						"custom_memory_types.0.fields.#":                                 "1",
+						"custom_memory_types.0.fields.0.name":                            "field1",
+						"custom_memory_types.0.extraction_strategy.0.enabled":            "true",
+						"custom_memory_types.0.extraction_strategy.0.prompt":             "test",
 					}
 					for key, want := range expected {
 						if got := attrs[key]; got != want {

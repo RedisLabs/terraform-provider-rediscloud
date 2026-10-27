@@ -156,7 +156,7 @@ func TestAgentMemoryDetectorNameLifecycleByAPI(t *testing.T) {
 			}()
 			config := testProviderConfig(t, server.URL) + reservedDetectorConfig("tostring(terraform_data.name.output)", fmt.Sprintf(`resource "terraform_data" "name" { input=%q }`, name), "")
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config, Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.custom_detectors.detectors.0.name", name))},
+				{Config: config, Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.detectors.0.name", name))},
 				{Config: config, PlanOnly: true},
 			}})
 		})

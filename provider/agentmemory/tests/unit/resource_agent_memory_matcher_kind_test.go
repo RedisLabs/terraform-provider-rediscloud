@@ -170,9 +170,9 @@ func TestAgentMemoryMatcherKindByAPI(t *testing.T) {
 					if creates != 1 || deletes != 0 || state.RootModule().Resources["rediscloud_agent_memory.example"].Primary.Tainted {
 						return fmt.Errorf("store replaced or tainted: creates=%d deletes=%d", creates, deletes)
 					}
-					checks := []resource.TestCheckFunc{resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.custom_detectors.detectors.0.matcher.kind", kind)}
+					checks := []resource.TestCheckFunc{resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.detectors.0.matcher.0.kind", kind)}
 					if kind != "regex" {
-						checks = append(checks, resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.custom_detectors.detectors.0.matcher.regex.pattern"))
+						checks = append(checks, resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.detectors.0.matcher.0.regex.0.pattern"))
 					}
 					return resource.ComposeTestCheckFunc(checks...)(state)
 				}

@@ -67,7 +67,7 @@ func validateCustomMemoryTypesPlan(ctx context.Context, plan, state AgentMemoryR
 			resp.RequiresReplace.Append(path.Root("custom_memory_types").AtListIndex(planned.index))
 			continue
 		}
-		if existing.ExtractionStrategy != nil && planned.model.ExtractionStrategy == nil {
+		if len(existing.ExtractionStrategy.Elements()) > 0 && (planned.model.ExtractionStrategy.IsUnknown() || len(planned.model.ExtractionStrategy.Elements()) == 0) {
 			resp.RequiresReplace.Append(path.Root("custom_memory_types").AtListIndex(planned.index).AtName("extraction_strategy"))
 		}
 	}
@@ -99,14 +99,15 @@ func customMemoryTypeUpdatesFromPlan(ctx context.Context, plan, state CustomMemo
 		if customExtractionStrategyEqual(planned.ExtractionStrategy, existing.ExtractionStrategy) {
 			continue
 		}
-		if planned.ExtractionStrategy == nil {
+		strategy := customExtractionStrategyBlock(ctx, planned.ExtractionStrategy, diags)
+		if strategy == nil {
 			continue
 		}
 
 		update := agentmemoryapi.MemoryTypeStrategyUpdate{TypeName: planned.Name.ValueStringPointer()}
-		update.Prompt = stringPointerFromValue(planned.ExtractionStrategy.Prompt)
-		if !planned.ExtractionStrategy.Enabled.IsNull() && !planned.ExtractionStrategy.Enabled.IsUnknown() {
-			enabled := planned.ExtractionStrategy.Enabled.ValueBool()
+		update.Prompt = stringPointerFromValue(strategy.Prompt)
+		if !strategy.Enabled.IsNull() && !strategy.Enabled.IsUnknown() {
+			enabled := strategy.Enabled.ValueBool()
 			update.Enabled = &enabled
 		}
 		updateStrategies = append(updateStrategies, update)
@@ -120,7 +121,7 @@ func customMemoryTypeFromModel(ctx context.Context, model AgentMemoryCustomMemor
 		Name:               model.Name.ValueStringPointer(),
 		Description:        model.Description.ValueStringPointer(),
 		Fields:             customFieldsFromModel(ctx, model.Fields, diags),
-		ExtractionStrategy: customExtractionStrategyFromModel(model.ExtractionStrategy),
+		ExtractionStrategy: customExtractionStrategyFromModel(customExtractionStrategyBlock(ctx, model.ExtractionStrategy, diags)),
 	}
 }
 
@@ -182,11 +183,14 @@ func customMemoryFieldEqual(left, right AgentMemoryCustomFieldModel) bool {
 		left.Type.Equal(right.Type)
 }
 
-func customExtractionStrategyEqual(left, right *AgentMemoryCustomExtractionStrategy) bool {
-	if left == nil || right == nil {
-		return left == nil && right == nil
+func customExtractionStrategyEqual(left, right CustomExtractionStrategyListValue) bool {
+	if left.IsUnknown() || right.IsUnknown() {
+		return false
 	}
-	return left.Prompt.Equal(right.Prompt) && left.Enabled.Equal(right.Enabled)
+	if len(left.Elements()) == 0 && len(right.Elements()) == 0 {
+		return true
+	}
+	return left.Equal(right)
 }
 
 func knownString(value types.String) (string, bool) {

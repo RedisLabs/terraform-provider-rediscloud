@@ -16,11 +16,11 @@ import (
 )
 
 var enabledFlagCases = []struct{ name, block, wire, attribute string }{
-	{"summarization", "summarization", "summarization", "summarization.enabled"},
-	{"exclusions", "", "longTermMemoryExclusions", "long_term_memory_exclusions.enabled"},
-	{"semantic", "semantic", "semantic", "long_term_memory_exclusions.semantic.enabled"},
-	{"built-in", "built_in_detectors", "builtInDetectors", "long_term_memory_exclusions.built_in_detectors.enabled"},
-	{"custom", "custom_detectors", "customDetectors", "long_term_memory_exclusions.custom_detectors.enabled"},
+	{"summarization", "summarization", "summarization", "summarization.0.enabled"},
+	{"exclusions", "", "longTermMemoryExclusions", "long_term_memory_exclusions.0.enabled"},
+	{"semantic", "semantic", "semantic", "long_term_memory_exclusions.0.semantic.0.enabled"},
+	{"built-in", "built_in_detectors", "builtInDetectors", "long_term_memory_exclusions.0.built_in_detectors.0.enabled"},
+	{"custom", "custom_detectors", "customDetectors", "long_term_memory_exclusions.0.custom_detectors.0.enabled"},
 }
 
 func enabledFlagConfig(name, block, expression, dependency string) string {

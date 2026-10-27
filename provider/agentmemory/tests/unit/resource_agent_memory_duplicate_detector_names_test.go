@@ -233,7 +233,7 @@ func TestAgentMemoryCustomDetectorNameLifecycle(t *testing.T) {
 	duplicate := config("account:after", `"ticket"`)
 	deferredDuplicate := config("ticket:after", expression)
 	restored := config("ticket:after", `"account"`)
-	check := resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.custom_detectors.detectors.1.name", "account"))
+	check := resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.detectors.1.name", "account"))
 	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 		{Config: initial, Check: check},
 		{Config: changed, Check: check},

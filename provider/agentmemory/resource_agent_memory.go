@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
+
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -129,294 +129,335 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"timeouts": timeouts.Block(ctx, timeouts.Opts{Create: true, Read: true, Update: true, Delete: true}),
-			"llm": schema.SingleNestedBlock{
+			"timeouts": memoryTimeoutsBlock(ctx),
+			"llm": schema.ListNestedBlock{
+				CustomType:  NewModelConfigListType(),
 				Description: "Customer-managed LLM configuration. Configure this together with embedding to opt into customer-managed models.",
-				// Separate checks keep unknown values from hiding missing siblings.
-				Validators: []validator.Object{
-					objectvalidator.AlsoRequires(path.MatchRelative().AtName("provider")),
-					objectvalidator.AlsoRequires(path.MatchRelative().AtName("model")),
-				},
-				Attributes: map[string]schema.Attribute{
-					"provider": schema.StringAttribute{
-						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.",
-						Optional:    true,
-						Computed:    true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseNonNullStateForUnknown(),
-							stringplanmodifier.RequiresReplaceIfConfigured(),
+				Validators:  []validator.List{listvalidator.SizeAtMost(1)},
+				NestedObject: schema.NestedBlockObject{
+					Validators: []validator.Object{
+						objectvalidator.AlsoRequires(path.MatchRelative().AtName("provider")),
+						objectvalidator.AlsoRequires(path.MatchRelative().AtName("model")),
+					},
+					Attributes: map[string]schema.Attribute{
+						"provider": schema.StringAttribute{
+							Description: "Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.",
+							Optional:    true,
+							Computed:    true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseNonNullStateForUnknown(),
+								stringplanmodifier.RequiresReplaceIfConfigured(),
+							},
+						},
+						"model": schema.StringAttribute{
+							Description: "Model name advertised by the provider.",
+							Optional:    true,
+							Computed:    true,
 						},
 					},
-					"model": schema.StringAttribute{
-						Description: "Model name advertised by the provider.",
-						Optional:    true,
-						Computed:    true,
-					},
-				},
-				Blocks: map[string]schema.Block{
-					"credentials": schema.SingleNestedBlock{
-						Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is write-only and is not persisted in Terraform plan or state.",
-						// Separate checks keep unknown values from hiding missing siblings.
-						Validators: []validator.Object{
-							objectvalidator.AlsoRequires(path.MatchRelative().AtName("type")),
-							objectvalidator.AlsoRequires(path.MatchRelative().AtName("api_key")),
-							objectvalidator.AlsoRequires(path.MatchRelative().AtName("api_key_version")),
-						},
-						Attributes: map[string]schema.Attribute{
-							"type": schema.StringAttribute{
-								Description: "Credential type validated by the Agent Memory API.",
-								Optional:    true,
-							},
-							"api_key": schema.StringAttribute{
-								Description: "Provider API key omitted from plan and state. Requires Terraform 1.16.7 or later. Increment api_key_version to rotate it.",
-								Optional:    true,
-								Sensitive:   true,
-								WriteOnly:   true,
-							},
-							"api_key_version": schema.Int64Attribute{
-								Description: "Positive version used to trigger an in-place write-only credential update. Change this value whenever api_key changes.",
-								Optional:    true,
-								Validators: []validator.Int64{
-									int64validator.AtLeast(1),
+					Blocks: map[string]schema.Block{
+						"credentials": schema.ListNestedBlock{
+							CustomType:  NewModelCredentialsListType(),
+							Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is write-only and is not persisted in Terraform plan or state.",
+							Validators:  []validator.List{listvalidator.SizeAtMost(1)},
+							NestedObject: schema.NestedBlockObject{
+								Validators: []validator.Object{
+									objectvalidator.AlsoRequires(path.MatchRelative().AtName("type")),
+									objectvalidator.AlsoRequires(path.MatchRelative().AtName("api_key")),
+									objectvalidator.AlsoRequires(path.MatchRelative().AtName("api_key_version")),
+								},
+								Attributes: map[string]schema.Attribute{
+									"type": schema.StringAttribute{
+										Description: "Credential type validated by the Agent Memory API.",
+										Optional:    true,
+									},
+									"api_key": schema.StringAttribute{
+										Description: "Provider API key omitted from plan and state. Requires Terraform 1.16.7 or later. Increment api_key_version to rotate it.",
+										Optional:    true,
+										Sensitive:   true,
+										WriteOnly:   true,
+									},
+									"api_key_version": schema.Int64Attribute{
+										Description: "Positive version used to trigger an in-place write-only credential update. Change this value whenever api_key changes.",
+										Optional:    true,
+										Validators: []validator.Int64{
+											int64validator.AtLeast(1),
+										},
+									},
 								},
 							},
 						},
 					},
 				},
 			},
-			"embedding": schema.SingleNestedBlock{
+			"embedding": schema.ListNestedBlock{
+				CustomType:  NewModelConfigListType(),
 				Description: "Customer-managed embedding model configuration for long-term memory. Configure this together with llm to opt into customer-managed models.",
-				// Separate checks keep unknown values from hiding missing siblings.
-				Validators: []validator.Object{
-					objectvalidator.AlsoRequires(path.MatchRelative().AtName("provider")),
-					objectvalidator.AlsoRequires(path.MatchRelative().AtName("model")),
-				},
-				Attributes: map[string]schema.Attribute{
-					"provider": schema.StringAttribute{
-						Description: "Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.",
-						Optional:    true,
-						Computed:    true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseNonNullStateForUnknown(),
-							stringplanmodifier.RequiresReplaceIfConfigured(),
+				Validators:  []validator.List{listvalidator.SizeAtMost(1)},
+				NestedObject: schema.NestedBlockObject{
+					Validators: []validator.Object{
+						objectvalidator.AlsoRequires(path.MatchRelative().AtName("provider")),
+						objectvalidator.AlsoRequires(path.MatchRelative().AtName("model")),
+					},
+					Attributes: map[string]schema.Attribute{
+						"provider": schema.StringAttribute{
+							Description: "Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.",
+							Optional:    true,
+							Computed:    true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseNonNullStateForUnknown(),
+								stringplanmodifier.RequiresReplaceIfConfigured(),
+							},
+						},
+						"model": schema.StringAttribute{
+							Description: "Model name advertised by the provider. Changing an explicitly configured model requires replacement.",
+							Optional:    true,
+							Computed:    true,
+							PlanModifiers: []planmodifier.String{
+								stringplanmodifier.UseNonNullStateForUnknown(),
+								stringplanmodifier.RequiresReplaceIfConfigured(),
+							},
 						},
 					},
-					"model": schema.StringAttribute{
-						Description: "Model name advertised by the provider. Changing an explicitly configured model requires replacement.",
-						Optional:    true,
-						Computed:    true,
-						PlanModifiers: []planmodifier.String{
-							stringplanmodifier.UseNonNullStateForUnknown(),
-							stringplanmodifier.RequiresReplaceIfConfigured(),
-						},
-					},
-				},
-				Blocks: map[string]schema.Block{
-					"credentials": schema.SingleNestedBlock{
-						Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is write-only and is not persisted in Terraform plan or state.",
-						// Separate checks keep unknown values from hiding missing siblings.
-						Validators: []validator.Object{
-							objectvalidator.AlsoRequires(path.MatchRelative().AtName("type")),
-							objectvalidator.AlsoRequires(path.MatchRelative().AtName("api_key")),
-							objectvalidator.AlsoRequires(path.MatchRelative().AtName("api_key_version")),
-						},
-						Attributes: map[string]schema.Attribute{
-							"type": schema.StringAttribute{
-								Description: "Credential type validated by the Agent Memory API.",
-								Optional:    true,
-							},
-							"api_key": schema.StringAttribute{
-								Description: "Provider API key omitted from plan and state. Requires Terraform 1.16.7 or later. Increment api_key_version to rotate it.",
-								Optional:    true,
-								Sensitive:   true,
-								WriteOnly:   true,
-							},
-							"api_key_version": schema.Int64Attribute{
-								Description: "Positive version used to trigger an in-place write-only credential update. Change this value whenever api_key changes.",
-								Optional:    true,
-								Validators: []validator.Int64{
-									int64validator.AtLeast(1),
+					Blocks: map[string]schema.Block{
+						"credentials": schema.ListNestedBlock{
+							CustomType:  NewModelCredentialsListType(),
+							Description: "Customer-supplied model provider credentials. The API does not return secrets. api_key is write-only and is not persisted in Terraform plan or state.",
+							Validators:  []validator.List{listvalidator.SizeAtMost(1)},
+							NestedObject: schema.NestedBlockObject{
+								Validators: []validator.Object{
+									objectvalidator.AlsoRequires(path.MatchRelative().AtName("type")),
+									objectvalidator.AlsoRequires(path.MatchRelative().AtName("api_key")),
+									objectvalidator.AlsoRequires(path.MatchRelative().AtName("api_key_version")),
+								},
+								Attributes: map[string]schema.Attribute{
+									"type": schema.StringAttribute{
+										Description: "Credential type validated by the Agent Memory API.",
+										Optional:    true,
+									},
+									"api_key": schema.StringAttribute{
+										Description: "Provider API key omitted from plan and state. Requires Terraform 1.16.7 or later. Increment api_key_version to rotate it.",
+										Optional:    true,
+										Sensitive:   true,
+										WriteOnly:   true,
+									},
+									"api_key_version": schema.Int64Attribute{
+										Description: "Positive version used to trigger an in-place write-only credential update. Change this value whenever api_key changes.",
+										Optional:    true,
+										Validators: []validator.Int64{
+											int64validator.AtLeast(1),
+										},
+									},
 								},
 							},
 						},
 					},
 				},
 			},
-			"summarization": schema.SingleNestedBlock{
+			"summarization": schema.ListNestedBlock{
+				CustomType:  NewSummarizationListType(),
 				Description: "Session summarization configuration.",
-				// Required child attributes would also require an omitted single nested block.
-				Validators: []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("enabled"))},
-				Attributes: map[string]schema.Attribute{
-					"enabled": schema.BoolAttribute{
-						Description: "Whether automatic session summarization is enabled.",
-						Optional:    true,
-						Computed:    true,
-					},
-					"trigger_strategy": schema.StringAttribute{
-						Description: "What triggers a summarization cycle. Accepted values and omitted defaults are determined by the Agent Memory API.",
-						Optional:    true,
-						Computed:    true,
-						Validators: []validator.String{
-							stringvalidator.LengthAtLeast(1),
+				Validators:  []validator.List{listvalidator.SizeAtMost(1)},
+				NestedObject: schema.NestedBlockObject{
+					Validators: []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("enabled"))},
+					Attributes: map[string]schema.Attribute{
+						"enabled": schema.BoolAttribute{
+							Description: "Whether automatic session summarization is enabled.",
+							Optional:    true,
+							Computed:    true,
 						},
-					},
-				},
-				Blocks: map[string]schema.Block{
-					"event_count": schema.SingleNestedBlock{
-						Description: "Event-count based summarization thresholds.",
-						// Check configuration so computed or prior-state values cannot hide missing fields.
-						// Separate checks keep unknown values from hiding missing siblings.
-						Validators: []validator.Object{
-							objectvalidator.AlsoRequires(path.MatchRelative().AtName("threshold")),
-							objectvalidator.AlsoRequires(path.MatchRelative().AtName("retain_count")),
-						},
-						Attributes: map[string]schema.Attribute{
-							"threshold": schema.Int64Attribute{
-								Description: "Number of messages in a session before summarization runs.",
-								Optional:    true,
-								Computed:    true,
-							},
-							"retain_count": schema.Int64Attribute{
-								Description: "Number of most recent messages retained in full after summarization.",
-								Optional:    true,
-								Computed:    true,
+						"trigger_strategy": schema.StringAttribute{
+							Description: "What triggers a summarization cycle. Accepted values and omitted defaults are determined by the Agent Memory API.",
+							Optional:    true,
+							Computed:    true,
+							Validators: []validator.String{
+								stringvalidator.LengthAtLeast(1),
 							},
 						},
 					},
-				},
-			},
-			"long_term_memory_exclusions": schema.SingleNestedBlock{
-				Description: "Exclusion rules applied to newly extracted long-term memories. They do not filter session events, summaries, or memories written directly by the application, and do not re-evaluate existing memories. Semantic exclusions guide the extraction model but do not guarantee exclusion.",
-				Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("enabled"))},
-				Attributes: map[string]schema.Attribute{
-					"enabled": schema.BoolAttribute{
-						Description: "Whether long-term memory exclusions are enabled.",
-						Optional:    true,
-						Computed:    true,
-					},
-				},
-				Blocks: map[string]schema.Block{
-					"semantic": schema.SingleNestedBlock{
-						Description: "Semantic exclusion configuration.",
-						Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("enabled"))},
-						Attributes: map[string]schema.Attribute{
-							"enabled": schema.BoolAttribute{
-								Description: "Whether semantic exclusions are enabled.",
-								Optional:    true,
-								Computed:    true,
-							},
-							"prompt": schema.StringAttribute{
-								Description: "Prompt describing concepts that should not be kept in long-term memory.",
-								Optional:    true,
-								Computed:    true,
-							},
-						},
-					},
-					"built_in_detectors": schema.SingleNestedBlock{
-						Description: "Built-in detector selections for common sensitive identifiers.",
-						Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("enabled"))},
-						Attributes: map[string]schema.Attribute{
-							"enabled": schema.BoolAttribute{
-								Description: "Whether built-in detectors are enabled.",
-								Optional:    true,
-								Computed:    true,
-							},
-						},
-						Blocks: map[string]schema.Block{
-							"detectors": schema.ListNestedBlock{
-								CustomType:  NewDetectorSelectionListType(),
-								Description: "Built-in detectors selected for the store.",
-								NestedObject: schema.NestedBlockObject{
-									Attributes: map[string]schema.Attribute{
-										"id": schema.StringAttribute{
-											Description: "Built-in detector ID.",
-											Required:    true,
-											Validators: []validator.String{
-												// The API owns the detector catalogue; blank IDs are never valid.
-												stringvalidator.RegexMatches(regexp.MustCompile(`.*\S.*`), "must contain at least one non-whitespace character"),
-											},
-										},
-										"enabled": schema.BoolAttribute{
-											Description: "Whether this detector is enabled.",
-											Required:    true,
-										},
-										"action": schema.StringAttribute{
-											Description: "Action applied when this detector matches.",
-											Optional:    true,
-											Computed:    true,
-											Validators: []validator.String{
-												stringvalidator.LengthAtLeast(1),
-											},
-										},
+					Blocks: map[string]schema.Block{
+						"event_count": schema.ListNestedBlock{
+							CustomType:  NewEventCountListType(),
+							Description: "Event-count based summarization thresholds.",
+							Validators:
+							// Check configuration so computed or prior-state values cannot hide missing fields.
+							[]validator.List{listvalidator.SizeAtMost(1)},
+							NestedObject: schema.NestedBlockObject{
+								Validators: []validator.Object{
+									objectvalidator.AlsoRequires(path.MatchRelative().AtName("threshold")),
+									objectvalidator.AlsoRequires(path.MatchRelative().AtName("retain_count")),
+								},
+								Attributes: map[string]schema.Attribute{
+									"threshold": schema.Int64Attribute{
+										Description: "Number of messages in a session before summarization runs.",
+										Optional:    true,
+										Computed:    true,
+									},
+									"retain_count": schema.Int64Attribute{
+										Description: "Number of most recent messages retained in full after summarization.",
+										Optional:    true,
+										Computed:    true,
 									},
 								},
 							},
 						},
 					},
-					"custom_detectors": schema.SingleNestedBlock{
-						Description: "Custom regex detector configuration.",
-						Validators:  []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("enabled"))},
-						Attributes: map[string]schema.Attribute{
-							"enabled": schema.BoolAttribute{
-								Description: "Whether custom detectors are enabled.",
-								Optional:    true,
-								Computed:    true,
+				},
+			},
+			"long_term_memory_exclusions": schema.ListNestedBlock{
+				CustomType:  NewExclusionsListType(),
+				Description: "Exclusion rules applied to newly extracted long-term memories. They do not filter session events, summaries, or memories written directly by the application, and do not re-evaluate existing memories. Semantic exclusions guide the extraction model but do not guarantee exclusion.",
+				Validators:  []validator.List{listvalidator.SizeAtMost(1)},
+				NestedObject: schema.NestedBlockObject{
+					Validators: []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("enabled"))},
+					Attributes: map[string]schema.Attribute{
+						"enabled": schema.BoolAttribute{
+							Description: "Whether long-term memory exclusions are enabled.",
+							Optional:    true,
+							Computed:    true,
+						},
+					},
+					Blocks: map[string]schema.Block{
+						"semantic": schema.ListNestedBlock{
+							CustomType:  NewSemanticExclusionListType(),
+							Description: "Semantic exclusion configuration.",
+							Validators:  []validator.List{listvalidator.SizeAtMost(1)},
+							NestedObject: schema.NestedBlockObject{
+								Validators: []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("enabled"))},
+								Attributes: map[string]schema.Attribute{
+									"enabled": schema.BoolAttribute{
+										Description: "Whether semantic exclusions are enabled.",
+										Optional:    true,
+										Computed:    true,
+									},
+									"prompt": schema.StringAttribute{
+										Description: "Prompt describing concepts that should not be kept in long-term memory.",
+										Optional:    true,
+										Computed:    true,
+									},
+								},
 							},
 						},
-						Blocks: map[string]schema.Block{
-							"detectors": schema.ListNestedBlock{
-								CustomType:  NewCustomDetectorListType(),
-								Description: "Custom detectors for tenant-specific or application-specific sensitive data.",
-								NestedObject: schema.NestedBlockObject{
-									Attributes: map[string]schema.Attribute{
-										"name": schema.StringAttribute{
-											Description: "Custom detector name.",
-											Required:    true,
-											// Name format and reserved names are validated by the API.
-											Validators: []validator.String{
-												// Empty names cannot round-trip: API strings are read as null when empty.
-												stringvalidator.LengthAtLeast(1),
-											},
-										},
-										"enabled": schema.BoolAttribute{
-											Description: "Whether this detector is enabled.",
-											Required:    true,
-										},
-										"action": schema.StringAttribute{
-											Description: "Action applied when this detector matches.",
-											Optional:    true,
-											Computed:    true,
-											Validators: []validator.String{
-												stringvalidator.LengthAtLeast(1),
-											},
-										},
+						"built_in_detectors": schema.ListNestedBlock{
+							CustomType:  NewBuiltInDetectorsListType(),
+							Description: "Built-in detector selections for common sensitive identifiers.",
+							Validators:  []validator.List{listvalidator.SizeAtMost(1)},
+							NestedObject: schema.NestedBlockObject{
+								Validators: []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("enabled"))},
+								Attributes: map[string]schema.Attribute{
+									"enabled": schema.BoolAttribute{
+										Description: "Whether built-in detectors are enabled.",
+										Optional:    true,
+										Computed:    true,
 									},
-									Blocks: map[string]schema.Block{
-										"matcher": schema.SingleNestedBlock{
-											Description: "Custom detector matcher.",
-											Validators:  []validator.Object{objectvalidator.IsRequired()},
+								},
+								Blocks: map[string]schema.Block{
+									"detectors": schema.ListNestedBlock{
+										CustomType:  NewDetectorSelectionListType(),
+										Description: "Built-in detectors selected for the store.",
+										NestedObject: schema.NestedBlockObject{
 											Attributes: map[string]schema.Attribute{
-												"kind": schema.StringAttribute{
-													Description: "Matcher kind.",
+												"id": schema.StringAttribute{
+													Description: "Built-in detector ID.",
 													Required:    true,
 													Validators: []validator.String{
-														// The API validates supported kinds; empty values cannot round-trip.
+														// The API owns the detector catalogue; blank IDs are never valid.
+														stringvalidator.RegexMatches(regexp.MustCompile(`.*\S.*`), "must contain at least one non-whitespace character"),
+													},
+												},
+												"enabled": schema.BoolAttribute{
+													Description: "Whether this detector is enabled.",
+													Required:    true,
+												},
+												"action": schema.StringAttribute{
+													Description: "Action applied when this detector matches.",
+													Optional:    true,
+													Computed:    true,
+													Validators: []validator.String{
+														stringvalidator.LengthAtLeast(1),
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						"custom_detectors": schema.ListNestedBlock{
+							CustomType:  NewCustomDetectorsListType(),
+							Description: "Custom regex detector configuration.",
+							Validators:  []validator.List{listvalidator.SizeAtMost(1)},
+							NestedObject: schema.NestedBlockObject{
+								Validators: []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("enabled"))},
+								Attributes: map[string]schema.Attribute{
+									"enabled": schema.BoolAttribute{
+										Description: "Whether custom detectors are enabled.",
+										Optional:    true,
+										Computed:    true,
+									},
+								},
+								Blocks: map[string]schema.Block{
+									"detectors": schema.ListNestedBlock{
+										CustomType:  NewCustomDetectorListType(),
+										Description: "Custom detectors for tenant-specific or application-specific sensitive data.",
+										NestedObject: schema.NestedBlockObject{
+											Attributes: map[string]schema.Attribute{
+												"name": schema.StringAttribute{
+													Description: "Custom detector name.",
+													Required:    true,
+													// Name format and reserved names are validated by the API.
+													Validators: []validator.String{
+														// Empty names cannot round-trip: API strings are read as null when empty.
+														stringvalidator.LengthAtLeast(1),
+													},
+												},
+												"enabled": schema.BoolAttribute{
+													Description: "Whether this detector is enabled.",
+													Required:    true,
+												},
+												"action": schema.StringAttribute{
+													Description: "Action applied when this detector matches.",
+													Optional:    true,
+													Computed:    true,
+													Validators: []validator.String{
 														stringvalidator.LengthAtLeast(1),
 													},
 												},
 											},
 											Blocks: map[string]schema.Block{
-												"regex": schema.SingleNestedBlock{
-													Description: "Regex matcher configuration.",
-													// Pattern is required only when this optional block is configured.
-													Validators: []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("pattern"))},
-													Attributes: map[string]schema.Attribute{
-														"pattern": schema.StringAttribute{
-															Description: "Regex pattern used by the matcher.",
-															Optional:    true,
-															Validators: []validator.String{
-																stringvalidator.LengthAtLeast(1),
-																nonEmptyRegexMatchValidator{},
+												"matcher": schema.ListNestedBlock{
+													CustomType:  NewMatcherSpecListType(),
+													Description: "Custom detector matcher.",
+													Validators:  []validator.List{listvalidator.IsRequired(), listvalidator.SizeBetween(1, 1)},
+													NestedObject: schema.NestedBlockObject{
+														Attributes: map[string]schema.Attribute{
+															"kind": schema.StringAttribute{
+																Description: "Matcher kind.",
+																Required:    true,
+																Validators: []validator.String{
+																	// The API validates supported kinds; empty values cannot round-trip.
+																	stringvalidator.LengthAtLeast(1),
+																},
+															},
+														},
+														Blocks: map[string]schema.Block{
+															"regex": schema.ListNestedBlock{
+																CustomType:  NewRegexSpecListType(),
+																Description: "Regex matcher configuration.",
+																Validators:  []validator.List{listvalidator.SizeAtMost(1)},
+																NestedObject: schema.NestedBlockObject{
+																	Validators: []validator.Object{objectvalidator.AlsoRequires(path.MatchRelative().AtName("pattern"))},
+																	Attributes: map[string]schema.Attribute{
+																		"pattern": schema.StringAttribute{
+																			Description: "Regex pattern used by the matcher.",
+																			Optional:    true,
+																			Validators: []validator.String{
+																				stringvalidator.LengthAtLeast(1),
+																				nonEmptyRegexMatchValidator{},
+																			},
+																		},
+																	},
+																},
 															},
 														},
 													},
@@ -487,25 +528,28 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 								},
 							},
 						},
-						"extraction_strategy": schema.SingleNestedBlock{
+						"extraction_strategy": schema.ListNestedBlock{
+							CustomType:  NewCustomExtractionStrategyListType(),
 							Description: "Extraction strategy for this custom memory type.",
-							// Required child attributes would also make the absent block invalid.
-							Validators: []validator.Object{
-								objectvalidator.AlsoRequires(path.MatchRelative().AtName("prompt")),
-							},
-							Attributes: map[string]schema.Attribute{
-								"prompt": schema.StringAttribute{
-									Description: "Prompt used to extract this custom memory type.",
-									Optional:    true,
-									Validators: []validator.String{
-										// The create API requires a non-blank custom extraction prompt.
-										stringvalidator.LengthAtLeast(1),
-									},
+							Validators:  []validator.List{listvalidator.SizeAtMost(1)},
+							NestedObject: schema.NestedBlockObject{
+								Validators: []validator.Object{
+									objectvalidator.AlsoRequires(path.MatchRelative().AtName("prompt")),
 								},
-								"enabled": schema.BoolAttribute{
-									Description: "Whether extraction is enabled for this custom memory type.",
-									Optional:    true,
-									Computed:    true,
+								Attributes: map[string]schema.Attribute{
+									"prompt": schema.StringAttribute{
+										Description: "Prompt used to extract this custom memory type.",
+										Optional:    true,
+										Validators: []validator.String{
+											// The create API requires a non-blank custom extraction prompt.
+											stringvalidator.LengthAtLeast(1),
+										},
+									},
+									"enabled": schema.BoolAttribute{
+										Description: "Whether extraction is enabled for this custom memory type.",
+										Optional:    true,
+										Computed:    true,
+									},
 								},
 							},
 						},
@@ -519,7 +563,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 
 func (r *agentMemoryResource) ConfigValidators(context.Context) []resource.ConfigValidator {
 	return []resource.ConfigValidator{
-		resourcevalidator.RequiredTogether(path.MatchRoot("llm"), path.MatchRoot("embedding")),
+		modelPairValidator{},
 	}
 }
 
@@ -551,7 +595,7 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 	}
 
 	modelConfig := plan
-	if !hasState || state.LLM == nil || state.Embedding == nil {
+	if !hasState || len(state.LLM.Elements()) == 0 || len(state.Embedding.Elements()) == 0 {
 		// New model blocks have no prior selectors to reuse. Configuration keeps
 		// omitted selectors distinct from expressions that are still unknown.
 		resp.Diagnostics.Append(req.Config.Get(ctx, &modelConfig)...)
@@ -560,9 +604,9 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 		}
 	}
 	// Write-only values exist only in configuration, even when the rest comes from the plan.
-	modelConfig.LLM = modelConfigWithWriteOnlyValue(modelConfig.LLM, config.LLM)
-	modelConfig.Embedding = modelConfigWithWriteOnlyValue(modelConfig.Embedding, config.Embedding)
-	validateModelConfigPlan(modelConfig, state, hasState, resp)
+	modelConfig.LLM = modelConfigWithWriteOnlyValue(ctx, modelConfig.LLM, config.LLM, &resp.Diagnostics)
+	modelConfig.Embedding = modelConfigWithWriteOnlyValue(ctx, modelConfig.Embedding, config.Embedding, &resp.Diagnostics)
+	validateModelConfigPlan(ctx, modelConfig, state, hasState, resp)
 	validateCustomMemoryTypesPlan(ctx, plan, state, resp)
 	validateCustomDetectorNamesPlan(ctx, plan, resp)
 	validateCustomDetectorMatchersConfig(ctx, config, resp)
@@ -570,26 +614,27 @@ func (r *agentMemoryResource) ModifyPlan(ctx context.Context, req resource.Modif
 		return
 	}
 
-	validateSummarizationPlan(plan, resp)
+	validateSummarizationPlan(ctx, plan, resp)
 }
 
-func validateSummarizationPlan(plan AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
-	if plan.Summarization == nil || plan.Summarization.EventCount == nil {
+func validateSummarizationPlan(ctx context.Context, plan AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
+	if plan.Summarization.IsUnknown() {
 		return
 	}
-
-	threshold := plan.Summarization.EventCount.Threshold
-	retainCount := plan.Summarization.EventCount.RetainCount
+	summary := summarizationBlock(ctx, plan.Summarization, &resp.Diagnostics)
+	if summary == nil || summary.EventCount.IsUnknown() {
+		return
+	}
+	event := eventCountBlock(ctx, summary.EventCount, &resp.Diagnostics)
+	if event == nil {
+		return
+	}
+	threshold, retainCount := event.Threshold, event.RetainCount
 	if threshold.IsNull() || threshold.IsUnknown() || retainCount.IsNull() || retainCount.IsUnknown() {
 		return
 	}
-
 	if threshold.ValueInt64() <= retainCount.ValueInt64() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("summarization").AtName("event_count").AtName("threshold"),
-			"Invalid summarization event count",
-			"summarization.event_count.threshold must be greater than summarization.event_count.retain_count.",
-		)
+		resp.Diagnostics.AddAttributeError(path.Root("summarization").AtListIndex(0).AtName("event_count").AtListIndex(0).AtName("threshold"), "Invalid summarization event count", "summarization[0].event_count[0].threshold must be greater than summarization[0].event_count[0].retain_count.")
 	}
 }
 
@@ -611,10 +656,9 @@ func (r *agentMemoryResource) ImportState(ctx context.Context, req resource.Impo
 
 	// Import must validate the returned identity against the ID supplied by the user.
 	// Import has no configuration; initialise the absent block with its custom type.
-	timeoutType := timeouts.BlockAll(ctx).Type().(timeouts.Type)
 	state := AgentMemoryResourceModel{
 		ID:       types.StringValue(req.ID),
-		Timeouts: timeouts.Value{Object: types.ObjectNull(timeoutType.AttrTypes)},
+		Timeouts: MemoryTimeoutsListValue{ListValue: types.ListNull(memoryTimeoutsElementType())},
 	}
 	readImportedAgentMemoryIntoModel(ctx, store, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {

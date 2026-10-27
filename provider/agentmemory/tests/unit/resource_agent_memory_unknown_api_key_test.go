@@ -219,8 +219,8 @@ func TestAgentMemoryModelAPIKeyUnknownCreateAndUpdate(t *testing.T) {
 				return cfg
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config("FAKE-FIRST"), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", block+".credentials.api_key"))},
-				{Config: config("FAKE-ROTATED"), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", block+".credentials.api_key"))},
+				{Config: config("FAKE-FIRST"), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", block+".0.credentials.0.api_key"))},
+				{Config: config("FAKE-ROTATED"), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", block+".0.credentials.0.api_key"))},
 				{Config: config("FAKE-ROTATED"), PlanOnly: true},
 			}})
 		})

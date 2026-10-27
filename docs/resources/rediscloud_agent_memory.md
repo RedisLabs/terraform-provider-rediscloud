@@ -83,9 +83,14 @@ resource "rediscloud_agent_memory" "example" {
 }
 ```
 
+Optional configuration blocks accept at most one item. Their HCL declaration
+stays `llm { ... }`; references use an index, such as
+`rediscloud_agent_memory.example.llm[0].provider`. Dynamic blocks may depend on
+values that become known only during apply.
+
 ### Write-only model credentials
 
-Model `credentials.api_key` is write-only. This provider requires Terraform 1.16.7
+Model `credentials[0].api_key` is write-only. This provider requires Terraform 1.16.7
 or later.
 Redis Cloud does not return it, and Terraform does not persist its resource
 attribute value in plan or state. Use an ephemeral sensitive variable to avoid
@@ -98,7 +103,7 @@ variable "llm_api_key" {
   ephemeral = true
 }
 
-# Inside llm.credentials; the same fields are available in embedding.credentials.
+# Inside llm[0].credentials[0]; the same fields are available in embedding[0].credentials[0].
 credentials {
   type            = "apiKey"
   api_key         = var.llm_api_key
@@ -288,10 +293,15 @@ even if it later resolves to the previous value.
 
 For customer-managed models, `llm` and `embedding` must be configured together
 on create. Adding or removing both blocks requires replacement. Changing
-`llm.provider`, `embedding.provider`, or `embedding.model` also requires
-replacement. `llm.model` can be updated within the existing provider, and model
-credentials can be rotated without replacement by updating `credentials.api_key`
-and changing `credentials.api_key_version`.
+`llm[0].provider`, `embedding[0].provider`, or `embedding[0].model` also requires
+replacement. `llm[0].model` can be updated within the existing provider, and model
+credentials can be rotated without replacement by updating `credentials[0].api_key`
+and changing `credentials[0].api_key_version`.
+
+If the presence of `llm` or `embedding` is unknown, Terraform conservatively
+plans replacement. The same applies when an existing custom memory type's
+extraction strategy might be removed. Prefer block counts known during planning
+when an unnecessary replacement would be disruptive.
 
 A replacement destroys and recreates the store with a new store ID. It does not
 migrate the existing agent context to that new identity. Use
@@ -321,8 +331,8 @@ called. If a credential is missing or invalid, those data-plane operations can
 return an `Invalid Model Credentials` error.
 
 For `custom_memory_types`, the provider follows the Agent Memory API behavior:
-new custom memory types can be added in place, and `extraction_strategy.prompt`
-or `extraction_strategy.enabled` can be updated for existing custom memory
+new custom memory types can be added in place, and `extraction_strategy[0].prompt`
+or `extraction_strategy[0].enabled` can be updated for existing custom memory
 types. Removing an existing custom memory type, changing its description, or
 changing its fields, or removing its extraction strategy requires replacement of
 the entire Agent Memory service because the API cannot apply those changes in place.
@@ -391,12 +401,12 @@ $ terraform import rediscloud_agent_memory.example store-id
 ```
 
 For imported services with customer-managed models, the provider imports the
-model metadata returned by Redis Cloud, such as `llm.provider`, `llm.model`,
-`embedding.provider`, and `embedding.model`. Model provider credentials are not
+model metadata returned by Redis Cloud, such as `llm[0].provider`, `llm[0].model`,
+`embedding[0].provider`, and `embedding[0].model`. Model provider credentials are not
 returned by the Agent Memory API, so they are not populated during import.
 If the Terraform configuration includes `credentials` blocks after import, the
 first plan can show an in-place update to send those write-only credentials
 back to Redis Cloud. This is expected and does not replace the Agent Memory
 service. To rotate credentials after import, update the relevant
-`credentials.api_key` values and change their `credentials.api_key_version`
+`credentials[0].api_key` values and change their `credentials[0].api_key_version`
 values, then run `terraform apply`.

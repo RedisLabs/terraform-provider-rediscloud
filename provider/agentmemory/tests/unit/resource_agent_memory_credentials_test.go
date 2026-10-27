@@ -119,7 +119,7 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 						_, _ = w.Write([]byte(`{"storeId":"store-1","databaseId":"invalid"}`))
 						return
 					}
-					// This endpoint returns metadata only, as the real API does for model credentials.
+					// This endpoint returns metadata only, as the real API does for model credentials.0.
 					response := httptest.NewRecorder()
 					writeStoreResponseWithModelConfig(t, response, "credential-store", "gpt-4o-mini", "text-embedding-3-small")
 					var store map[string]any
@@ -229,7 +229,7 @@ func TestAgentMemoryWriteOnlyCredentialsValidation(t *testing.T) {
 		for _, tc := range []struct{ name, attributes, pattern string }{
 			{"missing version", `api_key="FAKE-WO"`, "Invalid Attribute Combination"},
 			{"missing key", `api_key_version=1`, "Invalid Attribute Combination"},
-			{"zero version", "api_key=\"FAKE-WO\"\napi_key_version=0", "at least 1"},
+			{"zero version", "api_key=\"FAKE-WO\"\napi_key_version=0", "at least\\s+1"},
 			{"blank key", "api_key=\"  \"\napi_key_version=1", "Missing Agent Memory model API key"},
 		} {
 			t.Run(block+"/"+tc.name, func(t *testing.T) {
@@ -259,7 +259,7 @@ func TestAgentMemoryWriteOnlyVersionUnknownInvalid(t *testing.T) {
 				cfg = strings.Replace(cfg, "api_key=\"FAKE-KNOWN\"\n   api_key_version = 1", "api_key=\"FAKE-KNOWN\"\n   api_key_version = "+tc.expression, 1)
 				resource.UnitTest(t, resource.TestCase{
 					ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-					Steps:                    []resource.TestStep{{Config: testProviderConfig(t, server.URL) + cfg, ExpectError: regexp.MustCompile("Invalid Attribute Combination|at least 1")}},
+					Steps:                    []resource.TestStep{{Config: testProviderConfig(t, server.URL) + cfg, ExpectError: regexp.MustCompile("Invalid Attribute Combination|at least\\s+1")}},
 				})
 				if requests.Load() != 0 {
 					t.Fatalf("invalid version reached the API: %d requests", requests.Load())

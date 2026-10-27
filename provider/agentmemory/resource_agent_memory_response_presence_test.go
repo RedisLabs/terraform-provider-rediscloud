@@ -31,12 +31,12 @@ func TestAgentMemoryReadResponsePresence(t *testing.T) {
 			require.Equal(t, tc.omitted, state.ShortTermTTLSeconds.IsNull())
 			require.Equal(t, tc.omitted, state.LongTermTTLSeconds.IsNull())
 			require.Equal(t, tc.omitted, state.ExtractionCadenceSeconds.IsNull())
-			require.Equal(t, tc.omitted, state.LongTermMemoryExclusions.Enabled.IsNull())
+			require.Equal(t, tc.omitted, mustExclusions(t, state.LongTermMemoryExclusions).Enabled.IsNull())
 			endpoint := state.Endpoints.Elements()[0].(types.Object)
 			require.Equal(t, tc.omitted, endpoint.Attributes()["is_accessible"].IsNull())
 			if !tc.omitted {
 				require.Zero(t, state.ShortTermTTLSeconds.ValueInt64())
-				require.False(t, state.LongTermMemoryExclusions.Enabled.ValueBool())
+				require.False(t, mustExclusions(t, state.LongTermMemoryExclusions).Enabled.ValueBool())
 				require.Equal(t, types.BoolValue(false), endpoint.Attributes()["is_accessible"])
 			}
 		})

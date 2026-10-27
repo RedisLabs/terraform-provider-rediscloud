@@ -212,7 +212,7 @@ func TestAgentMemoryUnknownCredentialTypeLifecycle(t *testing.T) {
 				return prefix + credentialTypeConfig(selector.block, selector.field, `split(":",tostring(terraform_data.selector.output))[0]`, fmt.Sprintf(`resource "terraform_data" "selector" { input=%q }`, selector.value+":"+suffix))
 			}
 			first, changed := config("before"), config("after")
-			check := resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", selector.block+".credentials."+selector.field, selector.value))
+			check := resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", selector.block+".0.credentials.0."+selector.field, selector.value))
 			// A configured credentials block requires its type on updates as well.
 			omitted := prefix + credentialTypeConfig(selector.block, selector.field, "OMIT_SELECTOR", fmt.Sprintf(`resource "terraform_data" "selector" { input=%q }`, selector.value+":after"))
 			steps := []resource.TestStep{

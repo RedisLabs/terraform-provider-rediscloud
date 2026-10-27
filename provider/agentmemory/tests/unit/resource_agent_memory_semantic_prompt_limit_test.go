@@ -97,7 +97,7 @@ func TestAgentMemorySemanticPromptLimitsByAPI(t *testing.T) {
 					if state.RootModule().Resources["rediscloud_agent_memory.example"].Primary.Tainted {
 						return fmt.Errorf("store tainted")
 					}
-					return resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.semantic.prompt", prompt))(state)
+					return resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.semantic.0.prompt", prompt))(state)
 				}
 			}
 			longPrompt := strings.Repeat("é", 2001)

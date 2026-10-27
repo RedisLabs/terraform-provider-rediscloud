@@ -22,10 +22,10 @@ func TestSummarizationOptionalChildOwnership(t *testing.T) {
 			name: "configured event count",
 			existing: &AgentMemorySummarizationModel{
 				Enabled: types.BoolValue(true),
-				EventCount: &AgentMemoryEventCountModel{
+				EventCount: mustEventCountList(t, &AgentMemoryEventCountModel{
 					Threshold:   types.Int64Value(10),
 					RetainCount: types.Int64Value(5),
-				},
+				}),
 			},
 			wantEventCount: true,
 		},
@@ -47,17 +47,17 @@ func TestSummarizationOptionalChildOwnership(t *testing.T) {
 					RetainCount: redis.Int(10),
 				},
 			}
-			model := summarizationToModel(config, tc.existing, tc.includeAPIOnlyConfig)
+			model := summarizationToModel(t.Context(), config, tc.existing, tc.includeAPIOnlyConfig, testAgentMemoryDiags(t))
 			require.NotNil(t, model)
 			require.Equal(t, types.BoolValue(true), model.Enabled)
 			require.Equal(t, types.StringValue("event_count"), model.TriggerStrategy)
 			if !tc.wantEventCount {
-				require.Nil(t, model.EventCount)
+				require.Nil(t, mustEventCount(t, model.EventCount))
 				return
 			}
-			require.NotNil(t, model.EventCount)
-			require.Equal(t, types.Int64Value(20), model.EventCount.Threshold)
-			require.Equal(t, types.Int64Value(10), model.EventCount.RetainCount)
+			require.NotNil(t, mustEventCount(t, model.EventCount))
+			require.Equal(t, types.Int64Value(20), mustEventCount(t, model.EventCount).Threshold)
+			require.Equal(t, types.Int64Value(10), mustEventCount(t, model.EventCount).RetainCount)
 		})
 	}
 }
@@ -92,30 +92,30 @@ func TestExclusionOptionalChildOwnership(t *testing.T) {
 			model := exclusionsToModel(t.Context(), optionalChildExclusionsAPI(true), tc.existing, tc.includeAPIOnlyConfig, testAgentMemoryDiags(t))
 			require.NotNil(t, model)
 			require.Equal(t, types.BoolValue(true), model.Enabled)
-			require.Equal(t, tc.wantSemantic, model.Semantic != nil)
-			require.Equal(t, tc.wantBuiltIn, model.BuiltInDetectors != nil)
-			require.Equal(t, tc.wantCustom, model.CustomDetectors != nil)
+			require.Equal(t, tc.wantSemantic, mustSemanticExclusion(t, model.Semantic) != nil)
+			require.Equal(t, tc.wantBuiltIn, mustBuiltInDetectors(t, model.BuiltInDetectors) != nil)
+			require.Equal(t, tc.wantCustom, mustCustomDetectors(t, model.CustomDetectors) != nil)
 			if tc.wantSemantic {
-				require.Equal(t, types.StringValue("API prompt"), model.Semantic.Prompt)
+				require.Equal(t, types.StringValue("API prompt"), mustSemanticExclusion(t, model.Semantic).Prompt)
 			}
 			if tc.wantBuiltIn {
-				require.Len(t, model.BuiltInDetectors.Detectors.Elements(), 1)
-				require.Equal(t, types.StringValue("email"), mustDetectorSelectionModels(t, model.BuiltInDetectors.Detectors)[0].ID)
+				require.Len(t, mustBuiltInDetectors(t, model.BuiltInDetectors).Detectors.Elements(), 1)
+				require.Equal(t, types.StringValue("email"), mustDetectorSelectionModels(t, mustBuiltInDetectors(t, model.BuiltInDetectors).Detectors)[0].ID)
 			}
 			if tc.wantCustom {
-				require.Len(t, model.CustomDetectors.Detectors.Elements(), 1)
-				detector := mustCustomDetectorModels(t, model.CustomDetectors.Detectors)[0]
+				require.Len(t, mustCustomDetectors(t, model.CustomDetectors).Detectors.Elements(), 1)
+				detector := mustCustomDetectorModels(t, mustCustomDetectors(t, model.CustomDetectors).Detectors)[0]
 				require.Equal(t, types.StringValue("ticket"), detector.Name)
-				require.NotNil(t, detector.Matcher)
-				require.NotNil(t, detector.Matcher.Regex)
-				require.Equal(t, types.StringValue("ticket+"), detector.Matcher.Regex.Pattern)
+				require.NotNil(t, mustMatcherSpec(t, detector.Matcher))
+				require.NotNil(t, mustRegexSpec(t, mustMatcherSpec(t, detector.Matcher).Regex))
+				require.Equal(t, types.StringValue("ticket+"), mustRegexSpec(t, mustMatcherSpec(t, detector.Matcher).Regex).Pattern)
 			}
 		})
 	}
 }
 
 func TestOptionalChildMappingPreservesDisabledDefinitions(t *testing.T) {
-	summarization := summarizationToModel(&agentmemoryapi.SummarizationConfig{
+	summarization := summarizationToModel(t.Context(), &agentmemoryapi.SummarizationConfig{
 		Enabled:         redis.Bool(false),
 		TriggerStrategy: redis.String("event_count"),
 		EventCount: &agentmemoryapi.SummarizationThresholdConfig{
@@ -124,33 +124,39 @@ func TestOptionalChildMappingPreservesDisabledDefinitions(t *testing.T) {
 	}, &AgentMemorySummarizationModel{
 		Enabled:         types.BoolValue(false),
 		TriggerStrategy: types.StringValue("event_count"),
-		EventCount: &AgentMemoryEventCountModel{
+		EventCount: mustEventCountList(t, &AgentMemoryEventCountModel{
 			Threshold: types.Int64Value(20), RetainCount: types.Int64Value(10),
-		},
-	}, false)
-	require.NotNil(t, summarization.EventCount)
+		}),
+	}, false, testAgentMemoryDiags(t))
+	require.NotNil(t, mustEventCount(t, summarization.EventCount))
 	require.Equal(t, types.StringValue("event_count"), summarization.TriggerStrategy)
-	require.Equal(t, types.Int64Value(20), summarization.EventCount.Threshold)
-	require.Equal(t, types.Int64Value(10), summarization.EventCount.RetainCount)
+	require.Equal(t, types.Int64Value(20), mustEventCount(t, summarization.EventCount).Threshold)
+	require.Equal(t, types.Int64Value(10), mustEventCount(t, summarization.EventCount).RetainCount)
 
 	existing := optionalChildExclusionsModel(t, true, true, true)
 	existing.Enabled = types.BoolValue(false)
-	existing.Semantic.Enabled = types.BoolValue(false)
-	existing.BuiltInDetectors.Enabled = types.BoolValue(false)
-	existing.CustomDetectors.Enabled = types.BoolValue(false)
+	semanticExclusion := mustSemanticExclusion(t, existing.Semantic)
+	semanticExclusion.Enabled = types.BoolValue(false)
+	existing.Semantic = mustSemanticExclusionList(t, semanticExclusion)
+	builtInDetectors := mustBuiltInDetectors(t, existing.BuiltInDetectors)
+	builtInDetectors.Enabled = types.BoolValue(false)
+	existing.BuiltInDetectors = mustBuiltInDetectorsList(t, builtInDetectors)
+	customDetectors := mustCustomDetectors(t, existing.CustomDetectors)
+	customDetectors.Enabled = types.BoolValue(false)
+	existing.CustomDetectors = mustCustomDetectorsList(t, customDetectors)
 	model := exclusionsToModel(t.Context(), optionalChildExclusionsAPI(false), existing, false, testAgentMemoryDiags(t))
 	require.Equal(t, types.BoolValue(false), model.Enabled)
-	require.NotNil(t, model.Semantic)
-	require.Equal(t, types.BoolValue(false), model.Semantic.Enabled)
-	require.Equal(t, types.StringValue("API prompt"), model.Semantic.Prompt)
-	require.NotNil(t, model.BuiltInDetectors)
-	require.Equal(t, types.BoolValue(false), model.BuiltInDetectors.Enabled)
-	require.Len(t, model.BuiltInDetectors.Detectors.Elements(), 1)
-	require.Equal(t, types.StringValue("email"), mustDetectorSelectionModels(t, model.BuiltInDetectors.Detectors)[0].ID)
-	require.NotNil(t, model.CustomDetectors)
-	require.Equal(t, types.BoolValue(false), model.CustomDetectors.Enabled)
-	require.Len(t, model.CustomDetectors.Detectors.Elements(), 1)
-	require.Equal(t, types.StringValue("ticket"), mustCustomDetectorModels(t, model.CustomDetectors.Detectors)[0].Name)
+	require.NotNil(t, mustSemanticExclusion(t, model.Semantic))
+	require.Equal(t, types.BoolValue(false), mustSemanticExclusion(t, model.Semantic).Enabled)
+	require.Equal(t, types.StringValue("API prompt"), mustSemanticExclusion(t, model.Semantic).Prompt)
+	require.NotNil(t, mustBuiltInDetectors(t, model.BuiltInDetectors))
+	require.Equal(t, types.BoolValue(false), mustBuiltInDetectors(t, model.BuiltInDetectors).Enabled)
+	require.Len(t, mustBuiltInDetectors(t, model.BuiltInDetectors).Detectors.Elements(), 1)
+	require.Equal(t, types.StringValue("email"), mustDetectorSelectionModels(t, mustBuiltInDetectors(t, model.BuiltInDetectors).Detectors)[0].ID)
+	require.NotNil(t, mustCustomDetectors(t, model.CustomDetectors))
+	require.Equal(t, types.BoolValue(false), mustCustomDetectors(t, model.CustomDetectors).Enabled)
+	require.Len(t, mustCustomDetectors(t, model.CustomDetectors).Detectors.Elements(), 1)
+	require.Equal(t, types.StringValue("ticket"), mustCustomDetectorModels(t, mustCustomDetectors(t, model.CustomDetectors).Detectors)[0].Name)
 }
 
 func TestOptionalChildMappingDoesNotInventMissingAPIChildren(t *testing.T) {
@@ -160,19 +166,19 @@ func TestOptionalChildMappingDoesNotInventMissingAPIChildren(t *testing.T) {
 			name = "import"
 		}
 		t.Run(name, func(t *testing.T) {
-			existing := &AgentMemorySummarizationModel{EventCount: &AgentMemoryEventCountModel{Threshold: types.Int64Value(20), RetainCount: types.Int64Value(10)}}
-			require.Nil(t, summarizationToModel(nil, existing, importing))
-			summarization := summarizationToModel(&agentmemoryapi.SummarizationConfig{Enabled: redis.Bool(true)}, existing, importing)
+			existing := &AgentMemorySummarizationModel{EventCount: mustEventCountList(t, &AgentMemoryEventCountModel{Threshold: types.Int64Value(20), RetainCount: types.Int64Value(10)})}
+			require.Nil(t, summarizationToModel(t.Context(), nil, existing, importing, testAgentMemoryDiags(t)))
+			summarization := summarizationToModel(t.Context(), &agentmemoryapi.SummarizationConfig{Enabled: redis.Bool(true)}, existing, importing, testAgentMemoryDiags(t))
 			require.NotNil(t, summarization)
-			require.Nil(t, summarization.EventCount)
+			require.Nil(t, mustEventCount(t, summarization.EventCount))
 
 			exclusions := optionalChildExclusionsModel(t, true, true, true)
 			require.Nil(t, exclusionsToModel(t.Context(), nil, exclusions, importing, testAgentMemoryDiags(t)))
 			model := exclusionsToModel(t.Context(), &agentmemoryapi.LongTermMemoryExclusions{Enabled: redis.Bool(true)}, exclusions, importing, testAgentMemoryDiags(t))
 			require.NotNil(t, model)
-			require.Nil(t, model.Semantic)
-			require.Nil(t, model.BuiltInDetectors)
-			require.Nil(t, model.CustomDetectors)
+			require.Nil(t, mustSemanticExclusion(t, model.Semantic))
+			require.Nil(t, mustBuiltInDetectors(t, model.BuiltInDetectors))
+			require.Nil(t, mustCustomDetectors(t, model.CustomDetectors))
 		})
 	}
 }
@@ -180,13 +186,13 @@ func TestOptionalChildMappingDoesNotInventMissingAPIChildren(t *testing.T) {
 func optionalChildExclusionsModel(t *testing.T, semantic, builtIn, custom bool) *AgentMemoryExclusionsModel {
 	model := &AgentMemoryExclusionsModel{Enabled: types.BoolValue(true)}
 	if semantic {
-		model.Semantic = &AgentMemorySemanticExclusionModel{Enabled: types.BoolValue(true), Prompt: types.StringValue("Configured prompt")}
+		model.Semantic = mustSemanticExclusionList(t, &AgentMemorySemanticExclusionModel{Enabled: types.BoolValue(true), Prompt: types.StringValue("Configured prompt")})
 	}
 	if builtIn {
-		model.BuiltInDetectors = &AgentMemoryBuiltInDetectorsModel{Enabled: types.BoolValue(true), Detectors: mustDetectorSelectionList(t, []AgentMemoryDetectorSelectionModel{{ID: types.StringValue("email")}})}
+		model.BuiltInDetectors = mustBuiltInDetectorsList(t, &AgentMemoryBuiltInDetectorsModel{Enabled: types.BoolValue(true), Detectors: mustDetectorSelectionList(t, []AgentMemoryDetectorSelectionModel{{ID: types.StringValue("email")}})})
 	}
 	if custom {
-		model.CustomDetectors = &AgentMemoryCustomDetectorsModel{Enabled: types.BoolValue(true), Detectors: mustCustomDetectorList(t, []AgentMemoryCustomDetectorModel{{Name: types.StringValue("ticket")}})}
+		model.CustomDetectors = mustCustomDetectorsList(t, &AgentMemoryCustomDetectorsModel{Enabled: types.BoolValue(true), Detectors: mustCustomDetectorList(t, []AgentMemoryCustomDetectorModel{{Name: types.StringValue("ticket")}})})
 	}
 	return model
 }

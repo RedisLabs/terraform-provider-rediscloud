@@ -56,17 +56,17 @@ func TestAgentMemoryCreateRecoveryState(t *testing.T) {
 				var schema resource.SchemaResponse
 				r.Schema(ctx, resource.SchemaRequest{}, &schema)
 				model := AgentMemoryResourceModel{ID: types.StringUnknown(), Name: types.StringValue("recovery-store"), DatabaseID: types.Int64Value(123), ShortTermTTLSeconds: types.Int64Value(86400), LongTermTTLSeconds: types.Int64Value(31536000), ExtractionStrategy: types.StringValue("INSTRUCT"), ExtractionCadenceSeconds: types.Int64Value(300), Endpoint: types.StringUnknown(), Endpoints: types.ListUnknown(agentMemoryEndpointObjectType()), Status: types.StringUnknown(), CreatedAt: types.StringUnknown()}
-				model.Timeouts = timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(timeouts.Type).AttrTypes)}
+				model.Timeouts = testMemoryTimeoutsList(t, timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(MemoryTimeoutsListType).ElemType.(timeouts.Type).AttrTypes)})
 				if !unknownComputed {
-					model.LLM = &AgentMemoryModelConfigModel{Provider: types.StringValue("fake-provider"), Model: types.StringValue("fake-model"), Credentials: &AgentMemoryModelCredentialsModel{Type: types.StringValue("apiKey"), APIKey: types.StringValue("FAKE-MODEL-SECRET"), APIKeyVersion: types.Int64Value(1)}}
-					model.Embedding = &AgentMemoryModelConfigModel{Provider: types.StringValue("fake-provider"), Model: types.StringValue("fake-model"), Credentials: &AgentMemoryModelCredentialsModel{Type: types.StringValue("apiKey"), APIKey: types.StringValue("FAKE-MODEL-SECRET"), APIKeyVersion: types.Int64Value(1)}}
+					model.LLM = mustModelConfigList(t, &AgentMemoryModelConfigModel{Provider: types.StringValue("fake-provider"), Model: types.StringValue("fake-model"), Credentials: mustModelCredentialsList(t, &AgentMemoryModelCredentialsModel{Type: types.StringValue("apiKey"), APIKey: types.StringValue("FAKE-MODEL-SECRET"), APIKeyVersion: types.Int64Value(1)})})
+					model.Embedding = mustModelConfigList(t, &AgentMemoryModelConfigModel{Provider: types.StringValue("fake-provider"), Model: types.StringValue("fake-model"), Credentials: mustModelCredentialsList(t, &AgentMemoryModelCredentialsModel{Type: types.StringValue("apiKey"), APIKey: types.StringValue("FAKE-MODEL-SECRET"), APIKeyVersion: types.Int64Value(1)})})
 				}
 				if unknownComputed {
 					model.ShortTermTTLSeconds = types.Int64Unknown()
 					model.LongTermTTLSeconds = types.Int64Unknown()
 					model.ExtractionStrategy = types.StringUnknown()
 					model.ExtractionCadenceSeconds = types.Int64Unknown()
-					model.Summarization = &AgentMemorySummarizationModel{Enabled: types.BoolValue(true), TriggerStrategy: types.StringUnknown()}
+					model.Summarization = mustSummarizationList(t, &AgentMemorySummarizationModel{Enabled: types.BoolValue(true), TriggerStrategy: types.StringUnknown()})
 				}
 				plan := tfsdk.Plan{Schema: schema.Schema}
 				if diags := plan.Set(ctx, &model); diags.HasError() {
@@ -74,8 +74,13 @@ func TestAgentMemoryCreateRecoveryState(t *testing.T) {
 				}
 				config := tfsdk.Config{Schema: schema.Schema, Raw: plan.Raw}
 				if !unknownComputed {
-					model.LLM.Credentials.APIKey = types.StringNull()
-					model.Embedding.Credentials.APIKey = types.StringNull()
+					for _, list := range []*ModelConfigListValue{&model.LLM, &model.Embedding} {
+						cfg := mustModelConfig(t, *list)
+						creds := mustModelCredentials(t, cfg.Credentials)
+						creds.APIKey = types.StringNull()
+						cfg.Credentials = mustModelCredentialsList(t, creds)
+						*list = mustModelConfigList(t, cfg)
+					}
 					if diags := plan.Set(ctx, &model); diags.HasError() {
 						t.Fatal(diags)
 					}
@@ -105,14 +110,24 @@ func TestAgentMemoryCreateRecoveryState(t *testing.T) {
 					if !recovered.ShortTermTTLSeconds.IsNull() || !recovered.LongTermTTLSeconds.IsNull() {
 						t.Fatal("unresolved TTLs were not null")
 					}
-					if recovered.Summarization == nil || !recovered.Summarization.Enabled.ValueBool() || !recovered.Summarization.TriggerStrategy.IsNull() {
+					summary := mustSummarization(t, recovered.Summarization)
+					if summary == nil || !summary.Enabled.ValueBool() || !summary.TriggerStrategy.IsNull() {
 						t.Fatal("nested recovery lost known enabled or retained unknown strategy")
 					}
 				} else if recovered.ShortTermTTLSeconds.ValueInt64() != 86400 || recovered.LongTermTTLSeconds.ValueInt64() != 31536000 {
 					t.Fatal("known TTL inputs were not preserved")
 				}
-				if !unknownComputed && (recovered.LLM == nil || recovered.LLM.Credentials == nil || !recovered.LLM.Credentials.APIKey.IsNull() || recovered.LLM.Credentials.APIKeyVersion.ValueInt64() != 1 || recovered.Embedding == nil || recovered.Embedding.Credentials == nil || !recovered.Embedding.Credentials.APIKey.IsNull() || recovered.Embedding.Credentials.APIKeyVersion.ValueInt64() != 1) {
-					t.Fatal("rotation version was lost or a write-only secret entered state")
+				if !unknownComputed {
+					for _, list := range []ModelConfigListValue{recovered.LLM, recovered.Embedding} {
+						cfg := mustModelConfig(t, list)
+						if cfg == nil {
+							t.Fatal("missing recovered model")
+						}
+						creds := mustModelCredentials(t, cfg.Credentials)
+						if creds == nil || !creds.APIKey.IsNull() || creds.APIKeyVersion.ValueInt64() != 1 {
+							t.Fatal("rotation version was lost or a write-only secret entered state")
+						}
+					}
 				}
 			})
 		}
@@ -135,7 +150,7 @@ func TestAgentMemoryCreateRejectedHasNoRecoveryID(t *testing.T) {
 	r.Schema(ctx, resource.SchemaRequest{}, &schema)
 	plan := tfsdk.Plan{Schema: schema.Schema}
 	model := AgentMemoryResourceModel{Name: types.StringValue("rejected-store"), DatabaseID: types.Int64Value(123), Endpoints: types.ListNull(agentMemoryEndpointObjectType())}
-	model.Timeouts = timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(timeouts.Type).AttrTypes)}
+	model.Timeouts = testMemoryTimeoutsList(t, timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(MemoryTimeoutsListType).ElemType.(timeouts.Type).AttrTypes)})
 	if diags := plan.Set(ctx, &model); diags.HasError() {
 		t.Fatal(diags)
 	}

@@ -57,7 +57,7 @@ func TestAgentMemoryReadResponseIdentity(t *testing.T) {
 				var schema resource.SchemaResponse
 				r.Schema(ctx, resource.SchemaRequest{}, &schema)
 				model := AgentMemoryResourceModel{ID: types.StringValue("store-1"), Name: types.StringValue("identity-store"), DatabaseID: types.Int64Value(123), Endpoints: types.ListNull(agentMemoryEndpointObjectType())}
-				model.Timeouts = timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(timeouts.Type).AttrTypes)}
+				model.Timeouts = testMemoryTimeoutsList(t, timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(MemoryTimeoutsListType).ElemType.(timeouts.Type).AttrTypes)})
 				prior := tfsdk.State{Schema: schema.Schema}
 				if diags := prior.Set(ctx, &model); diags.HasError() {
 					t.Fatal(diags)

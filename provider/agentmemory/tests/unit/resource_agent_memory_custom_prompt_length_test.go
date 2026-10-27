@@ -120,7 +120,7 @@ func TestAgentMemoryCustomPromptLimitsByAPI(t *testing.T) {
 					if state.RootModule().Resources["rediscloud_agent_memory.example"].Primary.Tainted {
 						return fmt.Errorf("store tainted")
 					}
-					return resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.prompt", prompt))(state)
+					return resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.0.prompt", prompt))(state)
 				}
 			}
 			longPrompt := strings.Repeat("é", 10001)

@@ -21,7 +21,7 @@ func TestModelConfigRequestStringPresence(t *testing.T) {
 		{"configured", types.StringValue("configured-value"), true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			request := modelConfigFromModel(&AgentMemoryModelConfigModel{Provider: tc.value, Model: tc.value, Credentials: &AgentMemoryModelCredentialsModel{Type: tc.value}})
+			request := modelConfigFromModel(t.Context(), &AgentMemoryModelConfigModel{Provider: tc.value, Model: tc.value, Credentials: mustModelCredentialsList(t, &AgentMemoryModelCredentialsModel{Type: tc.value})}, testAgentMemoryDiags(t))
 			encoded, err := json.Marshal(request)
 			require.NoError(t, err)
 			var body map[string]any
@@ -57,9 +57,9 @@ func TestCustomMemoryTypeUpdatePromptPresence(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			state := customMemoryTypeModel(t, "preference", nil)
-			state.ExtractionStrategy = &AgentMemoryCustomExtractionStrategy{Prompt: types.StringValue("initial prompt"), Enabled: types.BoolValue(true)}
+			state.ExtractionStrategy = mustCustomExtractionStrategyList(t, &AgentMemoryCustomExtractionStrategy{Prompt: types.StringValue("initial prompt"), Enabled: types.BoolValue(true)})
 			plan := state
-			plan.ExtractionStrategy = &AgentMemoryCustomExtractionStrategy{Prompt: tc.prompt, Enabled: types.BoolValue(false)}
+			plan.ExtractionStrategy = mustCustomExtractionStrategyList(t, &AgentMemoryCustomExtractionStrategy{Prompt: tc.prompt, Enabled: types.BoolValue(false)})
 			added, updates := customMemoryTypeUpdatesFromPlan(t.Context(), mustCustomMemoryTypeList(t, []AgentMemoryCustomMemoryTypeModel{plan}), mustCustomMemoryTypeList(t, []AgentMemoryCustomMemoryTypeModel{state}), testAgentMemoryDiags(t))
 			require.Empty(t, added)
 			require.Len(t, updates, 1)

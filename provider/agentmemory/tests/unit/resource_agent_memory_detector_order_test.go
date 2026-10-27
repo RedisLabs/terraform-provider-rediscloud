@@ -121,7 +121,7 @@ func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
 					if creates != 1 || deletes != expectedDeletes {
 						return fmt.Errorf("store was replaced")
 					}
-					prefix := "long_term_memory_exclusions." + group + ".detectors"
+					prefix := "long_term_memory_exclusions.0." + group + ".0.detectors"
 					checks := []resource.TestCheckFunc{resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", prefix+".#", fmt.Sprint(len(values)))}
 					for i, name := range values {
 						checks = append(checks, resource.TestCheckResourceAttr("rediscloud_agent_memory.example", fmt.Sprintf("%s.%d.%s", prefix, i, identity), name), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", fmt.Sprintf("%s.%d.action", prefix, i), action))
@@ -160,7 +160,7 @@ func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
 						return fmt.Errorf("unexpected imported resource count")
 					}
 					for i := range names[:2] {
-						attribute := fmt.Sprintf("long_term_memory_exclusions.%s.detectors.%d.%s", group, i, identity)
+						attribute := fmt.Sprintf("long_term_memory_exclusions.0.%s.0.detectors.%d.%s", group, i, identity)
 						value := states[0].Attributes[attribute]
 						if value == "" {
 							return fmt.Errorf("import omitted detector identity")

@@ -98,7 +98,7 @@ func TestAgentMemoryEventCountLimitsByAPI(t *testing.T) {
 					if state.RootModule().Resources["rediscloud_agent_memory.example"].Primary.Tainted {
 						return fmt.Errorf("store tainted")
 					}
-					return resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.event_count.threshold", fmt.Sprint(threshold)), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.event_count.retain_count", fmt.Sprint(retain)))(state)
+					return resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.threshold", fmt.Sprint(threshold)), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.retain_count", fmt.Sprint(retain)))(state)
 				}
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{

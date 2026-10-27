@@ -9,7 +9,7 @@ import (
 )
 
 func TestCustomTypeUnknownNameValidation(t *testing.T) {
-	existing := AgentMemoryCustomMemoryTypeModel{Name: types.StringValue("preference"), Description: types.StringValue("Preferences"), ExtractionStrategy: &AgentMemoryCustomExtractionStrategy{Prompt: types.StringValue("Extract preferences"), Enabled: types.BoolValue(true)}}
+	existing := AgentMemoryCustomMemoryTypeModel{Name: types.StringValue("preference"), Description: types.StringValue("Preferences"), ExtractionStrategy: mustCustomExtractionStrategyList(t, &AgentMemoryCustomExtractionStrategy{Prompt: types.StringValue("Extract preferences"), Enabled: types.BoolValue(true)})}
 	unknown := existing
 	unknown.Name = types.StringUnknown()
 	renamed := existing
@@ -17,7 +17,7 @@ func TestCustomTypeUnknownNameValidation(t *testing.T) {
 	redefined := existing
 	redefined.Description = types.StringValue("Changed definition")
 	withoutStrategy := existing
-	withoutStrategy.ExtractionStrategy = nil
+	withoutStrategy.ExtractionStrategy = CustomExtractionStrategyListValue{}
 	for _, c := range []struct {
 		name         string
 		planned      []AgentMemoryCustomMemoryTypeModel

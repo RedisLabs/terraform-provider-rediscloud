@@ -23,10 +23,10 @@ func TestValidateCustomMemoryTypesPlanReplacesStrategyRemoval(t *testing.T) {
 						Description: types.StringValue("capture the field"),
 					},
 				}),
-				ExtractionStrategy: &AgentMemoryCustomExtractionStrategy{
+				ExtractionStrategy: mustCustomExtractionStrategyList(t, &AgentMemoryCustomExtractionStrategy{
 					Enabled: enabled,
 					Prompt:  types.StringValue("test"),
-				},
+				}),
 			},
 		}),
 	}

@@ -11,7 +11,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
 
-func TestAgentMemoryTimeoutsAcceptExistingState(t *testing.T) {
+func TestAgentMemoryStateWithoutTimeouts(t *testing.T) {
 	for _, kind := range []string{"rediscloud_agent_memory", "rediscloud_agent_memory_api_key"} {
 		t.Run(kind, func(t *testing.T) {
 			server, err := testhelpers.ProtoV5ProviderFactories()["rediscloud"]()
@@ -27,7 +27,7 @@ func TestAgentMemoryTimeoutsAcceptExistingState(t *testing.T) {
 			if kind == "rediscloud_agent_memory_api_key" {
 				prior = map[string]any{"id": "key-1", "store_id": "store-1", "name": "runtime", "api_key": "FAKE-EXISTING-SECRET"}
 			}
-			// Version-zero state from before this change contains no timeouts attribute.
+			// Omitted optional blocks decode as empty lists without changing resource identity.
 			raw, err := json.Marshal(prior)
 			if err != nil {
 				t.Fatal(err)
@@ -52,8 +52,13 @@ func TestAgentMemoryTimeoutsAcceptExistingState(t *testing.T) {
 			if err := value.As(&attrs); err != nil {
 				t.Fatal(err)
 			}
-			if timeout, ok := attrs["timeouts"]; !ok || !timeout.IsNull() {
-				t.Error("existing state did not acquire an absent optional timeout block")
+			timeout, ok := attrs["timeouts"]
+			if !ok {
+				t.Fatal("timeouts missing from schema")
+			}
+			var blocks []tftypes.Value
+			if err := timeout.As(&blocks); err != nil || len(blocks) != 0 {
+				t.Error("omitted timeouts must decode as an empty block list")
 			}
 			for _, field := range []string{"id", "name", "store_id", "api_key"} {
 				if expected, ok := prior[field]; ok {
