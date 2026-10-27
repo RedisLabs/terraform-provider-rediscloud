@@ -170,7 +170,7 @@ jobs:
   testacc-agent-memory:
     name: Acceptance Tests (Agent Memory)
     needs: [pre-test, detect-changes]
-    if: needs.detect-changes.outputs.agent_memory == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.agent_memory == 'true'
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: '^TestAccResourceRedisCloudAgentMemory_'
