@@ -1,3 +1,7 @@
+terraform {
+  required_version = ">= 1.11.1"
+}
+
 variable "llm_model" { type = string }
 variable "embedding_model" { type = string }
 variable "key_version" {
@@ -7,10 +11,12 @@ variable "key_version" {
 variable "llm_api_key" {
   type      = string
   sensitive = true
+  ephemeral = true
 }
 variable "embedding_api_key" {
   type      = string
   sensitive = true
+  ephemeral = true
 }
 
 resource "rediscloud_agent_memory" "test" {
