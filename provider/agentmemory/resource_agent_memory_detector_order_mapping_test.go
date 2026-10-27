@@ -117,11 +117,11 @@ func TestOrderDetectorSelectionsLikeExisting(t *testing.T) {
 }
 
 func TestOrderCustomDetectorsLikeExisting(t *testing.T) {
-	priorAccount := detectorOrderCustomModel("account", true, "redact", "ACCT-[0-9]+")
-	priorTenant := detectorOrderCustomModel("tenant", false, "redact", "TENANT-[0-9]+")
-	apiAccount := detectorOrderCustomModel("account", false, "drop", "ACCOUNT-[0-9]+")
-	apiTenant := detectorOrderCustomModel("tenant", true, "mask", "TENANT-[A-Z]+")
-	apiProject := detectorOrderCustomModel("project", true, "drop", "PROJECT-[0-9]+")
+	priorAccount := detectorOrderCustomModel(t, "account", true, "redact", "ACCT-[0-9]+")
+	priorTenant := detectorOrderCustomModel(t, "tenant", false, "redact", "TENANT-[0-9]+")
+	apiAccount := detectorOrderCustomModel(t, "account", false, "drop", "ACCOUNT-[0-9]+")
+	apiTenant := detectorOrderCustomModel(t, "tenant", true, "mask", "TENANT-[A-Z]+")
+	apiProject := detectorOrderCustomModel(t, "project", true, "drop", "PROJECT-[0-9]+")
 	unknownName, nullName, blankName := apiAccount, apiAccount, apiAccount
 	unknownName.Name = types.StringUnknown()
 	nullName.Name = types.StringNull()
@@ -224,16 +224,16 @@ func TestOrderCustomDetectorsLikeExisting(t *testing.T) {
 	}
 }
 
-func detectorOrderCustomModel(name string, enabled bool, action, pattern string) AgentMemoryCustomDetectorModel {
+func detectorOrderCustomModel(t *testing.T, name string, enabled bool, action, pattern string) AgentMemoryCustomDetectorModel {
 	return AgentMemoryCustomDetectorModel{
 		Name:    types.StringValue(name),
 		Enabled: types.BoolValue(enabled),
 		Action:  types.StringValue(action),
-		Matcher: &AgentMemoryMatcherSpecModel{
+		Matcher: mustMatcherSpecList(t, &AgentMemoryMatcherSpecModel{
 			Kind: types.StringValue("regex"),
-			Regex: &AgentMemoryRegexSpecModel{
+			Regex: mustRegexSpecList(t, &AgentMemoryRegexSpecModel{
 				Pattern: types.StringValue(pattern),
-			},
-		},
+			}),
+		}),
 	}
 }

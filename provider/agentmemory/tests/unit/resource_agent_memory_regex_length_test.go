@@ -106,7 +106,7 @@ func TestAgentMemoryRegexPatternLimitsByAPI(t *testing.T) {
 					if state.RootModule().Resources["rediscloud_agent_memory.example"].Primary.Tainted {
 						return fmt.Errorf("store tainted")
 					}
-					return resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.custom_detectors.detectors.0.matcher.regex.pattern", pattern))(state)
+					return resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.detectors.0.matcher.0.regex.0.pattern", pattern))(state)
 				}
 			}
 			longPattern := strings.Repeat("é", 513)

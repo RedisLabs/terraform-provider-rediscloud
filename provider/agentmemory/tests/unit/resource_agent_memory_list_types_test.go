@@ -22,6 +22,19 @@ func TestAgentMemoryListTypesPreserveValues(t *testing.T) {
 		agentmemory.NewCustomFieldListType(),
 		agentmemory.NewDetectorSelectionListType(),
 		agentmemory.NewCustomDetectorListType(),
+		agentmemory.NewModelConfigListType(),
+		agentmemory.NewModelCredentialsListType(),
+		agentmemory.NewSummarizationListType(),
+		agentmemory.NewEventCountListType(),
+		agentmemory.NewExclusionsListType(),
+		agentmemory.NewSemanticExclusionListType(),
+		agentmemory.NewBuiltInDetectorsListType(),
+		agentmemory.NewCustomDetectorsListType(),
+		agentmemory.NewMatcherSpecListType(),
+		agentmemory.NewRegexSpecListType(),
+		agentmemory.NewCustomExtractionStrategyListType(),
+		agentmemory.NewMemoryTimeoutsListType(),
+		agentmemory.NewAPIKeyTimeoutsListType(),
 	} {
 		t.Run(typ.String(), func(t *testing.T) {
 			ctx := t.Context()
@@ -75,27 +88,32 @@ func TestAgentMemoryListTypesDecodeModels(t *testing.T) {
 	require.False(t, diags.HasError(), diags.Errors())
 	require.Len(t, selectionModels, 1)
 	assert.Equal(t, "email", selectionModels[0].ID.ValueString())
-	detectors, diags := agentmemory.NewCustomDetectorList(ctx, []agentmemory.AgentMemoryCustomDetectorModel{{Name: types.StringValue("ticket"), Enabled: types.BoolValue(true), Matcher: &agentmemory.AgentMemoryMatcherSpecModel{Kind: types.StringValue("regex"), Regex: &agentmemory.AgentMemoryRegexSpecModel{Pattern: types.StringValue("ticket-[0-9]+")}}}})
+	regex, diags := agentmemory.NewRegexSpecList(ctx, []agentmemory.AgentMemoryRegexSpecModel{{Pattern: types.StringValue("ticket-[0-9]+")}})
+	require.False(t, diags.HasError(), diags.Errors())
+	matcher, diags := agentmemory.NewMatcherSpecList(ctx, []agentmemory.AgentMemoryMatcherSpecModel{{Kind: types.StringValue("regex"), Regex: regex}})
+	require.False(t, diags.HasError(), diags.Errors())
+	detectors, diags := agentmemory.NewCustomDetectorList(ctx, []agentmemory.AgentMemoryCustomDetectorModel{{Name: types.StringValue("ticket"), Enabled: types.BoolValue(true), Matcher: matcher}})
 	require.False(t, diags.HasError(), diags.Errors())
 	detectorModels, diags := detectors.AsModels(ctx)
 	require.False(t, diags.HasError(), diags.Errors())
 	require.Len(t, detectorModels, 1)
-	assert.Equal(t, "ticket-[0-9]+", detectorModels[0].Matcher.Regex.Pattern.ValueString())
+	matchers, diags := detectorModels[0].Matcher.AsModels(ctx)
+	require.False(t, diags.HasError(), diags.Errors())
+	require.Len(t, matchers, 1)
+	regexes, diags := matchers[0].Regex.AsModels(ctx)
+	require.False(t, diags.HasError(), diags.Errors())
+	require.Len(t, regexes, 1)
+	assert.Equal(t, "ticket-[0-9]+", regexes[0].Pattern.ValueString())
 }
 
 func TestAgentMemoryListTypesMatchNestedSchemas(t *testing.T) {
 	var response resource.SchemaResponse
 	agentmemory.NewAgentMemoryResource().Schema(t.Context(), resource.SchemaRequest{}, &response)
 	require.False(t, response.Diagnostics.HasError(), response.Diagnostics.Errors())
-	memoryTypes := response.Schema.Blocks["custom_memory_types"].(schema.ListNestedBlock)
-	fields := memoryTypes.NestedObject.Blocks["fields"].(schema.ListNestedBlock)
-	exclusions := response.Schema.Blocks["long_term_memory_exclusions"].(schema.SingleNestedBlock)
-	builtIn := exclusions.Blocks["built_in_detectors"].(schema.SingleNestedBlock).Blocks["detectors"].(schema.ListNestedBlock)
-	custom := exclusions.Blocks["custom_detectors"].(schema.SingleNestedBlock).Blocks["detectors"].(schema.ListNestedBlock)
-	for _, block := range []schema.ListNestedBlock{memoryTypes, fields, builtIn, custom} {
-		typ := block.CustomType
-		assert.True(t, typ.(attr.TypeWithElementType).ElementType().Equal(block.NestedObject.Type()), typ.String())
-	}
+	assertAgentMemoryBlockTypes(t, response.Schema.Blocks)
+	var keySchema resource.SchemaResponse
+	agentmemory.NewAgentMemoryAPIKeyResource().Schema(t.Context(), resource.SchemaRequest{}, &keySchema)
+	assertAgentMemoryBlockTypes(t, keySchema.Schema.Blocks)
 }
 
 func TestAgentMemoryUnknownListsDecodePlan(t *testing.T) {
@@ -106,6 +124,21 @@ func TestAgentMemoryUnknownListsDecodePlan(t *testing.T) {
 	typ := response.Schema.Type().TerraformType(ctx)
 	for _, path := range [][]string{
 		{"custom_memory_types"},
+		{"llm"},
+		{"embedding"},
+		{"llm", "credentials"},
+		{"embedding", "credentials"},
+		{"summarization"},
+		{"summarization", "event_count"},
+		{"long_term_memory_exclusions"},
+		{"long_term_memory_exclusions", "semantic"},
+		{"long_term_memory_exclusions", "built_in_detectors"},
+		{"long_term_memory_exclusions", "custom_detectors"},
+		{"long_term_memory_exclusions", "custom_detectors", "detectors", "matcher"},
+		{"long_term_memory_exclusions", "custom_detectors", "detectors", "matcher", "regex"},
+		{"custom_memory_types", "extraction_strategy"},
+		{"timeouts"},
+
 		{"custom_memory_types", "fields"},
 		{"long_term_memory_exclusions", "built_in_detectors", "detectors"},
 		{"long_term_memory_exclusions", "custom_detectors", "detectors"},
@@ -133,7 +166,7 @@ func TestAgentMemoryUnknownListsDecodePlan(t *testing.T) {
 }
 
 func TestAgentMemoryZeroListValuesAreTypedNull(t *testing.T) {
-	for _, value := range []attr.Value{agentmemory.CustomMemoryTypeListValue{}, agentmemory.CustomFieldListValue{}, agentmemory.DetectorSelectionListValue{}, agentmemory.CustomDetectorListValue{}} {
+	for _, value := range []attr.Value{agentmemory.CustomMemoryTypeListValue{}, agentmemory.CustomFieldListValue{}, agentmemory.DetectorSelectionListValue{}, agentmemory.CustomDetectorListValue{}, agentmemory.ModelConfigListValue{}, agentmemory.ModelCredentialsListValue{}, agentmemory.SummarizationListValue{}, agentmemory.EventCountListValue{}, agentmemory.ExclusionsListValue{}, agentmemory.SemanticExclusionListValue{}, agentmemory.BuiltInDetectorsListValue{}, agentmemory.CustomDetectorsListValue{}, agentmemory.MatcherSpecListValue{}, agentmemory.RegexSpecListValue{}, agentmemory.CustomExtractionStrategyListValue{}, agentmemory.MemoryTimeoutsListValue{}, agentmemory.APIKeyTimeoutsListValue{}} {
 		raw, err := value.ToTerraformValue(t.Context())
 		require.NoError(t, err)
 		assert.True(t, raw.IsNull())
@@ -156,4 +189,17 @@ func listValueAtPath(typ tftypes.Type, path []string, value any) tftypes.Value {
 		}
 	}
 	return tftypes.NewValue(typ, values)
+}
+
+func assertAgentMemoryBlockTypes(t *testing.T, blocks map[string]schema.Block) {
+	t.Helper()
+	for name, block := range blocks {
+		t.Run(name, func(t *testing.T) {
+			list, ok := block.(schema.ListNestedBlock)
+			require.True(t, ok, "configurable blocks must preserve unknown presence as lists")
+			require.NotNil(t, list.CustomType)
+			assert.True(t, list.CustomType.(attr.TypeWithElementType).ElementType().Equal(list.NestedObject.Type()), list.CustomType.String())
+			assertAgentMemoryBlockTypes(t, list.NestedObject.Blocks)
+		})
+	}
 }

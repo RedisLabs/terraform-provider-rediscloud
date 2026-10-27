@@ -135,8 +135,8 @@ resource "rediscloud_agent_memory" "example" {
 				if len(states) != 1 {
 					return fmt.Errorf("unexpected imported resource count")
 				}
-				for _, group := range []string{"semantic.prompt", "built_in_detectors.detectors.0.id", "custom_detectors.detectors.0.name"} {
-					if states[0].Attributes["long_term_memory_exclusions."+group] == "" {
+				for _, group := range []string{"semantic.0.prompt", "built_in_detectors.0.detectors.0.id", "custom_detectors.0.detectors.0.name"} {
+					if states[0].Attributes["long_term_memory_exclusions.0."+group] == "" {
 						return fmt.Errorf("import omitted stored group %s", group)
 					}
 				}

@@ -74,7 +74,7 @@ resource "rediscloud_agent_memory" "example" {
 			check := resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1")
 			if configured {
 				config = strings.Replace(config, "database_id = 123", "database_id = 123\ntimeouts {\ncreate=\"7m\"\nread=\"7m\"\nupdate=\"7m\"\ndelete=\"7m\"\n}", 1)
-				check = resource.ComposeTestCheckFunc(check, resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "timeouts.create", "7m"))
+				check = resource.ComposeTestCheckFunc(check, resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "timeouts.0.create", "7m"))
 			}
 			resource.UnitTest(t, resource.TestCase{
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),

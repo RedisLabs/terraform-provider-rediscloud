@@ -68,7 +68,7 @@ func TestAgentMemoryUnknownListsLifecycle(t *testing.T) {
 				action = plancheck.ResourceActionDestroyBeforeCreate
 			}
 			check := func(count string) resource.TestCheckFunc {
-				attr := map[string]string{"memory_types": "custom_memory_types.#", "fields": "custom_memory_types.0.fields.#", "built_in": "long_term_memory_exclusions.built_in_detectors.detectors.#", "custom": "long_term_memory_exclusions.custom_detectors.detectors.#"}[kind]
+				attr := map[string]string{"memory_types": "custom_memory_types.#", "fields": "custom_memory_types.0.fields.#", "built_in": "long_term_memory_exclusions.0.built_in_detectors.0.detectors.#", "custom": "long_term_memory_exclusions.0.custom_detectors.0.detectors.#"}[kind]
 				return resource.TestCheckResourceAttr("rediscloud_agent_memory.example", attr, count)
 			}
 			resource.UnitTest(t, resource.TestCase{
@@ -130,7 +130,7 @@ func TestAgentMemoryUnknownListsResolveInvalid(t *testing.T) {
 	}{
 		{"memory_types", []config.Variable{config.StringVariable("duplicate"), config.StringVariable("duplicate")}, "Duplicate Agent Memory custom memory type"},
 		{"fields", []config.Variable{config.StringVariable("")}, `(?s)Invalid Attribute Value Length.*custom_memory_types\[0\]\.fields\[0\]\.name`},
-		{"built_in", []config.Variable{config.StringVariable(" ")}, `(?s)Invalid Attribute Value Match.*built_in_detectors\.detectors\[0\]\.id`},
+		{"built_in", []config.Variable{config.StringVariable(" ")}, `(?s)Invalid Attribute Value Match.*built_in_detectors\[0\]\.detectors\[0\]\.id`},
 		{"custom", []config.Variable{config.StringVariable("duplicate"), config.StringVariable("duplicate")}, "Duplicate Agent Memory custom detector name"},
 	} {
 		t.Run(tc.kind, func(t *testing.T) {

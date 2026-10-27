@@ -47,7 +47,7 @@ func TestAgentMemoryAPIKeyDeleteHTTPOutcomes(t *testing.T) {
 			require.False(t, schema.Diagnostics.HasError(), "%v", schema.Diagnostics)
 			state := tfsdk.State{Schema: schema.Schema}
 			diags := state.Set(ctx, &AgentMemoryAPIKeyResourceModel{
-				Timeouts: timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(timeouts.Type).AttrTypes)},
+				Timeouts: testApiKeyTimeoutsList(t, timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(APIKeyTimeoutsListType).ElemType.(timeouts.Type).AttrTypes)}),
 				ID:       types.StringValue("key-1"), StoreID: types.StringValue("store-1"), Name: types.StringValue("runtime"),
 				APIKey: types.StringValue("fake-runtime-secret"), ObfuscatedToken: types.StringNull(), CreatedAt: types.Int64Null(),
 			})

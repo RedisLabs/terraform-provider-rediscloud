@@ -183,12 +183,12 @@ func TestAgentMemoryOptionalStrategyLifecycle(t *testing.T) {
 			config := testProviderConfig(t, server.URL) + optionalStrategyConfig(test.strategy, test.dependency)
 			checks := []resource.TestCheckFunc{resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1")}
 			if test.name != "absent" {
-				checks = append(checks, resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.prompt", "Extract preferences"))
+				checks = append(checks, resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.0.prompt", "Extract preferences"))
 				enabled := "true"
 				if test.name == "disabled" {
 					enabled = "false"
 				}
-				checks = append(checks, resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.enabled", enabled))
+				checks = append(checks, resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.0.enabled", enabled))
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 				{Config: config, Check: resource.ComposeTestCheckFunc(checks...)},

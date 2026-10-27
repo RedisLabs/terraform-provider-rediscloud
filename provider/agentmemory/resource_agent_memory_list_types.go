@@ -15,21 +15,8 @@ import (
 
 var customFieldElementType = types.ObjectType{AttrTypes: customtypes.AttrTypesOf(AgentMemoryCustomFieldModel{})}
 var detectorSelectionElementType = types.ObjectType{AttrTypes: customtypes.AttrTypesOf(AgentMemoryDetectorSelectionModel{})}
-var customMemoryTypeElementType = types.ObjectType{AttrTypes: map[string]attr.Type{
-	"name":                types.StringType,
-	"description":         types.StringType,
-	"fields":              NewCustomFieldListType(),
-	"extraction_strategy": types.ObjectType{AttrTypes: customtypes.AttrTypesOf(AgentMemoryCustomExtractionStrategy{})},
-}}
-var customDetectorElementType = types.ObjectType{AttrTypes: map[string]attr.Type{
-	"name":    types.StringType,
-	"enabled": types.BoolType,
-	"action":  types.StringType,
-	"matcher": types.ObjectType{AttrTypes: map[string]attr.Type{
-		"kind":  types.StringType,
-		"regex": types.ObjectType{AttrTypes: customtypes.AttrTypesOf(AgentMemoryRegexSpecModel{})},
-	}},
-}}
+var customMemoryTypeElementType = types.ObjectType{AttrTypes: customtypes.AttrTypesOf(AgentMemoryCustomMemoryTypeModel{})}
+var customDetectorElementType = types.ObjectType{AttrTypes: customtypes.AttrTypesOf(AgentMemoryCustomDetectorModel{})}
 
 var (
 	_ basetypes.ListTypable  = CustomFieldListType{}

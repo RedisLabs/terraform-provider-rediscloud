@@ -61,7 +61,7 @@ func TestAgentMemoryAPIKeyReadMetadata(t *testing.T) {
 				var schema resource.SchemaResponse
 				r.Schema(ctx, resource.SchemaRequest{}, &schema)
 				model := AgentMemoryAPIKeyResourceModel{ID: types.StringValue("key-1"), StoreID: types.StringValue("store-1"), Name: types.StringValue("runtime"), APIKey: types.StringValue("FAKE-EXISTING-SECRET"), ObfuscatedToken: types.StringValue("previous-mask"), CreatedAt: types.Int64Value(42)}
-				model.Timeouts = timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(timeouts.Type).AttrTypes)}
+				model.Timeouts = testApiKeyTimeoutsList(t, timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(APIKeyTimeoutsListType).ElemType.(timeouts.Type).AttrTypes)})
 				if imported {
 					model.Name = types.StringNull()
 					model.APIKey = types.StringNull()

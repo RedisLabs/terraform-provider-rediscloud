@@ -110,7 +110,7 @@ resource "rediscloud_agent_memory" "example" {
 					if creates != 1 || deletes != 0 {
 						return fmt.Errorf("store replaced: creates=%d deletes=%d", creates, deletes)
 					}
-					return resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.trigger_strategy", strategy))(state)
+					return resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.trigger_strategy", strategy))(state)
 				}
 			}
 			initial := config(tc.expression, true)
@@ -122,7 +122,7 @@ resource "rediscloud_agent_memory" "example" {
 				{Config: config(`"FAKE-REJECTED"`, true), ExpectError: regexp.MustCompile("Failed to update Agent Memory service")},
 				{Config: updated, PlanOnly: true},
 				{Config: config("", true), PlanOnly: true},
-				{Config: config("", false), Check: resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "summarization.trigger_strategy")},
+				{Config: config("", false), Check: resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "summarization.0.trigger_strategy")},
 				{Config: config("", true), Check: check("FAKE-API-DEFAULT")},
 				{Config: config("", true), PlanOnly: true},
 			}})

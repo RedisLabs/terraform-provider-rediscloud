@@ -10,24 +10,30 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func modelConfigWithWriteOnlyValue(model, config *AgentMemoryModelConfigModel) *AgentMemoryModelConfigModel {
-	if model == nil || model.Credentials == nil || config == nil || config.Credentials == nil {
+func modelConfigWithWriteOnlyValue(ctx context.Context, model, config ModelConfigListValue, diags *diag.Diagnostics) ModelConfigListValue {
+	if model.IsUnknown() || config.IsUnknown() {
 		return model
 	}
-	result := *model
-	credentials := *model.Credentials
-	credentials.APIKey = config.Credentials.APIKey
-	result.Credentials = &credentials
-	return &result
+	m, c := modelConfigBlock(ctx, model, diags), modelConfigBlock(ctx, config, diags)
+	if m == nil || c == nil || m.Credentials.IsUnknown() || c.Credentials.IsUnknown() {
+		return model
+	}
+	credentials, configured := modelCredentialsBlock(ctx, m.Credentials, diags), modelCredentialsBlock(ctx, c.Credentials, diags)
+	if credentials == nil || configured == nil {
+		return model
+	}
+	credentials.APIKey = configured.APIKey
+	m.Credentials = modelCredentialsList(ctx, credentials, diags)
+	return modelConfigList(ctx, m, diags)
 }
 
 func modelConfigForRequest(ctx context.Context, config tfsdk.Config, block string, model *AgentMemoryModelConfigModel, diags *diag.Diagnostics) *agentmemoryapi.ModelConfig {
-	result := modelConfigFromModel(model)
-	if model == nil || model.Credentials == nil {
+	result := modelConfigFromModel(ctx, model, diags)
+	if model == nil || len(model.Credentials.Elements()) == 0 {
 		return result
 	}
 	// Write-only secrets must be read from configuration, never from plan or state.
-	keyPath := path.Root(block).AtName("credentials").AtName("api_key")
+	keyPath := path.Root(block).AtListIndex(0).AtName("credentials").AtListIndex(0).AtName("api_key")
 	var key types.String
 	diags.Append(config.GetAttribute(ctx, keyPath, &key)...)
 	if diags.HasError() {

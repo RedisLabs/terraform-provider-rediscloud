@@ -242,7 +242,7 @@ func TestAgentMemoryEmptyRegexLifecycle(t *testing.T) {
 	restored := prefix + emptyRegexConfig(`"account-[0-9]+"`, `resource "terraform_data" "pattern" { input=".*" }`, true)
 	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 		{Config: initial},
-		{Config: changed, Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.custom_detectors.detectors.0.matcher.regex.pattern", "account-[0-9]+"))},
+		{Config: changed, Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.detectors.0.matcher.0.regex.0.pattern", "account-[0-9]+"))},
 		{Config: changed, PlanOnly: true},
 		{Config: invalid, PlanOnly: true, ExpectNonEmptyPlan: true},
 		{Config: invalid, ExpectError: regexp.MustCompile("Regex matches empty text")},

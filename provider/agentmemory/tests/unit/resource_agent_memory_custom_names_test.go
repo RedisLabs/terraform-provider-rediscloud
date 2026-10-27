@@ -159,7 +159,7 @@ func TestAgentMemoryCustomNameRulesByAPI(t *testing.T) {
 					if creates != 1 || deletes != 0 || state.RootModule().Resources["rediscloud_agent_memory.example"].Primary.Tainted {
 						return fmt.Errorf("store replaced or tainted: creates=%d deletes=%d", creates, deletes)
 					}
-					checks := []resource.TestCheckFunc{resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.#", fmt.Sprint(count)), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.custom_detectors.detectors.0.name", names[count-1])}
+					checks := []resource.TestCheckFunc{resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.#", fmt.Sprint(count)), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.detectors.0.name", names[count-1])}
 					for i := 0; i < count; i++ {
 						checks = append(checks, resource.TestCheckResourceAttr("rediscloud_agent_memory.example", fmt.Sprintf("custom_memory_types.%d.name", i), names[i]), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", fmt.Sprintf("custom_memory_types.%d.fields.0.name", i), names[i]))
 					}

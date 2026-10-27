@@ -83,9 +83,9 @@ resource "rediscloud_agent_memory" "example" {
 			if creates != 1 || deletes != 0 || policy["eventCount"] == nil {
 				return fmt.Errorf("store or retained thresholds changed unexpectedly")
 			}
-			thresholdCheck := resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "summarization.event_count.threshold")
+			thresholdCheck := resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.threshold")
 			if count == "1" {
-				thresholdCheck = resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.event_count.threshold", "12")
+				thresholdCheck = resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.threshold", "12")
 			}
 			return resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), thresholdCheck)(state)
 		}
@@ -98,7 +98,7 @@ resource "rediscloud_agent_memory" "example" {
 		{Config: config, Check: check("0")},
 		{Config: config, PlanOnly: true},
 		{Config: config, ResourceName: "rediscloud_agent_memory.example", ImportState: true, ImportStateId: "store-1", ImportStateCheck: func(states []*terraform.InstanceState) error {
-			if len(states) != 1 || states[0].Attributes["summarization.event_count.threshold"] != "12" {
+			if len(states) != 1 || states[0].Attributes["summarization.0.event_count.0.threshold"] != "12" {
 				return fmt.Errorf("import omitted stored summarization thresholds")
 			}
 			return nil

@@ -9,10 +9,18 @@ import (
 )
 
 func validateCustomDetectorNamesPlan(ctx context.Context, plan AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
-	if plan.LongTermMemoryExclusions == nil || plan.LongTermMemoryExclusions.CustomDetectors == nil {
+	if plan.LongTermMemoryExclusions.IsUnknown() {
 		return
 	}
-	list := plan.LongTermMemoryExclusions.CustomDetectors.Detectors
+	exclusions := exclusionsBlock(ctx, plan.LongTermMemoryExclusions, &resp.Diagnostics)
+	if exclusions == nil || exclusions.CustomDetectors.IsUnknown() {
+		return
+	}
+	custom := customDetectorsBlock(ctx, exclusions.CustomDetectors, &resp.Diagnostics)
+	if custom == nil {
+		return
+	}
+	list := custom.Detectors
 	if list.IsUnknown() {
 		return
 	}
@@ -26,9 +34,9 @@ func validateCustomDetectorNamesPlan(ctx context.Context, plan AgentMemoryResour
 		}
 		if previous, exists := names[name]; exists {
 			resp.Diagnostics.AddAttributeError(
-				path.Root("long_term_memory_exclusions").AtName("custom_detectors").AtName("detectors").AtListIndex(i).AtName("name"),
+				path.Root("long_term_memory_exclusions").AtListIndex(0).AtName("custom_detectors").AtListIndex(0).AtName("detectors").AtListIndex(i).AtName("name"),
 				"Duplicate Agent Memory custom detector name",
-				fmt.Sprintf("Custom detector names must be unique within the store. %q is already configured at long_term_memory_exclusions.custom_detectors.detectors.%d.", name, previous),
+				fmt.Sprintf("Custom detector names must be unique within the store. %q is already configured at long_term_memory_exclusions[0].custom_detectors[0].detectors[%d].", name, previous),
 			)
 			continue
 		}
@@ -37,23 +45,35 @@ func validateCustomDetectorNamesPlan(ctx context.Context, plan AgentMemoryResour
 }
 
 func validateCustomDetectorMatchersConfig(ctx context.Context, config AgentMemoryResourceModel, resp *resource.ModifyPlanResponse) {
-	if config.LongTermMemoryExclusions == nil || config.LongTermMemoryExclusions.CustomDetectors == nil {
+	if config.LongTermMemoryExclusions.IsUnknown() {
 		return
 	}
-	list := config.LongTermMemoryExclusions.CustomDetectors.Detectors
+	exclusions := exclusionsBlock(ctx, config.LongTermMemoryExclusions, &resp.Diagnostics)
+	if exclusions == nil || exclusions.CustomDetectors.IsUnknown() {
+		return
+	}
+	custom := customDetectorsBlock(ctx, exclusions.CustomDetectors, &resp.Diagnostics)
+	if custom == nil {
+		return
+	}
+	list := custom.Detectors
 	if list.IsUnknown() {
 		return
 	}
 	for i, detector := range customDetectorModels(ctx, list, &resp.Diagnostics) {
 		// Presence is checked by the schema.
-		if detector.Matcher == nil {
+		if detector.Matcher.IsUnknown() {
+			continue
+		}
+		matcher := matcherSpecBlock(ctx, detector.Matcher, &resp.Diagnostics)
+		if matcher == nil {
 			continue
 		}
 		// Defer unknown kinds: only regex matchers require this block.
-		kind, known := knownString(detector.Matcher.Kind)
-		if known && kind == "regex" && detector.Matcher.Regex == nil {
+		kind, known := knownString(matcher.Kind)
+		if known && kind == "regex" && !matcher.Regex.IsUnknown() && len(matcher.Regex.Elements()) == 0 {
 			resp.Diagnostics.AddAttributeError(
-				path.Root("long_term_memory_exclusions").AtName("custom_detectors").AtName("detectors").AtListIndex(i).AtName("matcher").AtName("regex"),
+				path.Root("long_term_memory_exclusions").AtListIndex(0).AtName("custom_detectors").AtListIndex(0).AtName("detectors").AtListIndex(i).AtName("matcher").AtListIndex(0).AtName("regex"),
 				"Missing custom detector regex",
 				"custom detector matcher.regex must be configured when matcher.kind is regex.",
 			)

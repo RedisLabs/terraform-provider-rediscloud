@@ -1,30 +1,29 @@
 package agentmemory
 
 import (
-	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/customtypes"
 )
 
 type AgentMemoryResourceModel struct {
-	Timeouts                 timeouts.Value                 `tfsdk:"timeouts"`
-	ID                       types.String                   `tfsdk:"id"`
-	Name                     types.String                   `tfsdk:"name"`
-	DatabaseID               types.Int64                    `tfsdk:"database_id"`
-	ShortTermTTLSeconds      types.Int64                    `tfsdk:"short_term_ttl_seconds"`
-	LongTermTTLSeconds       types.Int64                    `tfsdk:"long_term_ttl_seconds"`
-	LLM                      *AgentMemoryModelConfigModel   `tfsdk:"llm"`
-	Embedding                *AgentMemoryModelConfigModel   `tfsdk:"embedding"`
-	ExtractionStrategy       types.String                   `tfsdk:"extraction_strategy"`
-	ExtractionCadenceSeconds types.Int64                    `tfsdk:"extraction_cadence_seconds"`
-	Summarization            *AgentMemorySummarizationModel `tfsdk:"summarization"`
-	LongTermMemoryExclusions *AgentMemoryExclusionsModel    `tfsdk:"long_term_memory_exclusions"`
-	CustomMemoryTypes        CustomMemoryTypeListValue      `tfsdk:"custom_memory_types"`
-	Endpoint                 types.String                   `tfsdk:"endpoint"`
-	Endpoints                types.List                     `tfsdk:"endpoints"`
-	Status                   types.String                   `tfsdk:"status"`
-	CreatedAt                types.String                   `tfsdk:"created_at"`
+	Timeouts                 MemoryTimeoutsListValue   `tfsdk:"timeouts"`
+	ID                       types.String              `tfsdk:"id"`
+	Name                     types.String              `tfsdk:"name"`
+	DatabaseID               types.Int64               `tfsdk:"database_id"`
+	ShortTermTTLSeconds      types.Int64               `tfsdk:"short_term_ttl_seconds"`
+	LongTermTTLSeconds       types.Int64               `tfsdk:"long_term_ttl_seconds"`
+	LLM                      ModelConfigListValue      `tfsdk:"llm"`
+	Embedding                ModelConfigListValue      `tfsdk:"embedding"`
+	ExtractionStrategy       types.String              `tfsdk:"extraction_strategy"`
+	ExtractionCadenceSeconds types.Int64               `tfsdk:"extraction_cadence_seconds"`
+	Summarization            SummarizationListValue    `tfsdk:"summarization"`
+	LongTermMemoryExclusions ExclusionsListValue       `tfsdk:"long_term_memory_exclusions"`
+	CustomMemoryTypes        CustomMemoryTypeListValue `tfsdk:"custom_memory_types"`
+	Endpoint                 types.String              `tfsdk:"endpoint"`
+	Endpoints                types.List                `tfsdk:"endpoints"`
+	Status                   types.String              `tfsdk:"status"`
+	CreatedAt                types.String              `tfsdk:"created_at"`
 }
 
 type AgentMemoryEndpointModel struct {
@@ -44,9 +43,9 @@ func agentMemoryEndpointObjectType() types.ObjectType {
 }
 
 type AgentMemoryModelConfigModel struct {
-	Provider    types.String                      `tfsdk:"provider"`
-	Model       types.String                      `tfsdk:"model"`
-	Credentials *AgentMemoryModelCredentialsModel `tfsdk:"credentials"`
+	Provider    types.String              `tfsdk:"provider"`
+	Model       types.String              `tfsdk:"model"`
+	Credentials ModelCredentialsListValue `tfsdk:"credentials"`
 }
 
 type AgentMemoryModelCredentialsModel struct {
@@ -56,9 +55,9 @@ type AgentMemoryModelCredentialsModel struct {
 }
 
 type AgentMemorySummarizationModel struct {
-	Enabled         types.Bool                  `tfsdk:"enabled"`
-	TriggerStrategy types.String                `tfsdk:"trigger_strategy"`
-	EventCount      *AgentMemoryEventCountModel `tfsdk:"event_count"`
+	Enabled         types.Bool          `tfsdk:"enabled"`
+	TriggerStrategy types.String        `tfsdk:"trigger_strategy"`
+	EventCount      EventCountListValue `tfsdk:"event_count"`
 }
 
 type AgentMemoryEventCountModel struct {
@@ -67,10 +66,10 @@ type AgentMemoryEventCountModel struct {
 }
 
 type AgentMemoryExclusionsModel struct {
-	Enabled          types.Bool                         `tfsdk:"enabled"`
-	Semantic         *AgentMemorySemanticExclusionModel `tfsdk:"semantic"`
-	BuiltInDetectors *AgentMemoryBuiltInDetectorsModel  `tfsdk:"built_in_detectors"`
-	CustomDetectors  *AgentMemoryCustomDetectorsModel   `tfsdk:"custom_detectors"`
+	Enabled          types.Bool                 `tfsdk:"enabled"`
+	Semantic         SemanticExclusionListValue `tfsdk:"semantic"`
+	BuiltInDetectors BuiltInDetectorsListValue  `tfsdk:"built_in_detectors"`
+	CustomDetectors  CustomDetectorsListValue   `tfsdk:"custom_detectors"`
 }
 
 type AgentMemorySemanticExclusionModel struct {
@@ -95,15 +94,15 @@ type AgentMemoryCustomDetectorsModel struct {
 }
 
 type AgentMemoryCustomDetectorModel struct {
-	Name    types.String                 `tfsdk:"name"`
-	Enabled types.Bool                   `tfsdk:"enabled"`
-	Action  types.String                 `tfsdk:"action"`
-	Matcher *AgentMemoryMatcherSpecModel `tfsdk:"matcher"`
+	Name    types.String         `tfsdk:"name"`
+	Enabled types.Bool           `tfsdk:"enabled"`
+	Action  types.String         `tfsdk:"action"`
+	Matcher MatcherSpecListValue `tfsdk:"matcher"`
 }
 
 type AgentMemoryMatcherSpecModel struct {
-	Kind  types.String               `tfsdk:"kind"`
-	Regex *AgentMemoryRegexSpecModel `tfsdk:"regex"`
+	Kind  types.String       `tfsdk:"kind"`
+	Regex RegexSpecListValue `tfsdk:"regex"`
 }
 
 type AgentMemoryRegexSpecModel struct {
@@ -111,10 +110,10 @@ type AgentMemoryRegexSpecModel struct {
 }
 
 type AgentMemoryCustomMemoryTypeModel struct {
-	Name               types.String                         `tfsdk:"name"`
-	Description        types.String                         `tfsdk:"description"`
-	Fields             CustomFieldListValue                 `tfsdk:"fields"`
-	ExtractionStrategy *AgentMemoryCustomExtractionStrategy `tfsdk:"extraction_strategy"`
+	Name               types.String                      `tfsdk:"name"`
+	Description        types.String                      `tfsdk:"description"`
+	Fields             CustomFieldListValue              `tfsdk:"fields"`
+	ExtractionStrategy CustomExtractionStrategyListValue `tfsdk:"extraction_strategy"`
 }
 
 type AgentMemoryCustomFieldModel struct {

@@ -85,9 +85,9 @@ func TestAgentMemoryOperationsAlwaysBoundNetworkWork(t *testing.T) {
 				var schema, keySchema resource.SchemaResponse
 				r.Schema(ctx, resource.SchemaRequest{}, &schema)
 				key.Schema(ctx, resource.SchemaRequest{}, &keySchema)
-				model := AgentMemoryResourceModel{Timeouts: timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(timeouts.Type).AttrTypes)}, ID: types.StringValue("store-1"), Name: types.StringValue("bounded-store"), DatabaseID: types.Int64Value(123), Endpoints: types.ListNull(agentMemoryEndpointObjectType())}
+				model := AgentMemoryResourceModel{Timeouts: testMemoryTimeoutsList(t, timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(MemoryTimeoutsListType).ElemType.(timeouts.Type).AttrTypes)}), ID: types.StringValue("store-1"), Name: types.StringValue("bounded-store"), DatabaseID: types.Int64Value(123), Endpoints: types.ListNull(agentMemoryEndpointObjectType())}
 				if configured != "" {
-					model.Timeouts = configuredTestTimeouts(schema.Schema.Blocks["timeouts"].Type().(timeouts.Type), strings.TrimPrefix(operation, "key-"), configured)
+					model.Timeouts = testMemoryTimeoutsList(t, configuredTestTimeouts(schema.Schema.Blocks["timeouts"].Type().(MemoryTimeoutsListType).ElemType.(timeouts.Type), strings.TrimPrefix(operation, "key-"), configured))
 				}
 				plan, state := tfsdk.Plan{Schema: schema.Schema}, tfsdk.State{Schema: schema.Schema}
 				if diags := plan.Set(ctx, &model); diags.HasError() {
@@ -96,9 +96,9 @@ func TestAgentMemoryOperationsAlwaysBoundNetworkWork(t *testing.T) {
 				if diags := state.Set(ctx, &model); diags.HasError() {
 					t.Fatal(diags)
 				}
-				keyModel := AgentMemoryAPIKeyResourceModel{Timeouts: timeouts.Value{Object: types.ObjectNull(keySchema.Schema.Blocks["timeouts"].Type().(timeouts.Type).AttrTypes)}, ID: types.StringValue("key-1"), StoreID: types.StringValue("store-1"), Name: types.StringValue("runtime")}
+				keyModel := AgentMemoryAPIKeyResourceModel{Timeouts: testApiKeyTimeoutsList(t, timeouts.Value{Object: types.ObjectNull(keySchema.Schema.Blocks["timeouts"].Type().(APIKeyTimeoutsListType).ElemType.(timeouts.Type).AttrTypes)}), ID: types.StringValue("key-1"), StoreID: types.StringValue("store-1"), Name: types.StringValue("runtime")}
 				if configured != "" {
-					keyModel.Timeouts = configuredTestTimeouts(keySchema.Schema.Blocks["timeouts"].Type().(timeouts.Type), strings.TrimPrefix(operation, "key-"), configured)
+					keyModel.Timeouts = testApiKeyTimeoutsList(t, configuredTestTimeouts(keySchema.Schema.Blocks["timeouts"].Type().(APIKeyTimeoutsListType).ElemType.(timeouts.Type), strings.TrimPrefix(operation, "key-"), configured))
 				}
 				keyPlan, keyState := tfsdk.Plan{Schema: keySchema.Schema}, tfsdk.State{Schema: keySchema.Schema}
 				if diags := keyPlan.Set(ctx, &keyModel); diags.HasError() {
@@ -203,7 +203,7 @@ func TestAgentMemoryCreateCancellationDoesNotRetryOrLoseAcknowledgedID(t *testin
 			var schema resource.SchemaResponse
 			r.Schema(ctx, resource.SchemaRequest{}, &schema)
 			plan := tfsdk.Plan{Schema: schema.Schema}
-			model := AgentMemoryResourceModel{Timeouts: timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(timeouts.Type).AttrTypes)}, Name: types.StringValue("cancelled-store"), DatabaseID: types.Int64Value(123), Endpoints: types.ListNull(agentMemoryEndpointObjectType())}
+			model := AgentMemoryResourceModel{Timeouts: testMemoryTimeoutsList(t, timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(MemoryTimeoutsListType).ElemType.(timeouts.Type).AttrTypes)}), Name: types.StringValue("cancelled-store"), DatabaseID: types.Int64Value(123), Endpoints: types.ListNull(agentMemoryEndpointObjectType())}
 			if diags := plan.Set(ctx, &model); diags.HasError() {
 				t.Fatal(diags)
 			}

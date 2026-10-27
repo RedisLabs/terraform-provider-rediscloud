@@ -182,8 +182,8 @@ func TestAgentMemoryEventCountRequiredLifecycle(t *testing.T) {
 			} else {
 				steps = append(steps, resource.TestStep{Config: changed, Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.event_count.threshold", "30"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.event_count.retain_count", "0"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.threshold", "30"),
+					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.retain_count", "0"),
 				)}, resource.TestStep{Config: changed, PlanOnly: true})
 				// Prior state must not satisfy fields omitted from the new configuration.
 				for _, block := range []string{`event_count { threshold=30 }`, `event_count { retain_count=0 }`} {

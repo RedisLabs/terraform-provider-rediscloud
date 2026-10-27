@@ -16,7 +16,7 @@ import (
 )
 
 func TestAgentMemoryAPIKeyTimeoutLifecycle(t *testing.T) {
-	for _, scenario := range []string{"configure-and-change", "add-to-existing"} {
+	for _, scenario := range []string{"configure-and-change", "add-to-existing", "dynamic-presence"} {
 		t.Run(scenario, func(t *testing.T) {
 			var mu sync.Mutex
 			exists := false
@@ -72,6 +72,24 @@ read="7m"
 delete="7m"
 }`)
 
+			timeoutCheck := resource.TestCheckResourceAttr("rediscloud_agent_memory_api_key.runtime", "timeouts.0.read", "7m")
+			if scenario == "dynamic-presence" {
+				block := `dynamic "timeouts" {
+                  for_each = terraform_data.flag.output ? [true] : []
+                  content { read = "7m" }
+                }`
+				initial = fmt.Sprintf(config, block) + `
+                  resource "terraform_data" "flag" { input=true }
+                `
+				updated = fmt.Sprintf(config, block) + `
+                  resource "terraform_data" "flag" {
+                    input=false
+                    triggers_replace=1
+                  }
+                `
+				timeoutCheck = resource.TestCheckNoResourceAttr("rediscloud_agent_memory_api_key.runtime", "timeouts.0.read")
+			}
+
 			check := func(state *terraform.State) error {
 				mu.Lock()
 				defer mu.Unlock()
@@ -85,7 +103,7 @@ delete="7m"
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				Steps: []resource.TestStep{
 					{Config: initial, Check: check},
-					{Config: updated, Check: resource.ComposeTestCheckFunc(check, resource.TestCheckResourceAttr("rediscloud_agent_memory_api_key.runtime", "timeouts.read", "7m"))},
+					{Config: updated, Check: resource.ComposeTestCheckFunc(check, timeoutCheck)},
 					{Config: updated, PlanOnly: true},
 				},
 				CheckDestroy: func(_ *terraform.State) error {

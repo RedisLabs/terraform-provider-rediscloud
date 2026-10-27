@@ -32,12 +32,12 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
 	defer cancel()
 
-	llm := modelConfigForRequest(ctx, req.Config, "llm", plan.LLM, &resp.Diagnostics)
-	embedding := modelConfigForRequest(ctx, req.Config, "embedding", plan.Embedding, &resp.Diagnostics)
+	llm := modelConfigForRequest(ctx, req.Config, "llm", modelConfigBlock(ctx, plan.LLM, &resp.Diagnostics), &resp.Diagnostics)
+	embedding := modelConfigForRequest(ctx, req.Config, "embedding", modelConfigBlock(ctx, plan.Embedding, &resp.Diagnostics), &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	longTermMemory := longTermMemoryFromPlan(plan)
+	longTermMemory := longTermMemoryFromPlan(ctx, plan, &resp.Diagnostics)
 	if longTermMemory != nil {
 		longTermMemory.Embedding = embedding
 	}
@@ -49,8 +49,8 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 		LLM:                      llm,
 		ExtractionStrategy:       stringPointerFromValue(plan.ExtractionStrategy),
 		ExtractionCadence:        extractionCadenceFromPlan(plan),
-		Summarization:            summarizationFromModel(plan.Summarization),
-		LongTermMemoryExclusions: exclusionsFromModel(ctx, plan.LongTermMemoryExclusions, &resp.Diagnostics),
+		Summarization:            summarizationFromModel(ctx, summarizationBlock(ctx, plan.Summarization, &resp.Diagnostics), &resp.Diagnostics),
+		LongTermMemoryExclusions: exclusionsFromModel(ctx, exclusionsBlock(ctx, plan.LongTermMemoryExclusions, &resp.Diagnostics), &resp.Diagnostics),
 		CustomMemoryTypes:        customMemoryTypesFromModel(ctx, plan.CustomMemoryTypes, &resp.Diagnostics),
 	}
 	if resp.Diagnostics.HasError() {
@@ -170,19 +170,19 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 		update.ShortMemory = shortMemoryFromPlan(plan)
 	}
 	if !plan.LongTermTTLSeconds.Equal(state.LongTermTTLSeconds) {
-		update.LongTermMemory = longTermMemoryFromPlan(plan)
+		update.LongTermMemory = longTermMemoryFromPlan(ctx, plan, &resp.Diagnostics)
 	}
-	if !modelConfigEqual(plan.Embedding, state.Embedding) {
-		update.LongTermMemory = longTermMemoryFromPlan(plan)
+	if !modelConfigEqual(ctx, plan.Embedding, state.Embedding, &resp.Diagnostics) {
+		update.LongTermMemory = longTermMemoryFromPlan(ctx, plan, &resp.Diagnostics)
 		if update.LongTermMemory != nil {
-			update.LongTermMemory.Embedding = modelConfigForRequest(ctx, req.Config, "embedding", plan.Embedding, &resp.Diagnostics)
+			update.LongTermMemory.Embedding = modelConfigForRequest(ctx, req.Config, "embedding", modelConfigBlock(ctx, plan.Embedding, &resp.Diagnostics), &resp.Diagnostics)
 		}
 	} else if update.LongTermMemory != nil {
 		// A TTL-only update must not resend an unchanged write-only credential.
 		update.LongTermMemory.Embedding = nil
 	}
-	if !modelConfigEqual(plan.LLM, state.LLM) {
-		update.LLM = modelConfigForRequest(ctx, req.Config, "llm", plan.LLM, &resp.Diagnostics)
+	if !modelConfigEqual(ctx, plan.LLM, state.LLM, &resp.Diagnostics) {
+		update.LLM = modelConfigForRequest(ctx, req.Config, "llm", modelConfigBlock(ctx, plan.LLM, &resp.Diagnostics), &resp.Diagnostics)
 	}
 	if resp.Diagnostics.HasError() {
 		return
@@ -190,11 +190,11 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 	if !plan.ExtractionCadenceSeconds.Equal(state.ExtractionCadenceSeconds) {
 		update.ExtractionCadence = extractionCadenceFromPlan(plan)
 	}
-	if plan.Summarization != nil {
-		update.Summarization = summarizationFromModel(plan.Summarization)
+	if len(plan.Summarization.Elements()) > 0 {
+		update.Summarization = summarizationFromModel(ctx, summarizationBlock(ctx, plan.Summarization, &resp.Diagnostics), &resp.Diagnostics)
 	}
-	if plan.LongTermMemoryExclusions != nil {
-		update.LongTermMemoryExclusions = exclusionsFromModel(ctx, plan.LongTermMemoryExclusions, &resp.Diagnostics)
+	if len(plan.LongTermMemoryExclusions.Elements()) > 0 {
+		update.LongTermMemoryExclusions = exclusionsFromModel(ctx, exclusionsBlock(ctx, plan.LongTermMemoryExclusions, &resp.Diagnostics), &resp.Diagnostics)
 	}
 	update.AddCustomMemoryTypes, update.UpdateCustomMemoryTypeStrategies = customMemoryTypeUpdatesFromPlan(ctx, plan.CustomMemoryTypes, state.CustomMemoryTypes, &resp.Diagnostics)
 
@@ -254,12 +254,12 @@ func shortMemoryFromPlan(plan AgentMemoryResourceModel) *agentmemoryapi.ShortMem
 	return &agentmemoryapi.ShortMemoryConfig{TTLSeconds: redis.Int(int(plan.ShortTermTTLSeconds.ValueInt64()))}
 }
 
-func longTermMemoryFromPlan(plan AgentMemoryResourceModel) *agentmemoryapi.LongTermMemoryConfig {
-	if (plan.LongTermTTLSeconds.IsNull() || plan.LongTermTTLSeconds.IsUnknown()) && plan.Embedding == nil {
+func longTermMemoryFromPlan(ctx context.Context, plan AgentMemoryResourceModel, diags *diag.Diagnostics) *agentmemoryapi.LongTermMemoryConfig {
+	if (plan.LongTermTTLSeconds.IsNull() || plan.LongTermTTLSeconds.IsUnknown()) && len(plan.Embedding.Elements()) == 0 {
 		return nil
 	}
 	config := &agentmemoryapi.LongTermMemoryConfig{
-		Embedding: modelConfigFromModel(plan.Embedding),
+		Embedding: modelConfigFromModel(ctx, modelConfigBlock(ctx, plan.Embedding, diags), diags),
 	}
 	if !plan.LongTermTTLSeconds.IsNull() && !plan.LongTermTTLSeconds.IsUnknown() {
 		ttl := int(plan.LongTermTTLSeconds.ValueInt64())
@@ -311,12 +311,12 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 		state.LongTermTTLSeconds = types.Int64Null()
 	}
 	state.ExtractionStrategy = types.StringPointerValue(store.ExtractionStrategy)
-	state.LLM = modelConfigToModel(store.LLM, state.LLM)
+	state.LLM = modelConfigList(ctx, modelConfigToModel(ctx, store.LLM, modelConfigBlock(ctx, state.LLM, diags), diags), diags)
 	var embedding *agentmemoryapi.ModelStatus
 	if store.LongTermMemory != nil {
 		embedding = store.LongTermMemory.Embedding
 	}
-	state.Embedding = modelConfigToModel(embedding, state.Embedding)
+	state.Embedding = modelConfigList(ctx, modelConfigToModel(ctx, embedding, modelConfigBlock(ctx, state.Embedding, diags), diags), diags)
 	if store.ExtractionCadence != nil {
 		state.ExtractionCadenceSeconds = intPointerValue(store.ExtractionCadence.ActiveIntervalSeconds)
 	} else {
@@ -325,11 +325,11 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 	// Terraform cannot add optional nested blocks during create/update refresh when
 	// they were absent from config. Import is the one path where we intentionally
 	// adopt advanced API config even when the previous state is empty.
-	if includeAPIOnlyConfig || state.Summarization != nil || store.Summarization == nil {
-		state.Summarization = summarizationToModel(store.Summarization, state.Summarization, includeAPIOnlyConfig)
+	if includeAPIOnlyConfig || len(state.Summarization.Elements()) > 0 || store.Summarization == nil {
+		state.Summarization = summarizationList(ctx, summarizationToModel(ctx, store.Summarization, summarizationBlock(ctx, state.Summarization, diags), includeAPIOnlyConfig, diags), diags)
 	}
-	if includeAPIOnlyConfig || state.LongTermMemoryExclusions != nil || store.LongTermMemoryExclusions == nil {
-		state.LongTermMemoryExclusions = exclusionsToModel(ctx, store.LongTermMemoryExclusions, state.LongTermMemoryExclusions, includeAPIOnlyConfig, diags)
+	if includeAPIOnlyConfig || len(state.LongTermMemoryExclusions.Elements()) > 0 || store.LongTermMemoryExclusions == nil {
+		state.LongTermMemoryExclusions = exclusionsList(ctx, exclusionsToModel(ctx, store.LongTermMemoryExclusions, exclusionsBlock(ctx, state.LongTermMemoryExclusions, diags), includeAPIOnlyConfig, diags), diags)
 	}
 	if includeAPIOnlyConfig || !state.CustomMemoryTypes.IsNull() || len(store.CustomMemoryTypes) == 0 {
 		existing := customMemoryTypeModels(ctx, state.CustomMemoryTypes, diags)

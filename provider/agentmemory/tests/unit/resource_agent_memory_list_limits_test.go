@@ -21,8 +21,8 @@ var listLimitCases = []struct {
 	name, attribute            string
 	initial, updated, rejected int
 }{
-	{"built-in", "long_term_memory_exclusions.built_in_detectors.detectors", 4, 5, 6},
-	{"custom-detectors", "long_term_memory_exclusions.custom_detectors.detectors", 33, 34, 35},
+	{"built-in", "long_term_memory_exclusions.0.built_in_detectors.0.detectors", 4, 5, 6},
+	{"custom-detectors", "long_term_memory_exclusions.0.custom_detectors.0.detectors", 33, 34, 35},
 	{"custom-types", "custom_memory_types", 4, 5, 6},
 }
 

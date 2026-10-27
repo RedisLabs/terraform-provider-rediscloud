@@ -9,110 +9,82 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func modelConfigFromModel(model *AgentMemoryModelConfigModel) *agentmemoryapi.ModelConfig {
+func modelConfigFromModel(ctx context.Context, model *AgentMemoryModelConfigModel, diags *diag.Diagnostics) *agentmemoryapi.ModelConfig {
 	if model == nil {
 		return nil
 	}
-
-	config := &agentmemoryapi.ModelConfig{
-		Provider: stringPointerFromValue(model.Provider),
-		Model:    stringPointerFromValue(model.Model),
+	config := &agentmemoryapi.ModelConfig{Provider: stringPointerFromValue(model.Provider), Model: stringPointerFromValue(model.Model)}
+	if credentials := modelCredentialsBlock(ctx, model.Credentials, diags); credentials != nil {
+		config.Credentials = &agentmemoryapi.ModelCredentials{Type: stringPointerFromValue(credentials.Type)}
 	}
-	if model.Credentials != nil {
-		config.Credentials = &agentmemoryapi.ModelCredentials{
-			Type: stringPointerFromValue(model.Credentials.Type),
-		}
-	}
-
 	return config
 }
 
-func modelConfigToModel(status *agentmemoryapi.ModelStatus, existing *AgentMemoryModelConfigModel) *AgentMemoryModelConfigModel {
+func modelConfigToModel(ctx context.Context, status *agentmemoryapi.ModelStatus, existing *AgentMemoryModelConfigModel, diags *diag.Diagnostics) *AgentMemoryModelConfigModel {
 	if status == nil {
 		return existing
 	}
-
-	// The API does not return credentials. Preserve only the credential type and
-	// rotation version; write-only secrets must never enter refreshed state.
-	model := &AgentMemoryModelConfigModel{
-		Provider:    types.StringPointerValue(status.Provider),
-		Model:       types.StringPointerValue(status.Model),
-		Credentials: modelCredentialsFromExisting(existing),
-	}
-	return model
+	// The API does not return credentials. Keep only their type and rotation version.
+	return &AgentMemoryModelConfigModel{Provider: types.StringPointerValue(status.Provider), Model: types.StringPointerValue(status.Model), Credentials: modelCredentialsFromExisting(ctx, existing, diags)}
 }
 
-func modelCredentialsFromExisting(existing *AgentMemoryModelConfigModel) *AgentMemoryModelCredentialsModel {
-	if existing == nil || existing.Credentials == nil {
-		return nil
+func modelCredentialsFromExisting(ctx context.Context, existing *AgentMemoryModelConfigModel, diags *diag.Diagnostics) ModelCredentialsListValue {
+	var model *AgentMemoryModelCredentialsModel
+	if existing != nil {
+		if credentials := modelCredentialsBlock(ctx, existing.Credentials, diags); credentials != nil {
+			model = &AgentMemoryModelCredentialsModel{Type: credentials.Type, APIKeyVersion: credentials.APIKeyVersion}
+		}
 	}
-	return &AgentMemoryModelCredentialsModel{
-		Type:          existing.Credentials.Type,
-		APIKeyVersion: existing.Credentials.APIKeyVersion,
-	}
+	return modelCredentialsList(ctx, model, diags)
 }
 
-func modelConfigEqual(left, right *AgentMemoryModelConfigModel) bool {
-	if left == nil || right == nil {
-		return left == nil && right == nil
-	}
-	if !left.Provider.Equal(right.Provider) || !left.Model.Equal(right.Model) {
+func modelConfigEqual(ctx context.Context, left, right ModelConfigListValue, diags *diag.Diagnostics) bool {
+	if left.IsUnknown() || right.IsUnknown() {
 		return false
 	}
-	return modelCredentialsEqual(left.Credentials, right.Credentials)
-}
-
-func modelCredentialsEqual(left, right *AgentMemoryModelCredentialsModel) bool {
-	if left == nil || right == nil {
-		return left == nil && right == nil
+	a, b := modelConfigBlock(ctx, left, diags), modelConfigBlock(ctx, right, diags)
+	if a == nil || b == nil {
+		return a == nil && b == nil
 	}
-	return left.Type.Equal(right.Type) && left.APIKeyVersion.Equal(right.APIKeyVersion)
+	return a.Provider.Equal(b.Provider) && a.Model.Equal(b.Model) && modelCredentialsEqual(ctx, a.Credentials, b.Credentials, diags)
 }
 
-func summarizationFromModel(model *AgentMemorySummarizationModel) *agentmemoryapi.SummarizationConfig {
+func modelCredentialsEqual(ctx context.Context, left, right ModelCredentialsListValue, diags *diag.Diagnostics) bool {
+	if left.IsUnknown() || right.IsUnknown() {
+		return false
+	}
+	a, b := modelCredentialsBlock(ctx, left, diags), modelCredentialsBlock(ctx, right, diags)
+	if a == nil || b == nil {
+		return a == nil && b == nil
+	}
+	return a.Type.Equal(b.Type) && a.APIKeyVersion.Equal(b.APIKeyVersion)
+}
+
+func summarizationFromModel(ctx context.Context, model *AgentMemorySummarizationModel, diags *diag.Diagnostics) *agentmemoryapi.SummarizationConfig {
 	if model == nil {
 		return nil
 	}
-
-	config := &agentmemoryapi.SummarizationConfig{
-		Enabled: redis.Bool(model.Enabled.ValueBool()),
-	}
+	config := &agentmemoryapi.SummarizationConfig{Enabled: redis.Bool(model.Enabled.ValueBool())}
 	if !model.TriggerStrategy.IsNull() && !model.TriggerStrategy.IsUnknown() {
 		config.TriggerStrategy = model.TriggerStrategy.ValueStringPointer()
 	}
-	if model.EventCount != nil {
-		config.EventCount = &agentmemoryapi.SummarizationThresholdConfig{
-			Threshold:   redis.Int(int(model.EventCount.Threshold.ValueInt64())),
-			RetainCount: redis.Int(int(model.EventCount.RetainCount.ValueInt64())),
-		}
+	if event := eventCountBlock(ctx, model.EventCount, diags); event != nil {
+		config.EventCount = &agentmemoryapi.SummarizationThresholdConfig{Threshold: redis.Int(int(event.Threshold.ValueInt64())), RetainCount: redis.Int(int(event.RetainCount.ValueInt64()))}
 	}
-
 	return config
 }
 
-func summarizationToModel(config *agentmemoryapi.SummarizationConfig, existing *AgentMemorySummarizationModel, includeAPIOnlyConfig bool) *AgentMemorySummarizationModel {
+func summarizationToModel(ctx context.Context, config *agentmemoryapi.SummarizationConfig, existing *AgentMemorySummarizationModel, includeAPIOnlyConfig bool, diags *diag.Diagnostics) *AgentMemorySummarizationModel {
 	if config == nil {
 		return nil
 	}
-
-	model := &AgentMemorySummarizationModel{
-		Enabled:         types.BoolPointerValue(config.Enabled),
-		TriggerStrategy: types.StringPointerValue(config.TriggerStrategy),
+	model := &AgentMemorySummarizationModel{Enabled: types.BoolPointerValue(config.Enabled), TriggerStrategy: types.StringPointerValue(config.TriggerStrategy)}
+	if config.EventCount != nil && (includeAPIOnlyConfig || (existing != nil && len(existing.EventCount.Elements()) > 0)) {
+		model.EventCount = eventCountList(ctx, &AgentMemoryEventCountModel{Threshold: intPointerValue(config.EventCount.Threshold), RetainCount: intPointerValue(config.EventCount.RetainCount)}, diags)
 	}
-	// Managed reads must not add optional blocks absent from the plan or state.
-	if config.EventCount != nil && (includeAPIOnlyConfig || (existing != nil && existing.EventCount != nil)) {
-		model.EventCount = &AgentMemoryEventCountModel{
-			Threshold:   intPointerValue(config.EventCount.Threshold),
-			RetainCount: intPointerValue(config.EventCount.RetainCount),
-		}
-	}
-
-	// A disabled policy can still contain explicitly configured definitions.
-	// Omitted children must not acquire stale API-only values during refresh.
-	if config.Enabled != nil && !*config.Enabled && !includeAPIOnlyConfig {
-		if existing == nil || existing.TriggerStrategy.IsNull() || existing.TriggerStrategy.IsUnknown() {
-			model.TriggerStrategy = types.StringNull()
-		}
+	// Reads must not add API-only children omitted from managed configuration.
+	if config.Enabled != nil && !*config.Enabled && !includeAPIOnlyConfig && (existing == nil || existing.TriggerStrategy.IsNull() || existing.TriggerStrategy.IsUnknown()) {
+		model.TriggerStrategy = types.StringNull()
 	}
 	return model
 }
@@ -121,29 +93,16 @@ func exclusionsFromModel(ctx context.Context, model *AgentMemoryExclusionsModel,
 	if model == nil {
 		return nil
 	}
-
-	config := &agentmemoryapi.LongTermMemoryExclusions{
-		Enabled: redis.Bool(model.Enabled.ValueBool()),
+	config := &agentmemoryapi.LongTermMemoryExclusions{Enabled: redis.Bool(model.Enabled.ValueBool())}
+	if semantic := semanticExclusionBlock(ctx, model.Semantic, diags); semantic != nil {
+		config.Semantic = &agentmemoryapi.SemanticExclusion{Enabled: redis.Bool(semantic.Enabled.ValueBool()), Prompt: stringPointerFromValue(semantic.Prompt)}
 	}
-	if model.Semantic != nil {
-		config.Semantic = &agentmemoryapi.SemanticExclusion{
-			Enabled: redis.Bool(model.Semantic.Enabled.ValueBool()),
-			Prompt:  stringPointerFromValue(model.Semantic.Prompt),
-		}
+	if builtIn := builtInDetectorsBlock(ctx, model.BuiltInDetectors, diags); builtIn != nil {
+		config.BuiltInDetectors = &agentmemoryapi.BuiltInDetectorsConfig{Enabled: redis.Bool(builtIn.Enabled.ValueBool()), Detectors: detectorSelectionsFromModel(detectorSelectionModels(ctx, builtIn.Detectors, diags))}
 	}
-	if model.BuiltInDetectors != nil {
-		config.BuiltInDetectors = &agentmemoryapi.BuiltInDetectorsConfig{
-			Enabled:   redis.Bool(model.BuiltInDetectors.Enabled.ValueBool()),
-			Detectors: detectorSelectionsFromModel(detectorSelectionModels(ctx, model.BuiltInDetectors.Detectors, diags)),
-		}
+	if custom := customDetectorsBlock(ctx, model.CustomDetectors, diags); custom != nil {
+		config.CustomDetectors = &agentmemoryapi.CustomDetectorsConfig{Enabled: redis.Bool(custom.Enabled.ValueBool()), Detectors: customDetectorsFromModel(ctx, customDetectorModels(ctx, custom.Detectors, diags), diags)}
 	}
-	if model.CustomDetectors != nil {
-		config.CustomDetectors = &agentmemoryapi.CustomDetectorsConfig{
-			Enabled:   redis.Bool(model.CustomDetectors.Enabled.ValueBool()),
-			Detectors: customDetectorsFromModel(customDetectorModels(ctx, model.CustomDetectors.Detectors, diags)),
-		}
-	}
-
 	return config
 }
 
@@ -151,39 +110,36 @@ func exclusionsToModel(ctx context.Context, config *agentmemoryapi.LongTermMemor
 	if config == nil {
 		return nil
 	}
-
-	model := &AgentMemoryExclusionsModel{
-		Enabled: types.BoolPointerValue(config.Enabled),
+	model := &AgentMemoryExclusionsModel{Enabled: types.BoolPointerValue(config.Enabled)}
+	var semantic *AgentMemorySemanticExclusionModel
+	var builtIn *AgentMemoryBuiltInDetectorsModel
+	var custom *AgentMemoryCustomDetectorsModel
+	if existing != nil {
+		semantic = semanticExclusionBlock(ctx, existing.Semantic, diags)
+		builtIn = builtInDetectorsBlock(ctx, existing.BuiltInDetectors, diags)
+		custom = customDetectorsBlock(ctx, existing.CustomDetectors, diags)
 	}
-	// The API retains omitted groups. Only import should adopt unconfigured blocks.
-	if config.Semantic != nil && (includeAPIOnlyConfig || (existing != nil && existing.Semantic != nil)) {
-		model.Semantic = &AgentMemorySemanticExclusionModel{
-			Enabled: types.BoolPointerValue(config.Semantic.Enabled),
-			Prompt:  types.StringPointerValue(config.Semantic.Prompt),
+	if config.Semantic != nil && (includeAPIOnlyConfig || semantic != nil) {
+		m := &AgentMemorySemanticExclusionModel{Enabled: types.BoolPointerValue(config.Semantic.Enabled), Prompt: types.StringPointerValue(config.Semantic.Prompt)}
+		if config.Semantic.Enabled != nil && !*config.Semantic.Enabled && !includeAPIOnlyConfig && (semantic == nil || semantic.Prompt.IsNull() || semantic.Prompt.IsUnknown()) {
+			m.Prompt = types.StringNull()
 		}
-		if (config.Semantic.Enabled != nil && !*config.Semantic.Enabled) && !includeAPIOnlyConfig && (existing == nil || existing.Semantic == nil || existing.Semantic.Prompt.IsNull() || existing.Semantic.Prompt.IsUnknown()) {
-			model.Semantic.Prompt = types.StringNull()
-		}
+		model.Semantic = semanticExclusionList(ctx, m, diags)
 	}
-	if config.BuiltInDetectors != nil && (includeAPIOnlyConfig || (existing != nil && existing.BuiltInDetectors != nil)) {
-		model.BuiltInDetectors = &AgentMemoryBuiltInDetectorsModel{
-			Enabled:   types.BoolPointerValue(config.BuiltInDetectors.Enabled),
-			Detectors: detectorSelectionListFromAPI(ctx, config.BuiltInDetectors.Detectors, existing, diags),
+	if config.BuiltInDetectors != nil && (includeAPIOnlyConfig || builtIn != nil) {
+		m := &AgentMemoryBuiltInDetectorsModel{Enabled: types.BoolPointerValue(config.BuiltInDetectors.Enabled), Detectors: detectorSelectionListFromAPI(ctx, config.BuiltInDetectors.Detectors, builtIn, diags)}
+		if config.BuiltInDetectors.Enabled != nil && !*config.BuiltInDetectors.Enabled && !includeAPIOnlyConfig && (builtIn == nil || len(builtIn.Detectors.Elements()) == 0) {
+			m.Detectors = DetectorSelectionListValue{ListValue: types.ListNull(detectorSelectionElementType)}
 		}
-		if (config.BuiltInDetectors.Enabled != nil && !*config.BuiltInDetectors.Enabled) && !includeAPIOnlyConfig && (existing == nil || existing.BuiltInDetectors == nil || len(existing.BuiltInDetectors.Detectors.Elements()) == 0) {
-			model.BuiltInDetectors.Detectors = DetectorSelectionListValue{ListValue: types.ListNull(detectorSelectionElementType)}
-		}
+		model.BuiltInDetectors = builtInDetectorsList(ctx, m, diags)
 	}
-	if config.CustomDetectors != nil && (includeAPIOnlyConfig || (existing != nil && existing.CustomDetectors != nil)) {
-		model.CustomDetectors = &AgentMemoryCustomDetectorsModel{
-			Enabled:   types.BoolPointerValue(config.CustomDetectors.Enabled),
-			Detectors: customDetectorListFromAPI(ctx, config.CustomDetectors.Detectors, existing, diags),
+	if config.CustomDetectors != nil && (includeAPIOnlyConfig || custom != nil) {
+		m := &AgentMemoryCustomDetectorsModel{Enabled: types.BoolPointerValue(config.CustomDetectors.Enabled), Detectors: customDetectorListFromAPI(ctx, config.CustomDetectors.Detectors, custom, diags)}
+		if config.CustomDetectors.Enabled != nil && !*config.CustomDetectors.Enabled && !includeAPIOnlyConfig && (custom == nil || len(custom.Detectors.Elements()) == 0) {
+			m.Detectors = CustomDetectorListValue{ListValue: types.ListNull(customDetectorElementType)}
 		}
-		if (config.CustomDetectors.Enabled != nil && !*config.CustomDetectors.Enabled) && !includeAPIOnlyConfig && (existing == nil || existing.CustomDetectors == nil || len(existing.CustomDetectors.Detectors.Elements()) == 0) {
-			model.CustomDetectors.Detectors = CustomDetectorListValue{ListValue: types.ListNull(customDetectorElementType)}
-		}
+		model.CustomDetectors = customDetectorsList(ctx, m, diags)
 	}
-
 	return model
 }
 
@@ -218,7 +174,7 @@ func detectorSelectionsToModel(selections []agentmemoryapi.DetectorSelection) []
 	return models
 }
 
-func customDetectorsFromModel(models []AgentMemoryCustomDetectorModel) []agentmemoryapi.CustomDetector {
+func customDetectorsFromModel(ctx context.Context, models []AgentMemoryCustomDetectorModel, diags *diag.Diagnostics) []agentmemoryapi.CustomDetector {
 	if len(models) == 0 {
 		return []agentmemoryapi.CustomDetector{}
 	}
@@ -228,13 +184,13 @@ func customDetectorsFromModel(models []AgentMemoryCustomDetectorModel) []agentme
 			Name:    model.Name.ValueStringPointer(),
 			Enabled: redis.Bool(model.Enabled.ValueBool()),
 			Action:  stringPointerFromValue(model.Action),
-			Matcher: matcherFromModel(model.Matcher),
+			Matcher: matcherFromModel(ctx, matcherSpecBlock(ctx, model.Matcher, diags), diags),
 		})
 	}
 	return detectors
 }
 
-func customDetectorsToModel(detectors []agentmemoryapi.CustomDetector) []AgentMemoryCustomDetectorModel {
+func customDetectorsToModel(ctx context.Context, detectors []agentmemoryapi.CustomDetector, diags *diag.Diagnostics) []AgentMemoryCustomDetectorModel {
 	if len(detectors) == 0 {
 		return nil
 	}
@@ -244,29 +200,29 @@ func customDetectorsToModel(detectors []agentmemoryapi.CustomDetector) []AgentMe
 			Name:    types.StringPointerValue(detector.Name),
 			Enabled: types.BoolPointerValue(detector.Enabled),
 			Action:  types.StringPointerValue(detector.Action),
-			Matcher: matcherToModel(detector.Matcher),
+			Matcher: matcherSpecList(ctx, matcherToModel(ctx, detector.Matcher, diags), diags),
 		})
 	}
 	return models
 }
 
-func matcherFromModel(model *AgentMemoryMatcherSpecModel) *agentmemoryapi.MatcherSpec {
+func matcherFromModel(ctx context.Context, model *AgentMemoryMatcherSpecModel, diags *diag.Diagnostics) *agentmemoryapi.MatcherSpec {
 	if model == nil {
 		return nil
 	}
 	return &agentmemoryapi.MatcherSpec{
 		Kind:  model.Kind.ValueStringPointer(),
-		Regex: regexFromModel(model.Regex),
+		Regex: regexFromModel(regexSpecBlock(ctx, model.Regex, diags)),
 	}
 }
 
-func matcherToModel(matcher *agentmemoryapi.MatcherSpec) *AgentMemoryMatcherSpecModel {
+func matcherToModel(ctx context.Context, matcher *agentmemoryapi.MatcherSpec, diags *diag.Diagnostics) *AgentMemoryMatcherSpecModel {
 	if matcher == nil {
 		return nil
 	}
 	return &AgentMemoryMatcherSpecModel{
 		Kind:  types.StringPointerValue(matcher.Kind),
-		Regex: regexToModel(matcher.Regex),
+		Regex: regexSpecList(ctx, regexToModel(matcher.Regex), diags),
 	}
 }
 
@@ -306,7 +262,7 @@ func customMemoryTypesToModel(ctx context.Context, memoryTypes []agentmemoryapi.
 			Name:               types.StringPointerValue(memoryType.Name),
 			Description:        types.StringPointerValue(memoryType.Description),
 			Fields:             customFieldListFromAPI(ctx, memoryType.Fields, diags),
-			ExtractionStrategy: customExtractionStrategyToModel(memoryType.ExtractionStrategy),
+			ExtractionStrategy: customExtractionStrategyList(ctx, customExtractionStrategyToModel(memoryType.ExtractionStrategy), diags),
 		})
 	}
 	if len(existing) > 0 {
@@ -480,20 +436,20 @@ func customFieldListFromAPI(ctx context.Context, fields []agentmemoryapi.CustomF
 	return customFieldListFromModels(ctx, customFieldsToModel(fields), diags)
 }
 
-func detectorSelectionListFromAPI(ctx context.Context, selections []agentmemoryapi.DetectorSelection, existing *AgentMemoryExclusionsModel, diags *diag.Diagnostics) DetectorSelectionListValue {
+func detectorSelectionListFromAPI(ctx context.Context, selections []agentmemoryapi.DetectorSelection, existing *AgentMemoryBuiltInDetectorsModel, diags *diag.Diagnostics) DetectorSelectionListValue {
 	models := detectorSelectionsToModel(selections)
-	if existing != nil && existing.BuiltInDetectors != nil {
-		models = orderDetectorSelectionsLikeExisting(models, detectorSelectionModels(ctx, existing.BuiltInDetectors.Detectors, diags))
+	if existing != nil {
+		models = orderDetectorSelectionsLikeExisting(models, detectorSelectionModels(ctx, existing.Detectors, diags))
 	}
 	list, listDiags := NewDetectorSelectionList(ctx, models)
 	diags.Append(listDiags...)
 	return list
 }
 
-func customDetectorListFromAPI(ctx context.Context, detectors []agentmemoryapi.CustomDetector, existing *AgentMemoryExclusionsModel, diags *diag.Diagnostics) CustomDetectorListValue {
-	models := customDetectorsToModel(detectors)
-	if existing != nil && existing.CustomDetectors != nil {
-		models = orderCustomDetectorsLikeExisting(models, customDetectorModels(ctx, existing.CustomDetectors.Detectors, diags))
+func customDetectorListFromAPI(ctx context.Context, detectors []agentmemoryapi.CustomDetector, existing *AgentMemoryCustomDetectorsModel, diags *diag.Diagnostics) CustomDetectorListValue {
+	models := customDetectorsToModel(ctx, detectors, diags)
+	if existing != nil {
+		models = orderCustomDetectorsLikeExisting(models, customDetectorModels(ctx, existing.Detectors, diags))
 	}
 	list, listDiags := NewCustomDetectorList(ctx, models)
 	diags.Append(listDiags...)
