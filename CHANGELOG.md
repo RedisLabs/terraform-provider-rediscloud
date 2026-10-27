@@ -5,7 +5,10 @@
 ### Changed
 
 - Raised the Go toolchain to 1.26.10 to pick up the fix for GO-2026-6809 in `crypto/x509`.
+- Updated nixpkgs from `3181085` to `319e4ce` for the Nix development and CI environment.
+- Updated `github/codeql-action` from 4.39.0 to 4.39.1.
 - Migrated `rediscloud_essentials_subscription` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+- Added manual triggering of CI and acceptance smoke tests for stacked PR branches that do not target a release branch directly.
 
 ### Fixed
 
