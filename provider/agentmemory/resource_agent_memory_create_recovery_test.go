@@ -87,8 +87,8 @@ func TestAgentMemoryCreateRecoveryState(t *testing.T) {
 				}
 				response := resource.CreateResponse{State: tfsdk.State{Schema: schema.Schema}}
 				r.Create(ctx, resource.CreateRequest{Plan: plan, Config: config}, &response)
-				if response.Diagnostics.HasError() {
-					t.Fatalf("unexpected error/warning semantics: %v", response.Diagnostics)
+				if response.Diagnostics.HasError() != (scenario != "malformed") {
+					t.Fatalf("unexpected readiness/recovery diagnostics: %v", response.Diagnostics)
 				}
 				if len(response.Diagnostics) == 0 {
 					t.Fatal("read failure produced no diagnostic")

@@ -89,13 +89,10 @@ func TestAgentMemoryReadResponseIdentity(t *testing.T) {
 					output, diagnostics = response.State, response.Diagnostics
 				}
 				invalid := scenario != "matching"
-				if diagnostics.HasError() != (invalid && operation != "create") {
+				if diagnostics.HasError() != invalid {
 					t.Fatalf("unexpected identity validation result: %v", diagnostics)
 				}
 				if invalid {
-					if operation == "create" && len(diagnostics.Warnings()) == 0 {
-						t.Error("invalid create read must warn while retaining the acknowledged store")
-					}
 					if operation == "read" || operation == "update" {
 						if !output.Raw.Equal(prior.Raw) {
 							t.Error("invalid response changed prior state")

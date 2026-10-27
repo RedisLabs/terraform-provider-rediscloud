@@ -213,8 +213,8 @@ func TestAgentMemoryCreateCancellationDoesNotRetryOrLoseAcknowledgedID(t *testin
 				t.Fatalf("cancelled create repeated POST: %d", posts.Load())
 			}
 			if acknowledged {
-				if response.Diagnostics.HasError() {
-					t.Fatal(response.Diagnostics)
+				if !response.Diagnostics.HasError() {
+					t.Fatal("cancelled readiness must return an error")
 				}
 				var id types.String
 				if diags := response.State.GetAttribute(context.Background(), path.Root("id"), &id); diags.HasError() {
