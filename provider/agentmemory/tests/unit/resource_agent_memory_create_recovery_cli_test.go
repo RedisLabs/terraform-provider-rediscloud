@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -29,7 +30,7 @@ func TestAgentMemoryCreateReadRecoveryLifecycle(t *testing.T) {
 					w.Header().Set("Content-Type", "application/json")
 					switch {
 					case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
-						// Recovery must reuse the acknowledged store rather than create another one.
+						// A tainted store must be deleted before Terraform creates its replacement.
 						if len(live) != 0 {
 							t.Error("new create attempted while an earlier fixture remains live")
 						}
@@ -95,16 +96,24 @@ func TestAgentMemoryCreateReadRecoveryLifecycle(t *testing.T) {
 					mu.Lock()
 					defer mu.Unlock()
 					expectedCreates, expectedDeletes := 1, 0
+					if scenario != "malformed" && scenario != "404" {
+						expectedCreates, expectedDeletes = 2, 1
+					}
 					if creates != expectedCreates || deletes != expectedDeletes || len(live) != 1 {
 						return fmt.Errorf("unexpected recovery: creates=%d deletes=%d live=%d", creates, deletes, len(live))
 					}
 					if state.RootModule().Resources["rediscloud_agent_memory.example"].Primary.Tainted {
-						return fmt.Errorf("acknowledged store was tainted after a follow-up read failure")
+						return fmt.Errorf("successful recovery left the store tainted")
 					}
 					return resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", fmt.Sprintf("store-%d", creates))(state)
 				}
+				createStep := resource.TestStep{Config: config, Check: check}
+				if scenario != "malformed" && scenario != "404" {
+					createStep.ExpectError = regexp.MustCompile("Agent Memory service failed to become ready")
+					createStep.Check = nil
+				}
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-					{Config: config, Check: check},
+					createStep,
 					{Config: config, Check: check},
 					{Config: config, PlanOnly: true},
 				}})

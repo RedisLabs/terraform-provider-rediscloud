@@ -17,6 +17,7 @@ func TestAgentMemoryMutableComputedMetadata(t *testing.T) {
 	var mu sync.Mutex
 	updated := false
 	creates, patches, deletes := 0, 0, 0
+	updatedReads := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		defer mu.Unlock()
@@ -37,7 +38,12 @@ func TestAgentMemoryMutableComputedMetadata(t *testing.T) {
 		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
 			name, status, endpoint := "before", "READY", "https://old.example.test"
 			if updated {
-				name, status, endpoint = "after", "UNAVAILABLE", "https://new.example.test"
+				name, endpoint = "after", "https://new.example.test"
+				updatedReads++
+				// Update completes at READY; a later refresh observes the outage.
+				if updatedReads > 1 {
+					status = "UNAVAILABLE"
+				}
 			}
 			_, _ = fmt.Fprintf(w, `{"storeId":"store-1","name":%q,"databaseId":"123","status":%q,"endpoint":%q,"endpoints":[{"url":%q,"provider":"AWS","region":"us-east-1","isAccessible":%t}],"createdAt":"2026-10-17T12:00:00Z"}`, name, status, endpoint, endpoint, !updated)
 		default:
@@ -55,10 +61,11 @@ func TestAgentMemoryMutableComputedMetadata(t *testing.T) {
 		{Config: config("before"), Check: resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "status", "READY")},
 		{Config: config("after"), Check: resource.ComposeTestCheckFunc(
 			resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
-			resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "status", "UNAVAILABLE"),
+			resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "status", "READY"),
 			resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "endpoint", "https://new.example.test"),
 			resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "endpoints.0.is_accessible", "false"),
 		)},
+		{RefreshState: true, Check: resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "status", "UNAVAILABLE")},
 		{Config: config("after"), PlanOnly: true},
 	}})
 	mu.Lock()

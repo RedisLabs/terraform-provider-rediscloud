@@ -357,6 +357,14 @@ not make existing definitions immutable changes.
 
 ## Timeouts
 
+Creation and updates wait for the service status to become `READY`. The configured
+operation timeout covers both the API task and the readiness checks. Temporary
+not-found responses are retried within that deadline. Other read errors, an
+unexpected status, or an expired deadline return an error while keeping the store
+ID and last observed status in state. As with other Terraform creation errors, a
+failed create can mark the resource as tainted and cause replacement in the next plan; inspect that plan
+before applying it.
+
 An optional `timeouts` block configures operation deadlines using duration strings
 such as `30s`, `5m`, or `1h`.
 

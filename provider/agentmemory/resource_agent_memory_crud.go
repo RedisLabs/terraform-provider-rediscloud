@@ -67,12 +67,15 @@ func (r *agentMemoryResource) Create(ctx context.Context, req resource.CreateReq
 	plan.Endpoint = types.StringNull()
 	plan.CreatedAt = types.StringNull()
 
-	store, readErr := r.client.Client.AgentMemory.Get(ctx, storeID)
+	store, readErr := waitForAgentMemoryToBeReady(ctx, storeID, r.client, operationTimeout)
+	if store != nil && store.Status != nil {
+		plan.Status = types.StringPointerValue(store.Status)
+	}
 	needsRecovery := readErr != nil
 	if readErr != nil {
-		resp.Diagnostics.AddWarning(
-			"Agent Memory service created but not yet readable",
-			"The Agent Memory service was created and its ID was saved, but the full object could not be read immediately: "+readErr.Error(),
+		resp.Diagnostics.AddError(
+			"Agent Memory service failed to become ready",
+			"The Agent Memory service was created and its ID was saved, but readiness could not be confirmed: "+readErr.Error(),
 		)
 	} else {
 		candidate := plan
@@ -207,9 +210,13 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	store, err := r.client.Client.AgentMemory.Get(ctx, storeID)
+	store, err := waitForAgentMemoryToBeReady(ctx, storeID, r.client, operationTimeout)
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to read Agent Memory service after update", err.Error())
+		if store != nil && store.Status != nil {
+			state.Status = types.StringPointerValue(store.Status)
+		}
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+		resp.Diagnostics.AddError("Agent Memory service failed to become ready after update", err.Error())
 		return
 	}
 	// Validate the response against the requested ID even when the plan ID is unknown.
