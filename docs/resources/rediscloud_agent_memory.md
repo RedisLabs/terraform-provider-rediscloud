@@ -360,10 +360,7 @@ not make existing definitions immutable changes.
 Creation and updates wait for the service status to become `READY`. The configured
 operation timeout covers both the API task and the readiness checks. Temporary
 not-found responses are retried within that deadline. Other read errors, an
-unexpected status, or an expired deadline return an error while keeping the store
-ID and last observed status in state. As with other Terraform creation errors, a
-failed create can mark the resource as tainted and cause replacement in the next plan; inspect that plan
-before applying it.
+unexpected status, or an expired deadline return an error.
 
 An optional `timeouts` block configures operation deadlines using duration strings
 such as `30s`, `5m`, or `1h`.
@@ -393,12 +390,14 @@ A timeout does not undo an operation already accepted by Redis Cloud. If creatio
 may have succeeded without returning an ID, reconcile the remote store before
 retrying to avoid duplicates.
 
-If creation returns a store ID but the immediate follow-up read fails or returns
-invalid metadata, the provider saves that ID and the known configuration and
-reports a warning. It does not adopt invalid metadata or return a creation error
-that would taint the acknowledged store. Investigate or refresh the existing
-store before retrying. Subsequent read and update failures remain errors; a
-persistent invalid API response can therefore block further operations.
+If the API task returns a store ID but readiness or metadata conversion fails,
+the provider returns an error and retains that ID, the last observed status and
+known configuration. It discards partial response metadata and stores unresolved
+computed values as null.
+
+Terraform can mark the failed create as tainted, so a subsequent apply may destroy
+and replace the store. Inspect the plan and existing store before applying;
+replacement does not migrate memories.
 
 ## Import
 

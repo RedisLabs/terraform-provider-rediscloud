@@ -96,7 +96,7 @@ func TestAgentMemoryCreateReadRecoveryLifecycle(t *testing.T) {
 					mu.Lock()
 					defer mu.Unlock()
 					expectedCreates, expectedDeletes := 1, 0
-					if scenario != "malformed" && scenario != "404" {
+					if scenario != "404" {
 						expectedCreates, expectedDeletes = 2, 1
 					}
 					if creates != expectedCreates || deletes != expectedDeletes || len(live) != 1 {
@@ -108,8 +108,12 @@ func TestAgentMemoryCreateReadRecoveryLifecycle(t *testing.T) {
 					return resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", fmt.Sprintf("store-%d", creates))(state)
 				}
 				createStep := resource.TestStep{Config: config, Check: check}
-				if scenario != "malformed" && scenario != "404" {
-					createStep.ExpectError = regexp.MustCompile("Agent Memory service failed to become ready")
+				if scenario != "404" {
+					message := "Agent Memory service failed to become ready"
+					if scenario == "malformed" {
+						message = "Unexpected Agent Memory database ID"
+					}
+					createStep.ExpectError = regexp.MustCompile(message)
 					createStep.Check = nil
 				}
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
