@@ -4,11 +4,8 @@
 API requests go to local HTTP test servers; these tests do not require Redis
 Cloud credentials or create cloud resources.
 
-The CLI tests exercise write-only model credentials. This package defaults
-`TF_ACC_TERRAFORM_VERSION` to `1.11.1` and lets the test framework install that
-version. Explicit `TF_ACC_TERRAFORM_PATH` or `TF_ACC_TERRAFORM_VERSION` settings
-take precedence. The package-local default does not change the CLI used by other
-resource packages or the shared CI environment.
+Run the CLI tests in the repository's Nix development shell, which pins Terraform
+to 1.16.7 for both local development and CI, including write-only credential tests.
 
 Tests that access private resource types or helpers remain in the parent
 `agentmemory` package. Go subpackages cannot access those private symbols.

@@ -85,9 +85,8 @@ resource "rediscloud_agent_memory" "example" {
 
 ### Write-only model credentials
 
-Model `credentials.api_key` is write-only and requires Terraform 1.11.1 or later.
-Terraform 1.11.0 has a [serialization bug](https://github.com/hashicorp/terraform/releases/tag/v1.11.1)
-when ephemeral and sensitive values are combined; it was fixed in 1.11.1.
+Model `credentials.api_key` is write-only. This provider requires Terraform 1.16.7
+or later.
 Redis Cloud does not return it, and Terraform does not persist its resource
 attribute value in plan or state. Use an ephemeral sensitive variable to avoid
 persisting the input variable value as well:
@@ -220,14 +219,14 @@ The following arguments are optional:
   * `model` - Model name advertised by the provider.
   * `credentials` - Required when creating a store with customer-managed models; optional on existing/imported stores. When present, `type`, `api_key`, and `api_key_version` must be configured.
     * `type` - Credential type validated by the Agent Memory API.
-    * `api_key` - Provider API key omitted from plan/state values. Requires Terraform 1.11.1 or later and `api_key_version`.
+    * `api_key` - Provider API key omitted from plan/state values. Requires `api_key_version`.
     * `api_key_version` - Positive version for in-place credential rotation. Change it whenever the write-only key changes.
 * `embedding` - Customer-managed embedding model configuration for long-term memory. If configured, `llm` must also be configured. Both `provider` and `model` must be explicitly configured.
   * `provider` - Model provider. The Agent Memory API validates this against the providers supported by the service. Changing an explicitly configured provider requires replacement.
   * `model` - Model name advertised by the provider. Changing an explicitly configured model requires replacement.
   * `credentials` - Required when creating a store with customer-managed models; optional on existing/imported stores. When present, `type`, `api_key`, and `api_key_version` must be configured.
     * `type` - Credential type validated by the Agent Memory API.
-    * `api_key` - Provider API key omitted from plan/state values. Requires Terraform 1.11.1 or later and `api_key_version`.
+    * `api_key` - Provider API key omitted from plan/state values. Requires `api_key_version`.
     * `api_key_version` - Positive version for in-place credential rotation. Change it whenever the write-only key changes.
 * `summarization` - Automatic session summarization configuration.
   * `enabled` - Whether automatic summarization is enabled.

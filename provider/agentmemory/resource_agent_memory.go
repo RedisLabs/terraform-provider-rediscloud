@@ -168,7 +168,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 								Optional:    true,
 							},
 							"api_key": schema.StringAttribute{
-								Description: "Provider API key omitted from plan and state. Requires Terraform 1.11.1 or later. Increment api_key_version to rotate it.",
+								Description: "Provider API key omitted from plan and state. Requires Terraform 1.16.7 or later. Increment api_key_version to rotate it.",
 								Optional:    true,
 								Sensitive:   true,
 								WriteOnly:   true,
@@ -226,7 +226,7 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 								Optional:    true,
 							},
 							"api_key": schema.StringAttribute{
-								Description: "Provider API key omitted from plan and state. Requires Terraform 1.11.1 or later. Increment api_key_version to rotate it.",
+								Description: "Provider API key omitted from plan and state. Requires Terraform 1.16.7 or later. Increment api_key_version to rotate it.",
 								Optional:    true,
 								Sensitive:   true,
 								WriteOnly:   true,
