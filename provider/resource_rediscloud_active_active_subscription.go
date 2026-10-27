@@ -775,12 +775,8 @@ func resourceRedisCloudActiveActiveSubscriptionUpdateCmk(ctx context.Context, d 
 }
 
 func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*client.ApiClient)
 	timeout := d.Timeout(schema.TimeoutDelete)
-
-	var diags diag.Diagnostics
-
 	subId, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
@@ -789,48 +785,36 @@ func resourceRedisCloudActiveActiveSubscriptionDelete(ctx context.Context, d *sc
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
 
-	subscription, err := api.Client.Subscription.Get(ctx, subId)
+	targetStatuses := []string{subscriptions.SubscriptionStatusActive, subscriptions.SubscriptionStatusDeleting, utils.SubscriptionStatusDeleted}
+	pendingStatuses := []string{subscriptions.SubscriptionStatusPending, subscriptions.SubscriptionStatusEncryptionKeyPending}
+	status, err := utils.WaitForSubscriptionToBeStatus(ctx, subId, api, timeout, targetStatuses, pendingStatuses...)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	// If already deleting (e.g. auto-deleted empty CMK subscription), wait for completion.
-	if *subscription.Status == subscriptions.SubscriptionStatusDeleting {
-		d.SetId("")
-		if err := pro.WaitForSubscriptionToBeDeleted(ctx, subId, api, timeout); err != nil {
-			return diag.FromErr(err)
-		}
-		return diags
-	}
-
-	if *subscription.Status != subscriptions.SubscriptionStatusEncryptionKeyPending {
-		// Wait for the subscription to be active before deleting it.
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
-			return diag.FromErr(err)
-		}
-
-		// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
-		// This additional wait ensures that the databases are deleted before the subscription is deleted.
-		time.Sleep(30 * time.Second) //lintignore:R018
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
+	if status == subscriptions.SubscriptionStatusActive {
+		// The subscription can become active before its creation-plan databases are deleted.
+		// Recheck readiness after the delay, allowing automatic deletion in the meantime.
+		time.Sleep(api.WaitDelay(30 * time.Second)) //lintignore:R018
+		status, err = utils.WaitForSubscriptionToBeStatus(ctx, subId, api, timeout, targetStatuses, pendingStatuses...)
+		if err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
-	// Delete subscription once all databases are deleted
-	err = api.Client.Subscription.Delete(ctx, subId)
-	if err != nil {
-		return diag.FromErr(err)
+	if status == subscriptions.SubscriptionStatusActive {
+		if err := api.Client.Subscription.Delete(ctx, subId); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
+	if status != utils.SubscriptionStatusDeleted {
+		if err := utils.WaitForSubscriptionToBeDeleted(ctx, subId, api, timeout); err != nil {
+			return diag.FromErr(err)
+		}
+	}
 	d.SetId("")
-
-	err = pro.WaitForSubscriptionToBeDeleted(ctx, subId, api, timeout)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	return diags
+	return nil
 }
 
 func newCreateSubscription(name string, paymentMethodID *int, paymentMethod string, providers []*subscriptions.CreateCloudProvider, dbs []*subscriptions.CreateDatabase, cmkEnabled bool, publicEndpointAccess bool) subscriptions.CreateSubscription {
