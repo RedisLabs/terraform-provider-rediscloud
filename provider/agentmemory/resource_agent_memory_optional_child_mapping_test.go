@@ -47,7 +47,7 @@ func TestSummarizationOptionalChildOwnership(t *testing.T) {
 					RetainCount: redis.Int(10),
 				},
 			}
-			model := summarizationToModel(t.Context(), config, tc.existing, tc.includeAPIOnlyConfig, testAgentMemoryDiags(t))
+			model := summarizationFromAPI(t.Context(), config, tc.existing, tc.includeAPIOnlyConfig, testAgentMemoryDiags(t))
 			require.NotNil(t, model)
 			require.Equal(t, types.BoolValue(true), model.Enabled)
 			require.Equal(t, types.StringValue("event_count"), model.TriggerStrategy)
@@ -89,7 +89,7 @@ func TestExclusionOptionalChildOwnership(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			model := exclusionsToModel(t.Context(), optionalChildExclusionsAPI(true), tc.existing, tc.includeAPIOnlyConfig, testAgentMemoryDiags(t))
+			model := exclusionsFromAPI(t.Context(), optionalChildExclusionsAPI(true), tc.existing, tc.includeAPIOnlyConfig, testAgentMemoryDiags(t))
 			require.NotNil(t, model)
 			require.Equal(t, types.BoolValue(true), model.Enabled)
 			require.Equal(t, tc.wantSemantic, mustSemanticExclusion(t, model.Semantic) != nil)
@@ -115,7 +115,7 @@ func TestExclusionOptionalChildOwnership(t *testing.T) {
 }
 
 func TestOptionalChildMappingPreservesDisabledDefinitions(t *testing.T) {
-	summarization := summarizationToModel(t.Context(), &agentmemoryapi.SummarizationConfig{
+	summarization := summarizationFromAPI(t.Context(), &agentmemoryapi.SummarizationConfig{
 		Enabled:         redis.Bool(false),
 		TriggerStrategy: redis.String("event_count"),
 		EventCount: &agentmemoryapi.SummarizationThresholdConfig{
@@ -144,7 +144,7 @@ func TestOptionalChildMappingPreservesDisabledDefinitions(t *testing.T) {
 	customDetectors := mustCustomDetectors(t, existing.CustomDetectors)
 	customDetectors.Enabled = types.BoolValue(false)
 	existing.CustomDetectors = mustCustomDetectorsList(t, customDetectors)
-	model := exclusionsToModel(t.Context(), optionalChildExclusionsAPI(false), existing, false, testAgentMemoryDiags(t))
+	model := exclusionsFromAPI(t.Context(), optionalChildExclusionsAPI(false), existing, false, testAgentMemoryDiags(t))
 	require.Equal(t, types.BoolValue(false), model.Enabled)
 	require.NotNil(t, mustSemanticExclusion(t, model.Semantic))
 	require.Equal(t, types.BoolValue(false), mustSemanticExclusion(t, model.Semantic).Enabled)
@@ -167,14 +167,14 @@ func TestOptionalChildMappingDoesNotInventMissingAPIChildren(t *testing.T) {
 		}
 		t.Run(name, func(t *testing.T) {
 			existing := &AgentMemorySummarizationModel{EventCount: mustEventCountList(t, &AgentMemoryEventCountModel{Threshold: types.Int64Value(20), RetainCount: types.Int64Value(10)})}
-			require.Nil(t, summarizationToModel(t.Context(), nil, existing, importing, testAgentMemoryDiags(t)))
-			summarization := summarizationToModel(t.Context(), &agentmemoryapi.SummarizationConfig{Enabled: redis.Bool(true)}, existing, importing, testAgentMemoryDiags(t))
+			require.Nil(t, summarizationFromAPI(t.Context(), nil, existing, importing, testAgentMemoryDiags(t)))
+			summarization := summarizationFromAPI(t.Context(), &agentmemoryapi.SummarizationConfig{Enabled: redis.Bool(true)}, existing, importing, testAgentMemoryDiags(t))
 			require.NotNil(t, summarization)
 			require.Nil(t, mustEventCount(t, summarization.EventCount))
 
 			exclusions := optionalChildExclusionsModel(t, true, true, true)
-			require.Nil(t, exclusionsToModel(t.Context(), nil, exclusions, importing, testAgentMemoryDiags(t)))
-			model := exclusionsToModel(t.Context(), &agentmemoryapi.LongTermMemoryExclusions{Enabled: redis.Bool(true)}, exclusions, importing, testAgentMemoryDiags(t))
+			require.Nil(t, exclusionsFromAPI(t.Context(), nil, exclusions, importing, testAgentMemoryDiags(t)))
+			model := exclusionsFromAPI(t.Context(), &agentmemoryapi.LongTermMemoryExclusions{Enabled: redis.Bool(true)}, exclusions, importing, testAgentMemoryDiags(t))
 			require.NotNil(t, model)
 			require.Nil(t, mustSemanticExclusion(t, model.Semantic))
 			require.Nil(t, mustBuiltInDetectors(t, model.BuiltInDetectors))

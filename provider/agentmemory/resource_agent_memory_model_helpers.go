@@ -20,7 +20,7 @@ func modelConfigFromModel(ctx context.Context, model *AgentMemoryModelConfigMode
 	return config
 }
 
-func modelConfigToModel(ctx context.Context, status *agentmemoryapi.ModelStatus, existing *AgentMemoryModelConfigModel, diags *diag.Diagnostics) *AgentMemoryModelConfigModel {
+func modelConfigFromAPI(ctx context.Context, status *agentmemoryapi.ModelStatus, existing *AgentMemoryModelConfigModel, diags *diag.Diagnostics) *AgentMemoryModelConfigModel {
 	if status == nil {
 		return existing
 	}
@@ -74,7 +74,7 @@ func summarizationFromModel(ctx context.Context, model *AgentMemorySummarization
 	return config
 }
 
-func summarizationToModel(ctx context.Context, config *agentmemoryapi.SummarizationConfig, existing *AgentMemorySummarizationModel, includeAPIOnlyConfig bool, diags *diag.Diagnostics) *AgentMemorySummarizationModel {
+func summarizationFromAPI(ctx context.Context, config *agentmemoryapi.SummarizationConfig, existing *AgentMemorySummarizationModel, includeAPIOnlyConfig bool, diags *diag.Diagnostics) *AgentMemorySummarizationModel {
 	if config == nil {
 		return nil
 	}
@@ -106,7 +106,7 @@ func exclusionsFromModel(ctx context.Context, model *AgentMemoryExclusionsModel,
 	return config
 }
 
-func exclusionsToModel(ctx context.Context, config *agentmemoryapi.LongTermMemoryExclusions, existing *AgentMemoryExclusionsModel, includeAPIOnlyConfig bool, diags *diag.Diagnostics) *AgentMemoryExclusionsModel {
+func exclusionsFromAPI(ctx context.Context, config *agentmemoryapi.LongTermMemoryExclusions, existing *AgentMemoryExclusionsModel, includeAPIOnlyConfig bool, diags *diag.Diagnostics) *AgentMemoryExclusionsModel {
 	if config == nil {
 		return nil
 	}
@@ -159,7 +159,7 @@ func detectorSelectionsFromModel(models []AgentMemoryDetectorSelectionModel) []a
 	return selections
 }
 
-func detectorSelectionsToModel(selections []agentmemoryapi.DetectorSelection) []AgentMemoryDetectorSelectionModel {
+func detectorSelectionsFromAPI(selections []agentmemoryapi.DetectorSelection) []AgentMemoryDetectorSelectionModel {
 	if len(selections) == 0 {
 		return nil
 	}
@@ -190,7 +190,7 @@ func customDetectorsFromModel(ctx context.Context, models []AgentMemoryCustomDet
 	return detectors
 }
 
-func customDetectorsToModel(ctx context.Context, detectors []agentmemoryapi.CustomDetector, diags *diag.Diagnostics) []AgentMemoryCustomDetectorModel {
+func customDetectorsFromAPI(ctx context.Context, detectors []agentmemoryapi.CustomDetector, diags *diag.Diagnostics) []AgentMemoryCustomDetectorModel {
 	if len(detectors) == 0 {
 		return nil
 	}
@@ -200,7 +200,7 @@ func customDetectorsToModel(ctx context.Context, detectors []agentmemoryapi.Cust
 			Name:    types.StringPointerValue(detector.Name),
 			Enabled: types.BoolPointerValue(detector.Enabled),
 			Action:  types.StringPointerValue(detector.Action),
-			Matcher: matcherSpecList(ctx, matcherToModel(ctx, detector.Matcher, diags), diags),
+			Matcher: matcherSpecList(ctx, matcherFromAPI(ctx, detector.Matcher, diags), diags),
 		})
 	}
 	return models
@@ -216,13 +216,13 @@ func matcherFromModel(ctx context.Context, model *AgentMemoryMatcherSpecModel, d
 	}
 }
 
-func matcherToModel(ctx context.Context, matcher *agentmemoryapi.MatcherSpec, diags *diag.Diagnostics) *AgentMemoryMatcherSpecModel {
+func matcherFromAPI(ctx context.Context, matcher *agentmemoryapi.MatcherSpec, diags *diag.Diagnostics) *AgentMemoryMatcherSpecModel {
 	if matcher == nil {
 		return nil
 	}
 	return &AgentMemoryMatcherSpecModel{
 		Kind:  types.StringPointerValue(matcher.Kind),
-		Regex: regexSpecList(ctx, regexToModel(matcher.Regex), diags),
+		Regex: regexSpecList(ctx, regexFromAPI(matcher.Regex), diags),
 	}
 }
 
@@ -233,7 +233,7 @@ func regexFromModel(model *AgentMemoryRegexSpecModel) *agentmemoryapi.RegexSpec 
 	return &agentmemoryapi.RegexSpec{Pattern: model.Pattern.ValueStringPointer()}
 }
 
-func regexToModel(regex *agentmemoryapi.RegexSpec) *AgentMemoryRegexSpecModel {
+func regexFromAPI(regex *agentmemoryapi.RegexSpec) *AgentMemoryRegexSpecModel {
 	if regex == nil {
 		return nil
 	}
@@ -252,7 +252,7 @@ func customMemoryTypesFromModel(ctx context.Context, list CustomMemoryTypeListVa
 	return types
 }
 
-func customMemoryTypesToModel(ctx context.Context, memoryTypes []agentmemoryapi.CustomMemoryType, existing []AgentMemoryCustomMemoryTypeModel, diags *diag.Diagnostics) []AgentMemoryCustomMemoryTypeModel {
+func customMemoryTypesFromAPI(ctx context.Context, memoryTypes []agentmemoryapi.CustomMemoryType, existing []AgentMemoryCustomMemoryTypeModel, diags *diag.Diagnostics) []AgentMemoryCustomMemoryTypeModel {
 	if len(memoryTypes) == 0 {
 		return nil
 	}
@@ -262,7 +262,7 @@ func customMemoryTypesToModel(ctx context.Context, memoryTypes []agentmemoryapi.
 			Name:               types.StringPointerValue(memoryType.Name),
 			Description:        types.StringPointerValue(memoryType.Description),
 			Fields:             customFieldListFromAPI(ctx, memoryType.Fields, diags),
-			ExtractionStrategy: customExtractionStrategyList(ctx, customExtractionStrategyToModel(memoryType.ExtractionStrategy), diags),
+			ExtractionStrategy: customExtractionStrategyList(ctx, customExtractionStrategyFromAPI(memoryType.ExtractionStrategy), diags),
 		})
 	}
 	if len(existing) > 0 {
@@ -333,7 +333,7 @@ func customFieldsFromModel(ctx context.Context, list CustomFieldListValue, diags
 	return fields
 }
 
-func customFieldsToModel(fields []agentmemoryapi.CustomField) []AgentMemoryCustomFieldModel {
+func customFieldsFromAPI(fields []agentmemoryapi.CustomField) []AgentMemoryCustomFieldModel {
 	if len(fields) == 0 {
 		return nil
 	}
@@ -395,7 +395,7 @@ func customExtractionStrategyFromModel(model *AgentMemoryCustomExtractionStrateg
 	return strategy
 }
 
-func customExtractionStrategyToModel(strategy *agentmemoryapi.CustomExtractionStrategy) *AgentMemoryCustomExtractionStrategy {
+func customExtractionStrategyFromAPI(strategy *agentmemoryapi.CustomExtractionStrategy) *AgentMemoryCustomExtractionStrategy {
 	if strategy == nil {
 		return nil
 	}
@@ -433,11 +433,11 @@ func customFieldListFromModels(ctx context.Context, models []AgentMemoryCustomFi
 }
 
 func customFieldListFromAPI(ctx context.Context, fields []agentmemoryapi.CustomField, diags *diag.Diagnostics) CustomFieldListValue {
-	return customFieldListFromModels(ctx, customFieldsToModel(fields), diags)
+	return customFieldListFromModels(ctx, customFieldsFromAPI(fields), diags)
 }
 
 func detectorSelectionListFromAPI(ctx context.Context, selections []agentmemoryapi.DetectorSelection, existing *AgentMemoryBuiltInDetectorsModel, diags *diag.Diagnostics) DetectorSelectionListValue {
-	models := detectorSelectionsToModel(selections)
+	models := detectorSelectionsFromAPI(selections)
 	if existing != nil {
 		models = orderDetectorSelectionsLikeExisting(models, detectorSelectionModels(ctx, existing.Detectors, diags))
 	}
@@ -447,7 +447,7 @@ func detectorSelectionListFromAPI(ctx context.Context, selections []agentmemorya
 }
 
 func customDetectorListFromAPI(ctx context.Context, detectors []agentmemoryapi.CustomDetector, existing *AgentMemoryCustomDetectorsModel, diags *diag.Diagnostics) CustomDetectorListValue {
-	models := customDetectorsToModel(ctx, detectors, diags)
+	models := customDetectorsFromAPI(ctx, detectors, diags)
 	if existing != nil {
 		models = orderCustomDetectorsLikeExisting(models, customDetectorModels(ctx, existing.Detectors, diags))
 	}

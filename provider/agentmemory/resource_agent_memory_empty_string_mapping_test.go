@@ -24,12 +24,12 @@ func TestAgentMemoryStringMappingPreservesNullAndEmpty(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := t.Context()
 			var diags diag.Diagnostics
-			summarization := summarizationToModel(ctx, &api.SummarizationConfig{Enabled: redis.Bool(true), TriggerStrategy: tc.value}, nil, true, &diags)
-			selections := detectorSelectionsToModel([]api.DetectorSelection{{Action: tc.value}})
-			detectors := customDetectorsToModel(ctx, []api.CustomDetector{{Name: tc.value, Action: tc.value, Matcher: &api.MatcherSpec{Kind: tc.value, Regex: &api.RegexSpec{Pattern: tc.value}}}}, &diags)
+			summarization := summarizationFromAPI(ctx, &api.SummarizationConfig{Enabled: redis.Bool(true), TriggerStrategy: tc.value}, nil, true, &diags)
+			selections := detectorSelectionsFromAPI([]api.DetectorSelection{{Action: tc.value}})
+			detectors := customDetectorsFromAPI(ctx, []api.CustomDetector{{Name: tc.value, Action: tc.value, Matcher: &api.MatcherSpec{Kind: tc.value, Regex: &api.RegexSpec{Pattern: tc.value}}}}, &diags)
 			matcher := matcherSpecBlock(ctx, detectors[0].Matcher, &diags)
 			regex := regexSpecBlock(ctx, matcher.Regex, &diags)
-			memoryTypes := customMemoryTypesToModel(ctx, []api.CustomMemoryType{{Name: tc.value, Description: tc.value, Fields: []api.CustomField{{Name: tc.value, Description: tc.value, Type: tc.value}}, ExtractionStrategy: &api.CustomExtractionStrategy{Prompt: tc.value}}}, nil, &diags)
+			memoryTypes := customMemoryTypesFromAPI(ctx, []api.CustomMemoryType{{Name: tc.value, Description: tc.value, Fields: []api.CustomField{{Name: tc.value, Description: tc.value, Type: tc.value}}, ExtractionStrategy: &api.CustomExtractionStrategy{Prompt: tc.value}}}, nil, &diags)
 			fields := customFieldModels(ctx, memoryTypes[0].Fields, &diags)
 			strategy := customExtractionStrategyBlock(ctx, memoryTypes[0].ExtractionStrategy, &diags)
 			require.False(t, diags.HasError(), diags.Errors())
