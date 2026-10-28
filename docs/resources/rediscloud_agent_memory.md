@@ -95,8 +95,13 @@ values that become known only during apply.
 
 ### Write-only model credentials
 
-Model `credentials[0].api_key` is write-only. This provider requires Terraform 1.16.7
-or later.
+Model `credentials[0].api_key` is write-only. Agent Memory requires Terraform
+1.11.1 or later, including when these arguments receive ephemeral sensitive
+values. Terraform 1.11.0 introduced write-only arguments but has a serialization
+bug for combined ephemeral and sensitive marks; the fix is included in
+[Terraform 1.11.1](https://github.com/hashicorp/terraform/blob/v1.11.1/CHANGELOG.md).
+The repository uses Terraform 1.16.7 for development and CI.
+
 Redis Cloud does not return it, and Terraform does not persist its resource
 attribute value in plan or state. Use an ephemeral sensitive variable to avoid
 persisting the input variable value as well:
