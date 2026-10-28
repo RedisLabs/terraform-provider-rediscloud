@@ -146,8 +146,8 @@ func TestAgentMemorySummarizationStrategyErrors(t *testing.T) {
 		name, expression, dependency, pattern string
 		calls                                 int
 	}{
-		{name: "empty", expression: `""`, pattern: "at least 1"},
-		{name: "resolved empty", expression: "terraform_data.value.output", dependency: `resource "terraform_data" "value" { input="" }`, pattern: "at least 1"},
+		{name: "empty", expression: `""`, pattern: `unsupported\s+summarization\s+strategy`, calls: 1},
+		{name: "resolved empty", expression: "terraform_data.value.output", dependency: `resource "terraform_data" "value" { input="" }`, pattern: `unsupported\s+summarization\s+strategy`, calls: 1},
 		{name: "API rejection", expression: `"FAKE-REJECTED"`, pattern: "Failed to create Agent Memory service", calls: 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -165,7 +165,11 @@ func TestAgentMemorySummarizationStrategyErrors(t *testing.T) {
 					t.Error(err)
 				}
 				summarization, _ := payload["summarization"].(map[string]any)
-				assert.Equal(t, "FAKE-REJECTED", summarization["triggerStrategy"])
+				expected := ""
+				if tc.name == "API rejection" {
+					expected = "FAKE-REJECTED"
+				}
+				assert.Equal(t, expected, summarization["triggerStrategy"])
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(400)
 				_, _ = w.Write([]byte(`{"message":"unsupported summarization strategy"}`))

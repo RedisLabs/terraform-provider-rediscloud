@@ -47,9 +47,10 @@ func orderCustomDetectorsLikeExisting(models, existing []AgentMemoryCustomDetect
 		return models
 	}
 	byName := make(map[string]AgentMemoryCustomDetectorModel, len(models))
+	// An empty name accepted by the API is still a known identity.
 	for _, model := range models {
 		name, known := knownString(model.Name)
-		if !known || name == "" {
+		if !known {
 			return models
 		}
 		if _, duplicate := byName[name]; duplicate {
@@ -62,7 +63,7 @@ func orderCustomDetectorsLikeExisting(models, existing []AgentMemoryCustomDetect
 	ordered := make([]AgentMemoryCustomDetectorModel, 0, len(models))
 	for _, previous := range existing {
 		name, known := knownString(previous.Name)
-		if !known || name == "" {
+		if !known {
 			return models
 		}
 		if _, duplicate := seen[name]; duplicate {

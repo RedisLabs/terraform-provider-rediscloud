@@ -181,13 +181,42 @@ func customPromptConfig(expression, dependency string) string {
 	return optionalStrategyConfig("extraction_strategy {\nprompt="+expression+"\nenabled=true\n}", dependency)
 }
 
-func TestAgentMemoryCustomPromptResolvedEmpty(t *testing.T) {
-	prefix := testProviderConfig(t, "http://127.0.0.1:1")
+func TestAgentMemoryCustomPromptResolvedEmptyRejectedByAPI(t *testing.T) {
+	var mu sync.Mutex
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		calls++
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, "/memory-stores", r.URL.Path)
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Error(err)
+		}
+		entries := listLimitEntries(payload, "custom-types")
+		if assert.Len(t, entries, 1) {
+			item, _ := entries[0].(map[string]any)
+			strategy, _ := item["extractionStrategy"].(map[string]any)
+			assert.Equal(t, "", strategy["prompt"], "an explicit empty prompt must not be omitted")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"message":"empty prompt rejected by API"}`))
+	}))
+	defer server.Close()
+	prefix := testProviderConfig(t, server.URL)
 	dependency := `resource "terraform_data" "flag" { input=true }`
 	config := prefix + customPromptConfig(`terraform_data.flag.output ? "" : "Extract preferences"`, dependency)
-	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-		{Config: config, PlanOnly: true, ExpectNonEmptyPlan: true},
-		{Config: config, ExpectError: regexp.MustCompile("length")},
-		{Config: prefix + customPromptConfig(`"Extract preferences"`, dependency), PlanOnly: true, ExpectNonEmptyPlan: true},
-	}})
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{Config: config, PlanOnly: true, ExpectNonEmptyPlan: true},
+			{Config: config, ExpectError: regexp.MustCompile(`empty\s+prompt\s+rejected\s+by\s+API`)},
+			{Config: prefix + customPromptConfig(`"Extract preferences"`, dependency), PlanOnly: true, ExpectNonEmptyPlan: true},
+		},
+	})
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Equal(t, 1, calls)
 }

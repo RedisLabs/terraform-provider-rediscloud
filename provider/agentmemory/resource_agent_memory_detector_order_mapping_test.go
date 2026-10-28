@@ -184,10 +184,35 @@ func TestOrderCustomDetectorsLikeExisting(t *testing.T) {
 			want:     []AgentMemoryCustomDetectorModel{apiTenant, nullName},
 		},
 		{
-			name:     "blank API name preserves response order",
+			name:     "new empty API name is retained",
 			models:   []AgentMemoryCustomDetectorModel{apiTenant, blankName},
 			existing: []AgentMemoryCustomDetectorModel{priorAccount, priorTenant},
 			want:     []AgentMemoryCustomDetectorModel{apiTenant, blankName},
+		},
+
+		{
+			name:     "known empty name retains configured order",
+			models:   []AgentMemoryCustomDetectorModel{apiTenant, blankName},
+			existing: []AgentMemoryCustomDetectorModel{blankName, priorTenant},
+			want:     []AgentMemoryCustomDetectorModel{blankName, apiTenant},
+		},
+		{
+			name:     "API-only empty name follows configured detectors",
+			models:   []AgentMemoryCustomDetectorModel{blankName, apiAccount, apiTenant},
+			existing: []AgentMemoryCustomDetectorModel{priorAccount, priorTenant},
+			want:     []AgentMemoryCustomDetectorModel{apiAccount, apiTenant, blankName},
+		},
+		{
+			name:     "duplicate empty API names remain visible",
+			models:   []AgentMemoryCustomDetectorModel{apiTenant, blankName, blankName},
+			existing: []AgentMemoryCustomDetectorModel{blankName, priorTenant},
+			want:     []AgentMemoryCustomDetectorModel{apiTenant, blankName, blankName},
+		},
+		{
+			name:     "duplicate empty prior names are ambiguous",
+			models:   []AgentMemoryCustomDetectorModel{blankName, apiTenant},
+			existing: []AgentMemoryCustomDetectorModel{blankName, blankName, priorTenant},
+			want:     []AgentMemoryCustomDetectorModel{blankName, apiTenant},
 		},
 		{
 			name:     "duplicate prior name is ambiguous",
@@ -208,7 +233,7 @@ func TestOrderCustomDetectorsLikeExisting(t *testing.T) {
 			want:     []AgentMemoryCustomDetectorModel{apiTenant, apiAccount},
 		},
 		{
-			name:     "blank prior name is ambiguous",
+			name:     "removed empty prior name is not restored",
 			models:   []AgentMemoryCustomDetectorModel{apiTenant, apiAccount},
 			existing: []AgentMemoryCustomDetectorModel{blankName, priorTenant},
 			want:     []AgentMemoryCustomDetectorModel{apiTenant, apiAccount},

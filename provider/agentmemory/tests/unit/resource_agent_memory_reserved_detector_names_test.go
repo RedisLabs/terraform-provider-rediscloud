@@ -54,7 +54,7 @@ func TestAgentMemoryDetectorNameValidationByAPI(t *testing.T) {
 		{name: "memory-type-name-not-detector-id", expression: `"semantic"`},
 		{name: "maximum-length", expression: fmt.Sprintf("%q", strings.Repeat("a", 64))},
 		{name: "above-former-length-deferred-to-api", expression: fmt.Sprintf("%q", strings.Repeat("a", 65))},
-		{name: "empty-name", expression: `""`, errorPattern: "length"},
+		{name: "empty-name", expression: `""`},
 		{name: "null-name", expression: "null", errorPattern: "Missing Configuration for Required Attribute|Missing required argument"},
 		{name: "format-deferred-to-api", expression: `"1preference"`},
 	}

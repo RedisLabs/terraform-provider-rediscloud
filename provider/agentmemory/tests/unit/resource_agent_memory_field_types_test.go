@@ -196,7 +196,7 @@ func TestAgentMemoryFieldTypeValidation(t *testing.T) {
 	for _, c := range []struct{ expression, errorPattern string }{
 		{expression: `"str"`}, {expression: `"int"`}, {expression: `"float"`}, {expression: `"bool"`},
 		{expression: `"list[str]"`}, {expression: `"list[float]"`}, {expression: `"object"`},
-		{expression: `"future-scalar"`}, {expression: `""`, errorPattern: "length"},
+		{expression: `"future-scalar"`}, {expression: `""`},
 		{expression: "null", errorPattern: "Missing Configuration for Required Attribute|Missing required argument"},
 	} {
 		t.Run(c.expression, func(t *testing.T) {
@@ -210,20 +210,16 @@ func TestAgentMemoryFieldTypeValidation(t *testing.T) {
 	}
 }
 
-func TestAgentMemoryFieldTypeResolvedMissing(t *testing.T) {
-	for _, c := range []struct{ expression, errorPattern string }{
-		{expression: `""`, errorPattern: "length"},
-		{expression: "null", errorPattern: "Missing Configuration for Required Attribute|Missing required argument"},
-	} {
-		t.Run(c.expression, func(t *testing.T) {
-			dependency := fmt.Sprintf(`resource "terraform_data" "value" { input={type=%s} }`, c.expression)
-			config := strings.Replace(listLimitConfig("custom-types", 1, false), `type="str"`, "type=tostring(terraform_data.value.output.type)", 1)
-			prefix := testProviderConfig(t, "http://127.0.0.1:1") + dependency + "\n"
-			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: prefix + config, PlanOnly: true, ExpectNonEmptyPlan: true},
-				{Config: prefix + config, ExpectError: regexp.MustCompile(c.errorPattern)},
-				{Config: prefix + listLimitConfig("custom-types", 1, false), PlanOnly: true, ExpectNonEmptyPlan: true},
-			}})
-		})
-	}
+func TestAgentMemoryFieldTypeResolvedNull(t *testing.T) {
+	dependency := `resource "terraform_data" "value" { input={type=null} }`
+	config := strings.Replace(listLimitConfig("custom-types", 1, false), `type="str"`, "type=tostring(terraform_data.value.output.type)", 1)
+	prefix := testProviderConfig(t, "http://127.0.0.1:1") + dependency + "\n"
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		Steps: []resource.TestStep{
+			{Config: prefix + config, PlanOnly: true, ExpectNonEmptyPlan: true},
+			{Config: prefix + config, ExpectError: regexp.MustCompile("Missing Configuration for Required Attribute|Missing required argument")},
+			{Config: prefix + listLimitConfig("custom-types", 1, false), PlanOnly: true, ExpectNonEmptyPlan: true},
+		},
+	})
 }

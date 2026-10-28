@@ -38,7 +38,7 @@ func TestAgentMemoryOptionalStrategyValidation(t *testing.T) {
 		{name: "absent"},
 		{name: "empty-block", strategy: `extraction_strategy {}`, errorPattern: `(?s)(Invalid Attribute Combination|Missing Configuration for Required Attribute|Missing required argument)`},
 		{name: "null-prompt", strategy: `extraction_strategy { prompt=null }`, errorPattern: `(?s)(Invalid Attribute Combination|Missing Configuration for Required Attribute|Missing required argument)`},
-		{name: "empty-prompt", strategy: `extraction_strategy { prompt="" }`, errorPattern: `length`},
+		{name: "empty-prompt", strategy: `extraction_strategy { prompt="" }`},
 		{name: "above-former-maximum-deferred-to-api", strategy: fmt.Sprintf(`extraction_strategy { prompt=%q }`, strings.Repeat("x", 10001))},
 		{name: "prompt", strategy: `extraction_strategy { prompt="Extract preferences" }`},
 		{name: "former-maximum-prompt", strategy: fmt.Sprintf(`extraction_strategy { prompt=%q }`, strings.Repeat("x", 10000))},

@@ -200,10 +200,21 @@ func TestAgentMemoryDetectorEmptyAction(t *testing.T) {
 				var calls atomic.Int32
 				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					calls.Add(1)
-					http.Error(w, "empty action must not reach API", 500)
+					var payload map[string]any
+					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+						t.Error(err)
+					}
+					items := listLimitEntries(payload, kind)
+					assert.Len(t, items, 1)
+					if len(items) == 1 {
+						assert.Equal(t, "", items[0].(map[string]any)["action"])
+					}
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusBadRequest)
+					_, _ = w.Write([]byte(`{"message":"empty action rejected by API"}`))
 				}))
 				defer server.Close()
-				defer func() { assert.Zero(t, calls.Load()) }()
+				defer func() { assert.Equal(t, int32(1), calls.Load()) }()
 				dependency, expression := "", `""`
 				if unknown {
 					dependency = `resource "terraform_data" "action" { input="" }`
@@ -217,9 +228,9 @@ func TestAgentMemoryDetectorEmptyAction(t *testing.T) {
 					config = config[:index] + strings.Replace(config[index:], `action="redact"`, "action="+expression, 1)
 				}
 				prefix := testProviderConfig(t, server.URL)
-				steps := []resource.TestStep{{Config: prefix + config, PlanOnly: true, ExpectNonEmptyPlan: true, ExpectError: regexp.MustCompile("length")}}
+				steps := []resource.TestStep{{Config: prefix + config, ExpectError: regexp.MustCompile(`empty\s+action\s+rejected\s+by\s+API`)}}
 				if unknown {
-					steps = []resource.TestStep{{Config: prefix + config, PlanOnly: true, ExpectNonEmptyPlan: true}, {Config: prefix + config, ExpectError: regexp.MustCompile("length")}, {Config: prefix + reservedDetectorConfig(`"tenant_id"`, dependency, "email"), PlanOnly: true, ExpectNonEmptyPlan: true}}
+					steps = []resource.TestStep{{Config: prefix + config, PlanOnly: true, ExpectNonEmptyPlan: true}, {Config: prefix + config, ExpectError: regexp.MustCompile(`empty\s+action\s+rejected\s+by\s+API`)}, {Config: prefix + reservedDetectorConfig(`"tenant_id"`, dependency, "email"), PlanOnly: true, ExpectNonEmptyPlan: true}}
 				}
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: steps})
 			})

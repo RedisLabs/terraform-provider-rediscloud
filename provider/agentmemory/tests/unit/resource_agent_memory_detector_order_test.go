@@ -41,17 +41,23 @@ func detectorOrderConfig(kind string, names []string, action string) string {
 }
 
 func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
-	for _, kind := range []string{"built-in", "custom-detectors"} {
-		t.Run(kind, func(t *testing.T) {
+	for _, scenario := range []struct {
+		name, kind string
+		names      []string
+	}{
+		{"built-in", "built-in", []string{"credit-card", "email", "phone"}},
+		{"custom-detectors", "custom-detectors", []string{"ticket", "tenant", "account"}},
+		{"custom-empty-name", "custom-detectors", []string{"", "tenant", "account"}},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			kind, names := scenario.kind, scenario.names
 			var mu sync.Mutex
 			var store map[string]any
 			creates, deletes, reads := 0, 0, 0
 			group, identity := "built_in_detectors", "id"
-			names := []string{"credit-card", "email", "phone"}
 			if kind == "custom-detectors" {
 				group = "custom_detectors"
 				identity = "name"
-				names = []string{"ticket", "tenant", "account"}
 			}
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				mu.Lock()
@@ -161,8 +167,8 @@ func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
 					}
 					for i := range names[:2] {
 						attribute := fmt.Sprintf("long_term_memory_exclusions.0.%s.0.detectors.%d.%s", group, i, identity)
-						value := states[0].Attributes[attribute]
-						if value == "" {
+						value, present := states[0].Attributes[attribute]
+						if !present {
 							return fmt.Errorf("import omitted detector identity")
 						}
 						importedOrder = append(importedOrder, value)

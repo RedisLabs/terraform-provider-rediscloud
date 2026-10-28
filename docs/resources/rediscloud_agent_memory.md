@@ -33,6 +33,11 @@ resource "rediscloud_agent_memory" "example" {
 When optional time-based memory settings are omitted, Redis Cloud applies the
 service defaults and the provider stores the values returned by the API.
 
+Explicit empty strings in custom memory types and fields, detector names/actions,
+matcher kinds/patterns, summarization strategies, and extraction prompts are sent
+to the API for validation and preserved when returned. They are distinct from
+omitted values. Required attributes must still be provided.
+
 ### Service with memory settings
 
 ```hcl
@@ -235,20 +240,20 @@ The following arguments are optional:
     * `api_key_version` - Positive version for in-place credential rotation. Change it whenever the write-only key changes.
 * `summarization` - Automatic session summarization configuration.
   * `enabled` - Whether automatic summarization is enabled.
-  * `trigger_strategy` - Summarization trigger strategy. Accepted values are validated by the Agent Memory API; when omitted, the provider records the value returned by the API. Explicit empty strings are rejected.
+  * `trigger_strategy` - Summarization trigger strategy. Accepted values are validated by the Agent Memory API; when omitted, the provider records the value returned by the API.
   * `event_count` - Event-count thresholds. Numeric limits are validated by the Agent Memory API. Both fields must be configured when this block is present.
     * `threshold` - Number of messages that triggers summarization. Must be greater than `retain_count`.
     * `retain_count` - Number of most recent messages retained in full.
 * `custom_memory_types` - Custom long-term memory types. Quantity limits are validated by the Agent Memory API.
-  * `name` - Non-empty custom type name. Format and maximum length are validated by the Agent Memory API.
-  * `description` - Non-empty custom type description. Maximum length is validated by the Agent Memory API.
+  * `name` - Custom type name. Format and maximum length are validated by the Agent Memory API.
+  * `description` - Custom type description. Maximum length is validated by the Agent Memory API.
   * `fields` - Structured fields for this custom memory type.
-    * `name` - Non-empty field name. Format and maximum length are validated by the Agent Memory API.
-    * `type` - Non-empty field type validated by the Agent Memory API. Examples include `str`, `int`, `float`, `bool`, `list[str]`, `list[float]`, and `object`.
-    * `description` - Non-empty field description. Maximum length is validated by the Agent Memory API.
+    * `name` - Field name. Format and maximum length are validated by the Agent Memory API.
+    * `type` - Field type validated by the Agent Memory API. Examples include `str`, `int`, `float`, `bool`, `list[str]`, `list[float]`, and `object`.
+    * `description` - Field description. Maximum length is validated by the Agent Memory API.
   * `extraction_strategy` - Optional extraction strategy for this custom memory type.
     * `enabled` - Whether extraction is enabled for this custom type.
-    * `prompt` - Non-empty prompt used to extract memories of this custom type. Required when this extraction strategy block is present. Additional limits are determined by the Agent Memory service.
+    * `prompt` - Prompt used to extract memories of this custom type. Required when this extraction strategy block is present. Additional limits are determined by the Agent Memory service.
 * `long_term_memory_exclusions` - Exclusion policy applied to newly extracted long-term memories.
   * `enabled` - Master toggle for long-term memory exclusions.
   * `built_in_detectors` - Built-in sensitive-data detector configuration.
@@ -256,16 +261,16 @@ The following arguments are optional:
     * `detectors` - Built-in detector selections.
       * `id` - Non-blank built-in detector ID validated by the Agent Memory API. Examples include `credit-card`, `email`, `ip-address`, `phone`, and `us-ssn`; the available catalogue is managed by the service.
       * `enabled` - Whether this detector is enabled.
-      * `action` - Action when the detector matches. Examples include `redact` and `drop`; accepted values are validated by the Agent Memory API. When omitted, the provider records the value returned by the API. Explicit empty strings are rejected.
+      * `action` - Action when the detector matches. Examples include `redact` and `drop`; accepted values are validated by the Agent Memory API. When omitted, the provider records the value returned by the API.
   * `custom_detectors` - Custom regex detector configuration.
     * `enabled` - Whether custom detectors are enabled.
     * `detectors` - Custom detector definitions.
-      * `name` - Non-empty custom detector name. Format, maximum length and conflicts with built-in detector names are validated by the Agent Memory API.
+      * `name` - Custom detector name. Format, maximum length and conflicts with built-in detector names are validated by the Agent Memory API.
       * `enabled` - Whether this detector is enabled.
-      * `action` - Action when the detector matches. Accepted values are validated by the Agent Memory API; when omitted, the provider records the value returned by the API. Explicit empty strings are rejected.
+      * `action` - Action when the detector matches. Accepted values are validated by the Agent Memory API; when omitted, the provider records the value returned by the API.
       * `matcher` - Detector matcher configuration.
-        * `kind` - Non-empty matcher kind validated by the Agent Memory API. When `kind` is `regex`, the `regex` block is required. The published API currently documents `regex`; other kinds needing additional fields require SDK/schema support.
-        * `regex.pattern` - Non-empty regex pattern used by the matcher. Maximum length and syntax are validated by the Agent Memory API. Patterns known to match empty text are rejected locally.
+        * `kind` - Matcher kind validated by the Agent Memory API. When `kind` is `regex`, the `regex` block is required. The published API currently documents `regex`; other kinds needing additional fields require SDK/schema support.
+        * `regex.pattern` - Regex pattern used by the matcher. Maximum length and syntax are validated by the Agent Memory API. Non-empty patterns known to match empty text are rejected locally.
   * `semantic` - Semantic exclusion configuration.
     * `enabled` - Whether semantic exclusions are enabled.
     * `prompt` - Prompt describing concepts that should not be kept in long-term memory.

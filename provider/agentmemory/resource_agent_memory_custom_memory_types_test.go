@@ -133,3 +133,19 @@ func customMemoryFieldModel(name, fieldType, description string) AgentMemoryCust
 		Description: types.StringValue(description),
 	}
 }
+
+func TestOrderCustomTypeAndFieldEmptyNames(t *testing.T) {
+	knownField := customMemoryFieldModel("known", "str", "Known field")
+	emptyField := customMemoryFieldModel("", "str", "Empty field")
+	otherType := customMemoryTypeModel(t, "other", []AgentMemoryCustomFieldModel{knownField})
+	apiModels := []AgentMemoryCustomMemoryTypeModel{
+		otherType,
+		customMemoryTypeModel(t, "", []AgentMemoryCustomFieldModel{knownField, emptyField}),
+	}
+	existing := []AgentMemoryCustomMemoryTypeModel{
+		customMemoryTypeModel(t, "", []AgentMemoryCustomFieldModel{emptyField, knownField}),
+		otherType,
+	}
+	ordered := orderCustomMemoryTypesLikeExisting(t.Context(), apiModels, existing, testAgentMemoryDiags(t))
+	require.Equal(t, existing, ordered)
+}

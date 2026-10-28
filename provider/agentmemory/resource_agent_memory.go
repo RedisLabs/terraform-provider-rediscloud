@@ -270,9 +270,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 							Description: "What triggers a summarization cycle. Accepted values and omitted defaults are determined by the Agent Memory API.",
 							Optional:    true,
 							Computed:    true,
-							Validators: []validator.String{
-								stringvalidator.LengthAtLeast(1),
-							},
 						},
 					},
 					Blocks: map[string]schema.Block{
@@ -373,9 +370,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 													Description: "Action applied when this detector matches.",
 													Optional:    true,
 													Computed:    true,
-													Validators: []validator.String{
-														stringvalidator.LengthAtLeast(1),
-													},
 												},
 											},
 										},
@@ -405,11 +399,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 												"name": schema.StringAttribute{
 													Description: "Custom detector name.",
 													Required:    true,
-													// Name format and reserved names are validated by the API.
-													Validators: []validator.String{
-														// Empty names cannot round-trip: API strings are read as null when empty.
-														stringvalidator.LengthAtLeast(1),
-													},
 												},
 												"enabled": schema.BoolAttribute{
 													Description: "Whether this detector is enabled.",
@@ -419,9 +408,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 													Description: "Action applied when this detector matches.",
 													Optional:    true,
 													Computed:    true,
-													Validators: []validator.String{
-														stringvalidator.LengthAtLeast(1),
-													},
 												},
 											},
 											Blocks: map[string]schema.Block{
@@ -434,10 +420,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 															"kind": schema.StringAttribute{
 																Description: "Matcher kind.",
 																Required:    true,
-																Validators: []validator.String{
-																	// The API validates supported kinds; empty values cannot round-trip.
-																	stringvalidator.LengthAtLeast(1),
-																},
 															},
 														},
 														Blocks: map[string]schema.Block{
@@ -452,7 +434,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 																			Description: "Regex pattern used by the matcher.",
 																			Optional:    true,
 																			Validators: []validator.String{
-																				stringvalidator.LengthAtLeast(1),
 																				nonEmptyRegexMatchValidator{},
 																			},
 																		},
@@ -481,18 +462,12 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 							Required:    true,
 							// The API reserves these names for built-in memory types.
 							Validators: []validator.String{
-								// Empty names cannot round-trip: API strings are read as null when empty.
-								stringvalidator.LengthAtLeast(1),
 								stringvalidator.NoneOf("semantic", "episodic", "message", "session_summary_view"),
 							},
 						},
 						"description": schema.StringAttribute{
 							Description: "Custom memory type description.",
 							Required:    true,
-							Validators: []validator.String{
-								// Empty descriptions become null when the API response is read into state.
-								stringvalidator.LengthAtLeast(1),
-							},
 						},
 					},
 					Blocks: map[string]schema.Block{
@@ -504,26 +479,14 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 									"name": schema.StringAttribute{
 										Description: "Field name.",
 										Required:    true,
-										Validators: []validator.String{
-											// Empty names cannot round-trip: API strings are read as null when empty.
-											stringvalidator.LengthAtLeast(1),
-										},
 									},
 									"description": schema.StringAttribute{
 										Description: "Field description.",
 										Required:    true,
-										Validators: []validator.String{
-											// Empty descriptions become null when the API response is read into state.
-											stringvalidator.LengthAtLeast(1),
-										},
 									},
 									"type": schema.StringAttribute{
 										Description: "Field type.",
 										Required:    true,
-										Validators: []validator.String{
-											// Empty field types become null when the API response is read into state.
-											stringvalidator.LengthAtLeast(1),
-										},
 									},
 								},
 							},
@@ -540,10 +503,6 @@ func (r *agentMemoryResource) Schema(ctx context.Context, _ resource.SchemaReque
 									"prompt": schema.StringAttribute{
 										Description: "Prompt used to extract this custom memory type.",
 										Optional:    true,
-										Validators: []validator.String{
-											// The create API requires a non-blank custom extraction prompt.
-											stringvalidator.LengthAtLeast(1),
-										},
 									},
 									"enabled": schema.BoolAttribute{
 										Description: "Whether extraction is enabled for this custom memory type.",

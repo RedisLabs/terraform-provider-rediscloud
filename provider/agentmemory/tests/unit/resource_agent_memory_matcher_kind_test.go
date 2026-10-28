@@ -38,7 +38,7 @@ func TestAgentMemoryMatcherKindValidation(t *testing.T) {
 		{name: "future-with-regex-block", expression: `"future-kind"`, regex: true},
 		{name: "unknown-without-block", expression: "tostring(terraform_data.kind.output)", dependency: `resource "terraform_data" "kind" { input="regex" }`},
 		{name: "unknown-with-block", expression: "tostring(terraform_data.kind.output)", dependency: `resource "terraform_data" "kind" { input="regex" }`, regex: true},
-		{name: "empty", expression: `""`, errorPattern: "length"},
+		{name: "empty", expression: `""`},
 		{name: "null", expression: "null", errorPattern: "Missing Configuration for Required Attribute|Missing required argument"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
@@ -61,7 +61,6 @@ func TestAgentMemoryMatcherKindValidation(t *testing.T) {
 func TestAgentMemoryMatcherKindResolvedInvalid(t *testing.T) {
 	for _, c := range []struct{ name, input, errorPattern string }{
 		{"regex-without-block", `"regex"`, "Missing custom detector regex"},
-		{"empty", `""`, "length"},
 		{"null", "null", "Missing Configuration for Required Attribute|Missing required argument"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
