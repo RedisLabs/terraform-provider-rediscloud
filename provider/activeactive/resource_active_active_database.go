@@ -424,6 +424,9 @@ func (r *activeActiveDatabaseResource) Schema(ctx context.Context, _ resource.Sc
 							Optional:    true,
 							Validators: []validator.Int64{
 								int64validator.AtLeast(1),
+								int64validator.AlsoRequires(
+									path.MatchRelative().AtParent().AtName("local_write_operations_per_second"),
+								),
 							},
 						},
 						"local_write_operations_per_second": schema.Int64Attribute{
@@ -431,6 +434,9 @@ func (r *activeActiveDatabaseResource) Schema(ctx context.Context, _ resource.Sc
 							Optional:    true,
 							Validators: []validator.Int64{
 								int64validator.AtLeast(1),
+								int64validator.AlsoRequires(
+									path.MatchRelative().AtParent().AtName("local_read_operations_per_second"),
+								),
 							},
 						},
 					},
@@ -545,15 +551,6 @@ func (r *activeActiveDatabaseResource) ModifyPlan(ctx context.Context, req resou
 				resp.Diagnostics.AddError(
 					"Conflicting attributes",
 					fmt.Sprintf("'override_global_enable_passwordless' cannot be true when 'override_global_password' is set in region %s", region.Name.ValueString()),
-				)
-			}
-
-			readSet := !region.LocalReadOperationsPerSecond.IsNull() && !region.LocalReadOperationsPerSecond.IsUnknown()
-			writeSet := !region.LocalWriteOperationsPerSecond.IsNull() && !region.LocalWriteOperationsPerSecond.IsUnknown()
-			if readSet != writeSet {
-				resp.Diagnostics.AddError(
-					"Missing throughput attribute",
-					fmt.Sprintf("region %s must set both 'local_read_operations_per_second' and 'local_write_operations_per_second'", region.Name.ValueString()),
 				)
 			}
 		}

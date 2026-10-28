@@ -1,94 +1,136 @@
 package activeactive
 
 import (
+	"context"
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func TestBuildCreateLocalThroughputsUsesConfiguredRegionAndDefaultsTheRest(t *testing.T) {
-	overrides := map[string]OverrideRegionModel{
-		"us-east-1": {
-			Name:                          types.StringValue("us-east-1"),
-			LocalReadOperationsPerSecond:  types.Int64Value(2000),
-			LocalWriteOperationsPerSecond: types.Int64Value(1500),
-		},
-		"us-west-2": {
-			Name: types.StringValue("us-west-2"),
-		},
+func TestUnrelatedRegionUpdateOmitsThroughputWhenUnset(t *testing.T) {
+	plan := &ActiveActiveDatabaseModel{
+		GlobalSourceIPs: types.SetNull(types.StringType),
+		GlobalAlert:     types.SetNull(types.ObjectType{AttrTypes: getAlertAttrTypes()}),
+		OverrideRegion: overrideRegionSet(t, OverrideRegionModel{
+			Name:                             types.StringValue("us-east-1"),
+			OverrideGlobalPassword:           types.StringValue("secret-password"),
+			OverrideGlobalAlert:              types.SetNull(types.ObjectType{AttrTypes: getAlertAttrTypes()}),
+			OverrideGlobalSourceIPs:          types.SetNull(types.StringType),
+			RemoteBackup:                     types.ListNull(types.ObjectType{AttrTypes: getRemoteBackupAttrTypes()}),
+			LocalReadOperationsPerSecond:     types.Int64Null(),
+			LocalWriteOperationsPerSecond:    types.Int64Null(),
+			OverrideGlobalEnablePasswordless: types.BoolNull(),
+			OverrideGlobalDataPersistence:    types.StringNull(),
+			EnableDefaultUser:                types.BoolNull(),
+		}),
 	}
 
-	got := buildCreateLocalThroughputs([]string{"us-east-1", "us-west-2", "eu-west-1"}, overrides)
-	if len(got) != 3 {
-		t.Fatalf("got %d regions, want 3", len(got))
+	regions, diags := (&activeActiveDatabaseResource{}).buildRegionsFromPlan(context.Background(), plan)
+	if diags.HasError() {
+		t.Fatalf("build regions: %v", diags)
 	}
-
-	assertThroughput(t, got[0], "us-east-1", 2000, 1500)
-	assertThroughput(t, got[1], "us-west-2", 1000, 1000)
-	assertThroughput(t, got[2], "eu-west-1", 1000, 1000)
-}
-
-func TestBuildCreateLocalThroughputsIgnoresAPartialOverride(t *testing.T) {
-	overrides := map[string]OverrideRegionModel{
-		"us-east-1": {
-			Name:                         types.StringValue("us-east-1"),
-			LocalReadOperationsPerSecond: types.Int64Value(2000),
-		},
+	if len(regions) != 1 {
+		t.Fatalf("got %d regions, want 1", len(regions))
 	}
-
-	got := buildCreateLocalThroughputs([]string{"us-east-1"}, overrides)
-	assertThroughput(t, got[0], "us-east-1", 1000, 1000)
-}
-
-func TestSetLocalThroughputOmitsUnsetAttributes(t *testing.T) {
-	props := &databases.LocalRegionProperties{Region: redis.String("us-east-1")}
-	setLocalThroughput(props, OverrideRegionModel{Name: types.StringValue("us-east-1")})
-	if props.LocalThroughputMeasurement != nil {
-		t.Fatal("update included throughput when the attributes were unset")
+	if regions[0].LocalThroughputMeasurement != nil {
+		t.Fatal("unrelated update included throughput when the attributes were unset")
+	}
+	if redis.StringValue(regions[0].Password) != "secret-password" {
+		t.Fatalf("password %q, want the unrelated override to still be sent", redis.StringValue(regions[0].Password))
 	}
 }
 
-func TestSetLocalThroughputSendsBothValuesWhenSet(t *testing.T) {
-	props := &databases.LocalRegionProperties{Region: redis.String("us-east-1")}
-	setLocalThroughput(props, OverrideRegionModel{
-		Name:                          types.StringValue("us-east-1"),
-		LocalReadOperationsPerSecond:  types.Int64Value(4000),
-		LocalWriteOperationsPerSecond: types.Int64Value(2500),
-	})
-	if props.LocalThroughputMeasurement == nil {
+func TestRegionUpdateSendsThroughputWhenBothAttributesAreSet(t *testing.T) {
+	plan := &ActiveActiveDatabaseModel{
+		GlobalSourceIPs: types.SetNull(types.StringType),
+		GlobalAlert:     types.SetNull(types.ObjectType{AttrTypes: getAlertAttrTypes()}),
+		OverrideRegion: overrideRegionSet(t, OverrideRegionModel{
+			Name:                             types.StringValue("us-east-1"),
+			OverrideGlobalAlert:              types.SetNull(types.ObjectType{AttrTypes: getAlertAttrTypes()}),
+			OverrideGlobalSourceIPs:          types.SetNull(types.StringType),
+			RemoteBackup:                     types.ListNull(types.ObjectType{AttrTypes: getRemoteBackupAttrTypes()}),
+			LocalReadOperationsPerSecond:     types.Int64Value(4000),
+			LocalWriteOperationsPerSecond:    types.Int64Value(2500),
+			OverrideGlobalEnablePasswordless: types.BoolNull(),
+			OverrideGlobalDataPersistence:    types.StringNull(),
+			EnableDefaultUser:                types.BoolNull(),
+			OverrideGlobalPassword:           types.StringNull(),
+		}),
+	}
+
+	regions, diags := (&activeActiveDatabaseResource{}).buildRegionsFromPlan(context.Background(), plan)
+	if diags.HasError() {
+		t.Fatalf("build regions: %v", diags)
+	}
+	got := regions[0].LocalThroughputMeasurement
+	if got == nil {
 		t.Fatal("update omitted configured throughput")
 	}
-	assertThroughput(t, props.LocalThroughputMeasurement, "us-east-1", 4000, 2500)
-}
-
-func TestLocalThroughputStateValuesStayNullWhenUnset(t *testing.T) {
-	read, write := localThroughputStateValues(OverrideRegionModel{}, redis.Int(2000), redis.Int(1500))
-	if !read.IsNull() || !write.IsNull() {
-		t.Fatalf("unset attributes stored API values read=%s write=%s", read, write)
+	if redis.IntValue(got.ReadOperationsPerSecond) != 4000 || redis.IntValue(got.WriteOperationsPerSecond) != 2500 {
+		t.Fatalf("got read %d write %d, want 4000 and 2500", redis.IntValue(got.ReadOperationsPerSecond), redis.IntValue(got.WriteOperationsPerSecond))
 	}
 }
 
-func TestLocalThroughputStateValuesCopyTheAPIWhenConfigured(t *testing.T) {
-	read, write := localThroughputStateValues(OverrideRegionModel{
-		LocalReadOperationsPerSecond:  types.Int64Value(1),
-		LocalWriteOperationsPerSecond: types.Int64Value(1),
-	}, redis.Int(3000), redis.Int(2500))
-	if read.ValueInt64() != 3000 || write.ValueInt64() != 2500 {
-		t.Fatalf("got read=%s write=%s, want 3000 and 2500", read, write)
+func TestRefreshLeavesThroughputNullWhenUnset(t *testing.T) {
+	state := &ActiveActiveDatabaseModel{
+		GlobalEnableDefaultUser: types.BoolValue(true),
+		OverrideRegion: overrideRegionSet(t, OverrideRegionModel{
+			Name:                             types.StringValue("us-east-1"),
+			OverrideGlobalAlert:              types.SetNull(types.ObjectType{AttrTypes: getAlertAttrTypes()}),
+			OverrideGlobalSourceIPs:          types.SetNull(types.StringType),
+			RemoteBackup:                     types.ListNull(types.ObjectType{AttrTypes: getRemoteBackupAttrTypes()}),
+			LocalReadOperationsPerSecond:     types.Int64Null(),
+			LocalWriteOperationsPerSecond:    types.Int64Null(),
+			OverrideGlobalEnablePasswordless: types.BoolNull(),
+			OverrideGlobalDataPersistence:    types.StringNull(),
+			EnableDefaultUser:                types.BoolNull(),
+			OverrideGlobalPassword:           types.StringNull(),
+		}),
+	}
+	db := &databases.ActiveActiveDatabase{
+		CrdbDatabases: []*databases.CrdbDatabase{{
+			Region:                   redis.String("us-east-1"),
+			ReadOperationsPerSecond:  redis.Int(2000),
+			WriteOperationsPerSecond: redis.Int(1500),
+		}},
+	}
+
+	got, diags := (&activeActiveDatabaseResource{}).buildOverrideRegionFromAPI(context.Background(), db, state)
+	if diags.HasError() {
+		t.Fatalf("refresh: %v", diags)
+	}
+	var regions []OverrideRegionModel
+	if diags := got.ElementsAs(context.Background(), &regions, false); diags.HasError() {
+		t.Fatalf("decode refresh: %v", diags)
+	}
+	if len(regions) != 1 {
+		t.Fatalf("got %d regions, want 1", len(regions))
+	}
+	if !regions[0].LocalReadOperationsPerSecond.IsNull() || !regions[0].LocalWriteOperationsPerSecond.IsNull() {
+		t.Fatalf("refresh stored API throughput read=%s write=%s", regions[0].LocalReadOperationsPerSecond, regions[0].LocalWriteOperationsPerSecond)
 	}
 }
 
-func assertThroughput(t *testing.T, got *databases.LocalThroughput, region string, read, write int) {
+func overrideRegionSet(t *testing.T, region OverrideRegionModel) types.Set {
 	t.Helper()
-	if redis.StringValue(got.Region) != region {
-		t.Errorf("region %q, want %q", redis.StringValue(got.Region), region)
+	objectType := types.ObjectType{AttrTypes: map[string]attr.Type{
+		"name":                                types.StringType,
+		"override_global_alert":               types.SetType{ElemType: types.ObjectType{AttrTypes: getAlertAttrTypes()}},
+		"override_global_password":            types.StringType,
+		"override_global_enable_passwordless": types.BoolType,
+		"override_global_source_ips":          types.SetType{ElemType: types.StringType},
+		"override_global_data_persistence":    types.StringType,
+		"enable_default_user":                 types.BoolType,
+		"local_read_operations_per_second":    types.Int64Type,
+		"local_write_operations_per_second":   types.Int64Type,
+		"remote_backup":                       types.ListType{ElemType: types.ObjectType{AttrTypes: getRemoteBackupAttrTypes()}},
+	}}
+	set, diags := types.SetValueFrom(context.Background(), objectType, []OverrideRegionModel{region})
+	if diags.HasError() {
+		t.Fatalf("override region set: %v", diags)
 	}
-	if redis.IntValue(got.ReadOperationsPerSecond) != read {
-		t.Errorf("%s read %d, want %d", region, redis.IntValue(got.ReadOperationsPerSecond), read)
-	}
-	if redis.IntValue(got.WriteOperationsPerSecond) != write {
-		t.Errorf("%s write %d, want %d", region, redis.IntValue(got.WriteOperationsPerSecond), write)
-	}
+	return set
 }
