@@ -10,7 +10,10 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
@@ -103,7 +106,15 @@ delete="7m"
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				Steps: []resource.TestStep{
 					{Config: initial, Check: check},
-					{Config: updated, Check: resource.ComposeTestCheckFunc(check, timeoutCheck)},
+					{
+						Config: updated,
+						ConfigPlanChecks: resource.ConfigPlanChecks{
+							PreApply: []plancheck.PlanCheck{
+								plancheck.ExpectKnownValue("rediscloud_agent_memory_api_key.runtime", tfjsonpath.New("id"), knownvalue.StringExact("key-1")),
+							},
+						},
+						Check: resource.ComposeTestCheckFunc(check, timeoutCheck),
+					},
 					{Config: updated, PlanOnly: true},
 				},
 				CheckDestroy: func(_ *terraform.State) error {
