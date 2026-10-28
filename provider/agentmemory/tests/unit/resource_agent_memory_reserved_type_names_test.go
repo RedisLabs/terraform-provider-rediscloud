@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -175,10 +176,18 @@ func TestAgentMemoryReservedTypeNameValidLifecycle(t *testing.T) {
 					t.Errorf("fixture cleanup failed: creates=%d deletes=%d remaining=%t", creates, deletes, store != nil)
 				}
 			}()
-			config := testProviderConfig(t, server.URL) + reservedTypeConfig("tostring(terraform_data.name.output)", fmt.Sprintf(`resource "terraform_data" "name" { input=%q }`, name), "topic")
+			testProviderConfig(t, server.URL)
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config, Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.name", name))},
-				{Config: config, PlanOnly: true},
+				{
+					ConfigFile:      config.StaticFile("testdata/lifecycle/custom_types/custom_type_deferred_name.tf"),
+					ConfigVariables: config.Variables{"name": config.StringVariable(name)},
+					Check:           resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.name", name)),
+				},
+				{
+					ConfigFile:      config.StaticFile("testdata/lifecycle/custom_types/custom_type_deferred_name.tf"),
+					ConfigVariables: config.Variables{"name": config.StringVariable(name)},
+					PlanOnly:        true,
+				},
 			}})
 		})
 	}

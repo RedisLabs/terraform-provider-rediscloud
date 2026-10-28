@@ -10,6 +10,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
@@ -194,9 +195,22 @@ func TestAgentMemoryListLimitsByAPI(t *testing.T) {
 					}
 				}))
 				defer server.Close()
-				config := func(count int) string {
-					return testProviderConfig(t, server.URL) + listLimitConfig(c.name, count, unknown)
+				testProviderConfig(t, server.URL)
+				fixture := "testdata/lifecycle/lists/list_limits_" + c.name
+				if unknown {
+					fixture += "_deferred"
 				}
+				initialFixture, updatedFixture, rejectedFixture := fixture+".tf", fixture+".tf", fixture+".tf"
+				initialVariables := config.Variables{"entry_count": config.IntegerVariable(c.initial)}
+				updatedVariables := config.Variables{"entry_count": config.IntegerVariable(c.updated)}
+				rejectedVariables := config.Variables{"entry_count": config.IntegerVariable(c.rejected)}
+				if unknown && c.name == "custom-types" {
+					initialFixture = fmt.Sprintf("%s_%d.tf", fixture, c.initial)
+					updatedFixture = fmt.Sprintf("%s_%d.tf", fixture, c.updated)
+					rejectedFixture = fmt.Sprintf("%s_%d.tf", fixture, c.rejected)
+					initialVariables, updatedVariables, rejectedVariables = nil, nil, nil
+				}
+
 				check := func(count int) resource.TestCheckFunc {
 					return func(state *terraform.State) error {
 						mu.Lock()
@@ -208,11 +222,31 @@ func TestAgentMemoryListLimitsByAPI(t *testing.T) {
 					}
 				}
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-					{Config: config(c.initial), Check: check(c.initial)},
-					{Config: config(c.updated), Check: check(c.updated)},
-					{Config: config(c.rejected), ExpectError: regexp.MustCompile("Failed to update Agent Memory service")},
-					{Config: config(c.updated), Check: check(c.updated)},
-					{Config: config(c.updated), PlanOnly: true},
+					{
+						ConfigFile:      config.StaticFile(initialFixture),
+						ConfigVariables: initialVariables,
+						Check:           check(c.initial),
+					},
+					{
+						ConfigFile:      config.StaticFile(updatedFixture),
+						ConfigVariables: updatedVariables,
+						Check:           check(c.updated),
+					},
+					{
+						ConfigFile:      config.StaticFile(rejectedFixture),
+						ConfigVariables: rejectedVariables,
+						ExpectError:     regexp.MustCompile("Failed to update Agent Memory service"),
+					},
+					{
+						ConfigFile:      config.StaticFile(updatedFixture),
+						ConfigVariables: updatedVariables,
+						Check:           check(c.updated),
+					},
+					{
+						ConfigFile:      config.StaticFile(updatedFixture),
+						ConfigVariables: updatedVariables,
+						PlanOnly:        true,
+					},
 				}})
 				mu.Lock()
 				defer mu.Unlock()

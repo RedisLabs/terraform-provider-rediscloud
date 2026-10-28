@@ -2,43 +2,17 @@ package unit_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/require"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
-
-func exclusionListsConfig(enabled, entries bool) string {
-	builtin, custom := "", ""
-	if entries {
-		builtin = "detectors {\nid=\"email\"\nenabled=true\naction=\"redact\"\n}"
-		custom = "detectors {\nname=\"ticket\"\nenabled=true\naction=\"redact\"\nmatcher {\nkind=\"regex\"\nregex { pattern=\"ticket+\" }\n}\n}"
-	}
-	return fmt.Sprintf(`resource "rediscloud_agent_memory" "example" {
- name="exclusion-lists"
- database_id=123
- short_term_ttl_seconds=86400
- long_term_ttl_seconds=31536000
- extraction_cadence_seconds=300
- long_term_memory_exclusions {
-  enabled=true
-  built_in_detectors {
-   enabled=%t
-   %s
-  }
-  custom_detectors {
-   enabled=%t
-   %s
-  }
- }
-}`, enabled, builtin, enabled, custom)
-}
 
 func TestAgentMemoryExclusionListsLifecycle(t *testing.T) {
 	var mu sync.Mutex
@@ -102,11 +76,20 @@ func TestAgentMemoryExclusionListsLifecycle(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	prefix := testProviderConfig(t, server.URL)
+	testProviderConfig(t, server.URL)
 	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-		{Config: prefix + exclusionListsConfig(false, true), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.built_in_detectors.0.detectors.0.id", "email"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.detectors.0.name", "ticket"))},
-		{Config: prefix + exclusionListsConfig(true, false), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.built_in_detectors.0.detectors.0.id"), resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.detectors.0.name"))},
-		{Config: prefix + exclusionListsConfig(true, false), PlanOnly: true},
+		{
+			ConfigFile: config.StaticFile("testdata/lifecycle/detectors/detector_lists_populated.tf"),
+			Check:      resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.built_in_detectors.0.detectors.0.id", "email"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.detectors.0.name", "ticket")),
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/lifecycle/detectors/detector_lists_empty.tf"),
+			Check:      resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.built_in_detectors.0.detectors.0.id"), resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.detectors.0.name")),
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/lifecycle/detectors/detector_lists_empty.tf"),
+			PlanOnly:   true,
+		},
 	}})
 	mu.Lock()
 	defer mu.Unlock()

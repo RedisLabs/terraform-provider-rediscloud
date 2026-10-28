@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -241,18 +242,30 @@ func TestAgentMemoryEnabledFlagLifecycle(t *testing.T) {
 					t.Error("expected resolved true then false")
 				}
 			}()
-			prefix := testProviderConfig(t, server.URL)
-			config := func(expr, dependency string) string {
-				return prefix + enabledFlagConfig(flag.name, flag.block, expr, dependency)
-			}
-			on := config("terraform_data.flag.output", `resource "terraform_data" "flag" { input=true }`)
-			off := config("terraform_data.flag.output", `resource "terraform_data" "flag" { input=false }`)
+			testProviderConfig(t, server.URL)
+			fixture := "testdata/lifecycle/flags/enabled_" + flag.name
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: on, Check: resource.TestCheckResourceAttr("rediscloud_agent_memory.example", flag.attribute, "true")},
+				{
+					ConfigFile:      config.StaticFile(fixture + ".tf"),
+					ConfigVariables: config.Variables{"enabled": config.BoolVariable(true)},
+					Check:           resource.TestCheckResourceAttr("rediscloud_agent_memory.example", flag.attribute, "true"),
+				},
 				// Optional+Computed may reuse a prior value; configuration must still require the flag.
-				{Config: config("", `resource "terraform_data" "flag" { input=true }`), PlanOnly: true, ExpectError: regexp.MustCompile("Invalid Attribute Combination")},
-				{Config: off, Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", flag.attribute, "false"))},
-				{Config: off, PlanOnly: true},
+				{
+					ConfigFile:  config.StaticFile(fixture + "_omitted.tf"),
+					PlanOnly:    true,
+					ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + ".tf"),
+					ConfigVariables: config.Variables{"enabled": config.BoolVariable(false)},
+					Check:           resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", flag.attribute, "false")),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + ".tf"),
+					ConfigVariables: config.Variables{"enabled": config.BoolVariable(false)},
+					PlanOnly:        true,
+				},
 			}})
 		})
 	}

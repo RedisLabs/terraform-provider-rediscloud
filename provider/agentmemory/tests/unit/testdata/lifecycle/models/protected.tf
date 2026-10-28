@@ -1,0 +1,27 @@
+resource "rediscloud_agent_memory" "example" {
+  name        = "selector-store"
+  database_id = 123
+  lifecycle { prevent_destroy = true }
+  short_term_ttl_seconds     = 86400
+  long_term_ttl_seconds      = 31536000
+  extraction_cadence_seconds = 300
+  llm {
+    provider = "other-provider"
+    model    = "fake-llm"
+    credentials {
+      type            = "apiKey"
+      api_key         = "FAKE-STATIC"
+      api_key_version = 1
+    }
+  }
+  embedding {
+    provider = "fake-provider"
+    model    = "fake-embedding"
+    credentials {
+      type            = "apiKey"
+      api_key         = "FAKE-STATIC"
+      api_key_version = 1
+    }
+  }
+
+}

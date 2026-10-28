@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/stretchr/testify/assert"
@@ -65,32 +66,63 @@ func TestAgentMemoryExtractionStrategyLifecycle(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	config := func(name, strategy string) string {
-		attribute := ""
-		if strategy != "" {
-			attribute = fmt.Sprintf("extraction_strategy = %q", strategy)
-		}
-		return testProviderConfig(t, server.URL) + fmt.Sprintf(`
-resource "rediscloud_agent_memory" "example" {
- name = %q
- database_id = 123
- %s
-}
-`, name, attribute)
-	}
+	testProviderConfig(t, server.URL)
 	const address = "rediscloud_agent_memory.example"
-	initial, renamed := config("store", "FAKE-FUTURE-STRATEGY"), config("renamed", "FAKE-FUTURE-STRATEGY")
-	changed := config("renamed", "INSTRUCT")
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
-			{Config: initial, Check: resource.TestCheckResourceAttr(address, "extraction_strategy", "FAKE-FUTURE-STRATEGY")},
-			{Config: initial, PlanOnly: true},
-			{Config: renamed, Check: resource.TestCheckResourceAttr(address, "id", "store-1")},
-			{Config: config("renamed", ""), PlanOnly: true},
-			{Config: config("omitted-strategy", ""), ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate)}}, Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr(address, "id", "store-1"), resource.TestCheckResourceAttr(address, "extraction_strategy", "FAKE-FUTURE-STRATEGY"))},
-			{Config: changed, ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionDestroyBeforeCreate)}}, Check: resource.TestCheckResourceAttr(address, "id", "store-2")},
-			{Config: changed, PlanOnly: true},
+			{
+				ConfigFile: config.StaticFile("testdata/lifecycle/stores/store_extraction_strategy.tf"),
+				ConfigVariables: config.Variables{
+					"name":     config.StringVariable("store"),
+					"strategy": config.StringVariable("FAKE-FUTURE-STRATEGY"),
+				},
+				Check: resource.TestCheckResourceAttr(address, "extraction_strategy", "FAKE-FUTURE-STRATEGY"),
+			},
+			{
+				ConfigFile: config.StaticFile("testdata/lifecycle/stores/store_extraction_strategy.tf"),
+				ConfigVariables: config.Variables{
+					"name":     config.StringVariable("store"),
+					"strategy": config.StringVariable("FAKE-FUTURE-STRATEGY"),
+				},
+				PlanOnly: true,
+			},
+			{
+				ConfigFile: config.StaticFile("testdata/lifecycle/stores/store_extraction_strategy.tf"),
+				ConfigVariables: config.Variables{
+					"name":     config.StringVariable("renamed"),
+					"strategy": config.StringVariable("FAKE-FUTURE-STRATEGY"),
+				},
+				Check: resource.TestCheckResourceAttr(address, "id", "store-1"),
+			},
+			{
+				ConfigFile:      config.StaticFile("testdata/lifecycle/stores/store_without_extraction_strategy.tf"),
+				ConfigVariables: config.Variables{"name": config.StringVariable("renamed")},
+				PlanOnly:        true,
+			},
+			{
+				ConfigFile:       config.StaticFile("testdata/lifecycle/stores/store_without_extraction_strategy.tf"),
+				ConfigVariables:  config.Variables{"name": config.StringVariable("omitted-strategy")},
+				ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionUpdate)}},
+				Check:            resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr(address, "id", "store-1"), resource.TestCheckResourceAttr(address, "extraction_strategy", "FAKE-FUTURE-STRATEGY")),
+			},
+			{
+				ConfigFile: config.StaticFile("testdata/lifecycle/stores/store_extraction_strategy.tf"),
+				ConfigVariables: config.Variables{
+					"name":     config.StringVariable("renamed"),
+					"strategy": config.StringVariable("INSTRUCT"),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, plancheck.ResourceActionDestroyBeforeCreate)}},
+				Check:            resource.TestCheckResourceAttr(address, "id", "store-2"),
+			},
+			{
+				ConfigFile: config.StaticFile("testdata/lifecycle/stores/store_extraction_strategy.tf"),
+				ConfigVariables: config.Variables{
+					"name":     config.StringVariable("renamed"),
+					"strategy": config.StringVariable("INSTRUCT"),
+				},
+				PlanOnly: true,
+			},
 		},
 	})
 	mu.Lock()

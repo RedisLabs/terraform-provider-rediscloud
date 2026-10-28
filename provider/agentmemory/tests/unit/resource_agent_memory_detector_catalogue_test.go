@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -127,14 +128,12 @@ func TestAgentMemoryDetectorCatalogueLifecycle(t *testing.T) {
 					}
 				}))
 				defer server.Close()
-				config := func(value string) string {
-					expression, dependency := fmt.Sprintf("%q", value), ""
-					if deferred {
-						dependency = fmt.Sprintf(`resource "terraform_data" "value" { input=%q }`, value)
-						expression = "tostring(terraform_data.value.output)"
-					}
-					return testProviderConfig(t, server.URL) + catalogueConfig(field, expression, dependency)
+				testProviderConfig(t, server.URL)
+				fixture := "testdata/lifecycle/detectors/detector_catalogue_" + field
+				if deferred {
+					fixture += "_deferred"
 				}
+				fixture += ".tf"
 				check := func(value string) resource.TestCheckFunc {
 					return func(state *terraform.State) error {
 						mu.Lock()
@@ -152,14 +151,45 @@ func TestAgentMemoryDetectorCatalogueLifecycle(t *testing.T) {
 					updated = "phone"
 				}
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-					{Config: config(initial), Check: check(initial)},
-					{Config: config(updated), Check: check(updated)},
-					{Config: config(updated), PlanOnly: true},
-					{Config: config("rejected-detector"), ExpectError: regexp.MustCompile("Failed to update Agent Memory service")},
+					{
+						ConfigFile:      config.StaticFile(fixture),
+						ConfigVariables: config.Variables{"value": config.StringVariable(initial)},
+						Check:           check(initial),
+					},
+					{
+						ConfigFile:      config.StaticFile(fixture),
+						ConfigVariables: config.Variables{"value": config.StringVariable(updated)},
+						Check:           check(updated),
+					},
+					{
+						ConfigFile:      config.StaticFile(fixture),
+						ConfigVariables: config.Variables{"value": config.StringVariable(updated)},
+						PlanOnly:        true,
+					},
+					{
+						ConfigFile:      config.StaticFile(fixture),
+						ConfigVariables: config.Variables{"value": config.StringVariable("rejected-detector")},
+						ExpectError:     regexp.MustCompile("Failed to update Agent Memory service"),
+					},
 					// A failed apply may already have updated the terraform_data dependency.
-					{Config: config(updated), Check: check(updated)},
-					{Config: config(updated), PlanOnly: true},
-					{Config: config(updated), ResourceName: "rediscloud_agent_memory.example", ImportState: true, ImportStateId: "store-1", ImportStateVerify: true},
+					{
+						ConfigFile:      config.StaticFile(fixture),
+						ConfigVariables: config.Variables{"value": config.StringVariable(updated)},
+						Check:           check(updated),
+					},
+					{
+						ConfigFile:      config.StaticFile(fixture),
+						ConfigVariables: config.Variables{"value": config.StringVariable(updated)},
+						PlanOnly:        true,
+					},
+					{
+						ConfigFile:        config.StaticFile(fixture),
+						ConfigVariables:   config.Variables{"value": config.StringVariable(updated)},
+						ResourceName:      "rediscloud_agent_memory.example",
+						ImportState:       true,
+						ImportStateId:     "store-1",
+						ImportStateVerify: true,
+					},
 				}})
 				mu.Lock()
 				defer mu.Unlock()

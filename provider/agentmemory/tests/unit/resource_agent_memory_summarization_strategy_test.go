@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
@@ -17,13 +18,46 @@ import (
 )
 
 func TestAgentMemorySummarizationStrategyLifecycle(t *testing.T) {
-	for _, tc := range []struct{ name, expression, dependency, expected string }{
-		{name: "omitted", expected: "FAKE-API-DEFAULT"},
-		{name: "null", expression: "null", expected: "FAKE-API-DEFAULT"},
-		{name: "current", expression: `"event_count"`, expected: "event_count"},
-		{name: "future", expression: `"FAKE-FUTURE"`, expected: "FAKE-FUTURE"},
-		{name: "unknown", expression: "terraform_data.value.output", dependency: `resource "terraform_data" "value" { input="FAKE-RESOLVED" }`, expected: "FAKE-RESOLVED"},
-		{name: "unknown null", expression: "terraform_data.value.output", dependency: `resource "terraform_data" "value" { input=null }`, expected: "FAKE-API-DEFAULT"},
+	for _, tc := range []struct {
+		name, fixture, expected string
+		strategy, source        config.Variable
+		deferred                bool
+	}{
+		{
+			name:     "omitted",
+			expected: "FAKE-API-DEFAULT",
+			fixture:  "testdata/lifecycle/summarization/summarization_strategy_omitted.tf",
+		},
+		{
+			name:     "null",
+			expected: "FAKE-API-DEFAULT",
+			fixture:  "testdata/lifecycle/summarization/summarization_strategy.tf",
+		},
+		{
+			name:     "current",
+			expected: "event_count",
+			fixture:  "testdata/lifecycle/summarization/summarization_strategy.tf",
+			strategy: config.StringVariable("event_count"),
+		},
+		{
+			name:     "future",
+			expected: "FAKE-FUTURE",
+			fixture:  "testdata/lifecycle/summarization/summarization_strategy.tf",
+			strategy: config.StringVariable("FAKE-FUTURE"),
+		},
+		{
+			name:     "unknown",
+			expected: "FAKE-RESOLVED",
+			fixture:  "testdata/lifecycle/summarization/summarization_strategy_deferred.tf",
+			source:   config.StringVariable("FAKE-RESOLVED"),
+			deferred: true,
+		},
+		{
+			name:     "unknown null",
+			expected: "FAKE-API-DEFAULT",
+			fixture:  "testdata/lifecycle/summarization/summarization_strategy_deferred.tf",
+			deferred: true,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var mu sync.Mutex
@@ -84,24 +118,12 @@ func TestAgentMemorySummarizationStrategyLifecycle(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			config := func(expression string, enabled bool) string {
-				attr := ""
-				if expression != "" {
-					attr = "trigger_strategy=" + expression
-				}
-				return testProviderConfig(t, server.URL) + tc.dependency + fmt.Sprintf(`
-resource "rediscloud_agent_memory" "example" {
- name="store"
- database_id=123
- short_term_ttl_seconds=86400
- long_term_ttl_seconds=31536000
- extraction_cadence_seconds=300
- summarization {
-  enabled=%t
-  %s
- }
-}
-`, enabled, attr)
+			testProviderConfig(t, server.URL)
+			updatedFixture := "testdata/lifecycle/summarization/summarization_strategy.tf"
+			omittedFixture := "testdata/lifecycle/summarization/summarization_strategy_omitted.tf"
+			if tc.deferred {
+				updatedFixture = "testdata/lifecycle/summarization/summarization_strategy_with_source.tf"
+				omittedFixture = "testdata/lifecycle/summarization/summarization_strategy_omitted_with_source.tf"
 			}
 			check := func(strategy string) resource.TestCheckFunc {
 				return func(state *terraform.State) error {
@@ -113,18 +135,88 @@ resource "rediscloud_agent_memory" "example" {
 					return resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.trigger_strategy", strategy))(state)
 				}
 			}
-			initial := config(tc.expression, true)
-			updated := config(`"FAKE-FUTURE-UPDATE"`, true)
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: initial, Check: check(tc.expected)},
-				{Config: initial, PlanOnly: true},
-				{Config: updated, Check: check("FAKE-FUTURE-UPDATE")},
-				{Config: config(`"FAKE-REJECTED"`, true), ExpectError: regexp.MustCompile("Failed to update Agent Memory service")},
-				{Config: updated, PlanOnly: true},
-				{Config: config("", true), PlanOnly: true},
-				{Config: config("", false), Check: resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "summarization.0.trigger_strategy")},
-				{Config: config("", true), Check: check("FAKE-API-DEFAULT")},
-				{Config: config("", true), PlanOnly: true},
+				{
+					ConfigFile: config.StaticFile(tc.fixture),
+					ConfigVariables: config.Variables{"settings": config.ObjectVariable(map[string]config.Variable{
+						"enabled":  config.BoolVariable(true),
+						"strategy": tc.strategy,
+						"source":   tc.source,
+					})},
+					Check: check(tc.expected),
+				},
+				{
+					ConfigFile: config.StaticFile(tc.fixture),
+					ConfigVariables: config.Variables{"settings": config.ObjectVariable(map[string]config.Variable{
+						"enabled":  config.BoolVariable(true),
+						"strategy": tc.strategy,
+						"source":   tc.source,
+					})},
+					PlanOnly: true,
+				},
+				{
+					ConfigFile: config.StaticFile(updatedFixture),
+					ConfigVariables: config.Variables{"settings": config.ObjectVariable(map[string]config.Variable{
+						"enabled":  config.BoolVariable(true),
+						"strategy": config.StringVariable("FAKE-FUTURE-UPDATE"),
+						"source":   tc.source,
+					})},
+					Check: check("FAKE-FUTURE-UPDATE"),
+				},
+				{
+					ConfigFile: config.StaticFile(updatedFixture),
+					ConfigVariables: config.Variables{"settings": config.ObjectVariable(map[string]config.Variable{
+						"enabled":  config.BoolVariable(true),
+						"strategy": config.StringVariable("FAKE-REJECTED"),
+						"source":   tc.source,
+					})},
+					ExpectError: regexp.MustCompile("Failed to update Agent Memory service"),
+				},
+				{
+					ConfigFile: config.StaticFile(updatedFixture),
+					ConfigVariables: config.Variables{"settings": config.ObjectVariable(map[string]config.Variable{
+						"enabled":  config.BoolVariable(true),
+						"strategy": config.StringVariable("FAKE-FUTURE-UPDATE"),
+						"source":   tc.source,
+					})},
+					PlanOnly: true,
+				},
+				{
+					ConfigFile: config.StaticFile(omittedFixture),
+					ConfigVariables: config.Variables{"settings": config.ObjectVariable(map[string]config.Variable{
+						"enabled":  config.BoolVariable(true),
+						"strategy": nil,
+						"source":   tc.source,
+					})},
+					PlanOnly: true,
+				},
+				{
+					ConfigFile: config.StaticFile(omittedFixture),
+					ConfigVariables: config.Variables{"settings": config.ObjectVariable(map[string]config.Variable{
+						"enabled":  config.BoolVariable(false),
+						"strategy": nil,
+						"source":   tc.source,
+					})},
+					Check: resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", "summarization.0.trigger_strategy"),
+				},
+				{
+					ConfigFile: config.StaticFile(omittedFixture),
+					ConfigVariables: config.Variables{"settings": config.ObjectVariable(map[string]config.Variable{
+						"enabled":  config.BoolVariable(true),
+						"strategy": nil,
+						"source":   tc.source,
+					})},
+					Check: check("FAKE-API-DEFAULT"),
+				},
+				{
+					ConfigFile: config.StaticFile(omittedFixture),
+					ConfigVariables: config.Variables{"settings": config.ObjectVariable(map[string]config.Variable{
+						"enabled":  config.BoolVariable(true),
+						"strategy": nil,
+						"source":   tc.source,
+					})},
+					PlanOnly: true,
+				},
 			}})
 			mu.Lock()
 			defer mu.Unlock()

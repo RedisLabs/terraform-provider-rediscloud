@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
@@ -87,8 +88,16 @@ func TestAgentMemoryPartialModelBlockRemovalPreservesStore(t *testing.T) {
 		llm, embedding bool
 		pattern        string
 	}{
-		{name: "embedding removed", llm: true, pattern: "These attributes must be configured together"},
-		{name: "llm removed", embedding: true, pattern: "These attributes must be configured together"},
+		{
+			name:    "embedding removed",
+			llm:     true,
+			pattern: "These attributes must be configured together",
+		},
+		{
+			name:      "llm removed",
+			embedding: true,
+			pattern:   "These attributes must be configured together",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var mu sync.Mutex
@@ -120,8 +129,11 @@ func TestAgentMemoryPartialModelBlockRemovalPreservesStore(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			prefix := testProviderConfig(t, server.URL)
-			initial := prefix + pairedModelsConfig(true, true, false)
+			testProviderConfig(t, server.URL)
+			fixture := "testdata/lifecycle/models/model_blocks_without_llm.tf"
+			if tc.llm {
+				fixture = "testdata/lifecycle/models/model_blocks_without_embedding.tf"
+			}
 			check := func(state *terraform.State) error {
 				mu.Lock()
 				defer mu.Unlock()
@@ -134,10 +146,22 @@ func TestAgentMemoryPartialModelBlockRemovalPreservesStore(t *testing.T) {
 				return resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1")(state)
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: initial, Check: check},
-				{Config: prefix + pairedModelsConfig(tc.llm, tc.embedding, false), ExpectError: regexp.MustCompile(tc.pattern)},
-				{Config: initial, Check: check},
-				{Config: initial, PlanOnly: true},
+				{
+					ConfigFile: config.StaticFile("testdata/lifecycle/models/model_blocks_paired.tf"),
+					Check:      check,
+				},
+				{
+					ConfigFile:  config.StaticFile(fixture),
+					ExpectError: regexp.MustCompile(tc.pattern),
+				},
+				{
+					ConfigFile: config.StaticFile("testdata/lifecycle/models/model_blocks_paired.tf"),
+					Check:      check,
+				},
+				{
+					ConfigFile: config.StaticFile("testdata/lifecycle/models/model_blocks_paired.tf"),
+					PlanOnly:   true,
+				},
 			}})
 			mu.Lock()
 			defer mu.Unlock()

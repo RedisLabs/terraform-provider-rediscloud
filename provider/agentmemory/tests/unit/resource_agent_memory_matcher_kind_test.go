@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
@@ -154,13 +155,10 @@ func TestAgentMemoryMatcherKindByAPI(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			config := func(kind string, regex bool) string {
-				expression, dependency := fmt.Sprintf("%q", kind), ""
-				if unknown {
-					dependency = fmt.Sprintf(`resource "terraform_data" "kind" { input=%q }`, kind)
-					expression = "tostring(terraform_data.kind.output)"
-				}
-				return testProviderConfig(t, server.URL) + matcherKindConfig(expression, dependency, regex)
+			testProviderConfig(t, server.URL)
+			suffix := ".tf"
+			if unknown {
+				suffix = "_deferred.tf"
 			}
 			check := func(kind string) resource.TestCheckFunc {
 				return func(state *terraform.State) error {
@@ -177,12 +175,36 @@ func TestAgentMemoryMatcherKindByAPI(t *testing.T) {
 				}
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config("future-kind", false), Check: check("future-kind")},
-				{Config: config("regex", true), Check: check("regex")},
-				{Config: config("future-kind", false), Check: check("future-kind")},
-				{Config: config("rejected-kind", false), ExpectError: regexp.MustCompile("Failed to update Agent Memory service")},
-				{Config: config("future-kind", false), Check: check("future-kind")},
-				{Config: config("future-kind", false), PlanOnly: true},
+				{
+					ConfigFile:      config.StaticFile("testdata/lifecycle/detectors/matcher_kind" + suffix),
+					ConfigVariables: config.Variables{"kind": config.StringVariable("future-kind")},
+					Check:           check("future-kind"),
+				},
+				{
+					ConfigFile:      config.StaticFile("testdata/lifecycle/detectors/matcher_kind_regex" + suffix),
+					ConfigVariables: config.Variables{"kind": config.StringVariable("regex")},
+					Check:           check("regex"),
+				},
+				{
+					ConfigFile:      config.StaticFile("testdata/lifecycle/detectors/matcher_kind" + suffix),
+					ConfigVariables: config.Variables{"kind": config.StringVariable("future-kind")},
+					Check:           check("future-kind"),
+				},
+				{
+					ConfigFile:      config.StaticFile("testdata/lifecycle/detectors/matcher_kind" + suffix),
+					ConfigVariables: config.Variables{"kind": config.StringVariable("rejected-kind")},
+					ExpectError:     regexp.MustCompile("Failed to update Agent Memory service"),
+				},
+				{
+					ConfigFile:      config.StaticFile("testdata/lifecycle/detectors/matcher_kind" + suffix),
+					ConfigVariables: config.Variables{"kind": config.StringVariable("future-kind")},
+					Check:           check("future-kind"),
+				},
+				{
+					ConfigFile:      config.StaticFile("testdata/lifecycle/detectors/matcher_kind" + suffix),
+					ConfigVariables: config.Variables{"kind": config.StringVariable("future-kind")},
+					PlanOnly:        true,
+				},
 			}})
 			mu.Lock()
 			defer mu.Unlock()

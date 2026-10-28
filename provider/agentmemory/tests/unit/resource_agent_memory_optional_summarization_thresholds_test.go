@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -61,25 +62,8 @@ func TestAgentMemoryOptionalSummarizationThresholdsLifecycle(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	config := testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
- name="summary-defaults"
- database_id=123
- summarization { enabled=true }
-}
-`
+	testProviderConfig(t, server.URL)
 
-	configured := testProviderConfig(t, server.URL) + `resource "rediscloud_agent_memory" "example" {
- name="summary-defaults"
- database_id=123
- summarization {
-  enabled=true
-  event_count {
-   threshold=12
-   retain_count=6
-  }
- }
-}`
 	check := func(count string) resource.TestCheckFunc {
 		return func(state *terraform.State) error {
 			mu.Lock()
@@ -95,19 +79,46 @@ resource "rediscloud_agent_memory" "example" {
 		}
 	}
 	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-		{Config: config, Check: check("0")},
-		{Config: config, PlanOnly: true},
-		{Config: configured, Check: check("1")},
-		{Config: configured, PlanOnly: true},
-		{Config: config, Check: check("0")},
-		{Config: config, PlanOnly: true},
-		{Config: config, ResourceName: "rediscloud_agent_memory.example", ImportState: true, ImportStateId: "store-1", ImportStateCheck: func(states []*terraform.InstanceState) error {
-			if len(states) != 1 || states[0].Attributes["summarization.0.event_count.0.threshold"] != "12" {
-				return fmt.Errorf("import omitted stored summarization thresholds")
-			}
-			return nil
-		}},
-		{Config: config, PlanOnly: true},
+		{
+			ConfigFile: config.StaticFile("testdata/lifecycle/summarization/summarization_without_thresholds.tf"),
+			Check:      check("0"),
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/lifecycle/summarization/summarization_without_thresholds.tf"),
+			PlanOnly:   true,
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/lifecycle/summarization/summarization_with_thresholds.tf"),
+			Check:      check("1"),
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/lifecycle/summarization/summarization_with_thresholds.tf"),
+			PlanOnly:   true,
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/lifecycle/summarization/summarization_without_thresholds.tf"),
+			Check:      check("0"),
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/lifecycle/summarization/summarization_without_thresholds.tf"),
+			PlanOnly:   true,
+		},
+		{
+			ConfigFile:    config.StaticFile("testdata/lifecycle/summarization/summarization_without_thresholds.tf"),
+			ResourceName:  "rediscloud_agent_memory.example",
+			ImportState:   true,
+			ImportStateId: "store-1",
+			ImportStateCheck: func(states []*terraform.InstanceState) error {
+				if len(states) != 1 || states[0].Attributes["summarization.0.event_count.0.threshold"] != "12" {
+					return fmt.Errorf("import omitted stored summarization thresholds")
+				}
+				return nil
+			},
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/lifecycle/summarization/summarization_without_thresholds.tf"),
+			PlanOnly:   true,
+		},
 	}})
 	mu.Lock()
 	defer mu.Unlock()

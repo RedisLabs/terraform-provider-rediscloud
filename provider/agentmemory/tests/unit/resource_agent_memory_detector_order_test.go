@@ -5,40 +5,16 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/require"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
-
-func detectorOrderConfig(kind string, names []string, action string) string {
-	var detectors strings.Builder
-	group := "built_in_detectors"
-	for _, name := range names {
-		if kind == "built-in" {
-			fmt.Fprintf(&detectors, "detectors {\nid=%q\nenabled=true\naction=%q\n}\n", name, action)
-		} else {
-			group = "custom_detectors"
-			fmt.Fprintf(&detectors, "detectors {\nname=%q\nenabled=true\naction=%q\nmatcher {\nkind=\"regex\"\nregex { pattern=\"ticket-[0-9]+\" }\n}\n}\n", name, action)
-		}
-	}
-	return fmt.Sprintf(`resource "rediscloud_agent_memory" "example" {
- name="detector-order-store"
- database_id=123
- long_term_memory_exclusions {
-  enabled=true
-  %s {
-   enabled=true
-   %s
-  }
- }
-}`, group, detectors.String())
-}
 
 func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
 	for _, scenario := range []struct {
@@ -116,9 +92,8 @@ func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			config := func(values []string, action string) string {
-				return testProviderConfig(t, server.URL) + detectorOrderConfig(kind, values, action)
-			}
+			testProviderConfig(t, server.URL)
+			fixture := "testdata/lifecycle/detectors/detector_order_" + kind + ".tf"
 			expectedDeletes := 0
 			check := func(values []string, action string) resource.TestCheckFunc {
 				return func(state *terraform.State) error {
@@ -139,17 +114,59 @@ func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
 			var importedOrder []string
 			var importStore map[string]any
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config(names[:2], "redact"), Check: check(names[:2], "redact")},
-				{Config: config(names[:2], "redact"), PlanOnly: true},
-				{Config: config(names, "redact"), Check: check(names, "redact")},
-				{Config: config(reordered, "drop"), Check: check(reordered, "drop")},
-				{Config: config(reordered, "drop"), PlanOnly: true},
-				{Config: config(names[:2], "drop"), Check: resource.ComposeTestCheckFunc(check(names[:2], "drop"), func(*terraform.State) error {
-					mu.Lock()
-					defer mu.Unlock()
-					importStore = store
-					return nil
-				})},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[0]), config.StringVariable(names[1])),
+						"action": config.StringVariable("redact"),
+					},
+					Check: check(names[:2], "redact"),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[0]), config.StringVariable(names[1])),
+						"action": config.StringVariable("redact"),
+					},
+					PlanOnly: true,
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[0]), config.StringVariable(names[1]), config.StringVariable(names[2])),
+						"action": config.StringVariable("redact"),
+					},
+					Check: check(names, "redact"),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(reordered[0]), config.StringVariable(reordered[1]), config.StringVariable(reordered[2])),
+						"action": config.StringVariable("drop"),
+					},
+					Check: check(reordered, "drop"),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(reordered[0]), config.StringVariable(reordered[1]), config.StringVariable(reordered[2])),
+						"action": config.StringVariable("drop"),
+					},
+					PlanOnly: true,
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[0]), config.StringVariable(names[1])),
+						"action": config.StringVariable("drop"),
+					},
+					Check: resource.ComposeTestCheckFunc(check(names[:2], "drop"), func(*terraform.State) error {
+						mu.Lock()
+						defer mu.Unlock()
+						importStore = store
+						return nil
+					}),
+				},
 			}})
 			mu.Lock()
 			if deletes != 1 || store != nil {
@@ -161,23 +178,48 @@ func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
 			mu.Unlock()
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 
-				{Config: config(names[:2], "drop"), ResourceName: "rediscloud_agent_memory.example", ImportState: true, ImportStateId: "store-1", ImportStatePersist: true, ImportStateCheck: func(states []*terraform.InstanceState) error {
-					if len(states) != 1 {
-						return fmt.Errorf("unexpected imported resource count")
-					}
-					for i := range names[:2] {
-						attribute := fmt.Sprintf("long_term_memory_exclusions.0.%s.0.detectors.%d.%s", group, i, identity)
-						value, present := states[0].Attributes[attribute]
-						if !present {
-							return fmt.Errorf("import omitted detector identity")
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[0]), config.StringVariable(names[1])),
+						"action": config.StringVariable("drop"),
+					},
+					ResourceName:       "rediscloud_agent_memory.example",
+					ImportState:        true,
+					ImportStateId:      "store-1",
+					ImportStatePersist: true,
+					ImportStateCheck: func(states []*terraform.InstanceState) error {
+						if len(states) != 1 {
+							return fmt.Errorf("unexpected imported resource count")
 						}
-						importedOrder = append(importedOrder, value)
-					}
-					return nil
-				}},
+						for i := range names[:2] {
+							attribute := fmt.Sprintf("long_term_memory_exclusions.0.%s.0.detectors.%d.%s", group, i, identity)
+							value, present := states[0].Attributes[attribute]
+							if !present {
+								return fmt.Errorf("import omitted detector identity")
+							}
+							importedOrder = append(importedOrder, value)
+						}
+						return nil
+					},
+				},
 				{RefreshState: true, Check: func(state *terraform.State) error { return check(importedOrder, "drop")(state) }},
-				{Config: config(names[:2], "drop"), Check: check(names[:2], "drop")},
-				{Config: config(names[:2], "drop"), PlanOnly: true},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[0]), config.StringVariable(names[1])),
+						"action": config.StringVariable("drop"),
+					},
+					Check: check(names[:2], "drop"),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[0]), config.StringVariable(names[1])),
+						"action": config.StringVariable("drop"),
+					},
+					PlanOnly: true,
+				},
 			}})
 			mu.Lock()
 			defer mu.Unlock()

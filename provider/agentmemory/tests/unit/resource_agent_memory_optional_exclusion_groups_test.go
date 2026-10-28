@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -62,57 +63,8 @@ func TestAgentMemoryOptionalExclusionGroupsLifecycle(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	prefix := testProviderConfig(t, server.URL)
-	initial := prefix + `
-resource "rediscloud_agent_memory" "example" {
- name="remove-groups"
- database_id=123
- long_term_memory_exclusions {
-  enabled=true
-  semantic {
-   enabled=true
-   prompt="Exclude secrets"
-  }
-  built_in_detectors {
-   enabled=true
-   detectors {
-    id="email"
-    enabled=true
-   }
-  }
-  custom_detectors {
-   enabled=true
-   detectors {
-    name="ticket"
-    enabled=true
-    matcher {
-     kind="regex"
-     regex { pattern="ticket-[0-9]+" }
-    }
-   }
-  }
- }
-}
-`
-	removed := prefix + `
-resource "rediscloud_agent_memory" "example" {
- name="remove-groups"
- database_id=123
- long_term_memory_exclusions { enabled=true }
-}
-`
+	testProviderConfig(t, server.URL)
 
-	partial := prefix + `resource "rediscloud_agent_memory" "example" {
- name="remove-groups"
- database_id=123
- long_term_memory_exclusions {
-  enabled=true
-  semantic {
-   enabled=true
-   prompt="Exclude secrets"
-  }
- }
-}`
 	check := func(state *terraform.State) error {
 		mu.Lock()
 		defer mu.Unlock()
@@ -130,23 +82,47 @@ resource "rediscloud_agent_memory" "example" {
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
-			{Config: initial, Check: check},
-			{Config: partial, Check: check},
-			{Config: partial, PlanOnly: true},
-			{Config: removed, Check: check},
-			{Config: removed, PlanOnly: true},
-			{Config: removed, ResourceName: "rediscloud_agent_memory.example", ImportState: true, ImportStateId: "store-1", ImportStateCheck: func(states []*terraform.InstanceState) error {
-				if len(states) != 1 {
-					return fmt.Errorf("unexpected imported resource count")
-				}
-				for _, group := range []string{"semantic.0.prompt", "built_in_detectors.0.detectors.0.id", "custom_detectors.0.detectors.0.name"} {
-					if states[0].Attributes["long_term_memory_exclusions.0."+group] == "" {
-						return fmt.Errorf("import omitted stored group %s", group)
+			{
+				ConfigFile: config.StaticFile("testdata/lifecycle/exclusions/exclusion_groups_all.tf"),
+				Check:      check,
+			},
+			{
+				ConfigFile: config.StaticFile("testdata/lifecycle/exclusions/exclusion_groups_semantic.tf"),
+				Check:      check,
+			},
+			{
+				ConfigFile: config.StaticFile("testdata/lifecycle/exclusions/exclusion_groups_semantic.tf"),
+				PlanOnly:   true,
+			},
+			{
+				ConfigFile: config.StaticFile("testdata/lifecycle/exclusions/exclusion_groups_omitted.tf"),
+				Check:      check,
+			},
+			{
+				ConfigFile: config.StaticFile("testdata/lifecycle/exclusions/exclusion_groups_omitted.tf"),
+				PlanOnly:   true,
+			},
+			{
+				ConfigFile:    config.StaticFile("testdata/lifecycle/exclusions/exclusion_groups_omitted.tf"),
+				ResourceName:  "rediscloud_agent_memory.example",
+				ImportState:   true,
+				ImportStateId: "store-1",
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("unexpected imported resource count")
 					}
-				}
-				return nil
-			}},
-			{Config: removed, PlanOnly: true},
+					for _, group := range []string{"semantic.0.prompt", "built_in_detectors.0.detectors.0.id", "custom_detectors.0.detectors.0.name"} {
+						if states[0].Attributes["long_term_memory_exclusions.0."+group] == "" {
+							return fmt.Errorf("import omitted stored group %s", group)
+						}
+					}
+					return nil
+				},
+			},
+			{
+				ConfigFile: config.StaticFile("testdata/lifecycle/exclusions/exclusion_groups_omitted.tf"),
+				PlanOnly:   true,
+			},
 		},
 	})
 	mu.Lock()

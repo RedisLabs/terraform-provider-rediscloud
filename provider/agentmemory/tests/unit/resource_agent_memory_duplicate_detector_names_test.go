@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -223,25 +224,44 @@ func TestAgentMemoryCustomDetectorNameLifecycle(t *testing.T) {
 			t.Errorf("fixture not cleaned: creates=%d deletes=%d remaining=%t", creates, deletes, store != nil)
 		}
 	}()
-	prefix := testProviderConfig(t, server.URL)
-	first := duplicateDetectorBlock(`"ticket"`, "ticket-[0-9]+", "redact", true)
-	config := func(input, expression string) string {
-		return prefix + duplicateDetectorConfig(first+duplicateDetectorBlock(expression, "account-[0-9]+", "redact", true), fmt.Sprintf(`resource "terraform_data" "name" { input=%q }`, input), "", true, true)
-	}
-	expression := `split(":",tostring(terraform_data.name.output))[0]`
-	initial, changed := config("account:before", expression), config("account:after", expression)
-	duplicate := config("account:after", `"ticket"`)
-	deferredDuplicate := config("ticket:after", expression)
-	restored := config("ticket:after", `"account"`)
+	testProviderConfig(t, server.URL)
 	check := resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.detectors.1.name", "account"))
 	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-		{Config: initial, Check: check},
-		{Config: changed, Check: check},
-		{Config: changed, PlanOnly: true},
-		{Config: duplicate, PlanOnly: true, ExpectError: regexp.MustCompile("Duplicate Agent Memory custom detector name")},
-		{Config: deferredDuplicate, PlanOnly: true, ExpectNonEmptyPlan: true},
-		{Config: deferredDuplicate, ExpectError: regexp.MustCompile("Duplicate Agent Memory custom detector name")},
+		{
+			ConfigFile:      config.StaticFile("testdata/lifecycle/detectors/detector_deferred_duplicate_name.tf"),
+			ConfigVariables: config.Variables{"input": config.StringVariable("account:before")},
+			Check:           check,
+		},
+		{
+			ConfigFile:      config.StaticFile("testdata/lifecycle/detectors/detector_deferred_duplicate_name.tf"),
+			ConfigVariables: config.Variables{"input": config.StringVariable("account:after")},
+			Check:           check,
+		},
+		{
+			ConfigFile:      config.StaticFile("testdata/lifecycle/detectors/detector_deferred_duplicate_name.tf"),
+			ConfigVariables: config.Variables{"input": config.StringVariable("account:after")},
+			PlanOnly:        true,
+		},
+		{
+			ConfigFile:  config.StaticFile("testdata/lifecycle/detectors/detector_known_duplicate_name.tf"),
+			PlanOnly:    true,
+			ExpectError: regexp.MustCompile("Duplicate Agent Memory custom detector name"),
+		},
+		{
+			ConfigFile:         config.StaticFile("testdata/lifecycle/detectors/detector_deferred_duplicate_name.tf"),
+			ConfigVariables:    config.Variables{"input": config.StringVariable("ticket:after")},
+			PlanOnly:           true,
+			ExpectNonEmptyPlan: true,
+		},
+		{
+			ConfigFile:      config.StaticFile("testdata/lifecycle/detectors/detector_deferred_duplicate_name.tf"),
+			ConfigVariables: config.Variables{"input": config.StringVariable("ticket:after")},
+			ExpectError:     regexp.MustCompile("Duplicate Agent Memory custom detector name"),
+		},
 		// Use a valid list for cleanup after the rejected update.
-		{Config: restored, PlanOnly: true},
+		{
+			ConfigFile: config.StaticFile("testdata/lifecycle/detectors/detector_restored_name.tf"),
+			PlanOnly:   true,
+		},
 	}})
 }

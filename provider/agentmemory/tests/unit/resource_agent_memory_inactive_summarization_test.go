@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -32,24 +33,20 @@ func TestAgentMemoryInactiveSummarizationDefinitions(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	config := testProviderConfig(t, server.URL) + `resource "rediscloud_agent_memory" "example" {
- name="fixture"
- database_id=123
- summarization {
-  enabled=false
-  trigger_strategy="event_count"
-  event_count {
-   threshold=20
-   retain_count=10
-  }
- }
-}`
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-		{Config: config, Check: resource.ComposeTestCheckFunc(
-			resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.trigger_strategy", "event_count"),
-			resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.threshold", "20"),
-		)},
+		{
+			ConfigFile: config.StaticFile("testdata/lifecycle/summarization/summarization_inactive.tf"),
+			Check: resource.ComposeTestCheckFunc(
+				resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.trigger_strategy", "event_count"),
+				resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.threshold", "20"),
+			),
+		},
 		{ResourceName: "rediscloud_agent_memory.example", ImportState: true, ImportStateVerify: true},
-		{Config: config, PlanOnly: true},
+		{
+			ConfigFile: config.StaticFile("testdata/lifecycle/summarization/summarization_inactive.tf"),
+			PlanOnly:   true,
+		},
 	}})
 }

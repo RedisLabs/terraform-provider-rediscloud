@@ -10,6 +10,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
@@ -115,8 +116,11 @@ func TestAgentMemoryFieldTypesByAPI(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			prefix := testProviderConfig(t, server.URL)
-			config := func(count int) string { return prefix + fieldTypesConfig(fieldTypes[:count], unknown) }
+			testProviderConfig(t, server.URL)
+			fixture := "testdata/lifecycle/custom_types/custom_field_types"
+			if unknown {
+				fixture += "_deferred"
+			}
 			check := func(count int) resource.TestCheckFunc {
 				return func(state *terraform.State) error {
 					mu.Lock()
@@ -131,17 +135,54 @@ func TestAgentMemoryFieldTypesByAPI(t *testing.T) {
 					return resource.ComposeTestCheckFunc(checks...)(state)
 				}
 			}
-			redefined := prefix + fieldTypesConfig([]string{"changed-field-type", fieldTypes[1], fieldTypes[2]}, unknown)
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config(1), Check: check(1)},
-				{Config: config(2), Check: check(2)},
-				{Config: config(3), Check: check(3)},
-				{Config: config(4), ExpectError: regexp.MustCompile("Failed to update Agent Memory service")},
-				{Config: config(3), Check: check(3)},
-				{Config: redefined, PlanOnly: true, ExpectNonEmptyPlan: true},
-				{Config: config(1), PlanOnly: true, ExpectNonEmptyPlan: true},
-				{Config: config(3), Check: check(3)},
-				{Config: config(3), PlanOnly: true},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_1.tf"),
+					ConfigVariables: config.Variables{"values": config.ListVariable(config.StringVariable(fieldTypes[0]))},
+					Check:           check(1),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_2.tf"),
+					ConfigVariables: config.Variables{"values": config.ListVariable(config.StringVariable(fieldTypes[0]), config.StringVariable(fieldTypes[1]))},
+					Check:           check(2),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_3.tf"),
+					ConfigVariables: config.Variables{"values": config.ListVariable(config.StringVariable(fieldTypes[0]), config.StringVariable(fieldTypes[1]), config.StringVariable(fieldTypes[2]))},
+					Check:           check(3),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_4.tf"),
+					ConfigVariables: config.Variables{"values": config.ListVariable(config.StringVariable(fieldTypes[0]), config.StringVariable(fieldTypes[1]), config.StringVariable(fieldTypes[2]), config.StringVariable(fieldTypes[3]))},
+					ExpectError:     regexp.MustCompile("Failed to update Agent Memory service"),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_3.tf"),
+					ConfigVariables: config.Variables{"values": config.ListVariable(config.StringVariable(fieldTypes[0]), config.StringVariable(fieldTypes[1]), config.StringVariable(fieldTypes[2]))},
+					Check:           check(3),
+				},
+				{
+					ConfigFile:         config.StaticFile(fixture + "_3.tf"),
+					ConfigVariables:    config.Variables{"values": config.ListVariable(config.StringVariable("changed-field-type"), config.StringVariable(fieldTypes[1]), config.StringVariable(fieldTypes[2]))},
+					PlanOnly:           true,
+					ExpectNonEmptyPlan: true,
+				},
+				{
+					ConfigFile:         config.StaticFile(fixture + "_1.tf"),
+					ConfigVariables:    config.Variables{"values": config.ListVariable(config.StringVariable(fieldTypes[0]))},
+					PlanOnly:           true,
+					ExpectNonEmptyPlan: true,
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_3.tf"),
+					ConfigVariables: config.Variables{"values": config.ListVariable(config.StringVariable(fieldTypes[0]), config.StringVariable(fieldTypes[1]), config.StringVariable(fieldTypes[2]))},
+					Check:           check(3),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_3.tf"),
+					ConfigVariables: config.Variables{"values": config.ListVariable(config.StringVariable(fieldTypes[0]), config.StringVariable(fieldTypes[1]), config.StringVariable(fieldTypes[2]))},
+					PlanOnly:        true,
+				},
 			}})
 			mu.Lock()
 			defer mu.Unlock()

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/stretchr/testify/assert"
@@ -19,23 +20,105 @@ import (
 
 func TestAgentMemoryCreateOnlyReplacementLifecycle(t *testing.T) {
 	for _, tc := range []struct {
-		name, database, strategy, dependency, errorPattern string
-		replace, rename, preventDestroy                    bool
+		name, before, after, errorPattern string
+		afterVariables                    config.Variables
+		replace, rename                   bool
 	}{
-		{name: "unchanged", database: "123", strategy: `"INSTRUCT"`},
-		{name: "database change", database: "456", strategy: `"INSTRUCT"`, replace: true},
-		{name: "unknown database change", database: "terraform_data.value.output", strategy: `"INSTRUCT"`, dependency: `resource "terraform_data" "value" { input=456 }`, replace: true},
-		{name: "unknown database unchanged", database: "terraform_data.value.output", strategy: `"INSTRUCT"`, dependency: `resource "terraform_data" "value" { input=123 }`, replace: true},
-		{name: "strategy change", database: "123", strategy: `"FAKE-FUTURE-STRATEGY"`, replace: true},
-		{name: "unknown strategy change", database: "123", strategy: "terraform_data.value.output", dependency: `resource "terraform_data" "value" { input="FAKE-FUTURE-STRATEGY" }`, replace: true},
-		{name: "unknown strategy unchanged", database: "123", strategy: "terraform_data.value.output", dependency: `resource "terraform_data" "value" { input="INSTRUCT" }`, replace: true},
-		{name: "omitted strategy", database: "123"},
-		{name: "omitted strategy with rename", database: "123", rename: true},
-		{name: "database prevent destroy", database: "456", strategy: `"INSTRUCT"`, preventDestroy: true, errorPattern: "prevent_destroy|cannot be destroyed"},
-		{name: "strategy prevent destroy", database: "123", strategy: `"FAKE-FUTURE-STRATEGY"`, preventDestroy: true, errorPattern: "prevent_destroy|cannot be destroyed"},
-		{name: "unknown database prevent destroy", database: "terraform_data.value.output", strategy: `"INSTRUCT"`, dependency: `resource "terraform_data" "value" { input=123 }`, preventDestroy: true, errorPattern: "prevent_destroy|cannot be destroyed"},
-		{name: "unknown strategy prevent destroy", database: "123", strategy: "terraform_data.value.output", dependency: `resource "terraform_data" "value" { input="INSTRUCT" }`, preventDestroy: true, errorPattern: "prevent_destroy|cannot be destroyed"},
-		{name: "empty strategy prevent destroy", database: "123", strategy: `""`, preventDestroy: true, errorPattern: "prevent_destroy|cannot be destroyed"},
+		{
+			name:   "unchanged",
+			before: "testdata/lifecycle/stores/identity.tf",
+			after:  "testdata/lifecycle/stores/identity.tf",
+		},
+		{
+			name:           "database change",
+			before:         "testdata/lifecycle/stores/identity.tf",
+			after:          "testdata/lifecycle/stores/identity.tf",
+			afterVariables: config.Variables{"database_id": config.IntegerVariable(456)},
+			replace:        true,
+		},
+		{
+			name:    "unknown database change",
+			before:  "testdata/lifecycle/stores/identity.tf",
+			after:   "testdata/lifecycle/stores/deferred_database.tf",
+			replace: true,
+		},
+		{
+			name:           "unknown database unchanged",
+			before:         "testdata/lifecycle/stores/identity.tf",
+			after:          "testdata/lifecycle/stores/deferred_database.tf",
+			afterVariables: config.Variables{"value_input": config.IntegerVariable(123)},
+			replace:        true,
+		},
+		{
+			name:           "strategy change",
+			before:         "testdata/lifecycle/stores/identity.tf",
+			after:          "testdata/lifecycle/stores/identity.tf",
+			afterVariables: config.Variables{"extraction_strategy": config.StringVariable("FAKE-FUTURE-STRATEGY")},
+			replace:        true,
+		},
+		{
+			name:    "unknown strategy change",
+			before:  "testdata/lifecycle/stores/identity.tf",
+			after:   "testdata/lifecycle/stores/deferred_strategy.tf",
+			replace: true,
+		},
+		{
+			name:           "unknown strategy unchanged",
+			before:         "testdata/lifecycle/stores/identity.tf",
+			after:          "testdata/lifecycle/stores/deferred_strategy.tf",
+			afterVariables: config.Variables{"value_input": config.StringVariable("INSTRUCT")},
+			replace:        true,
+		},
+		{
+			name:   "omitted strategy",
+			before: "testdata/lifecycle/stores/identity.tf",
+			after:  "testdata/lifecycle/stores/omitted_strategy.tf",
+		},
+		{
+			name:           "omitted strategy with rename",
+			before:         "testdata/lifecycle/stores/identity.tf",
+			after:          "testdata/lifecycle/stores/omitted_strategy.tf",
+			afterVariables: config.Variables{"name": config.StringVariable("renamed")},
+			rename:         true,
+		},
+		{
+			name:         "database prevent destroy",
+			before:       "testdata/lifecycle/stores/identity.tf",
+			after:        "testdata/lifecycle/stores/protected_identity.tf",
+			errorPattern: "prevent_destroy|cannot be destroyed",
+		},
+		{
+			name:   "strategy prevent destroy",
+			before: "testdata/lifecycle/stores/identity.tf",
+			after:  "testdata/lifecycle/stores/protected_identity.tf",
+			afterVariables: config.Variables{
+				"database_id":         config.IntegerVariable(123),
+				"extraction_strategy": config.StringVariable("FAKE-FUTURE-STRATEGY"),
+			},
+			errorPattern: "prevent_destroy|cannot be destroyed",
+		},
+		{
+			name:         "unknown database prevent destroy",
+			before:       "testdata/lifecycle/stores/identity.tf",
+			after:        "testdata/lifecycle/stores/protected_deferred_database.tf",
+			errorPattern: "prevent_destroy|cannot be destroyed",
+		},
+		{
+			name:         "unknown strategy prevent destroy",
+			before:       "testdata/lifecycle/stores/identity.tf",
+			after:        "testdata/lifecycle/stores/protected_deferred_strategy.tf",
+			errorPattern: "prevent_destroy|cannot be destroyed",
+		},
+		{
+			name:   "empty strategy prevent destroy",
+			before: "testdata/lifecycle/stores/identity.tf",
+			after:  "testdata/lifecycle/stores/protected_identity.tf",
+			afterVariables: config.Variables{
+				"database_id":         config.IntegerVariable(123),
+				"extraction_strategy": config.StringVariable(""),
+			},
+			errorPattern: "prevent_destroy|cannot be destroyed",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var mu sync.Mutex
@@ -81,36 +164,22 @@ func TestAgentMemoryCreateOnlyReplacementLifecycle(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			config := func(name, database, strategy, dependency string, protect bool) string {
-				strategyLine, lifecycle := "", ""
-				if strategy != "" {
-					strategyLine = "extraction_strategy=" + strategy
-				}
-				if protect {
-					lifecycle = "lifecycle { prevent_destroy=true }"
-				}
-				return testProviderConfig(t, server.URL) + dependency + fmt.Sprintf(`
-resource "rediscloud_agent_memory" "example" {
- name=%q
- database_id=%s
- %s
- %s
- short_term_ttl_seconds=86400
- long_term_ttl_seconds=31536000
- extraction_cadence_seconds=300
-}
-`, name, database, strategyLine, lifecycle)
-			}
+			testProviderConfig(t, server.URL)
 			const address = "rediscloud_agent_memory.example"
-			initial := config("store", "123", `"INSTRUCT"`, "", false)
-			name := "store"
-			if tc.rename {
-				name = "renamed"
-			}
-			changed := config(name, tc.database, tc.strategy, tc.dependency, tc.preventDestroy)
-			steps := []resource.TestStep{{Config: initial, Check: resource.TestCheckResourceAttr(address, "id", "store-1")}}
+			steps := []resource.TestStep{{
+				ConfigFile: config.StaticFile(tc.before),
+				Check:      resource.TestCheckResourceAttr(address, "id", "store-1"),
+			}}
 			if tc.errorPattern != "" {
-				steps = append(steps, resource.TestStep{Config: changed, PlanOnly: true, ExpectError: regexp.MustCompile(tc.errorPattern)}, resource.TestStep{Config: initial, PlanOnly: true})
+				steps = append(steps, resource.TestStep{
+					ConfigFile:      config.StaticFile(tc.after),
+					ConfigVariables: tc.afterVariables,
+					PlanOnly:        true,
+					ExpectError:     regexp.MustCompile(tc.errorPattern),
+				}, resource.TestStep{
+					ConfigFile: config.StaticFile(tc.before),
+					PlanOnly:   true,
+				})
 			} else {
 				action, expectedID := plancheck.ResourceActionNoop, "store-1"
 				if tc.replace {
@@ -118,7 +187,16 @@ resource "rediscloud_agent_memory" "example" {
 				} else if tc.rename {
 					action = plancheck.ResourceActionUpdate
 				}
-				steps = append(steps, resource.TestStep{Config: changed, ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, action)}}, Check: resource.TestCheckResourceAttr(address, "id", expectedID)}, resource.TestStep{Config: changed, PlanOnly: true})
+				steps = append(steps, resource.TestStep{
+					ConfigFile:       config.StaticFile(tc.after),
+					ConfigVariables:  tc.afterVariables,
+					ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, action)}},
+					Check:            resource.TestCheckResourceAttr(address, "id", expectedID),
+				}, resource.TestStep{
+					ConfigFile:      config.StaticFile(tc.after),
+					ConfigVariables: tc.afterVariables,
+					PlanOnly:        true,
+				})
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: steps})
 			mu.Lock()

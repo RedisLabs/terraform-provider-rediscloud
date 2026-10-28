@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -90,11 +91,23 @@ func TestAgentMemoryOptionalStrategyUnknownResolvesNull(t *testing.T) {
 }
 
 func TestAgentMemoryOptionalStrategyLifecycle(t *testing.T) {
-	for _, test := range []struct{ name, strategy, dependency string }{
-		{name: "absent"},
-		{name: "default-enabled", strategy: `extraction_strategy { prompt="Extract preferences" }`},
-		{name: "disabled", strategy: "extraction_strategy {\nprompt=\"Extract preferences\"\nenabled=false\n}"},
-		{name: "resolved-prompt", strategy: `extraction_strategy { prompt=terraform_data.prompt.output }`, dependency: `resource "terraform_data" "prompt" { input="Extract preferences" }`},
+	for _, test := range []struct{ name, fixture string }{
+		{
+			name:    "absent",
+			fixture: "testdata/lifecycle/custom_types/custom_type_without_strategy.tf",
+		},
+		{
+			name:    "default-enabled",
+			fixture: "testdata/lifecycle/custom_types/custom_type_strategy_default_enabled.tf",
+		},
+		{
+			name:    "disabled",
+			fixture: "testdata/lifecycle/custom_types/custom_type_strategy_disabled.tf",
+		},
+		{
+			name:    "resolved-prompt",
+			fixture: "testdata/lifecycle/custom_types/custom_type_strategy_deferred_prompt.tf",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			var mu sync.Mutex
@@ -180,7 +193,7 @@ func TestAgentMemoryOptionalStrategyLifecycle(t *testing.T) {
 					t.Errorf("fixture cleanup/counts failed: create=%d delete=%d remaining=%t", creates, deletes, store != nil)
 				}
 			}()
-			config := testProviderConfig(t, server.URL) + optionalStrategyConfig(test.strategy, test.dependency)
+			testProviderConfig(t, server.URL)
 			checks := []resource.TestCheckFunc{resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1")}
 			if test.name != "absent" {
 				checks = append(checks, resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.0.prompt", "Extract preferences"))
@@ -191,8 +204,14 @@ func TestAgentMemoryOptionalStrategyLifecycle(t *testing.T) {
 				checks = append(checks, resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.0.enabled", enabled))
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config, Check: resource.ComposeTestCheckFunc(checks...)},
-				{Config: config, PlanOnly: true},
+				{
+					ConfigFile: config.StaticFile(test.fixture),
+					Check:      resource.ComposeTestCheckFunc(checks...),
+				},
+				{
+					ConfigFile: config.StaticFile(test.fixture),
+					PlanOnly:   true,
+				},
 			}})
 		})
 	}

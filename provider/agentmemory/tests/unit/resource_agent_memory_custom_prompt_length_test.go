@@ -10,6 +10,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
@@ -102,14 +103,12 @@ func TestAgentMemoryCustomPromptLimitsByAPI(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			config := func(prompt string) string {
-				expression, dependency := fmt.Sprintf("%q", prompt), ""
-				if unknown {
-					expression = "terraform_data.prompt.output"
-					dependency = fmt.Sprintf(`resource "terraform_data" "prompt" { input=%q }`, prompt)
-				}
-				return testProviderConfig(t, server.URL) + customPromptConfig(expression, dependency)
+			testProviderConfig(t, server.URL)
+			fixture := "testdata/lifecycle/custom_types/custom_type_prompt"
+			if unknown {
+				fixture += "_deferred"
 			}
+			fixture += ".tf"
 			check := func(prompt string) resource.TestCheckFunc {
 				return func(state *terraform.State) error {
 					mu.Lock()
@@ -126,11 +125,31 @@ func TestAgentMemoryCustomPromptLimitsByAPI(t *testing.T) {
 			longPrompt := strings.Repeat("é", 10001)
 			longerPrompt := strings.Repeat("界", 20000)
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config(longPrompt), Check: check(longPrompt)},
-				{Config: config(longerPrompt), Check: check(longerPrompt)},
-				{Config: config("rejected-by-api"), ExpectError: regexp.MustCompile("Failed to update Agent Memory service")},
-				{Config: config(longerPrompt), Check: check(longerPrompt)},
-				{Config: config(longerPrompt), PlanOnly: true},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"prompt": config.StringVariable(longPrompt)},
+					Check:           check(longPrompt),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"prompt": config.StringVariable(longerPrompt)},
+					Check:           check(longerPrompt),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"prompt": config.StringVariable("rejected-by-api")},
+					ExpectError:     regexp.MustCompile("Failed to update Agent Memory service"),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"prompt": config.StringVariable(longerPrompt)},
+					Check:           check(longerPrompt),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"prompt": config.StringVariable(longerPrompt)},
+					PlanOnly:        true,
+				},
 			}})
 			mu.Lock()
 			defer mu.Unlock()
