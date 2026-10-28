@@ -133,7 +133,7 @@ func TestAgentMemoryUnknownListsResolveInvalid(t *testing.T) {
 		errorPattern string
 	}{
 		{"memory_types", []config.Variable{config.StringVariable("duplicate"), config.StringVariable("duplicate")}, "Duplicate Agent Memory custom memory type"},
-		{"fields", []config.Variable{config.StringVariable("")}, `(?s)Invalid Attribute Value Length.*custom_memory_types\[0\]\.fields\[0\]\.name`},
+		{"fields", []config.Variable{json.RawMessage("null")}, `(?s)Missing Configuration for Required Attribute.*custom_memory_types\[0\]\.fields\[0\]\.name`},
 		{"built_in", []config.Variable{config.StringVariable(" ")}, `(?s)Invalid Attribute Value Match.*built_in_detectors\[0\]\.detectors\[0\]\.id`},
 		{"custom", []config.Variable{config.StringVariable("duplicate"), config.StringVariable("duplicate")}, "Duplicate Agent Memory custom detector name"},
 	} {

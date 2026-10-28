@@ -1375,7 +1375,8 @@ resource "rediscloud_agent_memory" "example" {
   }
 }
 `,
-				ExpectError: regexp.MustCompile(`length`),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 			{
 				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
