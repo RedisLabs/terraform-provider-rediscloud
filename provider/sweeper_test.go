@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -13,6 +14,7 @@ import (
 
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	agentmemoryapi "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
 	"github.com/RedisLabs/rediscloud-go-api/service/cloud_accounts"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	fixedSubscriptions "github.com/RedisLabs/rediscloud-go-api/service/fixed/subscriptions"
@@ -116,13 +118,19 @@ func sharedClientForRegion(region string) (*rediscloudApi.Client, error) {
 }
 
 func init() {
+	resource.AddTestSweepers("rediscloud_agent_memory", &resource.Sweeper{
+		Name: "rediscloud_agent_memory",
+		F:    testSweepAgentMemory,
+	})
 	resource.AddTestSweepers("rediscloud_subscription", &resource.Sweeper{
-		Name: "rediscloud_subscription",
-		F:    testSweepProSubscriptions,
+		Name:         "rediscloud_subscription",
+		Dependencies: []string{"rediscloud_agent_memory"},
+		F:            testSweepProSubscriptions,
 	})
 	resource.AddTestSweepers("rediscloud_active_active_subscription", &resource.Sweeper{
-		Name: "rediscloud_active_active_subscription",
-		F:    testSweepActiveActiveSubscriptions,
+		Name:         "rediscloud_active_active_subscription",
+		Dependencies: []string{"rediscloud_agent_memory"},
+		F:            testSweepActiveActiveSubscriptions,
 	})
 	resource.AddTestSweepers("rediscloud_essentials_subscription", &resource.Sweeper{
 		Name: "rediscloud_essentials_subscription",
@@ -569,4 +577,61 @@ func testSweepAcl(region string) error {
 	}
 
 	return errCollector.result()
+}
+
+func testSweepAgentMemory(region string) error {
+	age := sweepAgeThreshold()
+	if age < 0 {
+		return fmt.Errorf("invalid SWEEP_AGE_THRESHOLD: %q", os.Getenv("SWEEP_AGE_THRESHOLD"))
+	}
+	c, err := sharedClientForRegion(region)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+	subscriptions, err := c.Subscription.List(ctx)
+	if err != nil {
+		return err
+	}
+	owned := make(map[string]string)
+	for _, sub := range subscriptions {
+		name := redis.StringValue(sub.Name)
+		if agentMemorySweepOwnsSubscription(name, testResourcePrefix) {
+			owned[strconv.Itoa(redis.IntValue(sub.ID))] = name
+		}
+	}
+	if len(owned) == 0 {
+		return nil
+	}
+	stores, err := c.AgentMemory.List(ctx)
+	if err != nil {
+		return err
+	}
+	var failures []error
+	cutoff := time.Now().Add(-age)
+	for _, store := range stores {
+		if !agentMemorySweepOwnsStore(store, owned, cutoff) {
+			continue
+		}
+		id := redis.StringValue(store.StoreID)
+		if err := c.AgentMemory.Delete(ctx, id); err != nil {
+			var missing *agentmemoryapi.NotFound
+			if !errors.As(err, &missing) {
+				failures = append(failures, fmt.Errorf("sweep Agent Memory store %s: %w", id, err))
+			}
+		}
+	}
+	return errors.Join(failures...)
+}
+
+func agentMemorySweepOwnsSubscription(name, prefix string) bool {
+	return strings.HasPrefix(name, prefix+"-") && strings.HasSuffix(name, "-am")
+}
+
+func agentMemorySweepOwnsStore(store agentmemoryapi.StoreSummary, subscriptions map[string]string, cutoff time.Time) bool {
+	name, owned := subscriptions[redis.StringValue(store.SubscriptionID)]
+	// A matching store name alone must never authorize deletion in another subscription.
+	return owned && redis.StringValue(store.StoreID) != "" && store.CreatedAt != nil &&
+		!store.CreatedAt.After(cutoff) && strings.HasPrefix(redis.StringValue(store.Name), name+"-")
 }
