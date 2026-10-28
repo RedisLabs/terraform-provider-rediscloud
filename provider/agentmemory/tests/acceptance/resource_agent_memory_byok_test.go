@@ -23,20 +23,61 @@ func TestAccResourceRedisCloudAgentMemory_CustomerModels(t *testing.T) {
 	t.Setenv("TF_VAR_embedding_api_key", embeddingKey)
 	f := newFixture(t, "testdata/store_byok.tf")
 	tracked := &trackedResources{}
-	values := config.Variables{
-		"llm_model":       config.StringVariable(envDefault("AGENT_MEMORY_MODEL", "gpt-4o-mini")),
-		"embedding_model": config.StringVariable(envDefault("AGENT_MEMORY_EMBEDDING_MODEL", "text-embedding-3-small")),
-	}
 	keys := modelKeys{llmKey, embeddingKey}
-	create := f.step(values, tracked.remember(false, false), checkRemoteResources, keys.checkState)
-	// Incrementing the version exercises credential submission with the same valid keys.
-	// Distinct replacement credentials are not required to run this test.
-	values["key_version"] = config.IntegerVariable(2)
-	update := f.step(values, tracked.remember(false, false), checkRemoteResources, keys.checkState)
-	noop := f.step(values)
-	noop.PlanOnly = true
-	noop.ConfigPlanChecks = resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{keys}}
-	resource.Test(t, f.testCase(tracked, []resource.TestStep{create, update, noop}))
+	resource.Test(t, f.testCase(tracked, []resource.TestStep{
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"llm_model":          config.StringVariable(envDefault("AGENT_MEMORY_MODEL", "gpt-4o-mini")),
+				"embedding_model":    config.StringVariable(envDefault("AGENT_MEMORY_EMBEDDING_MODEL", "text-embedding-3-small")),
+			},
+			Check: resource.ComposeAggregateTestCheckFunc(tracked.remember(false, false), checkRemoteResources, keys.checkState),
+		},
+		// Submit the same valid keys with a new credential version.
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"llm_model":          config.StringVariable(envDefault("AGENT_MEMORY_MODEL", "gpt-4o-mini")),
+				"embedding_model":    config.StringVariable(envDefault("AGENT_MEMORY_EMBEDDING_MODEL", "text-embedding-3-small")),
+				"key_version":        config.IntegerVariable(2),
+			},
+			Check: resource.ComposeAggregateTestCheckFunc(tracked.remember(false, false), checkRemoteResources, keys.checkState),
+		},
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"llm_model":          config.StringVariable(envDefault("AGENT_MEMORY_MODEL", "gpt-4o-mini")),
+				"embedding_model":    config.StringVariable(envDefault("AGENT_MEMORY_EMBEDDING_MODEL", "text-embedding-3-small")),
+				"key_version":        config.IntegerVariable(2),
+			},
+			PlanOnly:         true,
+			ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{keys}},
+		},
+	}))
 }
 
 type modelKeys []string

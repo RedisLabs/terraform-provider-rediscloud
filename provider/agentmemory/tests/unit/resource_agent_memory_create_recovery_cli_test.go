@@ -10,6 +10,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -86,12 +87,14 @@ func TestAgentMemoryCreateReadRecoveryLifecycle(t *testing.T) {
 						t.Errorf("local orphan: creates=%d deletes=%d live=%v", creates, deletes, live)
 					}
 				}()
-				prefix := testProviderConfig(t, server.URL)
-				ttl := ""
+				testProviderConfig(t, server.URL)
+				var shortTTL, longTTL, cadence config.Variable = json.RawMessage("null"), json.RawMessage("null"), json.RawMessage("null")
 				if !defaults {
-					ttl = "short_term_ttl_seconds=86400\nlong_term_ttl_seconds=31536000\nextraction_cadence_seconds=300\n"
+					shortTTL = config.IntegerVariable(86400)
+					longTTL = config.IntegerVariable(31536000)
+					cadence = config.IntegerVariable(300)
 				}
-				config := prefix + fmt.Sprintf("resource \"rediscloud_agent_memory\" \"example\" {\nname=\"recovery-store\"\ndatabase_id=123\n%s}\n", ttl)
+
 				check := func(state *terraform.State) error {
 					mu.Lock()
 					defer mu.Unlock()
@@ -107,7 +110,16 @@ func TestAgentMemoryCreateReadRecoveryLifecycle(t *testing.T) {
 					}
 					return resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", fmt.Sprintf("store-%d", creates))(state)
 				}
-				createStep := resource.TestStep{Config: config, Check: check}
+				createStep := resource.TestStep{
+					ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+					ConfigVariables: config.Variables{
+						"name":      config.StringVariable("recovery-store"),
+						"short_ttl": shortTTL,
+						"long_ttl":  longTTL,
+						"cadence":   cadence,
+					},
+					Check: check,
+				}
 				if scenario != "404" {
 					message := "Agent Memory service failed to become ready"
 					if scenario == "malformed" {
@@ -118,8 +130,26 @@ func TestAgentMemoryCreateReadRecoveryLifecycle(t *testing.T) {
 				}
 				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 					createStep,
-					{Config: config, Check: check},
-					{Config: config, PlanOnly: true},
+					{
+						ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+						ConfigVariables: config.Variables{
+							"name":      config.StringVariable("recovery-store"),
+							"short_ttl": shortTTL,
+							"long_ttl":  longTTL,
+							"cadence":   cadence,
+						},
+						Check: check,
+					},
+					{
+						ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+						ConfigVariables: config.Variables{
+							"name":      config.StringVariable("recovery-store"),
+							"short_ttl": shortTTL,
+							"long_ttl":  longTTL,
+							"cadence":   cadence,
+						},
+						PlanOnly: true,
+					},
 				}})
 			})
 		}

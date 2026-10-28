@@ -1,11 +1,14 @@
 package acceptance
 
 import (
+	"encoding/json"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/stretchr/testify/require"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -18,15 +21,20 @@ const (
 )
 
 type fixture struct {
-	name   string
-	config string
-	vars   config.Variables
-	check  func()
+	name         string
+	directory    string
+	region       string
+	cloudAccount string
+	team         string
+	owner        string
+	cardType     string
+	cardLastFour string
+	redisVersion config.Variable
+	check        func()
 }
 
 func newFixture(t *testing.T, storeConfig string) fixture {
 	t.Helper()
-	name := utils.RandomWithPrefix() + "-am"
 	checks := []func(*testing.T) bool{envchecks.RedisCloudCheck}
 	cloudAccount := os.Getenv("AWS_TEST_CLOUD_ACCOUNT_NAME")
 	if cloudAccount != "" {
@@ -34,46 +42,30 @@ func newFixture(t *testing.T, storeConfig string) fixture {
 			return envchecks.RequireEnvVars(t, "TEAM_RESOURCE_TAG", "OWNER_RESOURCE_TAG")
 		})
 	}
-	vars := config.Variables{
-		"name":               config.StringVariable(name),
-		"region":             config.StringVariable(envDefault("AGENT_MEMORY_TEST_REGION", "us-east-1")),
-		"cloud_account_name": config.StringVariable(cloudAccount),
-		"team":               config.StringVariable(os.Getenv("TEAM_RESOURCE_TAG")),
-		"owner":              config.StringVariable(os.Getenv("OWNER_RESOURCE_TAG")),
-		"card_type":          config.StringVariable(envDefault("AGENT_MEMORY_TEST_CARD_TYPE", "Visa")),
-		"card_last_four":     config.StringVariable(envDefault("AGENT_MEMORY_TEST_CARD_LAST_FOUR", "5556")),
+	// Keep the shared infrastructure and the selected store shape as separate HCL files.
+	directory := t.TempDir()
+	for _, path := range []string{"testdata/infrastructure.tf", storeConfig} {
+		content, err := os.ReadFile(path)
+		require.NoError(t, err)
+		require.NoError(t, os.WriteFile(filepath.Join(directory, filepath.Base(path)), content, 0600))
 	}
-	// Leave the database version unset unless a test explicitly needs one.
+	var redisVersion config.Variable = json.RawMessage("null")
 	// Available versions differ between the integration and customer accounts.
 	if version := os.Getenv("AGENT_MEMORY_TEST_REDIS_VERSION"); version != "" {
-		vars["redis_version"] = config.StringVariable(version)
+		redisVersion = config.StringVariable(version)
 	}
 	return fixture{
-		name:   name,
-		config: utils.GetTestConfig(t, "testdata/infrastructure.tf") + "\n" + utils.GetTestConfig(t, storeConfig),
-		vars:   vars,
-		check:  envchecks.ComposePreChecks(t, checks...),
+		name:         utils.RandomWithPrefix() + "-am",
+		directory:    directory,
+		region:       envDefault("AGENT_MEMORY_TEST_REGION", "us-east-1"),
+		cloudAccount: cloudAccount,
+		team:         os.Getenv("TEAM_RESOURCE_TAG"),
+		owner:        os.Getenv("OWNER_RESOURCE_TAG"),
+		cardType:     envDefault("AGENT_MEMORY_TEST_CARD_TYPE", "Visa"),
+		cardLastFour: envDefault("AGENT_MEMORY_TEST_CARD_LAST_FOUR", "5556"),
+		redisVersion: redisVersion,
+		check:        envchecks.ComposePreChecks(t, checks...),
 	}
-}
-
-func (f fixture) step(vars config.Variables, checks ...resource.TestCheckFunc) resource.TestStep {
-	values := make(config.Variables, len(f.vars)+len(vars))
-	for name, value := range f.vars {
-		values[name] = value
-	}
-	for name, value := range vars {
-		values[name] = value
-	}
-	return resource.TestStep{Config: f.config, ConfigVariables: values, Check: resource.ComposeAggregateTestCheckFunc(checks...)}
-}
-
-func (f fixture) importStep(vars config.Variables, resourceName string) resource.TestStep {
-	// Import steps do not reuse the previous step's variable file.
-	step := f.step(vars)
-	step.Check = nil
-	step.ResourceName = resourceName
-	step.ImportState, step.ImportStateVerify = true, true
-	return step
 }
 
 func (f fixture) testCase(owned *trackedResources, steps []resource.TestStep) resource.TestCase {

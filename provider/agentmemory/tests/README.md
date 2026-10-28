@@ -18,6 +18,11 @@ Terraform 1.11.0 fails the credential lifecycle test when values are both
 ephemeral and sensitive. The serialization fix is documented in the
 [Terraform 1.11.1 changelog](https://github.com/hashicorp/terraform/blob/v1.11.1/CHANGELOG.md).
 
+Reusable lifecycle configurations live in `unit/testdata`. Load them with
+`config.StaticFile` and keep `ConfigVariables` beside each test step. Acceptance
+tests load the shared infrastructure and selected store fixture with
+`config.StaticDirectory`, with inputs declared in each step as well.
+
 Tests that access private resource types or helpers remain in the parent
 `agentmemory` package. Go subpackages cannot access those private symbols.
 

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -63,28 +64,37 @@ func TestAgentMemoryAPIKeyCreateFailurePreservesParent(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	config := testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
- name="key-failure-parent"
- database_id=123
- short_term_ttl_seconds=86400
- long_term_ttl_seconds=31536000
- extraction_cadence_seconds=300
-}
-resource "rediscloud_agent_memory_api_key" "runtime" {
- store_id=rediscloud_agent_memory.example.id
- name="runtime"
-}`
+	testProviderConfig(t, server.URL)
 	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-		{Config: config, ExpectError: regexp.MustCompile("Failed to create Agent Memory API key")},
+		{
+			ConfigFile: config.StaticFile("testdata/store_with_runtime_key.tf"),
+			ConfigVariables: config.Variables{
+				"name":      config.StringVariable("key-failure-parent"),
+				"short_ttl": config.IntegerVariable(86400),
+				"long_ttl":  config.IntegerVariable(31536000),
+				"cadence":   config.IntegerVariable(300),
+				"key_name":  config.StringVariable("runtime"),
+			},
+			ExpectError: regexp.MustCompile("Failed to create Agent Memory API key"),
+		},
 		// Retry must reuse the stored parent identity after the key creation failure.
-		{Config: config, Check: func(state *terraform.State) error {
-			mu.Lock()
-			defer mu.Unlock()
-			if creates != 1 || keyPosts != 2 {
-				return fmt.Errorf("unexpected parent/key retries: store creates=%d key attempts=%d", creates, keyPosts)
-			}
-			return resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory_api_key.runtime", "id", "key-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory_api_key.runtime", "api_key", "fake-review-key"))(state)
-		}},
+		{
+			ConfigFile: config.StaticFile("testdata/store_with_runtime_key.tf"),
+			ConfigVariables: config.Variables{
+				"name":      config.StringVariable("key-failure-parent"),
+				"short_ttl": config.IntegerVariable(86400),
+				"long_ttl":  config.IntegerVariable(31536000),
+				"cadence":   config.IntegerVariable(300),
+				"key_name":  config.StringVariable("runtime"),
+			},
+			Check: func(state *terraform.State) error {
+				mu.Lock()
+				defer mu.Unlock()
+				if creates != 1 || keyPosts != 2 {
+					return fmt.Errorf("unexpected parent/key retries: store creates=%d key attempts=%d", creates, keyPosts)
+				}
+				return resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory_api_key.runtime", "id", "key-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory_api_key.runtime", "api_key", "fake-review-key"))(state)
+			},
+		},
 	}})
 }
