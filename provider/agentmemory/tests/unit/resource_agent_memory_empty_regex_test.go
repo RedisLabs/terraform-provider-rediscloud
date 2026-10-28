@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -234,19 +235,37 @@ func TestAgentMemoryEmptyRegexLifecycle(t *testing.T) {
 			t.Errorf("fixture cleanup/counts failed: creates=%d patches=%d deletes=%d remaining=%t", creates, patches, deletes, store != nil)
 		}
 	}()
-	prefix := testProviderConfig(t, server.URL)
-	config := func(value string) string {
-		return prefix + emptyRegexConfig("tostring(terraform_data.pattern.output)", fmt.Sprintf(`resource "terraform_data" "pattern" { input=%q }`, value), true)
-	}
-	initial, changed, invalid := config("ticket-[0-9]+"), config("account-[0-9]+"), config(".*")
-	restored := prefix + emptyRegexConfig(`"account-[0-9]+"`, `resource "terraform_data" "pattern" { input=".*" }`, true)
+	testProviderConfig(t, server.URL)
 	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-		{Config: initial},
-		{Config: changed, Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.detectors.0.matcher.0.regex.0.pattern", "account-[0-9]+"))},
-		{Config: changed, PlanOnly: true},
-		{Config: invalid, PlanOnly: true, ExpectNonEmptyPlan: true},
-		{Config: invalid, ExpectError: regexp.MustCompile("Regex matches empty text")},
+		{
+			ConfigFile:      config.StaticFile("testdata/lifecycle/detectors/detector_deferred_pattern.tf"),
+			ConfigVariables: config.Variables{"pattern": config.StringVariable("ticket-[0-9]+")},
+		},
+		{
+			ConfigFile:      config.StaticFile("testdata/lifecycle/detectors/detector_deferred_pattern.tf"),
+			ConfigVariables: config.Variables{"pattern": config.StringVariable("account-[0-9]+")},
+			Check:           resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_memory_exclusions.0.custom_detectors.0.detectors.0.matcher.0.regex.0.pattern", "account-[0-9]+")),
+		},
+		{
+			ConfigFile:      config.StaticFile("testdata/lifecycle/detectors/detector_deferred_pattern.tf"),
+			ConfigVariables: config.Variables{"pattern": config.StringVariable("account-[0-9]+")},
+			PlanOnly:        true,
+		},
+		{
+			ConfigFile:         config.StaticFile("testdata/lifecycle/detectors/detector_deferred_pattern.tf"),
+			ConfigVariables:    config.Variables{"pattern": config.StringVariable(".*")},
+			PlanOnly:           true,
+			ExpectNonEmptyPlan: true,
+		},
+		{
+			ConfigFile:      config.StaticFile("testdata/lifecycle/detectors/detector_deferred_pattern.tf"),
+			ConfigVariables: config.Variables{"pattern": config.StringVariable(".*")},
+			ExpectError:     regexp.MustCompile("Regex matches empty text"),
+		},
 		// Use a valid pattern for cleanup after the rejected update.
-		{Config: restored, PlanOnly: true},
+		{
+			ConfigFile: config.StaticFile("testdata/lifecycle/detectors/detector_restored_pattern.tf"),
+			PlanOnly:   true,
+		},
 	}})
 }

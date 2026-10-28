@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
@@ -79,15 +80,12 @@ func TestAgentMemoryEventCountLimitsByAPI(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			config := func(threshold, retain int) string {
-				th, rt, dependency := fmt.Sprint(threshold), fmt.Sprint(retain), ""
-				if unknown {
-					th = "terraform_data.counts.output.threshold"
-					rt = "terraform_data.counts.output.retain"
-					dependency = fmt.Sprintf(`resource "terraform_data" "counts" { input={threshold=%d,retain=%d} }`, threshold, retain)
-				}
-				return testProviderConfig(t, server.URL) + requiredEventCountConfig(fmt.Sprintf("event_count {\nthreshold=%s\nretain_count=%s\n}", th, rt), dependency)
+			testProviderConfig(t, server.URL)
+			fixture := "testdata/lifecycle/summarization/summarization_event_count_limits"
+			if unknown {
+				fixture += "_deferred"
 			}
+			fixture += ".tf"
 			check := func(threshold, retain int) resource.TestCheckFunc {
 				return func(state *terraform.State) error {
 					mu.Lock()
@@ -102,12 +100,54 @@ func TestAgentMemoryEventCountLimitsByAPI(t *testing.T) {
 				}
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config(10001, 10000), Check: check(10001, 10000)},
-				{Config: config(20001, 15001), Check: check(20001, 15001)},
-				{Config: config(1, 0), Check: check(1, 0)},
-				{Config: config(20, -1), ExpectError: regexp.MustCompile("Failed to update Agent Memory service")},
-				{Config: config(1, 0), Check: check(1, 0)},
-				{Config: config(1, 0), PlanOnly: true},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"threshold": config.IntegerVariable(10001),
+						"retain":    config.IntegerVariable(10000),
+					},
+					Check: check(10001, 10000),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"threshold": config.IntegerVariable(20001),
+						"retain":    config.IntegerVariable(15001),
+					},
+					Check: check(20001, 15001),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"threshold": config.IntegerVariable(1),
+						"retain":    config.IntegerVariable(0),
+					},
+					Check: check(1, 0),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"threshold": config.IntegerVariable(20),
+						"retain":    config.IntegerVariable(-1),
+					},
+					ExpectError: regexp.MustCompile("Failed to update Agent Memory service"),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"threshold": config.IntegerVariable(1),
+						"retain":    config.IntegerVariable(0),
+					},
+					Check: check(1, 0),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"threshold": config.IntegerVariable(1),
+						"retain":    config.IntegerVariable(0),
+					},
+					PlanOnly: true,
+				},
 			}})
 			mu.Lock()
 			defer mu.Unlock()

@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
-	"strings"
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/stretchr/testify/assert"
@@ -19,71 +19,243 @@ import (
 )
 
 func TestAgentMemoryCustomTypeReplacementLifecycle(t *testing.T) {
-	const topic = `fields {
-name="topic"
-type="str"
-description="Topic"
-}`
-	const confidence = `fields {
-name="confidence"
-type="float"
-description="Confidence"
-}`
-	const strategy = `extraction_strategy {
-prompt="Extract preferences"
-enabled=true
-}`
-	block := func(name, fields, strategy string) string {
-		return fmt.Sprintf(`custom_memory_types {
- name=%q
- description="User preferences"
- %s
- %s
-}
-`, name, fields, strategy)
-	}
-	base := block("preference", topic+"\n"+confidence, strategy)
-	support := block("support", topic, strategy)
-	unknownName := strings.Replace(base, `name="preference"`, `name=terraform_data.value.output`, 1)
-	unknownDescription := strings.Replace(base, `description="User preferences"`, `description=terraform_data.value.output`, 1)
-	unknownFieldType := strings.Replace(base, `type="str"`, `type=terraform_data.value.output`, 1)
-	unknownAddition := strings.Replace(support, `name="support"`, `name=terraform_data.value.output`, 1)
 	for _, tc := range []struct {
-		name, before, after, dependency, errorPattern string
-		replace, update, protect                      bool
+		name, before, after, restore, errorPattern        string
+		beforeVariables, afterVariables, restoreVariables config.Variables
+		replace, update, protect, hasDependency           bool
 	}{
-		{name: "unchanged", before: base, after: base},
-		{name: "add type", before: base, after: base + support, update: true},
-		{name: "prompt update", before: base, after: strings.Replace(base, "Extract preferences", "Extract durable preferences", 1), update: true},
-		{name: "disable extraction", before: base, after: strings.Replace(base, "enabled=true", "enabled=false", 1), update: true},
-		{name: "add extraction strategy", before: block("preference", topic+"\n"+confidence, ""), after: base, update: true},
-		{name: "remove type", before: base + support, after: support, replace: true},
-		{name: "remove all types", before: base, replace: true},
-		{name: "rename type", before: base, after: strings.Replace(base, `name="preference"`, `name="renamed"`, 1), replace: true},
-		{name: "change description", before: base, after: strings.Replace(base, "User preferences", "Durable preferences", 1), replace: true},
-		{name: "add field", before: block("preference", topic, strategy), after: base, replace: true},
-		{name: "remove field", before: base, after: block("preference", topic, strategy), replace: true},
-		{name: "rename field", before: base, after: strings.Replace(base, `name="topic"`, `name="category"`, 1), replace: true},
-		{name: "change field type", before: base, after: strings.Replace(base, `type="str"`, `type="int"`, 1), replace: true},
-		{name: "change field description", before: base, after: strings.Replace(base, `description="Topic"`, `description="Preference topic"`, 1), replace: true},
-		{name: "remove extraction strategy", before: base, after: block("preference", topic+"\n"+confidence, ""), replace: true},
-		{name: "reorder types", before: base + support, after: support + base, update: true},
-		{name: "reorder fields", before: base, after: block("preference", confidence+"\n"+topic, strategy), update: true},
-		{name: "unknown existing name unchanged", before: base, after: unknownName, dependency: `resource "terraform_data" "value" { input="preference" }`, replace: true},
-		{name: "unknown existing name changed", before: base, after: unknownName, dependency: `resource "terraform_data" "value" { input="renamed" }`, replace: true},
-		{name: "unknown existing description unchanged", before: base, after: unknownDescription, dependency: `resource "terraform_data" "value" { input="User preferences" }`, replace: true},
-		{name: "unknown existing description changed", before: base, after: unknownDescription, dependency: `resource "terraform_data" "value" { input="Changed" }`, replace: true},
-		{name: "unknown existing field unchanged", before: base, after: unknownFieldType, dependency: `resource "terraform_data" "value" { input="str" }`, replace: true},
-		{name: "unknown existing field changed", before: base, after: unknownFieldType, dependency: `resource "terraform_data" "value" { input="int" }`, replace: true},
-		{name: "unknown new type name", before: base, after: base + unknownAddition, dependency: `resource "terraform_data" "value" { input="support" }`, update: true},
-		{name: "unknown new field type", before: base, after: base + strings.Replace(support, `type="str"`, `type=terraform_data.value.output`, 1), dependency: `resource "terraform_data" "value" { input="str" }`, update: true},
-		{name: "unknown mutable prompt", before: base, after: strings.Replace(base, `prompt="Extract preferences"`, `prompt=terraform_data.value.output`, 1), dependency: `resource "terraform_data" "value" { input="Extract durable preferences" }`, update: true},
-		{name: "unknown mutable enabled", before: base, after: strings.Replace(base, "enabled=true", "enabled=terraform_data.value.output", 1), dependency: `resource "terraform_data" "value" { input=false }`, update: true},
-		{name: "duplicate names", before: base, after: base + base, errorPattern: "Duplicate Agent Memory custom memory type"},
-		{name: "unknown duplicate addition", before: base, after: base + unknownAddition, dependency: `resource "terraform_data" "value" { input="preference" }`, errorPattern: "Duplicate Agent Memory custom memory type"},
-		{name: "removal prevent destroy", before: base, protect: true, errorPattern: "prevent_destroy|cannot be destroyed"},
-		{name: "redefinition prevent destroy", before: base, after: strings.Replace(base, "User preferences", "Changed", 1), protect: true, errorPattern: "prevent_destroy|cannot be destroyed"},
-		{name: "unknown name prevent destroy", before: base, after: unknownName, dependency: `resource "terraform_data" "value" { input="preference" }`, protect: true, errorPattern: "prevent_destroy|cannot be destroyed"},
+		{
+			name:   "unchanged",
+			before: "testdata/lifecycle/custom_types/definition.tf",
+			after:  "testdata/lifecycle/custom_types/definition.tf",
+		},
+		{
+			name:   "add type",
+			before: "testdata/lifecycle/custom_types/definition.tf",
+			after:  "testdata/lifecycle/custom_types/two_types.tf",
+			update: true,
+		},
+		{
+			name:           "prompt update",
+			before:         "testdata/lifecycle/custom_types/definition.tf",
+			after:          "testdata/lifecycle/custom_types/definition.tf",
+			afterVariables: config.Variables{"custom_memory_types_extraction_strategy_prompt": config.StringVariable("Extract durable preferences")},
+			update:         true,
+		},
+		{
+			name:           "disable extraction",
+			before:         "testdata/lifecycle/custom_types/definition.tf",
+			after:          "testdata/lifecycle/custom_types/definition.tf",
+			afterVariables: config.Variables{"custom_memory_types_extraction_strategy_enabled": config.BoolVariable(false)},
+			update:         true,
+		},
+		{
+			name:   "add extraction strategy",
+			before: "testdata/lifecycle/custom_types/without_strategy.tf",
+			after:  "testdata/lifecycle/custom_types/definition.tf",
+			update: true,
+		},
+		{
+			name:    "remove type",
+			before:  "testdata/lifecycle/custom_types/two_types.tf",
+			after:   "testdata/lifecycle/custom_types/single_field.tf",
+			replace: true,
+		},
+		{
+			name:    "remove all types",
+			before:  "testdata/lifecycle/custom_types/definition.tf",
+			after:   "testdata/lifecycle/custom_types/none.tf",
+			replace: true,
+		},
+		{
+			name:           "rename type",
+			before:         "testdata/lifecycle/custom_types/definition.tf",
+			after:          "testdata/lifecycle/custom_types/definition.tf",
+			afterVariables: config.Variables{"custom_memory_types_name": config.StringVariable("renamed")},
+			replace:        true,
+		},
+		{
+			name:           "change description",
+			before:         "testdata/lifecycle/custom_types/definition.tf",
+			after:          "testdata/lifecycle/custom_types/definition.tf",
+			afterVariables: config.Variables{"custom_memory_types_description": config.StringVariable("Durable preferences")},
+			replace:        true,
+		},
+		{
+			name:            "add field",
+			before:          "testdata/lifecycle/custom_types/single_field.tf",
+			beforeVariables: config.Variables{"custom_memory_types_name": config.StringVariable("preference")},
+			after:           "testdata/lifecycle/custom_types/definition.tf",
+			replace:         true,
+		},
+		{
+			name:           "remove field",
+			before:         "testdata/lifecycle/custom_types/definition.tf",
+			after:          "testdata/lifecycle/custom_types/single_field.tf",
+			afterVariables: config.Variables{"custom_memory_types_name": config.StringVariable("preference")},
+			replace:        true,
+		},
+		{
+			name:           "rename field",
+			before:         "testdata/lifecycle/custom_types/definition.tf",
+			after:          "testdata/lifecycle/custom_types/definition.tf",
+			afterVariables: config.Variables{"custom_memory_types_fields_0_name": config.StringVariable("category")},
+			replace:        true,
+		},
+		{
+			name:           "change field type",
+			before:         "testdata/lifecycle/custom_types/definition.tf",
+			after:          "testdata/lifecycle/custom_types/definition.tf",
+			afterVariables: config.Variables{"custom_memory_types_fields_0_type": config.StringVariable("int")},
+			replace:        true,
+		},
+		{
+			name:           "change field description",
+			before:         "testdata/lifecycle/custom_types/definition.tf",
+			after:          "testdata/lifecycle/custom_types/definition.tf",
+			afterVariables: config.Variables{"custom_memory_types_fields_0_description": config.StringVariable("Preference topic")},
+			replace:        true,
+		},
+		{
+			name:    "remove extraction strategy",
+			before:  "testdata/lifecycle/custom_types/definition.tf",
+			after:   "testdata/lifecycle/custom_types/without_strategy.tf",
+			replace: true,
+		},
+		{
+			name:   "reorder types",
+			before: "testdata/lifecycle/custom_types/two_types.tf",
+			after:  "testdata/lifecycle/custom_types/two_types_reordered.tf",
+			update: true,
+		},
+		{
+			name:   "reorder fields",
+			before: "testdata/lifecycle/custom_types/definition.tf",
+			after:  "testdata/lifecycle/custom_types/definition.tf",
+			afterVariables: config.Variables{
+				"custom_memory_types_fields_0_description": config.StringVariable("Confidence"),
+				"custom_memory_types_fields_0_name":        config.StringVariable("confidence"),
+				"custom_memory_types_fields_0_type":        config.StringVariable("float"),
+				"custom_memory_types_fields_1_description": config.StringVariable("Topic"),
+				"custom_memory_types_fields_1_name":        config.StringVariable("topic"),
+				"custom_memory_types_fields_1_type":        config.StringVariable("str"),
+			},
+			update: true,
+		},
+		{
+			name:          "unknown existing name unchanged",
+			before:        "testdata/lifecycle/custom_types/definition.tf",
+			after:         "testdata/lifecycle/custom_types/deferred_name.tf",
+			replace:       true,
+			hasDependency: true,
+		},
+		{
+			name:           "unknown existing name changed",
+			before:         "testdata/lifecycle/custom_types/definition.tf",
+			after:          "testdata/lifecycle/custom_types/deferred_name.tf",
+			afterVariables: config.Variables{"value_input": config.StringVariable("renamed")},
+			replace:        true,
+			hasDependency:  true,
+		},
+		{
+			name:          "unknown existing description unchanged",
+			before:        "testdata/lifecycle/custom_types/definition.tf",
+			after:         "testdata/lifecycle/custom_types/deferred_description.tf",
+			replace:       true,
+			hasDependency: true,
+		},
+		{
+			name:           "unknown existing description changed",
+			before:         "testdata/lifecycle/custom_types/definition.tf",
+			after:          "testdata/lifecycle/custom_types/deferred_description.tf",
+			afterVariables: config.Variables{"value_input": config.StringVariable("Changed")},
+			replace:        true,
+			hasDependency:  true,
+		},
+		{
+			name:          "unknown existing field unchanged",
+			before:        "testdata/lifecycle/custom_types/definition.tf",
+			after:         "testdata/lifecycle/custom_types/deferred_field_type.tf",
+			replace:       true,
+			hasDependency: true,
+		},
+		{
+			name:           "unknown existing field changed",
+			before:         "testdata/lifecycle/custom_types/definition.tf",
+			after:          "testdata/lifecycle/custom_types/deferred_field_type.tf",
+			afterVariables: config.Variables{"value_input": config.StringVariable("int")},
+			replace:        true,
+			hasDependency:  true,
+		},
+		{
+			name:          "unknown new type name",
+			before:        "testdata/lifecycle/custom_types/definition.tf",
+			after:         "testdata/lifecycle/custom_types/additional_deferred_name.tf",
+			update:        true,
+			hasDependency: true,
+		},
+		{
+			name:          "unknown new field type",
+			before:        "testdata/lifecycle/custom_types/definition.tf",
+			after:         "testdata/lifecycle/custom_types/additional_deferred_field_type.tf",
+			update:        true,
+			hasDependency: true,
+		},
+		{
+			name:          "unknown mutable prompt",
+			before:        "testdata/lifecycle/custom_types/definition.tf",
+			after:         "testdata/lifecycle/custom_types/deferred_prompt.tf",
+			update:        true,
+			hasDependency: true,
+		},
+		{
+			name:          "unknown mutable enabled",
+			before:        "testdata/lifecycle/custom_types/definition.tf",
+			after:         "testdata/lifecycle/custom_types/deferred_enabled.tf",
+			update:        true,
+			hasDependency: true,
+		},
+		{
+			name:         "duplicate names",
+			before:       "testdata/lifecycle/custom_types/definition.tf",
+			after:        "testdata/lifecycle/custom_types/duplicate_names.tf",
+			errorPattern: "Duplicate Agent Memory custom memory type",
+			restore:      "testdata/lifecycle/custom_types/definition.tf",
+		},
+		{
+			name:           "unknown duplicate addition",
+			before:         "testdata/lifecycle/custom_types/definition.tf",
+			after:          "testdata/lifecycle/custom_types/additional_deferred_name.tf",
+			afterVariables: config.Variables{"value_input": config.StringVariable("preference")},
+			errorPattern:   "Duplicate Agent Memory custom memory type",
+			restore:        "testdata/lifecycle/custom_types/restore_after_duplicate.tf",
+			hasDependency:  true,
+		},
+		{
+			name:         "removal prevent destroy",
+			before:       "testdata/lifecycle/custom_types/definition.tf",
+			after:        "testdata/lifecycle/custom_types/protected_empty.tf",
+			protect:      true,
+			errorPattern: "prevent_destroy|cannot be destroyed",
+			restore:      "testdata/lifecycle/custom_types/definition.tf",
+		},
+		{
+			name:         "redefinition prevent destroy",
+			before:       "testdata/lifecycle/custom_types/definition.tf",
+			after:        "testdata/lifecycle/custom_types/protected_definition.tf",
+			protect:      true,
+			errorPattern: "prevent_destroy|cannot be destroyed",
+			restore:      "testdata/lifecycle/custom_types/definition.tf",
+		},
+		{
+			name:          "unknown name prevent destroy",
+			before:        "testdata/lifecycle/custom_types/definition.tf",
+			after:         "testdata/lifecycle/custom_types/protected_deferred_name.tf",
+			protect:       true,
+			errorPattern:  "prevent_destroy|cannot be destroyed",
+			restore:       "testdata/lifecycle/custom_types/definition.tf",
+			hasDependency: true,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var mu sync.Mutex
@@ -152,36 +324,27 @@ enabled=true
 				}
 			}))
 			defer server.Close()
-			config := func(types, dependency string, protect bool) string {
-				lifecycle := ""
-				if protect {
-					lifecycle = "lifecycle { prevent_destroy=true }"
-				}
-				return testProviderConfig(t, server.URL) + dependency + fmt.Sprintf(`
-resource "rediscloud_agent_memory" "example" {
- name="custom-type-store"
- database_id=123
- short_term_ttl_seconds=86400
- long_term_ttl_seconds=31536000
- extraction_cadence_seconds=300
- %s
- %s
-}
-`, types, lifecycle)
-			}
-			initial, changed := config(tc.before, "", false), config(tc.after, tc.dependency, tc.protect)
+			testProviderConfig(t, server.URL)
 			const address = "rediscloud_agent_memory.example"
-			steps := []resource.TestStep{{Config: initial, Check: resource.TestCheckResourceAttr(address, "id", "store-1")}}
+			steps := []resource.TestStep{{
+				ConfigFile:      config.StaticFile(tc.before),
+				ConfigVariables: tc.beforeVariables,
+				Check:           resource.TestCheckResourceAttr(address, "id", "store-1"),
+			}}
 			if tc.errorPattern != "" {
-				step := resource.TestStep{Config: changed, ExpectError: regexp.MustCompile(tc.errorPattern)}
-				if tc.protect || tc.dependency == "" {
+				step := resource.TestStep{
+					ConfigFile:      config.StaticFile(tc.after),
+					ConfigVariables: tc.afterVariables,
+					ExpectError:     regexp.MustCompile(tc.errorPattern),
+				}
+				if tc.protect || !tc.hasDependency {
 					step.PlanOnly = true
 				}
-				restore := initial
-				if tc.dependency != "" && !tc.protect {
-					restore = config(tc.before, tc.dependency, false)
-				}
-				steps = append(steps, step, resource.TestStep{Config: restore, PlanOnly: true})
+				steps = append(steps, step, resource.TestStep{
+					ConfigFile:      config.StaticFile(tc.restore),
+					ConfigVariables: tc.restoreVariables,
+					PlanOnly:        true,
+				})
 			} else {
 				action, expectedID := plancheck.ResourceActionNoop, "store-1"
 				if tc.replace {
@@ -189,7 +352,16 @@ resource "rediscloud_agent_memory" "example" {
 				} else if tc.update {
 					action = plancheck.ResourceActionUpdate
 				}
-				steps = append(steps, resource.TestStep{Config: changed, ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, action)}}, Check: resource.TestCheckResourceAttr(address, "id", expectedID)}, resource.TestStep{Config: changed, PlanOnly: true})
+				steps = append(steps, resource.TestStep{
+					ConfigFile:       config.StaticFile(tc.after),
+					ConfigVariables:  tc.afterVariables,
+					ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, action)}},
+					Check:            resource.TestCheckResourceAttr(address, "id", expectedID),
+				}, resource.TestStep{
+					ConfigFile:      config.StaticFile(tc.after),
+					ConfigVariables: tc.afterVariables,
+					PlanOnly:        true,
+				})
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: steps})
 			mu.Lock()

@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -210,18 +211,32 @@ func TestAgentMemoryModelAPIKeyUnknownCreateAndUpdate(t *testing.T) {
 					t.Error("API did not receive the resolved keys in order")
 				}
 			}()
-			prefix := testProviderConfig(t, server.URL)
-			config := func(value string) string {
-				cfg := prefix + unknownKeyConfig(block, `tostring(terraform_data.key.output)`, fmt.Sprintf(`resource "terraform_data" "key" { input=%q }`, value))
-				if value == "FAKE-ROTATED" {
-					cfg = strings.ReplaceAll(cfg, "api_key_version = 1", "api_key_version = 2")
-				}
-				return cfg
-			}
+			testProviderConfig(t, server.URL)
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config("FAKE-FIRST"), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", block+".0.credentials.0.api_key"))},
-				{Config: config("FAKE-ROTATED"), Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", block+".0.credentials.0.api_key"))},
-				{Config: config("FAKE-ROTATED"), PlanOnly: true},
+				{
+					ConfigFile: config.StaticFile("testdata/lifecycle/models/model_deferred_key_" + block + ".tf"),
+					ConfigVariables: config.Variables{
+						"key":         config.StringVariable("FAKE-FIRST"),
+						"key_version": config.IntegerVariable(1),
+					},
+					Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", block+".0.credentials.0.api_key")),
+				},
+				{
+					ConfigFile: config.StaticFile("testdata/lifecycle/models/model_deferred_key_" + block + ".tf"),
+					ConfigVariables: config.Variables{
+						"key":         config.StringVariable("FAKE-ROTATED"),
+						"key_version": config.IntegerVariable(2),
+					},
+					Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckNoResourceAttr("rediscloud_agent_memory.example", block+".0.credentials.0.api_key")),
+				},
+				{
+					ConfigFile: config.StaticFile("testdata/lifecycle/models/model_deferred_key_" + block + ".tf"),
+					ConfigVariables: config.Variables{
+						"key":         config.StringVariable("FAKE-ROTATED"),
+						"key_version": config.IntegerVariable(2),
+					},
+					PlanOnly: true,
+				},
 			}})
 		})
 	}

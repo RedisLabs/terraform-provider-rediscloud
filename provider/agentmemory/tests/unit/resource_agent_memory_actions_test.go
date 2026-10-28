@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
@@ -48,7 +49,17 @@ func TestAgentMemoryDetectorActionsByAPI(t *testing.T) {
 		name          string
 		unknown, null bool
 	}{
-		{name: "known"}, {name: "unknown", unknown: true}, {name: "null", null: true}, {name: "unknown-null", unknown: true, null: true},
+		{name: "known"}, {
+			name:    "unknown",
+			unknown: true,
+		}, {
+			name: "null",
+			null: true,
+		}, {
+			name:    "unknown-null",
+			unknown: true,
+			null:    true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			var mu sync.Mutex
@@ -120,19 +131,19 @@ func TestAgentMemoryDetectorActionsByAPI(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			config := func(action string) string {
-				expression, dependency := "", ""
-				if action != "" {
-					expression = fmt.Sprintf("%q", action)
-				} else if test.null {
-					expression = "null"
-				}
-				if test.unknown && expression != "" {
-					dependency = fmt.Sprintf("resource \"terraform_data\" \"action\" { input=%s }", expression)
-					expression = "tostring(terraform_data.action.output)"
-				}
-				return testProviderConfig(t, server.URL) + detectorActionsConfig(expression, dependency)
+			testProviderConfig(t, server.URL)
+			fixture := "testdata/lifecycle/detectors/detector_actions.tf"
+			initialFixture := "testdata/lifecycle/detectors/detector_actions_omitted.tf"
+			if test.null {
+				initialFixture = "testdata/lifecycle/detectors/detector_actions_null.tf"
 			}
+			if test.unknown {
+				fixture = "testdata/lifecycle/detectors/detector_actions_deferred.tf"
+				if test.null {
+					initialFixture = "testdata/lifecycle/detectors/detector_actions_deferred_null.tf"
+				}
+			}
+
 			check := func(action string) resource.TestCheckFunc {
 				return func(state *terraform.State) error {
 					mu.Lock()
@@ -144,13 +155,40 @@ func TestAgentMemoryDetectorActionsByAPI(t *testing.T) {
 				}
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config(""), Check: check("redact")},
-				{Config: config("mask"), Check: check("mask")},
-				{Config: config("drop"), Check: check("drop")},
-				{Config: config("redact"), Check: check("redact")},
-				{Config: config("rejected-by-api"), ExpectError: regexp.MustCompile("Failed to update Agent Memory service")},
-				{Config: config("redact"), Check: check("redact")},
-				{Config: config("redact"), PlanOnly: true},
+				{
+					ConfigFile: config.StaticFile(initialFixture),
+					Check:      check("redact"),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"action": config.StringVariable("mask")},
+					Check:           check("mask"),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"action": config.StringVariable("drop")},
+					Check:           check("drop"),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"action": config.StringVariable("redact")},
+					Check:           check("redact"),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"action": config.StringVariable("rejected-by-api")},
+					ExpectError:     regexp.MustCompile("Failed to update Agent Memory service"),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"action": config.StringVariable("redact")},
+					Check:           check("redact"),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"action": config.StringVariable("redact")},
+					PlanOnly:        true,
+				},
 			}})
 			mu.Lock()
 			defer mu.Unlock()

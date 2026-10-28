@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -207,31 +208,61 @@ func TestAgentMemoryUnknownCredentialTypeLifecycle(t *testing.T) {
 					t.Errorf("fixture not cleaned up: creates=%d deletes=%d rejectedPatches=%d remaining=%t", creates, deletes, rejectedPatches, store != nil)
 				}
 			}()
-			prefix := testProviderConfig(t, server.URL)
-			config := func(suffix string) string {
-				return prefix + credentialTypeConfig(selector.block, selector.field, `split(":",tostring(terraform_data.selector.output))[0]`, fmt.Sprintf(`resource "terraform_data" "selector" { input=%q }`, selector.value+":"+suffix))
-			}
-			first, changed := config("before"), config("after")
+			testProviderConfig(t, server.URL)
+			fixture := "testdata/lifecycle/models/credential_type_" + selector.block
 			check := resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", selector.block+".0.credentials.0."+selector.field, selector.value))
 			// A configured credentials block requires its type on updates as well.
-			omitted := prefix + credentialTypeConfig(selector.block, selector.field, "OMIT_SELECTOR", fmt.Sprintf(`resource "terraform_data" "selector" { input=%q }`, selector.value+":after"))
+
 			steps := []resource.TestStep{
-				{Config: first, Check: check},
-				{Config: changed, PlanOnly: true, ExpectNonEmptyPlan: true},
-				{Config: changed, Check: check},
-				{Config: changed, PlanOnly: true},
-				{Config: omitted, PlanOnly: true, ExpectError: regexp.MustCompile("Invalid Attribute Combination")},
-				{Config: changed, PlanOnly: true},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_deferred.tf"),
+					ConfigVariables: config.Variables{"input": config.StringVariable(selector.value + ":before")},
+					Check:           check,
+				},
+				{
+					ConfigFile:         config.StaticFile(fixture + "_deferred.tf"),
+					ConfigVariables:    config.Variables{"input": config.StringVariable(selector.value + ":after")},
+					PlanOnly:           true,
+					ExpectNonEmptyPlan: true,
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_deferred.tf"),
+					ConfigVariables: config.Variables{"input": config.StringVariable(selector.value + ":after")},
+					Check:           check,
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_deferred.tf"),
+					ConfigVariables: config.Variables{"input": config.StringVariable(selector.value + ":after")},
+					PlanOnly:        true,
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_omitted.tf"),
+					ConfigVariables: config.Variables{"input": config.StringVariable(selector.value + ":after")},
+					PlanOnly:        true,
+					ExpectError:     regexp.MustCompile("Invalid Attribute Combination"),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_deferred.tf"),
+					ConfigVariables: config.Variables{"input": config.StringVariable(selector.value + ":after")},
+					PlanOnly:        true,
+				},
 			}
-			invalid := prefix + credentialTypeConfig(selector.block, selector.field,
-				`tostring(terraform_data.selector.output)`, `resource "terraform_data" "selector" { input="unsupported" }`)
 			steps = append(steps,
-				resource.TestStep{Config: invalid, PlanOnly: true, ExpectNonEmptyPlan: true},
-				resource.TestStep{Config: invalid, ExpectError: regexp.MustCompile(`(?s)Failed to update Agent Memory service.*Credential\s+type\s+rejected`)})
+				resource.TestStep{
+					ConfigFile:         config.StaticFile(fixture + "_rejected.tf"),
+					PlanOnly:           true,
+					ExpectNonEmptyPlan: true,
+				},
+				resource.TestStep{
+					ConfigFile:  config.StaticFile(fixture + "_rejected.tf"),
+					ExpectError: regexp.MustCompile(`(?s)Failed to update Agent Memory service.*Credential\s+type\s+rejected`),
+				})
 			// Restore the accepted type after the API rejects the update.
-			restored := prefix + credentialTypeConfig(selector.block, selector.field,
-				fmt.Sprintf("%q", selector.value), `resource "terraform_data" "selector" { input="unsupported" }`)
-			steps = append(steps, resource.TestStep{Config: restored, PlanOnly: true})
+			steps = append(steps, resource.TestStep{
+				ConfigFile:      config.StaticFile(fixture + "_restored.tf"),
+				ConfigVariables: config.Variables{"type": config.StringVariable(selector.value)},
+				PlanOnly:        true,
+			})
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: steps})
 		})
 	}

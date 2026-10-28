@@ -10,6 +10,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -17,9 +18,19 @@ import (
 
 func TestCustomTypeUnknownNameLifecycle(t *testing.T) {
 	for _, scenario := range []struct{ name, input, errorPattern string }{
-		{name: "same-name", input: "preference:after"},
-		{name: "resolved-rename", input: "renamed:after"},
-		{name: "resolved-duplicate", input: "support:after", errorPattern: "Duplicate Agent Memory custom memory type"},
+		{
+			name:  "same-name",
+			input: "preference:after",
+		},
+		{
+			name:  "resolved-rename",
+			input: "renamed:after",
+		},
+		{
+			name:         "resolved-duplicate",
+			input:        "support:after",
+			errorPattern: "Duplicate Agent Memory custom memory type",
+		},
 	} {
 		t.Run(scenario.name, func(t *testing.T) {
 			var mu sync.Mutex
@@ -95,51 +106,37 @@ func TestCustomTypeUnknownNameLifecycle(t *testing.T) {
 					t.Errorf("invalid resolved names reached API update: %d", patches)
 				}
 			}()
-			prefix := testProviderConfig(t, server.URL)
-			config := func(input string) string {
-				return prefix + fmt.Sprintf(`
-resource "terraform_data" "source" { input=%q }
-resource "rediscloud_agent_memory" "audit" {
- name="audit-store"
- database_id=123
- short_term_ttl_seconds=86400
- long_term_ttl_seconds=31536000
- extraction_cadence_seconds=300
- custom_memory_types {
-  name=split(":",tostring(terraform_data.source.output))[0]
-  description="Shopping preferences"
-  fields {
-   name="topic"
-   description="Preference topic"
-   type="str"
-  }
-  extraction_strategy {
-   prompt="Extract preferences"
-   enabled=true
-  }
- }
- custom_memory_types {
-  name="support"
-  description="Support requests"
-  extraction_strategy {
-   prompt="Extract support requests"
-   enabled=true
-  }
- }
-}
-`, input)
-			}
+			testProviderConfig(t, server.URL)
 			// Unknown existing names conservatively plan replacement, even when unchanged.
-			initial := config("preference:before")
-			changed := config(scenario.input)
 			check := resource.ComposeTestCheckFunc(
 				resource.TestCheckResourceAttr("rediscloud_agent_memory.audit", "id", "store-2"),
 				resource.TestCheckResourceAttr("rediscloud_agent_memory.audit", "custom_memory_types.0.name", strings.Split(scenario.input, ":")[0]))
-			steps := []resource.TestStep{{Config: initial, Check: resource.TestCheckResourceAttr("rediscloud_agent_memory.audit", "id", "store-1")}, {Config: changed, PlanOnly: true, ExpectNonEmptyPlan: true}}
+			steps := []resource.TestStep{{
+				ConfigFile:      config.StaticFile("testdata/lifecycle/custom_types/custom_type_deferred_rename.tf"),
+				ConfigVariables: config.Variables{"input": config.StringVariable("preference:before")},
+				Check:           resource.TestCheckResourceAttr("rediscloud_agent_memory.audit", "id", "store-1"),
+			}, {
+				ConfigFile:         config.StaticFile("testdata/lifecycle/custom_types/custom_type_deferred_rename.tf"),
+				ConfigVariables:    config.Variables{"input": config.StringVariable(scenario.input)},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			}}
 			if scenario.errorPattern == "" {
-				steps = append(steps, resource.TestStep{Config: changed, Check: check}, resource.TestStep{Config: changed, PlanOnly: true})
+				steps = append(steps, resource.TestStep{
+					ConfigFile:      config.StaticFile("testdata/lifecycle/custom_types/custom_type_deferred_rename.tf"),
+					ConfigVariables: config.Variables{"input": config.StringVariable(scenario.input)},
+					Check:           check,
+				}, resource.TestStep{
+					ConfigFile:      config.StaticFile("testdata/lifecycle/custom_types/custom_type_deferred_rename.tf"),
+					ConfigVariables: config.Variables{"input": config.StringVariable(scenario.input)},
+					PlanOnly:        true,
+				})
 			} else {
-				steps = append(steps, resource.TestStep{Config: changed, ExpectError: regexp.MustCompile(scenario.errorPattern)})
+				steps = append(steps, resource.TestStep{
+					ConfigFile:      config.StaticFile("testdata/lifecycle/custom_types/custom_type_deferred_rename.tf"),
+					ConfigVariables: config.Variables{"input": config.StringVariable(scenario.input)},
+					ExpectError:     regexp.MustCompile(scenario.errorPattern),
+				})
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: steps})
 		})

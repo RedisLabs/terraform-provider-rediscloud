@@ -3,12 +3,12 @@ package unit_test
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
@@ -19,8 +19,37 @@ import (
 )
 
 func TestAgentMemoryAPIKeyTimeoutLifecycle(t *testing.T) {
-	for _, scenario := range []string{"configure-and-change", "add-to-existing", "dynamic-presence"} {
-		t.Run(scenario, func(t *testing.T) {
+	for _, scenario := range []struct {
+		name, initial, updated string
+		variables              config.Variables
+	}{
+		{
+			name:    "configure-and-change",
+			initial: "testdata/lifecycle/api_keys/api_key_timeouts.tf",
+			updated: "testdata/lifecycle/api_keys/api_key_timeouts.tf",
+			variables: config.Variables{
+				"create": config.StringVariable("7m"),
+				"read":   config.StringVariable("7m"),
+				"delete": config.StringVariable("7m"),
+			},
+		},
+		{
+			name:    "add-to-existing",
+			initial: "testdata/lifecycle/api_keys/api_key_without_timeouts.tf",
+			updated: "testdata/lifecycle/api_keys/api_key_timeouts.tf",
+			variables: config.Variables{
+				"create": config.StringVariable("7m"),
+				"read":   config.StringVariable("7m"),
+				"delete": config.StringVariable("7m"),
+			},
+		},
+		{
+			name:    "dynamic-presence",
+			initial: "testdata/lifecycle/api_keys/api_key_dynamic_timeouts_on.tf",
+			updated: "testdata/lifecycle/api_keys/api_key_dynamic_timeouts_off.tf",
+		},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
 			var mu sync.Mutex
 			exists := false
 			creates, deletes := 0, 0
@@ -54,42 +83,9 @@ func TestAgentMemoryAPIKeyTimeoutLifecycle(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			prefix := testProviderConfig(t, server.URL)
-			config := prefix + `resource "rediscloud_agent_memory_api_key" "runtime" {
- store_id="store-1"
-name="runtime"
-%s
-}`
-			initialTimeouts := ""
-			if scenario == "configure-and-change" {
-				initialTimeouts = `timeouts {
- create="2m"
-read="3m"
-delete="4m"
-}`
-			}
-			initial := fmt.Sprintf(config, initialTimeouts)
-			updated := fmt.Sprintf(config, `timeouts {
- create="7m"
-read="7m"
-delete="7m"
-}`)
-
+			testProviderConfig(t, server.URL)
 			timeoutCheck := resource.TestCheckResourceAttr("rediscloud_agent_memory_api_key.runtime", "timeouts.0.read", "7m")
-			if scenario == "dynamic-presence" {
-				block := `dynamic "timeouts" {
-                  for_each = terraform_data.flag.output ? [true] : []
-                  content { read = "7m" }
-                }`
-				initial = fmt.Sprintf(config, block) + `
-                  resource "terraform_data" "flag" { input=true }
-                `
-				updated = fmt.Sprintf(config, block) + `
-                  resource "terraform_data" "flag" {
-                    input=false
-                    triggers_replace=1
-                  }
-                `
+			if scenario.name == "dynamic-presence" {
 				timeoutCheck = resource.TestCheckNoResourceAttr("rediscloud_agent_memory_api_key.runtime", "timeouts.0.read")
 			}
 
@@ -105,17 +101,28 @@ delete="7m"
 			resource.UnitTest(t, resource.TestCase{
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				Steps: []resource.TestStep{
-					{Config: initial, Check: check},
 					{
-						Config: updated,
+						ConfigFile: config.StaticFile(scenario.initial),
+						Check:      check,
+					},
+					{
+
+						ConfigFile:      config.StaticFile(scenario.updated),
+						ConfigVariables: scenario.variables,
+
 						ConfigPlanChecks: resource.ConfigPlanChecks{
 							PreApply: []plancheck.PlanCheck{
 								plancheck.ExpectKnownValue("rediscloud_agent_memory_api_key.runtime", tfjsonpath.New("id"), knownvalue.StringExact("key-1")),
 							},
 						},
+
 						Check: resource.ComposeTestCheckFunc(check, timeoutCheck),
 					},
-					{Config: updated, PlanOnly: true},
+					{
+						ConfigFile:      config.StaticFile(scenario.updated),
+						ConfigVariables: scenario.variables,
+						PlanOnly:        true,
+					},
 				},
 				CheckDestroy: func(_ *terraform.State) error {
 					mu.Lock()

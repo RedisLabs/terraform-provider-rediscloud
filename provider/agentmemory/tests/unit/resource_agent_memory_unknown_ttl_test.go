@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -211,19 +212,38 @@ func TestAgentMemoryUnknownLongTermTTLLifecycle(t *testing.T) {
 			t.Errorf("unexpected fixture counts: creates=%d patches=%d deletes=%d rejectedPatches=%d remaining=%t", creates, patches, deletes, rejectedPatches, store != nil)
 		}
 	}()
-	prefix := testProviderConfig(t, server.URL)
-	config := func(ttl int) string {
-		return prefix + unknownTTLConfig("terraform_data.ttl.output", fmt.Sprintf(`resource "terraform_data" "ttl" { input=%d }`, ttl), true)
-	}
-	first, changed := config(86400), config(172800)
+	testProviderConfig(t, server.URL)
 	// On update, omission must retain the known TTL rather than become a missing-create error.
-	omitted := prefix + unknownTTLConfig("OMIT_TTL", `resource "terraform_data" "ttl" { input=172800 }`, true)
+
 	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-		{Config: first, Check: resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_ttl_seconds", "86400")},
-		{Config: changed, Check: resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_ttl_seconds", "172800"))},
-		{Config: changed, PlanOnly: true},
-		{Config: omitted, PlanOnly: true},
-		{Config: changed, PlanOnly: true},
-		{Config: config(0), ExpectError: regexp.MustCompile("Failed to update Agent Memory service")},
+		{
+			ConfigFile:      config.StaticFile("testdata/lifecycle/stores/store_deferred_long_ttl.tf"),
+			ConfigVariables: config.Variables{"ttl": config.IntegerVariable(86400)},
+			Check:           resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_ttl_seconds", "86400"),
+		},
+		{
+			ConfigFile:      config.StaticFile("testdata/lifecycle/stores/store_deferred_long_ttl.tf"),
+			ConfigVariables: config.Variables{"ttl": config.IntegerVariable(172800)},
+			Check:           resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "long_term_ttl_seconds", "172800")),
+		},
+		{
+			ConfigFile:      config.StaticFile("testdata/lifecycle/stores/store_deferred_long_ttl.tf"),
+			ConfigVariables: config.Variables{"ttl": config.IntegerVariable(172800)},
+			PlanOnly:        true,
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/lifecycle/stores/store_omitted_long_ttl.tf"),
+			PlanOnly:   true,
+		},
+		{
+			ConfigFile:      config.StaticFile("testdata/lifecycle/stores/store_deferred_long_ttl.tf"),
+			ConfigVariables: config.Variables{"ttl": config.IntegerVariable(172800)},
+			PlanOnly:        true,
+		},
+		{
+			ConfigFile:      config.StaticFile("testdata/lifecycle/stores/store_deferred_long_ttl.tf"),
+			ConfigVariables: config.Variables{"ttl": config.IntegerVariable(0)},
+			ExpectError:     regexp.MustCompile("Failed to update Agent Memory service"),
+		},
 	}})
 }

@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
-	"strings"
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/stretchr/testify/assert"
@@ -19,38 +19,111 @@ import (
 )
 
 func TestAgentMemoryModelReplacementLifecycle(t *testing.T) {
-	base := selectorConfig("llm", "provider", `"fake-provider"`, "")
-	platform := `
-resource "rediscloud_agent_memory" "example" {
- name="selector-store"
- database_id=123
- short_term_ttl_seconds=86400
- long_term_ttl_seconds=31536000
- extraction_cadence_seconds=300
-}
-`
-	rotated := strings.ReplaceAll(strings.ReplaceAll(base, "FAKE-STATIC", "FAKE-ROTATED"), "api_key_version=1", "api_key_version=2")
-	omitted := strings.ReplaceAll(rotated, "provider=\"fake-provider\"\n", "")
-	omitted = strings.ReplaceAll(omitted, "model=\"fake-embedding\"\n", "")
 	for _, tc := range []struct {
 		name, before, after, errorPattern string
+		afterVariables                    config.Variables
 		replace                           bool
 	}{
-		{name: "llm provider", before: base, after: selectorConfig("llm", "provider", `"other-provider"`, ""), replace: true},
-		{name: "embedding provider", before: base, after: selectorConfig("embedding", "provider", `"other-provider"`, ""), replace: true},
-		{name: "embedding model", before: base, after: selectorConfig("embedding", "model", `"other-model"`, ""), replace: true},
-		{name: "llm model", before: base, after: selectorConfig("llm", "model", `"other-model"`, "")},
-		{name: "credential rotation", before: base, after: rotated},
-		{name: "rotation with omitted immutable selectors", before: base, after: omitted, errorPattern: "Invalid Attribute Combination"},
-		{name: "platform to customer models", before: platform, after: base, replace: true},
-		{name: "customer to platform models", before: base, after: platform, replace: true},
-		{name: "unknown provider resolving unchanged", before: base, after: selectorConfig("llm", "provider", `tostring(terraform_data.provider.output)`, `resource "terraform_data" "provider" { input="fake-provider" }`), replace: true},
-		{name: "unknown provider resolving changed", before: base, after: selectorConfig("llm", "provider", `tostring(terraform_data.provider.output)`, `resource "terraform_data" "provider" { input="other-provider" }`), replace: true},
-		{name: "replacement without credentials", before: base, after: regexp.MustCompile(`credentials \{[^}]*\}\n`).ReplaceAllString(selectorConfig("llm", "provider", `"other-provider"`, ""), ""), errorPattern: "Missing Agent Memory model credentials"},
-		{name: "adding models without credentials", before: platform, after: regexp.MustCompile(`credentials \{[^}]*\}\n`).ReplaceAllString(base, ""), errorPattern: "Missing Agent Memory model credentials"},
-		{name: "adding models without immutable selectors", before: platform, after: strings.ReplaceAll(strings.ReplaceAll(base, "provider=\"fake-provider\"\n", ""), "model=\"fake-embedding\"\n", ""), errorPattern: "Invalid Attribute Combination"},
-		{name: "prevent destroy", before: base, after: strings.Replace(selectorConfig("llm", "provider", `"other-provider"`, ""), `database_id=123`, `database_id=123
- lifecycle { prevent_destroy=true }`, 1), errorPattern: "prevent_destroy|cannot be destroyed"},
+		{
+			name:           "llm provider",
+			before:         "testdata/lifecycle/models/selectors.tf",
+			after:          "testdata/lifecycle/models/selectors.tf",
+			afterVariables: config.Variables{"llm_provider": config.StringVariable("other-provider")},
+			replace:        true,
+		},
+		{
+			name:           "embedding provider",
+			before:         "testdata/lifecycle/models/selectors.tf",
+			after:          "testdata/lifecycle/models/selectors.tf",
+			afterVariables: config.Variables{"embedding_provider": config.StringVariable("other-provider")},
+			replace:        true,
+		},
+		{
+			name:           "embedding model",
+			before:         "testdata/lifecycle/models/selectors.tf",
+			after:          "testdata/lifecycle/models/selectors.tf",
+			afterVariables: config.Variables{"embedding_model": config.StringVariable("other-model")},
+			replace:        true,
+		},
+		{
+			name:           "llm model",
+			before:         "testdata/lifecycle/models/selectors.tf",
+			after:          "testdata/lifecycle/models/selectors.tf",
+			afterVariables: config.Variables{"llm_model": config.StringVariable("other-model")},
+		},
+		{
+			name:   "credential rotation",
+			before: "testdata/lifecycle/models/selectors.tf",
+			after:  "testdata/lifecycle/models/selectors.tf",
+			afterVariables: config.Variables{
+				"embedding_credentials_api_key":         config.StringVariable("FAKE-ROTATED"),
+				"embedding_credentials_api_key_version": config.IntegerVariable(2),
+				"llm_credentials_api_key":               config.StringVariable("FAKE-ROTATED"),
+				"llm_credentials_api_key_version":       config.IntegerVariable(2),
+			},
+		},
+		{
+			name:         "rotation with omitted immutable selectors",
+			before:       "testdata/lifecycle/models/selectors.tf",
+			after:        "testdata/lifecycle/models/rotated_without_selectors.tf",
+			errorPattern: "Invalid Attribute Combination",
+		},
+		{
+			name:    "platform to customer models",
+			before:  "testdata/lifecycle/models/managed.tf",
+			after:   "testdata/lifecycle/models/selectors.tf",
+			replace: true,
+		},
+		{
+			name:    "customer to platform models",
+			before:  "testdata/lifecycle/models/selectors.tf",
+			after:   "testdata/lifecycle/models/managed.tf",
+			replace: true,
+		},
+		{
+			name:    "unknown provider resolving unchanged",
+			before:  "testdata/lifecycle/models/selectors.tf",
+			after:   "testdata/lifecycle/models/deferred_provider.tf",
+			replace: true,
+		},
+		{
+			name:           "unknown provider resolving changed",
+			before:         "testdata/lifecycle/models/selectors.tf",
+			after:          "testdata/lifecycle/models/deferred_provider.tf",
+			afterVariables: config.Variables{"provider_input": config.StringVariable("other-provider")},
+			replace:        true,
+		},
+		{
+			name:         "replacement without credentials",
+			before:       "testdata/lifecycle/models/selectors.tf",
+			after:        "testdata/lifecycle/models/without_credentials.tf",
+			errorPattern: "Missing Agent Memory model credentials",
+		},
+		{
+			name:           "adding models without credentials",
+			before:         "testdata/lifecycle/models/managed.tf",
+			after:          "testdata/lifecycle/models/without_credentials.tf",
+			afterVariables: config.Variables{"llm_provider": config.StringVariable("fake-provider")},
+			errorPattern:   "Missing Agent Memory model credentials",
+		},
+		{
+			name:   "adding models without immutable selectors",
+			before: "testdata/lifecycle/models/managed.tf",
+			after:  "testdata/lifecycle/models/rotated_without_selectors.tf",
+			afterVariables: config.Variables{
+				"embedding_credentials_api_key":         config.StringVariable("FAKE-STATIC"),
+				"embedding_credentials_api_key_version": config.IntegerVariable(1),
+				"llm_credentials_api_key":               config.StringVariable("FAKE-STATIC"),
+				"llm_credentials_api_key_version":       config.IntegerVariable(1),
+			},
+			errorPattern: "Invalid Attribute Combination",
+		},
+		{
+			name:         "prevent destroy",
+			before:       "testdata/lifecycle/models/selectors.tf",
+			after:        "testdata/lifecycle/models/protected.tf",
+			errorPattern: "prevent_destroy|cannot be destroyed",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var mu sync.Mutex
@@ -104,18 +177,38 @@ resource "rediscloud_agent_memory" "example" {
 				}
 			}))
 			defer server.Close()
-			prefix := testProviderConfig(t, server.URL)
+			testProviderConfig(t, server.URL)
 			const address = "rediscloud_agent_memory.example"
-			steps := []resource.TestStep{{Config: prefix + tc.before, Check: resource.TestCheckResourceAttr(address, "id", "store-1")}}
+			steps := []resource.TestStep{{
+				ConfigFile: config.StaticFile(tc.before),
+				Check:      resource.TestCheckResourceAttr(address, "id", "store-1"),
+			}}
 			if tc.errorPattern != "" {
-				steps = append(steps, resource.TestStep{Config: prefix + tc.after, PlanOnly: true, ExpectError: regexp.MustCompile(tc.errorPattern)}, resource.TestStep{Config: prefix + tc.before, PlanOnly: true})
+				steps = append(steps, resource.TestStep{
+					ConfigFile:      config.StaticFile(tc.after),
+					ConfigVariables: tc.afterVariables,
+					PlanOnly:        true,
+					ExpectError:     regexp.MustCompile(tc.errorPattern),
+				}, resource.TestStep{
+					ConfigFile: config.StaticFile(tc.before),
+					PlanOnly:   true,
+				})
 			} else {
 				action, expectedID := plancheck.ResourceActionUpdate, "store-1"
 				if tc.replace {
 					action = plancheck.ResourceActionDestroyBeforeCreate
 					expectedID = "store-2"
 				}
-				steps = append(steps, resource.TestStep{Config: prefix + tc.after, ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, action)}}, Check: resource.TestCheckResourceAttr(address, "id", expectedID)}, resource.TestStep{Config: prefix + tc.after, PlanOnly: true})
+				steps = append(steps, resource.TestStep{
+					ConfigFile:       config.StaticFile(tc.after),
+					ConfigVariables:  tc.afterVariables,
+					ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(address, action)}},
+					Check:            resource.TestCheckResourceAttr(address, "id", expectedID),
+				}, resource.TestStep{
+					ConfigFile:      config.StaticFile(tc.after),
+					ConfigVariables: tc.afterVariables,
+					PlanOnly:        true,
+				})
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: steps})
 			mu.Lock()

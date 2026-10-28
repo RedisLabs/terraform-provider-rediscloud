@@ -10,6 +10,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
@@ -88,14 +89,12 @@ func TestAgentMemoryRegexPatternLimitsByAPI(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			config := func(pattern string) string {
-				expression, dependency := fmt.Sprintf("%q", pattern), ""
-				if unknown {
-					expression = "terraform_data.pattern.output"
-					dependency = fmt.Sprintf(`resource "terraform_data" "pattern" { input=%q }`, pattern)
-				}
-				return testProviderConfig(t, server.URL) + emptyRegexConfig(expression, dependency, true)
+			testProviderConfig(t, server.URL)
+			fixture := "testdata/lifecycle/detectors/detector_pattern"
+			if unknown {
+				fixture += "_deferred"
 			}
+			fixture += ".tf"
 			check := func(pattern string) resource.TestCheckFunc {
 				return func(state *terraform.State) error {
 					mu.Lock()
@@ -112,11 +111,31 @@ func TestAgentMemoryRegexPatternLimitsByAPI(t *testing.T) {
 			longPattern := strings.Repeat("é", 513)
 			longerPattern := strings.Repeat("界", 1024)
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config(longPattern), Check: check(longPattern)},
-				{Config: config(longerPattern), Check: check(longerPattern)},
-				{Config: config("rejected-by-api"), ExpectError: regexp.MustCompile("Failed to update Agent Memory service")},
-				{Config: config(longerPattern), Check: check(longerPattern)},
-				{Config: config(longerPattern), PlanOnly: true},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"pattern": config.StringVariable(longPattern)},
+					Check:           check(longPattern),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"pattern": config.StringVariable(longerPattern)},
+					Check:           check(longerPattern),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"pattern": config.StringVariable("rejected-by-api")},
+					ExpectError:     regexp.MustCompile("Failed to update Agent Memory service"),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"pattern": config.StringVariable(longerPattern)},
+					Check:           check(longerPattern),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture),
+					ConfigVariables: config.Variables{"pattern": config.StringVariable(longerPattern)},
+					PlanOnly:        true,
+				},
 			}})
 			mu.Lock()
 			defer mu.Unlock()

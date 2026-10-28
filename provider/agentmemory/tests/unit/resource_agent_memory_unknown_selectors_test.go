@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -201,21 +202,44 @@ func TestAgentMemoryUnknownSelectorLifecycle(t *testing.T) {
 					t.Errorf("fixture not cleaned up: creates=%d deletes=%d remaining=%t", creates, deletes, store != nil)
 				}
 			}()
-			prefix := testProviderConfig(t, server.URL)
-			config := func(suffix string) string {
-				return prefix + selectorConfig(selector.block, selector.field, `split(":",tostring(terraform_data.selector.output))[0]`, fmt.Sprintf(`resource "terraform_data" "selector" { input=%q }`, selector.value+":"+suffix))
-			}
-			first, changed := config("before"), config("after")
+			testProviderConfig(t, server.URL)
+			fixture := "testdata/lifecycle/models/selector_" + selector.block + "_" + selector.field
 			check := resource.ComposeTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", selector.block+".0."+selector.field, selector.value))
 			// Configured model blocks require explicit selectors on updates as well.
-			omitted := prefix + selectorConfig(selector.block, selector.field, "OMIT_SELECTOR", fmt.Sprintf(`resource "terraform_data" "selector" { input=%q }`, selector.value+":after"))
+
 			steps := []resource.TestStep{
-				{Config: first, Check: check},
-				{Config: changed, PlanOnly: true, ExpectNonEmptyPlan: true},
-				{Config: changed, Check: check},
-				{Config: changed, PlanOnly: true},
-				{Config: omitted, PlanOnly: true, ExpectError: regexp.MustCompile("Invalid Attribute Combination")},
-				{Config: changed, PlanOnly: true},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_deferred.tf"),
+					ConfigVariables: config.Variables{"input": config.StringVariable(selector.value + ":before")},
+					Check:           check,
+				},
+				{
+					ConfigFile:         config.StaticFile(fixture + "_deferred.tf"),
+					ConfigVariables:    config.Variables{"input": config.StringVariable(selector.value + ":after")},
+					PlanOnly:           true,
+					ExpectNonEmptyPlan: true,
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_deferred.tf"),
+					ConfigVariables: config.Variables{"input": config.StringVariable(selector.value + ":after")},
+					Check:           check,
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_deferred.tf"),
+					ConfigVariables: config.Variables{"input": config.StringVariable(selector.value + ":after")},
+					PlanOnly:        true,
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_omitted.tf"),
+					ConfigVariables: config.Variables{"input": config.StringVariable(selector.value + ":after")},
+					PlanOnly:        true,
+					ExpectError:     regexp.MustCompile("Invalid Attribute Combination"),
+				},
+				{
+					ConfigFile:      config.StaticFile(fixture + "_deferred.tf"),
+					ConfigVariables: config.Variables{"input": config.StringVariable(selector.value + ":after")},
+					PlanOnly:        true,
+				},
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: steps})
 		})

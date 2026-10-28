@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -78,11 +79,33 @@ func TestAgentMemoryEventCountRequiredFields(t *testing.T) {
 }
 
 func TestAgentMemoryEventCountRequiredLifecycle(t *testing.T) {
-	for _, c := range []struct{ name, values, errorPattern string }{
-		{name: "valid-update", values: "threshold=30,retain=0"},
-		{name: "resolved-invalid-comparison", values: "threshold=5,retain=10", errorPattern: "Invalid summarization event count"},
-		{name: "resolved-null-threshold", values: "threshold=null,retain=10", errorPattern: "Invalid Attribute Combination"},
-		{name: "resolved-null-retain", values: "threshold=20,retain=null", errorPattern: "Invalid Attribute Combination"},
+	for _, c := range []struct {
+		name, errorPattern string
+		threshold, retain  config.Variable
+	}{
+		{
+			name:      "valid-update",
+			threshold: config.IntegerVariable(30),
+			retain:    config.IntegerVariable(0),
+		},
+		{
+			name:         "resolved-invalid-comparison",
+			threshold:    config.IntegerVariable(5),
+			retain:       config.IntegerVariable(10),
+			errorPattern: "Invalid summarization event count",
+		},
+		{
+			name:         "resolved-null-threshold",
+			threshold:    nil,
+			retain:       config.IntegerVariable(10),
+			errorPattern: "Invalid Attribute Combination",
+		},
+		{
+			name:         "resolved-null-retain",
+			threshold:    config.IntegerVariable(20),
+			retain:       nil,
+			errorPattern: "Invalid Attribute Combination",
+		},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			var mu sync.Mutex
@@ -170,27 +193,72 @@ func TestAgentMemoryEventCountRequiredLifecycle(t *testing.T) {
 					t.Errorf("unexpected fixture counts: creates=%d patches=%d deletes=%d remaining=%t", creates, patches, deletes, store != nil)
 				}
 			}()
-			prefix := testProviderConfig(t, server.URL)
-			config := func(values string) string {
-				return prefix + requiredEventCountConfig("event_count {\nthreshold=terraform_data.values.output.threshold\nretain_count=terraform_data.values.output.retain\n}", fmt.Sprintf(`resource "terraform_data" "values" { input={%s} }`, values))
-			}
-			initial := config("threshold=20,retain=10")
-			changed := config(c.values)
-			steps := []resource.TestStep{{Config: initial}, {Config: changed, PlanOnly: true, ExpectNonEmptyPlan: true}}
+			testProviderConfig(t, server.URL)
+			steps := []resource.TestStep{{
+				ConfigFile: config.StaticFile("testdata/lifecycle/summarization/summarization_deferred_event_counts.tf"),
+				ConfigVariables: config.Variables{"values": config.ObjectVariable(map[string]config.Variable{
+					"threshold": config.IntegerVariable(20),
+					"retain":    config.IntegerVariable(10),
+				})},
+			}, {
+				ConfigFile: config.StaticFile("testdata/lifecycle/summarization/summarization_deferred_event_counts.tf"),
+				ConfigVariables: config.Variables{"values": config.ObjectVariable(map[string]config.Variable{
+					"threshold": c.threshold,
+					"retain":    c.retain,
+				})},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			}}
 			if c.errorPattern != "" {
-				steps = append(steps, resource.TestStep{Config: changed, ExpectError: regexp.MustCompile(c.errorPattern)})
+				steps = append(steps, resource.TestStep{
+					ConfigFile: config.StaticFile("testdata/lifecycle/summarization/summarization_deferred_event_counts.tf"),
+					ConfigVariables: config.Variables{"values": config.ObjectVariable(map[string]config.Variable{
+						"threshold": c.threshold,
+						"retain":    c.retain,
+					})},
+					ExpectError: regexp.MustCompile(c.errorPattern),
+				})
 			} else {
-				steps = append(steps, resource.TestStep{Config: changed, Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.threshold", "30"),
-					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.retain_count", "0"),
-				)}, resource.TestStep{Config: changed, PlanOnly: true})
+				steps = append(steps, resource.TestStep{
+					ConfigFile: config.StaticFile("testdata/lifecycle/summarization/summarization_deferred_event_counts.tf"),
+					ConfigVariables: config.Variables{"values": config.ObjectVariable(map[string]config.Variable{
+						"threshold": c.threshold,
+						"retain":    c.retain,
+					})},
+					Check: resource.ComposeTestCheckFunc(
+						resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
+						resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.threshold", "30"),
+						resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.retain_count", "0"),
+					),
+				}, resource.TestStep{
+					ConfigFile: config.StaticFile("testdata/lifecycle/summarization/summarization_deferred_event_counts.tf"),
+					ConfigVariables: config.Variables{"values": config.ObjectVariable(map[string]config.Variable{
+						"threshold": c.threshold,
+						"retain":    c.retain,
+					})},
+					PlanOnly: true,
+				})
 				// Prior state must not satisfy fields omitted from the new configuration.
-				for _, block := range []string{`event_count { threshold=30 }`, `event_count { retain_count=0 }`} {
-					steps = append(steps, resource.TestStep{Config: prefix + requiredEventCountConfig(block, fmt.Sprintf(`resource "terraform_data" "values" { input={%s} }`, c.values)), PlanOnly: true, ExpectError: regexp.MustCompile("Invalid Attribute Combination")})
+				for _, fixture := range []string{"testdata/lifecycle/summarization/summarization_event_counts_missing_retain.tf", "testdata/lifecycle/summarization/summarization_event_counts_missing_threshold.tf"} {
+					steps = append(steps, resource.TestStep{
+						ConfigFile: config.StaticFile(fixture),
+						ConfigVariables: config.Variables{"values": config.ObjectVariable(map[string]config.Variable{
+							"threshold": c.threshold,
+							"retain":    c.retain,
+						})},
+						PlanOnly:    true,
+						ExpectError: regexp.MustCompile("Invalid Attribute Combination"),
+					})
 				}
 				// Restore valid configuration so the harness can plan fixture destruction.
-				steps = append(steps, resource.TestStep{Config: changed, PlanOnly: true})
+				steps = append(steps, resource.TestStep{
+					ConfigFile: config.StaticFile("testdata/lifecycle/summarization/summarization_deferred_event_counts.tf"),
+					ConfigVariables: config.Variables{"values": config.ObjectVariable(map[string]config.Variable{
+						"threshold": c.threshold,
+						"retain":    c.retain,
+					})},
+					PlanOnly: true,
+				})
 			}
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: steps})
 		})
