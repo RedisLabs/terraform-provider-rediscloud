@@ -85,32 +85,9 @@ jobs:
       create_account_sleep_seconds: 180
     secrets: inherit
 
-  detect-agent-memory:
-    name: Detect Agent Memory changes
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      changed: ${{ steps.filter.outputs.agent_memory }}
-    steps:
-      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-        id: filter
-        with:
-          filters: |
-            agent_memory:
-              - 'provider/agentmemory/**'
-              - 'go.mod'
-              - 'go.sum'
-              - '.github/workflows/testacc.yml'
-
   testacc-agent-memory:
     name: Acceptance Tests (Agent Memory)
-    needs: [ci, detect-agent-memory]
-    if: >-
-      !cancelled() && needs.ci.result == 'success' &&
-      (github.event_name == 'workflow_dispatch' || needs.detect-agent-memory.outputs.changed == 'true')
+    needs: [ci]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: '^TestAccResourceRedisCloudAgentMemory_'

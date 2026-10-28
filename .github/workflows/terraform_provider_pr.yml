@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.filter.outputs.code }}
-      agent_memory: ${{ steps.filter.outputs.agent_memory }}
     steps:
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         if: github.event_name == 'pull_request'
@@ -34,11 +33,6 @@ jobs:
               - 'provider/**/testdata/**'
               - '.github/**'
               - 'scripts/**'
-            agent_memory:
-              - 'provider/agentmemory/**'
-              - 'go.mod'
-              - 'go.sum'
-              - '.github/workflows/testacc.yml'
 
   # Gate job: all non-test checks (golangci-lint, go mod tidy, terraform fmt,
   # govulncheck, tfproviderlint, docs, build, schema, unit tests) run via
@@ -169,8 +163,7 @@ jobs:
 
   testacc-agent-memory:
     name: Acceptance Tests (Agent Memory)
-    needs: [pre-test, detect-changes]
-    if: github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.agent_memory == 'true'
+    needs: [pre-test]
     uses: ./.github/workflows/testacc.yml
     with:
       test_pattern: '^TestAccResourceRedisCloudAgentMemory_'
