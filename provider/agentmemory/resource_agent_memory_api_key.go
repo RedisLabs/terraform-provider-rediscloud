@@ -58,6 +58,9 @@ func (r *agentMemoryAPIKeyResource) Schema(ctx context.Context, _ resource.Schem
 			"id": schema.StringAttribute{
 				Description: "The API key ID.",
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"store_id": schema.StringAttribute{
 				Description: "The Agent Memory store ID.",
