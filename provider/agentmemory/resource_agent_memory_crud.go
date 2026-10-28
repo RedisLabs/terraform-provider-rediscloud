@@ -310,12 +310,12 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 		state.LongTermTTLSeconds = types.Int64Null()
 	}
 	state.ExtractionStrategy = types.StringPointerValue(store.ExtractionStrategy)
-	state.LLM = modelConfigList(ctx, modelConfigToModel(ctx, store.LLM, modelConfigBlock(ctx, state.LLM, diags), diags), diags)
+	state.LLM = modelConfigList(ctx, modelConfigFromAPI(ctx, store.LLM, modelConfigBlock(ctx, state.LLM, diags), diags), diags)
 	var embedding *agentmemoryapi.ModelStatus
 	if store.LongTermMemory != nil {
 		embedding = store.LongTermMemory.Embedding
 	}
-	state.Embedding = modelConfigList(ctx, modelConfigToModel(ctx, embedding, modelConfigBlock(ctx, state.Embedding, diags), diags), diags)
+	state.Embedding = modelConfigList(ctx, modelConfigFromAPI(ctx, embedding, modelConfigBlock(ctx, state.Embedding, diags), diags), diags)
 	if store.ExtractionCadence != nil {
 		state.ExtractionCadenceSeconds = intPointerValue(store.ExtractionCadence.ActiveIntervalSeconds)
 	} else {
@@ -325,14 +325,14 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 	// they were absent from config. Import is the one path where we intentionally
 	// adopt advanced API config even when the previous state is empty.
 	if includeAPIOnlyConfig || len(state.Summarization.Elements()) > 0 || store.Summarization == nil {
-		state.Summarization = summarizationList(ctx, summarizationToModel(ctx, store.Summarization, summarizationBlock(ctx, state.Summarization, diags), includeAPIOnlyConfig, diags), diags)
+		state.Summarization = summarizationList(ctx, summarizationFromAPI(ctx, store.Summarization, summarizationBlock(ctx, state.Summarization, diags), includeAPIOnlyConfig, diags), diags)
 	}
 	if includeAPIOnlyConfig || len(state.LongTermMemoryExclusions.Elements()) > 0 || store.LongTermMemoryExclusions == nil {
-		state.LongTermMemoryExclusions = exclusionsList(ctx, exclusionsToModel(ctx, store.LongTermMemoryExclusions, exclusionsBlock(ctx, state.LongTermMemoryExclusions, diags), includeAPIOnlyConfig, diags), diags)
+		state.LongTermMemoryExclusions = exclusionsList(ctx, exclusionsFromAPI(ctx, store.LongTermMemoryExclusions, exclusionsBlock(ctx, state.LongTermMemoryExclusions, diags), includeAPIOnlyConfig, diags), diags)
 	}
 	if includeAPIOnlyConfig || !state.CustomMemoryTypes.IsNull() || len(store.CustomMemoryTypes) == 0 {
 		existing := customMemoryTypeModels(ctx, state.CustomMemoryTypes, diags)
-		models := customMemoryTypesToModel(ctx, store.CustomMemoryTypes, existing, diags)
+		models := customMemoryTypesFromAPI(ctx, store.CustomMemoryTypes, existing, diags)
 		list, listDiags := NewCustomMemoryTypeList(ctx, models)
 		diags.Append(listDiags...)
 		state.CustomMemoryTypes = list
@@ -346,7 +346,7 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 	default:
 		state.Endpoint = types.StringNull()
 	}
-	state.Endpoints = endpointsToModel(ctx, store.Endpoints, diags)
+	state.Endpoints = endpointsFromAPI(ctx, store.Endpoints, diags)
 
 	if store.CreatedAt != nil {
 		state.CreatedAt = types.StringValue(store.CreatedAt.Format(time.RFC3339))
@@ -359,7 +359,7 @@ func readImportedAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi
 	readAgentMemoryIntoModel(ctx, store, state, true, diags)
 }
 
-func endpointsToModel(ctx context.Context, endpoints []agentmemoryapi.Endpoint, diags *diag.Diagnostics) types.List {
+func endpointsFromAPI(ctx context.Context, endpoints []agentmemoryapi.Endpoint, diags *diag.Diagnostics) types.List {
 	endpointObjectType := agentMemoryEndpointObjectType()
 	if len(endpoints) == 0 {
 		return types.ListNull(endpointObjectType)
