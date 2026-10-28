@@ -47,6 +47,10 @@ func TestAgentMemoryOptionalExclusionGroupsLifecycle(t *testing.T) {
 		case "GET /tasks/fixture-task":
 			_, _ = w.Write([]byte(`{"taskId":"fixture-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
 		case "GET /memory-stores/store-1":
+			if store == nil {
+				http.NotFound(w, r)
+				return
+			}
 			store["storeId"], store["databaseId"], store["status"] = "store-1", "123", "READY"
 			_ = json.NewEncoder(w).Encode(store)
 		case "DELETE /memory-stores/store-1":

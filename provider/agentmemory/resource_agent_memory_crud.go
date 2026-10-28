@@ -236,15 +236,14 @@ func (r *agentMemoryResource) Delete(ctx context.Context, req resource.DeleteReq
 	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
 	defer cancel()
 
-	err := r.client.Client.AgentMemory.Delete(ctx, state.ID.ValueString())
-	if err == nil {
+	storeID := state.ID.ValueString()
+	if err := r.client.Client.AgentMemory.Delete(ctx, storeID); err != nil {
+		resp.Diagnostics.AddError("Failed to delete Agent Memory service", err.Error())
 		return
 	}
-	var notFound *agentmemoryapi.NotFound
-	if errors.As(err, &notFound) {
-		return
+	if err := waitForAgentMemoryToBeDeleted(ctx, storeID, r.client, operationTimeout); err != nil {
+		resp.Diagnostics.AddError("Agent Memory service failed to delete", err.Error())
 	}
-	resp.Diagnostics.AddError("Failed to delete Agent Memory service", err.Error())
 }
 
 func shortMemoryFromPlan(plan AgentMemoryResourceModel) *agentmemoryapi.ShortMemoryConfig {

@@ -18,6 +18,7 @@ func TestAgentMemoryAPIKeyCreateFailurePreservesParent(t *testing.T) {
 	var mu sync.Mutex
 	creates, keyPosts := 0, 0
 	keyCreated := false
+	storeDeleted := false
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		defer mu.Unlock()
@@ -29,6 +30,10 @@ func TestAgentMemoryAPIKeyCreateFailurePreservesParent(t *testing.T) {
 		case "GET /tasks/create-task":
 			_, _ = w.Write([]byte(`{"taskId":"create-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
 		case "GET /memory-stores/store-1":
+			if storeDeleted {
+				http.NotFound(w, r)
+				return
+			}
 			writeStoreResponse(t, w, "key-failure-parent", 86400, 31536000, 300)
 		case "POST /memory-stores/store-1/api-keys":
 			keyPosts++
@@ -49,6 +54,7 @@ func TestAgentMemoryAPIKeyCreateFailurePreservesParent(t *testing.T) {
 			keyCreated = false
 			w.WriteHeader(204)
 		case "DELETE /memory-stores/store-1":
+			storeDeleted = true
 			_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 		case "GET /tasks/delete-task":
 			_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))

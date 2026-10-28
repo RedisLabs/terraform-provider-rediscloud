@@ -399,6 +399,15 @@ Terraform can mark the failed create as tainted, so a subsequent apply may destr
 and replace the store. Inspect the plan and existing store before applying;
 replacement does not migrate memories.
 
+Deletion waits for the store to disappear after the API task completes. Errors
+from the initial delete request, including not-found responses, fail the
+operation. After an accepted deletion, a not-found read confirms removal. If the
+request or confirmation fails or times out, Terraform retains the tracked state.
+On a later destroy with normal refresh enabled, a missing store is removed from
+state during refresh without sending another delete request. If refresh is
+disabled and the initial delete returns not found, refresh the state before
+retrying.
+
 ## Import
 
 `rediscloud_agent_memory` can be imported using its store ID:

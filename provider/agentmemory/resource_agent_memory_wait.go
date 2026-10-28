@@ -55,3 +55,30 @@ func waitForAgentMemoryToBeReady(ctx context.Context, id string, c *client.ApiCl
 	defer mu.Unlock()
 	return lastStore, err
 }
+
+func waitForAgentMemoryToBeDeleted(ctx context.Context, id string, c *client.ApiClient, timeout time.Duration) error {
+	wait := &retry.StateChangeConf{
+		Pending:      []string{"present"},
+		Target:       []string{"deleted"},
+		Timeout:      timeout,
+		PollInterval: c.WaitPollInterval(5 * time.Second),
+		Refresh: func() (interface{}, string, error) {
+			log.Printf("[DEBUG] Waiting for Agent Memory store %s to be deleted", id)
+			store, err := c.Client.AgentMemory.Get(ctx, id)
+			if err != nil {
+				var notFound *api.NotFound
+				if errors.As(err, &notFound) {
+					return "deleted", "deleted", nil
+				}
+				return nil, "", err
+			}
+			if store == nil || redis.StringValue(store.StoreID) != id {
+				return nil, "", fmt.Errorf("agent memory deletion response did not match store %s", id)
+			}
+			// Presence, rather than the service status, determines whether deletion finished.
+			return store, "present", nil
+		},
+	}
+	_, err := wait.WaitForStateContext(ctx)
+	return err
+}

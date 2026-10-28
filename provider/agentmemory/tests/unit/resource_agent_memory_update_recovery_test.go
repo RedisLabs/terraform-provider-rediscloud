@@ -20,6 +20,7 @@ func TestAgentMemoryAcceptedUpdateReadFailureRecovers(t *testing.T) {
 			var mu sync.Mutex
 			creates, updates, shortTTL := 0, 0, 86400
 			failRead := false
+			storeDeleted := false
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				mu.Lock()
 				defer mu.Unlock()
@@ -38,6 +39,10 @@ func TestAgentMemoryAcceptedUpdateReadFailureRecovers(t *testing.T) {
 				case "GET /tasks/update-task":
 					_, _ = w.Write([]byte(`{"taskId":"update-task","status":"processing-completed"}`))
 				case "GET /memory-stores/store-1":
+					if storeDeleted {
+						http.NotFound(w, r)
+						return
+					}
 					if failRead {
 						failRead = false
 						if scenario == "http-error" {
@@ -50,6 +55,7 @@ func TestAgentMemoryAcceptedUpdateReadFailureRecovers(t *testing.T) {
 					}
 					writeStoreResponse(t, w, "update-recovery", shortTTL, 31536000, 300)
 				case "DELETE /memory-stores/store-1":
+					storeDeleted = true
 					_, _ = w.Write([]byte(`{"taskId":"delete-task"}`))
 				case "GET /tasks/delete-task":
 					_, _ = w.Write([]byte(`{"taskId":"delete-task","status":"processing-completed"}`))

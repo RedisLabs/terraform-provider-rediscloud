@@ -3,6 +3,7 @@ package unit_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -11,14 +12,20 @@ import (
 )
 
 func TestAgentMemoryInactiveSummarizationDefinitions(t *testing.T) {
+	var storeDeleted atomic.Bool
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/memory-stores", r.Method == http.MethodDelete && r.URL.Path == "/memory-stores/store-1":
+			storeDeleted.Store(r.Method == http.MethodDelete)
 			_, _ = w.Write([]byte(`{"taskId":"fixture"}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/tasks/fixture":
 			_, _ = w.Write([]byte(`{"taskId":"fixture","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
 		case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
+			if storeDeleted.Load() {
+				http.NotFound(w, r)
+				return
+			}
 			_, _ = w.Write([]byte(`{"storeId":"store-1","name":"fixture","databaseId":"123","status":"READY","summarization":{"enabled":false,"triggerStrategy":"event_count","eventCount":{"threshold":20,"retainCount":10}}}`))
 		default:
 			http.NotFound(w, r)
