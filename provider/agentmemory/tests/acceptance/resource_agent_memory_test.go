@@ -3,6 +3,8 @@ package acceptance
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -69,8 +71,12 @@ func TestAccResourceRedisCloudAgentMemory_CRUDI(t *testing.T) {
 				// Keep the cleanup rehearsal isolated from concurrent fixtures using the default prefix.
 				t.Setenv("TEST_RESOURCE_PREFIX", strings.TrimSuffix(f.name, "-am"))
 				t.Setenv("SWEEP_AGE_THRESHOLD", "0s")
-				if err := sweepAgentMemory(""); err != nil {
-					t.Fatalf("sweep interrupted-run fixture: %s", err)
+				// The shared sweeper lives in another test package and must run through TestMain.
+				//lintignore:XR008
+				cmd := exec.CommandContext(ctx, "go", "test", "./provider", "-run=^$", "-sweep=ALL", "-sweep-run=rediscloud_agent_memory", "-timeout=15m")
+				cmd.Dir = filepath.Join("..", "..", "..", "..")
+				if output, err := cmd.CombinedOutput(); err != nil {
+					t.Fatalf("sweep interrupted-run fixture: %v\n%s", err, output)
 				}
 				if err := storeAbsent(ctx, client.MustTestClient(t), tracked.storeID); err != nil {
 					t.Fatalf("fixture was not removed by the sweeper: %s", err)

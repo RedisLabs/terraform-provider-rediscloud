@@ -65,18 +65,19 @@ are available.
 
 ## Cleanup after interruption
 
-Use the same unique `TEST_RESOURCE_PREFIX` as the interrupted run. First remove
-Agent Memory stores, then let the existing subscription sweeper remove their
-databases and subscriptions:
+Use the same unique `TEST_RESOURCE_PREFIX` as the interrupted run. The shared
+subscription sweeper removes Agent Memory stores before their databases and
+subscriptions:
 
 ```sh
 export TEST_RESOURCE_PREFIX=tf-am-local-unique
 export SWEEP_AGE_THRESHOLD=0s
-go test ./provider/agentmemory/tests/acceptance -run='^$' \
-  -sweep=ALL -sweep-run=rediscloud_agent_memory -timeout=20m
 go test ./provider -run='^$' \
   -sweep=ALL -sweep-run=rediscloud_subscription -timeout=30m
 ```
+
+To remove only stores and preserve their infrastructure, use
+`-sweep-run=rediscloud_agent_memory` with the same shared package.
 
 The Agent Memory sweeper requires both the store name and its subscription to
 belong to these fixtures. It skips stores with missing IDs or creation times.
@@ -85,9 +86,9 @@ Without `SWEEP_AGE_THRESHOLD`, it only selects stores at least 24 hours old.
 ## CI
 
 The existing PR and main workflows call the ephemeral-account workflow in a
-separate Agent Memory job, using their existing CI and acceptance gates. Its opt-in
-`sweep_agent_memory` input removes fixture stores before the existing subscription
-cleanup. That input defaults to false for all other callers.
+separate Agent Memory job, using their existing CI and acceptance gates. The
+shared cleanup step uses `make sweep`; registered dependencies remove Agent Memory
+stores before their backing databases and subscriptions.
 
 The new jobs only provision fixtures when Agent Memory files, SDK dependency
 files or the shared acceptance workflow change, or during the main workflow's

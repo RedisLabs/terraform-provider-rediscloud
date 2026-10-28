@@ -175,7 +175,6 @@ jobs:
     with:
       test_pattern: '^TestAccResourceRedisCloudAgentMemory_'
       create_account_sleep_seconds: 330
-      sweep_agent_memory: true
     secrets: inherit
 
   status:
