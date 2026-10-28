@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,16 +38,7 @@ func TestActiveActiveSubscriptionDataSourceSchemaMatchesModel(t *testing.T) {
 	})}
 	assert.Equal(t, modelType, response.Schema.Type(), "data-source schema must match its model type")
 
-	// A custom block reports its custom list type instead of independently
-	// exposing the shape declared in NestedObject. Compare the element types at
-	// each custom-list level to validate the maintenance and window schemas too.
-	maintenanceBlock, ok := response.Schema.Blocks["maintenance_windows"].(schema.ListNestedBlock)
-	require.True(t, ok)
-	maintenanceType := customtypes.NewMaintenanceListType()
-	assert.Equal(t, maintenanceType.ElementType(), maintenanceBlock.NestedObject.Type(), "maintenance_windows schema must match its model element type")
-
-	windowBlock, ok := maintenanceBlock.NestedObject.Blocks["window"].(schema.ListNestedBlock)
-	require.True(t, ok)
-	windowType := customtypes.NewMaintenanceWindowListType()
-	assert.Equal(t, windowType.ElementType(), windowBlock.NestedObject.Type(), "window schema must match its model element type")
+	// Computed object collections must be attributes: Terraform plans blocks as
+	// empty lists when the read is deferred, which breaks [0] references.
+	assert.Empty(t, response.Schema.Blocks, "data-source schema must not declare blocks")
 }

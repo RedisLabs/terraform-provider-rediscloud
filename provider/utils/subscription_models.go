@@ -61,3 +61,9 @@ var cloudProviderAttrTypes = customtypes.AttrTypesOf(CloudProviderModel{
 	ResourceTags: types.MapNull(types.StringType),
 	Region:       types.SetNull(types.ObjectType{AttrTypes: cloudRegionAttrTypes}),
 })
+
+// CloudProviderElemType is the element type of the computed cloud_provider list.
+var CloudProviderElemType = types.ObjectType{AttrTypes: cloudProviderAttrTypes}
+
+// PricingElemType is the element type of the computed pricing list.
+var PricingElemType = types.ObjectType{AttrTypes: pricingAttrTypes}

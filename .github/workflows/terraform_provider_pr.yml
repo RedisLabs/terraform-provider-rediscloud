@@ -4,6 +4,8 @@ on:
   pull_request:
     branches:
       - 'release/*'
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,6 +19,7 @@ jobs:
       code: ${{ steps.filter.outputs.code }}
     steps:
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        if: github.event_name == 'pull_request'
         id: filter
         with:
           filters: |
@@ -38,7 +41,7 @@ jobs:
   ci:
     name: CI
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-nix
@@ -50,9 +53,10 @@ jobs:
     name: Pre-test Gate
     needs: [ci, detect-changes]
     if: >
-      github.event.pull_request.draft == false &&
-      needs.detect-changes.outputs.code == 'true' &&
-      !contains(github.event.pull_request.labels.*.name, 'skip-tests')
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.draft == false &&
+       needs.detect-changes.outputs.code == 'true' &&
+       !contains(github.event.pull_request.labels.*.name, 'skip-tests'))
     runs-on: ubuntu-latest
     steps:
       - run: echo "Gate passed - running acceptance tests"
