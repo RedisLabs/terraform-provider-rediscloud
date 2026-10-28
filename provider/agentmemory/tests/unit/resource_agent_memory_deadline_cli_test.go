@@ -1,6 +1,7 @@
 package unit_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -9,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
@@ -65,22 +67,32 @@ func TestAgentMemoryTerraformLifecycleBoundsRequests(t *testing.T) {
 			previous := http.DefaultTransport
 			http.DefaultTransport = inspectDeadlineTransport{base: previous, host: strings.TrimPrefix(server.URL, "http://"), requests: &requests, t: t}
 			t.Cleanup(func() { http.DefaultTransport = previous })
-			config := testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
-  name = "deadline-cli"
-  database_id = 123
-}
-`
+			testProviderConfig(t, server.URL)
+			var timeout config.Variable = json.RawMessage("null")
 			check := resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1")
 			if configured {
-				config = strings.Replace(config, "database_id = 123", "database_id = 123\ntimeouts {\ncreate=\"7m\"\nread=\"7m\"\nupdate=\"7m\"\ndelete=\"7m\"\n}", 1)
+				timeout = config.StringVariable("7m")
 				check = resource.ComposeTestCheckFunc(check, resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "timeouts.0.create", "7m"))
 			}
 			resource.UnitTest(t, resource.TestCase{
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				Steps: []resource.TestStep{
-					{Config: config, Check: check},
-					{Config: config, PlanOnly: true},
+					{
+						ConfigFile: config.StaticFile("testdata/store_timeouts.tf"),
+						ConfigVariables: config.Variables{
+							"name":              config.StringVariable("deadline-cli"),
+							"operation_timeout": timeout,
+						},
+						Check: check,
+					},
+					{
+						ConfigFile: config.StaticFile("testdata/store_timeouts.tf"),
+						ConfigVariables: config.Variables{
+							"name":              config.StringVariable("deadline-cli"),
+							"operation_timeout": timeout,
+						},
+						PlanOnly: true,
+					},
 				},
 			})
 			if requests.Load() == 0 || creates.Load() != 1 || deletes.Load() != 1 {

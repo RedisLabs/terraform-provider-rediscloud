@@ -7,6 +7,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/stretchr/testify/require"
 
@@ -55,22 +56,35 @@ func TestAgentMemoryMutableComputedMetadata(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	config := func(name string) string {
-		return testProviderConfig(t, server.URL) + fmt.Sprintf(`resource "rediscloud_agent_memory" "example" {
- name=%q
- database_id=123
- }`, name)
-	}
+	testProviderConfig(t, server.URL)
 	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-		{Config: config("before"), Check: resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "status", "READY")},
-		{Config: config("after"), Check: resource.ComposeTestCheckFunc(
-			resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
-			resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "status", "READY"),
-			resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "endpoint", "https://new.example.test"),
-			resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "endpoints.0.is_accessible", "false"),
-		)},
+		{
+			ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+			ConfigVariables: config.Variables{
+				"name": config.StringVariable("before"),
+			},
+			Check: resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "status", "READY"),
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+			ConfigVariables: config.Variables{
+				"name": config.StringVariable("after"),
+			},
+			Check: resource.ComposeTestCheckFunc(
+				resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
+				resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "status", "READY"),
+				resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "endpoint", "https://new.example.test"),
+				resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "endpoints.0.is_accessible", "false"),
+			),
+		},
 		{RefreshState: true, Check: resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "status", "UNAVAILABLE")},
-		{Config: config("after"), PlanOnly: true},
+		{
+			ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+			ConfigVariables: config.Variables{
+				"name": config.StringVariable("after"),
+			},
+			PlanOnly: true,
+		},
 	}})
 	mu.Lock()
 	defer mu.Unlock()

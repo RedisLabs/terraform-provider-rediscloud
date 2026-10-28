@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -35,25 +36,6 @@ func (writeOnlyPlanCheck) CheckPlan(_ context.Context, req plancheck.CheckPlanRe
 			return
 		}
 	}
-}
-
-func writeOnlyModelConfig(llmVersion, embeddingVersion, ttl int) string {
-	config := agentMemoryModelConfig("credential-store", "gpt-4o-mini", "text-embedding-3-small", "LLM_PLACEHOLDER", "EMBED_PLACEHOLDER")
-	config = strings.Replace(config, "api_key = \"LLM_PLACEHOLDER\"\n   api_key_version = 1", fmt.Sprintf("api_key = var.llm_key\napi_key_version = %d", llmVersion), 1)
-	config = strings.Replace(config, "api_key = \"EMBED_PLACEHOLDER\"\n   api_key_version = 1", fmt.Sprintf("api_key = var.embedding_key\napi_key_version = %d", embeddingVersion), 1)
-	config = strings.Replace(config, "long_term_ttl_seconds      = 31536000", fmt.Sprintf("long_term_ttl_seconds      = %d", ttl), 1)
-	return `
-variable "llm_key" {
- type = string
- sensitive = true
- ephemeral = true
-}
-variable "embedding_key" {
- type = string
- sensitive = true
- ephemeral = true
-}
-` + config
 }
 
 func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
@@ -144,8 +126,7 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			prefix := testProviderConfig(t, server.URL)
-			config := func(lv, ev, ttl int) string { return prefix + writeOnlyModelConfig(lv, ev, ttl) }
+			testProviderConfig(t, server.URL)
 			check := func(llmCount, embeddingCount int, lastLLM, lastEmbedding string) resource.TestCheckFunc {
 				return func(state *terraform.State) error {
 					mu.Lock()
@@ -182,12 +163,24 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 				firstCount++
 				steps = append(steps,
 					resource.TestStep{
-						Config:           config(1, 1, 31536000),
+						ConfigFile: config.StaticFile("testdata/store_write_only.tf"),
+						ConfigVariables: config.Variables{
+							"name":              config.StringVariable("credential-store"),
+							"llm_version":       config.IntegerVariable(1),
+							"embedding_version": config.IntegerVariable(1),
+							"long_ttl":          config.IntegerVariable(31536000),
+						},
 						ConfigPlanChecks: planChecks,
 						ExpectError:      regexp.MustCompile("Unexpected Agent Memory database ID"),
 					},
 					resource.TestStep{
-						Config:             config(1, 1, 31536000),
+						ConfigFile: config.StaticFile("testdata/store_write_only.tf"),
+						ConfigVariables: config.Variables{
+							"name":              config.StringVariable("credential-store"),
+							"llm_version":       config.IntegerVariable(1),
+							"embedding_version": config.IntegerVariable(1),
+							"long_ttl":          config.IntegerVariable(31536000),
+						},
 						PlanOnly:           true,
 						ExpectNonEmptyPlan: true,
 						ConfigPlanChecks: resource.ConfigPlanChecks{
@@ -200,18 +193,99 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 				)
 			}
 			steps = append(steps,
-				resource.TestStep{Config: config(1, 1, 31536000), ConfigPlanChecks: planChecks, Check: check(firstCount, firstCount, modelTestSecrets[0], modelTestSecrets[2])},
-				resource.TestStep{Config: config(1, 1, 31536000), PlanOnly: true, ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}}},
+				resource.TestStep{
+					ConfigFile: config.StaticFile("testdata/store_write_only.tf"),
+					ConfigVariables: config.Variables{
+						"name":              config.StringVariable("credential-store"),
+						"llm_version":       config.IntegerVariable(1),
+						"embedding_version": config.IntegerVariable(1),
+						"long_ttl":          config.IntegerVariable(31536000),
+					},
+					ConfigPlanChecks: planChecks,
+					Check:            check(firstCount, firstCount, modelTestSecrets[0], modelTestSecrets[2]),
+				},
+				resource.TestStep{
+					ConfigFile: config.StaticFile("testdata/store_write_only.tf"),
+					ConfigVariables: config.Variables{
+						"name":              config.StringVariable("credential-store"),
+						"llm_version":       config.IntegerVariable(1),
+						"embedding_version": config.IntegerVariable(1),
+						"long_ttl":          config.IntegerVariable(31536000),
+					},
+					PlanOnly:         true,
+					ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}},
+				},
 				// Write-only values do not create a diff; each model rotates with its own revision.
-				resource.TestStep{PreConfig: func() {
-					t.Setenv("TF_VAR_llm_key", modelTestSecrets[1])
-					t.Setenv("TF_VAR_embedding_key", modelTestSecrets[3])
-				}, Config: config(1, 1, 31536000), PlanOnly: true, ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}}},
-				resource.TestStep{Config: config(2, 1, 31536000), ConfigPlanChecks: planChecks, Check: check(firstCount+1, firstCount, modelTestSecrets[1], modelTestSecrets[2])},
-				resource.TestStep{Config: config(2, 1, 172800), ConfigPlanChecks: planChecks, Check: check(firstCount+1, firstCount, modelTestSecrets[1], modelTestSecrets[2])},
-				resource.TestStep{Config: config(2, 2, 172800), ConfigPlanChecks: planChecks, Check: check(firstCount+1, firstCount+1, modelTestSecrets[1], modelTestSecrets[3])},
-				resource.TestStep{Config: config(2, 2, 172800), PlanOnly: true, ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}}},
-				resource.TestStep{Config: strings.Replace(config(3, 2, 172800), "api_key_version = 3", "api_key_version = terraform_data.version.output", 1) + `resource "terraform_data" "version" { input = 3 }`, ConfigPlanChecks: planChecks, Check: check(firstCount+2, firstCount+1, modelTestSecrets[1], modelTestSecrets[3])},
+				resource.TestStep{
+					PreConfig: func() {
+						t.Setenv("TF_VAR_llm_key", modelTestSecrets[1])
+						t.Setenv("TF_VAR_embedding_key", modelTestSecrets[3])
+					},
+					ConfigFile: config.StaticFile("testdata/store_write_only.tf"),
+					ConfigVariables: config.Variables{
+						"name":              config.StringVariable("credential-store"),
+						"llm_version":       config.IntegerVariable(1),
+						"embedding_version": config.IntegerVariable(1),
+						"long_ttl":          config.IntegerVariable(31536000),
+					},
+					PlanOnly:         true,
+					ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}},
+				},
+				resource.TestStep{
+					ConfigFile: config.StaticFile("testdata/store_write_only.tf"),
+					ConfigVariables: config.Variables{
+						"name":              config.StringVariable("credential-store"),
+						"llm_version":       config.IntegerVariable(2),
+						"embedding_version": config.IntegerVariable(1),
+						"long_ttl":          config.IntegerVariable(31536000),
+					},
+					ConfigPlanChecks: planChecks,
+					Check:            check(firstCount+1, firstCount, modelTestSecrets[1], modelTestSecrets[2]),
+				},
+				resource.TestStep{
+					ConfigFile: config.StaticFile("testdata/store_write_only.tf"),
+					ConfigVariables: config.Variables{
+						"name":              config.StringVariable("credential-store"),
+						"llm_version":       config.IntegerVariable(2),
+						"embedding_version": config.IntegerVariable(1),
+						"long_ttl":          config.IntegerVariable(172800),
+					},
+					ConfigPlanChecks: planChecks,
+					Check:            check(firstCount+1, firstCount, modelTestSecrets[1], modelTestSecrets[2]),
+				},
+				resource.TestStep{
+					ConfigFile: config.StaticFile("testdata/store_write_only.tf"),
+					ConfigVariables: config.Variables{
+						"name":              config.StringVariable("credential-store"),
+						"llm_version":       config.IntegerVariable(2),
+						"embedding_version": config.IntegerVariable(2),
+						"long_ttl":          config.IntegerVariable(172800),
+					},
+					ConfigPlanChecks: planChecks,
+					Check:            check(firstCount+1, firstCount+1, modelTestSecrets[1], modelTestSecrets[3]),
+				},
+				resource.TestStep{
+					ConfigFile: config.StaticFile("testdata/store_write_only.tf"),
+					ConfigVariables: config.Variables{
+						"name":              config.StringVariable("credential-store"),
+						"llm_version":       config.IntegerVariable(2),
+						"embedding_version": config.IntegerVariable(2),
+						"long_ttl":          config.IntegerVariable(172800),
+					},
+					PlanOnly:         true,
+					ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}},
+				},
+				resource.TestStep{
+					ConfigFile: config.StaticFile("testdata/store_write_only_unknown_version.tf"),
+					ConfigVariables: config.Variables{
+						"name":              config.StringVariable("credential-store"),
+						"llm_version":       config.IntegerVariable(3),
+						"embedding_version": config.IntegerVariable(2),
+						"long_ttl":          config.IntegerVariable(172800),
+					},
+					ConfigPlanChecks: planChecks,
+					Check:            check(firstCount+2, firstCount+1, modelTestSecrets[1], modelTestSecrets[3]),
+				},
 			)
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: steps})
 			mu.Lock()
@@ -223,18 +297,52 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 			expectedDeletes = expectedCreates
 			mu.Unlock()
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config(3, 2, 172800), ResourceName: "rediscloud_agent_memory.example", ImportStateId: "store-1", ImportState: true, ImportStateVerify: false, ImportStatePersist: true, ImportStateCheck: func(states []*terraform.InstanceState) error {
-					for _, state := range states {
-						for name, value := range state.Attributes {
-							if strings.HasSuffix(name, "api_key") && value != "" {
-								return fmt.Errorf("import populated model credential")
+				{
+					ConfigFile: config.StaticFile("testdata/store_write_only.tf"),
+					ConfigVariables: config.Variables{
+						"name":              config.StringVariable("credential-store"),
+						"llm_version":       config.IntegerVariable(3),
+						"embedding_version": config.IntegerVariable(2),
+						"long_ttl":          config.IntegerVariable(172800),
+					},
+					ResourceName:       "rediscloud_agent_memory.example",
+					ImportStateId:      "store-1",
+					ImportState:        true,
+					ImportStateVerify:  false,
+					ImportStatePersist: true,
+					ImportStateCheck: func(states []*terraform.InstanceState) error {
+						for _, state := range states {
+							for name, value := range state.Attributes {
+								if strings.HasSuffix(name, "api_key") && value != "" {
+									return fmt.Errorf("import populated model credential")
+								}
 							}
 						}
-					}
-					return nil
-				}},
-				{Config: config(3, 2, 172800), ConfigPlanChecks: planChecks, Check: check(firstCount+3, firstCount+2, modelTestSecrets[1], modelTestSecrets[3])},
-				{Config: config(3, 2, 172800), PlanOnly: true, ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}}},
+						return nil
+					},
+				},
+				{
+					ConfigFile: config.StaticFile("testdata/store_write_only.tf"),
+					ConfigVariables: config.Variables{
+						"name":              config.StringVariable("credential-store"),
+						"llm_version":       config.IntegerVariable(3),
+						"embedding_version": config.IntegerVariable(2),
+						"long_ttl":          config.IntegerVariable(172800),
+					},
+					ConfigPlanChecks: planChecks,
+					Check:            check(firstCount+3, firstCount+2, modelTestSecrets[1], modelTestSecrets[3]),
+				},
+				{
+					ConfigFile: config.StaticFile("testdata/store_write_only.tf"),
+					ConfigVariables: config.Variables{
+						"name":              config.StringVariable("credential-store"),
+						"llm_version":       config.IntegerVariable(3),
+						"embedding_version": config.IntegerVariable(2),
+						"long_ttl":          config.IntegerVariable(172800),
+					},
+					PlanOnly:         true,
+					ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}},
+				},
 			}})
 
 			mu.Lock()

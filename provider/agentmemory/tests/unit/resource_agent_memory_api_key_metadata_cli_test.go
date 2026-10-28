@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -57,12 +58,7 @@ func TestAgentMemoryAPIKeyMalformedNameLifecycle(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			config := testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory_api_key" "runtime" {
-  store_id = "store-1"
-  name = "runtime"
-}
-`
+			testProviderConfig(t, server.URL)
 			check := func(state *terraform.State) error {
 				mu.Lock()
 				defer mu.Unlock()
@@ -75,9 +71,33 @@ resource "rediscloud_agent_memory_api_key" "runtime" {
 			resource.UnitTest(t, resource.TestCase{
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				Steps: []resource.TestStep{
-					{Config: config, Check: check},
-					{Config: config, PlanOnly: true, PreConfig: func() { mu.Lock(); invalid = true; mu.Unlock() }, ExpectError: regexp.MustCompile("Invalid Agent Memory API key response")},
-					{Config: config, PreConfig: func() { mu.Lock(); invalid = false; mu.Unlock() }, Check: check},
+					{
+						ConfigFile: config.StaticFile("testdata/api_key_runtime.tf"),
+						ConfigVariables: config.Variables{
+							"name":     config.StringVariable("runtime"),
+							"store_id": config.StringVariable("store-1"),
+						},
+						Check: check,
+					},
+					{
+						ConfigFile: config.StaticFile("testdata/api_key_runtime.tf"),
+						ConfigVariables: config.Variables{
+							"name":     config.StringVariable("runtime"),
+							"store_id": config.StringVariable("store-1"),
+						},
+						PlanOnly:    true,
+						PreConfig:   func() { mu.Lock(); invalid = true; mu.Unlock() },
+						ExpectError: regexp.MustCompile("Invalid Agent Memory API key response"),
+					},
+					{
+						ConfigFile: config.StaticFile("testdata/api_key_runtime.tf"),
+						ConfigVariables: config.Variables{
+							"name":     config.StringVariable("runtime"),
+							"store_id": config.StringVariable("store-1"),
+						},
+						PreConfig: func() { mu.Lock(); invalid = false; mu.Unlock() },
+						Check:     check,
+					},
 				},
 				CheckDestroy: func(_ *terraform.State) error {
 					mu.Lock()

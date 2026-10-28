@@ -22,49 +22,200 @@ import (
 func TestAccResourceRedisCloudAgentMemory_CRUDI(t *testing.T) {
 	f := newFixture(t, "testdata/store.tf")
 	tracked := &trackedResources{}
-	initial := config.Variables{}
-	updated := config.Variables{"store_suffix": config.StringVariable("updated"), "short_ttl": config.IntegerVariable(172800)}
-	rotated := config.Variables{"store_suffix": config.StringVariable("updated"), "short_ttl": config.IntegerVariable(172800), "key_suffix": config.StringVariable("rotated")}
-	noop := f.step(updated)
-	noop.PlanOnly = true
-	invalid := f.step(config.Variables{"store_suffix": config.StringVariable("updated"), "short_ttl": config.IntegerVariable(0)})
-	invalid.Check = nil
-	// Some validation responses omit the field name; verify HTTP 400 and read back the TTL separately.
-	invalid.ExpectError = regexp.MustCompile(`(?s)Failed to update Agent Memory service.*: 400 -`)
-	afterRejection := f.step(updated, tracked.remember(false, false), checkRemoteResources)
-	afterRejection.PreConfig = func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-		defer cancel()
-		store, err := client.MustTestClient(t).Client.AgentMemory.Get(ctx, tracked.storeID)
-		if err != nil {
-			t.Fatalf("read store after rejected update: %s", err)
-		}
-		if store.ShortMemory == nil || redis.IntValue(store.ShortMemory.TTLSeconds) != 172800 {
-			t.Fatal("rejected update changed the remote short-term TTL")
-		}
-	}
-	rotatePlan := f.step(rotated)
-	rotatePlan.PlanOnly, rotatePlan.ExpectNonEmptyPlan = true, true
-	rotatePlan.ConfigPlanChecks = resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{
-		plancheck.ExpectResourceAction(keyResource, plancheck.ResourceActionDestroyBeforeCreate),
-	}}
-	keyImport := f.importStep(updated, keyResource)
-	keyImport.ImportStateVerifyIgnore = []string{"api_key"}
-	keyImport.ImportStateIdFunc = keyImportID
-	keyImport.ImportStateCheck = importedKeyHasNoSecret
 	resource.Test(t, f.testCase(tracked, []resource.TestStep{
-		f.step(initial, tracked.remember(false, false), checkRemoteResources),
-		f.step(updated, tracked.remember(false, false), checkRemoteResources),
-		noop,
-		invalid,
-		afterRejection,
-		f.importStep(updated, storeResource),
-		keyImport,
-		f.step(updated, tracked.remember(false, false), checkRemoteResources),
-		rotatePlan,
-		f.step(rotated, tracked.remember(false, true), checkRemoteResources, tracked.checkSuperseded),
 		{
-			Config: f.config, ConfigVariables: f.step(rotated).ConfigVariables,
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+			},
+			Check: resource.ComposeAggregateTestCheckFunc(tracked.remember(false, false), checkRemoteResources),
+		},
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"store_suffix":       config.StringVariable("updated"),
+				"short_ttl":          config.IntegerVariable(172800),
+			},
+			Check: resource.ComposeAggregateTestCheckFunc(tracked.remember(false, false), checkRemoteResources),
+		},
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"store_suffix":       config.StringVariable("updated"),
+				"short_ttl":          config.IntegerVariable(172800),
+			},
+			PlanOnly: true,
+		},
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"store_suffix":       config.StringVariable("updated"),
+				"short_ttl":          config.IntegerVariable(0),
+			},
+			// Some validation responses omit the field name; check the status and read back the TTL.
+			ExpectError: regexp.MustCompile(`(?s)Failed to update Agent Memory service.*: 400 -`),
+		},
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"store_suffix":       config.StringVariable("updated"),
+				"short_ttl":          config.IntegerVariable(172800),
+			},
+			PreConfig: func() {
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+				defer cancel()
+				store, err := client.MustTestClient(t).Client.AgentMemory.Get(ctx, tracked.storeID)
+				if err != nil {
+					t.Fatalf("read store after rejected update: %s", err)
+				}
+				if store.ShortMemory == nil || redis.IntValue(store.ShortMemory.TTLSeconds) != 172800 {
+					t.Fatal("rejected update changed the remote short-term TTL")
+				}
+			},
+			Check: resource.ComposeAggregateTestCheckFunc(tracked.remember(false, false), checkRemoteResources),
+		},
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"store_suffix":       config.StringVariable("updated"),
+				"short_ttl":          config.IntegerVariable(172800),
+			},
+			ResourceName: storeResource, ImportState: true, ImportStateVerify: true,
+		},
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"store_suffix":       config.StringVariable("updated"),
+				"short_ttl":          config.IntegerVariable(172800),
+			},
+			ResourceName: keyResource, ImportState: true, ImportStateVerify: true,
+			ImportStateVerifyIgnore: []string{"api_key"},
+			ImportStateIdFunc:       keyImportID,
+			ImportStateCheck:        importedKeyHasNoSecret,
+		},
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"store_suffix":       config.StringVariable("updated"),
+				"short_ttl":          config.IntegerVariable(172800),
+			},
+			Check: resource.ComposeAggregateTestCheckFunc(tracked.remember(false, false), checkRemoteResources),
+		},
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"store_suffix":       config.StringVariable("updated"),
+				"short_ttl":          config.IntegerVariable(172800),
+				"key_suffix":         config.StringVariable("rotated"),
+			},
+			PlanOnly: true, ExpectNonEmptyPlan: true,
+			ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{
+				plancheck.ExpectResourceAction(keyResource, plancheck.ResourceActionDestroyBeforeCreate),
+			}},
+		},
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"store_suffix":       config.StringVariable("updated"),
+				"short_ttl":          config.IntegerVariable(172800),
+				"key_suffix":         config.StringVariable("rotated"),
+			},
+			Check: resource.ComposeAggregateTestCheckFunc(tracked.remember(false, true), checkRemoteResources, tracked.checkSuperseded),
+		},
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"store_suffix":       config.StringVariable("updated"),
+				"short_ttl":          config.IntegerVariable(172800),
+				"key_suffix":         config.StringVariable("rotated"),
+			},
 			PreConfig: func() {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 				defer cancel()
@@ -90,15 +241,86 @@ func TestAccResourceRedisCloudAgentMemory_CRUDI(t *testing.T) {
 func TestAccResourceRedisCloudAgentMemory_Replacement(t *testing.T) {
 	f := newFixture(t, "testdata/store.tf")
 	tracked := &trackedResources{}
-	initial := config.Variables{"database_count": config.IntegerVariable(2)}
-	moved := config.Variables{"database_count": config.IntegerVariable(2), "database_index": config.IntegerVariable(1)}
-	redefined := config.Variables{"database_count": config.IntegerVariable(2), "database_index": config.IntegerVariable(1), "field_type": config.StringVariable("bool")}
 	resource.Test(t, f.testCase(tracked, []resource.TestStep{
-		f.step(initial, tracked.remember(false, false), checkRemoteResources),
-		replacementPlan(f.step(moved)),
-		f.step(moved, tracked.remember(true, true), checkRemoteResources, tracked.checkSuperseded),
-		replacementPlan(f.step(redefined)),
-		f.step(redefined, tracked.remember(true, true), checkRemoteResources, tracked.checkSuperseded),
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"database_count":     config.IntegerVariable(2),
+			},
+			Check: resource.ComposeAggregateTestCheckFunc(tracked.remember(false, false), checkRemoteResources),
+		},
+		replacementPlan(resource.TestStep{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"database_count":     config.IntegerVariable(2),
+				"database_index":     config.IntegerVariable(1),
+			},
+		}),
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"database_count":     config.IntegerVariable(2),
+				"database_index":     config.IntegerVariable(1),
+			},
+			Check: resource.ComposeAggregateTestCheckFunc(tracked.remember(true, true), checkRemoteResources, tracked.checkSuperseded),
+		},
+		replacementPlan(resource.TestStep{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"database_count":     config.IntegerVariable(2),
+				"database_index":     config.IntegerVariable(1),
+				"field_type":         config.StringVariable("bool"),
+			},
+		}),
+		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"database_count":     config.IntegerVariable(2),
+				"database_index":     config.IntegerVariable(1),
+				"field_type":         config.StringVariable("bool"),
+			},
+			Check: resource.ComposeAggregateTestCheckFunc(tracked.remember(true, true), checkRemoteResources, tracked.checkSuperseded),
+		},
 	}))
 }
 

@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
-	"strings"
 	"sync/atomic"
 	"testing"
 
 	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	agentmemoryapi "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
@@ -76,19 +76,19 @@ func TestAgentMemoryResource_mockedCreateReadDelete(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "store"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 31536000
-  extraction_cadence_seconds = 300
-}
-`,
+				ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable("store"),
+					"short_ttl": config.IntegerVariable(86400),
+					"long_ttl":  config.IntegerVariable(31536000),
+					"cadence":   config.IntegerVariable(300),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "name", "store"),
@@ -168,16 +168,16 @@ func TestAgentMemoryResource_mockedCreateWithAPIDefaults(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
-  name        = "store"
-  database_id = 123
-}
-`,
+				ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("store"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "name", "store"),
@@ -268,11 +268,16 @@ func TestAgentMemoryResource_mockedCreateWithAdvancedConfig(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
+				ConfigFile: config.StaticFile("testdata/store_advanced.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("store"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-advanced"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.enabled", "true"),
@@ -285,6 +290,10 @@ func TestAgentMemoryResource_mockedCreateWithAdvancedConfig(t *testing.T) {
 				),
 			},
 			{
+				ConfigFile: config.StaticFile("testdata/store_advanced.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("store"),
+				},
 				ResourceName:      "rediscloud_agent_memory.example",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -340,11 +349,20 @@ func TestAgentMemoryResource_mockedCreateWithModelConfig(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
+				ConfigFile: config.StaticFile("testdata/store_models.tf"),
+				ConfigVariables: config.Variables{
+					"name":            config.StringVariable("store"),
+					"llm_model":       config.StringVariable("gpt-4o-mini"),
+					"embedding_model": config.StringVariable("text-embedding-3-small"),
+					"llm_key":         config.StringVariable("llm-secret"),
+					"embedding_key":   config.StringVariable("embedding-secret"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.0.provider", "openai"),
@@ -425,14 +443,26 @@ func TestAgentMemoryResource_mockedUpdateAdvancedConfig(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
+				ConfigFile: config.StaticFile("testdata/store_advanced.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("store"),
+				},
 			},
 			{
-				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithValues("store", 30, 12, "updated", "drop"),
+				ConfigFile: config.StaticFile("testdata/store_advanced.tf"),
+				ConfigVariables: config.Variables{
+					"name":            config.StringVariable("store"),
+					"threshold":       config.IntegerVariable(30),
+					"retain_count":    config.IntegerVariable(12),
+					"semantic_prompt": config.StringVariable("updated"),
+					"email_action":    config.StringVariable("drop"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-advanced"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.event_count.0.threshold", "30"),
@@ -499,14 +529,28 @@ func TestAgentMemoryResource_mockedUpdateCustomMemoryTypeStrategy(t *testing.T) 
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
+				ConfigFile: config.StaticFile("testdata/store_advanced.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("store"),
+				},
 			},
 			{
-				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithCustomMemoryStrategy("store", 21, 11, "test", "redact", "updated extraction prompt", false),
+				ConfigFile: config.StaticFile("testdata/store_advanced.tf"),
+				ConfigVariables: config.Variables{
+					"name":            config.StringVariable("store"),
+					"threshold":       config.IntegerVariable(21),
+					"retain_count":    config.IntegerVariable(11),
+					"semantic_prompt": config.StringVariable("test"),
+					"email_action":    config.StringVariable("redact"),
+					"custom_prompt":   config.StringVariable("updated extraction prompt"),
+					"custom_enabled":  config.BoolVariable(false),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-advanced"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.0.extraction_strategy.0.prompt", "updated extraction prompt"),
@@ -572,14 +616,22 @@ func TestAgentMemoryResource_mockedAddCustomMemoryType(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
+				ConfigFile: config.StaticFile("testdata/store_advanced.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("store"),
+				},
 			},
 			{
-				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithAdditionalCustomMemoryType("store"),
+				ConfigFile: config.StaticFile("testdata/store_additional_type.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("store"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-advanced"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "custom_memory_types.#", "2"),
@@ -627,14 +679,22 @@ func TestAgentMemoryResource_plansCustomMemoryTypeRedefinition(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
+				ConfigFile: config.StaticFile("testdata/store_advanced.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("store"),
+				},
 			},
 			{
-				Config:             testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithChangedCustomMemoryTypeField("store"),
+				ConfigFile: config.StaticFile("testdata/store_changed_field.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("store"),
+				},
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 			},
@@ -677,14 +737,25 @@ func TestAgentMemoryResource_plansCustomMemoryTypeRemoval(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
+				ConfigFile: config.StaticFile("testdata/store_advanced.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("store"),
+				},
 			},
 			{
-				Config:             testProviderConfig(t, server.URL) + advancedAgentMemoryConfigWithoutCustomMemoryTypes("store"),
+				ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable("store"),
+					"short_ttl": config.IntegerVariable(86400),
+					"long_ttl":  config.IntegerVariable(604800),
+					"cadence":   config.IntegerVariable(300),
+				},
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 			},
@@ -754,14 +825,22 @@ func TestAgentMemoryResource_mockedUpdateDisablesAdvancedConfigWithStaleAPIChild
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + advancedAgentMemoryConfig("store"),
+				ConfigFile: config.StaticFile("testdata/store_advanced.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("store"),
+				},
 			},
 			{
-				Config: testProviderConfig(t, server.URL) + disabledAdvancedAgentMemoryConfig("store-disabled"),
+				ConfigFile: config.StaticFile("testdata/store_disabled_features.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("store-disabled"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "name", "store-disabled"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "summarization.0.enabled", "false"),
@@ -839,19 +918,19 @@ func TestAgentMemoryResource_mockedUpdate(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "store"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 31536000
-  extraction_cadence_seconds = 300
-}
-`,
+				ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable("store"),
+					"short_ttl": config.IntegerVariable(86400),
+					"long_ttl":  config.IntegerVariable(31536000),
+					"cadence":   config.IntegerVariable(300),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "name", "store"),
@@ -861,15 +940,13 @@ resource "rediscloud_agent_memory" "example" {
 				),
 			},
 			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "store-updated"
-  database_id                = 123
-  short_term_ttl_seconds     = 172800
-  long_term_ttl_seconds      = 604800
-  extraction_cadence_seconds = 600
-}
-`,
+				ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable("store-updated"),
+					"short_ttl": config.IntegerVariable(172800),
+					"long_ttl":  config.IntegerVariable(604800),
+					"cadence":   config.IntegerVariable(600),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "name", "store-updated"),
@@ -934,14 +1011,31 @@ func TestAgentMemoryResource_mockedUpdateModelConfig(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + agentMemoryModelConfig("store", "gpt-4o-mini", "text-embedding-3-small", "llm-secret", "embedding-secret"),
+				ConfigFile: config.StaticFile("testdata/store_models.tf"),
+				ConfigVariables: config.Variables{
+					"name":            config.StringVariable("store"),
+					"llm_model":       config.StringVariable("gpt-4o-mini"),
+					"embedding_model": config.StringVariable("text-embedding-3-small"),
+					"llm_key":         config.StringVariable("llm-secret"),
+					"embedding_key":   config.StringVariable("embedding-secret"),
+				},
 			},
 			{
-				Config: testProviderConfig(t, server.URL) + strings.ReplaceAll(agentMemoryModelConfig("store", "gpt-4.1-mini", "text-embedding-3-small", "llm-secret-2", "embedding-secret-2"), "api_key_version = 1", "api_key_version = 2"),
+				ConfigFile: config.StaticFile("testdata/store_models.tf"),
+				ConfigVariables: config.Variables{
+					"name":            config.StringVariable("store"),
+					"llm_model":       config.StringVariable("gpt-4.1-mini"),
+					"embedding_model": config.StringVariable("text-embedding-3-small"),
+					"llm_key":         config.StringVariable("llm-secret-2"),
+					"embedding_key":   config.StringVariable("embedding-secret-2"),
+					"key_version":     config.IntegerVariable(2),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.0.model", "gpt-4.1-mini"),
@@ -1016,40 +1110,28 @@ func TestAgentMemoryResource_updateDoesNotReplaceDependentAPIKey(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "store"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 604800
-  extraction_cadence_seconds = 300
-}
-
-resource "rediscloud_agent_memory_api_key" "example" {
-  store_id = rediscloud_agent_memory.example.id
-  name     = "terraform"
-}
-`,
+				ConfigFile: config.StaticFile("testdata/store_with_api_key.tf"),
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable("store"),
+					"short_ttl": config.IntegerVariable(86400),
+					"long_ttl":  config.IntegerVariable(604800),
+					"cadence":   config.IntegerVariable(300),
+				},
 			},
 			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "store-updated"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 604800
-  extraction_cadence_seconds = 300
-}
-
-resource "rediscloud_agent_memory_api_key" "example" {
-  store_id = rediscloud_agent_memory.example.id
-  name     = "terraform"
-}
-`,
+				ConfigFile: config.StaticFile("testdata/store_with_api_key.tf"),
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable("store-updated"),
+					"short_ttl": config.IntegerVariable(86400),
+					"long_ttl":  config.IntegerVariable(604800),
+					"cadence":   config.IntegerVariable(300),
+				},
 			},
 		},
 	})
@@ -1087,21 +1169,28 @@ func TestAgentMemoryResource_mockedImport(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "store"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 31536000
-  extraction_cadence_seconds = 300
-}
-`,
+				ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable("store"),
+					"short_ttl": config.IntegerVariable(86400),
+					"long_ttl":  config.IntegerVariable(31536000),
+					"cadence":   config.IntegerVariable(300),
+				},
 			},
 			{
+				ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable("store"),
+					"short_ttl": config.IntegerVariable(86400),
+					"long_ttl":  config.IntegerVariable(31536000),
+					"cadence":   config.IntegerVariable(300),
+				},
 				ResourceName:      "rediscloud_agent_memory.example",
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -1123,29 +1212,16 @@ func TestAgentMemoryResource_mockedImportWithModelConfig(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "store"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 31536000
-  extraction_cadence_seconds = 300
-
-  llm {
-    provider = "openai"
-    model    = "gpt-4o-mini"
-  }
-
-  embedding {
-    provider = "openai"
-    model    = "text-embedding-3-small"
-  }
-}
-`,
+				ConfigFile: config.StaticFile("testdata/store_models_without_credentials.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("store"),
+				},
 				ResourceName:  "rediscloud_agent_memory.example",
 				ImportState:   true,
 				ImportStateId: "store-1",
@@ -1188,19 +1264,19 @@ func TestAgentMemoryResource_mockedImportWithAdvancedConfig(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "store"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 604800
-  extraction_cadence_seconds = 300
-}
-`,
+				ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable("store"),
+					"short_ttl": config.IntegerVariable(86400),
+					"long_ttl":  config.IntegerVariable(604800),
+					"cadence":   config.IntegerVariable(300),
+				},
 				ResourceName:  "rediscloud_agent_memory.example",
 				ImportState:   true,
 				ImportStateId: "store-advanced",
@@ -1239,28 +1315,13 @@ resource "rediscloud_agent_memory" "example" {
 }
 
 func TestAgentMemoryResource_rejectsIncompleteModelConfig(t *testing.T) {
+	testProviderConfig(t, "https://example.invalid")
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, "https://example.invalid") + `
-resource "rediscloud_agent_memory" "example" {
-  name                  = "store"
-  database_id           = 123
-  long_term_ttl_seconds = 31536000
-
-  llm {
-    provider = "openai"
-    model    = "gpt-4o-mini"
-
-    credentials {
-      type    = "apiKey"
-      api_key = "llm-secret"
-   api_key_version = 1
-    }
-  }
-}
-`,
+				ConfigFile:  config.StaticFile("testdata/store_llm_only.tf"),
 				ExpectError: regexp.MustCompile("These attributes must be configured together"),
 			},
 		},
@@ -1268,38 +1329,13 @@ resource "rediscloud_agent_memory" "example" {
 }
 
 func TestAgentMemoryResource_rejectsModelConfigWithoutLongTermTTL(t *testing.T) {
+	testProviderConfig(t, "https://example.invalid")
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, "https://example.invalid") + `
-resource "rediscloud_agent_memory" "example" {
-  name        = "store"
-  database_id = 123
-
-  llm {
-    provider = "openai"
-    model    = "gpt-4o-mini"
-
-    credentials {
-      type    = "apiKey"
-      api_key = "llm-secret"
-   api_key_version = 1
-    }
-  }
-
-  embedding {
-    provider = "openai"
-    model    = "text-embedding-3-small"
-
-    credentials {
-      type    = "apiKey"
-      api_key = "embedding-secret"
-   api_key_version = 1
-    }
-  }
-}
-`,
+				ConfigFile:  config.StaticFile("testdata/store_models_missing_ttl.tf"),
 				ExpectError: regexp.MustCompile("long_term_ttl_seconds must be configured when embedding is configured"),
 			},
 		},
@@ -1307,16 +1343,16 @@ resource "rediscloud_agent_memory" "example" {
 }
 
 func TestAgentMemoryResource_rejectsBlankName(t *testing.T) {
+	testProviderConfig(t, "http://127.0.0.1:1")
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
-resource "rediscloud_agent_memory" "example" {
-  name        = "   "
-  database_id = 123
-}
-`,
+				ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("   "),
+				},
 				ExpectError: regexp.MustCompile(`non-whitespace`),
 			},
 		},
@@ -1324,26 +1360,13 @@ resource "rediscloud_agent_memory" "example" {
 }
 
 func TestAgentMemoryResource_rejectsInvalidSummarizationThreshold(t *testing.T) {
+	testProviderConfig(t, "http://127.0.0.1:1")
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
-resource "rediscloud_agent_memory" "example" {
-  name        = "store"
-  database_id = 123
-
-  summarization {
-    enabled          = true
-    trigger_strategy = "event_count"
-
-    event_count {
-      threshold    = 10
-      retain_count = 10
-    }
-  }
-}
-`,
+				ConfigFile:  config.StaticFile("testdata/invalid_summarization.tf"),
 				ExpectError: regexp.MustCompile(`threshold must be greater`),
 			},
 		},
@@ -1351,54 +1374,18 @@ resource "rediscloud_agent_memory" "example" {
 }
 
 func TestAgentMemoryResource_rejectsInvalidDetectorConfiguration(t *testing.T) {
+	testProviderConfig(t, "http://127.0.0.1:1")
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
-resource "rediscloud_agent_memory" "example" {
-  name        = "store"
-  database_id = 123
-
-  long_term_memory_exclusions {
-    enabled = true
-
-    built_in_detectors {
-      enabled = true
-
-      detectors {
-        id      = "email"
-        enabled = true
-        action  = ""
-      }
-    }
-  }
-}
-`,
+				ConfigFile:         config.StaticFile("testdata/detector_empty_action.tf"),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 			},
 			{
-				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
-resource "rediscloud_agent_memory" "example" {
-  name        = "store"
-  database_id = 123
-
-  long_term_memory_exclusions {
-    enabled = true
-
-    custom_detectors {
-      enabled = true
-
-      detectors {
-        name    = "tenant_id"
-        enabled = true
-        action  = "redact"
-      }
-    }
-  }
-}
-`,
+				ConfigFile:  config.StaticFile("testdata/detector_missing_matcher.tf"),
 				ExpectError: regexp.MustCompile(`Invalid Block|Missing Configuration for Required Attribute|matcher\.kind|matcher\.regex\.pattern`),
 			},
 		},
@@ -1406,11 +1393,13 @@ resource "rediscloud_agent_memory" "example" {
 }
 
 func TestAgentMemoryResource_rejectsDuplicateCustomMemoryTypeNames(t *testing.T) {
+	testProviderConfig(t, "http://127.0.0.1:1")
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config:      testProviderConfig(t, "http://127.0.0.1:1") + agentMemoryConfigWithDuplicateCustomMemoryTypeNames(),
+				ConfigFile:  config.StaticFile("testdata/store_duplicate_types.tf"),
 				ExpectError: regexp.MustCompile(`Duplicate Agent Memory custom memory type`),
 			},
 		},
@@ -1450,33 +1439,31 @@ func TestAgentMemoryResource_deleteSucceedsWhenStoreAlreadyMissing(t *testing.T)
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "store"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 31536000
-  extraction_cadence_seconds = 300
-}
-`,
+				ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable("store"),
+					"short_ttl": config.IntegerVariable(86400),
+					"long_ttl":  config.IntegerVariable(31536000),
+					"cadence":   config.IntegerVariable(300),
+				},
 			},
 			{
 				PreConfig: func() {
 					storeExists = false
 				},
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "store"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 31536000
-  extraction_cadence_seconds = 300
-}
-`,
+				ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable("store"),
+					"short_ttl": config.IntegerVariable(86400),
+					"long_ttl":  config.IntegerVariable(31536000),
+					"cadence":   config.IntegerVariable(300),
+				},
 				Destroy: true,
 			},
 		},
@@ -1512,19 +1499,19 @@ func TestAgentMemoryResource_removesStateWhenStoreNotFound(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "store"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 31536000
-  extraction_cadence_seconds = 300
-}
-`,
+				ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+				ConfigVariables: config.Variables{
+					"name":      config.StringVariable("store"),
+					"short_ttl": config.IntegerVariable(86400),
+					"long_ttl":  config.IntegerVariable(31536000),
+					"cadence":   config.IntegerVariable(300),
+				},
 			},
 			{
 				PreConfig: func() {
@@ -1565,16 +1552,17 @@ func TestAgentMemoryAPIKeyResource_mockedCreateReadDelete(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory_api_key" "example" {
-  store_id = "store-1"
-  name     = "terraform"
-}
-`,
+				ConfigFile: config.StaticFile("testdata/api_key.tf"),
+				ConfigVariables: config.Variables{
+					"store_id": config.StringVariable("store-1"),
+					"name":     config.StringVariable("terraform"),
+				},
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("rediscloud_agent_memory_api_key.example", "id", "key-1"),
 					resource.TestCheckResourceAttr("rediscloud_agent_memory_api_key.example", "store_id", "store-1"),
@@ -1612,18 +1600,24 @@ func TestAgentMemoryAPIKeyResource_mockedImport(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory_api_key" "example" {
-  store_id = "store-1"
-  name     = "terraform"
-}
-`,
+				ConfigFile: config.StaticFile("testdata/api_key.tf"),
+				ConfigVariables: config.Variables{
+					"store_id": config.StringVariable("store-1"),
+					"name":     config.StringVariable("terraform"),
+				},
 			},
 			{
+				ConfigFile: config.StaticFile("testdata/api_key.tf"),
+				ConfigVariables: config.Variables{
+					"store_id": config.StringVariable("store-1"),
+					"name":     config.StringVariable("terraform"),
+				},
 				ResourceName:            "rediscloud_agent_memory_api_key.example",
 				ImportState:             true,
 				ImportStateId:           "store-1/key-1",
@@ -1635,16 +1629,17 @@ resource "rediscloud_agent_memory_api_key" "example" {
 }
 
 func TestAgentMemoryAPIKeyResource_rejectsInvalidImportID(t *testing.T) {
+	testProviderConfig(t, "http://127.0.0.1:1")
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
-resource "rediscloud_agent_memory_api_key" "example" {
-  store_id = "store-1"
-  name     = "terraform"
-}
-`,
+				ConfigFile: config.StaticFile("testdata/api_key.tf"),
+				ConfigVariables: config.Variables{
+					"store_id": config.StringVariable("store-1"),
+					"name":     config.StringVariable("terraform"),
+				},
 				ResourceName:  "rediscloud_agent_memory_api_key.example",
 				ImportState:   true,
 				ImportStateId: "store-only",
@@ -1655,16 +1650,17 @@ resource "rediscloud_agent_memory_api_key" "example" {
 }
 
 func TestAgentMemoryAPIKeyResource_rejectsInvalidStoreIDAndName(t *testing.T) {
+	testProviderConfig(t, "http://127.0.0.1:1")
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, "http://127.0.0.1:1") + `
-resource "rediscloud_agent_memory_api_key" "example" {
-  store_id = "store/1"
-  name     = "invalid name"
-}
-`,
+				ConfigFile: config.StaticFile("testdata/api_key.tf"),
+				ConfigVariables: config.Variables{
+					"store_id": config.StringVariable("store/1"),
+					"name":     config.StringVariable("invalid name"),
+				},
 				ExpectError: regexp.MustCompile(`letters, numbers, and hyphens|must not contain whitespace`),
 			},
 		},
@@ -1700,27 +1696,27 @@ func TestAgentMemoryAPIKeyResource_deleteSucceedsWhenKeyAlreadyMissing(t *testin
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory_api_key" "example" {
-  store_id = "store-1"
-  name     = "terraform"
-}
-`,
+				ConfigFile: config.StaticFile("testdata/api_key.tf"),
+				ConfigVariables: config.Variables{
+					"store_id": config.StringVariable("store-1"),
+					"name":     config.StringVariable("terraform"),
+				},
 			},
 			{
 				PreConfig: func() {
 					apiKeyExists = false
 				},
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory_api_key" "example" {
-  store_id = "store-1"
-  name     = "terraform"
-}
-`,
+				ConfigFile: config.StaticFile("testdata/api_key.tf"),
+				ConfigVariables: config.Variables{
+					"store_id": config.StringVariable("store-1"),
+					"name":     config.StringVariable("terraform"),
+				},
 				Destroy: true,
 			},
 		},
@@ -1752,16 +1748,17 @@ func TestAgentMemoryAPIKeyResource_removesStateWhenKeyNotFound(t *testing.T) {
 	}))
 	defer server.Close()
 
+	testProviderConfig(t, server.URL)
+
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 		Steps: []resource.TestStep{
 			{
-				Config: testProviderConfig(t, server.URL) + `
-resource "rediscloud_agent_memory_api_key" "example" {
-  store_id = "store-1"
-  name     = "terraform"
-}
-`,
+				ConfigFile: config.StaticFile("testdata/api_key.tf"),
+				ConfigVariables: config.Variables{
+					"store_id": config.StringVariable("store-1"),
+					"name":     config.StringVariable("terraform"),
+				},
 			},
 			{
 				PreConfig: func() {
@@ -1856,40 +1853,6 @@ func advancedCustomMemoryTypesResponse(prompt string, enabled bool) []map[string
 			},
 		},
 	}
-}
-
-func agentMemoryModelConfig(name, llmModel, embeddingModel, llmAPIKey, embeddingAPIKey string) string {
-	return fmt.Sprintf(`
-resource "rediscloud_agent_memory" "example" {
-  name                       = %[1]q
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 31536000
-  extraction_cadence_seconds = 300
-
-  llm {
-    provider = "openai"
-    model    = %[2]q
-
-    credentials {
-      type    = "apiKey"
-      api_key = %[4]q
-   api_key_version = 1
-    }
-  }
-
-  embedding {
-    provider = "openai"
-    model    = %[3]q
-
-    credentials {
-      type    = "apiKey"
-      api_key = %[5]q
-   api_key_version = 1
-    }
-  }
-}
-`, name, llmModel, embeddingModel, llmAPIKey, embeddingAPIKey)
 }
 
 func advancedCustomMemoryTypesResponseWithAdditional() []map[string]any {
@@ -2052,322 +2015,4 @@ func writeAdvancedStoreResponseWithDisabledGroups(t *testing.T, w http.ResponseW
 		"status":    "READY",
 		"createdAt": "2026-09-22T12:00:00Z",
 	}))
-}
-
-func advancedAgentMemoryConfig(name string) string {
-	return advancedAgentMemoryConfigWithValues(name, 21, 11, "test", "redact")
-}
-
-func advancedAgentMemoryConfigWithValues(name string, threshold, retainCount int, semanticPrompt, emailAction string) string {
-	return advancedAgentMemoryConfigWithCustomMemoryStrategy(name, threshold, retainCount, semanticPrompt, emailAction, "test", true)
-}
-
-func advancedAgentMemoryConfigWithCustomMemoryStrategy(name string, threshold, retainCount int, semanticPrompt, emailAction, customMemoryPrompt string, customMemoryEnabled bool) string {
-	return `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "` + name + `"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 604800
-  extraction_cadence_seconds = 300
-
-  summarization {
-    enabled          = true
-    trigger_strategy = "event_count"
-
-    event_count {
-      threshold    = ` + fmt.Sprint(threshold) + `
-      retain_count = ` + fmt.Sprint(retainCount) + `
-    }
-  }
-
-  custom_memory_types {
-    name        = "custom_name"
-    description = "test"
-
-    fields {
-      name        = "field1"
-      type        = "str"
-      description = "capture the field"
-    }
-
-    extraction_strategy {
-      enabled = ` + fmt.Sprint(customMemoryEnabled) + `
-      prompt  = "` + customMemoryPrompt + `"
-    }
-  }
-
-  long_term_memory_exclusions {
-    enabled = true
-
-    semantic {
-      enabled = true
-      prompt  = "` + semanticPrompt + `"
-    }
-
-    built_in_detectors {
-      enabled = true
-
-      detectors {
-        id      = "credit-card"
-        enabled = true
-        action  = "redact"
-      }
-
-      detectors {
-        id      = "email"
-        enabled = true
-        action  = "` + emailAction + `"
-      }
-    }
-
-    custom_detectors {
-      enabled = true
-
-      detectors {
-        name    = "detector"
-        enabled = true
-        action  = "redact"
-
-        matcher {
-          kind = "regex"
-
-          regex {
-            pattern = "ACCT-[9]"
-          }
-        }
-      }
-    }
-  }
-}
-`
-}
-
-func disabledAdvancedAgentMemoryConfig(name string) string {
-	return `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "` + name + `"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 604800
-  extraction_cadence_seconds = 300
-
-  summarization {
-    enabled = false
-  }
-
-  custom_memory_types {
-    name        = "custom_name"
-    description = "test"
-
-    fields {
-      name        = "field1"
-      type        = "str"
-      description = "capture the field"
-    }
-
-    extraction_strategy {
-      enabled = true
-      prompt  = "test"
-    }
-  }
-
-  long_term_memory_exclusions {
-    enabled = true
-
-    semantic {
-      enabled = false
-    }
-
-    built_in_detectors {
-      enabled = false
-    }
-
-    custom_detectors {
-      enabled = false
-    }
-  }
-}
-`
-}
-
-func advancedAgentMemoryConfigWithAdditionalCustomMemoryType(name string) string {
-	return `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "` + name + `"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 604800
-  extraction_cadence_seconds = 300
-
-  summarization {
-    enabled          = true
-    trigger_strategy = "event_count"
-
-    event_count {
-      threshold    = 21
-      retain_count = 11
-    }
-  }
-
-  custom_memory_types {
-    name        = "custom_name"
-    description = "test"
-
-    fields {
-      name        = "field1"
-      type        = "str"
-      description = "capture the field"
-    }
-
-    extraction_strategy {
-      enabled = true
-      prompt  = "test"
-    }
-  }
-
-  custom_memory_types {
-    name        = "support_case"
-    description = "Persistent support case details"
-
-    fields {
-      name        = "case_priority"
-      type        = "int"
-      description = "case priority"
-    }
-
-    extraction_strategy {
-      enabled = true
-      prompt  = "Extract durable support case details."
-    }
-  }
-
-  long_term_memory_exclusions {
-    enabled = true
-
-    semantic {
-      enabled = true
-      prompt  = "test"
-    }
-
-    built_in_detectors {
-      enabled = true
-
-      detectors {
-        id      = "credit-card"
-        enabled = true
-        action  = "redact"
-      }
-
-      detectors {
-        id      = "email"
-        enabled = true
-        action  = "redact"
-      }
-    }
-
-    custom_detectors {
-      enabled = true
-
-      detectors {
-        name    = "detector"
-        enabled = true
-        action  = "redact"
-
-        matcher {
-          kind = "regex"
-
-          regex {
-            pattern = "ACCT-[9]"
-          }
-        }
-      }
-    }
-  }
-}
-`
-}
-
-func advancedAgentMemoryConfigWithChangedCustomMemoryTypeField(name string) string {
-	return `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "` + name + `"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 604800
-  extraction_cadence_seconds = 300
-
-  custom_memory_types {
-    name        = "custom_name"
-    description = "test"
-
-    fields {
-      name        = "field1"
-      type        = "int"
-      description = "capture the field"
-    }
-
-    extraction_strategy {
-      enabled = true
-      prompt  = "test"
-    }
-  }
-}
-`
-}
-
-func agentMemoryConfigWithDuplicateCustomMemoryTypeNames() string {
-	return `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "store"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 604800
-  extraction_cadence_seconds = 300
-
-  custom_memory_types {
-    name        = "duplicate_name"
-    description = "first type"
-
-    fields {
-      name        = "first_field"
-      type        = "str"
-      description = "first field"
-    }
-
-    extraction_strategy {
-      enabled = true
-      prompt  = "Extract the first type."
-    }
-  }
-
-  custom_memory_types {
-    name        = "duplicate_name"
-    description = "second type"
-
-    fields {
-      name        = "second_field"
-      type        = "str"
-      description = "second field"
-    }
-
-    extraction_strategy {
-      enabled = true
-      prompt  = "Extract the second type."
-    }
-  }
-}
-`
-}
-
-func advancedAgentMemoryConfigWithoutCustomMemoryTypes(name string) string {
-	return `
-resource "rediscloud_agent_memory" "example" {
-  name                       = "` + name + `"
-  database_id                = 123
-  short_term_ttl_seconds     = 86400
-  long_term_ttl_seconds      = 604800
-  extraction_cadence_seconds = 300
-}
-`
 }

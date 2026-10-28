@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -127,12 +128,7 @@ func TestAgentMemoryExistingModelsWithoutCredentials(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	prefix := testProviderConfig(t, server.URL)
-	full := prefix + agentMemoryModelConfig("required-model-store", "gpt-4o-mini", "text-embedding-3-small", "FAKE-LLM", "FAKE-EMBEDDING")
-	noCredentials := regexp.MustCompile(`credentials \{[^}]*\}`).ReplaceAllString(full, "")
-	changedModel := strings.Replace(noCredentials, "gpt-4o-mini", "gpt-4.1-mini", 1)
-	changedTTL := strings.Replace(changedModel, "31536000", "172800", 1)
-	afterImport := strings.Replace(changedTTL, "gpt-4.1-mini", "gpt-4.1", 1)
+	testProviderConfig(t, server.URL)
 	expectedDeletes := 0
 	check := func(want int) resource.TestCheckFunc {
 		return func(state *terraform.State) error {
@@ -145,11 +141,46 @@ func TestAgentMemoryExistingModelsWithoutCredentials(t *testing.T) {
 		}
 	}
 	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-		{Config: full, Check: check(0)},
-		{Config: noCredentials, Check: check(1)},
-		{Config: noCredentials, PlanOnly: true},
-		{Config: changedModel, Check: check(2)},
-		{Config: changedTTL, Check: check(3)},
+		{
+			ConfigFile: config.StaticFile("testdata/store_models.tf"),
+			ConfigVariables: config.Variables{
+				"name":          config.StringVariable("required-model-store"),
+				"llm_key":       config.StringVariable("FAKE-LLM"),
+				"embedding_key": config.StringVariable("FAKE-EMBEDDING"),
+			},
+			Check: check(0),
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/store_models_without_credentials.tf"),
+			ConfigVariables: config.Variables{
+				"name": config.StringVariable("required-model-store"),
+			},
+			Check: check(1),
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/store_models_without_credentials.tf"),
+			ConfigVariables: config.Variables{
+				"name": config.StringVariable("required-model-store"),
+			},
+			PlanOnly: true,
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/store_models_without_credentials.tf"),
+			ConfigVariables: config.Variables{
+				"name":      config.StringVariable("required-model-store"),
+				"llm_model": config.StringVariable("gpt-4.1-mini"),
+			},
+			Check: check(2),
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/store_models_without_credentials.tf"),
+			ConfigVariables: config.Variables{
+				"name":      config.StringVariable("required-model-store"),
+				"llm_model": config.StringVariable("gpt-4.1-mini"),
+				"long_ttl":  config.IntegerVariable(172800),
+			},
+			Check: check(3),
+		},
 	}})
 	mu.Lock()
 	if deletes != 1 || exists {
@@ -161,10 +192,45 @@ func TestAgentMemoryExistingModelsWithoutCredentials(t *testing.T) {
 	mu.Unlock()
 	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
 
-		{Config: changedTTL, ResourceName: "rediscloud_agent_memory.example", ImportState: true, ImportStateId: "store-1", ImportStatePersist: true},
-		{Config: changedTTL, PlanOnly: true},
-		{Config: afterImport, Check: check(4)},
-		{Config: afterImport, PlanOnly: true},
+		{
+			ConfigFile: config.StaticFile("testdata/store_models_without_credentials.tf"),
+			ConfigVariables: config.Variables{
+				"name":      config.StringVariable("required-model-store"),
+				"llm_model": config.StringVariable("gpt-4.1-mini"),
+				"long_ttl":  config.IntegerVariable(172800),
+			},
+			ResourceName:       "rediscloud_agent_memory.example",
+			ImportState:        true,
+			ImportStateId:      "store-1",
+			ImportStatePersist: true,
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/store_models_without_credentials.tf"),
+			ConfigVariables: config.Variables{
+				"name":      config.StringVariable("required-model-store"),
+				"llm_model": config.StringVariable("gpt-4.1-mini"),
+				"long_ttl":  config.IntegerVariable(172800),
+			},
+			PlanOnly: true,
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/store_models_without_credentials.tf"),
+			ConfigVariables: config.Variables{
+				"name":      config.StringVariable("required-model-store"),
+				"llm_model": config.StringVariable("gpt-4.1"),
+				"long_ttl":  config.IntegerVariable(172800),
+			},
+			Check: check(4),
+		},
+		{
+			ConfigFile: config.StaticFile("testdata/store_models_without_credentials.tf"),
+			ConfigVariables: config.Variables{
+				"name":      config.StringVariable("required-model-store"),
+				"llm_model": config.StringVariable("gpt-4.1"),
+				"long_ttl":  config.IntegerVariable(172800),
+			},
+			PlanOnly: true,
+		},
 	}})
 	mu.Lock()
 	defer mu.Unlock()

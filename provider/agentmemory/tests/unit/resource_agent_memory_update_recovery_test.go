@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
@@ -64,28 +65,45 @@ func TestAgentMemoryAcceptedUpdateReadFailureRecovers(t *testing.T) {
 				}
 			}))
 			defer server.Close()
-			config := func(ttl int) string {
-				return testProviderConfig(t, server.URL) + fmt.Sprintf(`
-resource "rediscloud_agent_memory" "example" {
- name="update-recovery"
- database_id=123
- short_term_ttl_seconds=%d
- long_term_ttl_seconds=31536000
- extraction_cadence_seconds=300
-}`, ttl)
-			}
+			testProviderConfig(t, server.URL)
 			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
-				{Config: config(86400)},
-				{Config: config(172800), ExpectError: regexp.MustCompile("Agent Memory service failed to become ready after update|Unexpected Agent Memory database ID")},
+				{
+					ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+					ConfigVariables: config.Variables{
+						"name":      config.StringVariable("update-recovery"),
+						"short_ttl": config.IntegerVariable(86400),
+						"long_ttl":  config.IntegerVariable(31536000),
+						"cadence":   config.IntegerVariable(300),
+					},
+				},
+				{
+					ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+					ConfigVariables: config.Variables{
+						"name":      config.StringVariable("update-recovery"),
+						"short_ttl": config.IntegerVariable(172800),
+						"long_ttl":  config.IntegerVariable(31536000),
+						"cadence":   config.IntegerVariable(300),
+					},
+					ExpectError: regexp.MustCompile("Agent Memory service failed to become ready after update|Unexpected Agent Memory database ID"),
+				},
 				// A failed refresh must preserve identity so retry can read the accepted update.
-				{Config: config(172800), Check: func(state *terraform.State) error {
-					mu.Lock()
-					defer mu.Unlock()
-					if creates != 1 || updates != 1 {
-						return fmt.Errorf("unexpected repeat mutation: creates=%d updates=%d", creates, updates)
-					}
-					return resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "short_term_ttl_seconds", "172800"))(state)
-				}},
+				{
+					ConfigFile: config.StaticFile("testdata/store_basic.tf"),
+					ConfigVariables: config.Variables{
+						"name":      config.StringVariable("update-recovery"),
+						"short_ttl": config.IntegerVariable(172800),
+						"long_ttl":  config.IntegerVariable(31536000),
+						"cadence":   config.IntegerVariable(300),
+					},
+					Check: func(state *terraform.State) error {
+						mu.Lock()
+						defer mu.Unlock()
+						if creates != 1 || updates != 1 {
+							return fmt.Errorf("unexpected repeat mutation: creates=%d updates=%d", creates, updates)
+						}
+						return resource.ComposeAggregateTestCheckFunc(resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "short_term_ttl_seconds", "172800"))(state)
+					},
+				},
 			}})
 		})
 	}
