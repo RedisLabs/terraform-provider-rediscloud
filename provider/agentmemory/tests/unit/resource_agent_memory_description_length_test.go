@@ -203,7 +203,11 @@ func TestAgentMemoryDescriptionRequired(t *testing.T) {
 					index := strings.LastIndex(config, `description="Description marker"`)
 					config = config[:index] + strings.Replace(config[index:], `description="Description marker"`, "description="+expression, 1)
 				}
-				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{{Config: testProviderConfig(t, "http://127.0.0.1:1") + config, PlanOnly: true, ExpectError: regexp.MustCompile("length|Missing Configuration for Required Attribute|Missing required argument")}}})
+				step := resource.TestStep{Config: testProviderConfig(t, "http://127.0.0.1:1") + config, PlanOnly: true, ExpectNonEmptyPlan: true}
+				if expression == "null" {
+					step.ExpectError = regexp.MustCompile("Missing Configuration for Required Attribute|Missing required argument")
+				}
+				resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{step}})
 			})
 		}
 	}

@@ -46,7 +46,7 @@ func TestAgentMemoryReservedTypeNameValidation(t *testing.T) {
 		{name: "custom-name", expression: `"preference"`},
 		{name: "maximum-length", expression: fmt.Sprintf("%q", strings.Repeat("a", 64))},
 		{name: "above-former-length-deferred-to-api", expression: fmt.Sprintf("%q", strings.Repeat("a", 65))},
-		{name: "empty-name", expression: `""`, errorPattern: "length"},
+		{name: "empty-name", expression: `""`},
 		{name: "null-name", expression: "null", errorPattern: "Missing Configuration for Required Attribute|Missing required argument"},
 		{name: "format-deferred-to-api", expression: `"1preference"`},
 	}

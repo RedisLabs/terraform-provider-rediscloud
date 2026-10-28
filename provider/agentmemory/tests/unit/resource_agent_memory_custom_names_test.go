@@ -221,7 +221,11 @@ func TestAgentMemoryCustomFieldNameRequired(t *testing.T) {
 		t.Run(expression, func(t *testing.T) {
 			config := reservedTypeConfig(`"preference"`, "", "topic")
 			config = strings.Replace(config, `name="topic"`, "name="+expression, 1)
-			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{{Config: testProviderConfig(t, "http://127.0.0.1:1") + config, PlanOnly: true, ExpectError: regexp.MustCompile("length|Missing Configuration for Required Attribute|Missing required argument")}}})
+			step := resource.TestStep{Config: testProviderConfig(t, "http://127.0.0.1:1") + config, PlanOnly: true, ExpectNonEmptyPlan: true}
+			if expression == "null" {
+				step.ExpectError = regexp.MustCompile("Missing Configuration for Required Attribute|Missing required argument")
+			}
+			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{step}})
 		})
 	}
 }

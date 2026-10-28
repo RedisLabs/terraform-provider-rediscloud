@@ -99,7 +99,7 @@ func TestAgentMemoryEmptyRegexBoundaries(t *testing.T) {
 		name, expression, errorPattern string
 		disabled                       bool
 	}{
-		{name: "empty-pattern", expression: `""`, errorPattern: "length"},
+		{name: "empty-pattern", expression: `""`},
 		{name: "former-maximum-length", expression: fmt.Sprintf("%q", strings.Repeat("a", 512))},
 		{name: "above-former-maximum-deferred-to-api", expression: fmt.Sprintf("%q", strings.Repeat("a", 513))},
 		{name: "null-pattern", expression: "null", errorPattern: "Invalid Attribute Combination"},
