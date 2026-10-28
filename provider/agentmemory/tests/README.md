@@ -7,6 +7,17 @@ Cloud credentials or create cloud resources.
 Run the CLI tests in the repository's Nix development shell, which pins Terraform
 to 1.16.7 for both local development and CI, including write-only credential tests.
 
+The Agent Memory feature minimum is Terraform 1.11.1. To verify that minimum
+without changing the development toolchain, use a separate CLI binary:
+
+```sh
+TF_ACC_TERRAFORM_PATH=/path/to/terraform-1.11.1 go test ./provider/agentmemory/...
+```
+
+Terraform 1.11.0 fails the credential lifecycle test when values are both
+ephemeral and sensitive. The serialization fix is documented in the
+[Terraform 1.11.1 changelog](https://github.com/hashicorp/terraform/blob/v1.11.1/CHANGELOG.md).
+
 Tests that access private resource types or helpers remain in the parent
 `agentmemory` package. Go subpackages cannot access those private symbols.
 

@@ -7,8 +7,14 @@ lifecycle of their subscriptions and related Redis databases.
 Requirements
 ------------
 
--	[Terraform](https://www.terraform.io/downloads.html) >= 1.16.7
+-	[Terraform](https://www.terraform.io/downloads.html) >= 1.11.1
 -	[Go](https://golang.org/doc/install) >= 1.25
+
+Agent Memory requires Terraform 1.11.1 or later for write-only model credentials,
+including ephemeral sensitive inputs. Terraform 1.11.0 introduced write-only
+arguments but has a serialization bug when ephemeral and sensitive marks are
+combined, fixed in [Terraform 1.11.1](https://github.com/hashicorp/terraform/blob/v1.11.1/CHANGELOG.md).
+The Nix development environment and CI remain pinned to Terraform 1.16.7.
 
 Quick Starts
 ------------
@@ -91,7 +97,7 @@ terraform {
       source = "RedisLabs/rediscloud"
     }
   }
-  required_version = ">= 1.16.7"
+  required_version = ">= 1.11.1"
 }
 ``` 
 

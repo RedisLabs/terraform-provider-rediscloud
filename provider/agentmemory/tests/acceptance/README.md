@@ -18,8 +18,10 @@ The suite covers:
 ## Run
 
 Set `REDISCLOUD_URL`, `REDISCLOUD_ACCESS_KEY` and `REDISCLOUD_SECRET_KEY` for a test
-account. All cases use Terraform 1.16.7 or later, provided by the repository's Nix
-development shell. From the repository root:
+account. The fixtures require Terraform 1.11.1 or later. The repository's Nix
+development shell and CI pin Terraform 1.16.7. The feature minimum accounts for
+the ephemeral/sensitive serialization fix in Terraform 1.11.1.
+From the repository root:
 
 ```sh
 make testacc-check TEST_PATTERN='^TestAccResourceRedisCloudAgentMemory_'
