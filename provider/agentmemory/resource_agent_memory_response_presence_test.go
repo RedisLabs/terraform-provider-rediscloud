@@ -55,3 +55,34 @@ func TestAgentMemoryReadRejectsMissingName(t *testing.T) {
 		require.Equal(t, original, state)
 	}
 }
+
+func TestAgentMemoryEndpointsNullAndEmpty(t *testing.T) {
+	for _, tc := range []struct {
+		name, payload string
+		nullEndpoints bool
+		nullEgressIPs bool
+	}{
+		{name: "null endpoints", payload: `null`, nullEndpoints: true},
+		{name: "empty endpoints", payload: `[]`, nullEndpoints: true},
+		{name: "omitted IPs", payload: `[{}]`, nullEgressIPs: true},
+		{name: "null IPs", payload: `[{"egressIps":null}]`, nullEgressIPs: true},
+		{name: "empty IPs", payload: `[{"egressIps":[]}]`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var endpoints []api.Endpoint
+			require.NoError(t, json.Unmarshal([]byte(tc.payload), &endpoints))
+			var diags diag.Diagnostics
+			got := endpointsFromAPI(context.Background(), endpoints, &diags)
+			require.False(t, diags.HasError(), diags)
+			require.Equal(t, tc.nullEndpoints, got.IsNull())
+			if tc.nullEndpoints {
+				return
+			}
+			require.Len(t, got.Elements(), 1)
+			attrs := got.Elements()[0].(types.Object).Attributes()
+			ips := attrs["egress_ips"].(types.List)
+			require.Equal(t, tc.nullEgressIPs, ips.IsNull())
+			require.Empty(t, ips.Elements())
+		})
+	}
+}

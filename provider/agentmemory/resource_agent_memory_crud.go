@@ -10,7 +10,6 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	agentmemoryapi "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -376,7 +375,7 @@ func endpointsFromAPI(ctx context.Context, endpoints []agentmemoryapi.Endpoint, 
 		return redis.StringValue(sortedEndpoints[i].URL) < redis.StringValue(sortedEndpoints[j].URL)
 	})
 
-	values := make([]attr.Value, 0, len(sortedEndpoints))
+	models := make([]AgentMemoryEndpointModel, 0, len(sortedEndpoints))
 	for _, endpoint := range sortedEndpoints {
 		egressIPs := types.ListNull(types.StringType)
 		if endpoint.EgressIPs != nil {
@@ -388,21 +387,16 @@ func endpointsFromAPI(ctx context.Context, endpoints []agentmemoryapi.Endpoint, 
 			egressIPs = list
 		}
 
-		value, valueDiags := types.ObjectValue(agentMemoryEndpointAttrTypes, map[string]attr.Value{
-			"url":           types.StringPointerValue(endpoint.URL),
-			"provider":      types.StringPointerValue(endpoint.Provider),
-			"region":        types.StringPointerValue(endpoint.Region),
-			"egress_ips":    egressIPs,
-			"is_accessible": types.BoolPointerValue(endpoint.IsAccessible),
+		models = append(models, AgentMemoryEndpointModel{
+			URL:          types.StringPointerValue(endpoint.URL),
+			Provider:     types.StringPointerValue(endpoint.Provider),
+			Region:       types.StringPointerValue(endpoint.Region),
+			EgressIPs:    egressIPs,
+			IsAccessible: types.BoolPointerValue(endpoint.IsAccessible),
 		})
-		diags.Append(valueDiags...)
-		if diags.HasError() {
-			return types.ListNull(endpointObjectType)
-		}
-		values = append(values, value)
 	}
 
-	list, listDiags := types.ListValue(endpointObjectType, values)
+	list, listDiags := types.ListValueFrom(ctx, endpointObjectType, models)
 	diags.Append(listDiags...)
 	if diags.HasError() {
 		return types.ListNull(endpointObjectType)
