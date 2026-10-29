@@ -337,15 +337,17 @@ func readAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi.Store, 
 		state.CustomMemoryTypes = list
 	}
 
+	// The same stable order defines the primary fallback and the regional list.
+	endpoints := orderedEndpoints(store.Endpoints)
 	switch {
 	case redis.StringValue(store.Endpoint) != "":
 		state.Endpoint = types.StringPointerValue(store.Endpoint)
-	case len(store.Endpoints) > 0:
-		state.Endpoint = types.StringPointerValue(store.Endpoints[0].URL)
+	case len(endpoints) > 0:
+		state.Endpoint = types.StringPointerValue(endpoints[0].URL)
 	default:
 		state.Endpoint = types.StringNull()
 	}
-	state.Endpoints = endpointsFromAPI(ctx, store.Endpoints, diags)
+	state.Endpoints = endpointsFromAPI(ctx, endpoints, diags)
 
 	if store.CreatedAt != nil {
 		state.CreatedAt = types.StringValue(store.CreatedAt.Format(time.RFC3339))
@@ -358,12 +360,7 @@ func readImportedAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi
 	readAgentMemoryIntoModel(ctx, store, state, true, diags)
 }
 
-func endpointsFromAPI(ctx context.Context, endpoints []agentmemoryapi.Endpoint, diags *diag.Diagnostics) types.List {
-	endpointObjectType := agentMemoryEndpointObjectType()
-	if len(endpoints) == 0 {
-		return types.ListNull(endpointObjectType)
-	}
-
+func orderedEndpoints(endpoints []agentmemoryapi.Endpoint) []agentmemoryapi.Endpoint {
 	sortedEndpoints := append([]agentmemoryapi.Endpoint(nil), endpoints...)
 	sort.SliceStable(sortedEndpoints, func(i, j int) bool {
 		if redis.StringValue(sortedEndpoints[i].Provider) != redis.StringValue(sortedEndpoints[j].Provider) {
@@ -374,9 +371,17 @@ func endpointsFromAPI(ctx context.Context, endpoints []agentmemoryapi.Endpoint, 
 		}
 		return redis.StringValue(sortedEndpoints[i].URL) < redis.StringValue(sortedEndpoints[j].URL)
 	})
+	return sortedEndpoints
+}
 
-	models := make([]AgentMemoryEndpointModel, 0, len(sortedEndpoints))
-	for _, endpoint := range sortedEndpoints {
+func endpointsFromAPI(ctx context.Context, endpoints []agentmemoryapi.Endpoint, diags *diag.Diagnostics) types.List {
+	endpointObjectType := agentMemoryEndpointObjectType()
+	if len(endpoints) == 0 {
+		return types.ListNull(endpointObjectType)
+	}
+
+	models := make([]AgentMemoryEndpointModel, 0, len(endpoints))
+	for _, endpoint := range endpoints {
 		egressIPs := types.ListNull(types.StringType)
 		if endpoint.EgressIPs != nil {
 			list, listDiags := types.ListValueFrom(ctx, types.StringType, endpoint.EgressIPs)
