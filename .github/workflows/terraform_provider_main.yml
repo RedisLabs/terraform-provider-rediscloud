@@ -27,7 +27,6 @@ jobs:
     needs: [ci]
     uses: ./.github/workflows/testacc.yml
     with:
-      # Database_.* includes TestAccResourceRedisCloudActiveActiveDatabase_LocalThroughput.
       test_pattern: TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Database_.*
       create_account_sleep_seconds: 0
     secrets: inherit

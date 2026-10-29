@@ -6,11 +6,12 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func TestUnrelatedRegionUpdateOmitsThroughputWhenUnset(t *testing.T) {
+func TestUnitActiveActiveDatabase_UnrelatedRegionUpdateOmitsThroughputWhenUnset(t *testing.T) {
 	plan := &ActiveActiveDatabaseModel{
 		GlobalSourceIPs: types.SetNull(types.StringType),
 		GlobalAlert:     types.SetNull(types.ObjectType{AttrTypes: getAlertAttrTypes()}),
@@ -43,7 +44,7 @@ func TestUnrelatedRegionUpdateOmitsThroughputWhenUnset(t *testing.T) {
 	}
 }
 
-func TestRegionUpdateSendsThroughputWhenBothAttributesAreSet(t *testing.T) {
+func TestUnitActiveActiveDatabase_RegionUpdateSendsThroughputWhenBothAttributesAreSet(t *testing.T) {
 	plan := &ActiveActiveDatabaseModel{
 		GlobalSourceIPs: types.SetNull(types.StringType),
 		GlobalAlert:     types.SetNull(types.ObjectType{AttrTypes: getAlertAttrTypes()}),
@@ -74,7 +75,7 @@ func TestRegionUpdateSendsThroughputWhenBothAttributesAreSet(t *testing.T) {
 	}
 }
 
-func TestRefreshLeavesThroughputNullWhenUnset(t *testing.T) {
+func TestUnitActiveActiveDatabase_RefreshLeavesThroughputNullWhenUnset(t *testing.T) {
 	state := &ActiveActiveDatabaseModel{
 		GlobalEnableDefaultUser: types.BoolValue(true),
 		OverrideRegion: overrideRegionSet(t, OverrideRegionModel{
@@ -116,18 +117,19 @@ func TestRefreshLeavesThroughputNullWhenUnset(t *testing.T) {
 
 func overrideRegionSet(t *testing.T, region OverrideRegionModel) types.Set {
 	t.Helper()
-	objectType := types.ObjectType{AttrTypes: map[string]attr.Type{
-		"name":                                types.StringType,
-		"override_global_alert":               types.SetType{ElemType: types.ObjectType{AttrTypes: getAlertAttrTypes()}},
-		"override_global_password":            types.StringType,
-		"override_global_enable_passwordless": types.BoolType,
-		"override_global_source_ips":          types.SetType{ElemType: types.StringType},
-		"override_global_data_persistence":    types.StringType,
-		"enable_default_user":                 types.BoolType,
-		"local_read_operations_per_second":    types.Int64Type,
-		"local_write_operations_per_second":   types.Int64Type,
-		"remote_backup":                       types.ListType{ElemType: types.ObjectType{AttrTypes: getRemoteBackupAttrTypes()}},
-	}}
+	var response resource.SchemaResponse
+	(&activeActiveDatabaseResource{}).Schema(context.Background(), resource.SchemaRequest{}, &response)
+	if response.Diagnostics.HasError() {
+		t.Fatalf("schema: %v", response.Diagnostics)
+	}
+	block, ok := response.Schema.Blocks["override_region"].(schema.SetNestedBlock)
+	if !ok {
+		t.Fatal("override_region is not a set nested block")
+	}
+	objectType, ok := block.NestedObject.Type().(types.ObjectType)
+	if !ok {
+		t.Fatalf("override_region element type %T, want an object", block.NestedObject.Type())
+	}
 	set, diags := types.SetValueFrom(context.Background(), objectType, []OverrideRegionModel{region})
 	if diags.HasError() {
 		t.Fatalf("override region set: %v", diags)
