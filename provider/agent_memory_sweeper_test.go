@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	api "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
@@ -32,6 +33,10 @@ type agentMemorySweepFixture struct {
 	subscriptionName string
 	failList         bool
 	failDelete       bool
+	failGet          bool
+	deletePending    bool
+	pendingReads     int
+	getCalls         int
 }
 
 func newAgentMemorySweepFixture(t *testing.T) *agentMemorySweepFixture {
@@ -84,9 +89,35 @@ func (f *agentMemorySweepFixture) serveHTTP(w http.ResponseWriter, r *http.Reque
 			http.NotFound(w, r)
 			return
 		}
-		delete(f.stores, id)
-		f.events = append(f.events, "store")
+		if f.pendingReads > 0 {
+			f.deletePending = true
+		} else {
+			delete(f.stores, id)
+			f.events = append(f.events, "store")
+		}
 		body = map[string]any{"taskId": "delete-task"}
+	case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/memory-stores/"):
+		f.getCalls++
+		if f.failGet {
+			http.Error(w, "fixture deletion polling failure", http.StatusForbidden)
+			return
+		}
+		id := strings.TrimPrefix(r.URL.Path, "/memory-stores/")
+		if f.deletePending {
+			if f.pendingReads == 0 {
+				delete(f.stores, id)
+				f.events = append(f.events, "store")
+				f.deletePending = false
+			} else {
+				f.pendingReads--
+			}
+		}
+		store, exists := f.stores[id]
+		if !exists {
+			http.NotFound(w, r)
+			return
+		}
+		body = api.Store{StoreID: store.StoreID, Status: redis.String(api.StatusReady)}
 	case r.Method == http.MethodGet && r.URL.Path == "/subscriptions/101/databases":
 		dbs := []map[string]any{}
 		if r.URL.Query().Get("offset") == "0" {
@@ -157,18 +188,24 @@ func TestAgentMemorySharedSweeperDependencyOrder(t *testing.T) {
 }
 
 func TestAgentMemorySharedSweeperFailureBlocksParents(t *testing.T) {
-	for _, step := range []string{"list", "delete"} {
+	for _, step := range []string{"list", "delete", "poll"} {
 		t.Run(step, func(t *testing.T) {
 			f := newAgentMemorySweepFixture(t)
 			f.mu.Lock()
 			f.failList, f.failDelete = step == "list", step == "delete"
+			if step == "poll" {
+				f.failGet, f.pendingReads = true, 1
+			}
 			f.mu.Unlock()
 			out, err := f.run(t, "rediscloud_subscription", "0s")
 			require.Error(t, err, "%s", out)
-			if step == "list" {
+			switch step {
+			case "list":
 				assert.Contains(t, string(out), "fixture list failure")
-			} else {
+			case "delete":
 				assert.Contains(t, string(out), "fixture deletion failure")
+			case "poll":
+				assert.Contains(t, string(out), "fixture deletion polling failure")
 			}
 			f.mu.Lock()
 			defer f.mu.Unlock()
@@ -176,6 +213,35 @@ func TestAgentMemorySharedSweeperFailureBlocksParents(t *testing.T) {
 			assert.Contains(t, f.stores, "store-owned")
 		})
 	}
+}
+
+func TestAgentMemorySharedSweeperWaitsForDisappearance(t *testing.T) {
+	f := newAgentMemorySweepFixture(t)
+	f.mu.Lock()
+	f.pendingReads = 1
+	f.mu.Unlock()
+	out, err := f.run(t, "rediscloud_subscription", "0s")
+	require.NoError(t, err, "%s", out)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	assert.Equal(t, 2, f.getCalls)
+	assert.Equal(t, []string{"store", "database", "subscription"}, f.events)
+	assert.Empty(t, f.stores)
+}
+
+func TestAgentMemorySweeperDeletionWaitHonorsContext(t *testing.T) {
+	f := newAgentMemorySweepFixture(t)
+	c, err := rediscloudapi.NewClient(rediscloudapi.BaseURL(f.server.URL), rediscloudapi.Auth("fake-access", "fake-secret"))
+	require.NoError(t, err)
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+	err = waitForSweptAgentMemoryDeletion(ctx, c, "store-owned")
+	require.Error(t, err)
+	require.Error(t, ctx.Err())
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	assert.Contains(t, f.stores, "store-owned")
+	assert.Empty(t, f.events)
 }
 
 func TestAgentMemorySharedSweeperSkipsAPIWithoutFixtures(t *testing.T) {

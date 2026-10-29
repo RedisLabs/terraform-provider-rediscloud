@@ -19,6 +19,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	fixedSubscriptions "github.com/RedisLabs/rediscloud-go-api/service/fixed/subscriptions"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
@@ -620,9 +621,39 @@ func testSweepAgentMemory(region string) error {
 			if !errors.As(err, &missing) {
 				failures = append(failures, fmt.Errorf("sweep Agent Memory store %s: %w", id, err))
 			}
+			continue
+		}
+		if err := waitForSweptAgentMemoryDeletion(ctx, c, id); err != nil {
+			failures = append(failures, fmt.Errorf("wait for swept Agent Memory store %s: %w", id, err))
 		}
 	}
 	return errors.Join(failures...)
+}
+
+func waitForSweptAgentMemoryDeletion(ctx context.Context, c *rediscloudApi.Client, id string) error {
+	wait := &retry.StateChangeConf{
+		Pending:      []string{"present"},
+		Target:       []string{"deleted"},
+		Timeout:      15 * time.Minute,
+		PollInterval: 5 * time.Second,
+		Refresh: func() (interface{}, string, error) {
+			store, err := c.AgentMemory.Get(ctx, id)
+			if err != nil {
+				var missing *agentmemoryapi.NotFound
+				if errors.As(err, &missing) {
+					return "deleted", "deleted", nil
+				}
+				return nil, "", err
+			}
+			if store == nil || redis.StringValue(store.StoreID) != id {
+				return nil, "", fmt.Errorf("Agent Memory deletion response did not match store %s", id)
+			}
+			// A completed task or service status does not establish that the store is gone.
+			return store, "present", nil
+		},
+	}
+	_, err := wait.WaitForStateContext(ctx)
+	return err
 }
 
 func agentMemorySweepOwnsSubscription(name, prefix string) bool {
