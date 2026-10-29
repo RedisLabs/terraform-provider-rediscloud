@@ -3,8 +3,10 @@ package agentmemory
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"testing"
 
+	"github.com/RedisLabs/rediscloud-go-api/redis"
 	api "github.com/RedisLabs/rediscloud-go-api/service/agentmemory"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -83,6 +85,50 @@ func TestAgentMemoryEndpointsNullAndEmpty(t *testing.T) {
 			ips := attrs["egress_ips"].(types.List)
 			require.Equal(t, tc.nullEgressIPs, ips.IsNull())
 			require.Empty(t, ips.Elements())
+		})
+	}
+}
+
+func TestAgentMemoryReadEndpointOrder(t *testing.T) {
+	first := api.Endpoint{Provider: redis.String("AWS"), Region: redis.String("us-east-1"), URL: redis.String("https://a.example.invalid"), IsAccessible: redis.Bool(false)}
+	second := api.Endpoint{Provider: redis.String("AWS"), Region: redis.String("us-east-1"), URL: redis.String("https://b.example.invalid")}
+	third := api.Endpoint{Provider: redis.String("AWS"), Region: redis.String("us-east-2"), URL: redis.String("https://c.example.invalid")}
+	fourth := api.Endpoint{Provider: redis.String("GCP"), Region: redis.String("us-east4"), URL: redis.String("https://d.example.invalid"), IsAccessible: redis.Bool(true)}
+
+	for _, tc := range []struct {
+		name      string
+		primary   *string
+		endpoints []api.Endpoint
+		want      types.String
+	}{
+		{name: "reversed response", endpoints: []api.Endpoint{fourth, third, second, first}, want: types.StringValue(*first.URL)},
+		{name: "permuted response", endpoints: []api.Endpoint{second, first, fourth, third}, want: types.StringValue(*first.URL)},
+		{name: "empty primary uses fallback", primary: redis.String(""), endpoints: []api.Endpoint{third, fourth, first, second}, want: types.StringValue(*first.URL)},
+		{name: "explicit primary wins", primary: fourth.URL, endpoints: []api.Endpoint{second, third, first, fourth}, want: types.StringValue(*fourth.URL)},
+		{name: "nil endpoints", want: types.StringNull()},
+		{name: "empty endpoints", endpoints: []api.Endpoint{}, want: types.StringNull()},
+		{name: "explicit primary without regional endpoints", primary: fourth.URL, want: types.StringValue(*fourth.URL)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			original := slices.Clone(tc.endpoints)
+			store := &api.Store{StoreID: redis.String("store-1"), Name: redis.String("fixture"), DatabaseID: redis.String("123"), Endpoint: tc.primary, Endpoints: tc.endpoints}
+			state := AgentMemoryResourceModel{ID: types.StringValue("store-1")}
+			var diags diag.Diagnostics
+			readImportedAgentMemoryIntoModel(context.Background(), store, &state, &diags)
+			require.False(t, diags.HasError(), diags)
+			require.Equal(t, tc.want, state.Endpoint)
+			require.Equal(t, original, store.Endpoints, "API response must not be changed")
+			if len(tc.endpoints) == 0 {
+				require.True(t, state.Endpoints.IsNull())
+				return
+			}
+			var models []AgentMemoryEndpointModel
+			require.False(t, state.Endpoints.ElementsAs(context.Background(), &models, false).HasError())
+			var urls []string
+			for _, model := range models {
+				urls = append(urls, model.URL.ValueString())
+			}
+			require.Equal(t, []string{*first.URL, *second.URL, *third.URL, *fourth.URL}, urls)
 		})
 	}
 }
