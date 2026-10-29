@@ -44,14 +44,17 @@ Optional settings:
 | `AWS_TEST_CLOUD_ACCOUNT_NAME` | Use a named AWS BYOC account instead of Redis-managed hosting |
 | `TEAM_RESOURCE_TAG`, `OWNER_RESOURCE_TAG` | Required when using the BYOC account |
 | `AGENT_MEMORY_LLM_API_KEY`, `AGENT_MEMORY_EMBEDDING_API_KEY` | Enable the customer-managed model case |
+| `AGENT_MEMORY_ROTATED_LLM_API_KEY`, `AGENT_MEMORY_ROTATED_EMBEDDING_API_KEY` | Optional second valid keys for the customer-managed model update; supply both |
 | `AGENT_MEMORY_MODEL` | `gpt-4o-mini` |
 | `AGENT_MEMORY_EMBEDDING_MODEL` | `text-embedding-3-small` |
 
 The customer-managed model case uses ephemeral sensitive input variables and
-checks that model secrets are absent from plan and state. Its version update
-resubmits the same valid keys; it does not claim to test rotation to different
-provider credentials. It skips when either key is missing. The managed fixture
-contains no model credential variables.
+checks that model secrets are absent from plan and state. It verifies that import
+cannot recover model credentials or their versions, and that changing a
+credential version updates the store in place without replacing its runtime key.
+Supply both optional rotated keys to send different provider credentials during
+the update; otherwise it resubmits the original keys. It skips when either initial
+key is missing. The managed fixture contains no model credential variables.
 
 To run only the BYOK case, supply the two model keys and run:
 

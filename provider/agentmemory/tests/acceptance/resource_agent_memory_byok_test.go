@@ -24,6 +24,13 @@ func TestAccResourceRedisCloudAgentMemory_CustomerModels(t *testing.T) {
 	f := newFixture(t, "testdata/store_byok.tf")
 	tracked := &trackedResources{}
 	keys := modelKeys{llmKey, embeddingKey}
+	rotatedLLM, rotatedEmbedding := os.Getenv("AGENT_MEMORY_ROTATED_LLM_API_KEY"), os.Getenv("AGENT_MEMORY_ROTATED_EMBEDDING_API_KEY")
+	if (rotatedLLM == "") != (rotatedEmbedding == "") {
+		t.Fatal("Supply both rotated model keys, or neither to test version updates with the original keys")
+	}
+	if rotatedLLM != "" {
+		keys = append(keys, rotatedLLM, rotatedEmbedding)
+	}
 	resource.Test(t, f.testCase(tracked, []resource.TestStep{
 		{
 			ConfigDirectory: config.StaticDirectory(f.directory),
@@ -41,8 +48,32 @@ func TestAccResourceRedisCloudAgentMemory_CustomerModels(t *testing.T) {
 			},
 			Check: resource.ComposeAggregateTestCheckFunc(tracked.remember(false, false), checkRemoteResources, keys.checkState),
 		},
-		// Submit the same valid keys with a new credential version.
 		{
+			ConfigDirectory: config.StaticDirectory(f.directory),
+			ConfigVariables: config.Variables{
+				"name":               config.StringVariable(f.name),
+				"region":             config.StringVariable(f.region),
+				"cloud_account_name": config.StringVariable(f.cloudAccount),
+				"team":               config.StringVariable(f.team),
+				"owner":              config.StringVariable(f.owner),
+				"card_type":          config.StringVariable(f.cardType),
+				"card_last_four":     config.StringVariable(f.cardLastFour),
+				"redis_version":      f.redisVersion,
+				"llm_model":          config.StringVariable(envDefault("AGENT_MEMORY_MODEL", "gpt-4o-mini")),
+				"embedding_model":    config.StringVariable(envDefault("AGENT_MEMORY_EMBEDDING_MODEL", "text-embedding-3-small")),
+			},
+			ResourceName: storeResource, ImportState: true, ImportStateVerify: true,
+			// Import learns omitted summarization defaults, but cannot recover keys or their versions.
+			ImportStateVerifyIgnore: []string{"llm.0.credentials", "embedding.0.credentials", "summarization"},
+			ImportStateCheck:        keys.checkImported,
+		},
+		{
+			PreConfig: func() {
+				if rotatedLLM != "" {
+					t.Setenv("TF_VAR_llm_api_key", rotatedLLM)
+					t.Setenv("TF_VAR_embedding_api_key", rotatedEmbedding)
+				}
+			},
 			ConfigDirectory: config.StaticDirectory(f.directory),
 			ConfigVariables: config.Variables{
 				"name":               config.StringVariable(f.name),
@@ -57,6 +88,11 @@ func TestAccResourceRedisCloudAgentMemory_CustomerModels(t *testing.T) {
 				"embedding_model":    config.StringVariable(envDefault("AGENT_MEMORY_EMBEDDING_MODEL", "text-embedding-3-small")),
 				"key_version":        config.IntegerVariable(2),
 			},
+			ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+				keys,
+				plancheck.ExpectResourceAction(storeResource, plancheck.ResourceActionUpdate),
+				plancheck.ExpectResourceAction(keyResource, plancheck.ResourceActionNoop),
+			}},
 			Check: resource.ComposeAggregateTestCheckFunc(tracked.remember(false, false), checkRemoteResources, keys.checkState),
 		},
 		{
@@ -81,6 +117,17 @@ func TestAccResourceRedisCloudAgentMemory_CustomerModels(t *testing.T) {
 }
 
 type modelKeys []string
+
+func (keys modelKeys) checkImported(states []*terraform.InstanceState) error {
+	for _, state := range states {
+		for name, value := range state.Attributes {
+			if value != "" && (strings.HasSuffix(name, ".api_key") || strings.HasSuffix(name, ".api_key_version")) {
+				return errors.New("import recovered model credentials or a Terraform-only version")
+			}
+		}
+	}
+	return keys.absentFrom(states)
+}
 
 func (keys modelKeys) checkState(state *terraform.State) error {
 	return keys.absentFrom(state)

@@ -20,7 +20,11 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
 
-var modelTestSecrets = []string{"FAKE-WO-LLM-FIRST", "FAKE-WO-LLM-ROTATED", "FAKE-WO-EMBED-FIRST", "FAKE-WO-EMBED-ROTATED"}
+var modelTestSecrets = []string{
+	"FAKE-WO-LLM-FIRST", "FAKE-WO-LLM-ROTATED",
+	"FAKE-WO-EMBED-FIRST", "FAKE-WO-EMBED-ROTATED",
+	"FAKE-WO-LLM-AFTER-IMPORT", "FAKE-WO-EMBED-AFTER-IMPORT",
+}
 
 type writeOnlyPlanCheck struct{}
 
@@ -343,6 +347,40 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 					PlanOnly:         true,
 					ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}},
 				},
+				// Import cannot recover credentials or versions; later rotations must still update in place.
+				{
+					PreConfig: func() {
+						t.Setenv("TF_VAR_llm_key", modelTestSecrets[4])
+						t.Setenv("TF_VAR_embedding_key", modelTestSecrets[5])
+					},
+					ConfigFile: config.StaticFile("testdata/store_write_only.tf"),
+					ConfigVariables: config.Variables{
+						"name":              config.StringVariable("credential-store"),
+						"llm_version":       config.IntegerVariable(4),
+						"embedding_version": config.IntegerVariable(3),
+						"long_ttl":          config.IntegerVariable(172800),
+					},
+					ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+						writeOnlyPlanCheck{},
+						plancheck.ExpectResourceAction("rediscloud_agent_memory.example", plancheck.ResourceActionUpdate),
+					}},
+					Check: resource.ComposeAggregateTestCheckFunc(
+						check(firstCount+4, firstCount+3, modelTestSecrets[4], modelTestSecrets[5]),
+						resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "llm.0.credentials.0.api_key_version", "4"),
+						resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "embedding.0.credentials.0.api_key_version", "3"),
+					),
+				},
+				{
+					ConfigFile: config.StaticFile("testdata/store_write_only.tf"),
+					ConfigVariables: config.Variables{
+						"name":              config.StringVariable("credential-store"),
+						"llm_version":       config.IntegerVariable(4),
+						"embedding_version": config.IntegerVariable(3),
+						"long_ttl":          config.IntegerVariable(172800),
+					},
+					PlanOnly:         true,
+					ConfigPlanChecks: resource.ConfigPlanChecks{PostApplyPostRefresh: []plancheck.PlanCheck{writeOnlyPlanCheck{}}},
+				},
 			}})
 
 			mu.Lock()
@@ -350,7 +388,7 @@ func TestAgentMemoryWriteOnlyCredentialsLifecycle(t *testing.T) {
 			if creates != expectedCreates || deletes != expectedCreates+1 {
 				t.Errorf("expected initial and imported store cleanup, got %d/%d", creates, deletes)
 			}
-			expectedPatches := 5
+			expectedPatches := 6
 			if patches != expectedPatches {
 				t.Errorf("expected %d patches, got %d", expectedPatches, patches)
 			}
