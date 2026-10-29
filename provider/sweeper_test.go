@@ -609,25 +609,38 @@ func testSweepAgentMemory(region string) error {
 	if err != nil {
 		return err
 	}
-	var failures []error
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, maxSweepConcurrency)
+	errCollector := &sweepErrorCollector{}
 	cutoff := time.Now().Add(-age)
 	for _, store := range stores {
 		if !agentMemorySweepOwnsStore(store, owned, cutoff) {
 			continue
 		}
-		id := redis.StringValue(store.StoreID)
-		if err := c.AgentMemory.Delete(ctx, id); err != nil {
-			var missing *agentmemoryapi.NotFound
-			if !errors.As(err, &missing) {
-				failures = append(failures, fmt.Errorf("sweep Agent Memory store %s: %w", id, err))
+		wg.Add(1)
+		go func(id string) {
+			defer wg.Done()
+			select {
+			case sem <- struct{}{}:
+				defer func() { <-sem }()
+			case <-ctx.Done():
+				errCollector.add(fmt.Errorf("sweep Agent Memory store %s: %w", id, ctx.Err()))
+				return
 			}
-			continue
-		}
-		if err := waitForSweptAgentMemoryDeletion(ctx, c, id); err != nil {
-			failures = append(failures, fmt.Errorf("wait for swept Agent Memory store %s: %w", id, err))
-		}
+			if err := c.AgentMemory.Delete(ctx, id); err != nil {
+				var missing *agentmemoryapi.NotFound
+				if !errors.As(err, &missing) {
+					errCollector.add(fmt.Errorf("sweep Agent Memory store %s: %w", id, err))
+				}
+				return
+			}
+			if err := waitForSweptAgentMemoryDeletion(ctx, c, id); err != nil {
+				errCollector.add(fmt.Errorf("wait for swept Agent Memory store %s: %w", id, err))
+			}
+		}(redis.StringValue(store.StoreID))
 	}
-	return errors.Join(failures...)
+	wg.Wait()
+	return errCollector.result()
 }
 
 func waitForSweptAgentMemoryDeletion(ctx context.Context, c *rediscloudApi.Client, id string) error {

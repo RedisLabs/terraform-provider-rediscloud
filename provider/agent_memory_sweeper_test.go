@@ -3,6 +3,7 @@ package provider_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -37,6 +38,10 @@ type agentMemorySweepFixture struct {
 	deletePending    bool
 	pendingReads     int
 	getCalls         int
+	waitForDeletes   int
+	deletesStarted   map[string]bool
+	activeDeletes    int
+	maxActiveDeletes int
 }
 
 func newAgentMemorySweepFixture(t *testing.T) *agentMemorySweepFixture {
@@ -89,7 +94,16 @@ func (f *agentMemorySweepFixture) serveHTTP(w http.ResponseWriter, r *http.Reque
 			http.NotFound(w, r)
 			return
 		}
-		if f.pendingReads > 0 {
+		if f.waitForDeletes > 0 {
+			if f.deletesStarted == nil {
+				f.deletesStarted = make(map[string]bool)
+			}
+			f.deletesStarted[id] = true
+			f.activeDeletes++
+			if f.activeDeletes > f.maxActiveDeletes {
+				f.maxActiveDeletes = f.activeDeletes
+			}
+		} else if f.pendingReads > 0 {
 			f.deletePending = true
 		} else {
 			delete(f.stores, id)
@@ -103,7 +117,13 @@ func (f *agentMemorySweepFixture) serveHTTP(w http.ResponseWriter, r *http.Reque
 			return
 		}
 		id := strings.TrimPrefix(r.URL.Path, "/memory-stores/")
-		if f.deletePending {
+		if f.waitForDeletes > 0 && len(f.deletesStarted) >= f.waitForDeletes && f.deletesStarted[id] {
+			if _, exists := f.stores[id]; exists {
+				delete(f.stores, id)
+				f.activeDeletes--
+				f.events = append(f.events, "store")
+			}
+		} else if f.deletePending {
 			if f.pendingReads == 0 {
 				delete(f.stores, id)
 				f.events = append(f.events, "store")
@@ -242,6 +262,35 @@ func TestAgentMemorySweeperDeletionWaitHonorsContext(t *testing.T) {
 	defer f.mu.Unlock()
 	assert.Contains(t, f.stores, "store-owned")
 	assert.Empty(t, f.events)
+}
+
+func TestAgentMemorySharedSweeperOverlapsBoundedDeletions(t *testing.T) {
+	f := newAgentMemorySweepFixture(t)
+	f.mu.Lock()
+	f.waitForDeletes = maxSweepConcurrency
+	old := time.Now().Add(-48 * time.Hour)
+	for i := range maxSweepConcurrency {
+		id := fmt.Sprintf("store-owned-%d", i)
+		f.stores[id] = api.StoreSummary{
+			StoreID: redis.String(id), SubscriptionID: redis.String("101"),
+			Name: redis.String(sweepFixtureSubscription + "-" + id), CreatedAt: &old,
+		}
+	}
+	f.mu.Unlock()
+	// Stores remain present until a full batch of delete requests has arrived.
+	out, err := f.run(t, "rediscloud_subscription", "0s")
+	require.NoError(t, err, "%s", out)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	assert.Len(t, f.deletesStarted, maxSweepConcurrency+1)
+	assert.Equal(t, maxSweepConcurrency, f.maxActiveDeletes)
+	assert.Empty(t, f.stores)
+	wantEvents := make([]string, maxSweepConcurrency+1)
+	for i := range wantEvents {
+		wantEvents[i] = "store"
+	}
+	wantEvents = append(wantEvents, "database", "subscription")
+	assert.Equal(t, wantEvents, f.events)
 }
 
 func TestAgentMemorySharedSweeperSkipsAPIWithoutFixtures(t *testing.T) {
