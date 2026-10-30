@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"time"
@@ -185,15 +186,24 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 	if !plan.ExtractionCadenceSeconds.Equal(state.ExtractionCadenceSeconds) {
 		update.ExtractionCadence = extractionCadenceFromPlan(plan)
 	}
-	if len(plan.Summarization.Elements()) > 0 {
+	if len(plan.Summarization.Elements()) > 0 && !plan.Summarization.Equal(state.Summarization) {
 		update.Summarization = summarizationFromModel(ctx, summarizationBlock(ctx, plan.Summarization, &resp.Diagnostics), &resp.Diagnostics)
 	}
-	if len(plan.LongTermMemoryExclusions.Elements()) > 0 {
+	if len(plan.LongTermMemoryExclusions.Elements()) > 0 && !exclusionsConfigEqual(ctx, plan.LongTermMemoryExclusions, state.LongTermMemoryExclusions, &resp.Diagnostics) {
 		update.LongTermMemoryExclusions = exclusionsFromModel(ctx, exclusionsBlock(ctx, plan.LongTermMemoryExclusions, &resp.Diagnostics), &resp.Diagnostics)
 	}
 	update.AddCustomMemoryTypes, update.UpdateCustomMemoryTypeStrategies = customMemoryTypeUpdatesFromPlan(ctx, plan.CustomMemoryTypes, state.CustomMemoryTypes, &resp.Diagnostics)
 
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !hasAgentMemoryUpdates(update) {
+		// Local changes keep the last refreshed metadata without a remote operation.
+		state.Timeouts = plan.Timeouts
+		state.CustomMemoryTypes = plan.CustomMemoryTypes
+		state.Summarization = plan.Summarization
+		state.LongTermMemoryExclusions = plan.LongTermMemoryExclusions
+		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 		return
 	}
 	storeID := state.ID.ValueString()
@@ -361,7 +371,7 @@ func readImportedAgentMemoryIntoModel(ctx context.Context, store *agentmemoryapi
 }
 
 func orderedEndpoints(endpoints []agentmemoryapi.Endpoint) []agentmemoryapi.Endpoint {
-	sortedEndpoints := append([]agentmemoryapi.Endpoint(nil), endpoints...)
+	sortedEndpoints := slices.Clone(endpoints)
 	sort.SliceStable(sortedEndpoints, func(i, j int) bool {
 		if redis.StringValue(sortedEndpoints[i].Provider) != redis.StringValue(sortedEndpoints[j].Provider) {
 			return redis.StringValue(sortedEndpoints[i].Provider) < redis.StringValue(sortedEndpoints[j].Provider)
@@ -376,7 +386,7 @@ func orderedEndpoints(endpoints []agentmemoryapi.Endpoint) []agentmemoryapi.Endp
 
 func endpointsFromAPI(ctx context.Context, endpoints []agentmemoryapi.Endpoint, diags *diag.Diagnostics) types.List {
 	endpointObjectType := agentMemoryEndpointObjectType()
-	if len(endpoints) == 0 {
+	if endpoints == nil {
 		return types.ListNull(endpointObjectType)
 	}
 

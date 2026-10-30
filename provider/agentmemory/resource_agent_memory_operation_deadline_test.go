@@ -90,7 +90,11 @@ func TestAgentMemoryOperationsAlwaysBoundNetworkWork(t *testing.T) {
 					model.Timeouts = testMemoryTimeoutsList(t, configuredTestTimeouts(schema.Schema.Blocks["timeouts"].Type().(MemoryTimeoutsListType).ElemType.(timeouts.Type), strings.TrimPrefix(operation, "key-"), configured))
 				}
 				plan, state := tfsdk.Plan{Schema: schema.Schema}, tfsdk.State{Schema: schema.Schema}
-				if diags := plan.Set(ctx, &model); diags.HasError() {
+				planned := model
+				if operation == "update" {
+					planned.Name = types.StringValue("updated-bounded-store")
+				}
+				if diags := plan.Set(ctx, &planned); diags.HasError() {
 					t.Fatal(diags)
 				}
 				if diags := state.Set(ctx, &model); diags.HasError() {

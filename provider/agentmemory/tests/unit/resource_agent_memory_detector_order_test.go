@@ -29,7 +29,7 @@ func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
 			kind, names := scenario.kind, scenario.names
 			var mu sync.Mutex
 			var store map[string]any
-			creates, deletes, reads := 0, 0, 0
+			creates, deletes, reads, patches := 0, 0, 0, 0
 			group, identity := "built_in_detectors", "id"
 			if kind == "custom-detectors" {
 				group = "custom_detectors"
@@ -51,6 +51,7 @@ func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
 						creates++
 						store = payload
 					} else {
+						patches++
 						store["longTermMemoryExclusions"] = payload["longTermMemoryExclusions"]
 					}
 					_, _ = w.Write([]byte(`{"taskId":"fixture-task"}`))
@@ -137,6 +138,21 @@ func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
 						"action": config.StringVariable("redact"),
 					},
 					Check: check(names, "redact"),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(reordered[0]), config.StringVariable(reordered[1]), config.StringVariable(reordered[2])),
+						"action": config.StringVariable("redact"),
+					},
+					Check: resource.ComposeTestCheckFunc(check(reordered, "redact"), func(*terraform.State) error {
+						mu.Lock()
+						defer mu.Unlock()
+						if patches != 1 {
+							return fmt.Errorf("detector reordering sent a remote update: %d patches", patches)
+						}
+						return nil
+					}),
 				},
 				{
 					ConfigFile: config.StaticFile(fixture),

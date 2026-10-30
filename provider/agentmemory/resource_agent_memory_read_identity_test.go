@@ -59,11 +59,15 @@ func TestAgentMemoryReadResponseIdentity(t *testing.T) {
 				model := AgentMemoryResourceModel{ID: types.StringValue("store-1"), Name: types.StringValue("identity-store"), DatabaseID: types.Int64Value(123), Endpoints: types.ListNull(agentMemoryEndpointObjectType())}
 				model.Timeouts = testMemoryTimeoutsList(t, timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(MemoryTimeoutsListType).ElemType.(timeouts.Type).AttrTypes)})
 				prior := tfsdk.State{Schema: schema.Schema}
+				if operation == "update" {
+					model.Name = types.StringValue("prior-name")
+				}
 				if diags := prior.Set(ctx, &model); diags.HasError() {
 					t.Fatal(diags)
 				}
 				// Update can receive an unknown computed ID; the request still targets the prior ID.
 				model.ID = types.StringUnknown()
+				model.Name = types.StringValue("identity-store")
 				plan := tfsdk.Plan{Schema: schema.Schema}
 				if diags := plan.Set(ctx, &model); diags.HasError() {
 					t.Fatal(diags)

@@ -65,7 +65,7 @@ func TestAgentMemoryEndpointsNullAndEmpty(t *testing.T) {
 		nullEgressIPs bool
 	}{
 		{name: "null endpoints", payload: `null`, nullEndpoints: true},
-		{name: "empty endpoints", payload: `[]`, nullEndpoints: true},
+		{name: "empty endpoints", payload: `[]`},
 		{name: "omitted IPs", payload: `[{}]`, nullEgressIPs: true},
 		{name: "null IPs", payload: `[{"egressIps":null}]`, nullEgressIPs: true},
 		{name: "empty IPs", payload: `[{"egressIps":[]}]`},
@@ -78,6 +78,10 @@ func TestAgentMemoryEndpointsNullAndEmpty(t *testing.T) {
 			require.False(t, diags.HasError(), diags)
 			require.Equal(t, tc.nullEndpoints, got.IsNull())
 			if tc.nullEndpoints {
+				return
+			}
+			if len(endpoints) == 0 {
+				require.Empty(t, got.Elements())
 				return
 			}
 			require.Len(t, got.Elements(), 1)
@@ -119,7 +123,8 @@ func TestAgentMemoryReadEndpointOrder(t *testing.T) {
 			require.Equal(t, tc.want, state.Endpoint)
 			require.Equal(t, original, store.Endpoints, "API response must not be changed")
 			if len(tc.endpoints) == 0 {
-				require.True(t, state.Endpoints.IsNull())
+				require.Equal(t, tc.endpoints == nil, state.Endpoints.IsNull())
+				require.Empty(t, state.Endpoints.Elements())
 				return
 			}
 			var models []AgentMemoryEndpointModel
