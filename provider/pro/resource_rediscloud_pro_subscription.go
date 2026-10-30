@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -17,7 +16,6 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/service/maintenance"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
@@ -991,12 +989,8 @@ func buildProCmks(cmkResources []interface{}) []subscriptions.CustomerManagedKey
 }
 
 func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	// use the meta value to retrieve your client from the provider configure method
 	api := meta.(*client.ApiClient)
 	timeout := d.Timeout(schema.TimeoutDelete)
-
-	var diags diag.Diagnostics
-
 	subId, err := strconv.Atoi(d.Id())
 	if err != nil {
 		return diag.FromErr(err)
@@ -1005,48 +999,36 @@ func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.Reso
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
 
-	subscription, err := api.Client.Subscription.Get(ctx, subId)
+	targetStatuses := []string{subscriptions.SubscriptionStatusActive, subscriptions.SubscriptionStatusDeleting, utils.SubscriptionStatusDeleted}
+	pendingStatuses := []string{subscriptions.SubscriptionStatusPending, subscriptions.SubscriptionStatusEncryptionKeyPending}
+	status, err := utils.WaitForSubscriptionToBeStatus(ctx, subId, api, timeout, targetStatuses, pendingStatuses...)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	// If already deleting (e.g. auto-deleted empty CMK subscription), wait for completion.
-	if *subscription.Status == subscriptions.SubscriptionStatusDeleting {
-		d.SetId("")
-		if err := WaitForSubscriptionToBeDeleted(ctx, subId, api, timeout); err != nil {
-			return diag.FromErr(err)
-		}
-		return diags
-	}
-
-	if *subscription.Status != subscriptions.SubscriptionStatusEncryptionKeyPending {
-		// Wait for the subscription to be active before deleting it.
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
-			return diag.FromErr(err)
-		}
-
-		// There is a timing issue where the subscription is marked as active before the creation-plan databases are deleted.
-		// This additional wait ensures that the databases are deleted before the subscription is deleted.
-		time.Sleep(30 * time.Second) //lintignore:R018
-		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
+	if status == subscriptions.SubscriptionStatusActive {
+		// The subscription can become active before its creation-plan databases are deleted.
+		// Recheck readiness after the delay, allowing automatic deletion in the meantime.
+		time.Sleep(api.WaitDelay(30 * time.Second)) //lintignore:R018
+		status, err = utils.WaitForSubscriptionToBeStatus(ctx, subId, api, timeout, targetStatuses, pendingStatuses...)
+		if err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
-	// Delete subscription once all databases are deleted
-	err = api.Client.Subscription.Delete(ctx, subId)
-	if err != nil {
-		return diag.FromErr(err)
+	if status == subscriptions.SubscriptionStatusActive {
+		if err := api.Client.Subscription.Delete(ctx, subId); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
+	if status != utils.SubscriptionStatusDeleted {
+		if err := utils.WaitForSubscriptionToBeDeleted(ctx, subId, api, timeout); err != nil {
+			return diag.FromErr(err)
+		}
+	}
 	d.SetId("")
-
-	err = WaitForSubscriptionToBeDeleted(ctx, subId, api, timeout)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	return diags
+	return nil
 }
 
 func buildCreateCloudProviders(providers interface{}) ([]*subscriptions.CreateCloudProvider, error) {
@@ -1262,34 +1244,4 @@ func createDatabase(dbName string, idx *int, modules []*subscriptions.CreateModu
 		dbs = append(dbs, &createDatabase)
 	}
 	return dbs
-}
-
-func WaitForSubscriptionToBeDeleted(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
-	wait := &retry.StateChangeConf{
-		Pending:      []string{subscriptions.SubscriptionStatusDeleting},
-		Target:       []string{"deleted"}, // TODO: update this with deleted field in SDK
-		Timeout:      timeout,
-		Delay:        api.WaitDelay(10 * time.Second),
-		PollInterval: api.WaitPollInterval(30 * time.Second),
-
-		Refresh: func() (result interface{}, state string, err error) {
-			log.Printf("[DEBUG] Waiting for subscription %d to be deleted", id)
-
-			subscription, err := api.Client.Subscription.Get(ctx, id)
-			if err != nil {
-				notFound := &subscriptions.NotFound{}
-				if errors.As(err, &notFound) {
-					return "deleted", "deleted", nil
-				} // TODO: update this with deleted field in SDK
-				return nil, "", err
-			}
-
-			return redis.StringValue(subscription.Status), redis.StringValue(subscription.Status), nil
-		},
-	}
-	if _, err := wait.WaitForStateContext(ctx); err != nil {
-		return err
-	}
-
-	return nil
 }

@@ -2,8 +2,10 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"slices"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -16,30 +18,53 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
+// SubscriptionStatusDeleted represents an absent subscription or an explicit deleted status.
+// TODO move and export via rediscloud-go-api
+const SubscriptionStatusDeleted = "deleted"
+
+func WaitForSubscriptionToBeDeleted(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
+	_, err := WaitForSubscriptionToBeStatus(ctx, id, api, timeout, []string{SubscriptionStatusDeleted}, subscriptions.SubscriptionStatusDeleting)
+	return err
+}
+
 func WaitForSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
+	_, err := WaitForSubscriptionToBeStatus(ctx, id, api, timeout, []string{subscriptions.SubscriptionStatusActive})
+	return err
+}
+
+func WaitForSubscriptionToBeStatus(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration, targetStatuses []string, pendingStatuses ...string) (string, error) {
+	if len(pendingStatuses) == 0 {
+		pendingStatuses = []string{subscriptions.SubscriptionStatusPending}
+	}
+
 	wait := &retry.StateChangeConf{
-		Pending:      []string{subscriptions.SubscriptionStatusPending},
-		Target:       []string{subscriptions.SubscriptionStatusActive},
+		Pending:      pendingStatuses,
+		Target:       targetStatuses,
 		Timeout:      timeout,
 		Delay:        api.WaitDelay(10 * time.Second),
 		PollInterval: api.WaitPollInterval(30 * time.Second),
 
 		Refresh: func() (result interface{}, state string, err error) {
-			log.Printf("[DEBUG] Waiting for subscription %d to be %s", id, subscriptions.SubscriptionStatusActive)
+			log.Printf("[DEBUG] Waiting for subscription %d to reach one of %v", id, targetStatuses)
 
 			subscription, err := api.Client.Subscription.Get(ctx, id)
 			if err != nil {
+				var notFound *subscriptions.NotFound
+				if slices.Contains(targetStatuses, SubscriptionStatusDeleted) && errors.As(err, &notFound) {
+					return SubscriptionStatusDeleted, SubscriptionStatusDeleted, nil
+				}
 				return nil, "", err
 			}
 
 			return redis.StringValue(subscription.Status), redis.StringValue(subscription.Status), nil
 		},
 	}
-	if _, err := wait.WaitForStateContext(ctx); err != nil {
-		return err
+	result, err := wait.WaitForStateContext(ctx)
+	if err != nil {
+		return "", err
 	}
 
-	return nil
+	return result.(string), nil
 }
 
 // WaitForSubscriptionPublicEndpointAccess waits for the subscription's public_endpoint_access
