@@ -1,3 +1,8 @@
+variable "grace_period" {
+  type    = string
+  default = "immediate"
+}
+
 variable "team" {
   type = string
 }
@@ -77,8 +82,7 @@ resource "rediscloud_active_active_subscription" "example" {
   payment_method_id            = data.rediscloud_payment_method.card.id
   customer_managed_key_enabled = true
 
-  # Prevent automatic deletion when key permissions are removed during teardown.
-  customer_managed_key_deletion_grace_period = "alerts-only"
+  customer_managed_key_deletion_grace_period = var.grace_period
   cloud_provider                             = "GCP"
 
   dynamic "maintenance_windows" {

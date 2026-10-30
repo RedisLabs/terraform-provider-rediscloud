@@ -86,8 +86,7 @@ resource "rediscloud_active_active_subscription" "example" {
   payment_method_id            = data.rediscloud_payment_method.card.id
   customer_managed_key_enabled = true
 
-  # Prevent automatic deletion when key permissions are removed during teardown.
-  customer_managed_key_deletion_grace_period = "alerts-only"
+  customer_managed_key_deletion_grace_period = "immediate"
   cloud_provider                             = "AWS"
 
   dynamic "maintenance_windows" {

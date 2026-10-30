@@ -64,8 +64,7 @@ resource "rediscloud_subscription" "example" {
   memory_storage               = "ram"
   customer_managed_key_enabled = true
 
-  # Prevent automatic deletion when key permissions are removed during teardown.
-  customer_managed_key_deletion_grace_period = "alerts-only"
+  customer_managed_key_deletion_grace_period = "immediate"
 
   dynamic "maintenance_windows" {
     for_each = var.maintenance_windows
