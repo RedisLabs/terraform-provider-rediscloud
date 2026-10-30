@@ -64,6 +64,8 @@ The `database` block supports:
 * `local_write_operations_per_second` - (Required) Local write operations per second for this active-active region
 * `local_read_operations_per_second` - (Required) Local read operations per second for this active-active region
 
+Set a database's local throughput here or on `override_region` of `rediscloud_active_active_subscription_database`, not on both. The last apply wins.
+
 ### Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:

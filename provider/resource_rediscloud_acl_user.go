@@ -223,10 +223,11 @@ func resourceRedisCloudAclUserDelete(ctx context.Context, d *schema.ResourceData
 
 func waitForAclUserToBeActive(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
-		Delay:   5 * time.Second,
-		Pending: []string{users.StatusPending},
-		Target:  []string{users.StatusActive},
-		Timeout: timeout,
+		PollInterval: api.WaitPollInterval(0),
+		Delay:        api.WaitDelay(5 * time.Second),
+		Pending:      []string{users.StatusPending},
+		Target:       []string{users.StatusActive},
+		Timeout:      timeout,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for user %d to be active", id)

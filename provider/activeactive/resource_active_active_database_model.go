@@ -53,6 +53,8 @@ type OverrideRegionModel struct {
 	OverrideGlobalSourceIPs          types.Set    `tfsdk:"override_global_source_ips"`
 	OverrideGlobalDataPersistence    types.String `tfsdk:"override_global_data_persistence"`
 	EnableDefaultUser                types.Bool   `tfsdk:"enable_default_user"`
+	LocalReadOperationsPerSecond     types.Int64  `tfsdk:"local_read_operations_per_second"`
+	LocalWriteOperationsPerSecond    types.Int64  `tfsdk:"local_write_operations_per_second"`
 	RemoteBackup                     types.List   `tfsdk:"remote_backup"`
 }
 

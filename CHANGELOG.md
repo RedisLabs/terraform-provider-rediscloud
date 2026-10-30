@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.20.0 (Unreleased)
+
+### Added
+
+- `rediscloud_active_active_subscription_database` accepts optional `local_read_operations_per_second` and `local_write_operations_per_second` on `override_region`. Each Active-Active region can set local throughput when the database is created and change it in place. Omitting the attributes keeps the 1000 read and 1000 write default.
+
 ## 2.19.3 (Unreleased)
 
 ### Changed

@@ -127,7 +127,7 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterApply(ct
 	}
 
 	if redis.StringValue(endpoint.Status) == psc.EndpointStatusInitialized || redis.StringValue(endpoint.Status) == psc.EndpointStatusProcessing {
-		err = waitForPrivateServiceConnectServiceEndpointToBePending(ctx, refreshFunc, timeout)
+		err = waitForPrivateServiceConnectServiceEndpointToBePending(ctx, api, refreshFunc, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -143,12 +143,12 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepterApply(ct
 	}
 
 	if action == psc.EndpointActionAccept {
-		err = waitForPrivateServiceConnectServiceEndpointToBeActive(ctx, refreshFunc, timeout)
+		err = waitForPrivateServiceConnectServiceEndpointToBeActive(ctx, api, refreshFunc, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 	} else {
-		err = waitForPrivateServiceConnectServiceEndpointToBeRejected(ctx, refreshFunc, timeout)
+		err = waitForPrivateServiceConnectServiceEndpointToBeRejected(ctx, api, refreshFunc, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
