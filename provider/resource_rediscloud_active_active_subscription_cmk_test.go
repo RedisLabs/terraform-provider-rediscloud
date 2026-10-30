@@ -29,24 +29,6 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 	const resourceName = "rediscloud_active_active_subscription.example"
 	gcpProjectId := os.Getenv("GCP_PROJECT_ID")
 
-	configVars := config.Variables{
-		"team":           config.StringVariable(resourceTags.Team),
-		"owner":          config.StringVariable(resourceTags.Owner),
-		"name":           config.StringVariable(name),
-		"gcp_project_id": config.StringVariable(gcpProjectId),
-		"maintenance_windows": config.ListVariable(config.ObjectVariable(
-			map[string]config.Variable{
-				"mode": config.StringVariable("manual"),
-				"window": config.ListVariable(config.ObjectVariable(
-					map[string]config.Variable{
-						"start_hour":        config.IntegerVariable(22),
-						"duration_in_hours": config.IntegerVariable(8),
-						"days":              config.ListVariable(config.StringVariable("Monday"), config.StringVariable("Thursday")),
-					})),
-			},
-		)),
-	}
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, envchecks.GCPProviderCheck),
 		CheckDestroy: testhelpers.CheckActiveActiveSubscriptionDestroy,
@@ -56,8 +38,24 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 				// Also creates GCP KMS key and grants IAM permissions to the Redis service account
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_step1.tf"),
-				ConfigVariables:          configVars,
-				ExpectNonEmptyPlan:       true,
+				ConfigVariables: config.Variables{
+					"team":           config.StringVariable(resourceTags.Team),
+					"owner":          config.StringVariable(resourceTags.Owner),
+					"name":           config.StringVariable(name),
+					"gcp_project_id": config.StringVariable(gcpProjectId),
+					"maintenance_windows": config.ListVariable(config.ObjectVariable(
+						map[string]config.Variable{
+							"mode": config.StringVariable("manual"),
+							"window": config.ListVariable(config.ObjectVariable(
+								map[string]config.Variable{
+									"start_hour":        config.IntegerVariable(22),
+									"duration_in_hours": config.IntegerVariable(8),
+									"days":              config.ListVariable(config.StringVariable("Monday"), config.StringVariable("Thursday")),
+								})),
+						},
+					)),
+				},
+				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_redis_service_account"),
@@ -72,7 +70,24 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 				// This triggers the UpdateCmk code path which should also clean up creation plan databases
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_step2.tf"),
-				ConfigVariables:          configVars,
+				ConfigVariables: config.Variables{
+					"team":           config.StringVariable(resourceTags.Team),
+					"owner":          config.StringVariable(resourceTags.Owner),
+					"name":           config.StringVariable(name),
+					"gcp_project_id": config.StringVariable(gcpProjectId),
+					"maintenance_windows": config.ListVariable(config.ObjectVariable(
+						map[string]config.Variable{
+							"mode": config.StringVariable("manual"),
+							"window": config.ListVariable(config.ObjectVariable(
+								map[string]config.Variable{
+									"start_hour":        config.IntegerVariable(22),
+									"duration_in_hours": config.IntegerVariable(8),
+									"days":              config.ListVariable(config.StringVariable("Monday"), config.StringVariable("Thursday")),
+								})),
+						},
+					)),
+					"grace_period": config.StringVariable("immediate"),
+				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectNonEmptyPlan(),
@@ -95,6 +110,35 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK(t *testing.T) {
 					testAccCheckNoCreationPlanDatabases(resourceName),
 				),
 			},
+			{
+				// Step 3: change only the grace period, retaining the configured keys.
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_step2.tf"),
+				ConfigVariables: config.Variables{
+					"team":           config.StringVariable(resourceTags.Team),
+					"owner":          config.StringVariable(resourceTags.Owner),
+					"name":           config.StringVariable(name),
+					"gcp_project_id": config.StringVariable(gcpProjectId),
+					"maintenance_windows": config.ListVariable(config.ObjectVariable(
+						map[string]config.Variable{
+							"mode": config.StringVariable("manual"),
+							"window": config.ListVariable(config.ObjectVariable(
+								map[string]config.Variable{
+									"start_hour":        config.IntegerVariable(22),
+									"duration_in_hours": config.IntegerVariable(8),
+									"days":              config.ListVariable(config.StringVariable("Monday"), config.StringVariable("Thursday")),
+								})),
+						},
+					)),
+					"grace_period": config.StringVariable("15-minutes"),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate)},
+					PostApplyPreRefresh:  []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.TestCheckResourceAttr(resourceName, "customer_managed_key_deletion_grace_period", "15-minutes"),
+			},
 		},
 	})
 }
@@ -109,23 +153,6 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 	name := testRandomWithPrefix() + "-aa-cmk-aws"
 	const resourceName = "rediscloud_active_active_subscription.example"
 
-	configVars := config.Variables{
-		"team":  config.StringVariable(resourceTags.Team),
-		"owner": config.StringVariable(resourceTags.Owner),
-		"name":  config.StringVariable(name),
-		"maintenance_windows": config.ListVariable(config.ObjectVariable(
-			map[string]config.Variable{
-				"mode": config.StringVariable("manual"),
-				"window": config.ListVariable(config.ObjectVariable(
-					map[string]config.Variable{
-						"start_hour":        config.IntegerVariable(22),
-						"duration_in_hours": config.IntegerVariable(8),
-						"days":              config.ListVariable(config.StringVariable("Monday"), config.StringVariable("Thursday")),
-					})),
-			},
-		)),
-	}
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
 		CheckDestroy: testhelpers.CheckActiveActiveSubscriptionDestroy,
@@ -135,8 +162,23 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 				// (primary + replica) reference the role ARN returned by the subscription.
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_aws_step1.tf"),
-				ConfigVariables:          configVars,
-				ExpectNonEmptyPlan:       true,
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
+					"name":  config.StringVariable(name),
+					"maintenance_windows": config.ListVariable(config.ObjectVariable(
+						map[string]config.Variable{
+							"mode": config.StringVariable("manual"),
+							"window": config.ListVariable(config.ObjectVariable(
+								map[string]config.Variable{
+									"start_hour":        config.IntegerVariable(22),
+									"duration_in_hours": config.IntegerVariable(8),
+									"days":              config.ListVariable(config.StringVariable("Monday"), config.StringVariable("Thursday")),
+								})),
+						},
+					)),
+				},
+				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_aws_role_arn"),
@@ -151,7 +193,23 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 				// and transitions out of encryption_key_pending.
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_aws_step2.tf"),
-				ConfigVariables:          configVars,
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
+					"name":  config.StringVariable(name),
+					"maintenance_windows": config.ListVariable(config.ObjectVariable(
+						map[string]config.Variable{
+							"mode": config.StringVariable("manual"),
+							"window": config.ListVariable(config.ObjectVariable(
+								map[string]config.Variable{
+									"start_hour":        config.IntegerVariable(22),
+									"duration_in_hours": config.IntegerVariable(8),
+									"days":              config.ListVariable(config.StringVariable("Monday"), config.StringVariable("Thursday")),
+								})),
+						},
+					)),
+					"grace_period": config.StringVariable("immediate"),
+				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectNonEmptyPlan(),
@@ -174,6 +232,34 @@ func TestAccResourceRedisCloudActiveActiveSubscription_CMK_AWS(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "1"),
 					testAccCheckNoCreationPlanDatabases(resourceName),
 				),
+			},
+			{
+				// Step 3: change only the grace period, retaining the configured keys.
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ConfigFile:               config.StaticFile("./activeactive/testdata/cmk_aws_step2.tf"),
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
+					"name":  config.StringVariable(name),
+					"maintenance_windows": config.ListVariable(config.ObjectVariable(
+						map[string]config.Variable{
+							"mode": config.StringVariable("manual"),
+							"window": config.ListVariable(config.ObjectVariable(
+								map[string]config.Variable{
+									"start_hour":        config.IntegerVariable(22),
+									"duration_in_hours": config.IntegerVariable(8),
+									"days":              config.ListVariable(config.StringVariable("Monday"), config.StringVariable("Thursday")),
+								})),
+						},
+					)),
+					"grace_period": config.StringVariable("15-minutes"),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate)},
+					PostApplyPreRefresh:  []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.TestCheckResourceAttr(resourceName, "customer_managed_key_deletion_grace_period", "15-minutes"),
 			},
 		},
 	})

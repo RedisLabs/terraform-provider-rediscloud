@@ -830,6 +830,17 @@ func resourceRedisCloudProSubscriptionUpdateWithTimeout(ctx context.Context, d *
 		if diags != nil {
 			return diags
 		}
+	} else if cmkEnabled && d.HasChange("customer_managed_key_deletion_grace_period") {
+		// Updating the grace period must not resend customer keys after activation.
+		request := subscriptions.UpdateSubscriptionCMKs{
+			DeletionGracePeriod: redis.String(d.Get("customer_managed_key_deletion_grace_period").(string)),
+		}
+		if err := api.Client.Subscription.UpdateCMKs(ctx, subId, request); err != nil {
+			return diag.FromErr(err)
+		}
+		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	if d.HasChange("allowlist") {
