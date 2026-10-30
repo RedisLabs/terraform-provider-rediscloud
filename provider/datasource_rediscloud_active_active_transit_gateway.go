@@ -118,8 +118,8 @@ func dataSourceActiveActiveTransitGatewayRead(ctx context.Context, d *schema.Res
 			Pending:      []string{"waiting"},
 			Target:       []string{"found"},
 			Timeout:      time.Duration(waitTimeoutSeconds) * time.Second,
-			Delay:        5 * time.Second,
-			PollInterval: 10 * time.Second,
+			Delay:        api.WaitDelay(5 * time.Second),
+			PollInterval: api.WaitPollInterval(10 * time.Second),
 
 			Refresh: func() (result interface{}, state string, err error) {
 				log.Printf("[DEBUG] Waiting for Active-Active Transit Gateway to appear for subscription %d, region %d", subId, regionId)

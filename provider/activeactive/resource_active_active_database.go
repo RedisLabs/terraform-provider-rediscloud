@@ -7,6 +7,7 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -417,6 +418,26 @@ func (r *activeActiveDatabaseResource) Schema(ctx context.Context, _ resource.Sc
 						"enable_default_user": schema.BoolAttribute{
 							Description: "When 'true', enables connecting to the database with the 'default' user. If not set, inherits from global_enable_default_user.",
 							Optional:    true,
+						},
+						"local_read_operations_per_second": schema.Int64Attribute{
+							Description: "Local read operations per second for this region. When unset, the region is created at 1000. Set this together with local_write_operations_per_second. Do not also set throughput for this database on rediscloud_active_active_subscription_regions.",
+							Optional:    true,
+							Validators: []validator.Int64{
+								int64validator.AtLeast(1),
+								int64validator.AlsoRequires(
+									path.MatchRelative().AtParent().AtName("local_write_operations_per_second"),
+								),
+							},
+						},
+						"local_write_operations_per_second": schema.Int64Attribute{
+							Description: "Local write operations per second for this region. When unset, the region is created at 1000. Set this together with local_read_operations_per_second. Do not also set throughput for this database on rediscloud_active_active_subscription_regions.",
+							Optional:    true,
+							Validators: []validator.Int64{
+								int64validator.AtLeast(1),
+								int64validator.AlsoRequires(
+									path.MatchRelative().AtParent().AtName("local_read_operations_per_second"),
+								),
+							},
 						},
 					},
 					Blocks: map[string]schema.Block{

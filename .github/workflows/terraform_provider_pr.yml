@@ -75,7 +75,7 @@ jobs:
     needs: [pre-test]
     uses: ./.github/workflows/testacc.yml
     with:
-      test_pattern: TestAccResourceRedisCloudActiveActiveDatabase_CRUDI
+      test_pattern: TestAccResourceRedisCloudActiveActiveDatabase_(CRUDI|LocalThroughput)
       create_account_sleep_seconds: 30
     secrets: inherit
 
