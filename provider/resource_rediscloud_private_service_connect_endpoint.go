@@ -272,7 +272,7 @@ func resourceRedisCloudPrivateServiceConnectEndpointDelete(ctx context.Context, 
 
 	// Endpoints will be automatically removed once related GCP resources are removed. So we will wait for this
 	// to happen, but we can't check the GCP resources from this provider
-	err = waitForPrivateServiceConnectServiceEndpointDisappear(ctx, func() (result interface{}, state string, err error) {
+	err = waitForPrivateServiceConnectServiceEndpointDisappear(ctx, api, func() (result interface{}, state string, err error) {
 		return refreshPrivateServiceConnectServiceEndpointDisappear(ctx, resId.subscriptionId, resId.pscServiceId, resId.endpointId, api)
 	}, d.Timeout(schema.TimeoutDelete))
 	if err != nil {
@@ -374,7 +374,7 @@ func flattenPrivateServiceConnectEndpointServiceAttachments(serviceAttachments [
 	return rl
 }
 
-func waitForPrivateServiceConnectServiceEndpointDisappear(ctx context.Context, refreshFunc func() (result interface{}, state string, err error), timeout time.Duration) error {
+func waitForPrivateServiceConnectServiceEndpointDisappear(ctx context.Context, api *client.ApiClient, refreshFunc func() (result interface{}, state string, err error), timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending: []string{
 			psc.EndpointStatusProcessing,
@@ -388,8 +388,8 @@ func waitForPrivateServiceConnectServiceEndpointDisappear(ctx context.Context, r
 		},
 		Target:       []string{placeholderStatusDisappear},
 		Timeout:      timeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        api.WaitDelay(10 * time.Second),
+		PollInterval: api.WaitPollInterval(30 * time.Second),
 
 		Refresh: refreshFunc,
 	}
