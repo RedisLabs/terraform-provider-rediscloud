@@ -51,8 +51,6 @@ resource "rediscloud_subscription" "example" {
   memory_storage               = "ram"
   customer_managed_key_enabled = true
 
-  customer_managed_key_deletion_grace_period = "immediate"
-
   cloud_provider {
     resource_tags = {
       team  = var.team
