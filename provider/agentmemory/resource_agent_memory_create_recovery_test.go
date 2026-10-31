@@ -1,0 +1,176 @@
+package agentmemory
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+
+	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+)
+
+func TestAgentMemoryCreateRecoveryState(t *testing.T) {
+	for _, unknownComputed := range []bool{false, true} {
+		for _, scenario := range []string{"malformed", "404", "500", "503"} {
+			t.Run(fmt.Sprintf("%s-unknown-%t", scenario, unknownComputed), func(t *testing.T) {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Type", "application/json")
+					switch {
+					case r.Method == http.MethodPost && r.URL.Path == "/memory-stores":
+						_, _ = w.Write([]byte(`{"taskId":"fixture-task"}`))
+					case r.URL.Path == "/tasks/fixture-task":
+						_, _ = w.Write([]byte(`{"taskId":"fixture-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
+					case r.Method == http.MethodGet && r.URL.Path == "/memory-stores/store-1":
+						switch scenario {
+						case "malformed":
+							_, _ = w.Write([]byte(`{"storeId":"store-1","name":"unexpected-response-name","databaseId":"not-a-number","status":"READY"}`))
+						case "404":
+							w.WriteHeader(404)
+						case "500":
+							w.WriteHeader(500)
+						case "503":
+							w.WriteHeader(503)
+						}
+					default:
+						http.NotFound(w, r)
+					}
+				}))
+				defer server.Close()
+				t.Setenv(rediscloudapi.RedisCloudUrlEnvVar, server.URL)
+				t.Setenv(rediscloudapi.AccessKeyEnvVar, "FAKE-KEY")
+				t.Setenv(rediscloudapi.SecretKeyEnvVar, "FAKE-SECRET")
+				c, err := client.NewClient()
+				if err != nil {
+					t.Fatal(err)
+				}
+				c.WaitPollIntervalOverride = time.Millisecond
+				ctx := context.Background()
+				r := &agentMemoryResource{client: c}
+				var schema resource.SchemaResponse
+				r.Schema(ctx, resource.SchemaRequest{}, &schema)
+				model := AgentMemoryResourceModel{ID: types.StringUnknown(), Name: types.StringValue("recovery-store"), DatabaseID: types.Int64Value(123), ShortTermTTLSeconds: types.Int64Value(86400), LongTermTTLSeconds: types.Int64Value(31536000), ExtractionStrategy: types.StringValue("INSTRUCT"), ExtractionCadenceSeconds: types.Int64Value(300), Endpoint: types.StringUnknown(), Endpoints: types.ListUnknown(agentMemoryEndpointObjectType()), Status: types.StringUnknown(), CreatedAt: types.StringUnknown()}
+				model.Timeouts = testMemoryTimeoutsList(t, configuredTestTimeouts(schema.Schema.Blocks["timeouts"].Type().(MemoryTimeoutsListType).ElemType.(timeouts.Type), "create", "1s"))
+				if !unknownComputed {
+					model.LLM = mustModelConfigList(t, &AgentMemoryModelConfigModel{Provider: types.StringValue("fake-provider"), Model: types.StringValue("fake-model"), Credentials: mustModelCredentialsList(t, &AgentMemoryModelCredentialsModel{Type: types.StringValue("apiKey"), APIKey: types.StringValue("FAKE-MODEL-SECRET"), APIKeyVersion: types.Int64Value(1)})})
+					model.Embedding = mustModelConfigList(t, &AgentMemoryModelConfigModel{Provider: types.StringValue("fake-provider"), Model: types.StringValue("fake-model"), Credentials: mustModelCredentialsList(t, &AgentMemoryModelCredentialsModel{Type: types.StringValue("apiKey"), APIKey: types.StringValue("FAKE-MODEL-SECRET"), APIKeyVersion: types.Int64Value(1)})})
+				}
+				if unknownComputed {
+					model.ShortTermTTLSeconds = types.Int64Unknown()
+					model.LongTermTTLSeconds = types.Int64Unknown()
+					model.ExtractionStrategy = types.StringUnknown()
+					model.ExtractionCadenceSeconds = types.Int64Unknown()
+					model.Summarization = mustSummarizationList(t, &AgentMemorySummarizationModel{Enabled: types.BoolValue(true), TriggerStrategy: types.StringUnknown()})
+				}
+				plan := tfsdk.Plan{Schema: schema.Schema}
+				if diags := plan.Set(ctx, &model); diags.HasError() {
+					t.Fatal(diags)
+				}
+				config := tfsdk.Config{Schema: schema.Schema, Raw: plan.Raw}
+				if !unknownComputed {
+					for _, list := range []*ModelConfigListValue{&model.LLM, &model.Embedding} {
+						cfg := mustModelConfig(t, *list)
+						creds := mustModelCredentials(t, cfg.Credentials)
+						creds.APIKey = types.StringNull()
+						cfg.Credentials = mustModelCredentialsList(t, creds)
+						*list = mustModelConfigList(t, cfg)
+					}
+					if diags := plan.Set(ctx, &model); diags.HasError() {
+						t.Fatal(diags)
+					}
+				}
+				response := resource.CreateResponse{State: tfsdk.State{Schema: schema.Schema}}
+				r.Create(ctx, resource.CreateRequest{Plan: plan, Config: config}, &response)
+				if !response.Diagnostics.HasError() {
+					t.Fatalf("unexpected readiness/recovery diagnostics: %v", response.Diagnostics)
+				}
+				if len(response.Diagnostics.Warnings()) != 0 {
+					t.Fatal("failed create downgraded an error to a warning")
+				}
+				if scenario == "malformed" {
+					original := response.Diagnostics.Errors()[0]
+					if original.Summary() != "Unexpected Agent Memory database ID" || original.Detail() != `Expected databaseId to be numeric, got "not-a-number".` {
+						t.Fatalf("mapping diagnostic was not preserved: %v", original)
+					}
+				}
+				if len(response.Diagnostics) == 0 {
+					t.Fatal("read failure produced no diagnostic")
+				}
+				if response.State.Raw.IsNull() {
+					t.Fatal("acknowledged create lost its state")
+				}
+				if !response.State.Raw.IsFullyKnown() {
+					t.Fatal("recovery state contains unknown values")
+				}
+				var recovered AgentMemoryResourceModel
+				if diags := response.State.Get(ctx, &recovered); diags.HasError() {
+					t.Fatal(diags)
+				}
+				if recovered.ID.ValueString() != "store-1" || recovered.Name.ValueString() != "recovery-store" || recovered.DatabaseID.ValueInt64() != 123 {
+					t.Fatal("recovery lost identity or known inputs")
+				}
+				if scenario == "malformed" && recovered.Status.ValueString() != "READY" {
+					t.Fatal("recovery lost the last observed status")
+				}
+				if unknownComputed {
+					if !recovered.ShortTermTTLSeconds.IsNull() || !recovered.LongTermTTLSeconds.IsNull() {
+						t.Fatal("unresolved TTLs were not null")
+					}
+					summary := mustSummarization(t, recovered.Summarization)
+					if summary == nil || !summary.Enabled.ValueBool() || !summary.TriggerStrategy.IsNull() {
+						t.Fatal("nested recovery lost known enabled or retained unknown strategy")
+					}
+				} else if recovered.ShortTermTTLSeconds.ValueInt64() != 86400 || recovered.LongTermTTLSeconds.ValueInt64() != 31536000 {
+					t.Fatal("known TTL inputs were not preserved")
+				}
+				if !unknownComputed {
+					for _, list := range []ModelConfigListValue{recovered.LLM, recovered.Embedding} {
+						cfg := mustModelConfig(t, list)
+						if cfg == nil {
+							t.Fatal("missing recovered model")
+						}
+						creds := mustModelCredentials(t, cfg.Credentials)
+						if creds == nil || !creds.APIKey.IsNull() || creds.APIKeyVersion.ValueInt64() != 1 {
+							t.Fatal("rotation version was lost or a write-only secret entered state")
+						}
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestAgentMemoryCreateRejectedHasNoRecoveryID(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(400) }))
+	defer server.Close()
+	t.Setenv(rediscloudapi.RedisCloudUrlEnvVar, server.URL)
+	t.Setenv(rediscloudapi.AccessKeyEnvVar, "FAKE-KEY")
+	t.Setenv(rediscloudapi.SecretKeyEnvVar, "FAKE-SECRET")
+	c, err := client.NewClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	r := &agentMemoryResource{client: c}
+	var schema resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schema)
+	plan := tfsdk.Plan{Schema: schema.Schema}
+	model := AgentMemoryResourceModel{Name: types.StringValue("rejected-store"), DatabaseID: types.Int64Value(123), Endpoints: types.ListNull(agentMemoryEndpointObjectType())}
+	model.Timeouts = testMemoryTimeoutsList(t, timeouts.Value{Object: types.ObjectNull(schema.Schema.Blocks["timeouts"].Type().(MemoryTimeoutsListType).ElemType.(timeouts.Type).AttrTypes)})
+	if diags := plan.Set(ctx, &model); diags.HasError() {
+		t.Fatal(diags)
+	}
+	response := resource.CreateResponse{State: tfsdk.State{Schema: schema.Schema}}
+	r.Create(ctx, resource.CreateRequest{Plan: plan}, &response)
+	if !response.Diagnostics.HasError() || !response.State.Raw.IsNull() {
+		t.Fatal("rejected create must report error without inventing state ownership")
+	}
+}

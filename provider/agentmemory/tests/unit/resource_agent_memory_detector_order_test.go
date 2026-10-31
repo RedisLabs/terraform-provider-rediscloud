@@ -1,0 +1,268 @@
+package unit_test
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"sync"
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/stretchr/testify/require"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
+)
+
+func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
+	for _, scenario := range []struct {
+		name, kind string
+		names      []string
+	}{
+		{"built-in", "built-in", []string{"credit-card", "email", "phone"}},
+		{"custom-detectors", "custom-detectors", []string{"ticket", "tenant", "account"}},
+		{"custom-empty-name", "custom-detectors", []string{"", "tenant", "account"}},
+	} {
+		t.Run(scenario.name, func(t *testing.T) {
+			kind, names := scenario.kind, scenario.names
+			var mu sync.Mutex
+			var store map[string]any
+			creates, deletes, reads, patches := 0, 0, 0, 0
+			group, identity := "built_in_detectors", "id"
+			if kind == "custom-detectors" {
+				group = "custom_detectors"
+				identity = "name"
+			}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				mu.Lock()
+				defer mu.Unlock()
+				w.Header().Set("Content-Type", "application/json")
+				switch r.Method + " " + r.URL.Path {
+				case "POST /memory-stores", "PATCH /memory-stores/store-1":
+					var payload map[string]any
+					if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+						t.Error(err)
+						w.WriteHeader(500)
+						return
+					}
+					if r.Method == http.MethodPost {
+						for _, entry := range listLimitEntries(payload, kind) {
+							detector := entry.(map[string]any)
+							if _, exists := detector["action"]; !exists {
+								detector["action"] = "redact"
+							}
+						}
+						creates++
+						store = payload
+					} else {
+						patches++
+						store["longTermMemoryExclusions"] = payload["longTermMemoryExclusions"]
+					}
+					_, _ = w.Write([]byte(`{"taskId":"fixture-task"}`))
+				case "GET /tasks/fixture-task":
+					_, _ = w.Write([]byte(`{"taskId":"fixture-task","status":"processing-completed","response":{"resource":{"storeId":"store-1"}}}`))
+				case "GET /memory-stores/store-1":
+					if store == nil {
+						http.NotFound(w, r)
+						return
+					}
+					// Change response order without changing the stored detector configuration.
+					raw, err := json.Marshal(store)
+					if err != nil {
+						t.Error(err)
+						w.WriteHeader(500)
+						return
+					}
+					var response map[string]any
+					if err := json.Unmarshal(raw, &response); err != nil {
+						t.Error(err)
+						w.WriteHeader(500)
+						return
+					}
+					reads++
+					entries := listLimitEntries(response, kind)
+					if reads%2 == 1 {
+						for i, j := 0, len(entries)-1; i < j; i, j = i+1, j-1 {
+							entries[i], entries[j] = entries[j], entries[i]
+						}
+					}
+					response["storeId"], response["databaseId"], response["status"] = "store-1", "123", "READY"
+					_ = json.NewEncoder(w).Encode(response)
+				case "DELETE /memory-stores/store-1":
+					deletes++
+					store = nil
+					_, _ = w.Write([]byte(`{"taskId":"fixture-task"}`))
+				default:
+					http.NotFound(w, r)
+				}
+			}))
+			defer server.Close()
+			testProviderConfig(t, server.URL)
+			fixture := "testdata/lifecycle/detectors/detector_order_" + kind + ".tf"
+			expectedDeletes := 0
+			check := func(values []string, action string) resource.TestCheckFunc {
+				return func(state *terraform.State) error {
+					mu.Lock()
+					defer mu.Unlock()
+					if creates != 1 || deletes != expectedDeletes {
+						return fmt.Errorf("store was replaced")
+					}
+					prefix := "long_term_memory_exclusions.0." + group + ".0.detectors"
+					checks := []resource.TestCheckFunc{resource.TestCheckResourceAttr("rediscloud_agent_memory.example", "id", "store-1"), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", prefix+".#", fmt.Sprint(len(values)))}
+					for i, name := range values {
+						checks = append(checks, resource.TestCheckResourceAttr("rediscloud_agent_memory.example", fmt.Sprintf("%s.%d.%s", prefix, i, identity), name), resource.TestCheckResourceAttr("rediscloud_agent_memory.example", fmt.Sprintf("%s.%d.action", prefix, i), action))
+					}
+					return resource.ComposeTestCheckFunc(checks...)(state)
+				}
+			}
+			reordered := []string{names[2], names[0], names[1]}
+			var importedOrder []string
+			var importStore map[string]any
+			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[0]), config.StringVariable(names[1])),
+						"action": json.RawMessage("null"),
+					},
+					Check: check(names[:2], "redact"),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[1]), config.StringVariable(names[0])),
+						"action": json.RawMessage("null"),
+					},
+					Check: resource.ComposeTestCheckFunc(check([]string{names[1], names[0]}, "redact"), func(*terraform.State) error {
+						mu.Lock()
+						defer mu.Unlock()
+						if patches != 0 {
+							return fmt.Errorf("reordering with computed actions sent %d patches", patches)
+						}
+						return nil
+					}),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[1]), config.StringVariable(names[0])),
+						"action": json.RawMessage("null"),
+					},
+					PlanOnly: true,
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[0]), config.StringVariable(names[1]), config.StringVariable(names[2])),
+						"action": config.StringVariable("redact"),
+					},
+					Check: check(names, "redact"),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(reordered[0]), config.StringVariable(reordered[1]), config.StringVariable(reordered[2])),
+						"action": config.StringVariable("redact"),
+					},
+					Check: resource.ComposeTestCheckFunc(check(reordered, "redact"), func(*terraform.State) error {
+						mu.Lock()
+						defer mu.Unlock()
+						if patches != 1 {
+							return fmt.Errorf("detector reordering sent a remote update: %d patches", patches)
+						}
+						return nil
+					}),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(reordered[0]), config.StringVariable(reordered[1]), config.StringVariable(reordered[2])),
+						"action": config.StringVariable("drop"),
+					},
+					Check: check(reordered, "drop"),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(reordered[0]), config.StringVariable(reordered[1]), config.StringVariable(reordered[2])),
+						"action": config.StringVariable("drop"),
+					},
+					PlanOnly: true,
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[0]), config.StringVariable(names[1])),
+						"action": config.StringVariable("drop"),
+					},
+					Check: resource.ComposeTestCheckFunc(check(names[:2], "drop"), func(*terraform.State) error {
+						mu.Lock()
+						defer mu.Unlock()
+						importStore = store
+						return nil
+					}),
+				},
+			}})
+			mu.Lock()
+			if deletes != 1 || store != nil {
+				t.Error("initial lifecycle did not clean up its store")
+			}
+			// Import the fixture into a fresh Terraform state without a removed block.
+			store = importStore
+			expectedDeletes = 1
+			mu.Unlock()
+			resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: []resource.TestStep{
+
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[0]), config.StringVariable(names[1])),
+						"action": config.StringVariable("drop"),
+					},
+					ResourceName:       "rediscloud_agent_memory.example",
+					ImportState:        true,
+					ImportStateId:      "store-1",
+					ImportStatePersist: true,
+					ImportStateCheck: func(states []*terraform.InstanceState) error {
+						if len(states) != 1 {
+							return fmt.Errorf("unexpected imported resource count")
+						}
+						for i := range names[:2] {
+							attribute := fmt.Sprintf("long_term_memory_exclusions.0.%s.0.detectors.%d.%s", group, i, identity)
+							value, present := states[0].Attributes[attribute]
+							if !present {
+								return fmt.Errorf("import omitted detector identity")
+							}
+							importedOrder = append(importedOrder, value)
+						}
+						return nil
+					},
+				},
+				{RefreshState: true, Check: func(state *terraform.State) error { return check(importedOrder, "drop")(state) }},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[0]), config.StringVariable(names[1])),
+						"action": config.StringVariable("drop"),
+					},
+					Check: check(names[:2], "drop"),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[0]), config.StringVariable(names[1])),
+						"action": config.StringVariable("drop"),
+					},
+					PlanOnly: true,
+				},
+			}})
+			mu.Lock()
+			defer mu.Unlock()
+			require.Equal(t, 1, creates)
+			require.Equal(t, 2, deletes)
+			require.Nil(t, store)
+		})
+	}
+}
