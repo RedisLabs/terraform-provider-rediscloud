@@ -20,9 +20,9 @@ import (
 
 func TestAgentMemoryCustomTypeReplacementLifecycle(t *testing.T) {
 	for _, tc := range []struct {
-		name, before, after, restore, errorPattern        string
-		beforeVariables, afterVariables, restoreVariables config.Variables
-		replace, update, protect, hasDependency           bool
+		name, before, after, restore, errorPattern           string
+		beforeVariables, afterVariables, restoreVariables    config.Variables
+		replace, update, localUpdate, protect, hasDependency bool
 	}{
 		{
 			name:   "unchanged",
@@ -123,10 +123,11 @@ func TestAgentMemoryCustomTypeReplacementLifecycle(t *testing.T) {
 			replace: true,
 		},
 		{
-			name:   "reorder types",
-			before: "testdata/lifecycle/custom_types/two_types.tf",
-			after:  "testdata/lifecycle/custom_types/two_types_reordered.tf",
-			update: true,
+			name:        "reorder types",
+			before:      "testdata/lifecycle/custom_types/two_types.tf",
+			after:       "testdata/lifecycle/custom_types/two_types_reordered.tf",
+			update:      true,
+			localUpdate: true,
 		},
 		{
 			name:   "reorder fields",
@@ -140,7 +141,8 @@ func TestAgentMemoryCustomTypeReplacementLifecycle(t *testing.T) {
 				"custom_memory_types_fields_1_name":        config.StringVariable("topic"),
 				"custom_memory_types_fields_1_type":        config.StringVariable("str"),
 			},
-			update: true,
+			update:      true,
+			localUpdate: true,
 		},
 		{
 			name:          "unknown existing name unchanged",
@@ -370,7 +372,7 @@ func TestAgentMemoryCustomTypeReplacementLifecycle(t *testing.T) {
 			if tc.replace {
 				expectedCreates = 2
 			}
-			if tc.update {
+			if tc.update && !tc.localUpdate {
 				expectedPatches = 1
 			}
 			assert.Equal(t, expectedCreates, creates)
