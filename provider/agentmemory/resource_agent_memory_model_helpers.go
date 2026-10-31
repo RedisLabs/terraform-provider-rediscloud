@@ -64,7 +64,7 @@ func summarizationFromModel(ctx context.Context, model *AgentMemorySummarization
 	if model == nil {
 		return nil
 	}
-	config := &agentmemoryapi.SummarizationConfig{Enabled: redis.Bool(model.Enabled.ValueBool())}
+	config := &agentmemoryapi.SummarizationConfig{Enabled: model.Enabled.ValueBoolPointer()}
 	if !model.TriggerStrategy.IsNull() && !model.TriggerStrategy.IsUnknown() {
 		config.TriggerStrategy = model.TriggerStrategy.ValueStringPointer()
 	}
@@ -93,15 +93,15 @@ func exclusionsFromModel(ctx context.Context, model *AgentMemoryExclusionsModel,
 	if model == nil {
 		return nil
 	}
-	config := &agentmemoryapi.LongTermMemoryExclusions{Enabled: redis.Bool(model.Enabled.ValueBool())}
+	config := &agentmemoryapi.LongTermMemoryExclusions{Enabled: model.Enabled.ValueBoolPointer()}
 	if semantic := semanticExclusionBlock(ctx, model.Semantic, diags); semantic != nil {
-		config.Semantic = &agentmemoryapi.SemanticExclusion{Enabled: redis.Bool(semantic.Enabled.ValueBool()), Prompt: stringPointerFromValue(semantic.Prompt)}
+		config.Semantic = &agentmemoryapi.SemanticExclusion{Enabled: semantic.Enabled.ValueBoolPointer(), Prompt: stringPointerFromValue(semantic.Prompt)}
 	}
 	if builtIn := builtInDetectorsBlock(ctx, model.BuiltInDetectors, diags); builtIn != nil {
-		config.BuiltInDetectors = &agentmemoryapi.BuiltInDetectorsConfig{Enabled: redis.Bool(builtIn.Enabled.ValueBool()), Detectors: detectorSelectionsFromModel(detectorSelectionModels(ctx, builtIn.Detectors, diags))}
+		config.BuiltInDetectors = &agentmemoryapi.BuiltInDetectorsConfig{Enabled: builtIn.Enabled.ValueBoolPointer(), Detectors: detectorSelectionsFromModel(detectorSelectionModels(ctx, builtIn.Detectors, diags))}
 	}
 	if custom := customDetectorsBlock(ctx, model.CustomDetectors, diags); custom != nil {
-		config.CustomDetectors = &agentmemoryapi.CustomDetectorsConfig{Enabled: redis.Bool(custom.Enabled.ValueBool()), Detectors: customDetectorsFromModel(ctx, customDetectorModels(ctx, custom.Detectors, diags), diags)}
+		config.CustomDetectors = &agentmemoryapi.CustomDetectorsConfig{Enabled: custom.Enabled.ValueBoolPointer(), Detectors: customDetectorsFromModel(ctx, customDetectorModels(ctx, custom.Detectors, diags), diags)}
 	}
 	return config
 }
@@ -152,7 +152,7 @@ func detectorSelectionsFromModel(models []AgentMemoryDetectorSelectionModel) []a
 	for _, model := range models {
 		selections = append(selections, agentmemoryapi.DetectorSelection{
 			ID:      model.ID.ValueStringPointer(),
-			Enabled: redis.Bool(model.Enabled.ValueBool()),
+			Enabled: model.Enabled.ValueBoolPointer(),
 			Action:  stringPointerFromValue(model.Action),
 		})
 	}
@@ -182,7 +182,7 @@ func customDetectorsFromModel(ctx context.Context, models []AgentMemoryCustomDet
 	for _, model := range models {
 		detectors = append(detectors, agentmemoryapi.CustomDetector{
 			Name:    model.Name.ValueStringPointer(),
-			Enabled: redis.Bool(model.Enabled.ValueBool()),
+			Enabled: model.Enabled.ValueBoolPointer(),
 			Action:  stringPointerFromValue(model.Action),
 			Matcher: matcherFromModel(ctx, matcherSpecBlock(ctx, model.Matcher, diags), diags),
 		})

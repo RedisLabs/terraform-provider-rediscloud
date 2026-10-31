@@ -93,7 +93,6 @@ jobs:
       test_pattern: '^TestAccResourceRedisCloudAgentMemory_'
       create_account_sleep_seconds: 210
     secrets: inherit
-
   status:
     name: Status
     runs-on: ubuntu-latest

@@ -15,7 +15,7 @@ import (
 )
 
 func TestAgentMemoryTimeoutUpdatesStayLocal(t *testing.T) {
-	for _, fixture := range []string{"store_timeouts.tf", "store_advanced.tf"} {
+	for _, fixture := range []string{"store_timeouts.tf", "store_advanced.tf", "store_disabled_features.tf"} {
 		t.Run(fixture, func(t *testing.T) {
 			testAgentMemoryTimeoutUpdatesStayLocal(t, fixture)
 		})

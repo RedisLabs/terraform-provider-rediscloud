@@ -186,7 +186,7 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 	if !plan.ExtractionCadenceSeconds.Equal(state.ExtractionCadenceSeconds) {
 		update.ExtractionCadence = extractionCadenceFromPlan(plan)
 	}
-	if len(plan.Summarization.Elements()) > 0 && !plan.Summarization.Equal(state.Summarization) {
+	if len(plan.Summarization.Elements()) > 0 && !summarizationConfigEqual(ctx, plan.Summarization, state.Summarization, &resp.Diagnostics) {
 		update.Summarization = summarizationFromModel(ctx, summarizationBlock(ctx, plan.Summarization, &resp.Diagnostics), &resp.Diagnostics)
 	}
 	if len(plan.LongTermMemoryExclusions.Elements()) > 0 && !exclusionsConfigEqual(ctx, plan.LongTermMemoryExclusions, state.LongTermMemoryExclusions, &resp.Diagnostics) {
@@ -199,10 +199,10 @@ func (r *agentMemoryResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 	if !hasAgentMemoryUpdates(update) {
 		// Local changes keep the last refreshed metadata without a remote operation.
-		state.Timeouts = plan.Timeouts
-		state.CustomMemoryTypes = plan.CustomMemoryTypes
-		state.Summarization = plan.Summarization
-		state.LongTermMemoryExclusions = plan.LongTermMemoryExclusions
+		applyLocalAgentMemoryPlan(ctx, plan, &state, &resp.Diagnostics)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 		resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 		return
 	}

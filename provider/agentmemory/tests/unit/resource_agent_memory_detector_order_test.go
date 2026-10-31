@@ -48,6 +48,12 @@ func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
 						return
 					}
 					if r.Method == http.MethodPost {
+						for _, entry := range listLimitEntries(payload, kind) {
+							detector := entry.(map[string]any)
+							if _, exists := detector["action"]; !exists {
+								detector["action"] = "redact"
+							}
+						}
 						creates++
 						store = payload
 					} else {
@@ -119,15 +125,30 @@ func TestAgentMemoryDetectorOrderLifecycle(t *testing.T) {
 					ConfigFile: config.StaticFile(fixture),
 					ConfigVariables: config.Variables{
 						"names":  config.ListVariable(config.StringVariable(names[0]), config.StringVariable(names[1])),
-						"action": config.StringVariable("redact"),
+						"action": json.RawMessage("null"),
 					},
 					Check: check(names[:2], "redact"),
 				},
 				{
 					ConfigFile: config.StaticFile(fixture),
 					ConfigVariables: config.Variables{
-						"names":  config.ListVariable(config.StringVariable(names[0]), config.StringVariable(names[1])),
-						"action": config.StringVariable("redact"),
+						"names":  config.ListVariable(config.StringVariable(names[1]), config.StringVariable(names[0])),
+						"action": json.RawMessage("null"),
+					},
+					Check: resource.ComposeTestCheckFunc(check([]string{names[1], names[0]}, "redact"), func(*terraform.State) error {
+						mu.Lock()
+						defer mu.Unlock()
+						if patches != 0 {
+							return fmt.Errorf("reordering with computed actions sent %d patches", patches)
+						}
+						return nil
+					}),
+				},
+				{
+					ConfigFile: config.StaticFile(fixture),
+					ConfigVariables: config.Variables{
+						"names":  config.ListVariable(config.StringVariable(names[1]), config.StringVariable(names[0])),
+						"action": json.RawMessage("null"),
 					},
 					PlanOnly: true,
 				},
