@@ -83,12 +83,6 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 	name := testRandomWithPrefix() + "-pro-cmk-aws"
 	const resourceName = "rediscloud_subscription.example"
 
-	configVars := config.Variables{
-		"team":  config.StringVariable(resourceTags.Team),
-		"owner": config.StringVariable(resourceTags.Owner),
-		"name":  config.StringVariable(name),
-	}
-
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck, envchecks.AWSProviderCheck),
 		CheckDestroy: testhelpers.CheckProSubscriptionDestroy,
@@ -98,8 +92,12 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 				// references the role ARN returned by the subscription.
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				ConfigFile:               config.StaticFile("./pro/testdata/cmk_aws_step1.tf"),
-				ConfigVariables:          configVars,
-				ExpectNonEmptyPlan:       true,
+				ConfigVariables: config.Variables{
+					"team":  config.StringVariable(resourceTags.Team),
+					"owner": config.StringVariable(resourceTags.Owner),
+					"name":  config.StringVariable(name),
+				},
+				ExpectNonEmptyPlan: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttrSet(resourceName, "customer_managed_key_aws_role_arn"),
@@ -116,7 +114,12 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 				// Step 2: subscription supplies the KMS key ARN and transitions to active.
 				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
 				ConfigFile:               config.StaticFile("./pro/testdata/cmk_aws_step2.tf"),
-				ConfigVariables:          configVars,
+				ConfigVariables: config.Variables{
+					"team":         config.StringVariable(resourceTags.Team),
+					"owner":        config.StringVariable(resourceTags.Owner),
+					"name":         config.StringVariable(name),
+					"grace_period": config.StringVariable("immediate"),
+				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectNonEmptyPlan(),
@@ -139,6 +142,23 @@ func TestAccResourceRedisCloudProSubscription_CMK_AWS(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "creation_plan.0.dataset_size_in_gb"),
 					resource.TestCheckResourceAttr(resourceName, "customer_managed_key_enabled", "true"),
 				),
+			},
+			{
+				// Step 3: change only the grace period, retaining the configured keys.
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ConfigFile:               config.StaticFile("./pro/testdata/cmk_aws_step2.tf"),
+				ConfigVariables: config.Variables{
+					"team":         config.StringVariable(resourceTags.Team),
+					"owner":        config.StringVariable(resourceTags.Owner),
+					"name":         config.StringVariable(name),
+					"grace_period": config.StringVariable("15-minutes"),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply:             []plancheck.PlanCheck{plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate)},
+					PostApplyPreRefresh:  []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+					PostApplyPostRefresh: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.TestCheckResourceAttr(resourceName, "customer_managed_key_deletion_grace_period", "15-minutes"),
 			},
 		},
 	})

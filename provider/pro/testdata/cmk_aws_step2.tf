@@ -1,3 +1,8 @@
+variable "grace_period" {
+  type    = string
+  default = "immediate"
+}
+
 variable "team" {
   type = string
 }
@@ -82,8 +87,7 @@ resource "rediscloud_subscription" "example" {
   memory_storage               = "ram"
   customer_managed_key_enabled = true
 
-  # Prevent automatic deletion when key permissions are removed during teardown.
-  customer_managed_key_deletion_grace_period = "alerts-only"
+  customer_managed_key_deletion_grace_period = var.grace_period
 
   cloud_provider {
     resource_tags = {
