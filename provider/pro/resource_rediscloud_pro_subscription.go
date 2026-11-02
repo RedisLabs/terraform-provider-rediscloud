@@ -1011,7 +1011,7 @@ func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.Reso
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
 
-	targetStatuses := []string{subscriptions.SubscriptionStatusActive, subscriptions.SubscriptionStatusDeleting, utils.SubscriptionStatusDeleted}
+	targetStatuses := []string{subscriptions.SubscriptionStatusActive, subscriptions.SubscriptionStatusDeleting, subscriptions.SubscriptionStatusDeleted}
 	pendingStatuses := []string{subscriptions.SubscriptionStatusPending, subscriptions.SubscriptionStatusEncryptionKeyPending}
 	status, err := utils.WaitForSubscriptionToBeStatus(ctx, subId, api, timeout, targetStatuses, pendingStatuses...)
 	if err != nil {
@@ -1034,7 +1034,7 @@ func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.Reso
 		}
 	}
 
-	if status != utils.SubscriptionStatusDeleted {
+	if status != subscriptions.SubscriptionStatusDeleted {
 		if err := utils.WaitForSubscriptionToBeDeleted(ctx, subId, api, timeout); err != nil {
 			return diag.FromErr(err)
 		}

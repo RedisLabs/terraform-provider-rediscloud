@@ -18,12 +18,8 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
-// SubscriptionStatusDeleted represents an absent subscription or an explicit deleted status.
-// TODO move and export via rediscloud-go-api
-const SubscriptionStatusDeleted = "deleted"
-
 func WaitForSubscriptionToBeDeleted(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
-	_, err := WaitForSubscriptionToBeStatus(ctx, id, api, timeout, []string{SubscriptionStatusDeleted}, subscriptions.SubscriptionStatusDeleting)
+	_, err := WaitForSubscriptionToBeStatus(ctx, id, api, timeout, []string{subscriptions.SubscriptionStatusDeleted}, subscriptions.SubscriptionStatusDeleting)
 	return err
 }
 
@@ -50,8 +46,8 @@ func WaitForSubscriptionToBeStatus(ctx context.Context, id int, api *client.ApiC
 			subscription, err := api.Client.Subscription.Get(ctx, id)
 			if err != nil {
 				var notFound *subscriptions.NotFound
-				if slices.Contains(targetStatuses, SubscriptionStatusDeleted) && errors.As(err, &notFound) {
-					return SubscriptionStatusDeleted, SubscriptionStatusDeleted, nil
+				if slices.Contains(targetStatuses, subscriptions.SubscriptionStatusDeleted) && errors.As(err, &notFound) {
+					return subscriptions.SubscriptionStatusDeleted, subscriptions.SubscriptionStatusDeleted, nil
 				}
 				return nil, "", err
 			}
