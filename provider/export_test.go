@@ -1,0 +1,3 @@
+package provider
+
+var WaitForEssentialsDatabaseToBeActive = waitForEssentialsDatabaseToBeActive

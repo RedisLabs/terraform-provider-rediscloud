@@ -826,6 +826,8 @@ func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api
 			databases.StatusProxyPolicyChangePending,
 			databases.StatusProxyPolicyChangeDraft,
 			databases.StatusDynamicEndpointsCreationPending,
+			databases.StatusActiveUpgradePending,
+			"bdb-update-pending", // Database update in progress; no rediscloud-go-api constant yet.
 		},
 		Target:       []string{databases.StatusActive},
 		Timeout:      timeout,

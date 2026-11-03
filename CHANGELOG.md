@@ -2,6 +2,10 @@
 
 ## 2.21.0 (unreleased)
 
+### Fixed
+
+- `rediscloud_essentials_database` now waits through the `active-upgrade-pending` and `bdb-update-pending` statuses, as `rediscloud_subscription_database` already does. Changing `redis_version` no longer fails with `unexpected state 'active-upgrade-pending', wanted target 'active'`.
+
 ### Changed
 
 - Raised the Go toolchain to 1.26.11 to pick up the fix for GO-2026-6859 in `net/http`.
