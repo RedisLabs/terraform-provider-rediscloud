@@ -15,7 +15,7 @@ import (
 )
 
 func TestAgentMemoryTimeoutUpdatesStayLocal(t *testing.T) {
-	for _, fixture := range []string{"store_timeouts.tf", "store_advanced.tf", "store_disabled_features.tf"} {
+	for _, fixture := range []string{"store_timeouts.tf", "store_advanced.tf", "store_disabled_features.tf", "store_computed_strategy_enabled.tf"} {
 		t.Run(fixture, func(t *testing.T) {
 			testAgentMemoryTimeoutUpdatesStayLocal(t, fixture)
 		})
@@ -37,6 +37,16 @@ func testAgentMemoryTimeoutUpdatesStayLocal(t *testing.T, fixture string) {
 				t.Error(err)
 				w.WriteHeader(http.StatusBadRequest)
 				return
+			}
+			if fixture == "store_computed_strategy_enabled.tf" {
+				memoryType := store["customMemoryTypes"].([]any)[0].(map[string]any)
+				strategy := memoryType["extractionStrategy"].(map[string]any)
+				if _, exists := strategy["enabled"]; exists {
+					t.Error("omitted strategy enabled must be left to the API")
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				strategy["enabled"] = true
 			}
 			creates++
 			_, _ = w.Write([]byte(`{"taskId":"fixture"}`))
@@ -90,6 +100,12 @@ func testAgentMemoryTimeoutUpdatesStayLocal(t *testing.T, fixture string) {
 	for _, duration := range []string{"5m", "7m", ""} {
 		variables := config.Variables{"name": config.StringVariable("local-timeouts")}
 		checks := []resource.TestCheckFunc{check}
+		if fixture == "store_computed_strategy_enabled.tf" {
+			checks = append(checks,
+				resource.TestCheckResourceAttr(address, "custom_memory_types.0.extraction_strategy.0.enabled", "true"),
+				resource.TestCheckResourceAttr(address, "custom_memory_types.0.extraction_strategy.0.prompt", "Extract preferences"),
+			)
+		}
 		if duration != "" {
 			variables["operation_timeout"] = config.StringVariable(duration)
 			checks = append(checks, resource.TestCheckResourceAttr(address, "timeouts.0.update", duration))
@@ -97,6 +113,9 @@ func testAgentMemoryTimeoutUpdatesStayLocal(t *testing.T, fixture string) {
 			checks = append(checks, resource.TestCheckNoResourceAttr(address, "timeouts.0.update"))
 		}
 		steps = append(steps, resource.TestStep{ConfigFile: config.StaticFile("testdata/" + fixture), ConfigVariables: variables, Check: resource.ComposeAggregateTestCheckFunc(checks...)})
+		if fixture == "store_computed_strategy_enabled.tf" {
+			steps = append(steps, resource.TestStep{ConfigFile: config.StaticFile("testdata/" + fixture), ConfigVariables: variables, PlanOnly: true})
+		}
 	}
 	steps = append(steps, resource.TestStep{ConfigFile: config.StaticFile("testdata/" + fixture), ConfigVariables: config.Variables{"name": config.StringVariable("local-timeouts")}, PlanOnly: true})
 	resource.UnitTest(t, resource.TestCase{ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(), Steps: steps})

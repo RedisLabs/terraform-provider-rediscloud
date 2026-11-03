@@ -96,7 +96,7 @@ func customMemoryTypeUpdatesFromPlan(ctx context.Context, plan, state CustomMemo
 			addTypes = append(addTypes, customMemoryTypeFromModel(ctx, planned, diags))
 			continue
 		}
-		if customExtractionStrategyEqual(planned.ExtractionStrategy, existing.ExtractionStrategy) {
+		if customExtractionStrategyEqual(ctx, planned.ExtractionStrategy, existing.ExtractionStrategy, diags) {
 			continue
 		}
 		strategy := customExtractionStrategyBlock(ctx, planned.ExtractionStrategy, diags)
@@ -183,14 +183,23 @@ func customMemoryFieldEqual(left, right AgentMemoryCustomFieldModel) bool {
 		left.Type.Equal(right.Type)
 }
 
-func customExtractionStrategyEqual(left, right CustomExtractionStrategyListValue) bool {
+func customExtractionStrategyEqual(ctx context.Context, left, right CustomExtractionStrategyListValue, diags *diag.Diagnostics) bool {
 	if left.IsUnknown() || right.IsUnknown() {
 		return false
 	}
-	if len(left.Elements()) == 0 && len(right.Elements()) == 0 {
-		return true
+	planned := customExtractionStrategyBlock(ctx, left, diags)
+	existing := customExtractionStrategyBlock(ctx, right, diags)
+	if diags.HasError() {
+		return false
 	}
-	return left.Equal(right)
+	if planned == nil || existing == nil {
+		return planned == nil && existing == nil
+	}
+	// An unconfigured computed flag may become unknown after a local timeout edit.
+	if planned.Enabled.IsUnknown() {
+		planned.Enabled = existing.Enabled
+	}
+	return planned.Enabled.Equal(existing.Enabled) && planned.Prompt.Equal(existing.Prompt)
 }
 
 func knownString(value types.String) (string, bool) {

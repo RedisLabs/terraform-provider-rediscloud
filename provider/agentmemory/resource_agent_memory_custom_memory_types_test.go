@@ -149,3 +149,53 @@ func TestOrderCustomTypeAndFieldEmptyNames(t *testing.T) {
 	ordered := orderCustomMemoryTypesLikeExisting(t.Context(), apiModels, existing, testAgentMemoryDiags(t))
 	require.Equal(t, existing, ordered)
 }
+
+func TestCustomMemoryTypeStrategyUpdatesPreserveComputedEnabled(t *testing.T) {
+	for _, test := range []struct {
+		name           string
+		previous       bool
+		plannedEnabled types.Bool
+		prompt         string
+		wantUpdate     bool
+	}{
+		{name: "computed true", previous: true, plannedEnabled: types.BoolUnknown(), prompt: "test"},
+		{name: "computed false", previous: false, plannedEnabled: types.BoolUnknown(), prompt: "test"},
+		{name: "unchanged explicit flag", previous: true, plannedEnabled: types.BoolValue(true), prompt: "test"},
+		{name: "explicit disable", previous: true, plannedEnabled: types.BoolValue(false), prompt: "test", wantUpdate: true},
+		{name: "explicit enable", previous: false, plannedEnabled: types.BoolValue(true), prompt: "test", wantUpdate: true},
+		{name: "prompt change with computed true", previous: true, plannedEnabled: types.BoolUnknown(), prompt: "new prompt", wantUpdate: true},
+		{name: "prompt change with computed false", previous: false, plannedEnabled: types.BoolUnknown(), prompt: "new prompt", wantUpdate: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			state := customMemoryTypeModelWithFields(t, nil)
+			state.ExtractionStrategy = mustCustomExtractionStrategyList(t, &AgentMemoryCustomExtractionStrategy{
+				Enabled: types.BoolValue(test.previous),
+				Prompt:  types.StringValue("test"),
+			})
+			plan := state
+			plan.ExtractionStrategy = mustCustomExtractionStrategyList(t, &AgentMemoryCustomExtractionStrategy{
+				Enabled: test.plannedEnabled,
+				Prompt:  types.StringValue(test.prompt),
+			})
+			added, updates := customMemoryTypeUpdatesFromPlan(t.Context(),
+				mustCustomMemoryTypeList(t, []AgentMemoryCustomMemoryTypeModel{plan}),
+				mustCustomMemoryTypeList(t, []AgentMemoryCustomMemoryTypeModel{state}),
+				testAgentMemoryDiags(t),
+			)
+			require.Empty(t, added)
+			if !test.wantUpdate {
+				require.Empty(t, updates)
+				return
+			}
+			require.Len(t, updates, 1)
+			require.NotNil(t, updates[0].Prompt)
+			require.Equal(t, test.prompt, *updates[0].Prompt)
+			if test.plannedEnabled.IsUnknown() {
+				require.Nil(t, updates[0].Enabled, "an unconfigured flag must not be sent in a prompt-only update")
+			} else {
+				require.NotNil(t, updates[0].Enabled)
+				require.Equal(t, test.plannedEnabled.ValueBool(), *updates[0].Enabled)
+			}
+		})
+	}
+}
