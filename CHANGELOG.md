@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.20.0 (3rd November 2026)
+## 2.20.0 (4th November 2026)
 
 ### Added
 
@@ -12,6 +12,7 @@
 
 - Raised the minimum Terraform version to 1.11.1 for Agent Memory write-only model credentials, including ephemeral sensitive inputs, and upgraded Terraform in the Nix development and CI environment from 1.5.7 to 1.16.7.
 - Upgraded `rediscloud-go-api` from 0.52.1 to 0.53.0 and updated indirect Go dependencies.
+- Errors returned when retrieving tasks now include the task ID.
 - Updated nixpkgs from `319e4ce` to `e62746b` for the Nix development and CI environment.
 - Applied client waiter delay and poll interval overrides consistently across resource state waiters for testing.
 - Added an aggregate `Status` check to main-branch CI that fails when a required job fails or is cancelled.
