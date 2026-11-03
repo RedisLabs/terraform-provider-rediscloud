@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.21.0 (Unreleased)
+
+### Fixed
+
+- `rediscloud_essentials_database` now waits through the `active-upgrade-pending` and `bdb-update-pending` statuses, as `rediscloud_subscription_database` already does. Changing `redis_version` no longer fails with `unexpected state 'active-upgrade-pending', wanted target 'active'`.
+
 ## 2.20.0 (4th November 2026)
 
 ### Added
