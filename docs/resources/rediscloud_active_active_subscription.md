@@ -60,7 +60,7 @@ The following arguments are supported:
 * `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. This value is __Optional__ for AWS/GCP Marketplace accounts, but __Required__ for all other account types
 * `public_endpoint_access` - (Optional) Allow public access to databases within this subscription. When set to `false`, database access is restricted to private IP ranges only. Default: `true`.
 * `cloud_provider` - (Optional) The cloud provider to use with the subscription, (either `AWS` or `GCP`). Default: ‘AWS’. **Modifying this attribute will force creation of a new resource.**
-* `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default. **Deprecated: This attribute is deprecated on the subscription level. Please specify `redis_version` on databases directly instead.**
+* `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default. **Deprecated: `redis_version` is deprecated and will be removed in the next major version of the provider. Use `redis_version` on the database instead.**
 * `creation_plan` - (Required) A creation plan object, documented below. Ignored after creation.
 * `maintenance_windows` - (Optional) The subscription's maintenance window specification, documented below.
 * `customer_managed_key_enabled` - (Optional) Whether to enable the CMK flow.
@@ -70,7 +70,7 @@ The following arguments are supported:
 
 The `creation_plan` block supports:
 
-* `memory_limit_in_gb` - (Optional -  **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favor of `dataset_size_in_gb` - not possible to import databases with this attribute set**
+* `memory_limit_in_gb` - (Optional -  **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead. **Deprecated: `memory_limit_in_gb` is deprecated and will be removed in the next major version of the provider. Use `dataset_size_in_gb` instead.**
 * `dataset_size_in_gb` - (Optional - **Required if `memory_limit_in_gb` is unset**) The maximum amount of data in the dataset for this specific database is in GB
 * `quantity` - (Required) The planned number of databases in the subscription.
 * `modules` - (Optional) A list of modules to be enabled on all deployments of this database. Either: `RedisJSON` or `RediSearch`. **Don't specify modules for DB versions 8 and above. All capabilities are bundled in the DB by default.**

@@ -26,6 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/deprecation"
 )
 
 var (
@@ -216,9 +217,10 @@ func (r *activeActiveDatabaseResource) Schema(ctx context.Context, _ resource.Sc
 				},
 			},
 			"memory_limit_in_gb": schema.Float64Attribute{
-				Description: "(Deprecated) Maximum memory usage for this specific database",
-				Optional:    true,
-				Computed:    true,
+				Description:        "(Deprecated) Maximum memory usage for this specific database",
+				Optional:           true,
+				Computed:           true,
+				DeprecationMessage: deprecation.Message("memory_limit_in_gb", "`dataset_size_in_gb`"),
 				PlanModifiers: []planmodifier.Float64{
 					float64planmodifier.UseStateForUnknown(),
 				},
@@ -263,9 +265,10 @@ func (r *activeActiveDatabaseResource) Schema(ctx context.Context, _ resource.Sc
 				Default:     booldefault.StaticBool(false),
 			},
 			"client_ssl_certificate": schema.StringAttribute{
-				Description: "SSL certificate to authenticate user connections.",
-				Optional:    true,
-				Sensitive:   true,
+				Description:        "SSL certificate to authenticate user connections.",
+				Optional:           true,
+				Sensitive:          true,
+				DeprecationMessage: deprecation.Message("client_ssl_certificate", "`client_tls_certificates`"),
 			},
 			"client_tls_certificates": schema.ListAttribute{
 				Description: "TLS certificates to authenticate user connections",

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/deprecation"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 
@@ -115,6 +116,7 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 							Type:          schema.TypeFloat,
 							Optional:      true,
 							ConflictsWith: []string{"creation_plan.0.dataset_size_in_gb"},
+							Deprecated:    deprecation.Message("memory_limit_in_gb", "`dataset_size_in_gb`"),
 						},
 						"dataset_size_in_gb": {
 							Description:   "Maximum amount of data in the dataset for this specific database in GB",
@@ -181,7 +183,7 @@ func resourceRedisCloudActiveActiveSubscription() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
-				Deprecated:  "This attribute is deprecated on Active-Active subscriptions. Please specify `redis_version` on databases directly instead.",
+				Deprecated:  deprecation.Message("redis_version", "`redis_version` on the database"),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if d.Id() == "" {
 						// Consider the property if the resource is about to be created.
