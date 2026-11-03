@@ -239,7 +239,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseWithEnabledTlsAn
 			{
 				ConfigVariables: tagVariables,
 				Config:          fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithEnableTlsAndCert, cloudAccountName, name, 1, password, invalidSslCertificate),
-				ExpectError:     regexp.MustCompile("Error: 400 BAD_REQUEST - DATABASE_INVALID_CERT: Database certificate is invalid"),
+				ExpectError:     regexp.MustCompile("400 BAD_REQUEST - DATABASE_INVALID_CERT: Database certificate is invalid"),
 			},
 		},
 	})
@@ -265,7 +265,7 @@ func TestAccResourceRedisCloudSubscriptionTls_createWithDatabaseAndDisabledTlsAn
 			{
 				ConfigVariables: tagVariables,
 				Config:          fmt.Sprintf(testAccResourceRedisCloudSubscriptionOneDbWithoutEnableTlsAndWithCert, cloudAccountName, name, 1, password, invalidSslCertificate),
-				ExpectError:     regexp.MustCompile("Error: 400 BAD_REQUEST - DATABASE_INVALID_CERT: Database certificate is invalid"),
+				ExpectError:     regexp.MustCompile("400 BAD_REQUEST - DATABASE_INVALID_CERT: Database certificate is invalid"),
 			},
 		},
 	})
