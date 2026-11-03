@@ -45,6 +45,9 @@ func WaitForSubscriptionToBeStatus(ctx context.Context, id int, api *client.ApiC
 
 			subscription, err := api.Client.Subscription.Get(ctx, id)
 			if err != nil {
+				// Once explicit or automatic deletion removes the subscription, polling returns
+				// NotFound. Treat that as success only when deleted is an accepted target;
+				// waiters for other statuses must still return the API error.
 				var notFound *subscriptions.NotFound
 				if slices.Contains(targetStatuses, subscriptions.SubscriptionStatusDeleted) && errors.As(err, &notFound) {
 					return subscriptions.SubscriptionStatusDeleted, subscriptions.SubscriptionStatusDeleted, nil

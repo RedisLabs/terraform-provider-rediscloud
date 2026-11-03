@@ -1011,6 +1011,11 @@ func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.Reso
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
 
+	// Terraform deletes database resources before their subscription, but SM/CAPI
+	// database cleanup is asynchronous and subscription deletion is rejected while
+	// databases remain. Wait for active before issuing DELETE.
+	// Revoking CMK access during teardown can start automatic subscription deletion;
+	// accept deleting/deleted too so we wait for or acknowledge that deletion.
 	targetStatuses := []string{subscriptions.SubscriptionStatusActive, subscriptions.SubscriptionStatusDeleting, subscriptions.SubscriptionStatusDeleted}
 	pendingStatuses := []string{subscriptions.SubscriptionStatusPending, subscriptions.SubscriptionStatusEncryptionKeyPending}
 	status, err := utils.WaitForSubscriptionToBeStatus(ctx, subId, api, timeout, targetStatuses, pendingStatuses...)
@@ -1019,8 +1024,10 @@ func resourceRedisCloudProSubscriptionDelete(ctx context.Context, d *schema.Reso
 	}
 
 	if status == subscriptions.SubscriptionStatusActive {
-		// The subscription can become active before its creation-plan databases are deleted.
-		// Recheck readiness after the delay, allowing automatic deletion in the meantime.
+		// CAPI can report active before creation-plan database cleanup has finished.
+		// Give that cleanup 30 seconds, then recheck readiness; deleting immediately
+		// can fail because the subscription is still in use. The second wait also
+		// catches automatic deletion that started after the first wait.
 		time.Sleep(api.WaitDelay(30 * time.Second)) //lintignore:R018
 		status, err = utils.WaitForSubscriptionToBeStatus(ctx, subId, api, timeout, targetStatuses, pendingStatuses...)
 		if err != nil {

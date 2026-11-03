@@ -33,6 +33,21 @@ func subscriptionSequence(states []string) testhelpers.HandlerFunc {
 	}
 }
 
+// subscriptionDelete records each DELETE and returns the configured response.
+// FakeAPI serialises calls to this handler; read calls with WithHandlersPaused.
+func subscriptionDelete(fake *testhelpers.FakeAPI, result string, calls *int) testhelpers.HandlerFunc {
+	return func(r *http.Request) (any, error) {
+		*calls += 1
+		switch result {
+		case "notfound":
+			return nil, testhelpers.NotFound()
+		case "failure":
+			return nil, testhelpers.StatusError{Code: http.StatusForbidden, Body: map[string]any{"description": "denied"}}
+		}
+		return fake.RegisterTask("subscriptionDelete", 123), nil
+	}
+}
+
 func TestSubscriptionDeletionTransitions(t *testing.T) {
 	cases := []struct {
 		name         string
@@ -62,34 +77,37 @@ func TestSubscriptionDeletionTransitions(t *testing.T) {
 		t.Run(resourceName, func(t *testing.T) {
 			for _, tc := range cases {
 				t.Run(tc.name, func(t *testing.T) {
+					// Set up the API responses.
 					fake := testhelpers.NewFakeAPI()
 					fake.Handle("GET /subscriptions/123", subscriptionSequence(tc.states))
+
 					deletes := 0
-					fake.Handle("DELETE /subscriptions/123", func(r *http.Request) (any, error) {
-						deletes++
-						if tc.deleteResult == "notfound" {
-							return nil, testhelpers.NotFound()
-						}
-						if tc.deleteResult == "failure" {
-							return nil, testhelpers.StatusError{Code: http.StatusForbidden, Body: map[string]any{"description": "denied"}}
-						}
-						return fake.RegisterTask("subscriptionDelete", 123), nil
-					})
+					fake.Handle("DELETE /subscriptions/123", subscriptionDelete(fake, tc.deleteResult, &deletes))
 					api := testhelpers.NewAPIClient(t, fake)
+
+					// Set up the Terraform state and timeout.
 					resource := provider.NewSdkProvider("test")().ResourcesMap[resourceName]
 					require.NotNil(t, resource)
+
 					data := schema.TestResourceDataRaw(t, resource.Schema, map[string]interface{}{})
 					data.SetId("123")
+
 					ctx, cancel := context.WithTimeout(context.Background(), 250*time.Millisecond)
 					defer cancel()
+
+					// Run the resource's delete operation.
 					diags := resource.DeleteContext(ctx, data, api)
+
+					// Check the error, Terraform state, and DELETE requests.
 					require.Equal(t, tc.wantError, diags.HasError(), "%v", diags)
 					if tc.wantError {
 						require.Equal(t, "123", data.Id())
 					} else {
 						require.Empty(t, data.Id())
 					}
-					fake.WithHandlersPaused(func() { require.Equal(t, tc.deletes, deletes) })
+					fake.WithHandlersPaused(func() {
+						require.Equal(t, tc.deletes, deletes)
+					})
 				})
 			}
 		})
