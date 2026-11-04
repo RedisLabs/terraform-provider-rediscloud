@@ -70,7 +70,7 @@ func resourceRedisCloudPrivateServiceConnectCreate(ctx context.Context, d *schem
 
 	d.SetId(buildPrivateServiceConnectId(subscriptionId, pscServiceId))
 
-	err = waitForPrivateServiceConnectServiceToBeActive(ctx, func() (result interface{}, state string, err error) {
+	err = waitForPrivateServiceConnectServiceToBeActive(ctx, api, func() (result interface{}, state string, err error) {
 		return refreshPrivateServiceConnectServiceStatus(ctx, subscriptionId, api)
 	}, timeout)
 	if err != nil {
@@ -192,7 +192,7 @@ func refreshPrivateServiceConnectServiceStatus(ctx context.Context, subscription
 	return redis.StringValue(pscService.Status), redis.StringValue(pscService.Status), nil
 }
 
-func waitForPrivateServiceConnectServiceToBeActive(ctx context.Context, refreshFunc func() (result interface{}, state string, err error), timeout time.Duration) error {
+func waitForPrivateServiceConnectServiceToBeActive(ctx context.Context, api *client.ApiClient, refreshFunc func() (result interface{}, state string, err error), timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending: []string{
 			psc.ServiceStatusCreateQueued,
@@ -200,8 +200,8 @@ func waitForPrivateServiceConnectServiceToBeActive(ctx context.Context, refreshF
 			psc.ServiceStatusCreatePending},
 		Target:       []string{psc.ServiceStatusActive},
 		Timeout:      timeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        api.WaitDelay(10 * time.Second),
+		PollInterval: api.WaitPollInterval(30 * time.Second),
 
 		Refresh: refreshFunc,
 	}

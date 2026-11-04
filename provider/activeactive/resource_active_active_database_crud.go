@@ -60,12 +60,34 @@ func (r *activeActiveDatabaseResource) createDatabase(ctx context.Context, plan 
 		return
 	}
 
+	overrides := map[string]OverrideRegionModel{}
+	if !plan.OverrideRegion.IsNull() && !plan.OverrideRegion.IsUnknown() {
+		var overrideRegions []OverrideRegionModel
+		diags := plan.OverrideRegion.ElementsAs(ctx, &overrideRegions, false)
+		diagnostics.Append(diags...)
+		if diagnostics.HasError() {
+			utils.SubscriptionMutex.Unlock(subId)
+			return
+		}
+		for _, region := range overrideRegions {
+			overrides[region.Name.ValueString()] = region
+		}
+	}
+
 	localThroughputs := make([]*databases.LocalThroughput, 0, len(regions.Regions))
 	for _, region := range regions.Regions {
+		name := *region.Region
+		readOps, writeOps := 1000, 1000
+		if override, ok := overrides[name]; ok &&
+			!override.LocalReadOperationsPerSecond.IsNull() && !override.LocalReadOperationsPerSecond.IsUnknown() &&
+			!override.LocalWriteOperationsPerSecond.IsNull() && !override.LocalWriteOperationsPerSecond.IsUnknown() {
+			readOps = int(override.LocalReadOperationsPerSecond.ValueInt64())
+			writeOps = int(override.LocalWriteOperationsPerSecond.ValueInt64())
+		}
 		localThroughputs = append(localThroughputs, &databases.LocalThroughput{
-			Region:                   redis.String(*region.Region),
-			WriteOperationsPerSecond: redis.Int(1000),
-			ReadOperationsPerSecond:  redis.Int(1000),
+			Region:                   redis.String(name),
+			ReadOperationsPerSecond:  redis.Int(readOps),
+			WriteOperationsPerSecond: redis.Int(writeOps),
 		})
 	}
 
@@ -681,6 +703,17 @@ func (r *activeActiveDatabaseResource) buildRegionsFromPlan(ctx context.Context,
 			regionProps.RemoteBackup = backupConfig
 		}
 
+		// Send throughput only when both attributes are set. An unrelated update
+		// must not overwrite throughput managed on the regions resource.
+		if !region.LocalReadOperationsPerSecond.IsNull() && !region.LocalReadOperationsPerSecond.IsUnknown() &&
+			!region.LocalWriteOperationsPerSecond.IsNull() && !region.LocalWriteOperationsPerSecond.IsUnknown() {
+			regionProps.LocalThroughputMeasurement = &databases.LocalThroughput{
+				Region:                   redis.String(region.Name.ValueString()),
+				ReadOperationsPerSecond:  redis.Int(int(region.LocalReadOperationsPerSecond.ValueInt64())),
+				WriteOperationsPerSecond: redis.Int(int(region.LocalWriteOperationsPerSecond.ValueInt64())),
+			}
+		}
+
 		regions = append(regions, regionProps)
 	}
 
@@ -701,6 +734,8 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 		"override_global_source_ips":          types.SetType{ElemType: types.StringType},
 		"override_global_data_persistence":    types.StringType,
 		"enable_default_user":                 types.BoolType,
+		"local_read_operations_per_second":    types.Int64Type,
+		"local_write_operations_per_second":   types.Int64Type,
 		"remote_backup":                       types.ListType{ElemType: types.ObjectType{AttrTypes: remoteBackupAttrTypes}},
 	}
 
@@ -833,6 +868,21 @@ func (r *activeActiveDatabaseResource) buildOverrideRegionFromAPI(ctx context.Co
 		backupList, diags := flattenBackupPlan(regionDb.Backup, stateStorageType)
 		allDiags.Append(diags...)
 		regionConfig["remote_backup"] = backupList
+
+		// Copy API throughput into state only when the user set both attributes.
+		// Otherwise leave them null so an upgrade does not plan a diff.
+		readOps := types.Int64Null()
+		writeOps := types.Int64Null()
+		if stateRegion != nil && !stateRegion.LocalReadOperationsPerSecond.IsNull() && !stateRegion.LocalWriteOperationsPerSecond.IsNull() {
+			if regionDb.ReadOperationsPerSecond != nil {
+				readOps = types.Int64Value(int64(*regionDb.ReadOperationsPerSecond))
+			}
+			if regionDb.WriteOperationsPerSecond != nil {
+				writeOps = types.Int64Value(int64(*regionDb.WriteOperationsPerSecond))
+			}
+		}
+		regionConfig["local_read_operations_per_second"] = readOps
+		regionConfig["local_write_operations_per_second"] = writeOps
 
 		regionObj, diags := types.ObjectValue(overrideRegionAttrTypes, regionConfig)
 		allDiags.Append(diags...)

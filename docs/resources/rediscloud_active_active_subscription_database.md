@@ -61,6 +61,8 @@ resource "rediscloud_active_active_subscription_database" "database-resource" {
       name = "us-east-1"
       override_global_data_persistence = "none"
       override_global_password = "region-specific-password"
+      local_read_operations_per_second = 2000
+      local_write_operations_per_second = 1000
       override_global_alert {
         name = "dataset-size"
         value = 60
@@ -120,6 +122,8 @@ The `override_region` block supports:
 * `override_global_data_persistence` - (Optional) Regional instance of an Active-Active database data persistence rate (in persistent storage)
 * `remote_backup` - (Optional) Specifies the backup options for the database in this region, documented below
 * `enable_default_user` - (Optional) Whether the default user should be enabled for this specific region. If not set, inherits from `global_enable_default_user`. Only set this if you need a different value for this region than the global setting
+* `local_read_operations_per_second` - (Optional) Local read operations per second for this region, the same value as **Local read ops/sec** in the Redis Cloud console. When unset, the region is created at 1000. Must be set together with `local_write_operations_per_second`. Do not also set throughput for this database on `rediscloud_active_active_subscription_regions`
+* `local_write_operations_per_second` - (Optional) Local write operations per second for this region, the same value as **Local write ops/sec** in the Redis Cloud console. When unset, the region is created at 1000. Must be set together with `local_read_operations_per_second`. Do not also set throughput for this database on `rediscloud_active_active_subscription_regions`
 
 The `override_global_alert` block supports:
 

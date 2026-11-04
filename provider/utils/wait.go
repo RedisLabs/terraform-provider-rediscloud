@@ -2,8 +2,10 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"slices"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
@@ -16,30 +18,52 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
+func WaitForSubscriptionToBeDeleted(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
+	_, err := WaitForSubscriptionToBeStatus(ctx, id, api, timeout, []string{subscriptions.SubscriptionStatusDeleted}, subscriptions.SubscriptionStatusDeleting)
+	return err
+}
+
 func WaitForSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
+	_, err := WaitForSubscriptionToBeStatus(ctx, id, api, timeout, []string{subscriptions.SubscriptionStatusActive})
+	return err
+}
+
+func WaitForSubscriptionToBeStatus(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration, targetStatuses []string, pendingStatuses ...string) (string, error) {
+	if len(pendingStatuses) == 0 {
+		pendingStatuses = []string{subscriptions.SubscriptionStatusPending}
+	}
+
 	wait := &retry.StateChangeConf{
-		Pending:      []string{subscriptions.SubscriptionStatusPending},
-		Target:       []string{subscriptions.SubscriptionStatusActive},
+		Pending:      pendingStatuses,
+		Target:       targetStatuses,
 		Timeout:      timeout,
 		Delay:        api.WaitDelay(10 * time.Second),
 		PollInterval: api.WaitPollInterval(30 * time.Second),
 
 		Refresh: func() (result interface{}, state string, err error) {
-			log.Printf("[DEBUG] Waiting for subscription %d to be %s", id, subscriptions.SubscriptionStatusActive)
+			log.Printf("[DEBUG] Waiting for subscription %d to reach one of %v", id, targetStatuses)
 
 			subscription, err := api.Client.Subscription.Get(ctx, id)
 			if err != nil {
+				// Once explicit or automatic deletion removes the subscription, polling returns
+				// NotFound. Treat that as success only when deleted is an accepted target;
+				// waiters for other statuses must still return the API error.
+				var notFound *subscriptions.NotFound
+				if slices.Contains(targetStatuses, subscriptions.SubscriptionStatusDeleted) && errors.As(err, &notFound) {
+					return subscriptions.SubscriptionStatusDeleted, subscriptions.SubscriptionStatusDeleted, nil
+				}
 				return nil, "", err
 			}
 
 			return redis.StringValue(subscription.Status), redis.StringValue(subscription.Status), nil
 		},
 	}
-	if _, err := wait.WaitForStateContext(ctx); err != nil {
-		return err
+	result, err := wait.WaitForStateContext(ctx)
+	if err != nil {
+		return "", err
 	}
 
-	return nil
+	return result.(string), nil
 }
 
 // WaitForSubscriptionPublicEndpointAccess waits for the subscription's public_endpoint_access
@@ -49,8 +73,8 @@ func WaitForSubscriptionPublicEndpointAccess(ctx context.Context, id int, api *c
 		Pending:      []string{"waiting"},
 		Target:       []string{"matched"},
 		Timeout:      timeout,
-		Delay:        2 * time.Second,
-		PollInterval: 5 * time.Second,
+		Delay:        api.WaitDelay(2 * time.Second),
+		PollInterval: api.WaitPollInterval(5 * time.Second),
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for subscription %d public_endpoint_access to be %t", id, expected)
@@ -122,8 +146,8 @@ func WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx context.Context,
 		Pending:      []string{"provisioning"},
 		Target:       []string{"available"},
 		Timeout:      timeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        api.WaitDelay(10 * time.Second),
+		PollInterval: api.WaitPollInterval(30 * time.Second),
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for Active-Active Transit Gateway resource to be available for subscription %d, region %d", subId, regionId)
@@ -193,8 +217,8 @@ func WaitForTransitGatewayAttachmentToBeAvailable(
 		Pending:      transitGatewayAttachmentPendingStates,
 		Target:       []string{TransitGatewayAttachmentStatusAvailable},
 		Timeout:      timeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        api.WaitDelay(10 * time.Second),
+		PollInterval: api.WaitPollInterval(30 * time.Second),
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for Transit Gateway attachment to be available for subscription %d, tgw %d", subId, tgwId)
@@ -257,8 +281,8 @@ func WaitForActiveActiveTransitGatewayAttachmentToBeAvailable(
 		Pending:      transitGatewayAttachmentPendingStates,
 		Target:       []string{TransitGatewayAttachmentStatusAvailable},
 		Timeout:      timeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        api.WaitDelay(10 * time.Second),
+		PollInterval: api.WaitPollInterval(30 * time.Second),
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for Active-Active Transit Gateway attachment to be available for subscription %d, region %d, tgw %d", subId, regionId, tgwId)
@@ -311,8 +335,8 @@ func WaitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, ap
 		Pending:      []string{subscriptions.SubscriptionStatusPending},
 		Target:       []string{subscriptions.SubscriptionStatusEncryptionKeyPending, subscriptions.SubscriptionStatusActive},
 		Timeout:      timeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        api.WaitDelay(10 * time.Second),
+		PollInterval: api.WaitPollInterval(30 * time.Second),
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for subscription %d to be %s", id, subscriptions.SubscriptionStatusEncryptionKeyPending)

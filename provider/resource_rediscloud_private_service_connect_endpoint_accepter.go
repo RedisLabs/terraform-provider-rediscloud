@@ -121,7 +121,7 @@ func resourceRedisCloudPrivateServiceConnectEndpointAccepterApply(ctx context.Co
 	}
 
 	if redis.StringValue(endpoint.Status) == psc.EndpointStatusInitialized || redis.StringValue(endpoint.Status) == psc.EndpointStatusProcessing {
-		err = waitForPrivateServiceConnectServiceEndpointToBePending(ctx, refreshFunc, timeout)
+		err = waitForPrivateServiceConnectServiceEndpointToBePending(ctx, api, refreshFunc, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -137,12 +137,12 @@ func resourceRedisCloudPrivateServiceConnectEndpointAccepterApply(ctx context.Co
 	}
 
 	if action == psc.EndpointActionAccept {
-		err = waitForPrivateServiceConnectServiceEndpointToBeActive(ctx, refreshFunc, timeout)
+		err = waitForPrivateServiceConnectServiceEndpointToBeActive(ctx, api, refreshFunc, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
 	} else {
-		err = waitForPrivateServiceConnectServiceEndpointToBeRejected(ctx, refreshFunc, timeout)
+		err = waitForPrivateServiceConnectServiceEndpointToBeRejected(ctx, api, refreshFunc, timeout)
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -265,41 +265,41 @@ func refreshPrivateServiceConnectServiceEndpointStatus(ctx context.Context, subs
 	return redis.StringValue(endpoint.Status), redis.StringValue(endpoint.Status), nil
 }
 
-func waitForPrivateServiceConnectServiceEndpointToBePending(ctx context.Context, refreshFunc func(targetStatus string) (result interface{}, state string, err error), timeout time.Duration) error {
+func waitForPrivateServiceConnectServiceEndpointToBePending(ctx context.Context, api *client.ApiClient, refreshFunc func(targetStatus string) (result interface{}, state string, err error), timeout time.Duration) error {
 	targetStatus := psc.EndpointStatusPending
-	return waitForPrivateServiceConnectServiceEndpointToBeInStatus(ctx, func() (result interface{}, state string, err error) {
+	return waitForPrivateServiceConnectServiceEndpointToBeInStatus(ctx, api, func() (result interface{}, state string, err error) {
 		return refreshFunc(targetStatus)
 	}, targetStatus, []string{
 		psc.EndpointStatusInitialized,
 		psc.EndpointStatusProcessing}, timeout)
 }
 
-func waitForPrivateServiceConnectServiceEndpointToBeActive(ctx context.Context, refreshFunc func(targetStatus string) (result interface{}, state string, err error), timeout time.Duration) error {
+func waitForPrivateServiceConnectServiceEndpointToBeActive(ctx context.Context, api *client.ApiClient, refreshFunc func(targetStatus string) (result interface{}, state string, err error), timeout time.Duration) error {
 	targetStatus := psc.EndpointStatusActive
-	return waitForPrivateServiceConnectServiceEndpointToBeInStatus(ctx, func() (result interface{}, state string, err error) {
+	return waitForPrivateServiceConnectServiceEndpointToBeInStatus(ctx, api, func() (result interface{}, state string, err error) {
 		return refreshFunc(targetStatus)
 	}, targetStatus, []string{
 		psc.EndpointStatusPending,
 		psc.EndpointStatusAcceptPending}, timeout)
 }
 
-func waitForPrivateServiceConnectServiceEndpointToBeRejected(ctx context.Context, refreshFunc func(targetStatus string) (result interface{}, state string, err error), timeout time.Duration) error {
+func waitForPrivateServiceConnectServiceEndpointToBeRejected(ctx context.Context, api *client.ApiClient, refreshFunc func(targetStatus string) (result interface{}, state string, err error), timeout time.Duration) error {
 	targetStatus := psc.EndpointStatusRejected
-	return waitForPrivateServiceConnectServiceEndpointToBeInStatus(ctx, func() (result interface{}, state string, err error) {
+	return waitForPrivateServiceConnectServiceEndpointToBeInStatus(ctx, api, func() (result interface{}, state string, err error) {
 		return refreshFunc(targetStatus)
 	}, targetStatus, []string{
 		psc.EndpointStatusPending,
 		psc.EndpointStatusRejectPending}, timeout)
 }
 
-func waitForPrivateServiceConnectServiceEndpointToBeInStatus(ctx context.Context,
+func waitForPrivateServiceConnectServiceEndpointToBeInStatus(ctx context.Context, api *client.ApiClient,
 	refreshFunc func() (result interface{}, state string, err error), status string, pendingStatus []string, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Pending:      pendingStatus,
 		Target:       []string{status},
 		Timeout:      timeout,
-		Delay:        10 * time.Second,
-		PollInterval: 30 * time.Second,
+		Delay:        api.WaitDelay(10 * time.Second),
+		PollInterval: api.WaitPollInterval(30 * time.Second),
 
 		Refresh: refreshFunc,
 	}

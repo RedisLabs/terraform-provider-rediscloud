@@ -285,7 +285,7 @@ func resourceRedisCloudActiveActivePrivateServiceConnectEndpointDelete(ctx conte
 
 	// Endpoints will be automatically removed once related GCP resources are removed. So we will wait for this
 	// to happen, but we can't check the GCP resources from this provider
-	err = waitForPrivateServiceConnectServiceEndpointDisappear(ctx, func() (result interface{}, state string, err error) {
+	err = waitForPrivateServiceConnectServiceEndpointDisappear(ctx, api, func() (result interface{}, state string, err error) {
 		return refreshPrivateServiceConnectServiceActiveActiveEndpointDisappear(ctx, resId.subscriptionId, resId.regionId, resId.pscServiceId, resId.endpointId, api)
 	}, d.Timeout(schema.TimeoutDelete))
 	if err != nil {

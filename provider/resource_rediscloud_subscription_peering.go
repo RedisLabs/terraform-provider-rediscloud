@@ -385,7 +385,8 @@ func findVpcPeering(id int, peerings []*subscriptions.VPCPeering) *subscriptions
 
 func waitForPeeringToBeInitiated(ctx context.Context, subId, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
-		Delay: 10 * time.Second,
+		PollInterval: api.WaitPollInterval(0),
+		Delay:        api.WaitDelay(10 * time.Second),
 		Pending: []string{
 			subscriptions.VPCPeeringStatusInitiatingRequest,
 		},

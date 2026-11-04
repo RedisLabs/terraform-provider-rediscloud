@@ -77,7 +77,7 @@ func resourceRedisCloudActiveActivePrivateServiceConnectCreate(ctx context.Conte
 
 	d.SetId(buildPrivateServiceConnectActiveActiveId(subscriptionId, regionId, pscServiceId))
 
-	err = waitForPrivateServiceConnectServiceToBeActive(ctx, func() (result interface{}, state string, err error) {
+	err = waitForPrivateServiceConnectServiceToBeActive(ctx, api, func() (result interface{}, state string, err error) {
 		return refreshPrivateServiceConnectServiceActiveActiveStatus(ctx, subscriptionId, regionId, api)
 	}, timeout)
 	if err != nil {

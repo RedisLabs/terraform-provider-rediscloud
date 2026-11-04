@@ -15,19 +15,19 @@
       terraformPlatforms = {
         x86_64-linux = {
           arch = "linux_amd64";
-          sha256 = "c0ed7bc32ee52ae255af9982c8c88a7a4c610485cf1d55feeb037eab75fa082c";
+          sha256 = "5454efcf7fc87f0c2113111b9a5c7182f0ca1c6f0f23a1e110a50770a8fe473b";
         };
         aarch64-linux = {
           arch = "linux_arm64";
-          sha256 = "f4b4ad7c6b6088960a667e34495cae490fb072947a9ff266bf5929f5333565e4";
+          sha256 = "2d6a3f1098de94f1672aaa4e6873ef91ade9eac38851d3a403e2009193208de4";
         };
         x86_64-darwin = {
           arch = "darwin_amd64";
-          sha256 = "b310ec0e626e9799000cfc8e30247cd827cf7f8030c8e0400257c7f111e93537";
+          sha256 = "d17d1053bcbde650a8a919b7218ef2886eac76c474306e9ecd8bd64427408741";
         };
         aarch64-darwin = {
           arch = "darwin_arm64";
-          sha256 = "db7c33eb1a446b73a443e2c55b532845f7b70cd56100bec4c96f15cfab5f50cb";
+          sha256 = "81e98d9186e0cd1bc88caeb2403453fdd4bdeedd574ca4dbe8fb6a2880c9c51a";
         };
       };
 
@@ -41,7 +41,7 @@
 
           terraform = pkgs.stdenv.mkDerivation rec {
             pname = "terraform";
-            version = "1.5.7";
+            version = "1.16.7";
             src = pkgs.fetchurl {
               url = "https://releases.hashicorp.com/terraform/${version}/terraform_${version}_${
                 terraformPlatforms.${system}.arch

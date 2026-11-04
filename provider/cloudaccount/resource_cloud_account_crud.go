@@ -239,7 +239,8 @@ func (r *cloudAccountResource) readCloudAccountIntoModel(ctx context.Context, id
 func waitForCloudAccountToBeActive(ctx context.Context, id int, c *client.ApiClient, timeout time.Duration) (types.String, error) {
 	lastStatus := types.StringNull()
 	wait := &retry.StateChangeConf{
-		Delay: 10 * time.Second,
+		PollInterval: c.WaitPollInterval(0),
+		Delay:        c.WaitDelay(10 * time.Second),
 		Pending: []string{
 			cloud_accounts.StatusDraft,
 			cloud_accounts.StatusChangeDraft,
@@ -271,10 +272,11 @@ func waitForCloudAccountToBeDeleted(ctx context.Context, id int, c *client.ApiCl
 	deleteCompleteState := cloud_accounts.StatusDeleted
 
 	wait := &retry.StateChangeConf{
-		Delay:   10 * time.Second,
-		Pending: []string{deletePendingState},
-		Target:  []string{deleteCompleteState},
-		Timeout: timeout,
+		PollInterval: c.WaitPollInterval(0),
+		Delay:        c.WaitDelay(10 * time.Second),
+		Pending:      []string{deletePendingState},
+		Target:       []string{deleteCompleteState},
+		Timeout:      timeout,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for cloud account %d to be deleted", id)

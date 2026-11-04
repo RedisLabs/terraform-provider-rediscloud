@@ -1,6 +1,29 @@
 # Changelog
 
-## 2.19.3 (Unreleased)
+## 2.20.0 (4th November 2026)
+
+### Added
+
+- `rediscloud_active_active_subscription_database` accepts optional `local_read_operations_per_second` and `local_write_operations_per_second` on `override_region`. Each Active-Active region can set local throughput when the database is created and change it in place. Omitting the attributes keeps the 1000 read and 1000 write default. Configure local throughput here or in `rediscloud_active_active_subscription_regions`, as the last apply wins.
+- Added the `rediscloud_agent_memory` resource to manage an Agent Memory service backed by an existing Redis Cloud database, including memory TTLs, extraction settings, summarization, custom memory types, and long-term memory exclusions. Supports customer-managed LLM and embedding models with write-only credentials and in-place credential rotation, import, and configurable operation timeouts.
+- Added the `rediscloud_agent_memory_api_key` resource to manage named Agent Memory data-plane API keys, with sensitive generated secrets, import, and configurable operation timeouts.
+
+### Changed
+
+- Raised the minimum Terraform version to 1.11.1 for Agent Memory write-only model credentials, including ephemeral sensitive inputs, and upgraded Terraform in the Nix development and CI environment from 1.5.7 to 1.16.7.
+- Upgraded `rediscloud-go-api` from 0.52.1 to 0.53.0 and updated indirect Go dependencies.
+- Errors returned when retrieving tasks now include the task ID.
+- Updated nixpkgs from `319e4ce` to `e62746b` for the Nix development and CI environment.
+- Applied client waiter delay and poll interval overrides consistently across resource state waiters for testing.
+- Added an aggregate `Status` check to main-branch CI that fails when a required job fails or is cancelled.
+- Expanded CI acceptance coverage for Active-Active local throughput and Agent Memory, added Agent Memory cleanup to the shared test sweeper, and added unit and acceptance coverage for CMK deletion grace period updates and subscription deletion.
+
+### Fixed
+
+- `rediscloud_subscription` and `rediscloud_active_active_subscription` now apply `customer_managed_key_deletion_grace_period` changes after CMK activation without resending customer-managed keys.
+- `rediscloud_subscription` and `rediscloud_active_active_subscription` deletion now handles pending database cleanup and automatic CMK subscription deletion, including `encryption_key_pending`, `deleting`, and already-deleted subscriptions. Resources remain in Terraform state until deletion completes.
+
+## 2.19.3 (28th October 2026)
 
 ### Changed
 

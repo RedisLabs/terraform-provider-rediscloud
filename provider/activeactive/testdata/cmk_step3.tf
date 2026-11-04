@@ -51,10 +51,7 @@ resource "rediscloud_active_active_subscription" "example" {
   name                         = var.name
   payment_method_id            = data.rediscloud_payment_method.card.id
   customer_managed_key_enabled = true
-
-  # Prevent automatic deletion when key permissions are removed during teardown.
-  customer_managed_key_deletion_grace_period = "alerts-only"
-  cloud_provider                             = "GCP"
+  cloud_provider               = "GCP"
 
   customer_managed_key {
     resource_name = google_kms_crypto_key.cmk.id

@@ -322,10 +322,11 @@ func flattenDatabases(databases []*roles.GetDatabaseInRuleInRoleResponse) []map[
 
 func waitForAclRoleToBeActive(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
-		Delay:   5 * time.Second,
-		Pending: []string{roles.StatusPending},
-		Target:  []string{roles.StatusActive},
-		Timeout: timeout,
+		PollInterval: api.WaitPollInterval(0),
+		Delay:        api.WaitDelay(5 * time.Second),
+		Pending:      []string{roles.StatusPending},
+		Target:       []string{roles.StatusActive},
+		Timeout:      timeout,
 
 		Refresh: func() (result interface{}, state string, err error) {
 			log.Printf("[DEBUG] Waiting for role %d to be active", id)
