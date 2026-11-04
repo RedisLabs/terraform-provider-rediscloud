@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.21.0 (unreleased)
+
+### Changed
+
+- Migrated `rediscloud_acl_role` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+
 ## 2.20.0 (4th November 2026)
 
 ### Added
