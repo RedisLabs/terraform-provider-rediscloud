@@ -90,6 +90,14 @@ The `principal` block supports:
 * `principal_type` - (Required) The principal type. Can be one of: `aws_account`, `organization`, `organization_unit`, `iam_role`, `iam_user`, `service_principal`.
 * `principal_alias` - The friendly name to refer to the principal.
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 30 mins) Used when creating the PrivateLink and waiting for its principals
+* `read` - (Defaults to 10 mins) Used when reading the PrivateLink
+* `update` - (Defaults to 30 mins) Used when changing the PrivateLink principals and waiting for them
+* `delete` - (Defaults to 10 mins) Used when destroying the PrivateLink
 
 ## Attribute Reference
 
