@@ -20,6 +20,7 @@
 - Migrated `rediscloud_active_active_subscription_peering` resource from Terraform SDK v2 to the Terraform Plugin Framework. Existing state is read without changes. `id` and `provider_name` are now reported as Computed at the protocol level; no configuration change is needed. Changing `gcp_project_id` or `gcp_network_name` now fails at plan time instead of apply time.
 - Migrated `rediscloud_private_link_endpoint_script` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 - Migrated `rediscloud_active_active_private_link_endpoint_script` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+- Migrated `rediscloud_private_link` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 
 ## 2.20.0 (4th November 2026)
 

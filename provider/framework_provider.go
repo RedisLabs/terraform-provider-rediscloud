@@ -209,6 +209,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 		pro.NewProSubscriptionDataSource,
 		peering.NewSubscriptionPeeringsDataSource,
 		privatelink.NewEndpointScriptDataSource,
+		privatelink.NewPrivateLinkDataSource,
 		privatelink.NewActiveActiveEndpointScriptDataSource,
 	}
 }
