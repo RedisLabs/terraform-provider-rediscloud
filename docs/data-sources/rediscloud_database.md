@@ -40,17 +40,21 @@ data "rediscloud_database" "example" {
 
 ## Attributes Reference
 
+* `id` - The identifier of the database, in the format `<subscription_id>/<db_id>`.
 * `db_id` - The ID of the database
 * `name` - The name of the database
 * `protocol` - The protocol of the database.
+* `region` - The region of the database.
 * `memory_limit_in_gb` - The maximum memory usage for the database.
 * `dataset_size_in_gb` - Maximum amount of data in the dataset for this specific database in GB.
 * `support_oss_cluster_api` - Supports the Redis open-source (OSS) Cluster API.
 * `redis_version` - The Redis version of the database.
+* `query_performance_factor` - The query performance factor of the database.
 * `resp_version` - Either `resp2` or `resp3`. Database's RESP version.
 * `replica_of` - The set of Redis database URIs, in the format `redis://user:password@host:port`, that this
   database will be a replica of.
 * `alert` - Set of alerts to enable on the database, documented below.
+* `module` - Set of Redis modules enabled on the database, each with a `name`.
 * `data_persistence` - The rate of database data persistence (in persistent storage).
 * `data_eviction` - The data items eviction policy.
 * `password` - The password used to access the database - not present on `memcached` protocol databases.
@@ -63,7 +67,6 @@ data "rediscloud_database" "example" {
   hashing policy.
 * `public_endpoint` - Public endpoint to access the database
 * `private_endpoint` - Private endpoint to access the database
-* `enable_tls` - Enable TLS for database, default is `false`
 * `enable_default_user` - When `true` enables connecting to the database with the default user. Default `true`.
 * `auto_minor_version_upgrade` - Automatically upgrades the database to newer minor versions within the same major release. Applies to version 8.4 and above.
 * `source_ips` - Set of CIDR addresses to allow access to the database.
