@@ -153,3 +153,127 @@ func waitForInvitations(
 
 	return invitations, diags
 }
+
+// TransitGatewayAttachmentFilter selects Transit Gateway attachments returned by the API.
+type TransitGatewayAttachmentFilter func(tgwa *attachments.TransitGatewayAttachment) bool
+
+// FilterTransitGatewayAttachments returns the attachments in the task that satisfy every filter.
+func FilterTransitGatewayAttachments(getAttachmentsTask *attachments.GetAttachmentsTask, filters []TransitGatewayAttachmentFilter) []*attachments.TransitGatewayAttachment {
+	var filtered []*attachments.TransitGatewayAttachment
+
+	if getAttachmentsTask == nil || getAttachmentsTask.Response == nil || getAttachmentsTask.Response.Resource == nil {
+		return filtered
+	}
+
+	for _, tgwa := range getAttachmentsTask.Response.Resource.TransitGatewayAttachment {
+		if transitGatewayAttachmentMatches(tgwa, filters) {
+			filtered = append(filtered, tgwa)
+		}
+	}
+	return filtered
+}
+
+func transitGatewayAttachmentMatches(tgwa *attachments.TransitGatewayAttachment, filters []TransitGatewayAttachmentFilter) bool {
+	for _, filter := range filters {
+		if !filter(tgwa) {
+			return false
+		}
+	}
+	return true
+}
+
+// CidrsFromAPI maps attachment CIDRs to a known list of addresses, keeping the API order.
+func CidrsFromAPI(ctx context.Context, cidrs []*attachments.Cidr) (types.List, diag.Diagnostics) {
+	addresses := make([]string, 0, len(cidrs))
+	for _, cidr := range cidrs {
+		addresses = append(addresses, redis.StringValue(cidr.CidrAddress))
+	}
+	return types.ListValueFrom(ctx, types.StringType, addresses)
+}
+
+// transitGatewayDataSourceFilters mirrors the SDKv2 GetOk semantics, where zero values do not filter.
+func transitGatewayDataSourceFilters(tgwId types.Int64, awsTgwUid types.String) []TransitGatewayAttachmentFilter {
+	var filters []TransitGatewayAttachmentFilter
+
+	if v := tgwId.ValueInt64(); v != 0 {
+		filters = append(filters, func(tgwa *attachments.TransitGatewayAttachment) bool {
+			return int64(redis.IntValue(tgwa.Id)) == v
+		})
+	}
+
+	if v := awsTgwUid.ValueString(); v != "" {
+		filters = append(filters, func(tgwa *attachments.TransitGatewayAttachment) bool {
+			return redis.StringValue(tgwa.AwsTgwUid) == v
+		})
+	}
+
+	return filters
+}
+
+// waitForMatchingTransitGateways polls fetch until at least one attachment satisfies the filters or the timeout expires.
+func waitForMatchingTransitGateways(
+	ctx context.Context,
+	api *client.ApiClient,
+	timeout time.Duration,
+	label string,
+	location string,
+	fetch func(context.Context) (*attachments.GetAttachmentsTask, error),
+	filters []TransitGatewayAttachmentFilter,
+) ([]*attachments.TransitGatewayAttachment, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	wait := &retry.StateChangeConf{
+		Pending:      []string{"waiting"},
+		Target:       []string{"found"},
+		Timeout:      timeout,
+		Delay:        api.WaitDelay(5 * time.Second),
+		PollInterval: api.WaitPollInterval(10 * time.Second),
+
+		Refresh: func() (result interface{}, state string, err error) {
+			log.Printf("[DEBUG] Waiting for %s to appear for %s", label, location)
+
+			tgwTask, err := fetch(ctx)
+			if err != nil {
+				return nil, "", err
+			}
+
+			if tgwTask == nil || tgwTask.Response == nil || tgwTask.Response.Resource == nil {
+				return nil, "waiting", nil
+			}
+
+			filtered := FilterTransitGatewayAttachments(tgwTask, filters)
+			if len(filtered) == 0 {
+				return nil, "waiting", nil
+			}
+
+			return filtered, "found", nil
+		},
+	}
+
+	result, err := wait.WaitForStateContext(ctx)
+	if err != nil {
+		diags.AddError("Unable to Read Transit Gateway", fmt.Sprintf("Timeout waiting for %s to appear for %s: %s", label, location, err))
+		return nil, diags
+	}
+
+	filtered, ok := result.([]*attachments.TransitGatewayAttachment)
+	if !ok {
+		diags.AddError("Unable to Read Transit Gateway", fmt.Sprintf("Internal error: unexpected result type from wait operation for %s", location))
+		return nil, diags
+	}
+
+	return filtered, diags
+}
+
+// singleTransitGateway reports the SDKv2 errors for empty or ambiguous data source queries.
+func singleTransitGateway(filtered []*attachments.TransitGatewayAttachment) (*attachments.TransitGatewayAttachment, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if len(filtered) == 0 {
+		diags.AddError("No Transit Gateway Found", "Your query returned no results. Please change your search criteria and try again.")
+		return nil, diags
+	}
+	if len(filtered) > 1 {
+		diags.AddError("Multiple Transit Gateways Found", "Your query returned more than one result. Please change try a more specific search criteria and try again.")
+		return nil, diags
+	}
+	return filtered[0], diags
+}

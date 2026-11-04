@@ -71,8 +71,8 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				"rediscloud_active_active_subscription_database":             dataSourceRedisCloudActiveActiveDatabase(),
 				"rediscloud_active_active_private_service_connect":           dataSourceActiveActivePrivateServiceConnect(),
 				"rediscloud_active_active_private_service_connect_endpoints": dataSourceActiveActivePrivateServiceConnectEndpoints(),
-				"rediscloud_transit_gateway":                                 dataSourceTransitGateway(),
-				"rediscloud_active_active_transit_gateway":                   dataSourceActiveActiveTransitGateway(),
+				// Note: rediscloud_transit_gateway is served by the Plugin Framework provider
+				"rediscloud_active_active_transit_gateway": dataSourceActiveActiveTransitGateway(),
 				// Note: rediscloud_transit_gateway_invitations is served by the Plugin Framework provider
 				// Note: rediscloud_active_active_transit_gateway_invitations is served by the Plugin Framework provider
 				"rediscloud_acl_role": dataSourceRedisCloudAclRole(),
