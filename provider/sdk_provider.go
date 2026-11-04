@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/privatelink"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/transitgateway"
 
@@ -90,7 +89,7 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				"rediscloud_private_service_connect_endpoint":          resourceRedisCloudPrivateServiceConnectEndpoint(),
 				"rediscloud_private_service_connect_endpoint_accepter": resourceRedisCloudPrivateServiceConnectEndpointAccepter(),
 				// Note: rediscloud_private_link is served by the Plugin Framework provider
-				"rediscloud_active_active_private_link": privatelink.ResourceRedisCloudActiveActivePrivateLink(),
+				// Note: rediscloud_active_active_private_link is served by the Plugin Framework provider
 
 				"rediscloud_active_active_subscription": resourceRedisCloudActiveActiveSubscription(),
 				// Note: rediscloud_active_active_subscription_database is served by the Plugin Framework provider
