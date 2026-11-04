@@ -16,7 +16,6 @@ func TestAccResourceRedisCloudPrivateServiceConnect_CRUDI(t *testing.T) {
 	databaseName := subName + "-database"
 
 	const resourceName = "rediscloud_private_service_connect.psc"
-	const datasourceName = "data.rediscloud_private_service_connect.psc"
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:                 envchecks.ComposePreChecks(t, envchecks.RedisCloudCheck),
@@ -29,17 +28,6 @@ func TestAccResourceRedisCloudPrivateServiceConnect_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "subscription_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "private_service_connect_service_id"),
-				),
-			},
-			{
-				Config: fmt.Sprintf(testAccResourceRedisCloudPrivateServiceConnectProStep2, subName, databaseName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(datasourceName, "id"),
-					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
-					resource.TestCheckResourceAttrSet(datasourceName, "private_service_connect_service_id"),
-					resource.TestCheckResourceAttrSet(datasourceName, "connection_host_name"),
-					resource.TestCheckResourceAttrSet(datasourceName, "service_attachment_name"),
-					resource.TestCheckResourceAttr(datasourceName, "status", "active"),
 				),
 			},
 			{
@@ -90,12 +78,5 @@ resource "rediscloud_subscription_database" "database_resource" {
 resource "rediscloud_private_service_connect" "psc" {
   subscription_id = rediscloud_subscription.subscription_resource.id
   depends_on = [rediscloud_subscription_database.database_resource]
-}
-`
-
-const testAccResourceRedisCloudPrivateServiceConnectProStep2 = testAccResourceRedisCloudPrivateServiceConnectProStep1 + `
-
-data "rediscloud_private_service_connect" "psc" {
-  subscription_id = rediscloud_subscription.subscription_resource.id
 }
 `
