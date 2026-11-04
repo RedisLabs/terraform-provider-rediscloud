@@ -15,6 +15,7 @@
 - Migrated `rediscloud_essentials_database` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 - Migrated `rediscloud_essentials_subscription` resource from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes. Changing `payment_method` after creation now shows an in-place update instead of being hidden; the new value is still not sent to the API.
 - Migrated `rediscloud_essentials_database` resource from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes. Changes that SDK v2 hid with diff suppression (a `redis_version` already satisfied by the running version, and Pay-As-You-Go attributes or `source_ips` changed while `enable_payg_features` is `false`) now show an in-place update once; they still trigger no upgrade and no Pay-As-You-Go API change. `password` and the endpoints show as known after apply on updates.
+- Migrated `rediscloud_subscription_peerings` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 
 ## 2.20.0 (4th November 2026)
 
