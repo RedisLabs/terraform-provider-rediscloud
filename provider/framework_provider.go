@@ -221,6 +221,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 		psc.NewPrivateServiceConnectDataSource,
 		psc.NewPrivateServiceConnectEndpointsDataSource,
 		transitgateway.NewActiveActiveTransitGatewayInvitationsDataSource,
+		transitgateway.NewTransitGatewayDataSource,
 		transitgateway.NewTransitGatewayInvitationsDataSource,
 	}
 }

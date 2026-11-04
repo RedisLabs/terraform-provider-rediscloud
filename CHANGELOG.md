@@ -29,6 +29,7 @@
 - Migrated `rediscloud_private_service_connect_endpoint` resource from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 - Migrated `rediscloud_active_active_private_service_connect_endpoint` resource from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 - Migrated `rediscloud_active_active_transit_gateway_invitations` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes. Invitations are now ordered by invitation ID.
+- Migrated `rediscloud_transit_gateway` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 - Migrated `rediscloud_transit_gateway_invitations` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes. Invitations are now ordered by invitation ID.
 
 ## 2.20.0 (4th November 2026)
