@@ -26,6 +26,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/paymentmethod"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/regions"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/transitgateway"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -190,6 +191,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 		cloudaccount.NewCloudAccountDataSource,
 		regions.NewRegionsDataSource,
 		pro.NewProSubscriptionDataSource,
+		transitgateway.NewActiveActiveTransitGatewayInvitationsDataSource,
 	}
 }
 
