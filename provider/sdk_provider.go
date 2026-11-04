@@ -101,13 +101,13 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				"rediscloud_active_active_private_service_connect_endpoint_accepter": resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter(),
 				"rediscloud_transit_gateway_attachment":                              resourceRedisCloudTransitGatewayAttachment(),
 				"rediscloud_active_active_transit_gateway_attachment":                resourceRedisCloudActiveActiveTransitGatewayAttachment(),
-				"rediscloud_transit_gateway_route":                                   resourceRedisCloudTransitGatewayRoute(),
-				"rediscloud_active_active_transit_gateway_route":                     resourceRedisCloudActiveActiveTransitGatewayRoute(),
-				"rediscloud_transit_gateway_invitation_acceptor":                     transitgateway.ResourceRedisCloudTransitGatewayInvitationAcceptor(),
-				"rediscloud_active_active_transit_gateway_invitation_acceptor":       transitgateway.ResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor(),
-				"rediscloud_acl_rule":                                                resourceRedisCloudAclRule(),
-				"rediscloud_acl_role":                                                resourceRedisCloudAclRole(),
-				"rediscloud_acl_user":                                                resourceRedisCloudAclUser(),
+				// Note: rediscloud_transit_gateway_route is served by the Plugin Framework provider
+				// Note: rediscloud_active_active_transit_gateway_route is served by the Plugin Framework provider
+				"rediscloud_transit_gateway_invitation_acceptor":               transitgateway.ResourceRedisCloudTransitGatewayInvitationAcceptor(),
+				"rediscloud_active_active_transit_gateway_invitation_acceptor": transitgateway.ResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor(),
+				"rediscloud_acl_rule": resourceRedisCloudAclRule(),
+				"rediscloud_acl_role": resourceRedisCloudAclRole(),
+				"rediscloud_acl_user": resourceRedisCloudAclUser(),
 			},
 		}
 

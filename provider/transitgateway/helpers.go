@@ -277,3 +277,47 @@ func singleTransitGateway(filtered []*attachments.TransitGatewayAttachment) (*at
 	}
 	return filtered[0], diags
 }
+
+// cidrsToAPI converts a configured CIDR list, sending null elements as empty strings like the SDKv2 implementation did.
+func cidrsToAPI(ctx context.Context, cidrs types.List) ([]*string, diag.Diagnostics) {
+	result := make([]*string, 0)
+	if cidrs.IsNull() || cidrs.IsUnknown() {
+		return result, nil
+	}
+
+	var values []types.String
+	diags := cidrs.ElementsAs(ctx, &values, false)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	for _, value := range values {
+		result = append(result, redis.String(value.ValueString()))
+	}
+	return result, diags
+}
+
+// findTransitGatewayAttachment returns the attachment with tgwId, or nil when the API does not list it.
+func findTransitGatewayAttachment(tgwTask *attachments.GetAttachmentsTask, tgwId int, idDescription string) (*attachments.TransitGatewayAttachment, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	tgws := FilterTransitGatewayAttachments(tgwTask, []TransitGatewayAttachmentFilter{
+		func(tgw *attachments.TransitGatewayAttachment) bool {
+			return redis.IntValue(tgw.Id) == tgwId
+		},
+	})
+
+	if len(tgws) == 0 {
+		return nil, diags
+	}
+
+	if len(tgws) > 1 {
+		diags.AddError("Unable to Read Transit Gateway", "More than one Transit Gateway identified! "+idDescription)
+		return nil, diags
+	}
+
+	return tgws[0], diags
+}
+
+func isTransitGatewayAttachmentNotFound(err error) bool {
+	return strings.Contains(err.Error(), "TGW_ATTACHMENT_DOES_NOT_EXIST")
+}
