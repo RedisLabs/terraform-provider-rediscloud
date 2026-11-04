@@ -184,6 +184,7 @@ func (p *redisCloudFrameworkProvider) Resources(_ context.Context) []func() reso
 		essentialsdatabase.NewEssentialsDatabaseResource,
 		essentialssubscription.NewEssentialsSubscriptionResource,
 		peering.NewSubscriptionPeeringResource,
+		peering.NewActiveActiveSubscriptionPeeringResource,
 		pro.NewProSubscriptionResource,
 	}
 }

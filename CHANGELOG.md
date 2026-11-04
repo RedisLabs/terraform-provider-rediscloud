@@ -17,6 +17,7 @@
 - Migrated `rediscloud_essentials_database` resource from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes. Changes that SDK v2 hid with diff suppression (a `redis_version` already satisfied by the running version, and Pay-As-You-Go attributes or `source_ips` changed while `enable_payg_features` is `false`) now show an in-place update once; they still trigger no upgrade and no Pay-As-You-Go API change. `password` and the endpoints show as known after apply on updates.
 - Migrated `rediscloud_subscription_peerings` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 - Migrated `rediscloud_subscription_peering` resource from Terraform SDK v2 to the Terraform Plugin Framework. Existing state is read without changes. `id` and `provider_name` are now reported as Computed at the protocol level; no configuration change is needed.
+- Migrated `rediscloud_active_active_subscription_peering` resource from Terraform SDK v2 to the Terraform Plugin Framework. Existing state is read without changes. `id` and `provider_name` are now reported as Computed at the protocol level; no configuration change is needed. Changing `gcp_project_id` or `gcp_network_name` now fails at plan time instead of apply time.
 
 ## 2.20.0 (4th November 2026)
 
