@@ -79,8 +79,8 @@ func NewSdkProvider(version string) func() *schema.Provider {
 			},
 			ResourcesMap: map[string]*schema.Resource{
 				// Note: rediscloud_cloud_account is served by the Plugin Framework provider
-				"rediscloud_essentials_subscription": resourceRedisCloudEssentialsSubscription(),
-				"rediscloud_essentials_database":     resourceRedisCloudEssentialsDatabase(),
+				// Note: rediscloud_essentials_subscription is served by the Plugin Framework provider
+				"rediscloud_essentials_database": resourceRedisCloudEssentialsDatabase(),
 				// Note the difference in public resource name and the file/method name.
 				// <default> == flexible == pro
 				// Note: rediscloud_subscription is served by the Plugin Framework provider
