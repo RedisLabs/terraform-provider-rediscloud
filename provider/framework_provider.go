@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/aclrole"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/aclrule"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/acluser"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/activeactive"
@@ -180,6 +181,7 @@ func (p *redisCloudFrameworkProvider) Resources(_ context.Context) []func() reso
 // DataSources defines the data sources implemented in the provider.
 func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		aclrole.NewAclRoleDataSource,
 		aclrule.NewAclRuleDataSource,
 		acluser.NewAclUserDataSource,
 		activeactive.NewActiveActiveSubscriptionDataSource,
