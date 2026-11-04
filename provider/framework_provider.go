@@ -30,6 +30,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/peering"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/privatelink"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/psc"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/regions"
 )
 
@@ -214,6 +215,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 		privatelink.NewPrivateLinkDataSource,
 		privatelink.NewActiveActiveEndpointScriptDataSource,
 		privatelink.NewActiveActivePrivateLinkDataSource,
+		psc.NewPrivateServiceConnectDataSource,
 	}
 }
 
