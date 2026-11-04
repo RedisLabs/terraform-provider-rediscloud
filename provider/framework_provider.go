@@ -216,6 +216,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 		privatelink.NewActiveActiveEndpointScriptDataSource,
 		privatelink.NewActiveActivePrivateLinkDataSource,
 		psc.NewPrivateServiceConnectDataSource,
+		psc.NewPrivateServiceConnectEndpointsDataSource,
 	}
 }
 
