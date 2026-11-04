@@ -20,6 +20,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/agentmemory"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/cloudaccount"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/databasemodules"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/datapersistence"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentialsplan"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentialssubscription"
@@ -183,6 +184,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 		aclrule.NewAclRuleDataSource,
 		acluser.NewAclUserDataSource,
 		activeactive.NewActiveActiveSubscriptionDataSource,
+		databasemodules.NewDatabaseModulesDataSource,
 		datapersistence.NewDataPersistenceDataSource,
 		essentialsplan.NewEssentialsPlanDataSource,
 		essentialssubscription.NewEssentialsSubscriptionDataSource,
