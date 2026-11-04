@@ -83,7 +83,7 @@ The following arguments are supported:
 * `allowlist` - (Optional) An allowlist object, documented below
 * `cloud_provider` - (Required) A cloud provider object, documented below. **Modifying this attribute will force creation of a new resource.**
 * `creation_plan` - (Required) A creation plan object, documented below.
-* `maintenance_windows` - (Optional) The subscription's maintenance window specification, documented below.
+* `maintenance_windows` - (Optional) The subscription's maintenance window specification, documented below. When the block is omitted, the subscription uses automatic maintenance and the block is not recorded in state. After an import or an upgrade from 2.20.0 or earlier, an omitted block leaves the current maintenance windows unchanged.
 * `customer_managed_key_enabled` - (Optional) Whether to enable the customer managed encryption key flow.
 * `customer_managed_key_deletion_grace_period` - (Optional) The grace period for deleting the subscription. If not set, will default to immediate deletion grace period.
 * `customer_managed_key` - (Optional) The customer managed keys (CMK) to use for this subscription.

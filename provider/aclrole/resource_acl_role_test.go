@@ -163,6 +163,21 @@ func TestAccResourceRedisCloudAclRole_sdkStateCompatibility(t *testing.T) {
 				},
 				PlanOnly: true,
 			},
+			// A plan-only step leaves rediscloud_subscription at schema version 0, which the
+			// post-test destroy cannot read. Applying stores the upgraded state.
+			{
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ConfigFile:               config.StaticFile("testdata/resource_registry_source.tf"),
+				ConfigVariables: config.Variables{
+					"team":               config.StringVariable(resourceTags.Team),
+					"owner":              config.StringVariable(resourceTags.Owner),
+					"cloud_account_name": config.StringVariable(cloudAccountName),
+					"subscription_name":  config.StringVariable(subscriptionName),
+					"database_password":  config.StringVariable(databasePassword),
+					"rule_name":          config.StringVariable(ruleName),
+					"role_name":          config.StringVariable(roleName),
+				},
+			},
 		},
 	})
 }
