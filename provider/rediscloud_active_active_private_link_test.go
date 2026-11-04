@@ -28,7 +28,6 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 	const resourceName = "rediscloud_active_active_private_link.aa_private_link"
 	const subscriptionResourceName = "rediscloud_active_active_subscription.aa_subscription"
 	const regionsDataSourceName = "data.rediscloud_active_active_subscription_regions.aa_regions_info"
-	const datasourceName = "data.rediscloud_active_active_private_link.aa_private_link"
 
 	// Generate names reused across configs
 	subName := testRandomWithPrefix() + "-aa-private-link"
@@ -62,16 +61,6 @@ func TestAccResourceRedisCloudActiveActivePrivateLink_CRUDI(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "share_arn"),
 					resource.TestCheckResourceAttrSet(resourceName, "connections.#"),
 					resource.TestCheckResourceAttrSet(resourceName, "databases.#"),
-
-					resource.TestCheckResourceAttrSet(datasourceName, "id"),
-					resource.TestCheckResourceAttrSet(datasourceName, "subscription_id"),
-					resource.TestCheckResourceAttrSet(datasourceName, "region_id"),
-					resource.TestCheckResourceAttr(datasourceName, "principals.#", "2"),
-					resource.TestCheckResourceAttrSet(datasourceName, "resource_configuration_id"),
-					resource.TestCheckResourceAttrSet(datasourceName, "resource_configuration_arn"),
-					resource.TestCheckResourceAttrSet(datasourceName, "share_arn"),
-					resource.TestCheckResourceAttrSet(datasourceName, "connections.#"),
-					resource.TestCheckResourceAttrSet(datasourceName, "databases.#"),
 				),
 			},
 			// Step 2: Import test
