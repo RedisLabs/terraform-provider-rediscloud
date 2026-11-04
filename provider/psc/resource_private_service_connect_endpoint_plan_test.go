@@ -20,6 +20,7 @@ func TestEndpointReplacementPlansNewIdentity(t *testing.T) {
 		typeID  string
 	}{
 		{"Pro", psc.NewPrivateServiceConnectEndpointResource, "test_private_service_connect_endpoint"},
+		{"Active-Active", psc.NewActiveActivePrivateServiceConnectEndpointResource, "test_active_active_private_service_connect_endpoint"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
