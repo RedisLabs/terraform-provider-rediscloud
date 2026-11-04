@@ -136,3 +136,87 @@ resource "rediscloud_acl_role" "test" {
 	}
 }
 `
+
+const testAccResourceRedisCloudProDatabaseAcl = `
+variable "team" {
+  type = string
+}
+
+variable "owner" {
+  type = string
+}
+
+data "rediscloud_payment_method" "card" {
+  card_type = "Visa"
+  last_four_numbers = "5556"
+}
+
+data "rediscloud_cloud_account" "account" {
+  exclude_internal_account = true
+  provider_type = "AWS"
+  name = "%s"
+}
+
+resource "rediscloud_subscription" "example" {
+  name = "%s"
+  payment_method_id = data.rediscloud_payment_method.card.id
+  cloud_provider {
+    resource_tags = {
+      team  = var.team
+      owner = var.owner
+    }
+
+    provider = data.rediscloud_cloud_account.account.provider_type
+    cloud_account_id = data.rediscloud_cloud_account.account.id
+    region {
+      region = "eu-west-1"
+      networking_deployment_cidr = "10.0.0.0/24"
+      preferred_availability_zones = ["eu-west-1a"]
+    }
+  }
+
+  creation_plan {
+    dataset_size_in_gb = 1
+    quantity = 1
+    replication = false
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 1000
+  }
+}
+
+resource "rediscloud_subscription_database" "example" {
+    subscription_id = rediscloud_subscription.example.id
+    name = "example"
+    protocol = "redis"
+    dataset_size_in_gb = 3
+    data_persistence = "none"
+    data_eviction = "allkeys-random"
+    throughput_measurement_by = "operations-per-second"
+    throughput_measurement_value = 1000
+    password = "%s"
+    support_oss_cluster_api = false
+    external_endpoint_for_oss_cluster_api = false
+    replication = false
+    average_item_size_in_bytes = 0
+    client_ssl_certificate = ""
+    periodic_backup_path = ""
+	enable_default_user = true
+    redis_version = "7.4"
+
+    alert {
+        name = "dataset-size"
+        value = 1
+    }
+
+    modules = [
+        {
+          name = "RedisBloom"
+        }
+    ]
+
+	tags = {
+		"market" = "emea"
+		"material" = "cardboard"
+	}
+}
+`
