@@ -58,7 +58,7 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				"rediscloud_essentials_database":   dataSourceRedisCloudEssentialsDatabase(),
 				"rediscloud_subscription_peerings": dataSourceRedisCloudSubscriptionPeerings(),
 				// Note: rediscloud_private_service_connect is served by the Plugin Framework provider
-				"rediscloud_private_service_connect_endpoints": dataSourcePrivateServiceConnectEndpoints(),
+				// Note: rediscloud_private_service_connect_endpoints is served by the Plugin Framework provider
 				// Note: rediscloud_active_active_subscription is served by the Plugin Framework provider
 				"rediscloud_active_active_subscription_regions":         dataSourceRedisCloudActiveActiveSubscriptionRegions(),
 				"rediscloud_private_link":                               privatelink.DataSourcePrivateLink(),
