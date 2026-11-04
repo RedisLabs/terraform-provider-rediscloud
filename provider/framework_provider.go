@@ -170,6 +170,7 @@ func (p *redisCloudFrameworkProvider) Configure(ctx context.Context, req provide
 // Resources defines the resources implemented in the provider.
 func (p *redisCloudFrameworkProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		aclrule.NewAclRuleResource,
 		activeactive.NewActiveActiveDatabaseResource,
 		agentmemory.NewAgentMemoryResource,
 		agentmemory.NewAgentMemoryAPIKeyResource,
