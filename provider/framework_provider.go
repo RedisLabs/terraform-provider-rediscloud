@@ -191,6 +191,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 		paymentmethod.NewPaymentMethodDataSource,
 		cloudaccount.NewCloudAccountDataSource,
 		regions.NewRegionsDataSource,
+		pro.NewProDatabaseDataSource,
 		pro.NewProSubscriptionDataSource,
 	}
 }
