@@ -89,7 +89,7 @@ func (r *privateLinkResource) Schema(ctx context.Context, _ resource.SchemaReque
 			},
 		},
 		Blocks: map[string]schema.Block{
-			"principal": principalBlock(),
+			"principal": principalBlock("must be one of 'aws_account', 'organization', 'organization_unit', 'iam_role', 'iam_user', 'service_principal'"),
 			"timeouts": timeouts.Block(ctx, timeouts.Opts{
 				Create: true,
 				Read:   true,
@@ -110,7 +110,7 @@ func computedStableString(description string) schema.StringAttribute {
 	}
 }
 
-func principalBlock() schema.SetNestedBlock {
+func principalBlock(principalTypeMessage string) schema.SetNestedBlock {
 	return schema.SetNestedBlock{
 		Description: "List of principals attached to this PrivateLink",
 		CustomType:  NewPrincipalSetType(),
@@ -128,7 +128,7 @@ func principalBlock() schema.SetNestedBlock {
 					Validators: []validator.String{
 						stringvalidator.RegexMatches(
 							regexp.MustCompile("^(aws_account|organization|organization_unit|iam_role|iam_user|service_principal)$"),
-							"must be one of 'aws_account', 'organization', 'organization_unit', 'iam_role', 'iam_user', 'service_principal'",
+							principalTypeMessage,
 						),
 					},
 				},

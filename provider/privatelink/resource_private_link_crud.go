@@ -271,34 +271,37 @@ func (r *privateLinkResource) Delete(ctx context.Context, req resource.DeleteReq
 }
 
 func (m *PrivateLinkResourceModel) setComputed(ctx context.Context, privateLink *pl.PrivateLink) diag.Diagnostics {
+	return setComputedFromAPI(ctx, privateLink, &m.ResourceConfigurationID, &m.ResourceConfigurationArn, &m.ShareArn, &m.Connections, &m.Databases)
+}
+
+func (m *PrivateLinkResourceModel) nullUnknownComputed() {
+	nullUnknownComputed(&m.ResourceConfigurationID, &m.ResourceConfigurationArn, &m.ShareArn, &m.Connections, &m.Databases)
+}
+
+func setComputedFromAPI(ctx context.Context, privateLink *pl.PrivateLink, resourceConfigurationID, resourceConfigurationArn, shareArn *types.String, connections, databases *types.Set) diag.Diagnostics {
 	var diags, d diag.Diagnostics
-	m.ResourceConfigurationID = types.StringPointerValue(privateLink.ResourceConfigurationId)
-	m.ResourceConfigurationArn = types.StringPointerValue(privateLink.ResourceConfigurationArn)
-	m.ShareArn = types.StringPointerValue(privateLink.ShareArn)
-	m.Connections, d = ConnectionsFromAPI(ctx, privateLink.Connections)
+	*resourceConfigurationID = types.StringPointerValue(privateLink.ResourceConfigurationId)
+	*resourceConfigurationArn = types.StringPointerValue(privateLink.ResourceConfigurationArn)
+	*shareArn = types.StringPointerValue(privateLink.ShareArn)
+	*connections, d = ConnectionsFromAPI(ctx, privateLink.Connections)
 	diags.Append(d...)
-	m.Databases, d = DatabasesFromAPI(ctx, privateLink.Databases)
+	*databases, d = DatabasesFromAPI(ctx, privateLink.Databases)
 	diags.Append(d...)
 	return diags
 }
 
-func (m *PrivateLinkResourceModel) nullUnknownComputed() {
-	m.ResourceConfigurationID = nullIfUnknown(m.ResourceConfigurationID)
-	m.ResourceConfigurationArn = nullIfUnknown(m.ResourceConfigurationArn)
-	m.ShareArn = nullIfUnknown(m.ShareArn)
-	if m.Connections.IsUnknown() {
-		m.Connections = types.SetNull(connectionElemType)
+func nullUnknownComputed(resourceConfigurationID, resourceConfigurationArn, shareArn *types.String, connections, databases *types.Set) {
+	for _, v := range []*types.String{resourceConfigurationID, resourceConfigurationArn, shareArn} {
+		if v.IsUnknown() {
+			*v = types.StringNull()
+		}
 	}
-	if m.Databases.IsUnknown() {
-		m.Databases = types.SetNull(databaseElemType)
+	if connections.IsUnknown() {
+		*connections = types.SetNull(connectionElemType)
 	}
-}
-
-func nullIfUnknown(v types.String) types.String {
-	if v.IsUnknown() {
-		return types.StringNull()
+	if databases.IsUnknown() {
+		*databases = types.SetNull(databaseElemType)
 	}
-	return v
 }
 
 // principalsFromPlan returns the configured principals sorted by principal, as

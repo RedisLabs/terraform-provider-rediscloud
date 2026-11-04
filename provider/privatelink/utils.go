@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"sort"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -13,7 +12,6 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	pl "github.com/RedisLabs/rediscloud-go-api/service/privatelink"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
@@ -158,80 +156,6 @@ func formatPrincipalLists(expected []pl.PrivateLinkPrincipal, actual []*pl.Priva
 		}
 	}
 	return fmt.Sprintf("expected %v, got %v", expectedPrincipals, actualPrincipals)
-}
-
-func principalsFromSet(principals *schema.Set) []pl.PrivateLinkPrincipal {
-	var createPrincipals []pl.PrivateLinkPrincipal
-	for _, principal := range principals.List() {
-		principalMap := principal.(map[string]interface{})
-
-		createPrincipal := pl.PrivateLinkPrincipal{
-			Principal: redis.String(principalMap["principal"].(string)),
-			Alias:     redis.String(principalMap["principal_alias"].(string)),
-			Type:      redis.String(principalMap["principal_type"].(string)),
-		}
-
-		createPrincipals = append(createPrincipals, createPrincipal)
-	}
-
-	sort.Slice(createPrincipals, func(i, j int) bool {
-		return *createPrincipals[i].Principal < *createPrincipals[j].Principal
-	})
-
-	return createPrincipals
-}
-
-// FlattenPrincipals converts private link principals to Terraform state shape.
-func FlattenPrincipals(principals []*pl.PrivateLinkPrincipal) []map[string]interface{} {
-	var tfs = make([]map[string]interface{}, 0)
-
-	for _, principal := range principals {
-		tf := map[string]interface{}{
-			"principal":       redis.StringValue(principal.Principal),
-			"principal_type":  redis.StringValue(principal.Type),
-			"principal_alias": redis.StringValue(principal.Alias),
-		}
-		tfs = append(tfs, tf)
-	}
-
-	sort.Slice(tfs, func(i, j int) bool {
-		return tfs[i]["principal"].(string) < tfs[j]["principal"].(string)
-	})
-
-	return tfs
-}
-
-// FlattenDatabases converts private link databases to Terraform state shape.
-func FlattenDatabases(databases []*pl.PrivateLinkDatabase) []map[string]interface{} {
-	var tfs = make([]map[string]interface{}, 0)
-
-	for _, db := range databases {
-		tf := map[string]interface{}{
-			"database_id":            redis.IntValue(db.DatabaseId),
-			"port":                   redis.IntValue(db.Port),
-			"resource_link_endpoint": redis.StringValue(db.ResourceLinkEndpoint),
-		}
-		tfs = append(tfs, tf)
-	}
-	return tfs
-}
-
-// FlattenConnections converts private link connections to Terraform state shape.
-func FlattenConnections(connections []*pl.PrivateLinkConnection) []map[string]interface{} {
-	var tfs = make([]map[string]interface{}, 0)
-
-	for _, connection := range connections {
-		tf := map[string]interface{}{
-			"association_id":   redis.StringValue(connection.AssociationId),
-			"connection_id":    redis.StringValue(connection.ConnectionId),
-			"connection_type":  redis.StringValue(connection.Type),
-			"owner_id":         redis.StringValue(connection.OwnerId),
-			"association_date": redis.StringValue(connection.AssociationDate),
-		}
-		tfs = append(tfs, tf)
-	}
-
-	return tfs
 }
 
 func makeActiveActivePrivateLinkId(subId int, regionId int) string {
