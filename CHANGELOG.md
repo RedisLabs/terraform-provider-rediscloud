@@ -5,6 +5,7 @@
 ### Changed
 
 - Migrated `rediscloud_acl_role` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+- Migrated `rediscloud_acl_rule` resource from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 
 ## 2.20.0 (4th November 2026)
 
