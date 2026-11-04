@@ -6,6 +6,7 @@
 
 - Migrated `rediscloud_acl_rule` resource from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 - Migrated `rediscloud_acl_user` resource from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes. A user whose creation times out before it becomes active is now kept in state instead of being orphaned.
+- Added acceptance tests that configure a working S3 `remote_backup` on `rediscloud_subscription_database` and `rediscloud_active_active_subscription_database`, change its schedule in place, and check the backup configuration through the API. The Pro test also runs a manual backup and checks that files reach the bucket.
 
 ## 2.20.0 (4th November 2026)
 
