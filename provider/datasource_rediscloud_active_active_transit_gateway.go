@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/transitgateway"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
@@ -94,7 +95,7 @@ func dataSourceActiveActiveTransitGatewayRead(ctx context.Context, d *schema.Res
 	regionId := d.Get("region_id").(int)
 
 	// Build filters for matching TGWs
-	var filters []func(db *attachments.TransitGatewayAttachment) bool
+	var filters []transitgateway.TransitGatewayAttachmentFilter
 
 	if v, ok := d.GetOk("tgw_id"); ok {
 		filters = append(filters, func(tgwa *attachments.TransitGatewayAttachment) bool {
@@ -133,7 +134,7 @@ func dataSourceActiveActiveTransitGatewayRead(ctx context.Context, d *schema.Res
 					return nil, "waiting", nil
 				}
 
-				filtered := filterTgwAttachments(tgwTask, filters)
+				filtered := transitgateway.FilterTransitGatewayAttachments(tgwTask, filters)
 				if len(filtered) == 0 {
 					return nil, "waiting", nil
 				}
@@ -158,7 +159,7 @@ func dataSourceActiveActiveTransitGatewayRead(ctx context.Context, d *schema.Res
 			return diag.FromErr(err)
 		}
 
-		filteredTgws = filterTgwAttachments(tgwTask, filters)
+		filteredTgws = transitgateway.FilterTransitGatewayAttachments(tgwTask, filters)
 	}
 
 	if len(filteredTgws) == 0 {
