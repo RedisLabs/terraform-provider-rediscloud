@@ -12,6 +12,7 @@
 - Upgraded `rediscloud-go-api` from 0.53.0 to 0.54.0. GET requests to the API are now retried on connection resets and Cloudflare 520-524 responses, which made acceptance tests flaky.
 - Migrated `rediscloud_private_service_connect` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 - Migrated `rediscloud_private_service_connect_endpoints` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+- Migrated `rediscloud_private_service_connect_endpoint` resource from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 
 ## 2.20.0 (4th November 2026)
 

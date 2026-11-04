@@ -15,6 +15,7 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/psc"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
@@ -366,4 +367,47 @@ func refreshPrivateServiceConnectServiceActiveActiveEndpointDisappear(ctx contex
 	}
 
 	return redis.StringValue(endpoint.Status), redis.StringValue(endpoint.Status), nil
+}
+
+func flattenPrivateServiceConnectEndpointServiceAttachments(serviceAttachments []psc.TerraformGCPServiceAttachment) []map[string]interface{} {
+	var rl []map[string]interface{}
+	for _, serviceAttachment := range serviceAttachments {
+
+		serviceAttachmentMapString := map[string]interface{}{
+			"name":                 serviceAttachment.Name,
+			"dns_record":           serviceAttachment.DNSRecord,
+			"ip_address_name":      serviceAttachment.IPAddressName,
+			"forwarding_rule_name": serviceAttachment.ForwardingRuleName,
+		}
+
+		rl = append(rl, serviceAttachmentMapString)
+	}
+
+	return rl
+}
+
+func waitForPrivateServiceConnectServiceEndpointDisappear(ctx context.Context, api *client.ApiClient, refreshFunc func() (result interface{}, state string, err error), timeout time.Duration) error {
+	wait := &retry.StateChangeConf{
+		Pending: []string{
+			psc.EndpointStatusProcessing,
+			psc.EndpointStatusPending,
+			psc.EndpointStatusAcceptPending,
+			psc.EndpointStatusActive,
+			psc.EndpointStatusDeleted,
+			psc.EndpointStatusRejected,
+			psc.EndpointStatusRejectPending,
+			psc.EndpointStatusFailed,
+		},
+		Target:       []string{placeholderStatusDisappear},
+		Timeout:      timeout,
+		Delay:        api.WaitDelay(10 * time.Second),
+		PollInterval: api.WaitPollInterval(30 * time.Second),
+
+		Refresh: refreshFunc,
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }
