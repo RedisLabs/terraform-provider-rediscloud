@@ -12,6 +12,7 @@
 - Upgraded `rediscloud-go-api` from 0.53.0 to 0.54.0. GET requests to the API are now retried on connection resets and Cloudflare 520-524 responses, which made acceptance tests flaky.
 - Migrated the `rediscloud_subscription_peerings` data source from Terraform SDK v2 to the Terraform Plugin Framework, preserving existing configuration and state.
 - Migrated the `rediscloud_subscription_peering` resource from Terraform SDK v2 to the Terraform Plugin Framework.
+- Migrated the `rediscloud_active_active_subscription_peering` resource from Terraform SDK v2 to the Terraform Plugin Framework.
 
 ## 2.20.0 (4th November 2026)
 
