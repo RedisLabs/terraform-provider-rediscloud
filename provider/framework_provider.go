@@ -190,6 +190,7 @@ func (p *redisCloudFrameworkProvider) Resources(_ context.Context) []func() reso
 		privatelink.NewPrivateLinkResource,
 		privatelink.NewActiveActivePrivateLinkResource,
 		pro.NewProSubscriptionResource,
+		psc.NewPrivateServiceConnectEndpointResource,
 	}
 }
 
