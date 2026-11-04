@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentialssubscription"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
@@ -747,7 +748,7 @@ func resourceRedisCloudEssentialsDatabaseUpdateWithTimeout(ctx context.Context, 
 		return diag.FromErr(err)
 	}
 
-	if err := waitForEssentialsSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
+	if err := essentialssubscription.WaitForEssentialsSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -805,7 +806,7 @@ func upgradeRedisVersionEssentials(ctx context.Context, api *client.ApiClient, s
 	}
 
 	// Wait for subscription to be active
-	if err := waitForEssentialsSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
+	if err := essentialssubscription.WaitForEssentialsSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
