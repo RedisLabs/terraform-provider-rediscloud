@@ -31,6 +31,7 @@ func ResourceRedisCloudPrivateLink() *schema.Resource {
 
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(30 * time.Minute),
+			Update: schema.DefaultTimeout(30 * time.Minute),
 			Read:   schema.DefaultTimeout(10 * time.Minute),
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
@@ -185,14 +186,16 @@ func resourceRedisCloudPrivateLinkCreate(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	// TODO: figure out if this is necessary and remove/uncomment
-	//err = waitForAllPrincipalsToBeAssociated(ctx, api, subId, principals)
-	//if err != nil {
-	//	return diag.FromErr(err)
-	//}
-
 	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api, d.Timeout(schema.TimeoutCreate))
 	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	// Task completion does not guarantee that the requested principals exist.
+	// Verify the full set before refreshing state so missing principals cannot be
+	// reported as a successful create.
+	getPrivateLink := privateLinkGetter(api, subId)
+	if err := WaitForPrivateLinkPrincipals(ctx, getPrivateLink, principals, d.Timeout(schema.TimeoutCreate)); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -301,6 +304,14 @@ func resourceRedisCloudPrivateLinkUpdate(ctx context.Context, d *schema.Resource
 		err = deletePrincipals(ctx, api, subId, principals)
 
 		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		// This resource manages the complete principal set. Wait for additions and
+		// deletions to become visible before refreshing state so an incomplete
+		// change cannot be reported as a successful update.
+		getPrivateLink := privateLinkGetter(api, subId)
+		if err := WaitForPrivateLinkPrincipals(ctx, getPrivateLink, tfPrincipals, d.Timeout(schema.TimeoutUpdate)); err != nil {
 			return diag.FromErr(err)
 		}
 
@@ -422,4 +433,10 @@ func deletePrincipals(ctx context.Context, api *client.ApiClient, subscriptionId
 		}
 	}
 	return nil
+}
+
+func privateLinkGetter(api *client.ApiClient, subscriptionID int) PrivateLinkGetter {
+	return func(ctx context.Context) (*pl.PrivateLink, error) {
+		return api.Client.PrivateLink.GetPrivateLink(ctx, subscriptionID)
+	}
 }
