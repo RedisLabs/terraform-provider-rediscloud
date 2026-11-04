@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"regexp"
 	"strconv"
@@ -426,4 +427,23 @@ func waitForActiveActivePeeringToBeInitiated(ctx context.Context, subId, id int,
 	}
 
 	return nil
+}
+
+func toVpcPeeringId(id string) (int, int, error) {
+	parts := strings.Split(id, "/")
+	if len(parts) != 2 {
+		return 0, 0, fmt.Errorf("invalid id: %s", id)
+	}
+
+	sub, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	peering, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return sub, peering, nil
 }
