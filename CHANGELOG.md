@@ -7,6 +7,7 @@
 - Raised the Go toolchain to 1.26.11 to pick up the fix for GO-2026-6859 in `net/http`.
 - Migrated `rediscloud_database_modules` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 - Migrated `rediscloud_database` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes. Its documentation now lists `id`, `region`, `query_performance_factor` and `module`, and no longer lists the nonexistent `enable_tls`.
+- Added acceptance tests that configure a working S3 `remote_backup` on `rediscloud_subscription_database` and `rediscloud_active_active_subscription_database`, change its schedule in place, and check the backup configuration through the API. The Pro test also runs a manual backup and checks that files reach the bucket. They run only with `-s3Backup`, as their AWS credentials need `s3:CreateBucket`.
 
 ## 2.20.0 (4th November 2026)
 
