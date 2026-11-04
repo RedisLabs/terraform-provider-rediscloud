@@ -6,13 +6,20 @@ variable "owner" {
   type = string
 }
 
-locals {
-  subscription_name = "%s"
-  aws_region        = "%s"
+variable "subscription_name" {
+  type = string
+}
+
+variable "aws_region" {
+  type = string
+}
+
+variable "route_cidrs" {
+  type = list(string)
 }
 
 provider "aws" {
-  region = local.aws_region
+  region = var.aws_region
 }
 
 data "rediscloud_payment_method" "card" {
@@ -21,7 +28,7 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_subscription" "example" {
-  name              = local.subscription_name
+  name              = var.subscription_name
   payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage    = "ram"
@@ -35,7 +42,7 @@ resource "rediscloud_subscription" "example" {
     provider         = "AWS"
     cloud_account_id = "1"
     region {
-      region                     = local.aws_region
+      region                     = var.aws_region
       networking_deployment_cidr = "10.0.0.0/24"
     }
   }
@@ -52,14 +59,14 @@ resource "rediscloud_subscription" "example" {
 }
 
 resource "aws_ec2_transit_gateway" "test" {
-  description = local.subscription_name
+  description = var.subscription_name
   tags = {
-    Name = local.subscription_name
+    Name = var.subscription_name
   }
 }
 
 resource "aws_ram_resource_share" "test" {
-  name                      = local.subscription_name
+  name                      = var.subscription_name
   allow_external_principals = true
 }
 
@@ -87,7 +94,7 @@ data "rediscloud_transit_gateway_invitations" "test" {
 locals {
   matching_invitation = one([
     for inv in data.rediscloud_transit_gateway_invitations.test.invitations :
-    inv if inv.name == local.subscription_name
+    inv if inv.name == var.subscription_name
   ])
 }
 
@@ -123,7 +130,7 @@ resource "aws_ec2_transit_gateway_vpc_attachment_accepter" "test" {
   transit_gateway_attachment_id = rediscloud_transit_gateway_attachment.test.attachment_uid
 
   tags = {
-    Name = local.subscription_name
+    Name = var.subscription_name
   }
 
   depends_on = [time_sleep.wait_for_attachment]
@@ -132,7 +139,7 @@ resource "aws_ec2_transit_gateway_vpc_attachment_accepter" "test" {
 resource "rediscloud_transit_gateway_route" "test" {
   subscription_id = rediscloud_subscription.example.id
   tgw_id          = data.rediscloud_transit_gateway.test.tgw_id
-  cidrs           = ["10.10.20.0/24"]
+  cidrs           = var.route_cidrs
 
   depends_on = [aws_ec2_transit_gateway_vpc_attachment_accepter.test]
 }
