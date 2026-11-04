@@ -27,7 +27,8 @@ output "pending_invitations" {
 
 ## Attribute Reference
 
-* `invitations` - List of Transit Gateway invitations, documented below
+* `id` - The identifier of the data source, which is the subscription ID
+* `invitations` - List of Transit Gateway invitations ordered by invitation ID, documented below
 
 The `invitations` object has these attributes:
 
