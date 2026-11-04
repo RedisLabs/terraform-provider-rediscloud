@@ -38,7 +38,8 @@ The following arguments are supported:
 
 * `name` - (Required) A meaningful name to identify the subscription
 * `plan_id` - (Required) The plan to which this subscription will belong
-* `payment_method_id` - (Optional) If the plan is paid, this must be a valid payment method pre-defined in the current account
+* `payment_method` - (Optional) Payment method for the subscription: `credit-card` or `marketplace`. Defaults to `credit-card`. Only used when creating the subscription; later changes are not sent to the API.
+* `payment_method_id` - (Optional) If the plan is paid, this must be a valid payment method pre-defined in the current account. Must not be set when `payment_method` is `marketplace`.
 
 ### Timeouts
 
@@ -46,11 +47,13 @@ The `timeouts` block allows you to
 specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 30 mins) Used when creating the subscription
+* `read` - (Defaults to 10 mins) Used when reading the subscription
 * `update` - (Defaults to 30 mins) Used when updating the subscription
 * `delete` - (Defaults to 10 mins) Used when destroying the subscription
 
 ## Attribute reference
 
+* `id` - The ID of the subscription
 * `status` - The current status of the subscription
 * `creation_date` - When the subscription was created
 
