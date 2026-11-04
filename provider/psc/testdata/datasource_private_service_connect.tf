@@ -1,13 +1,9 @@
-variable "team" {
+variable "subscription_name" {
   type = string
 }
 
-variable "owner" {
+variable "database_name" {
   type = string
-}
-
-locals {
-  rediscloud_subscription_name = "%s"
 }
 
 data "rediscloud_payment_method" "card" {
@@ -16,15 +12,10 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_subscription" "subscription_resource" {
-  name              = local.rediscloud_subscription_name
+  name              = var.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
 
   cloud_provider {
-    resource_tags = {
-      team  = var.team
-      owner = var.owner
-    }
-
     provider = "GCP"
     region {
       region                     = "us-central1"
@@ -41,10 +32,20 @@ resource "rediscloud_subscription" "subscription_resource" {
   }
 }
 
+resource "rediscloud_subscription_database" "database_resource" {
+  name                         = var.database_name
+  subscription_id              = rediscloud_subscription.subscription_resource.id
+  dataset_size_in_gb           = 1
+  replication                  = true
+  throughput_measurement_by    = "operations-per-second"
+  throughput_measurement_value = 20000
+}
+
 resource "rediscloud_private_service_connect" "psc" {
   subscription_id = rediscloud_subscription.subscription_resource.id
+  depends_on      = [rediscloud_subscription_database.database_resource]
 }
 
 data "rediscloud_private_service_connect" "psc" {
-  subscription_id = rediscloud_subscription.subscription_resource.id
+  subscription_id = rediscloud_private_service_connect.psc.subscription_id
 }
