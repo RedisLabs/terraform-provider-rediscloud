@@ -5,16 +5,16 @@ variable "subscription_name" {
 variable "database_name" {
   type = string
 }
-variable "redis_version" {
-  type = string
-}
-variable "password" {
-  type = string
-}
-variable "database_protocol" {
-  type = string
+
+variable "enable_default_user" {
+  type = bool
 }
 
+variable "password" {
+  type      = string
+  sensitive = true
+  default   = null
+}
 
 data "rediscloud_payment_method" "card" {
   card_type         = "Visa"
@@ -34,17 +34,14 @@ resource "rediscloud_essentials_subscription" "example" {
 }
 
 resource "rediscloud_essentials_database" "example" {
-  subscription_id  = rediscloud_essentials_subscription.example.id
-  name             = var.database_name
-  protocol         = var.database_protocol
-  redis_version    = var.redis_version
-  replication      = false
-  data_persistence = "none"
+  subscription_id     = rediscloud_essentials_subscription.example.id
+  name                = var.database_name
+  enable_default_user = var.enable_default_user
+  password            = var.password
+  data_persistence    = "none"
+  replication         = false
 
-  password = var.password
-
-  alert {
-    name  = "throughput-higher-than"
-    value = 80
+  tags = {
+    "envaaaa" = "qaaaa"
   }
 }

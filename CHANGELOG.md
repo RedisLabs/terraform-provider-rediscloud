@@ -14,6 +14,7 @@
 - Added acceptance tests that configure a working S3 `remote_backup` on `rediscloud_subscription_database` and `rediscloud_active_active_subscription_database`, change its schedule in place, and check the backup configuration through the API. The Pro test also runs a manual backup and checks that files reach the bucket. They run only with `-s3Backup`, as their AWS credentials need `s3:CreateBucket`.
 - Migrated `rediscloud_essentials_database` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 - Migrated `rediscloud_essentials_subscription` resource from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes. Changing `payment_method` after creation now shows an in-place update instead of being hidden; the new value is still not sent to the API.
+- Migrated `rediscloud_essentials_database` resource from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes. Changes that SDK v2 hid with diff suppression (a `redis_version` already satisfied by the running version, and Pay-As-You-Go attributes or `source_ips` changed while `enable_payg_features` is `false`) now show an in-place update once; they still trigger no upgrade and no Pay-As-You-Go API change. `password` and the endpoints show as known after apply on updates.
 
 ## 2.20.0 (4th November 2026)
 
