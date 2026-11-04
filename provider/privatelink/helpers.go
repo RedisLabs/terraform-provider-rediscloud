@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/customtypes"
 )
 
@@ -79,4 +80,88 @@ func DatabasesFromAPI(ctx context.Context, databases []*pl.PrivateLinkDatabase) 
 		})
 	}
 	return types.SetValueFrom(ctx, databaseElemType, models)
+}
+
+func createOtherPrincipals(ctx context.Context, api *client.ApiClient, subId int, otherPrincipals []pl.PrivateLinkPrincipal) error {
+	if len(otherPrincipals) > 0 {
+		for _, principal := range otherPrincipals {
+			err := api.Client.PrivateLink.CreatePrincipal(ctx, subId, pl.CreatePrivateLinkPrincipal{
+				Principal:      principal.Principal,
+				PrincipalType:  principal.Type,
+				PrincipalAlias: principal.Alias,
+			})
+
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func findPrincipalsToCreate(apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipals []pl.PrivateLinkPrincipal) []pl.CreatePrivateLinkPrincipal {
+	var principals []pl.PrivateLinkPrincipal
+
+	for _, tfPrincipal := range tfPrincipals {
+		found := false
+		for _, apiPrincipal := range apiPrincipals {
+			if redis.StringValue(tfPrincipal.Principal) == redis.StringValue(apiPrincipal.Principal) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			principals = append(principals, tfPrincipal)
+		}
+	}
+
+	var createPrincipals []pl.CreatePrivateLinkPrincipal
+	for _, principal := range principals {
+		createPrincipal := pl.CreatePrivateLinkPrincipal{
+			Principal:      principal.Principal,
+			PrincipalType:  principal.Type,
+			PrincipalAlias: principal.Alias,
+		}
+		createPrincipals = append(createPrincipals, createPrincipal)
+	}
+
+	return createPrincipals
+}
+
+func createPrincipals(ctx context.Context, api *client.ApiClient, subscriptionId int, principals []pl.CreatePrivateLinkPrincipal) error {
+	for _, principal := range principals {
+		err := api.Client.PrivateLink.CreatePrincipal(ctx, subscriptionId, principal)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func findPrincipalsToDelete(apiPrincipals []*pl.PrivateLinkPrincipal, tfPrincipals []pl.PrivateLinkPrincipal) []pl.PrivateLinkPrincipal {
+	var result []pl.PrivateLinkPrincipal
+
+	for _, apiPrincipal := range apiPrincipals {
+		found := false
+		for _, tfPrincipal := range tfPrincipals {
+			if redis.StringValue(apiPrincipal.Principal) == redis.StringValue(tfPrincipal.Principal) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			result = append(result, *apiPrincipal)
+		}
+	}
+	return result
+}
+
+func deletePrincipals(ctx context.Context, api *client.ApiClient, subscriptionId int, principals []pl.PrivateLinkPrincipal) error {
+	for _, principal := range principals {
+		err := api.Client.PrivateLink.DeletePrincipal(ctx, subscriptionId, *principal.Principal)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

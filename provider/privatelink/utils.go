@@ -3,9 +3,11 @@ package privatelink
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"sort"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -76,6 +78,86 @@ func waitForActiveActivePrivateLinkToBeActive(ctx context.Context, client *clien
 	}
 
 	return nil
+}
+
+// PrivateLinkGetter lets a shared waiter use a subscription or regional PrivateLink read.
+type PrivateLinkGetter func(context.Context) (*pl.PrivateLink, error)
+
+// Use WaitForPrivateLinkPrincipals when an operation requires exact principal
+// membership. Retry temporary mismatches to allow API reads to catch up with writes.
+func WaitForPrivateLinkPrincipals(ctx context.Context, getPrincipals PrivateLinkGetter, expected []pl.PrivateLinkPrincipal, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	// Refresh and timeout handling can run concurrently, so share the last
+	// observation atomically for error reporting.
+	var lastObservation atomic.Value
+	lastObservation.Store("no principal list returned")
+	wait := &retry.StateChangeConf{
+		Pending:      []string{"pending"},
+		Target:       []string{"matched"},
+		Timeout:      timeout,
+		PollInterval: 10 * time.Second,
+		Refresh: func() (interface{}, string, error) {
+			link, err := getPrincipals(ctx)
+			if err != nil {
+				return nil, "", err
+			}
+			matched, err := privateLinkPrincipalsMatch(link.Principals, expected)
+			if err != nil {
+				return nil, "", err
+			}
+			if matched {
+				return link, "matched", nil
+			}
+			lastObservation.Store(formatPrincipalLists(expected, link.Principals))
+			return link, "pending", nil
+		},
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return fmt.Errorf("verifying PrivateLink principals: %w (last observed: %s)", err, lastObservation.Load().(string))
+	}
+	return nil
+}
+
+// Aliases label principals without changing access, so match membership by
+// principal value and type while checking association status.
+func privateLinkPrincipalsMatch(actual []*pl.PrivateLinkPrincipal, expected []pl.PrivateLinkPrincipal) (bool, error) {
+	for _, principal := range expected {
+		found := false
+		for _, candidate := range actual {
+			if candidate == nil || redis.StringValue(candidate.Principal) != redis.StringValue(principal.Principal) || redis.StringValue(candidate.Type) != redis.StringValue(principal.Type) {
+				continue
+			}
+			status := redis.StringValue(candidate.Status)
+			if status == pl.PrivateLinkPrincipalStatusFailed {
+				return false, fmt.Errorf("PrivateLink principal %q association failed", redis.StringValue(principal.Principal))
+			}
+			// An external consumer accepts the invitation separately, so associating is sufficient here.
+			found = status != pl.PrivateLinkPrincipalStatusDisassociating && status != pl.PrivateLinkPrincipalStatusDisassociated
+			break
+		}
+		if !found {
+			return false, nil
+		}
+	}
+	// The resource owns the complete principal set, so an extra principal is
+	// also a mismatch.
+	return len(actual) == len(expected), nil
+}
+
+func formatPrincipalLists(expected []pl.PrivateLinkPrincipal, actual []*pl.PrivateLinkPrincipal) string {
+	expectedPrincipals := make([]string, len(expected))
+	for i, principal := range expected {
+		expectedPrincipals[i] = redis.StringValue(principal.Principal)
+	}
+	actualPrincipals := make([]string, len(actual))
+	for i, principal := range actual {
+		if principal != nil {
+			actualPrincipals[i] = redis.StringValue(principal.Principal)
+		}
+	}
+	return fmt.Sprintf("expected %v, got %v", expectedPrincipals, actualPrincipals)
 }
 
 func principalsFromSet(principals *schema.Set) []pl.PrivateLinkPrincipal {
