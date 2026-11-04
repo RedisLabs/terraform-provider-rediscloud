@@ -193,6 +193,8 @@ func (p *redisCloudFrameworkProvider) Resources(_ context.Context) []func() reso
 		pro.NewProSubscriptionResource,
 		psc.NewPrivateServiceConnectEndpointResource,
 		psc.NewActiveActivePrivateServiceConnectEndpointResource,
+		transitgateway.NewActiveActiveTransitGatewayRouteResource,
+		transitgateway.NewTransitGatewayRouteResource,
 	}
 }
 
