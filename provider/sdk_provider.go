@@ -63,8 +63,8 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				"rediscloud_active_active_subscription_regions": dataSourceRedisCloudActiveActiveSubscriptionRegions(),
 				"rediscloud_private_link":                       privatelink.DataSourcePrivateLink(),
 				// Note: rediscloud_private_link_endpoint_script is served by the Plugin Framework provider
-				"rediscloud_active_active_private_link":                 privatelink.DataSourceActiveActivePrivateLink(),
-				"rediscloud_active_active_private_link_endpoint_script": privatelink.DataSourceActiveActivePrivateLinkEndpointScript(),
+				"rediscloud_active_active_private_link": privatelink.DataSourceActiveActivePrivateLink(),
+				// Note: rediscloud_active_active_private_link_endpoint_script is served by the Plugin Framework provider
 
 				// Note the difference in public data-source name and the file/method name.
 				// active_active_subscription_database == active_active_database
