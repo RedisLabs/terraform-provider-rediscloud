@@ -5,6 +5,7 @@
 ### Changed
 
 - Migrated `rediscloud_acl_rule` resource from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+- Migrated `rediscloud_acl_user` resource from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes. A user whose creation times out before it becomes active is now kept in state instead of being orphaned.
 
 ## 2.20.0 (4th November 2026)
 
