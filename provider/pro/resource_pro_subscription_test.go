@@ -1,4 +1,4 @@
-package provider_test
+package pro_test
 
 import (
 	"context"
@@ -10,6 +10,8 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -33,7 +35,7 @@ var marketplaceFlag = flag.Bool("marketplace", false,
 func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
-	name := testRandomWithPrefix()
+	name := utils.RandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
@@ -104,14 +106,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 				},
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, cloudAccountName, name, "ram"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "0"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.dataset_size_in_gb", "1"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.replication", "false"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "false"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.throughput_measurement_by", "operations-per-second"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.throughput_measurement_value", "10000"),
+					// Framework blocks follow the configuration: a removed creation_plan block is no longer kept in state.
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "0"),
 				),
 			},
 			{
@@ -163,7 +159,7 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis7(t *testing.T) {
 func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
-	name := testRandomWithPrefix()
+	name := utils.RandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
@@ -231,14 +227,8 @@ func TestAccResourceRedisCloudProSubscription_CRUDI_Redis8(t *testing.T) {
 				},
 				Config: fmt.Sprintf(testAccResourceRedisCloudProSubscriptionNoCreationPlan, cloudAccountName, name, "ram"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.average_item_size_in_bytes", "0"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.dataset_size_in_gb", "1"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.quantity", "1"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.replication", "false"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.support_oss_cluster_api", "false"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.throughput_measurement_by", "operations-per-second"),
-					resource.TestCheckResourceAttr(resourceName, "creation_plan.0.throughput_measurement_value", "10000"),
+					// Framework blocks follow the configuration: a removed creation_plan block is no longer kept in state.
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "0"),
 				),
 			},
 			{
@@ -293,7 +283,7 @@ func TestAccResourceRedisCloudProSubscription_preferredAZsModulesOptional(t *tes
 		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
-	name := testRandomWithPrefix()
+	name := utils.RandomWithPrefix()
 	const resourceName = "rediscloud_subscription.example"
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
@@ -325,7 +315,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateContractPayment(t *tes
 		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
-	name := testRandomWithPrefix()
+	name := utils.RandomWithPrefix()
 	updatedName := fmt.Sprintf("%v-updatedName", name)
 	const resourceName = "rediscloud_subscription.example"
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
@@ -369,7 +359,7 @@ func TestAccResourceRedisCloudProSubscription_createUpdateMarketplacePayment(t *
 		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
-	name := testRandomWithPrefix()
+	name := utils.RandomWithPrefix()
 	updatedName := fmt.Sprintf("%v-updatedName", name)
 	const resourceName = "rediscloud_subscription.example"
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
@@ -407,7 +397,7 @@ func TestAccResourceRedisCloudProSubscription_RedisVersion(t *testing.T) {
 		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
-	name := testRandomWithPrefix()
+	name := utils.RandomWithPrefix()
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
 
 	identifier := ""
@@ -461,7 +451,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 		"owner": config.StringVariable(resourceTags.Owner),
 	}
 
-	name := testRandomWithPrefix() + "-mw"
+	name := utils.RandomWithPrefix() + "-mw"
 	resourceName := "rediscloud_subscription.example"
 	datasourceName := "data.rediscloud_subscription.example"
 	cloudAccountName, cloudAccountCheck := envchecks.AWSBYOCValueAndCheck()
@@ -515,8 +505,8 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 				Config:          fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, defaultMW),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", name),
-					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.mode", "automatic"),
-					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.0.window.#", "0"),
+					// Framework blocks cannot be computed: an omitted maintenance_windows block stays empty.
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.#", "0"),
 
 					resource.TestCheckResourceAttr(datasourceName, "name", name),
 					resource.TestCheckResourceAttr(datasourceName, "maintenance_windows.0.mode", "automatic"),
@@ -558,12 +548,12 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 			{
 				ConfigVariables: tagVariables,
 				Config:          fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, errorManualMw),
-				ExpectError:     regexp.MustCompile("Must provide at least one maintenance window with manual maintenance mode"),
+				ExpectError:     regexp.MustCompile(`Must\s+provide\s+at\s+least\s+one\s+maintenance\s+window\s+with\s+manual\s+maintenance\s+mode`),
 			},
 			{
 				ConfigVariables: tagVariables,
 				Config:          fmt.Sprintf(testAccResourceRedisCloudProSubscriptionMaintenanceWindows, cloudAccountName, name, errorAutoMw),
-				ExpectError:     regexp.MustCompile("Automatic mode cannot be set with a manual maintenance window"),
+				ExpectError:     regexp.MustCompile(`Automatic\s+mode\s+cannot\s+be\s+set\s+with\s+a\s+manual\s+maintenance\s+window`),
 			},
 			{
 				ConfigVariables: tagVariables,
@@ -619,7 +609,7 @@ func TestAccResourceRedisCloudProSubscription_MaintenanceWindows(t *testing.T) {
 
 func TestAccResourceRedisCloudProSubscription_PublicEndpointAccess(t *testing.T) {
 
-	name := testRandomWithPrefix()
+	name := utils.RandomWithPrefix()
 	resourceName := "rediscloud_subscription.example"
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -645,6 +635,56 @@ func TestAccResourceRedisCloudProSubscription_PublicEndpointAccess(t *testing.T)
 	})
 }
 
+// Checks that a subscription created by the last SDKv2 release plans no changes with the Framework provider.
+func TestAccResourceRedisCloudProSubscription_StateUpgradeFromSDK(t *testing.T) {
+	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
+	tagVariables := config.Variables{
+		"team":  config.StringVariable(resourceTags.Team),
+		"owner": config.StringVariable(resourceTags.Owner),
+	}
+
+	name := utils.RandomWithPrefix()
+	resourceName := "rediscloud_subscription.example"
+	subscriptionConfig := fmt.Sprintf(utils.GetTestConfig(t, "./testdata/pro_subscription_state_upgrade.tf"), name)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     envchecks.ComposePreChecks(t, resourceTagsCheck, envchecks.RedisCloudCheck),
+		CheckDestroy: testhelpers.CheckProSubscriptionDestroy,
+		Steps: []resource.TestStep{
+			{
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"rediscloud": {
+						Source:            "RedisLabs/rediscloud",
+						VersionConstraint: "2.20.0",
+					},
+				},
+				ConfigVariables: tagVariables,
+				Config:          subscriptionConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
+				),
+			},
+			{
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ConfigVariables:          tagVariables,
+				Config:                   subscriptionConfig,
+				PlanOnly:                 true,
+			},
+			{
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ConfigVariables:          tagVariables,
+				Config:                   subscriptionConfig,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "creation_plan.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "maintenance_windows.#", "0"),
+				),
+			},
+		},
+	})
+}
+
 // Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is one.
 func TestUnitFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 
@@ -659,7 +699,7 @@ func TestUnitFlexSubModulesAllocationWhenGraphAndQuantityIsOne(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRamAndFlash, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(context.Background(), databases.MemoryStorageRamAndFlash, creationPlanFromMap(planMap))
 	assert.Empty(t, diags)
 	otherDatabases := 0
 	graphDatabases := 0
@@ -695,7 +735,7 @@ func TestUnitFlexSubModulesAllocationWhenGraphAndQuantityMoreThanOne(t *testing.
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(context.Background(), databases.MemoryStorageRam, creationPlanFromMap(planMap))
 	assert.Empty(t, diags)
 	graphDatabases := 0
 	otherDatabases := 0
@@ -730,7 +770,7 @@ func TestUnitFlexSubModulesAllocationWhenOnlyGraphModule(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(context.Background(), databases.MemoryStorageRam, creationPlanFromMap(planMap))
 	assert.Len(t, createDbs, numDatabases)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -753,7 +793,7 @@ func TestUnitFlexSubModulesAllocationWhenNoGraph(t *testing.T) {
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(context.Background(), databases.MemoryStorageRam, creationPlanFromMap(planMap))
 	assert.Len(t, createDbs, numDatabases)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -778,7 +818,7 @@ func TestUnitFlexSubNoModulesInCreatePlanDatabases(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(context.Background(), databases.MemoryStorageRam, creationPlanFromMap(planMap))
 	assert.Len(t, createDbs, 2)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -799,7 +839,7 @@ func TestUnitFlexSubNoAverageItemSizeInBytes(t *testing.T) {
 		"throughput_measurement_by":    "operations-per-second",
 		"throughput_measurement_value": 10000,
 	}
-	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(context.Background(), databases.MemoryStorageRam, creationPlanFromMap(planMap))
 	assert.Len(t, createDbs, 2)
 	assert.Empty(t, diags)
 	for _, createDb := range createDbs {
@@ -819,7 +859,7 @@ func TestUnitFlexSubRediSearchThroughputMeasurementWhenReplicationIsFalse(t *tes
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(context.Background(), databases.MemoryStorageRam, creationPlanFromMap(planMap))
 	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
@@ -838,7 +878,7 @@ func TestUnitFlexSubRediSearchThroughputMeasurementWhenReplicationIsTrue(t *test
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(context.Background(), databases.MemoryStorageRam, creationPlanFromMap(planMap))
 	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "number-of-shards", *createDb.ThroughputMeasurement.By)
@@ -857,7 +897,7 @@ func TestUnitFlexSubRedisGraphThroughputMeasurementWhenReplicationIsFalse(t *tes
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(context.Background(), databases.MemoryStorageRam, creationPlanFromMap(planMap))
 	assert.Empty(t, diags)
 	createDb := createDbs[0]
 	assert.Equal(t, "operations-per-second", *createDb.ThroughputMeasurement.By)
@@ -876,7 +916,7 @@ func TestUnitFlexSubRedisGraphThroughputMeasurementWhenReplicationIsTrue(t *test
 		"throughput_measurement_by":    "number-of-shards",
 		"throughput_measurement_value": 2,
 	}
-	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(databases.MemoryStorageRam, planMap)
+	createDbs, diags := pro.BuildSubscriptionCreatePlanDatabases(context.Background(), databases.MemoryStorageRam, creationPlanFromMap(planMap))
 	assert.Len(t, diags, 1, "Warning should be reported when storage was ram and using `average_item_size_in_bytes`")
 	assert.False(t, diags.HasError(), "diagnostic should be a warning, not an error")
 	createDb := createDbs[0]
@@ -1327,11 +1367,31 @@ resource "rediscloud_subscription" "example" {
 `
 
 func testAccResourceRedisCloudProSubscriptionRedis7(t *testing.T, cloudAccountName string, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_redis7.tf")
+	content := utils.GetTestConfig(t, "./testdata/pro_subscription_redis7.tf")
 	return fmt.Sprintf(content, cloudAccountName, subscriptionName)
 }
 
 func testAccResourceRedisCloudProSubscriptionRedis8(t *testing.T, cloudAccountName string, subscriptionName string) string {
-	content := utils.GetTestConfig(t, "./pro/testdata/pro_subscription_redis8.tf")
+	content := utils.GetTestConfig(t, "./testdata/pro_subscription_redis8.tf")
 	return fmt.Sprintf(content, cloudAccountName, subscriptionName)
+}
+
+func creationPlanFromMap(planMap map[string]interface{}) pro.CreationPlanModel {
+	var modules []attr.Value
+	for _, m := range planMap["modules"].([]interface{}) {
+		modules = append(modules, types.StringValue(m.(string)))
+	}
+	return pro.CreationPlanModel{
+		MemoryLimitInGB:            types.Float64Null(),
+		DatasetSizeInGB:            types.Float64Value(planMap["dataset_size_in_gb"].(float64)),
+		QueryPerformanceFactor:     types.StringNull(),
+		ThroughputMeasurementBy:    types.StringValue(planMap["throughput_measurement_by"].(string)),
+		ThroughputMeasurementValue: types.Int64Value(int64(planMap["throughput_measurement_value"].(int))),
+		AverageItemSizeInBytes:     types.Int64Value(int64(planMap["average_item_size_in_bytes"].(int))),
+		RamPercentage:              types.Int64Null(),
+		Quantity:                   types.Int64Value(int64(planMap["quantity"].(int))),
+		SupportOSSClusterAPI:       types.BoolValue(planMap["support_oss_cluster_api"].(bool)),
+		Replication:                types.BoolValue(planMap["replication"].(bool)),
+		Modules:                    types.ListValueMust(types.StringType, modules),
+	}
 }

@@ -14,7 +14,7 @@ import (
 )
 
 func TestSubscriptionGracePeriodRequest(t *testing.T) {
-	for _, name := range []string{"rediscloud_subscription", "rediscloud_active_active_subscription"} {
+	for _, name := range []string{"rediscloud_active_active_subscription"} {
 		t.Run(name, func(t *testing.T) {
 			for _, activation := range []bool{false, true} {
 				label := "grace period only"

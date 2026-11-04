@@ -1,0 +1,80 @@
+{
+  "allowlist": [],
+  "cloud_provider": [
+    {
+      "aws_account_id": "123456789012",
+      "cloud_account_id": "1",
+      "provider": "AWS",
+      "region": [
+        {
+          "multiple_availability_zones": false,
+          "networking_deployment_cidr": "10.0.0.0/24",
+          "networking_vpc_id": "vpc-api",
+          "networks": [
+            {
+              "networking_deployment_cidr": "10.0.0.0/24",
+              "networking_subnet_id": "subnet-api",
+              "networking_vpc_id": "vpc-api"
+            }
+          ],
+          "preferred_availability_zones": [
+            "eu-west-1c"
+          ],
+          "region": "eu-west-1"
+        }
+      ],
+      "resource_tags": {
+        "owner": "owner",
+        "team": "team"
+      }
+    }
+  ],
+  "creation_plan": [
+    {
+      "average_item_size_in_bytes": 0,
+      "dataset_size_in_gb": 1,
+      "memory_limit_in_gb": 0,
+      "modules": null,
+      "quantity": 1,
+      "query_performance_factor": "",
+      "ram_percentage": 0,
+      "replication": false,
+      "support_oss_cluster_api": false,
+      "throughput_measurement_by": "operations-per-second",
+      "throughput_measurement_value": 1000
+    }
+  ],
+  "customer_managed_key": [],
+  "customer_managed_key_aws_role_arn": "",
+  "customer_managed_key_deletion_grace_period": "",
+  "customer_managed_key_enabled": false,
+  "customer_managed_key_redis_service_account": "",
+  "id": "123",
+  "maintenance_windows": [
+    {
+      "mode": "automatic",
+      "window": []
+    }
+  ],
+  "memory_storage": "ram",
+  "name": "sub",
+  "payment_method": "credit-card",
+  "payment_method_id": "1",
+  "prometheus_endpoint": "prometheus.example:8070",
+  "public_endpoint_access": true,
+  "pricing": [
+    {
+      "database_name": "",
+      "price_currency": "USD",
+      "price_per_unit": 0.137,
+      "price_period": "hour",
+      "quantity": 2,
+      "quantity_measurement": "shards",
+      "region": "eu-west-1",
+      "type": "Shards",
+      "type_details": "micro"
+    }
+  ],
+  "redis_version": null,
+  "timeouts": null
+}
