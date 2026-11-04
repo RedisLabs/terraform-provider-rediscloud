@@ -28,11 +28,17 @@ func SuppressIfRedisVersionSatisfied(_, _, newVal string, d *schema.ResourceData
 	if !ok {
 		return false
 	}
-	requested, err := version.NewVersion(newVal)
+	return RedisVersionSatisfied(newVal, actualRaw.(string))
+}
+
+// RedisVersionSatisfied reports whether the actual version meets or exceeds the
+// requested one within the same major version.
+func RedisVersionSatisfied(requestedRaw, actualRaw string) bool {
+	requested, err := version.NewVersion(requestedRaw)
 	if err != nil {
 		return false
 	}
-	actual, err := version.NewVersion(actualRaw.(string))
+	actual, err := version.NewVersion(actualRaw)
 	if err != nil {
 		return false
 	}

@@ -1,4 +1,4 @@
-package provider_test
+package essentialsdatabase_test
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentialsdatabase"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/testhelpers"
 )
 
@@ -35,7 +35,7 @@ func TestEssentialsDatabaseActiveWaiter(t *testing.T) {
 				}
 				return map[string]any{"databaseId": 456, "status": state}, nil
 			})
-			err := provider.WaitForEssentialsDatabaseToBeActive(context.Background(), 123, 456, testhelpers.NewAPIClient(t, fake), 5*time.Second)
+			err := essentialsdatabase.WaitForEssentialsDatabaseToBeActive(context.Background(), 123, 456, testhelpers.NewAPIClient(t, fake), 5*time.Second)
 			if tc.wantError {
 				require.Error(t, err)
 				return
