@@ -99,8 +99,8 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				"rediscloud_active_active_private_service_connect":                   resourceRedisCloudActiveActivePrivateServiceConnect(),
 				"rediscloud_active_active_private_service_connect_endpoint":          resourceRedisCloudActiveActivePrivateServiceConnectEndpoint(),
 				"rediscloud_active_active_private_service_connect_endpoint_accepter": resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter(),
-				"rediscloud_transit_gateway_attachment":                              resourceRedisCloudTransitGatewayAttachment(),
-				"rediscloud_active_active_transit_gateway_attachment":                resourceRedisCloudActiveActiveTransitGatewayAttachment(),
+				// Note: rediscloud_transit_gateway_attachment is served by the Plugin Framework provider
+				// Note: rediscloud_active_active_transit_gateway_attachment is served by the Plugin Framework provider
 				// Note: rediscloud_transit_gateway_route is served by the Plugin Framework provider
 				// Note: rediscloud_active_active_transit_gateway_route is served by the Plugin Framework provider
 				"rediscloud_transit_gateway_invitation_acceptor":               transitgateway.ResourceRedisCloudTransitGatewayInvitationAcceptor(),

@@ -67,7 +67,7 @@ func (d *transitGatewayDataSource) Read(ctx context.Context, req datasource.Read
 			return
 		}
 
-		filtered = FilterTransitGatewayAttachments(tgwTask, filters)
+		filtered = filterTransitGatewayAttachments(tgwTask, filters)
 	}
 
 	tgw, diags := singleTransitGateway(filtered)

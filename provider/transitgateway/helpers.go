@@ -154,11 +154,11 @@ func waitForInvitations(
 	return invitations, diags
 }
 
-// TransitGatewayAttachmentFilter selects Transit Gateway attachments returned by the API.
-type TransitGatewayAttachmentFilter func(tgwa *attachments.TransitGatewayAttachment) bool
+// transitGatewayAttachmentFilter selects Transit Gateway attachments returned by the API.
+type transitGatewayAttachmentFilter func(tgwa *attachments.TransitGatewayAttachment) bool
 
-// FilterTransitGatewayAttachments returns the attachments in the task that satisfy every filter.
-func FilterTransitGatewayAttachments(getAttachmentsTask *attachments.GetAttachmentsTask, filters []TransitGatewayAttachmentFilter) []*attachments.TransitGatewayAttachment {
+// filterTransitGatewayAttachments returns the attachments in the task that satisfy every filter.
+func filterTransitGatewayAttachments(getAttachmentsTask *attachments.GetAttachmentsTask, filters []transitGatewayAttachmentFilter) []*attachments.TransitGatewayAttachment {
 	var filtered []*attachments.TransitGatewayAttachment
 
 	if getAttachmentsTask == nil || getAttachmentsTask.Response == nil || getAttachmentsTask.Response.Resource == nil {
@@ -173,7 +173,7 @@ func FilterTransitGatewayAttachments(getAttachmentsTask *attachments.GetAttachme
 	return filtered
 }
 
-func transitGatewayAttachmentMatches(tgwa *attachments.TransitGatewayAttachment, filters []TransitGatewayAttachmentFilter) bool {
+func transitGatewayAttachmentMatches(tgwa *attachments.TransitGatewayAttachment, filters []transitGatewayAttachmentFilter) bool {
 	for _, filter := range filters {
 		if !filter(tgwa) {
 			return false
@@ -192,8 +192,8 @@ func CidrsFromAPI(ctx context.Context, cidrs []*attachments.Cidr) (types.List, d
 }
 
 // transitGatewayDataSourceFilters mirrors the SDKv2 GetOk semantics, where zero values do not filter.
-func transitGatewayDataSourceFilters(tgwId types.Int64, awsTgwUid types.String) []TransitGatewayAttachmentFilter {
-	var filters []TransitGatewayAttachmentFilter
+func transitGatewayDataSourceFilters(tgwId types.Int64, awsTgwUid types.String) []transitGatewayAttachmentFilter {
+	var filters []transitGatewayAttachmentFilter
 
 	if v := tgwId.ValueInt64(); v != 0 {
 		filters = append(filters, func(tgwa *attachments.TransitGatewayAttachment) bool {
@@ -218,7 +218,7 @@ func waitForMatchingTransitGateways(
 	label string,
 	location string,
 	fetch func(context.Context) (*attachments.GetAttachmentsTask, error),
-	filters []TransitGatewayAttachmentFilter,
+	filters []transitGatewayAttachmentFilter,
 ) ([]*attachments.TransitGatewayAttachment, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	wait := &retry.StateChangeConf{
@@ -240,7 +240,7 @@ func waitForMatchingTransitGateways(
 				return nil, "waiting", nil
 			}
 
-			filtered := FilterTransitGatewayAttachments(tgwTask, filters)
+			filtered := filterTransitGatewayAttachments(tgwTask, filters)
 			if len(filtered) == 0 {
 				return nil, "waiting", nil
 			}
@@ -300,7 +300,7 @@ func cidrsToAPI(ctx context.Context, cidrs types.List) ([]*string, diag.Diagnost
 // findTransitGatewayAttachment returns the attachment with tgwId, or nil when the API does not list it.
 func findTransitGatewayAttachment(tgwTask *attachments.GetAttachmentsTask, tgwId int, idDescription string) (*attachments.TransitGatewayAttachment, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	tgws := FilterTransitGatewayAttachments(tgwTask, []TransitGatewayAttachmentFilter{
+	tgws := filterTransitGatewayAttachments(tgwTask, []transitGatewayAttachmentFilter{
 		func(tgw *attachments.TransitGatewayAttachment) bool {
 			return redis.IntValue(tgw.Id) == tgwId
 		},

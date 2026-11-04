@@ -175,7 +175,9 @@ func (p *redisCloudFrameworkProvider) Resources(_ context.Context) []func() reso
 		agentmemory.NewAgentMemoryResource,
 		agentmemory.NewAgentMemoryAPIKeyResource,
 		cloudaccount.NewCloudAccountResource,
+		transitgateway.NewActiveActiveTransitGatewayAttachmentResource,
 		transitgateway.NewActiveActiveTransitGatewayRouteResource,
+		transitgateway.NewTransitGatewayAttachmentResource,
 		transitgateway.NewTransitGatewayRouteResource,
 	}
 }

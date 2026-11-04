@@ -10,6 +10,7 @@
 - Migrated `rediscloud_transit_gateway` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 - Migrated `rediscloud_transit_gateway_invitations` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes. Invitations are now ordered by invitation ID.
 - Migrated `rediscloud_active_active_transit_gateway_route` and `rediscloud_transit_gateway_route` resources from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+- Migrated `rediscloud_active_active_transit_gateway_attachment` and `rediscloud_transit_gateway_attachment` resources from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 
 ## 2.20.0 (4th November 2026)
 
