@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/deprecation"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
 
@@ -119,6 +120,7 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ExactlyOneOf: []string{"memory_limit_in_gb", "dataset_size_in_gb"},
+				Deprecated:   deprecation.Message("memory_limit_in_gb", "`dataset_size_in_gb`"),
 			},
 			"dataset_size_in_gb": {
 				Description:  "Maximum amount of data in the dataset for this specific database in GB",
@@ -195,7 +197,7 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				// specified. SDK's catch-all issue around this: https://github.com/hashicorp/terraform-plugin-sdk/issues/261
 				Default:       0,
 				ConflictsWith: []string{"ram_percentage"},
-				Deprecated:    "Configure `ram_percentage` instead. This attribute will be removed in the next major version of the provider.",
+				Deprecated:    deprecation.Message("average_item_size_in_bytes", "`ram_percentage`"),
 			},
 			"ram_percentage": {
 				Description:   "Relevant only to ram-and-flash subscriptions. The percentage of data to be stored in RAM",
@@ -230,10 +232,11 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Computed:    true,
 			},
 			"client_ssl_certificate": {
-				Description: "SSL certificate to authenticate user connections",
-				Type:        schema.TypeString,
-				Optional:    true,
-				Default:     "",
+				Description:      "SSL certificate to authenticate user connections",
+				Type:             schema.TypeString,
+				Optional:         true,
+				Default:          "",
+				ValidateDiagFunc: deprecation.WhenNonEmpty("client_ssl_certificate", "`client_tls_certificates`"),
 			},
 			"client_tls_certificates": {
 				Description: "TLS certificates to authenticate user connections",
@@ -250,7 +253,7 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				Optional:      true,
 				Default:       "",
 				ConflictsWith: []string{"remote_backup"},
-				Deprecated:    "Use `remote_backup` block instead",
+				Deprecated:    deprecation.Message("periodic_backup_path", "the `remote_backup` block"),
 			},
 			"replica_of": {
 				Description: "Set of Redis database URIs, in the format `redis://user:password@host:port`, that this database will be a replica of. If the URI provided is Redis Labs Cloud instance, only host and port should be provided",

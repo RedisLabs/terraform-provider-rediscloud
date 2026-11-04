@@ -74,16 +74,16 @@ The following arguments are supported:
 * `redis_version` - (Optional) The requested Redis version of the database. If omitted, the Redis version will be the default. May differ if `auto_minor_version_upgrade` is set to `true`. Use `redis_version_actual` to fetch the Redis version used by the database.
 * `throughput_measurement_by` - (Required) Throughput measurement method that will be used by your databases. Either `number-of-shards` or `operations-per-second`. **`number-of-shards` is deprecated and only supported for legacy deployments.**
 * `throughput_measurement_value` - (Required) Throughput value (as applies to selected measurement method)
-* `memory_limit_in_gb` - (Optional -  **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead **Deprecated in favor of `dataset_size_in_gb` - not possible to import databases with this attribute set**
+* `memory_limit_in_gb` - (Optional -  **Required if `dataset_size_in_gb` is unset**) Maximum memory usage for this specific database, including replication and other overhead. **Deprecated: `memory_limit_in_gb` is deprecated and will be removed in the next major version of the provider. Use `dataset_size_in_gb` instead.** It is not possible to import a database with this attribute set.
 * `dataset_size_in_gb` - (Optional - **Required if `memory_limit_in_gb` is unset**) The maximum amount of data in the dataset for this specific database is in GB
 * `protocol` - (Optional) The protocol that will be used to access the database, (either ‘redis’ or ‘memcached’) Default: ‘redis’. **Modifying this attribute will force creation of a new resource.**
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
 * `resp_version` - (Optional) Either `resp2` or `resp3`. Database's RESP version. Must be compatible with the Redis version.
 * `external_endpoint_for_oss_cluster_api` - (Optional) Should use the external endpoint for open-source (OSS) Cluster API.
   Can only be enabled if OSS Cluster API support is enabled. Default: 'false'
-* `client_ssl_certificate` - (Optional) SSL certificate to authenticate user connections, conflicts with `client_tls_certificates`
+* `client_ssl_certificate` - (Optional) SSL certificate to authenticate user connections, conflicts with `client_tls_certificates`. **Deprecated: `client_ssl_certificate` is deprecated and will be removed in the next major version of the provider. Use `client_tls_certificates` instead.** A warning is shown on plan and apply only when this value is non-empty.
 * `client_tls_certificates` - (Optional) A list of TLS certificates to authenticate user connections, conflicts with `client_ssl_certificate`
-* `periodic_backup_path` - (Optional) Path that will be used to store database backup files. **Deprecated: Use `remote_backup` block instead**
+* `periodic_backup_path` - (Optional) Path that will be used to store database backup files. **Deprecated: `periodic_backup_path` is deprecated and will be removed in the next major version of the provider. Use the `remote_backup` block instead.**
 * `replica_of` - (Optional) Set of Redis database URIs, in the format `redis://user:password@host:port`, that this
   database will be a replica of. If the URI provided is a Redis Cloud resource, only host and port should be provided.
 * `modules` - (Optional) A list of modules objects, documented below. **Don’t specify modules for DB versions 8 and above. All capabilities are bundled in the DB by default.**
@@ -95,7 +95,7 @@ The following arguments are supported:
 * `replication` - (Optional) Databases replication. Default: ‘true’
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters. Estimated average size (measured in bytes)
   of the items stored in the database. Default: 1000.
-**Deprecated: This attribute is deprecated. Configure `ram_percentage` instead. This attribute will be removed in the next major version of the provider.**
+**Deprecated: `average_item_size_in_bytes` is deprecated and will be removed in the next major version of the provider. Use `ram_percentage` instead.**
 * `ram_percentage` - (Optional) Relevant only to ram-and-flash subscriptions. The percentage of data to be stored in RAM. Must be between 10 and 50 in steps of 10 (10, 20, 30, 40, 50). Default: 20
 * `source_ips` - (Optional) List of source IP addresses or subnet masks that are allowed to connect to the database (example: ['192.168.10.0/32', '192.168.12.0/24']). When not specified, the default behavior depends on the subscription's `public_endpoint_access` setting: if `false`, defaults to RFC1918 private IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10); if `true`, defaults to 0.0.0.0/0 (unrestricted public access)
 * `hashing_policy` - (Optional) List of regular expression rules to shard the database by. See

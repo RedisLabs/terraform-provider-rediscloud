@@ -79,7 +79,7 @@ The following arguments are supported:
 * `payment_method_id` - (Optional) A valid payment method pre-defined in the current account. Only __Required__ when `payment_method` is `credit-card`.
 * `public_endpoint_access` - (Optional) Allow public access to databases within this subscription. When set to `false`, database access is restricted to private IP ranges only. Default: `true`.
 * `memory_storage` - (Optional) Memory storage preference: either ‘ram’ or a combination of ‘ram-and-flash’. Default: ‘ram’. **Modifying this attribute will force creation of a new resource.**
-* `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default.  **Deprecated: This attribute is deprecated on the subscriptions level. Please specify `redis_version` on databases directly instead.**
+* `redis_version` - (Optional) The Redis version of the databases in the subscription. If omitted, the Redis version will be the default. **Deprecated: `redis_version` is deprecated and will be removed in the next major version of the provider. Use `redis_version` on the database instead.**
 * `allowlist` - (Optional) An allowlist object, documented below
 * `cloud_provider` - (Required) A cloud provider object, documented below. **Modifying this attribute will force creation of a new resource.**
 * `creation_plan` - (Required) A creation plan object, documented below.
@@ -106,7 +106,7 @@ The `cloud_provider` block supports:
 
 The `creation_plan` block supports:
 
-* `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database. You can not set both dataset_size_in_gb and memory_limit_in_gb. **Deprecated: Use `dataset_size_in_gb` instead**
+* `memory_limit_in_gb` - (Required) Maximum memory usage that will be used for your largest planned database. You can not set both dataset_size_in_gb and memory_limit_in_gb. **Deprecated: `memory_limit_in_gb` is deprecated and will be removed in the next major version of the provider. Use `dataset_size_in_gb` instead.**
 * `dataset_size_in_gb` - (Required) The maximum amount of data in the dataset for this specific database is in GB. You can not set both dataset_size_in_gb and memory_limit_in_gb.
 * `modules` - (Optional) a list of modules that will be used by the databases in this subscription. **Don’t specify modules for DB versions 8 and above. All capabilities are bundled in the DB by default.**
 * `support_oss_cluster_api` - (Optional) Support Redis open-source (OSS) Cluster API. Default: ‘false’
@@ -117,7 +117,7 @@ The `creation_plan` block supports:
 * `average_item_size_in_bytes` - (Optional) Relevant only to ram-and-flash clusters
   Estimated average size (measured in bytes) of the items stored in the database. The value needs to
   be the maximum average item size defined in one of your databases.  Default: 1000.
- **Deprecated: This attribute is deprecated. Configure `ram_percentage` instead. This attribute will be removed in the next major version of the provider.**
+ **Deprecated: `average_item_size_in_bytes` is deprecated and will be removed in the next major version of the provider. Use `ram_percentage` instead.**
 * `ram_percentage` - (Optional) Relevant only to ram-and-flash subscriptions. The percentage of data to be stored in RAM. Must be between 10 and 50 in steps of 10 (10, 20, 30, 40, 50). Default: 20
 * `query_performance_factor` - (Optional) The query performance factor adds extra compute power specifically for search and query databases. You can increase your queries per second by the selected factor. Valid values are "Standard" or multiples of 2, e.g. 2x, 4x, 6x, 8x.
 
