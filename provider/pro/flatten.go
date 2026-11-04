@@ -1,53 +1,14 @@
 package pro
 
 import (
-	"context"
-	"fmt"
 	"strconv"
-
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/maintenance"
 	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
-	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
-
-func flattenSubscriptionAllowlist(ctx context.Context, subId int, api *client.ApiClient) ([]map[string]interface{}, error) {
-	allowlist, err := api.Client.Subscription.GetCIDRAllowlist(ctx, subId)
-	if err != nil {
-		return nil, err
-	}
-
-	if !isNil(allowlist.Errors) {
-		return nil, fmt.Errorf("unable to read allowlist for subscription %d: %v", subId, allowlist.Errors)
-	}
-
-	var cidrs []string
-	for _, cidr := range allowlist.CIDRIPs {
-		cidrs = append(cidrs, redis.StringValue(cidr))
-	}
-	var sgs []string
-	for _, sg := range allowlist.SecurityGroupIDs {
-		sgs = append(sgs, redis.StringValue(sg))
-	}
-
-	tfs := map[string]interface{}{}
-
-	if len(cidrs) != 0 {
-		tfs["cidrs"] = cidrs
-	}
-	if len(sgs) != 0 {
-		tfs["security_group_ids"] = sgs
-	}
-	if len(tfs) == 0 {
-		return nil, nil
-	}
-
-	return []map[string]interface{}{tfs}, nil
-}
 
 func isNil(i interface{}) bool {
 	if i == nil {
@@ -67,81 +28,6 @@ func isNil(i interface{}) bool {
 	}
 
 	return false
-}
-
-// FlattenCloudDetails maps cloud-provider state for SDKv2 subscription resources.
-// Keep this map-based helper until its remaining callers migrate to the Framework.
-func FlattenCloudDetails(cloudDetails []*subscriptions.CloudDetail, isResource bool) []map[string]interface{} {
-	var cdl []map[string]interface{}
-
-	for _, currentCloudDetail := range cloudDetails {
-
-		var regions []interface{}
-		for _, currentRegion := range currentCloudDetail.Regions {
-
-			regionMapString := map[string]interface{}{
-				"region":                       redis.StringValue(currentRegion.Region),
-				"multiple_availability_zones":  redis.BoolValue(currentRegion.MultipleAvailabilityZones),
-				"preferred_availability_zones": currentRegion.PreferredAvailabilityZones,
-				"networks":                     flattenNetworks(currentRegion.Networking),
-			}
-
-			if isResource {
-				if len(currentRegion.Networking) > 0 && !redis.BoolValue(currentRegion.MultipleAvailabilityZones) {
-					regionMapString["networking_deployment_cidr"] = redis.StringValue(currentRegion.Networking[0].DeploymentCIDR)
-					regionMapString["networking_vpc_id"] = redis.StringValue(currentRegion.Networking[0].VPCId)
-				} else {
-					regionMapString["networking_deployment_cidr"] = ""
-					regionMapString["networking_vpc_id"] = ""
-				}
-			}
-
-			regions = append(regions, regionMapString)
-		}
-
-		cdlMapString := map[string]interface{}{
-			"provider":         redis.StringValue(currentCloudDetail.Provider),
-			"cloud_account_id": strconv.Itoa(redis.IntValue(currentCloudDetail.CloudAccountID)),
-			"region":           regions,
-			"resource_tags":    flattenResourceTags(currentCloudDetail.ResourceTags),
-		}
-
-		if currentCloudDetail.AWSAccountID != nil {
-			cdlMapString["aws_account_id"] = redis.StringValue(currentCloudDetail.AWSAccountID)
-		}
-
-		cdl = append(cdl, cdlMapString)
-	}
-
-	return cdl
-}
-
-// flattenResourceTags converts the API's key/value slice into a string map for
-// Terraform state. Always returns a non-nil map so Terraform records an empty
-// TypeMap rather than no attribute, which keeps "tags cleared" scenarios clean.
-func flattenResourceTags(tags []*subscriptions.ResourceTag) map[string]string {
-	result := make(map[string]string, len(tags))
-	for _, t := range tags {
-		result[redis.StringValue(t.Key)] = redis.StringValue(t.Value)
-	}
-	return result
-}
-
-func flattenNetworks(networks []*subscriptions.Networking) []map[string]interface{} {
-	var cdl []map[string]interface{}
-
-	for _, currentNetwork := range networks {
-
-		networkMapString := map[string]interface{}{
-			"networking_deployment_cidr": redis.StringValue(currentNetwork.DeploymentCIDR),
-			"networking_vpc_id":          redis.StringValue(currentNetwork.VPCId),
-			"networking_subnet_id":       redis.StringValue(currentNetwork.SubnetID),
-		}
-
-		cdl = append(cdl, networkMapString)
-	}
-
-	return cdl
 }
 
 func FlattenAlerts(alerts []*databases.Alert) []map[string]interface{} {
