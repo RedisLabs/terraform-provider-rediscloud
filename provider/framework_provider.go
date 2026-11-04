@@ -24,6 +24,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentialsplan"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentialssubscription"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/paymentmethod"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/peering"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/regions"
 )
@@ -192,6 +193,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 		cloudaccount.NewCloudAccountDataSource,
 		regions.NewRegionsDataSource,
 		pro.NewProSubscriptionDataSource,
+		peering.NewSubscriptionPeeringsDataSource,
 	}
 }
 
