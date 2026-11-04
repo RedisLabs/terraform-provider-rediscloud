@@ -5,6 +5,7 @@
 ### Changed
 
 - Raised the Go toolchain to 1.26.11 to pick up the fix for GO-2026-6859 in `net/http`.
+- Migrated `rediscloud_essentials_database` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 
 ## 2.20.0 (4th November 2026)
 
