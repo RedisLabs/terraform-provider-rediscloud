@@ -148,3 +148,31 @@ func TestEmptySetIfUnset(t *testing.T) {
 	emptySetIfUnset(&v)
 	assert.Len(t, v.Elements(), 1)
 }
+
+func TestFindActiveActiveVPCPeering(t *testing.T) {
+	regions := []*subscriptions.ActiveActiveVpcRegion{
+		{SourceRegion: redis.String("eu-west-1"), VPCPeerings: []*subscriptions.ActiveActiveVPCPeering{{ID: redis.Int(1)}}},
+		{SourceRegion: redis.String("us-east-1"), VPCPeerings: []*subscriptions.ActiveActiveVPCPeering{{ID: redis.Int(2)}, {ID: redis.Int(3)}}},
+	}
+
+	peering, sourceRegion := findActiveActiveVPCPeering(3, regions)
+	require.NotNil(t, peering)
+	assert.Equal(t, 3, redis.IntValue(peering.ID))
+	assert.Equal(t, "us-east-1", redis.StringValue(sourceRegion))
+
+	peering, sourceRegion = findActiveActiveVPCPeering(4, regions)
+	assert.Nil(t, peering)
+	assert.Nil(t, sourceRegion)
+}
+
+func TestActiveActiveSubscriptionPeeringNullUnknowns(t *testing.T) {
+	m := ActiveActiveSubscriptionPeeringResourceModel{
+		SourceRegion:      types.StringValue("europe-west2"),
+		DestinationRegion: types.StringUnknown(),
+		VPCCidrs:          types.SetUnknown(types.StringType),
+	}
+	m.nullUnknowns()
+	assert.Equal(t, types.StringValue("europe-west2"), m.SourceRegion)
+	assert.True(t, m.DestinationRegion.IsNull())
+	assert.Equal(t, types.SetValueMust(types.StringType, []attr.Value{}), m.VPCCidrs)
+}

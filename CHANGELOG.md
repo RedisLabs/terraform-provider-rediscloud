@@ -12,6 +12,7 @@
 - Upgraded `rediscloud-go-api` from 0.53.0 to 0.54.0. GET requests to the API are now retried on connection resets and Cloudflare 520-524 responses, which made acceptance tests flaky.
 - Migrated `rediscloud_subscription_peerings` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
 - Migrated `rediscloud_subscription_peering` resource from Terraform SDK v2 to the Terraform Plugin Framework. Existing state is read without changes. `id` and `provider_name` are now reported as Computed at the protocol level; no configuration change is needed.
+- Migrated `rediscloud_active_active_subscription_peering` resource from Terraform SDK v2 to the Terraform Plugin Framework. Existing state is read without changes. `id` and `provider_name` are now reported as Computed at the protocol level; no configuration change is needed. Changing `gcp_project_id` or `gcp_network_name` now fails at plan time instead of apply time.
 
 ## 2.20.0 (4th November 2026)
 
