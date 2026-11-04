@@ -1,8 +1,29 @@
-locals {
-  subscription_name = "%s"
-  database_name     = "%s"
-  redis_version     = "%s"
-  password          = "%s"
+variable "subscription_name" {
+  type = string
+}
+
+variable "database_name" {
+  type = string
+}
+
+variable "password" {
+  type      = string
+  sensitive = true
+}
+
+variable "redis_version" {
+  type    = string
+  default = null
+}
+
+variable "protocol" {
+  type    = string
+  default = null
+}
+
+variable "alert_value" {
+  type    = number
+  default = 80
 }
 
 data "rediscloud_payment_method" "card" {
@@ -17,23 +38,22 @@ data "rediscloud_essentials_plan" "example" {
 }
 
 resource "rediscloud_essentials_subscription" "example" {
-  name              = local.subscription_name
+  name              = var.subscription_name
   plan_id           = data.rediscloud_essentials_plan.example.id
   payment_method_id = data.rediscloud_payment_method.card.id
 }
 
 resource "rediscloud_essentials_database" "example" {
   subscription_id  = rediscloud_essentials_subscription.example.id
-  name             = local.database_name
-  protocol         = "stack"
-  redis_version    = local.redis_version
+  name             = var.database_name
+  protocol         = var.protocol
+  redis_version    = var.redis_version
   replication      = false
   data_persistence = "none"
-
-  password = local.password
+  password         = var.password
 
   alert {
     name  = "throughput-higher-than"
-    value = 80
+    value = var.alert_value
   }
 }
