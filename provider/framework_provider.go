@@ -32,6 +32,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/psc"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/regions"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/transitgateway"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -219,6 +220,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 		privatelink.NewActiveActivePrivateLinkDataSource,
 		psc.NewPrivateServiceConnectDataSource,
 		psc.NewPrivateServiceConnectEndpointsDataSource,
+		transitgateway.NewActiveActiveTransitGatewayInvitationsDataSource,
 	}
 }
 
