@@ -175,4 +175,9 @@ Then commit the changes to `go.mod` and `go.sum`.
 Releasing the Provider
 ----------------------
 
-Releases are automated. See [RELEASE_PROCESS.md](./RELEASE_PROCESS.md) for the full process.
+Releases are automated. See [RELEASE_PROCESS.md](./RELEASE_PROCESS.md) for the full process. Crossplane and Pulumi follow that release on the next morning: [docs/design/downstream-provider-releases.md](docs/design/downstream-provider-releases.md).
+
+Glossary
+--------
+
+Repository terms are in [GLOSSARY.md](./GLOSSARY.md).
