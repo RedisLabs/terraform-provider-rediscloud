@@ -35,38 +35,47 @@ Crossplane and the dedicated Pulumi provider are generated from this Terraform p
 
 [RELEASE_PROCESS.md](../../RELEASE_PROCESS.md) is the process for this repository. A person merges to `main`, pushes a `v*` tag, and `.github/workflows/release.yml` publishes the GitHub release and the Terraform Registry provider.
 
-That tag is the input the other two repositories read. Their jobs are not called by the tag push. Each one polls GitHub once a day at 04:17 UTC. A person can also start either job from Actions → Run workflow.
+That tag is the input the other two repositories read. Nothing outside those repositories watches the tag. Each repository contains its own GitHub Action, the file `.github/workflows/terraform-release.yaml`. GitHub runs that file every day at 04:17 UTC because the file says `cron: "17 4 * * *"`. The same file can also be started by hand from Actions → Run workflow. The tag push does not start it.
 
 ```mermaid
 sequenceDiagram
     participant Person
-    participant TF as This repo
-    participant Clock as Daily 04:17 UTC
-    participant XP as crossplane-provider-rediscloud
-    participant PU as pulumi-rediscloud
+    participant TF as RedisLabs/terraform-provider-rediscloud
+    participant XW as RedisLabs/crossplane-provider-rediscloud<br/>workflow terraform-release.yaml
+    participant PW as RedisLabs/pulumi-rediscloud<br/>workflow terraform-release.yaml
 
     Person->>TF: Push tag vX.Y.Z
-    TF->>TF: release.yml publishes the provider
-    Note over Clock: The tag push does not call the other repos
-    Clock->>XP: Read the latest release
-    XP->>XP: Pin is older, so regenerate and open a pull request
-    Clock->>PU: Read the latest release
-    PU->>PU: Pin is older, so regenerate and open a pull request
-    Note over XP,PU: A person merges each pull request later
+    TF->>TF: .github/workflows/release.yml publishes the provider
+    Note over XW: This file lives in the Crossplane repo.<br/>GitHub runs it every day at 04:17 UTC.
+    XW->>TF: Read the latest GitHub release
+    XW->>XW: Pin is older, so regenerate and open a pull request in the Crossplane repo
+    Note over PW: This file lives in the Pulumi repo.<br/>GitHub runs it every day at 04:17 UTC.
+    PW->>TF: Read the latest GitHub release
+    PW->>PW: Pin is older, so regenerate and open a pull request in the Pulumi repo
 ```
 
 ## Where the jobs live
 
-```mermaid
-flowchart LR
-    TF["terraform-provider-rediscloud<br/>tag vX.Y.Z"]
-    XP["Crossplane repo<br/>.github/workflows/terraform-release.yaml"]
-    PU["Pulumi repo<br/>.github/workflows/terraform-release.yaml"]
-    PRX["Pull request on Crossplane main"]
-    PRP["Pull request on Pulumi main"]
+The daily run is not a third service. It is one workflow file inside `RedisLabs/crossplane-provider-rediscloud` and a second workflow file, with the same name, inside `RedisLabs/pulumi-rediscloud`.
 
-    TF --> XP --> PRX
-    TF --> PU --> PRP
+```mermaid
+flowchart TB
+    TF["RedisLabs/terraform-provider-rediscloud<br/>tag vX.Y.Z published by release.yml"]
+
+    subgraph XP["RedisLabs/crossplane-provider-rediscloud"]
+        XW["GitHub Action in this repo<br/>.github/workflows/terraform-release.yaml<br/>cron 04:17 UTC"]
+        PRX["Pull request on this repo main"]
+        XW --> PRX
+    end
+
+    subgraph PU["RedisLabs/pulumi-rediscloud"]
+        PW["GitHub Action in this repo<br/>.github/workflows/terraform-release.yaml<br/>cron 04:17 UTC"]
+        PRP["Pull request on this repo main"]
+        PW --> PRP
+    end
+
+    TF --> XW
+    TF --> PW
 ```
 
 | | Crossplane | Pulumi |
