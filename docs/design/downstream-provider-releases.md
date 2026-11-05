@@ -38,6 +38,7 @@ Crossplane and the dedicated Pulumi provider are generated from this Terraform p
 That tag is the input the other two repositories read. Nothing outside those repositories watches the tag. Each repository contains its own GitHub Action, the file `.github/workflows/terraform-release.yaml`. GitHub runs that file every day at 04:17 UTC because the file says `cron: "17 4 * * *"`. The same file can also be started by hand from Actions → Run workflow. The tag push does not start it.
 
 ```mermaid
+%%{init: {'sequence': {'mirrorActors': false}}}%%
 sequenceDiagram
     participant Person
     participant TF as RedisLabs/terraform-provider-rediscloud
