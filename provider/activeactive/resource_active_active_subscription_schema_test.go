@@ -221,6 +221,24 @@ func TestActiveActiveSubscriptionPlanModifiers(t *testing.T) {
 			PlanValue:   configured,
 		}, &response)
 		assert.True(t, response.PlanValue.IsNull())
+
+		response = planmodifier.ListResponse{PlanValue: types.ListUnknown(types.StringType)}
+		keepStateWhenUnsetList().PlanModifyList(ctx, planmodifier.ListRequest{
+			State:       present,
+			StateValue:  stored,
+			ConfigValue: configured,
+			PlanValue:   types.ListUnknown(types.StringType),
+		}, &response)
+		assert.True(t, response.PlanValue.IsUnknown())
+
+		response = planmodifier.ListResponse{}
+		keepStateWhenUnsetList().PlanModifyList(ctx, planmodifier.ListRequest{
+			State:       present,
+			StateValue:  stored,
+			ConfigValue: types.ListNull(types.StringType),
+			PlanValue:   types.ListUnknown(types.StringType),
+		}, &response)
+		assert.True(t, stored.Equal(response.PlanValue))
 	})
 }
 

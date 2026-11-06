@@ -131,7 +131,9 @@ func (m keepStateWhenUnsetListModifier) PlanModifyList(_ context.Context, req pl
 	if req.State.Raw.IsNull() || req.StateValue.IsNull() || req.StateValue.IsUnknown() {
 		return
 	}
-	if req.ConfigValue.IsNull() || req.PlanValue.IsUnknown() {
+	// Only an omitted block keeps state. A configured block must keep its plan,
+	// including when that plan is still unknown.
+	if req.ConfigValue.IsNull() {
 		resp.PlanValue = req.StateValue
 	}
 }
