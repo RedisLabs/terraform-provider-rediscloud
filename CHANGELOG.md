@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.21.0 (unreleased)
+
+### Fixed
+
+- `rediscloud_subscription_database` creates a database that sets `hashing_policy` with the custom sharding type (`custom-regex-rules`). Creation no longer fails with `DATABASE_SHARDING_TYPE_IS_IMMUTABLE` after redis-oss hashing became the default. Databases that omit `hashing_policy` keep that default. Adding or removing `hashing_policy` replaces the database. Changing the regex rules updates the database in place, and an update that does not change `hashing_policy` does not send the hashing policy.
+
 ## 2.20.0 (4th November 2026)
 
 ### Added

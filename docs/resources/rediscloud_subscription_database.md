@@ -100,7 +100,9 @@ The following arguments are supported:
 * `source_ips` - (Optional) List of source IP addresses or subnet masks that are allowed to connect to the database (example: ['192.168.10.0/32', '192.168.12.0/24']). When not specified, the default behavior depends on the subscription's `public_endpoint_access` setting: if `false`, defaults to RFC1918 private IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 100.64.0.0/10); if `true`, defaults to 0.0.0.0/0 (unrestricted public access)
 * `hashing_policy` - (Optional) List of regular expression rules to shard the database by. See
   [the documentation on clustering](https://docs.redislabs.com/latest/rc/concepts/clustering/) for more information on the
-  hashing policy. This cannot be set when `support_oss_cluster_api` is set to true.
+  hashing policy. When this is set, the database is created with the custom sharding type (`custom-regex-rules`).
+  Omit it to keep the account default, including redis-oss hashing. Adding or removing `hashing_policy` replaces the
+  database. Changing the rules updates the database in place. This cannot be set when `support_oss_cluster_api` is set to true.
 * `enable_tls` - (Optional) Use TLS for authentication. Default: ‘false’
 * `port` - (Optional) TCP port on which the database is available - must be between 10000 and 19999. **Modifying this attribute will force creation of a new resource.**
 * `remote_backup` (Optional) Specifies the backup options for the database, documented below

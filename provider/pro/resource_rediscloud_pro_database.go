@@ -324,7 +324,7 @@ func ResourceRedisCloudProDatabase() *schema.Resource {
 				},
 			},
 			"hashing_policy": {
-				Description: "List of regular expression rules to shard the database by. See the documentation on clustering for more information on the hashing policy - https://docs.redislabs.com/latest/rc/concepts/clustering/",
+				Description: "List of regular expression rules to shard the database by. When set, the database is created with the custom sharding type (custom-regex-rules). Omit it to keep the account default, including redis-oss hashing. Adding or removing this attribute replaces the database. Changing the rules updates the database in place. See the documentation on clustering for more information on the hashing policy - https://docs.redislabs.com/latest/rc/concepts/clustering/",
 				Type:        schema.TypeList,
 				Optional:    true,
 				Computed:    true,
@@ -519,7 +519,11 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		return append(diags, diag.FromErr(err)...)
 	}
 
-	dbId, err := api.Client.Database.Create(ctx, subId, createDatabase)
+	// hashing_policy is valid only for the custom sharding type. The create
+	// request has to select it; the follow-up update then sends the regex rules.
+	// Customers who omit hashing_policy keep the API default (redis-oss when
+	// that feature flag is on).
+	dbId, err := api.Client.Database.Create(createContextWithHashingPolicy(ctx, d), subId, createDatabase)
 	if err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return append(diags, diag.FromErr(err)...)
@@ -958,10 +962,10 @@ func resourceRedisCloudProDatabaseUpdateWithTimeout(ctx context.Context, d *sche
 		}
 	}
 
-	regex := d.Get("hashing_policy").([]interface{})
-	if len(regex) != 0 {
-		update.RegexRules = utils.InterfaceToStringSlice(regex)
-	}
+	// Send regex rules only when hashing_policy itself is changing. The Cloud
+	// API treats a hashing-policy change on a redis-oss database as immutable,
+	// and rules that were only read into state are not a configured change.
+	update.RegexRules = hashingPolicyRulesForUpdate(d)
 
 	backupPath := d.Get("periodic_backup_path").(string)
 	if backupPath != "" {
@@ -1185,7 +1189,7 @@ func customizeDiff() schema.CustomizeDiffFunc {
 		if err := RemoteBackupIntervalSetCorrectly("remote_backup")(ctx, diff, meta); err != nil {
 			return err
 		}
-		return nil
+		return hashingPolicyCustomizeDiff(ctx, diff, meta)
 	}
 }
 

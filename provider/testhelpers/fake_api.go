@@ -96,7 +96,7 @@ func NewAPIClient(t *testing.T, fake *FakeAPI) *client.ApiClient {
 
 	api, err := rediscloudApi.NewClient(
 		rediscloudApi.Auth("fake-key", "fake-secret"),
-		rediscloudApi.Transporter(fake),
+		rediscloudApi.Transporter(client.NewShardingTypeTransport(fake)),
 	)
 	if err != nil {
 		t.Fatalf("building a rediscloud-go-api client over the fake API failed: %s", err)
