@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -139,6 +140,10 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 		}
 
 		config = append(config, rediscloudApi.Logger(&debugLogger{}))
+		// Database create has to be able to set shardingType. The Go client
+		// struct does not carry that field yet; this transport adds it when
+		// the pro database create asks for it.
+		config = append(config, rediscloudApi.Transporter(client.NewShardingTypeTransport(http.DefaultTransport)))
 
 		apiClient, err := rediscloudApi.NewClient(config...)
 		if err != nil {
