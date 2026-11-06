@@ -14,7 +14,9 @@ import (
 )
 
 func TestSubscriptionGracePeriodRequest(t *testing.T) {
-	for _, name := range []string{"rediscloud_subscription", "rediscloud_active_active_subscription"} {
+	// Active-Active subscription is a Framework resource. Its grace-period requests
+	// are covered in provider/activeactive.
+	for _, name := range []string{"rediscloud_subscription"} {
 		t.Run(name, func(t *testing.T) {
 			for _, activation := range []bool{false, true} {
 				label := "grace period only"
@@ -24,9 +26,6 @@ func TestSubscriptionGracePeriodRequest(t *testing.T) {
 				t.Run(label, func(t *testing.T) {
 					res := provider.NewSdkProvider("test")().ResourcesMap[name]
 					key := map[string]interface{}{"resource_name": "projects/test/keys/key"}
-					if name == "rediscloud_active_active_subscription" {
-						key["region"] = "us-east1"
-					}
 					data := schema.TestResourceDataRaw(t, res.Schema, map[string]interface{}{
 						"customer_managed_key_enabled":               true,
 						"customer_managed_key_deletion_grace_period": "15-minutes",
