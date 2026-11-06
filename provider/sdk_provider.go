@@ -92,7 +92,7 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				"rediscloud_private_link":                              privatelink.ResourceRedisCloudPrivateLink(),
 				"rediscloud_active_active_private_link":                privatelink.ResourceRedisCloudActiveActivePrivateLink(),
 
-				"rediscloud_active_active_subscription": resourceRedisCloudActiveActiveSubscription(),
+				// Note: rediscloud_active_active_subscription is served by the Plugin Framework provider
 				// Note: rediscloud_active_active_subscription_database is served by the Plugin Framework provider
 				"rediscloud_active_active_subscription_regions":                      resourceRedisCloudActiveActiveSubscriptionRegions(),
 				"rediscloud_active_active_subscription_peering":                      resourceRedisCloudActiveActiveSubscriptionPeering(),

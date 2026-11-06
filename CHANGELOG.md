@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.21.0
+
+### Changed
+
+- Migrated `rediscloud_active_active_subscription` resource from Terraform SDK v2 to the Terraform Plugin Framework. This is an internal architectural change with no schema or behaviour changes.
+
 ## 2.20.0 (4th November 2026)
 
 ### Added

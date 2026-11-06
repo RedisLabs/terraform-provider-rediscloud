@@ -171,6 +171,7 @@ func (p *redisCloudFrameworkProvider) Configure(ctx context.Context, req provide
 func (p *redisCloudFrameworkProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		activeactive.NewActiveActiveDatabaseResource,
+		activeactive.NewActiveActiveSubscriptionResource,
 		agentmemory.NewAgentMemoryResource,
 		agentmemory.NewAgentMemoryAPIKeyResource,
 		cloudaccount.NewCloudAccountResource,
