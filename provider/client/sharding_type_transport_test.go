@@ -99,6 +99,15 @@ func TestShardingTypeTransport_LeavesOtherRequestsAlone(t *testing.T) {
 	}
 }
 
+func TestInjectShardingType_NullBodyBecomesObject(t *testing.T) {
+	body, err := injectShardingType([]byte("null"), ShardingTypeCustomRegexRules)
+	require.NoError(t, err)
+
+	var payload map[string]string
+	require.NoError(t, json.Unmarshal(body, &payload))
+	require.Equal(t, ShardingTypeCustomRegexRules, payload["shardingType"])
+}
+
 func TestInjectShardingType_KeepsExistingValue(t *testing.T) {
 	body, err := injectShardingType([]byte(`{"shardingType":"redis-oss-hashing"}`), ShardingTypeCustomRegexRules)
 	require.NoError(t, err)

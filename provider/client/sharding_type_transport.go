@@ -85,6 +85,11 @@ func injectShardingType(body []byte, shardingType string) ([]byte, error) {
 			return nil, err
 		}
 	}
+	// JSON null unmarshals to a nil map. A create body of null must still
+	// become an object rather than panicking on the write below.
+	if payload == nil {
+		payload = map[string]json.RawMessage{}
+	}
 	if _, exists := payload["shardingType"]; exists {
 		return body, nil
 	}
