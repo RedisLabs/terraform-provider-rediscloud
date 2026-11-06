@@ -9,12 +9,19 @@ import (
 	"runtime/debug"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	rediscloudApi "github.com/RedisLabs/rediscloud-go-api"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
+)
+
+// The SDK keeps task status values in its internal package, so we mirror them here
+const (
+	taskStatusReceived            = "received"
+	taskStatusProcessingCompleted = "processing-completed"
 )
 
 // FakeAPI is an in-memory stand-in for the Redis Cloud REST API. It is an http.RoundTripper that the SDK client
@@ -42,38 +49,16 @@ type FakeAPI struct {
 
 	fixtureMu sync.Mutex
 
-	// tasksMu protects taskResourceIDs and nextTaskID. Handlers acquire fixtureMu before tasksMu.
-	// Code holding tasksMu must not acquire fixtureMu, because that would reverse the lock order.
-	tasksMu         sync.Mutex
-	taskResourceIDs map[string]int
-	nextTaskID      int
+	// Tasks can also be registered outside handlers, so ID allocation must be safe for concurrent callers.
+	nextTaskID atomic.Uint64
 }
 
 var _ http.RoundTripper = (*FakeAPI)(nil)
 
 func NewFakeAPI() *FakeAPI {
-	f := &FakeAPI{mux: http.NewServeMux(), taskResourceIDs: map[string]int{}}
-
-	// Every Redis Cloud mutation is asynchronous. It returns a task id, and the SDK client polls this
-	// endpoint until the task completes, then reads the resource id out of the response. This handler lives
-	// here rather than in each fixture, because task polling is protocol rather than resource behaviour. Check
-	// RegisterTask to see how a fixture creates the tasks this endpoint serves.
-	f.Handle("GET /tasks/{taskID}", func(r *http.Request) (any, error) {
-		taskID := r.PathValue("taskID")
-
-		f.tasksMu.Lock()
-		resourceID, ok := f.taskResourceIDs[taskID]
-		f.tasksMu.Unlock()
-		if !ok {
-			return nil, fmt.Errorf("unknown task %q — tasks must be created with RegisterTask", taskID)
-		}
-
-		return map[string]any{
-			"taskId":   taskID,
-			"status":   "processing-completed",
-			"response": map[string]any{"resourceId": resourceID},
-		}, nil
-	})
+	f := &FakeAPI{
+		mux: http.NewServeMux(),
+	}
 
 	// This is the least specific pattern, so it runs only when nothing else matched. It responds with a 500
 	// rather than a 404, because a 404 has meaning to the SDK client. A 404 is how the provider detects a
@@ -182,23 +167,48 @@ func (f *FakeAPI) invoke(handler HandlerFunc, r *http.Request) (payload any, err
 
 // RegisterTask registers an asynchronous task that maps to a resourceID and returns the response body that
 // should be returned from a fixture's create, update and delete handlers.
-// The SDK client then polls GET /tasks/{taskID}, which NewFakeAPI already serves, so a fixture needs
-// to do nothing else to complete a mutation.
+// RegisterTask installs the task's GET /tasks/{taskID} handler so the SDK's WaitForResourceId can retrieve
+// the result without further fixture setup.
 //
 // Every task completes immediately and succeeds, so no test can exercise a failed task or the SDK Client's
 // retry mechanisms.
 func (f *FakeAPI) RegisterTask(commandType string, resourceID int) map[string]any {
-	f.tasksMu.Lock()
-	defer f.tasksMu.Unlock()
-
-	f.nextTaskID++
-	id := fmt.Sprintf("task-%d", f.nextTaskID)
-	f.taskResourceIDs[id] = resourceID
+	id := fmt.Sprintf("task-%d", f.nextTaskID.Add(1))
+	getTask := func(*http.Request) (any, error) {
+		return map[string]any{
+			"taskId":   id,
+			"status":   taskStatusProcessingCompleted,
+			"response": map[string]any{"resourceId": resourceID},
+		}, nil
+	}
+	f.Handle("GET /tasks/"+id, getTask)
 
 	return map[string]any{
 		"taskId":      id,
 		"commandType": commandType,
-		"status":      "received",
+		"status":      taskStatusReceived,
+		"description": "Task request received and is being queued for processing.",
+	}
+}
+
+// RegisterResourceTask registers an asynchronous task that returns a resource
+// payload through the SDK's WaitForResource. RegisterResourceTask installs the
+// task's GET /tasks/{taskID} handler, which immediately reports successful completion.
+func (f *FakeAPI) RegisterResourceTask(commandType string, resource any) map[string]any {
+	id := fmt.Sprintf("task-%d", f.nextTaskID.Add(1))
+	getTask := func(*http.Request) (any, error) {
+		return map[string]any{
+			"taskId":   id,
+			"status":   taskStatusProcessingCompleted,
+			"response": map[string]any{"resource": resource},
+		}, nil
+	}
+	f.Handle("GET /tasks/"+id, getTask)
+
+	return map[string]any{
+		"taskId":      id,
+		"commandType": commandType,
+		"status":      taskStatusReceived,
 		"description": "Task request received and is being queued for processing.",
 	}
 }
