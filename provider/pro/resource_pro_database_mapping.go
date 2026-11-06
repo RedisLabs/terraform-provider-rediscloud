@@ -278,7 +278,11 @@ func adjustProDatabasePlan(ctx context.Context, config, plan, state ProDatabaseM
 	var result proDatabasePlanAdjustment
 	result.Plan = plan
 
-	if password, ok := knownString(config.Password); ok && config.EnablePasswordless.ValueBool() {
+	// Use the planned value. Config omits the schema default, so a null
+	// enable_passwordless is false there and true on the plan when state or
+	// the default says passwordless. The conflict check and the password
+	// clear have to see the same value.
+	if password, ok := knownString(config.Password); ok && result.Plan.EnablePasswordless.ValueBool() {
 		if err := ShouldRejectPasswordlessWithPassword(true, true, password); err != nil {
 			result.Diagnostics.AddError("Conflicting attributes", err.Error())
 		}

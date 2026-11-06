@@ -137,6 +137,9 @@ func (r *proDatabaseResource) Schema(ctx context.Context, _ resource.SchemaReque
 				Description: "Maximum amount of data in the dataset for this specific database in GB",
 				Optional:    true,
 				Computed:    true,
+				Validators: []validator.Float64{
+					float64validator.ExactlyOneOf(path.MatchRoot("memory_limit_in_gb")),
+				},
 				PlanModifiers: []planmodifier.Float64{
 					float64planmodifier.UseStateForUnknown(),
 				},

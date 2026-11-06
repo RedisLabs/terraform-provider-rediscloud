@@ -290,6 +290,14 @@ func TestAdjustProDatabasePlan(t *testing.T) {
 	adjusted = adjustProDatabasePlan(ctx, config, plan, state, true)
 	assert.True(t, adjusted.Diagnostics.HasError())
 
+	config.EnablePasswordless = types.BoolNull()
+	config.Password = types.StringValue("secret")
+	plan = config
+	plan.EnablePasswordless = types.BoolValue(true)
+	adjusted = adjustProDatabasePlan(ctx, config, plan, state, true)
+	require.True(t, adjusted.Diagnostics.HasError())
+	assert.Contains(t, adjusted.Diagnostics.Errors()[0].Detail(), "cannot be true when \"password\" is set")
+
 	config.Password = types.StringNull()
 	config.EnablePasswordless = types.BoolValue(false)
 	config.RemoteBackup, diags = NewRemoteBackupList(ctx, []RemoteBackupModel{{
