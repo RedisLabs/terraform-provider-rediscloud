@@ -175,10 +175,15 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 										Type:        schema.TypeString,
 										Required:    true,
 									},
+									// The Cloud API accepts multipleAvailabilityZones on create only.
+									// ForceNew has to be on this attribute. ForceNew on the region set
+									// does not mark a nested value change as a replacement, so toggling
+									// this planned an in-place update the API never applied.
 									"multiple_availability_zones": {
-										Description: "Support deployment on multiple availability zones within the selected region",
+										Description: "Support deployment on multiple availability zones within the selected region. Changing this value replaces the subscription, which destroys the existing subscription",
 										Type:        schema.TypeBool,
 										Optional:    true,
+										ForceNew:    true,
 										Default:     false,
 									},
 									"preferred_availability_zones": {

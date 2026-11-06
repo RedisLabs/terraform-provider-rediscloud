@@ -121,12 +121,12 @@ The `creation_plan` block supports:
 * `ram_percentage` - (Optional) Relevant only to ram-and-flash subscriptions. The percentage of data to be stored in RAM. Must be between 10 and 50 in steps of 10 (10, 20, 30, 40, 50). Default: 20
 * `query_performance_factor` - (Optional) The query performance factor adds extra compute power specifically for search and query databases. You can increase your queries per second by the selected factor. Valid values are "Standard" or multiples of 2, e.g. 2x, 4x, 6x, 8x.
 
-~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `memory_storage` or `cloud_provider`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created.
+~> **Note:** If changes are made to attributes in the subscription which require the subscription to be recreated (such as `memory_storage`, `cloud_provider`, or `multiple_availability_zones`), the creation_plan will need to be defined in order to change these attributes. This is because the creation_plan is always required when a subscription is created. Replacement destroys the existing subscription.
 
 The cloud_provider `region` block supports:
 
 * `region` - (Required) Deployment region as defined by cloud provider. **Modifying this attribute will force creation of a new resource.**
-* `multiple_availability_zones` - (Optional) Support deployment on multiple availability zones within the selected region. Default: ‘false’. **Modifying this attribute will force creation of a new resource.**
+* `multiple_availability_zones` - (Optional) Support deployment on multiple availability zones within the selected region. Default: ‘false’. **Modifying this attribute forces replacement. Replacement destroys this subscription and creates a new one.** The Cloud API cannot change this value after the subscription is created.
 * `networking_deployment_cidr` - (Required) Deployment CIDR mask. The total number of bits must be 24 (x.x.x.x/24). **Modifying this attribute will force creation of a new resource.**
 * `networking_vpc_id` - (Optional) Either an existing VPC Id (already exists in the specific region) or create a new VPC
   (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4986384ad’) and exist
