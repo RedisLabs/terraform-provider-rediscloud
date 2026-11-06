@@ -68,6 +68,26 @@ func SubscriptionNameFilter(name string) SubscriptionFilter {
 	}
 }
 
+// FilterAndSortProSubscriptions returns single-region subscriptions matching the
+// optional exact name. The result is ordered by numeric ID so callers can store it
+// in an ordered Terraform collection without state churn.
+func FilterAndSortProSubscriptions(subs []*subscriptions.Subscription, name types.String) []*subscriptions.Subscription {
+	filters := []SubscriptionFilter{
+		ProSubscriptionFilter(),
+	}
+
+	if !name.IsNull() && name.ValueString() != "" {
+		filters = append(filters, SubscriptionNameFilter(name.ValueString()))
+	}
+
+	filtered := FilterSubscriptions(subs, filters)
+	sort.SliceStable(filtered, func(i, j int) bool {
+		return redis.IntValue(filtered[i].ID) < redis.IntValue(filtered[j].ID)
+	})
+
+	return filtered
+}
+
 // PricingFromAPI converts a pricing API response into the pricing list expected by the
 // subscription data sources. Entries are sorted by a composite key so the ordered list
 // is stable across reads. Pricing.List does not guarantee a consistent order, which
