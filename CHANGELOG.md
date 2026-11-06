@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.21.0 (unreleased)
+
+### Fixed
+
+- `rediscloud_subscription`: changing `multiple_availability_zones` now plans replacement of the subscription. The Cloud API accepts the value only when the subscription is created, and the previous in-place update reported a change that Redis Cloud did not apply. Replacement destroys the subscription.
+
 ## 2.20.0 (4th November 2026)
 
 ### Added
