@@ -28,7 +28,7 @@ TF_LOG?=info
         ci govulncheck go-mod-tidy go-build go-test terraform-providers-schema \
         testacc testacc-essentials testacc-check \
         sweep \
-        release-notes release
+        release-notes release release-candidate
 
 bin:
 	mkdir -p $(BIN)
@@ -152,3 +152,30 @@ release-notes:
 
 release: release-notes
 	goreleaser release --clean --release-notes=$(RELEASE_NOTES_FILE)
+
+# GitHub pre-release only. The tag must be X.Y.Z-rcN. GoReleaser marks it
+# pre-release, the Terraform Registry ignores it, and the stable release
+# workflow skips any tag that contains a hyphen.
+release-candidate:
+ifndef RC_VERSION
+	$(error RC_VERSION is not set, e.g. make release-candidate RC_VERSION=2.21.0-rc1)
+endif
+	@printf '%s\n' '$(RC_VERSION)' | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]+$$' \
+		|| { echo "RC_VERSION must look like 2.21.0-rc1, with no v prefix"; exit 1; }
+	@printf '%s\n' \
+		'Release candidate $(RC_VERSION).' \
+		'' \
+		'This GitHub pre-release is not published to the Terraform Registry.' \
+		'Customers who do not pin this exact version do not install it.' \
+		'The official release is the same numbers without the -rc suffix.' \
+		'' \
+		'Install for Test Automation: download the linux_amd64 zip from this' \
+		'pre-release, unzip it into a filesystem mirror, and point Terraform' \
+		'at that mirror instead of the registry. The required version is' \
+		'$(RC_VERSION).' \
+		> $(RELEASE_NOTES_FILE)
+	git tag -f "v$(RC_VERSION)"
+	goreleaser release --clean \
+		--config .goreleaser.yml \
+		--config .goreleaser-rc.yml \
+		--release-notes=$(RELEASE_NOTES_FILE)

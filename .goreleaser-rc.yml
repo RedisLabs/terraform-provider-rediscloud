@@ -1,0 +1,8 @@
+# Overlay for `make release-candidate`. Merged on top of .goreleaser.yml.
+# Forces a GitHub pre-release so the Terraform Registry does not publish it
+# and GitHub does not mark it as the latest release.
+version: 2
+release:
+  prerelease: true
+  make_latest: false
+  draft: false
