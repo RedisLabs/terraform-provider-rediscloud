@@ -16,6 +16,10 @@ on:
       - 'v*'
 jobs:
   goreleaser:
+    # A release candidate tag (vX.Y.Z-rcN) is a GitHub pre-release only.
+    # release-candidate.yml owns those tags. This job stays on stable tags
+    # so a candidate is not published to the Terraform Registry.
+    if: ${{ !contains(github.ref_name, '-') }}
     runs-on: ubuntu-latest
     steps:
       -
