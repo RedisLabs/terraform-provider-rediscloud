@@ -9,6 +9,7 @@
 ### Changed
 
 - Raised the Go toolchain to 1.26.11 to pick up the fix for GO-2026-6859 in `net/http`.
+- Upgraded `rediscloud-go-api` from 0.53.0 to 0.54.0.
 
 ## 2.20.0 (4th November 2026)
 
