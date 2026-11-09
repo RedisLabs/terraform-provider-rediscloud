@@ -21,6 +21,18 @@ The main directories are:
 - `scripts/` contains repository automation.
 - `bin/` receives local build output and the Terraform development override.
 
+## Provider engineering caveats
+
+Use this section for non-obvious SDK behaviour, backend characteristics,
+Terraform semantics, and similar cross-cutting facts that are easy to miss
+during otherwise unrelated provider work. Keep each entry independent and
+actionable. Put multi-step procedures in a task skill instead.
+
+- **SDKv2 waiter results.** `retry.StateChangeConf` treats a nil refresh result
+  as not found and increments `NotFoundChecks` before evaluating the returned
+  state. Return a non-nil result when the refresh should remain pending. Return
+  nil only when absence is intentional.
+
 ## Build and test commands
 
 - Run `make build` to compile the provider and create

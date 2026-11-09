@@ -188,11 +188,11 @@ func WaitForTransitGatewayResourceToMatchFilters(
 			}
 
 			if tgwTask == nil || tgwTask.Response == nil || tgwTask.Response.Resource == nil {
-				return nil, waitStateWaiting, nil
+				return struct{}{}, waitStateWaiting, nil
 			}
 
 			if !transitGatewayTaskMatchesFilters(tgwTask, filters) {
-				return nil, waitStateWaiting, nil
+				return struct{}{}, waitStateWaiting, nil
 			}
 
 			return tgwTask, waitStateFound, nil
