@@ -1,3 +1,20 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+  }
+}
+
+variable "subscription_name" {
+  type = string
+}
+
+variable "aws_region" {
+  type = string
+}
+
 variable "team" {
   type = string
 }
@@ -6,13 +23,18 @@ variable "owner" {
   type = string
 }
 
-locals {
-  subscription_name = "%s"
-  aws_region        = "%s"
+variable "lookup_aws_tgw_uid" {
+  type    = string
+  default = null
+}
+
+variable "wait_for_tgw_timeout" {
+  type    = number
+  default = 600
 }
 
 provider "aws" {
-  region = local.aws_region
+  region = var.aws_region
 }
 
 data "rediscloud_payment_method" "card" {
@@ -21,7 +43,7 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_subscription" "example" {
-  name              = local.subscription_name
+  name              = var.subscription_name
   payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   memory_storage    = "ram"
@@ -35,7 +57,7 @@ resource "rediscloud_subscription" "example" {
     provider         = "AWS"
     cloud_account_id = "1"
     region {
-      region                     = local.aws_region
+      region                     = var.aws_region
       networking_deployment_cidr = "10.0.0.0/24"
     }
   }
@@ -52,14 +74,14 @@ resource "rediscloud_subscription" "example" {
 }
 
 resource "aws_ec2_transit_gateway" "test" {
-  description = local.subscription_name
+  description = var.subscription_name
   tags = {
-    Name = local.subscription_name
+    Name = var.subscription_name
   }
 }
 
 resource "aws_ram_resource_share" "test" {
-  name                      = local.subscription_name
+  name                      = var.subscription_name
   allow_external_principals = true
 }
 
@@ -73,21 +95,20 @@ resource "aws_ram_principal_association" "test" {
   principal          = rediscloud_subscription.example.cloud_provider[0].aws_account_id
 }
 
-resource "time_sleep" "wait_for_invitation" {
-  depends_on      = [aws_ram_principal_association.test]
-  create_duration = "120s"
-}
-
 data "rediscloud_transit_gateway_invitations" "test" {
-  subscription_id = rediscloud_subscription.example.id
+  subscription_id              = rediscloud_subscription.example.id
+  wait_for_invitations_timeout = 600
 
-  depends_on = [time_sleep.wait_for_invitation]
+  depends_on = [
+    aws_ram_resource_association.test,
+    aws_ram_principal_association.test,
+  ]
 }
 
 locals {
   matching_invitation = one([
     for inv in data.rediscloud_transit_gateway_invitations.test.invitations :
-    inv if inv.name == local.subscription_name
+    inv if inv.name == var.subscription_name
   ])
 }
 
@@ -97,42 +118,10 @@ resource "rediscloud_transit_gateway_invitation_acceptor" "test" {
   action            = "accept"
 }
 
-resource "time_sleep" "wait_for_acceptance" {
-  depends_on      = [rediscloud_transit_gateway_invitation_acceptor.test]
-  create_duration = "30s"
-}
-
 data "rediscloud_transit_gateway" "test" {
-  subscription_id = rediscloud_subscription.example.id
-  aws_tgw_uid     = aws_ec2_transit_gateway.test.id
+  subscription_id      = rediscloud_subscription.example.id
+  aws_tgw_uid          = coalesce(var.lookup_aws_tgw_uid, aws_ec2_transit_gateway.test.id)
+  wait_for_tgw_timeout = var.wait_for_tgw_timeout
 
-  depends_on = [time_sleep.wait_for_acceptance]
-}
-
-resource "rediscloud_transit_gateway_attachment" "test" {
-  subscription_id = rediscloud_subscription.example.id
-  tgw_id          = data.rediscloud_transit_gateway.test.tgw_id
-}
-
-resource "time_sleep" "wait_for_attachment" {
-  depends_on      = [rediscloud_transit_gateway_attachment.test]
-  create_duration = "120s"
-}
-
-resource "aws_ec2_transit_gateway_vpc_attachment_accepter" "test" {
-  transit_gateway_attachment_id = rediscloud_transit_gateway_attachment.test.attachment_uid
-
-  tags = {
-    Name = local.subscription_name
-  }
-
-  depends_on = [time_sleep.wait_for_attachment]
-}
-
-resource "rediscloud_transit_gateway_route" "test" {
-  subscription_id = rediscloud_subscription.example.id
-  tgw_id          = data.rediscloud_transit_gateway.test.tgw_id
-  cidrs           = ["10.10.20.0/24", "10.10.21.0/24"]
-
-  depends_on = [aws_ec2_transit_gateway_vpc_attachment_accepter.test]
+  depends_on = [rediscloud_transit_gateway_invitation_acceptor.test]
 }

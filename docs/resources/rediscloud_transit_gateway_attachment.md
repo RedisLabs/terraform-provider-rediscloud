@@ -37,8 +37,18 @@ resource "rediscloud_transit_gateway_route" "route" {
 * `tgw_id` - (Required) The ID of the Transit Gateway to attach to
 * `cidrs` - (Optional) A list of consumer CIDR blocks. It is recommended to use the [`rediscloud_transit_gateway_route`](rediscloud_transit_gateway_route.md) resource instead for managing CIDRs.
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when creating the attachment
+* `read` - (Defaults to 3 mins) Used when reading the attachment
+* `update` - (Defaults to 5 mins) Used when updating the attachment
+* `delete` - (Defaults to 5 mins) Used when destroying the attachment
+
 ## Attribute Reference
 
+* `id` - The identifier of the attachment, in the format `{subscription_id}/{tgw_id}`
 * `aws_tgw_uid` - The ID of the Transit Gateway as known to AWS
 * `attachment_uid` - A unique identifier for the Subscription/Transit Gateway attachment, if established
 * `status` - The status of the Transit Gateway

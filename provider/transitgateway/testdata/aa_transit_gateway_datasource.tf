@@ -1,3 +1,29 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+  }
+}
+
+variable "subscription_name" {
+  type = string
+}
+
+variable "database_name" {
+  type = string
+}
+
+variable "database_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "aws_region" {
+  type = string
+}
+
 variable "team" {
   type = string
 }
@@ -6,15 +32,18 @@ variable "owner" {
   type = string
 }
 
-locals {
-  subscription_name = "%s"
-  database_name     = "%s"
-  database_password = "%s"
-  aws_region        = "%s"
+variable "lookup_aws_tgw_uid" {
+  type    = string
+  default = null
+}
+
+variable "wait_for_tgw_timeout" {
+  type    = number
+  default = 600
 }
 
 provider "aws" {
-  region = local.aws_region
+  region = var.aws_region
 }
 
 data "rediscloud_payment_method" "card" {
@@ -32,7 +61,7 @@ resource "rediscloud_active_active_subscription" "test" {
     owner = var.owner
   }
 
-  name              = local.subscription_name
+  name              = var.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider    = "AWS"
 
@@ -40,7 +69,7 @@ resource "rediscloud_active_active_subscription" "test" {
     dataset_size_in_gb = 1
     quantity           = 1
     region {
-      region                      = local.aws_region
+      region                      = var.aws_region
       networking_deployment_cidr  = "192.168.0.0/24"
       write_operations_per_second = 1000
       read_operations_per_second  = 1000
@@ -56,13 +85,13 @@ resource "rediscloud_active_active_subscription" "test" {
 
 resource "rediscloud_active_active_subscription_database" "test" {
   subscription_id         = rediscloud_active_active_subscription.test.id
-  name                    = local.database_name
+  name                    = var.database_name
   dataset_size_in_gb      = 1
   global_data_persistence = "none"
-  global_password         = local.database_password
+  global_password         = var.database_password
 
   override_region {
-    name = local.aws_region
+    name = var.aws_region
   }
 
   override_region {
@@ -73,19 +102,19 @@ resource "rediscloud_active_active_subscription_database" "test" {
 locals {
   region_id = one([
     for r in data.rediscloud_regions.aws.regions :
-    r.region_id if r.name == local.aws_region
+    r.region_id if r.name == var.aws_region
   ])
 }
 
 resource "aws_ec2_transit_gateway" "test" {
-  description = local.subscription_name
+  description = var.subscription_name
   tags = {
-    Name = local.subscription_name
+    Name = var.subscription_name
   }
 }
 
 resource "aws_ram_resource_share" "test" {
-  name                      = local.subscription_name
+  name                      = var.subscription_name
   allow_external_principals = true
 }
 
@@ -99,22 +128,22 @@ resource "aws_ram_principal_association" "test" {
   principal          = rediscloud_active_active_subscription.test.aws_account_id
 }
 
-resource "time_sleep" "wait_for_invitation" {
-  depends_on      = [aws_ram_principal_association.test]
-  create_duration = "120s"
-}
-
 data "rediscloud_active_active_transit_gateway_invitations" "test" {
-  subscription_id = rediscloud_active_active_subscription.test.id
-  region_id       = local.region_id
+  subscription_id              = rediscloud_active_active_subscription.test.id
+  region_id                    = local.region_id
+  wait_for_invitations_timeout = 600
 
-  depends_on = [time_sleep.wait_for_invitation]
+  depends_on = [
+    aws_ram_resource_association.test,
+    aws_ram_principal_association.test,
+    rediscloud_active_active_subscription_database.test,
+  ]
 }
 
 locals {
   matching_invitation = one([
     for inv in data.rediscloud_active_active_transit_gateway_invitations.test.invitations :
-    inv if inv.name == local.subscription_name
+    inv if inv.name == var.subscription_name
   ])
 }
 
@@ -125,45 +154,11 @@ resource "rediscloud_active_active_transit_gateway_invitation_acceptor" "test" {
   action            = "accept"
 }
 
-resource "time_sleep" "wait_for_acceptance" {
-  depends_on      = [rediscloud_active_active_transit_gateway_invitation_acceptor.test]
-  create_duration = "30s"
-}
-
 data "rediscloud_active_active_transit_gateway" "test" {
-  subscription_id = rediscloud_active_active_subscription.test.id
-  region_id       = local.region_id
-  aws_tgw_uid     = aws_ec2_transit_gateway.test.id
+  subscription_id      = rediscloud_active_active_subscription.test.id
+  region_id            = local.region_id
+  aws_tgw_uid          = coalesce(var.lookup_aws_tgw_uid, aws_ec2_transit_gateway.test.id)
+  wait_for_tgw_timeout = var.wait_for_tgw_timeout
 
-  depends_on = [time_sleep.wait_for_acceptance]
-}
-
-resource "rediscloud_active_active_transit_gateway_attachment" "test" {
-  subscription_id = rediscloud_active_active_subscription.test.id
-  region_id       = local.region_id
-  tgw_id          = data.rediscloud_active_active_transit_gateway.test.tgw_id
-}
-
-resource "time_sleep" "wait_for_attachment" {
-  depends_on      = [rediscloud_active_active_transit_gateway_attachment.test]
-  create_duration = "120s"
-}
-
-resource "aws_ec2_transit_gateway_vpc_attachment_accepter" "test" {
-  transit_gateway_attachment_id = rediscloud_active_active_transit_gateway_attachment.test.attachment_uid
-
-  tags = {
-    Name = local.subscription_name
-  }
-
-  depends_on = [time_sleep.wait_for_attachment]
-}
-
-resource "rediscloud_active_active_transit_gateway_route" "test" {
-  subscription_id = rediscloud_active_active_subscription.test.id
-  region_id       = local.region_id
-  tgw_id          = data.rediscloud_active_active_transit_gateway.test.tgw_id
-  cidrs           = ["10.10.20.0/24", "10.10.21.0/24"]
-
-  depends_on = [aws_ec2_transit_gateway_vpc_attachment_accepter.test]
+  depends_on = [rediscloud_active_active_transit_gateway_invitation_acceptor.test]
 }
