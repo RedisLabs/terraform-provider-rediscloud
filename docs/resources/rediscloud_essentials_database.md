@@ -57,7 +57,7 @@ The following arguments are supported:
 * `subscription_id` - (Required) The ID of the subscription to create the database in. **Modifying this attribute will force creation of a new resource.**
 * `name` - (Required) A meaningful name to identify the database.
 * `protocol` - (Optional) Database protocol. 'stack' is a suite of all Redis' data modules. Default: 'stack'. Either: 'redis', 'memcached' or 'stack'. **'redis' is only used with Pay-As-You-Go databases.**
-* `redis_version` - (Optional) Defines the requested Redis database version. If omitted, the Redis version will be set to the default version. May differ if a minor version upgrade has been automatically applied. Use `redis_version_actual` to fetch the Redis version used by the database.
+* `redis_version` - (Optional) Defines the requested Redis database version. If omitted, the Redis version will be set to the default version. May differ if a minor version upgrade has been automatically applied. Use `redis_version_actual` to fetch the Redis version used by the database. The value is a minimum: setting it below the running version stores the new value without downgrading the database.
 * `resp_version` - (Optional) RESP version must be compatible with the Redis version.
 * `data_persistence` - (Required) Rate of database data persistence (in persistent storage). Either: 'none', 'aof-every-1-second', 'aof-every-write', 'snapshot-every-1-hour', 'snapshot-every-6-hours' or 'snapshot-every-12-hours'.
 * `data_eviction` - (Optional) Data items eviction method. Either: 'allkeys-lru', 'allkeys-lfu', 'allkeys-random', 'volatile-lru', 'volatile-lfu', 'volatile-random', 'volatile-ttl' or 'noeviction'. Default: 'volatile-lru'.
@@ -98,8 +98,19 @@ Each `modules` entry provides the following attributes:
 
 * `name` - The identifier assigned by the database module.
 
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/language/resources/syntax#operation-timeouts) for certain actions:
+
+* `create` - (Defaults to 30 mins) Used when creating the database.
+* `read` - (Defaults to 10 mins) Used when reading the database.
+* `update` - (Defaults to 30 mins) Used when updating the database.
+* `delete` - (Defaults to 10 mins) Used when destroying the database.
+
 ## Attribute Reference
 
+* `id` - The identifier of the database, in the format `{subscription ID}/{database ID}`.
+* `db_id` - The identifier of the database within its subscription.
 * `cloud_provider` - The Cloud Provider hosting this database.
 * `region` - The region within the Cloud Provider where this database is hosted.
 * `redis_version_compliance` - The compliance Redis version of the database.

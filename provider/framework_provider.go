@@ -21,6 +21,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/cloudaccount"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/datapersistence"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentialsdatabase"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentialsplan"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentialssubscription"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/paymentmethod"
@@ -174,6 +175,8 @@ func (p *redisCloudFrameworkProvider) Resources(_ context.Context) []func() reso
 		agentmemory.NewAgentMemoryResource,
 		agentmemory.NewAgentMemoryAPIKeyResource,
 		cloudaccount.NewCloudAccountResource,
+		essentialsdatabase.NewEssentialsDatabaseResource,
+		essentialssubscription.NewEssentialsSubscriptionResource,
 	}
 }
 
@@ -184,6 +187,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 		acluser.NewAclUserDataSource,
 		activeactive.NewActiveActiveSubscriptionDataSource,
 		datapersistence.NewDataPersistenceDataSource,
+		essentialsdatabase.NewEssentialsDatabaseDataSource,
 		essentialsplan.NewEssentialsPlanDataSource,
 		essentialssubscription.NewEssentialsSubscriptionDataSource,
 		paymentmethod.NewPaymentMethodDataSource,
