@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.21.0 (unreleased)
+
+### Changed
+
+- Raised the Go toolchain to 1.26.11 to pick up the fix for GO-2026-6859 in `net/http`.
+- Migrated `rediscloud_private_link_endpoint_script` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+- Migrated `rediscloud_active_active_private_link_endpoint_script` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+- Migrated `rediscloud_private_link` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+- Migrated `rediscloud_active_active_private_link` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+- Migrated `rediscloud_private_link` resource from Terraform SDK v2 to the Terraform Plugin Framework. The resource now waits until the PrivateLink principals match the configuration after create and update, and accepts an `update` operation timeout (default 30 minutes).
+- Migrated `rediscloud_active_active_private_link` resource from Terraform SDK v2 to the Terraform Plugin Framework. The resource now waits until the PrivateLink principals match the configuration after create and update, and accepts an `update` operation timeout (default 30 minutes).
+
 ## 2.20.0 (4th November 2026)
 
 ### Added

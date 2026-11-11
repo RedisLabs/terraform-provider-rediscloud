@@ -6,10 +6,25 @@ variable "owner" {
   type = string
 }
 
-locals {
-  rediscloud_subscription_name = "%s"
-  rediscloud_cloud_account     = "%s"
-  rediscloud_database_password = "%s"
+variable "subscription_name" {
+  type = string
+}
+
+variable "database_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "share_name" {
+  type = string
+}
+
+variable "principals" {
+  type = list(object({
+    principal       = string
+    principal_type  = string
+    principal_alias = optional(string)
+  }))
 }
 
 data "rediscloud_payment_method" "card" {
@@ -23,7 +38,7 @@ resource "rediscloud_active_active_subscription" "aa_subscription" {
     owner = var.owner
   }
 
-  name              = local.rediscloud_subscription_name
+  name              = var.subscription_name
   payment_method    = "credit-card"
   payment_method_id = data.rediscloud_payment_method.card.id
   cloud_provider    = "AWS"
@@ -51,13 +66,25 @@ resource "rediscloud_active_active_subscription_database" "aa_database" {
   name                    = "db"
   memory_limit_in_gb      = 1
   global_data_persistence = "aof-every-1-second"
-  global_password         = local.rediscloud_database_password
+  global_password         = var.database_password
 }
 
-# Keep regions data source - needed for verification
 data "rediscloud_active_active_subscription_regions" "aa_regions_info" {
   subscription_name = rediscloud_active_active_subscription.aa_subscription.name
   depends_on        = [rediscloud_active_active_subscription_database.aa_database]
 }
 
-# privatelink resource intentionally removed to test deletion
+resource "rediscloud_active_active_private_link" "aa_private_link" {
+  subscription_id = rediscloud_active_active_subscription.aa_subscription.id
+  region_id       = data.rediscloud_active_active_subscription_regions.aa_regions_info.regions[0].region_id
+  share_name      = var.share_name
+
+  dynamic "principal" {
+    for_each = var.principals
+    content {
+      principal       = principal.value.principal
+      principal_type  = principal.value.principal_type
+      principal_alias = principal.value.principal_alias
+    }
+  }
+}

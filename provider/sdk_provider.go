@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/privatelink"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/transitgateway"
 
@@ -60,11 +59,11 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				"rediscloud_private_service_connect":           dataSourcePrivateServiceConnect(),
 				"rediscloud_private_service_connect_endpoints": dataSourcePrivateServiceConnectEndpoints(),
 				// Note: rediscloud_active_active_subscription is served by the Plugin Framework provider
-				"rediscloud_active_active_subscription_regions":         dataSourceRedisCloudActiveActiveSubscriptionRegions(),
-				"rediscloud_private_link":                               privatelink.DataSourcePrivateLink(),
-				"rediscloud_private_link_endpoint_script":               privatelink.DataSourcePrivateLinkEndpointScript(),
-				"rediscloud_active_active_private_link":                 privatelink.DataSourceActiveActivePrivateLink(),
-				"rediscloud_active_active_private_link_endpoint_script": privatelink.DataSourceActiveActivePrivateLinkEndpointScript(),
+				"rediscloud_active_active_subscription_regions": dataSourceRedisCloudActiveActiveSubscriptionRegions(),
+				// Note: rediscloud_private_link is served by the Plugin Framework provider
+				// Note: rediscloud_private_link_endpoint_script is served by the Plugin Framework provider
+				// Note: rediscloud_active_active_private_link is served by the Plugin Framework provider
+				// Note: rediscloud_active_active_private_link_endpoint_script is served by the Plugin Framework provider
 
 				// Note the difference in public data-source name and the file/method name.
 				// active_active_subscription_database == active_active_database
@@ -89,8 +88,8 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				"rediscloud_private_service_connect":                   resourceRedisCloudPrivateServiceConnect(),
 				"rediscloud_private_service_connect_endpoint":          resourceRedisCloudPrivateServiceConnectEndpoint(),
 				"rediscloud_private_service_connect_endpoint_accepter": resourceRedisCloudPrivateServiceConnectEndpointAccepter(),
-				"rediscloud_private_link":                              privatelink.ResourceRedisCloudPrivateLink(),
-				"rediscloud_active_active_private_link":                privatelink.ResourceRedisCloudActiveActivePrivateLink(),
+				// Note: rediscloud_private_link is served by the Plugin Framework provider
+				// Note: rediscloud_active_active_private_link is served by the Plugin Framework provider
 
 				"rediscloud_active_active_subscription": resourceRedisCloudActiveActiveSubscription(),
 				// Note: rediscloud_active_active_subscription_database is served by the Plugin Framework provider

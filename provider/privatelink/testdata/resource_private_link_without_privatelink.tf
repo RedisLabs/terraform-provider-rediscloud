@@ -6,10 +6,17 @@ variable "owner" {
   type = string
 }
 
-locals {
-  rediscloud_subscription_name       = "%s"
-  rediscloud_cloud_account           = "%s"
-  rediscloud_private_link_share_name = "%s"
+variable "subscription_name" {
+  type = string
+}
+
+variable "cloud_account_name" {
+  type = string
+}
+
+variable "database_password" {
+  type      = string
+  sensitive = true
 }
 
 data "rediscloud_payment_method" "card" {
@@ -20,11 +27,11 @@ data "rediscloud_payment_method" "card" {
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
   provider_type            = "AWS"
-  name                     = local.rediscloud_cloud_account
+  name                     = var.cloud_account_name
 }
 
 resource "rediscloud_subscription" "pro_subscription" {
-  name              = local.rediscloud_subscription_name
+  name              = var.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
 
   cloud_provider {
@@ -51,23 +58,15 @@ resource "rediscloud_subscription" "pro_subscription" {
   }
 }
 
-resource "rediscloud_private_link" "private_link" {
-  subscription_id = rediscloud_subscription.pro_subscription.id
-  share_name      = local.rediscloud_private_link_share_name
-
-  # principal {
-  #   principal = local.rediscloud_principal_1
-  #   principal_type = "aws_account"
-  #   principal_alias = "terraform test aws account"
-  # }
-
-  principal {
-    principal       = "234567890123"
-    principal_type  = "aws_account"
-    principal_alias = "terraform test aws account 2"
-  }
+resource "rediscloud_subscription_database" "pro_database" {
+  subscription_id              = rediscloud_subscription.pro_subscription.id
+  name                         = "db"
+  memory_limit_in_gb           = 1
+  password                     = var.database_password
+  protocol                     = "redis"
+  data_persistence             = "none"
+  throughput_measurement_by    = "operations-per-second"
+  throughput_measurement_value = 10000
 }
 
-data "rediscloud_private_link" "private_link" {
-  subscription_id = rediscloud_private_link.private_link.subscription_id
-}
+# privatelink resource intentionally removed to test deletion

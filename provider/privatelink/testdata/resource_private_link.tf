@@ -6,10 +6,29 @@ variable "owner" {
   type = string
 }
 
-locals {
-  rediscloud_subscription_name = "%s"
-  rediscloud_cloud_account     = "%s"
-  rediscloud_database_password = "%s"
+variable "subscription_name" {
+  type = string
+}
+
+variable "cloud_account_name" {
+  type = string
+}
+
+variable "database_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "share_name" {
+  type = string
+}
+
+variable "principals" {
+  type = list(object({
+    principal       = string
+    principal_type  = string
+    principal_alias = optional(string)
+  }))
 }
 
 data "rediscloud_payment_method" "card" {
@@ -20,11 +39,11 @@ data "rediscloud_payment_method" "card" {
 data "rediscloud_cloud_account" "account" {
   exclude_internal_account = true
   provider_type            = "AWS"
-  name                     = local.rediscloud_cloud_account
+  name                     = var.cloud_account_name
 }
 
 resource "rediscloud_subscription" "pro_subscription" {
-  name              = local.rediscloud_subscription_name
+  name              = var.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
 
   cloud_provider {
@@ -51,15 +70,31 @@ resource "rediscloud_subscription" "pro_subscription" {
   }
 }
 
+## this will give some connections and databases in the output
 resource "rediscloud_subscription_database" "pro_database" {
   subscription_id              = rediscloud_subscription.pro_subscription.id
   name                         = "db"
   memory_limit_in_gb           = 1
-  password                     = local.rediscloud_database_password
+  password                     = var.database_password
   protocol                     = "redis"
   data_persistence             = "none"
   throughput_measurement_by    = "operations-per-second"
   throughput_measurement_value = 10000
 }
 
-# privatelink resource intentionally removed to test deletion
+
+resource "rediscloud_private_link" "pro_private_link" {
+  subscription_id = rediscloud_subscription.pro_subscription.id
+  share_name      = var.share_name
+
+  dynamic "principal" {
+    for_each = var.principals
+    content {
+      principal       = principal.value.principal
+      principal_type  = principal.value.principal_type
+      principal_alias = principal.value.principal_alias
+    }
+  }
+
+  depends_on = [rediscloud_subscription_database.pro_database]
+}
