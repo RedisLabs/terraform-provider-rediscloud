@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.21.0 (unreleased)
+
+### Changed
+
+- Raised the Go toolchain to 1.26.11 to pick up the fix for GO-2026-6859 in `net/http`.
+- Migrated `rediscloud_acl_role` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+- Migrated `rediscloud_acl_rule` resource from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+- Migrated `rediscloud_acl_user` resource from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes. A user whose creation times out before it becomes active is now kept in state instead of being orphaned.
+- Migrated `rediscloud_acl_role` resource from Terraform SDK v2 to the Terraform Plugin Framework. Attributes are unchanged; the required `rule` and `rule.database` blocks are now enforced by validators instead of schema `MinItems`, so the error messages differ. Existing state moves to schema version 1, which 2.20.0 and earlier cannot read, and an empty `rule.database.regions` that SDK v2 stored for an omitted argument becomes null, so an omitted `regions` gives an empty plan. A configuration that sets `regions = []` shows an in-place update once, which sends the same rule to the API.
+
 ## 2.20.0 (4th November 2026)
 
 ### Added
