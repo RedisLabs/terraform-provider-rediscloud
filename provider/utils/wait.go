@@ -28,6 +28,14 @@ func WaitForSubscriptionToBeActive(ctx context.Context, id int, api *client.ApiC
 	return err
 }
 
+// WaitForSubscriptionToBeActiveAfterCmkUpdate waits for a subscription to become active after its
+// customer-managed keys were submitted. The API can still report encryption_key_pending once the
+// update task has completed, so that status is treated as pending here rather than as a failure.
+func WaitForSubscriptionToBeActiveAfterCmkUpdate(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {
+	_, err := WaitForSubscriptionToBeStatus(ctx, id, api, timeout, []string{subscriptions.SubscriptionStatusActive}, subscriptions.SubscriptionStatusPending, subscriptions.SubscriptionStatusEncryptionKeyPending)
+	return err
+}
+
 func WaitForSubscriptionToBeStatus(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration, targetStatuses []string, pendingStatuses ...string) (string, error) {
 	if len(pendingStatuses) == 0 {
 		pendingStatuses = []string{subscriptions.SubscriptionStatusPending}
@@ -350,6 +358,14 @@ func WaitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, ap
 		},
 	}
 	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		// The subscription ID is already in state, so an error here taints the resource and the
+		// next apply replaces it. A transient polling failure must not do that when the
+		// subscription has in fact reached the state the CMK flow expects.
+		subscription, getErr := api.Client.Subscription.Get(ctx, id)
+		if getErr == nil && redis.StringValue(subscription.Status) == subscriptions.SubscriptionStatusEncryptionKeyPending {
+			log.Printf("[WARN] Subscription %d is %s despite wait error: %v", id, subscriptions.SubscriptionStatusEncryptionKeyPending, err)
+			return nil
+		}
 		return err
 	}
 
