@@ -73,7 +73,7 @@ func TestSubscriptionDeletionTransitions(t *testing.T) {
 		{name: "deletion times out", states: []string{"active", "active", "deleting"}, deletes: 1, wantError: true},
 		{name: "readiness fails", states: []string{"failure"}, wantError: true},
 	}
-	for _, resourceName := range []string{"rediscloud_active_active_subscription", "rediscloud_subscription"} {
+	for _, resourceName := range []string{"rediscloud_active_active_subscription"} {
 		t.Run(resourceName, func(t *testing.T) {
 			for _, tc := range cases {
 				t.Run(tc.name, func(t *testing.T) {

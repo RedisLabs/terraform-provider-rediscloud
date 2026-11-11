@@ -5,6 +5,10 @@
 ### Changed
 
 - Raised the Go toolchain to 1.26.11 to pick up the fix for GO-2026-6859 in `net/http`.
+- Migrated `rediscloud_database_modules` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+- Migrated `rediscloud_database` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes. Its documentation now lists `id`, `region`, `query_performance_factor` and `module`, and no longer lists the nonexistent `enable_tls`.
+- Migrated `rediscloud_subscription` resource from Terraform SDK v2 to the Terraform Plugin Framework. Existing state moves to schema version 1, which 2.20.0 and earlier cannot read, and drops the `maintenance_windows` block that SDK v2 filled from the API. After the upgrade or an import, an omitted block gives an empty plan and leaves the current maintenance windows unchanged, and a configured block shows as added and is applied once. Attributes with a default value, and `creation_plan` `memory_limit_in_gb` and `dataset_size_in_gb`, are now reported as optional and computed, and `id` is computed only. The `creation_plan` block is no longer kept in state once it is removed from the configuration, and an omitted `maintenance_windows` block is no longer filled from the API. Changing an attribute that replaces the subscription without a `creation_plan` block now fails at plan time.
+- Added acceptance tests that configure a working S3 `remote_backup` on `rediscloud_subscription_database` and `rediscloud_active_active_subscription_database`, change its schedule in place, and check the backup configuration through the API. The Pro test also runs a manual backup and checks that files reach the bucket. They run only with `-s3Backup`, as their AWS credentials need `s3:CreateBucket`.
 
 ## 2.20.0 (4th November 2026)
 
