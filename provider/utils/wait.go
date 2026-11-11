@@ -211,47 +211,6 @@ func WaitForTransitGatewayResourceToMatchFilters(
 	return task, nil
 }
 
-// WaitForActiveActiveTransitGatewayResourceToBeAvailable waits for Active-Active Transit Gateway API resources
-// to become available. This handles the case where Response.Resource is nil during initial subscription provisioning.
-func WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx context.Context, subId int, regionId int, api *client.ApiClient, timeout time.Duration) (*attachments.GetAttachmentsTask, error) {
-	wait := &retry.StateChangeConf{
-		Pending:      []string{"provisioning"},
-		Target:       []string{"available"},
-		Timeout:      timeout,
-		Delay:        api.WaitDelay(10 * time.Second),
-		PollInterval: api.WaitPollInterval(30 * time.Second),
-
-		Refresh: func() (result interface{}, state string, err error) {
-			log.Printf("[DEBUG] Waiting for Active-Active Transit Gateway resource to be available for subscription %d, region %d", subId, regionId)
-
-			tgwTask, err := api.Client.TransitGatewayAttachments.GetActiveActive(ctx, subId, regionId)
-			if err != nil {
-				return nil, "", err
-			}
-
-			if tgwTask == nil || tgwTask.Response == nil || tgwTask.Response.Resource == nil {
-				return nil, "provisioning", nil
-			}
-
-			return tgwTask, "available", nil
-		},
-	}
-
-	result, err := wait.WaitForStateContext(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("timeout waiting for Active-Active Transit Gateway resource to become available for subscription %d, region %d. "+
-			"This may indicate the subscription is still provisioning or there's an issue with the subscription setup. "+
-			"Original error: %w", subId, regionId, err)
-	}
-
-	task, ok := result.(*attachments.GetAttachmentsTask)
-	if !ok {
-		return nil, fmt.Errorf("internal error: unexpected result type from wait operation for subscription %d, region %d", subId, regionId)
-	}
-
-	return task, nil
-}
-
 func transitGatewayTaskMatchesFilters(
 	tgwTask *attachments.GetAttachmentsTask,
 	filters []func(tgw *attachments.TransitGatewayAttachment) bool,
