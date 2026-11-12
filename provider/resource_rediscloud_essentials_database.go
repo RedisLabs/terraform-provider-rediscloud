@@ -437,7 +437,7 @@ func resourceRedisCloudEssentialsDatabaseCreate(ctx context.Context, d *schema.R
 	d.SetId(utils.BuildResourceId(subId, databaseId))
 
 	// Confirm Subscription Active status
-	err = waitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api, timeout)
+	err = WaitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api, timeout)
 	if err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return diag.FromErr(err)
@@ -743,7 +743,7 @@ func resourceRedisCloudEssentialsDatabaseUpdateWithTimeout(ctx context.Context, 
 		return diag.FromErr(err)
 	}
 
-	if err := waitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api, timeout); err != nil {
+	if err := WaitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -775,7 +775,7 @@ func resourceRedisCloudEssentialsDatabaseDelete(ctx context.Context, d *schema.R
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
 
-	if err := waitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api, timeout); err != nil {
+	if err := WaitForEssentialsDatabaseToBeActive(ctx, subId, databaseId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -800,7 +800,7 @@ func upgradeRedisVersionEssentials(ctx context.Context, api *client.ApiClient, s
 	log.Printf("[INFO] Redis version change request to %s accepted by API", newVersion)
 
 	// Wait for database to be active
-	if err := waitForEssentialsDatabaseToBeActive(ctx, subId, dbId, api, timeout); err != nil {
+	if err := WaitForEssentialsDatabaseToBeActive(ctx, subId, dbId, api, timeout); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -812,7 +812,7 @@ func upgradeRedisVersionEssentials(ctx context.Context, api *client.ApiClient, s
 	return nil
 }
 
-func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient, timeout time.Duration) error {
+func WaitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api *client.ApiClient, timeout time.Duration) error {
 	wait := &retry.StateChangeConf{
 		Delay: api.WaitDelay(30 * time.Second),
 		Pending: []string{
@@ -826,6 +826,8 @@ func waitForEssentialsDatabaseToBeActive(ctx context.Context, subId, id int, api
 			databases.StatusProxyPolicyChangePending,
 			databases.StatusProxyPolicyChangeDraft,
 			databases.StatusDynamicEndpointsCreationPending,
+			databases.StatusActiveUpgradePending,
+			databases.StatusBDBUpdatePending,
 		},
 		Target:       []string{databases.StatusActive},
 		Timeout:      timeout,
