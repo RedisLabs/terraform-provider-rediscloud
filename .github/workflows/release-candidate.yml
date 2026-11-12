@@ -1,0 +1,56 @@
+# Build a release candidate and publish it as a GitHub pre-release.
+# The Terraform Registry does not publish pre-releases. The stable release
+# workflow skips any tag that contains a hyphen, so this does not become
+# the public provider version.
+name: release-candidate
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Candidate version without the v prefix, for example 2.21.0-rc1"
+        required: true
+        type: string
+      ref:
+        description: "Git ref to build. Branch, tag, or full commit SHA. Defaults to the branch selected in Run workflow."
+        required: false
+        type: string
+        default: ""
+permissions:
+  contents: write
+concurrency:
+  group: release-candidate
+  cancel-in-progress: false
+jobs:
+  release-candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check version
+        env:
+          RC_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s\n' "$RC_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]+$'; then
+            echo "::error::version must look like 2.21.0-rc1, with no v prefix"
+            exit 1
+          fi
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref != '' && inputs.ref || github.ref }}
+          fetch-depth: 0
+      - name: Set up Nix
+        uses: ./.github/actions/setup-nix
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Import GPG key
+        id: import_gpg
+        uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+      - name: Publish pre-release
+        run: nix develop --command make release-candidate RC_VERSION="${RC_VERSION}"
+        env:
+          RC_VERSION: ${{ inputs.version }}
+          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

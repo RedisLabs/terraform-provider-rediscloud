@@ -82,6 +82,31 @@ GoReleaser creates the GitHub release automatically, with its notes taken from t
 1. Check the [releases page](https://github.com/RedisLabs/terraform-provider-rediscloud/releases) to confirm the release and its notes look correct.
 2. Wait for the [Terraform Registry](https://registry.terraform.io/providers/RedisLabs/rediscloud/latest) to pick up the new version (usually a few minutes).
 
+## Release candidate
+
+A release candidate lets Test Automation install the provider before the official publish. It is a GitHub pre-release. It is not a Terraform Registry version.
+
+From the provider repository, Actions → Release-candidate → Run workflow.
+
+- **version:** the candidate, with no `v` prefix, for example `2.21.0-rc1`. The same numbers as the official release you intend to tag, plus `-rc` and a number.
+- **ref:** the branch, tag, or commit to build. Leave it empty to build the branch selected in the workflow screen.
+
+The workflow tags `v2.21.0-rc1` and publishes a GitHub pre-release with signed zips. The stable release workflow skips any tag that contains a hyphen, so this tag does not publish to the Terraform Registry. GitHub does not mark a pre-release as the latest release. Crossplane and Pulumi read the latest stable release, so they do not open a pull request for a candidate.
+
+Test Automation installs it from the pre-release assets, not from the registry. Download `terraform-provider-rediscloud_<version>_linux_amd64.zip`, unzip it, and place the binary at:
+
+```text
+registry.terraform.io/RedisLabs/rediscloud/<version>/linux_amd64/terraform-provider-rediscloud_v<version>
+```
+
+Point Terraform at that filesystem mirror for `RedisLabs/rediscloud`, and set the required provider version to the candidate, for example `2.21.0-rc1`. A normal version constraint such as `~> 2.20` does not select it.
+
+The official release is still a stable tag, for example `v2.21.0`, with no `-rc` suffix. That tag is the one the registry publishes.
+
+## Downstream providers
+
+Crossplane and Pulumi do not move when this tag is pushed. The next morning each repository opens its own pull request. See [docs/design/downstream-provider-releases.md](docs/design/downstream-provider-releases.md).
+
 ## Additional Resources
 
 - [Terraform Registry Provider Publishing](https://www.terraform.io/docs/registry/providers/publishing.html)
