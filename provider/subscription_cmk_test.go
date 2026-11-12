@@ -98,7 +98,8 @@ func TestSubscriptionCmkFailedActivationKeepsPriorState(t *testing.T) {
 				// The planned keys must not be persisted, so the next apply retries the activation.
 				state := data.State()
 				require.NotNil(t, state)
-				require.Empty(t, state.Attributes["customer_managed_key.#"])
+				require.Equal(t, "0", state.Attributes["customer_managed_key.#"])
+				require.NotContains(t, state.Attributes, "customer_managed_key.0.resource_name")
 			})
 		}
 	}

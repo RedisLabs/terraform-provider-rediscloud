@@ -977,19 +977,13 @@ func resourceRedisCloudProSubscriptionUpdateCmk(ctx context.Context, d *schema.R
 		CustomerManagedKeys: &customerManagedKeys,
 	}
 
-	// Keep the prior state if the keys are not accepted, so the next apply sends them again
-	// instead of finding no change to customer_managed_key.
-	d.Partial(true)
-
 	if err := api.Client.Subscription.UpdateCMKs(ctx, subId, updateCmkRequest); err != nil {
-		return diag.FromErr(err)
+		return utils.CustomerManagedKeyUpdateError(d, err)
 	}
 
 	if err := utils.WaitForSubscriptionToBeActiveAfterCmkUpdate(ctx, subId, api, timeout); err != nil {
-		return diag.FromErr(err)
+		return utils.CustomerManagedKeyUpdateError(d, err)
 	}
-
-	d.Partial(false)
 
 	// After CMK activation, delete databases that were not cleaned up during Create
 	if cleanupDiags := utils.DeleteSubscriptionDatabases(ctx, subId, api, timeout); cleanupDiags != nil {
