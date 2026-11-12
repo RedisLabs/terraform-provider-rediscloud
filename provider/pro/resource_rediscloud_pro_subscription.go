@@ -783,6 +783,15 @@ func resourceRedisCloudProSubscriptionRead(ctx context.Context, d *schema.Resour
 		return diag.FromErr(err)
 	}
 
+	// The API does not return the keys. While the subscription waits for them, keep
+	// customer_managed_key out of state so that configured keys always show as a change and the
+	// next apply sends them, including keys already present in the configuration at creation.
+	if redis.StringValue(subscription.Status) == subscriptions.SubscriptionStatusEncryptionKeyPending {
+		if err := d.Set("customer_managed_key", nil); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
 	cmkEnabledFromAPI := subscription.PersistentStorageEncryptionType != nil &&
 		redis.StringValue(subscription.PersistentStorageEncryptionType) == utils.CmkEnabledString
 	if err := d.Set("customer_managed_key_enabled", cmkEnabledFromAPI); err != nil {
@@ -969,11 +978,11 @@ func resourceRedisCloudProSubscriptionUpdateCmk(ctx context.Context, d *schema.R
 	}
 
 	if err := api.Client.Subscription.UpdateCMKs(ctx, subId, updateCmkRequest); err != nil {
-		return diag.FromErr(err)
+		return utils.CustomerManagedKeyUpdateError(d, err)
 	}
 
-	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
-		return diag.FromErr(err)
+	if err := utils.WaitForSubscriptionToBeActiveAfterCmkUpdate(ctx, subId, api, timeout); err != nil {
+		return utils.CustomerManagedKeyUpdateError(d, err)
 	}
 
 	// After CMK activation, delete databases that were not cleaned up during Create

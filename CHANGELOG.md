@@ -5,6 +5,10 @@
 ### Fixed
 
 - `rediscloud_essentials_database` now waits through the `active-upgrade-pending` and `bdb-update-pending` statuses, as `rediscloud_subscription_database` already does. Changing `redis_version` no longer fails with `unexpected state 'active-upgrade-pending', wanted target 'active'`.
+- `rediscloud_subscription` and `rediscloud_active_active_subscription` now send the `customer_managed_key` blocks on the apply after creation while the subscription is in `encryption_key_pending`, including keys already configured at creation. Previously the second apply found no change and the subscription stayed pending.
+- `rediscloud_subscription` and `rediscloud_active_active_subscription` keep the previous state when the customer-managed key update or the following wait fails, so the next apply retries the activation.
+- `rediscloud_subscription` and `rediscloud_active_active_subscription` no longer fail with an unexpected state when the subscription still reports `encryption_key_pending` right after the customer-managed keys are submitted.
+- `rediscloud_subscription` and `rediscloud_active_active_subscription` no longer taint a newly created CMK subscription when waiting for `encryption_key_pending` fails but the subscription has reached that state.
 
 ### Changed
 

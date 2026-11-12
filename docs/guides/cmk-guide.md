@@ -13,9 +13,9 @@ come across before. In this case, Terraform requires applying the resource twice
 CMKs differs from standard resource provisioning due to a dependency cycle between cloud providers and the Redis Cloud API.
 
 The Terraform flow looks like this:
-- First `terraform apply` to enable CMK and get Redis service account/role info.
+- First `terraform apply` to enable CMK and get Redis service account/role info, without the `customer_managed_key` blocks.
 - Grant the Redis identity (GCP service account or AWS IAM role) access to your CMK in your cloud provider.
-- Second `terraform apply` to update the encryption information in Redis Cloud.
+- Add the `customer_managed_key` blocks, then run a second `terraform apply` to update the encryption information in Redis Cloud.
 
 CMKs are provided at the subscription level, not at the database level. For a multi-region database (active-active)
 you will need to provide a key for each region. These can be the same key, but they must be specified for each region.
@@ -195,7 +195,8 @@ This can be done either using Terraform or manually creating one in the cloud pr
 The setup is relatively similar between the two kinds of subscriptions, and is enabled by activation of the
 `customer_managed_key_enabled` flag on the subscription.
 
-Run `terraform apply` with this flag enabled on your subscription.
+Run `terraform apply` with this flag enabled on your subscription. Leave out the `customer_managed_key` blocks for
+now, as the keys can only be supplied once the Redis identity has access to them.
 
 The subscription is put into a `encryption_key_pending` state - and will output identity information for the next step:
 - **GCP**: `customer_managed_key_redis_service_account` — the GCP service account to grant access to your Cloud KMS key
@@ -230,7 +231,11 @@ The exact permissions depend on the provider:
 
 Now that you have granted access to your CMK, the subscription can be transitioned fully into an active subscription state.
 
-Simply `terraform apply` again.
+Add the `customer_managed_key` blocks shown in the examples above to your subscription and run `terraform apply` again.
+
+While the subscription is in the `encryption_key_pending` state, the provider does not record the keys in state, so
+the plan always shows the `customer_managed_key` blocks as a change and the apply sends them. This also applies if the
+blocks were already present at the first apply, and if a previous attempt failed: fix the access and apply again.
 
 Terraform will now update the subscription with the CMK information using the `customer_managed_key` blocks. Note that
 if you have an active-active subscription with multiple regions, you must provide a block for each region. This is true

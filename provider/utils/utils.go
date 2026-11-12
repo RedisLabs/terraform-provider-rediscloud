@@ -33,6 +33,17 @@ func InterfaceToStringSlice(list []interface{}) []*string {
 	return ret
 }
 
+// CustomerManagedKeyUpdateError clears the planned keys from state before returning an update
+// failure. The Redis Cloud API does not return customer-managed keys, so retaining the planned
+// value after a failed update would make the next apply incorrectly find no key change to retry.
+func CustomerManagedKeyUpdateError(d *schema.ResourceData, updateErr error) diag.Diagnostics {
+	diags := diag.FromErr(updateErr)
+	if err := d.Set("customer_managed_key", nil); err != nil {
+		diags = append(diags, diag.FromErr(fmt.Errorf("clearing customer_managed_key after update failure: %w", err))...)
+	}
+	return diags
+}
+
 // IDs of any resources dependent on a subscription need to be divided by a slash. In this format: <sub id>/<resource id>.
 func BuildResourceId(subId int, id int) string {
 	return fmt.Sprintf("%d/%d", subId, id)
