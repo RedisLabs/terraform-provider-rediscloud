@@ -5,18 +5,15 @@
 ### Fixed
 
 - `rediscloud_essentials_database` now waits through the `active-upgrade-pending` and `bdb-update-pending` statuses, as `rediscloud_subscription_database` already does. Changing `redis_version` no longer fails with `unexpected state 'active-upgrade-pending', wanted target 'active'`.
+- `rediscloud_subscription` and `rediscloud_active_active_subscription` now send the `customer_managed_key` blocks on the apply after creation while the subscription is in `encryption_key_pending`, including keys already configured at creation. Previously the second apply found no change and the subscription stayed pending.
+- `rediscloud_subscription` and `rediscloud_active_active_subscription` keep the previous state when the customer-managed key update or the following wait fails, so the next apply retries the activation.
+- `rediscloud_subscription` and `rediscloud_active_active_subscription` no longer fail with an unexpected state when the subscription still reports `encryption_key_pending` right after the customer-managed keys are submitted.
+- `rediscloud_subscription` and `rediscloud_active_active_subscription` no longer taint a newly created CMK subscription when waiting for `encryption_key_pending` fails but the subscription has reached that state.
 
 ### Changed
 
 - Raised the Go toolchain to 1.26.11 to pick up the fix for GO-2026-6859 in `net/http`.
 - Upgraded `rediscloud-go-api` from 0.53.0 to 0.54.0. GET requests to the API are now retried on connection resets and Cloudflare 520-524 responses, which made acceptance tests flaky.
-
-### Fixed
-
-- `rediscloud_subscription` and `rediscloud_active_active_subscription` now send the `customer_managed_key` blocks on the apply after creation while the subscription is in `encryption_key_pending`, including keys already configured at creation. Previously the second apply found no change and the subscription stayed pending.
-- `rediscloud_subscription` and `rediscloud_active_active_subscription` keep the previous state when the customer-managed key update or the following wait fails, so the next apply retries the activation.
-- `rediscloud_subscription` and `rediscloud_active_active_subscription` no longer fail with an unexpected state when the subscription still reports `encryption_key_pending` right after the customer-managed keys are submitted.
-- `rediscloud_subscription` and `rediscloud_active_active_subscription` no longer taint a newly created CMK subscription when waiting for `encryption_key_pending` fails but the subscription has reached that state.
 
 ## 2.20.0 (4th November 2026)
 
