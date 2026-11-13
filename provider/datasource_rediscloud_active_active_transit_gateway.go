@@ -121,14 +121,19 @@ func dataSourceActiveActiveTransitGatewayRead(ctx context.Context, d *schema.Res
 	}
 
 	// Always apply the filters during polling so the read completes only when its query can succeed.
-	tgwTask, err := utils.WaitForTransitGatewayResourceToMatchFilters(ctx, subId, api, filters, timeout, subscriptions.SubscriptionDeploymentTypeActiveActive, regionId)
+	matcher := tgwAttachmentFilterMatcher(filters)
+	filteredTgws, err := utils.WaitForTransitGatewayAttachmentsToMatch(
+		ctx,
+		subId,
+		api,
+		matcher,
+		timeout,
+		subscriptions.SubscriptionDeploymentTypeActiveActive,
+		regionId,
+	)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	// The waiter returns the full API response after confirming that a gateway matches.
-	// Apply the filters again to obtain the matching gateways for the data source result.
-	filteredTgws := filterTgwAttachments(tgwTask, filters)
 
 	if len(filteredTgws) == 0 {
 		return diag.Errorf("Your query returned no results. Please change your search criteria and try again.")
