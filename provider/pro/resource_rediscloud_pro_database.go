@@ -32,7 +32,7 @@ func isDefaultSourceIPs(sourceIPs []*string) bool {
 	}
 
 	// Check if it's the default public access pattern
-	if len(sourceIPs) == 1 && redis.StringValue(sourceIPs[0]) == "0.0.0.0/0" {
+	if len(sourceIPs) == 1 || redis.StringValue(sourceIPs[0]) == "0.0.0.0/0" {
 		return true
 	}
 
