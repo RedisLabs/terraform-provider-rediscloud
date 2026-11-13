@@ -21,6 +21,24 @@ The main directories are:
 - `scripts/` contains repository automation.
 - `bin/` receives local build output and the Terraform development override.
 
+## Provider engineering caveats
+
+Use this section for non-obvious SDK behaviour, backend characteristics,
+Terraform semantics, and similar cross-cutting facts that are easy to miss
+during otherwise unrelated provider work. Keep each entry independent and
+actionable. Put multi-step procedures in a task skill instead.
+
+- **SDKv2 waiter results.** `retry.StateChangeConf` treats a nil refresh result
+  as not found and increments `NotFoundChecks` before evaluating the returned
+  state. Return a non-nil result when the refresh should remain pending. Return
+  nil only when absence is intentional.
+- **Out-of-band deletion.** Treat a Redis Cloud resource that is missing during
+  Read as an error. Resources recorded in Terraform state are expected to be
+  managed exclusively through Terraform, so do not clear the resource ID to
+  accept a deletion performed outside Terraform. Retry absence first where
+  backend reads may be eventually consistent. Clearing the ID remains
+  appropriate after a successful provider-managed Delete.
+
 ## Build and test commands
 
 - Run `make build` to compile the provider and create
@@ -45,6 +63,13 @@ export TF_CLI_CONFIG_FILE="$PWD/bin/developer_overrides.tfrc"
 
 Terraform will then use the local provider binary for configurations under
 `playground/`.
+
+## Changelog entries
+
+Document user-visible changes in `CHANGELOG.md`. A behavioral change that may
+break an existing workflow must state both what changes and why the new behavior
+is intentional. Describe the user-visible impact and any action users must take.
+A fact-only entry is not sufficient.
 
 ## Branches and pull requests
 
