@@ -283,3 +283,14 @@ func refreshPrivateServiceConnectServiceEndpointActiveActiveStatus(ctx context.C
 
 	return redis.StringValue(endpoint.Status), redis.StringValue(endpoint.Status), nil
 }
+
+type privateServiceConnectActiveActiveEndpointId struct {
+	subscriptionId int
+	regionId       int
+	pscServiceId   int
+	endpointId     int
+}
+
+func (p privateServiceConnectActiveActiveEndpointId) String() string {
+	return fmt.Sprintf("%d/%d/%d/%d", p.subscriptionId, p.regionId, p.pscServiceId, p.endpointId)
+}

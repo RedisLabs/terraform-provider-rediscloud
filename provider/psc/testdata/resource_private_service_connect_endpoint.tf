@@ -1,13 +1,17 @@
-variable "team" {
+variable "subscription_name" {
   type = string
 }
 
-variable "owner" {
+variable "gcp_project_id" {
   type = string
 }
 
-locals {
-  rediscloud_subscription_name = "%s"
+variable "gcp_vpc_name" {
+  type = string
+}
+
+variable "gcp_vpc_subnet_name" {
+  type = string
 }
 
 data "rediscloud_payment_method" "card" {
@@ -16,15 +20,10 @@ data "rediscloud_payment_method" "card" {
 }
 
 resource "rediscloud_subscription" "subscription_resource" {
-  name              = local.rediscloud_subscription_name
+  name              = var.subscription_name
   payment_method_id = data.rediscloud_payment_method.card.id
 
   cloud_provider {
-    resource_tags = {
-      team  = var.team
-      owner = var.owner
-    }
-
     provider = "GCP"
     region {
       region                     = "us-central1"
@@ -45,6 +44,11 @@ resource "rediscloud_private_service_connect" "psc" {
   subscription_id = rediscloud_subscription.subscription_resource.id
 }
 
-data "rediscloud_private_service_connect" "psc" {
-  subscription_id = rediscloud_subscription.subscription_resource.id
+resource "rediscloud_private_service_connect_endpoint" "psce" {
+  subscription_id                    = rediscloud_subscription.subscription_resource.id
+  private_service_connect_service_id = rediscloud_private_service_connect.psc.private_service_connect_service_id
+  gcp_project_id                     = var.gcp_project_id
+  gcp_vpc_name                       = var.gcp_vpc_name
+  gcp_vpc_subnet_name                = var.gcp_vpc_subnet_name
+  endpoint_connection_name           = "redis-${rediscloud_subscription.subscription_resource.id}"
 }

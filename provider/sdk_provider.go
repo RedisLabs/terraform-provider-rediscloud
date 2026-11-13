@@ -55,10 +55,10 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				// Note: rediscloud_regions is served by the Plugin Framework provider
 				// Note: regiscloud_essentials_plan is served by the Plugin Framework provider
 				// Note: rediscloud_essentials_subscription is served by the Plugin Framework provider
-				"rediscloud_essentials_database":               dataSourceRedisCloudEssentialsDatabase(),
-				"rediscloud_subscription_peerings":             dataSourceRedisCloudSubscriptionPeerings(),
-				"rediscloud_private_service_connect":           dataSourcePrivateServiceConnect(),
-				"rediscloud_private_service_connect_endpoints": dataSourcePrivateServiceConnectEndpoints(),
+				"rediscloud_essentials_database":   dataSourceRedisCloudEssentialsDatabase(),
+				"rediscloud_subscription_peerings": dataSourceRedisCloudSubscriptionPeerings(),
+				// Note: rediscloud_private_service_connect is served by the Plugin Framework provider
+				// Note: rediscloud_private_service_connect_endpoints is served by the Plugin Framework provider
 				// Note: rediscloud_active_active_subscription is served by the Plugin Framework provider
 				"rediscloud_active_active_subscription_regions":         dataSourceRedisCloudActiveActiveSubscriptionRegions(),
 				"rediscloud_private_link":                               privatelink.DataSourcePrivateLink(),
@@ -83,21 +83,21 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				"rediscloud_essentials_database":     resourceRedisCloudEssentialsDatabase(),
 				// Note the difference in public resource name and the file/method name.
 				// <default> == flexible == pro
-				"rediscloud_subscription":                              pro.ResourceRedisCloudProSubscription(),
-				"rediscloud_subscription_database":                     pro.ResourceRedisCloudProDatabase(),
-				"rediscloud_subscription_peering":                      resourceRedisCloudSubscriptionPeering(),
-				"rediscloud_private_service_connect":                   resourceRedisCloudPrivateServiceConnect(),
-				"rediscloud_private_service_connect_endpoint":          resourceRedisCloudPrivateServiceConnectEndpoint(),
+				"rediscloud_subscription":            pro.ResourceRedisCloudProSubscription(),
+				"rediscloud_subscription_database":   pro.ResourceRedisCloudProDatabase(),
+				"rediscloud_subscription_peering":    resourceRedisCloudSubscriptionPeering(),
+				"rediscloud_private_service_connect": resourceRedisCloudPrivateServiceConnect(),
+				// Note: rediscloud_private_service_connect_endpoint is served by the Plugin Framework provider
 				"rediscloud_private_service_connect_endpoint_accepter": resourceRedisCloudPrivateServiceConnectEndpointAccepter(),
 				"rediscloud_private_link":                              privatelink.ResourceRedisCloudPrivateLink(),
 				"rediscloud_active_active_private_link":                privatelink.ResourceRedisCloudActiveActivePrivateLink(),
 
 				"rediscloud_active_active_subscription": resourceRedisCloudActiveActiveSubscription(),
 				// Note: rediscloud_active_active_subscription_database is served by the Plugin Framework provider
-				"rediscloud_active_active_subscription_regions":                      resourceRedisCloudActiveActiveSubscriptionRegions(),
-				"rediscloud_active_active_subscription_peering":                      resourceRedisCloudActiveActiveSubscriptionPeering(),
-				"rediscloud_active_active_private_service_connect":                   resourceRedisCloudActiveActivePrivateServiceConnect(),
-				"rediscloud_active_active_private_service_connect_endpoint":          resourceRedisCloudActiveActivePrivateServiceConnectEndpoint(),
+				"rediscloud_active_active_subscription_regions":    resourceRedisCloudActiveActiveSubscriptionRegions(),
+				"rediscloud_active_active_subscription_peering":    resourceRedisCloudActiveActiveSubscriptionPeering(),
+				"rediscloud_active_active_private_service_connect": resourceRedisCloudActiveActivePrivateServiceConnect(),
+				// Note: rediscloud_active_active_private_service_connect_endpoint is served by the Plugin Framework provider
 				"rediscloud_active_active_private_service_connect_endpoint_accepter": resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter(),
 				"rediscloud_transit_gateway_attachment":                              resourceRedisCloudTransitGatewayAttachment(),
 				"rediscloud_active_active_transit_gateway_attachment":                resourceRedisCloudActiveActiveTransitGatewayAttachment(),

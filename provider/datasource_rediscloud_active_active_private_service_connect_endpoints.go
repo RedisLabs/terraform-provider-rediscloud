@@ -141,3 +141,44 @@ func dataSourceActiveActivePrivateServiceConnectEndpointsRead(ctx context.Contex
 
 	return diags
 }
+
+// flattenPrivateServiceConnectEndpoints moved here from the migrated Pro endpoints data source; remove it with this data source.
+func flattenPrivateServiceConnectEndpoints(endpoints []*psc.PrivateServiceConnectEndpoint,
+	serviceAttachments map[int][]psc.TerraformGCPServiceAttachment) []map[string]interface{} {
+
+	var rl []map[string]interface{}
+	for _, endpoint := range endpoints {
+
+		endpointMapString := map[string]interface{}{
+			"private_service_connect_endpoint_id": redis.IntValue(endpoint.ID),
+			"gcp_project_id":                      redis.StringValue(endpoint.GCPProjectID),
+			"gcp_vpc_name":                        redis.StringValue(endpoint.GCPVPCName),
+			"gcp_vpc_subnet_name":                 redis.StringValue(endpoint.GCPVPCSubnetName),
+			"endpoint_connection_name":            redis.StringValue(endpoint.EndpointConnectionName),
+			"status":                              redis.StringValue(endpoint.Status),
+			"service_attachments":                 flattenPrivateServiceConnectEndpointServiceAttachments(serviceAttachments[redis.IntValue(endpoint.ID)]),
+		}
+
+		rl = append(rl, endpointMapString)
+	}
+
+	return rl
+}
+
+// flattenPrivateServiceConnectEndpointServiceAttachments moved here from the migrated Active-Active endpoint resource; remove it with this data source.
+func flattenPrivateServiceConnectEndpointServiceAttachments(serviceAttachments []psc.TerraformGCPServiceAttachment) []map[string]interface{} {
+	var rl []map[string]interface{}
+	for _, serviceAttachment := range serviceAttachments {
+
+		serviceAttachmentMapString := map[string]interface{}{
+			"name":                 serviceAttachment.Name,
+			"dns_record":           serviceAttachment.DNSRecord,
+			"ip_address_name":      serviceAttachment.IPAddressName,
+			"forwarding_rule_name": serviceAttachment.ForwardingRuleName,
+		}
+
+		rl = append(rl, serviceAttachmentMapString)
+	}
+
+	return rl
+}
