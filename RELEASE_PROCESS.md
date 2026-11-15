@@ -82,6 +82,10 @@ GoReleaser creates the GitHub release automatically, with its notes taken from t
 1. Check the [releases page](https://github.com/RedisLabs/terraform-provider-rediscloud/releases) to confirm the release and its notes look correct.
 2. Wait for the [Terraform Registry](https://registry.terraform.io/providers/RedisLabs/rediscloud/latest) to pick up the new version (usually a few minutes).
 
+## Downstream providers
+
+Crossplane and Pulumi do not move when this tag is pushed. The next morning each repository opens its own pull request. See [docs/design/downstream-provider-releases.md](docs/design/downstream-provider-releases.md).
+
 ## Additional Resources
 
 - [Terraform Registry Provider Publishing](https://www.terraform.io/docs/registry/providers/publishing.html)
