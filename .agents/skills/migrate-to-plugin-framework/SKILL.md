@@ -266,6 +266,10 @@ test.
 
 ## Update tests with the migration
 
+When writing fake-API-backed resource or data-source unit tests, also read
+[write-terraform-unit-tests](../write-terraform-unit-tests/SKILL.md). Apply it to
+direct handler tests and `resource.UnitTest` cases.
+
 Add table-driven unit tests for pure filters, mapping helpers, sort keys, custom
 types, and model conversions. Keep those tests independent of Terraform and live
 API credentials where possible.

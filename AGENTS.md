@@ -105,6 +105,7 @@ Recurring workflows live as Agent Skills:
 | Skill | Use it for |
 | --- | --- |
 | `migrate-to-plugin-framework` | Migrating an SDKv2 resource or data source, or adding a new Framework implementation. |
+| [write-terraform-unit-tests](.agents/skills/write-terraform-unit-tests/SKILL.md) | Read before writing or refactoring fake-API-backed Terraform resource or data-source unit tests, including during migrations. |
 
 Skills are stored at `.agents/skills/<skill-name>/SKILL.md`. When adding or
 changing a skill, validate it with the available Agent Skills validator.
