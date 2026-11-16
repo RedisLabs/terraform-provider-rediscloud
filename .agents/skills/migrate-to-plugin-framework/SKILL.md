@@ -40,20 +40,32 @@ and manual-provider setup.
 ## Preserve the protocol-v5 schema
 
 The provider mux speaks protocol v5. Translate SDKv2 collection shapes according
-to what they represent:
+to whether each field is computed-only or configurable:
 
-- Convert `TypeList` or `TypeSet` with `Elem: &schema.Resource{}` to
-  `schema.ListNestedBlock` or `schema.SetNestedBlock`.
-- Do not use Framework nested attributes for those object collections. Nested
+- Convert computed-only `TypeList` or `TypeSet` with
+  `Elem: &schema.Resource{}` to `schema.ListAttribute` or `schema.SetAttribute`
+  with `Computed: true` and an object `ElementType`. Computed-only means
+  `Computed: true` with neither `Required` nor `Optional` set.
+- Convert configurable object blocks to `schema.ListNestedBlock` or
+  `schema.SetNestedBlock`. Optional-and-Computed collections are configurable.
+- Do not use `schema.ListNestedAttribute` or `schema.SetNestedAttribute`. Nested
   attributes require protocol v6 and can panic when served through this mux.
+  Plain list and set attributes with object elements are supported by protocol v5.
 - Convert primitive lists and sets to `schema.ListAttribute` and
   `schema.SetAttribute` with an `ElementType`.
 - Convert primitive maps to `schema.MapAttribute`.
 
+SDKv2 exposes computed-only object collections as attributes by default. A block
+declaration makes a deferred data-source read plan these collections as empty
+instead of unknown. List indexing can then fail, and `length(...)` can incorrectly
+return zero. Follow the
+[computed-block migration guidance](https://developer.hashicorp.com/terraform/plugin/framework/migrating/attributes-blocks/blocks-computed)
+for protocol v5.
+
 Preserve the public block and attribute names, nesting, collection kind, and
-configuration semantics exactly. Similar subscription types do not necessarily
-give a field the same Required, Optional, or Computed flags, so verify each
-schema independently.
+configuration semantics exactly. Check the exported SDKv2 schema when `ConfigMode`
+is set explicitly. Similar subscription types do not necessarily give a field
+the same Required, Optional, or Computed flags, so verify each schema independently.
 
 Keep descriptions meaningful in code you touch. Update generated or published
 documentation only when the schema or its wording actually changes.
@@ -136,8 +148,11 @@ helpers touched by the migration rather than sweeping unrelated legacy code.
 
 ## Choose a strategy for nested collections
 
-Make the decision from every resource and data source that uses the shape, not
-only from the schema currently being migrated.
+Choose ordinary Framework values or reusable custom types by inspecting every
+resource and data source that uses the shape. Choose attribute versus block
+separately for each field using the protocol-v5 rules above. A shared custom type
+may back a computed attribute in a data source and a configurable block in a
+resource.
 
 Share a custom type only when those consumers expose the same Terraform element
 shape. Related blocks with different nested fields require different Framework
@@ -146,7 +161,8 @@ computed-only variant as a computed shape instead.
 
 ### Configurable shapes
 
-Create a reusable Framework custom collection type when the nested shape is user configurable somewhere. Required, Optional, or Optional-and-Computed blocks fall
+Create a reusable Framework custom collection type when the nested shape is user
+configurable somewhere. Required, Optional, or Optional-and-Computed blocks fall
 into this category. Maintenance windows are the representative subscription
 shape: a data source reads them as computed data, while subscription resources
 accept them as configuration.
@@ -169,8 +185,10 @@ Use a custom list type when callers need the whole list as a domain value:
 2. Implement the Framework conversion, equality, and type methods required by
    `basetypes.ListTypable` and `basetypes.ListValuable`. Add compile-time
    interface assertions.
-3. Attach the type to `schema.ListNestedBlock.CustomType` and use `XListValue` in
-   the containing `tfsdk` model.
+3. Set `CustomType` on the field's `schema.ListAttribute` or
+   `schema.ListNestedBlock`, and use `XListValue` in the containing `tfsdk` model.
+   For a computed attribute, also set `Computed: true` and take `ElementType` from
+   the custom list type's `ElementType()`.
 4. Represent element data with `tfsdk`-tagged model structs. Construct the
    collection from those models as described in the shared rules below.
 5. Add `AsModels(ctx) ([]XModel, diag.Diagnostics)` to the list value and decode
@@ -196,8 +214,9 @@ custom type adds no useful configuration or CRUD boundary.
 Still give the element a `tfsdk`-tagged model such as `PricingModel`. Derive the
 element attribute map with `customtypes.AttrTypesOf(PricingModel{})`. This keeps
 the model as the source of attribute names and types so mapping code does not
-repeat hardcoded string keys. Store the result in a normal `types.List` or
-`types.Set` model field.
+repeat hardcoded string keys. Wrap the map in `types.ObjectType` and reuse that
+object type as the computed attribute's `ElementType` and in the API mapper.
+Store the value in a normal `types.List` or `types.Set` model field.
 
 `AttrTypesOf` expects model fields that implement `attr.Value`. A zero
 `types.String`, `types.Int64`, or similar scalar can report its type directly. A
@@ -279,11 +298,22 @@ because an uninitialised collection cannot report its element type. The complete
 comparison must cover every schema name, every `tfsdk` tag, and their scalar and
 collection types without requiring a live API.
 
-For every custom nested collection, also compare the custom type's
-`ElementType()` with the corresponding schema `NestedObject.Type()`, and repeat
-that check recursively for nested custom collections. A block's `Type()` returns
-its configured `CustomType` directly, so the complete top-level comparison does
-not independently verify the manually declared nested object shape.
+For every custom nested block, also compare the custom type's `ElementType()`
+with the corresponding schema `NestedObject.Type()`, and repeat that check
+recursively for nested custom blocks. A block's `Type()` returns its configured
+`CustomType` directly, so the complete top-level comparison does not independently
+verify the manually declared nested object shape.
+
+Also assert that computed-only object collections appear in `Schema.Attributes`
+and configurable blocks appear in `Schema.Blocks`. Matching model value types
+cannot distinguish those schema declarations.
+
+For migrated data sources with computed object collections, add a plan-only
+`resource.UnitTest` that defers the read to apply. For example, make a lookup input
+unknown using `terraform_data`. Assert that collection lengths and references to
+nested values remain unknown; include indexing for list collections. Use dummy
+API credentials if configuration requires them, and keep the read deferred so the
+test makes no API calls.
 
 Acceptance tests use `terraform-plugin-testing` and run against a real account
 only with `TF_ACC=1`. Keep these common pieces unless the existing test requires
@@ -335,7 +365,8 @@ Run checks in increasing order of cost:
    package changed by the migration.
 3. Run `go build ./...`, `go vet ./...`, and `golangci-lint fmt --diff`.
 4. Compare the resulting protocol-v5 schema with the SDKv2 schema, especially
-   nested block kinds and Required, Optional, and Computed flags.
+   attribute versus block declarations, list versus set kinds, and Required,
+   Optional, and Computed flags.
 5. Run the relevant acceptance tests when credentials and a live test account
    are available. Report missing credentials as a skipped verification rather
    than treating them as a passing test.
