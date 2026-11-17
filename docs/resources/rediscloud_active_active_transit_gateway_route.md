@@ -51,9 +51,18 @@ resource "rediscloud_active_active_transit_gateway_route" "example" {
 * `tgw_id` - (Required) The ID of the Transit Gateway
 * `cidrs` - (Required) A list of consumer CIDR blocks
 
+### Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when creating the route
+* `read` - (Defaults to 3 mins) Used when reading the route
+* `update` - (Defaults to 5 mins) Used when updating the route
+* `delete` - (Defaults to 5 mins) Used when destroying the route
+
 ## Attribute Reference
 
-No additional attributes are exported.
+* `id` - The identifier of the route, in the format `{subscription_id}/{region_id}/{tgw_id}`
 
 ## Import
 
