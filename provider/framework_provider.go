@@ -191,6 +191,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 		cloudaccount.NewCloudAccountDataSource,
 		regions.NewRegionsDataSource,
 		pro.NewProSubscriptionDataSource,
+		transitgateway.NewActiveActiveTransitGatewayDataSource,
 		transitgateway.NewActiveActiveTransitGatewayInvitationsDataSource,
 		transitgateway.NewTransitGatewayDataSource,
 		transitgateway.NewTransitGatewayInvitationsDataSource,
