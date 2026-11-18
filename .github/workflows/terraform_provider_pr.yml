@@ -130,7 +130,7 @@ jobs:
     needs: [pre-test]
     uses: ./.github/workflows/testacc.yml
     with:
-      test_pattern: TestAccResourceRedisCloudEssentialsDatabase_CRUDI
+      test_pattern: TestAcc(DataSource|Resource)RedisCloudEssentialsDatabase_(basic|CRUDI)
       create_account_sleep_seconds: 210
     secrets: inherit
 
