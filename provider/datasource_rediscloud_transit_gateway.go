@@ -189,9 +189,3 @@ func filterTgwAttachment(tgwa *attachments.TransitGatewayAttachment, filters []f
 	}
 	return true
 }
-
-func tgwAttachmentFilterMatcher(filters []func(tgwa *attachments.TransitGatewayAttachment) bool) utils.TransitGatewayAttachmentMatcher {
-	return func(tgwa *attachments.TransitGatewayAttachment) (bool, error) {
-		return filterTgwAttachment(tgwa, filters), nil
-	}
-}

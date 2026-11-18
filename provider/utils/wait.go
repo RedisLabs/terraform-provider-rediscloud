@@ -140,14 +140,43 @@ func WaitForDatabaseToBeActive(ctx context.Context, subId, id int, api *client.A
 }
 
 const (
-	waitStateWaiting = "waiting"
-	waitStateFound   = "found"
+	// TransitGatewayAttachmentWaitStateWaiting is the synthetic pending state used when no attachment provides a
+	// more specific API state.
+	TransitGatewayAttachmentWaitStateWaiting = "waiting"
+	// TransitGatewayAttachmentWaitStateFound is the synthetic target state used when matching does not depend on
+	// attachment lifecycle state.
+	TransitGatewayAttachmentWaitStateFound = "found"
+	// TransitGatewayAttachmentStatusAvailable is the API lifecycle state used when availability is the target
+	// condition.
+	TransitGatewayAttachmentStatusAvailable = "available"
 )
 
-// TransitGatewayAttachmentMatcher decides whether an attachment satisfies the caller's wait condition. Return false
-// when the attachment does not satisfy the condition. Return an error when observing the attachment means the wait
-// cannot succeed and polling needs to stop.
-type TransitGatewayAttachmentMatcher func(tgw *attachments.TransitGatewayAttachment) (bool, error)
+// TransitGatewayAttachmentPendingStates contains API lifecycle states that keep an availability wait active.
+var TransitGatewayAttachmentPendingStates = []string{
+	"provisioning",
+	"initiating-request",
+	"pending",
+	"pendingAcceptance",
+	"modifying",
+	"deleting",
+	"rejecting",
+	"failing",
+	"rollingBack",
+}
+
+// TransitGatewayAttachmentTerminalStates contains API lifecycle states that stop an availability wait with an error.
+var TransitGatewayAttachmentTerminalStates = []string{
+	"failed",
+	"rejected",
+	"deleted",
+}
+
+// TransitGatewayAttachmentMatcher evaluates one attachment for a wait condition. Return an empty state when the
+// attachment is irrelevant, a pending state when the attachment should keep the wait active, and a target state when
+// the attachment matches. Return an error when observing the attachment means the wait cannot succeed.
+type TransitGatewayAttachmentMatcher func(
+	tgw *attachments.TransitGatewayAttachment,
+) (matched bool, state string, err error)
 
 // WaitForTransitGatewayAttachmentsToMatch waits until the selected Transit Gateway API response contains one or more
 // attachments accepted by matcher. The region ID is only used for Active-Active subscriptions.
@@ -167,9 +196,12 @@ func WaitForTransitGatewayAttachmentsToMatch(
 		location = fmt.Sprintf("subscription %d, region %d", subId, regionId)
 	}
 
+	waitingStates := append([]string{TransitGatewayAttachmentWaitStateWaiting}, TransitGatewayAttachmentPendingStates...)
+	targetStates := []string{TransitGatewayAttachmentWaitStateFound, TransitGatewayAttachmentStatusAvailable}
+
 	wait := &retry.StateChangeConf{
-		Pending:      []string{waitStateWaiting},
-		Target:       []string{waitStateFound},
+		Pending:      waitingStates,
+		Target:       targetStates,
 		Timeout:      timeout,
 		Delay:        api.WaitDelay(5 * time.Second),
 		PollInterval: api.WaitPollInterval(10 * time.Second),
@@ -192,18 +224,19 @@ func WaitForTransitGatewayAttachmentsToMatch(
 			}
 
 			if tgwTask == nil || tgwTask.Response == nil || tgwTask.Response.Resource == nil {
-				return struct{}{}, waitStateWaiting, nil
+				return struct{}{}, TransitGatewayAttachmentWaitStateWaiting, nil
 			}
 
-			matchingTgws, matchErr := matchTransitGatewayAttachments(tgwTask, matcher)
+			att := tgwTask.Response.Resource.TransitGatewayAttachment
+			matchingTgws, state, matchErr := matchTransitGatewayAttachments(att, matcher)
 			if matchErr != nil {
-				return nil, "", matchErr
+				return nil, state, matchErr
 			}
 			if len(matchingTgws) == 0 {
-				return struct{}{}, waitStateWaiting, nil
+				return struct{}{}, state, nil
 			}
 
-			return matchingTgws, waitStateFound, nil
+			return matchingTgws, state, nil
 		},
 	}
 
@@ -221,21 +254,28 @@ func WaitForTransitGatewayAttachmentsToMatch(
 }
 
 func matchTransitGatewayAttachments(
-	tgwTask *attachments.GetAttachmentsTask,
+	tgws []*attachments.TransitGatewayAttachment,
 	matcher TransitGatewayAttachmentMatcher,
-) ([]*attachments.TransitGatewayAttachment, error) {
+) ([]*attachments.TransitGatewayAttachment, string, error) {
 	var matchingTgws []*attachments.TransitGatewayAttachment
-	for _, tgw := range tgwTask.Response.Resource.TransitGatewayAttachment {
-		matches, err := matcher(tgw)
+	// Keep polling when no attachment provides a more specific state.
+	state := TransitGatewayAttachmentWaitStateWaiting
+	for _, tgw := range tgws {
+		matched, matcherState, err := matcher(tgw)
 		if err != nil {
-			return nil, err
+			return nil, matcherState, err
 		}
-		if matches {
+		if matched {
 			matchingTgws = append(matchingTgws, tgw)
+		}
+		// An empty state means this attachment is irrelevant. Preserve the state reported by a relevant attachment
+		// so an unrelated attachment later in the API response cannot replace it.
+		if matcherState != "" {
+			state = matcherState
 		}
 	}
 
-	return matchingTgws, nil
+	return matchingTgws, state, nil
 }
 
 func WaitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, api *client.ApiClient, timeout time.Duration) error {

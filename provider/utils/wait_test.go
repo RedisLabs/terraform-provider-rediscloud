@@ -95,6 +95,29 @@ func transitGatewayResponse(id int) map[string]any {
 	}
 }
 
+func transitGatewayAttachmentFilterMatcher(
+	filter func(tgw *attachments.TransitGatewayAttachment) bool,
+) utils.TransitGatewayAttachmentMatcher {
+	return func(tgw *attachments.TransitGatewayAttachment) (bool, string, error) {
+		if !filter(tgw) {
+			return false, "", nil
+		}
+
+		return true, utils.TransitGatewayAttachmentWaitStateFound, nil
+	}
+}
+
+func transitGatewayAttachmentAvailableMatcher(tgwID int) utils.TransitGatewayAttachmentMatcher {
+	return func(tgw *attachments.TransitGatewayAttachment) (bool, string, error) {
+		if redis.IntValue(tgw.Id) != tgwID {
+			return false, "", nil
+		}
+
+		status := redis.StringValue(tgw.Status)
+		return status == utils.TransitGatewayAttachmentStatusAvailable, status, nil
+	}
+}
+
 func TestWaitForTransitGatewayAttachmentsToMatchContinuesPastNotFoundChecks(t *testing.T) {
 	fake := testhelpers.NewFakeAPI()
 	fake.Handle("GET /subscriptions/123/transitGateways", func(_ *http.Request) (any, error) {
@@ -120,9 +143,9 @@ func TestWaitForTransitGatewayAttachmentsToMatchContinuesPastNotFoundChecks(t *t
 		}
 	})
 
-	matcher := func(tgw *attachments.TransitGatewayAttachment) (bool, error) {
-		return redis.IntValue(tgw.Id) == 2, nil
-	}
+	matcher := transitGatewayAttachmentFilterMatcher(func(tgw *attachments.TransitGatewayAttachment) bool {
+		return redis.IntValue(tgw.Id) == 2
+	})
 
 	matches, err := utils.WaitForTransitGatewayAttachmentsToMatch(
 		context.Background(),
@@ -139,6 +162,46 @@ func TestWaitForTransitGatewayAttachmentsToMatchContinuesPastNotFoundChecks(t *t
 	fake.WithHandlersPaused(func() {
 		require.Equal(t, 43, refreshes)
 	})
+}
+
+func TestWaitForTransitGatewayAttachmentsToMatchReportsLastObservedLifecycleState(t *testing.T) {
+	fake := testhelpers.NewFakeAPI()
+	fake.Handle("GET /subscriptions/123/transitGateways", func(_ *http.Request) (any, error) {
+		return map[string]any{"taskId": "tgw-get"}, nil
+	})
+
+	taskReads := 0
+	fake.Handle("GET /tasks/tgw-get", func(_ *http.Request) (any, error) {
+		taskReads++
+		if taskReads%2 != 0 {
+			return map[string]any{"taskId": "tgw-get", "status": "processing-completed"}, nil
+		}
+
+		return map[string]any{
+			"response": map[string]any{
+				"resource": map[string]any{
+					"tgws": []map[string]any{
+						{"id": 790, "status": "available"},
+						{"id": 789, "status": "pending"},
+						{"id": 791, "status": "failed"},
+					},
+				},
+			},
+		}, nil
+	})
+
+	_, err := utils.WaitForTransitGatewayAttachmentsToMatch(
+		context.Background(),
+		123,
+		testhelpers.NewAPIClient(t, fake),
+		transitGatewayAttachmentAvailableMatcher(789),
+		10*time.Millisecond,
+		subscriptions.SubscriptionDeploymentTypeSingleRegion,
+		0,
+	)
+
+	require.Error(t, err)
+	require.ErrorContains(t, err, "last state: 'pending'")
 }
 
 func TestWaitForTransitGatewayAttachmentsToMatch(t *testing.T) {
@@ -171,9 +234,9 @@ func TestWaitForTransitGatewayAttachmentsToMatch(t *testing.T) {
 					},
 				},
 			},
-			givenMatcher: func(tgw *attachments.TransitGatewayAttachment) (bool, error) {
-				return redis.IntValue(tgw.Id) == 789, nil
-			},
+			givenMatcher: transitGatewayAttachmentFilterMatcher(func(tgw *attachments.TransitGatewayAttachment) bool {
+				return redis.IntValue(tgw.Id) == 789
+			}),
 			success:      true,
 			wantIDs:      []int{789, 789},
 			wantError:    nil,
@@ -196,12 +259,7 @@ func TestWaitForTransitGatewayAttachmentsToMatch(t *testing.T) {
 					},
 				},
 			},
-			givenMatcher: func(tgw *attachments.TransitGatewayAttachment) (bool, error) {
-				if redis.IntValue(tgw.Id) != 789 {
-					return false, nil
-				}
-				return redis.StringValue(tgw.Status) == "available", nil
-			},
+			givenMatcher: transitGatewayAttachmentAvailableMatcher(789),
 			success:      true,
 			wantIDs:      []int{789},
 			wantError:    nil,
@@ -220,12 +278,7 @@ func TestWaitForTransitGatewayAttachmentsToMatch(t *testing.T) {
 					},
 				},
 			},
-			givenMatcher: func(tgw *attachments.TransitGatewayAttachment) (bool, error) {
-				if redis.IntValue(tgw.Id) != 789 {
-					return false, nil
-				}
-				return redis.StringValue(tgw.Status) == "available", nil
-			},
+			givenMatcher: transitGatewayAttachmentAvailableMatcher(789),
 			success:      true,
 			wantIDs:      []int{789},
 			wantError:    nil,
@@ -244,11 +297,11 @@ func TestWaitForTransitGatewayAttachmentsToMatch(t *testing.T) {
 					},
 				},
 			},
-			givenMatcher: func(tgw *attachments.TransitGatewayAttachment) (bool, error) {
+			givenMatcher: func(tgw *attachments.TransitGatewayAttachment) (bool, string, error) {
 				if redis.IntValue(tgw.Id) == 789 {
-					return false, matcherError
+					return false, redis.StringValue(tgw.Status), matcherError
 				}
-				return false, nil
+				return false, "", nil
 			},
 			success:      false,
 			wantIDs:      nil,

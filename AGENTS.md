@@ -39,6 +39,26 @@ actionable. Put multi-step procedures in a task skill instead.
   backend reads may be eventually consistent. Clearing the ID remains
   appropriate after a successful provider-managed Delete.
 
+## Implementation comments
+
+Comment contracts that Go types and the surrounding control flow do not make
+obvious. Primitive values and generic callback results can carry state-machine
+or protocol meaning that is easy to lose during later refactoring. When adding
+or changing such code:
+
+- Document each semantic value where it is defined. State whether it comes from
+  an external API or exists only to control provider logic.
+- Document defaults, precedence, and aggregation where values are combined or
+  conditionally preserved, especially when response ordering or callback
+  conventions affect correctness.
+- Before handing off the change, inspect new callback signatures, sentinel
+  returns, state collections, and accumulators for hidden contracts that a
+  future maintainer could otherwise simplify incorrectly.
+
+Comment mechanics when their intent, purpose or constraint is not obvious from the
+surrounding code. Explain why the code uses that value, ordering, fallback, or
+operation rather than merely paraphrasing what it does.
+
 ## Build and test commands
 
 - Run `make build` to compile the provider and create
