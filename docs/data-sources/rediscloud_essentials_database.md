@@ -16,7 +16,7 @@ The following example shows how to locate a single database within a Subscriptio
 
 ```hcl-terraform
 data "rediscloud_essentials_database" "example" {
-  subscription_id = "1234"
+  subscription_id = 1234
 }
 ```
 
@@ -24,7 +24,7 @@ The following example shows how to use the name to locate a single database with
 
 ```hcl-terraform
 data "rediscloud_essentials_database" "example" {
-  subscription_id = "1234"
+  subscription_id = 1234
   name = "first-database"
 }
 ```
@@ -37,6 +37,9 @@ data "rediscloud_essentials_database" "example" {
 
 ## Attribute Reference
 
+* `id` - The ID of the database in the format `subscription_id/db_id`.
+* `db_id` - The ID of the database.
+* `name` - The name of the database.
 * `protocol` - The protocol of the database. Either `redis`, `memcached` or `stack`.
 * `redis_version` - The Redis database version.
 * `cloud_provider` - The Cloud Provider hosting this database.
@@ -52,7 +55,7 @@ data "rediscloud_essentials_database" "example" {
 * `private_endpoint` - Private endpoint to access the database.
 * `source_ips` - Set of CIDR addresses to allow access to the database.
 * `replica` - Replica details on this database, documented below.
-* `client_tls_certificates` - A list of TLS certificates (public keys) with new line characters replaced by \n.
+* `client_tls_certificates` - Always empty: the API does not return client TLS certificates.
 * `password` - The password used to access the database - not present on `memcached` protocol databases.
 * `enable_default_user` - When `true` enables connecting to the database with the default user.
 * `alert` - Set of alerts to enable on the database, documented below.
