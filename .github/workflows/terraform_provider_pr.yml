@@ -175,7 +175,7 @@ jobs:
     needs: [pre-test]
     uses: ./.github/workflows/testacc.yml
     with:
-      test_pattern: '^TestAcc(DataSourceRedisCloudAclRole_|ResourceRedisCloudAclRule_sdkStateCompatibility|ResourceRedisCloudAclUser_|DataSourceRedisCloudAclUser_)'
+      test_pattern: '^TestAcc(DataSourceRedisCloudAclRole_|ResourceRedisCloudAclRule_sdkStateCompatibility|ResourceRedisCloudAclUser_|DataSourceRedisCloudAclUser_|ResourceRedisCloudAclRole_)'
       create_account_sleep_seconds: 360
     secrets: inherit
 
