@@ -4,16 +4,21 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	sdkterraform "github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/envchecks"
@@ -643,6 +648,188 @@ func TestAccResourceRedisCloudProSubscription_PublicEndpointAccess(t *testing.T)
 			},
 		},
 	})
+}
+
+func TestRedisCloudProSubscriptionMultiAZPlan(t *testing.T) {
+	cases := []struct {
+		name                 string
+		resourceID           string
+		status               string
+		previousName         string
+		plannedName          string
+		previousMultiAZ      bool
+		plannedMultiAZ       bool
+		previousCreationPlan bool
+		plannedCreationPlan  bool
+		wantReplacement      bool
+		wantError            string
+	}{
+		{
+			name: "active subscription enables Multi-AZ", resourceID: "123", status: "active",
+			previousName: "example", plannedName: "example",
+			previousMultiAZ: false, plannedMultiAZ: true,
+			previousCreationPlan: true, plannedCreationPlan: true,
+			wantReplacement: true, wantError: "",
+		},
+		{
+			name: "active subscription disables Multi-AZ", resourceID: "123", status: "active",
+			previousName: "example", plannedName: "example",
+			previousMultiAZ: true, plannedMultiAZ: false,
+			previousCreationPlan: true, plannedCreationPlan: true,
+			wantReplacement: true, wantError: "",
+		},
+		{
+			name: "single-AZ configuration is unchanged", resourceID: "123", status: "active",
+			previousName: "example", plannedName: "example",
+			previousMultiAZ: false, plannedMultiAZ: false,
+			previousCreationPlan: true, plannedCreationPlan: true,
+			wantReplacement: false, wantError: "",
+		},
+		{
+			name: "Multi-AZ configuration is unchanged", resourceID: "123", status: "active",
+			previousName: "example", plannedName: "example",
+			previousMultiAZ: true, plannedMultiAZ: true,
+			previousCreationPlan: true, plannedCreationPlan: true,
+			wantReplacement: false, wantError: "",
+		},
+		{
+			name: "rename without a creation plan", resourceID: "123", status: "active",
+			previousName: "example", plannedName: "renamed",
+			previousMultiAZ: true, plannedMultiAZ: true,
+			previousCreationPlan: false, plannedCreationPlan: false,
+			wantReplacement: false, wantError: "",
+		},
+		{
+			name: "enabling Multi-AZ requires the removed creation plan", resourceID: "123", status: "active",
+			previousName: "example", plannedName: "example",
+			previousMultiAZ: false, plannedMultiAZ: true,
+			previousCreationPlan: true, plannedCreationPlan: false,
+			wantReplacement: false, wantError: `the "creation_plan" block is required when creating or replacing a subscription`,
+		},
+		{
+			name: "imported subscription needs a creation plan to disable Multi-AZ", resourceID: "123", status: "active",
+			previousName: "example", plannedName: "example",
+			previousMultiAZ: true, plannedMultiAZ: false,
+			previousCreationPlan: false, plannedCreationPlan: false,
+			wantReplacement: false, wantError: `the "creation_plan" block is required when creating or replacing a subscription`,
+		},
+		{
+			name: "new subscription needs a creation plan", resourceID: "", status: "",
+			previousName: "example", plannedName: "example",
+			previousMultiAZ: false, plannedMultiAZ: true,
+			previousCreationPlan: false, plannedCreationPlan: false,
+			wantReplacement: false, wantError: `the "creation_plan" block is required when creating or replacing a subscription`,
+		},
+		{
+			name: "pending CMK subscription retains its region exception without a creation plan", resourceID: "123", status: "encryption_key_pending",
+			previousName: "example", plannedName: "example",
+			previousMultiAZ: true, plannedMultiAZ: false,
+			previousCreationPlan: false, plannedCreationPlan: false,
+			wantReplacement: false, wantError: "",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := pro.ResourceRedisCloudProSubscription()
+			previous := proSubscriptionPlanConfig(tc.previousName, tc.previousMultiAZ, tc.previousCreationPlan)
+			planned := proSubscriptionPlanConfig(tc.plannedName, tc.plannedMultiAZ, tc.plannedCreationPlan)
+			data := schema.TestResourceDataRaw(t, res.Schema, previous)
+			data.SetId(tc.resourceID)
+
+			fake := testhelpers.NewFakeAPI()
+			fake.Handle("GET /subscriptions/123", func(_ *http.Request) (any, error) {
+				return map[string]any{"id": 123, "status": tc.status}, nil
+			})
+			diff, err := res.Diff(context.Background(), data.State(), sdkterraform.NewResourceConfigRaw(planned), testhelpers.NewAPIClient(t, fake))
+			if tc.wantError != "" {
+				require.ErrorContains(t, err, tc.wantError)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.wantReplacement, diff != nil && diff.RequiresNew())
+			if !tc.wantReplacement {
+				return
+			}
+
+			for key, attr := range diff.Attributes {
+				if strings.HasSuffix(key, ".multiple_availability_zones") && attr.RequiresNew {
+					return
+				}
+			}
+			t.Fatalf("Multi-AZ change did not require replacement: %#v", diff.Attributes)
+		})
+	}
+}
+
+func TestRedisCloudProSubscriptionMultiAZCMKActivation(t *testing.T) {
+	res := pro.ResourceRedisCloudProSubscription()
+	previous := proSubscriptionPlanConfig("example", true, true)
+	previous["customer_managed_key_enabled"] = true
+	data := schema.TestResourceDataRaw(t, res.Schema, previous)
+	data.SetId("123")
+
+	fake := testhelpers.NewFakeAPI()
+	fake.Handle("GET /subscriptions/123", func(_ *http.Request) (any, error) {
+		return map[string]any{
+			"id":                              123,
+			"name":                            "example",
+			"status":                          "encryption_key_pending",
+			"memoryStorage":                   "ram",
+			"paymentMethodType":               "credit-card",
+			"persistentStorageEncryptionType": "customer-managed-key",
+			"cloudDetails": []any{map[string]any{
+				"provider":       "AWS",
+				"cloudAccountId": 1,
+				"regions": []any{map[string]any{
+					"region":                     "us-east-1",
+					"multipleAvailabilityZones":  nil,
+					"preferredAvailabilityZones": []string{},
+				}},
+			}},
+		}, nil
+	})
+	api := testhelpers.NewAPIClient(t, fake)
+	diags := res.ReadContext(context.Background(), data, api)
+	require.False(t, diags.HasError(), "read diagnostics: %+v", diags)
+	region := data.Get("cloud_provider.0.region").(*schema.Set).List()[0].(map[string]interface{})
+	require.Equal(t, false, region["multiple_availability_zones"])
+
+	planned := proSubscriptionPlanConfig("example", true, true)
+	planned["customer_managed_key_enabled"] = true
+	planned["customer_managed_key"] = []interface{}{map[string]interface{}{
+		"resource_name": "arn:aws:kms:us-east-1:123456789012:key/example",
+	}}
+	diff, err := res.Diff(context.Background(), data.State(), sdkterraform.NewResourceConfigRaw(planned), api)
+	require.NoError(t, err)
+	require.NotNil(t, diff)
+	require.False(t, diff.RequiresNew(), "CMK activation must retain the subscription: %#v", diff.Attributes)
+	require.Contains(t, diff.Attributes, "customer_managed_key.#")
+}
+
+func proSubscriptionPlanConfig(name string, multipleAvailabilityZones, creationPlan bool) map[string]interface{} {
+	configuration := map[string]interface{}{
+		"name": name,
+		"cloud_provider": []interface{}{map[string]interface{}{
+			"provider": "AWS",
+			"region": []interface{}{map[string]interface{}{
+				"region":                       "us-east-1",
+				"multiple_availability_zones":  multipleAvailabilityZones,
+				"networking_deployment_cidr":   "10.0.0.0/24",
+				"preferred_availability_zones": []interface{}{},
+			}},
+		}},
+	}
+	if creationPlan {
+		configuration["creation_plan"] = []interface{}{map[string]interface{}{
+			"dataset_size_in_gb":           1.0,
+			"quantity":                     1,
+			"replication":                  true,
+			"throughput_measurement_by":    "operations-per-second",
+			"throughput_measurement_value": 1000,
+		}}
+	}
+	return configuration
 }
 
 // Checks that modules are allocated correctly into each creation-plan db if there are multiple modules, including "RedisGraph" and the number of databases is one.
