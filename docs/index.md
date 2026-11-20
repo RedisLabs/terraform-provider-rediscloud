@@ -37,3 +37,19 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 
 * `secret_key` - (Optional) This is the Redis Enterprise Cloud API secret key. It must be provided but can also be set
 by the `REDISCLOUD_SECRET_KEY` environment variable.
+
+## Direct Iris services
+
+The provider also supports separate `rediscloud_iris_*` resources for the Agent
+Memory and Identity Service control planes. Iris-only configurations use their
+service URLs and bearer tokens and do not need Redis Cloud CAPI credentials.
+See the [direct Iris guide](guides/iris.md) for configuration and usage.
+
+* `iris_agent_memory_url` - (Optional) Agent Memory control-plane base URL, or
+  `REDISCLOUD_IRIS_AGENT_MEMORY_URL`.
+* `iris_agent_memory_token` - (Optional, Sensitive) Agent Memory bearer token, or
+  `REDISCLOUD_IRIS_AGENT_MEMORY_TOKEN`.
+* `iris_identity_url` - (Optional) Identity Service base URL, or
+  `REDISCLOUD_IRIS_IDENTITY_URL`.
+* `iris_identity_token` - (Optional, Sensitive) Identity Service bearer token, or
+  `REDISCLOUD_IRIS_IDENTITY_TOKEN`.

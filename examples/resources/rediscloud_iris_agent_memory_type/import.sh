@@ -1,0 +1,1 @@
+terraform import rediscloud_iris_agent_memory_type.example st_11111111111111111111111111111111/preferences

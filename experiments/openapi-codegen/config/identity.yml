@@ -1,0 +1,43 @@
+provider:
+  name: rediscloud
+resources:
+  identity_api_key:
+    create:
+      path: /v1/api-keys
+      method: POST
+    read:
+      path: /v1/api-keys/{keyId}
+      method: GET
+    update:
+      path: /v1/api-keys/{keyId}
+      method: PATCH
+    delete:
+      path: /v1/api-keys/{keyId}
+      method: DELETE
+    schema:
+      attributes:
+        aliases:
+          keyId: id
+  identity_subject_grant_set:
+    create:
+      path: /v1/subject-grants
+      method: POST
+    read:
+      path: /v1/subject-grants/{id}
+      method: GET
+    delete:
+      path: /v1/subject-grants/{id}
+      method: DELETE
+  identity_provider:
+    create:
+      path: /v1/tenants/{tenant}/identity-providers
+      method: POST
+    read:
+      path: /v1/tenants/{tenant}/identity-providers/{name}
+      method: GET
+    update:
+      path: /v1/tenants/{tenant}/identity-providers/{name}
+      method: PUT
+    delete:
+      path: /v1/tenants/{tenant}/identity-providers/{name}
+      method: DELETE

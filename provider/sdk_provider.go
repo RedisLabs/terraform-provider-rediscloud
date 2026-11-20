@@ -111,6 +111,10 @@ func NewSdkProvider(version string) func() *schema.Provider {
 			},
 		}
 
+		for _, setting := range irisSettings {
+			p.Schema[setting.name] = &schema.Schema{Type: schema.TypeString, Optional: true, Sensitive: setting.sensitive, Description: setting.description + " May also be set using " + setting.env + "."}
+		}
+
 		p.ConfigureContextFunc = configure(version, p)
 
 		return p
@@ -119,6 +123,15 @@ func NewSdkProvider(version string) func() *schema.Provider {
 
 func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	return func(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+		irisValues := map[string]string{}
+		for _, setting := range irisSettings {
+			irisValues[setting.name] = d.Get(setting.name).(string)
+		}
+		connectors, irisErr := irisClients(irisValues)
+		if irisErr != nil {
+			return nil, diag.FromErr(irisErr)
+		}
+
 		var config []rediscloudApi.Option
 		config = append(config, rediscloudApi.AdditionalUserAgent(p.UserAgent("terraform-provider-rediscloud", version)))
 
@@ -147,6 +160,7 @@ func configure(version string, p *schema.Provider) func(context.Context, *schema
 
 		return &client.ApiClient{
 			Client: apiClient,
+			Iris:   connectors,
 		}, nil
 	}
 }

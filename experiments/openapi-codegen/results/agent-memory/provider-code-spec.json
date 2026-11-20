@@ -1,0 +1,1493 @@
+{
+	"provider": {
+		"name": "rediscloud"
+	},
+	"resources": [
+		{
+			"name": "agent_memory",
+			"schema": {
+				"attributes": [
+					{
+						"name": "custom_memory_types",
+						"list_nested": {
+							"computed_optional_required": "computed_optional",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "description",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "Human-readable description of what this memory type captures.",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.LengthBetween(1, 200)"
+													}
+												}
+											]
+										}
+									},
+									{
+										"name": "extraction_strategy",
+										"single_nested": {
+											"computed_optional_required": "computed_optional",
+											"attributes": [
+												{
+													"name": "enabled",
+													"bool": {
+														"computed_optional_required": "computed_optional",
+														"description": "Whether the strategy is active. Defaults to true when omitted."
+													}
+												},
+												{
+													"name": "prompt",
+													"string": {
+														"computed_optional_required": "required",
+														"description": "Prompt used to extract memories of this type from session events."
+													}
+												}
+											],
+											"description": "Extraction strategy for a custom memory type."
+										}
+									},
+									{
+										"name": "fields",
+										"list_nested": {
+											"computed_optional_required": "computed_optional",
+											"nested_object": {
+												"attributes": [
+													{
+														"name": "description",
+														"string": {
+															"computed_optional_required": "required",
+															"description": "Human-readable description of the field.",
+															"validators": [
+																{
+																	"custom": {
+																		"imports": [
+																			{
+																				"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+																			}
+																		],
+																		"schema_definition": "stringvalidator.LengthBetween(1, 200)"
+																	}
+																}
+															]
+														}
+													},
+													{
+														"name": "name",
+														"string": {
+															"computed_optional_required": "required",
+															"description": "Field name.",
+															"validators": [
+																{
+																	"custom": {
+																		"imports": [
+																			{
+																				"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+																			}
+																		],
+																		"schema_definition": "stringvalidator.LengthBetween(1, 64)"
+																	}
+																},
+																{
+																	"custom": {
+																		"imports": [
+																			{
+																				"path": "regexp"
+																			},
+																			{
+																				"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+																			}
+																		],
+																		"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^[a-zA-Z][a-zA-Z0-9_-]*$\"), \"\")"
+																	}
+																}
+															]
+														}
+													},
+													{
+														"name": "type",
+														"string": {
+															"computed_optional_required": "required",
+															"description": "Supported custom field data types.",
+															"validators": [
+																{
+																	"custom": {
+																		"imports": [
+																			{
+																				"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+																			}
+																		],
+																		"schema_definition": "stringvalidator.OneOf(\n\"STRING\",\n\"INTEGER\",\n\"FLOAT\",\n\"BOOLEAN\",\n\"STRING_LIST\",\n\"FLOAT_LIST\",\n\"OBJECT\",\n)"
+																	}
+																}
+															]
+														}
+													}
+												]
+											},
+											"description": "Structured fields that make up a record of this type. Optional; a type with no\nfields accepts direct writes carrying no structured attributes."
+										}
+									},
+									{
+										"name": "name",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "Unique type name within the store. Must not collide with built-in types\n(semantic, episodic, message, session_summary, session_summary_view).",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.LengthBetween(1, 64)"
+													}
+												},
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "regexp"
+															},
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^[a-zA-Z][a-zA-Z0-9_-]*$\"), \"\")"
+													}
+												}
+											]
+										}
+									},
+									{
+										"name": "revision",
+										"string": {
+											"computed_optional_required": "computed_optional",
+											"description": "Opaque revision returned on reads. Server assigned; ignored on creation.",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.LengthBetween(1, 64)"
+													}
+												}
+											]
+										}
+									}
+								]
+							},
+							"description": "Custom memory types to register on the store. Optional; when omitted the\nstore uses only built-in memory types."
+						}
+					},
+					{
+						"name": "database",
+						"single_nested": {
+							"computed_optional_required": "required",
+							"attributes": [
+								{
+									"name": "database_id",
+									"string": {
+										"computed_optional_required": "required",
+										"description": "The database ID.",
+										"validators": [
+											{
+												"custom": {
+													"imports": [
+														{
+															"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+														}
+													],
+													"schema_definition": "stringvalidator.LengthBetween(1, 32)"
+												}
+											}
+										]
+									}
+								},
+								{
+									"name": "name",
+									"string": {
+										"computed_optional_required": "computed",
+										"description": "The database name."
+									}
+								},
+								{
+									"name": "redis_cloud",
+									"single_nested": {
+										"computed_optional_required": "computed",
+										"attributes": [
+											{
+												"name": "access_cidrs",
+												"list": {
+													"computed_optional_required": "computed",
+													"element_type": {
+														"string": {}
+													},
+													"description": "Database CIDR allow-list items."
+												}
+											},
+											{
+												"name": "provider",
+												"string": {
+													"computed_optional_required": "computed",
+													"description": "The cloud provider where the database is provisioned."
+												}
+											},
+											{
+												"name": "region",
+												"string": {
+													"computed_optional_required": "computed",
+													"description": "The cloud region where the database is provisioned."
+												}
+											}
+										],
+										"description": "Redis Cloud details of a database."
+									}
+								}
+							],
+							"description": "The database to store memory data in."
+						}
+					},
+					{
+						"name": "extraction_cadence",
+						"single_nested": {
+							"computed_optional_required": "computed_optional",
+							"attributes": [
+								{
+									"name": "active_interval_seconds",
+									"int64": {
+										"computed_optional_required": "required",
+										"description": "Interval in seconds between extraction runs while a session is active.",
+										"validators": [
+											{
+												"custom": {
+													"imports": [
+														{
+															"path": "github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+														}
+													],
+													"schema_definition": "int64validator.Between(60, 600)"
+												}
+											}
+										]
+									}
+								}
+							],
+							"description": "Cadence configuration for the extraction pipeline."
+						}
+					},
+					{
+						"name": "extraction_strategy",
+						"string": {
+							"computed_optional_required": "computed_optional",
+							"description": "Extraction strategy for promoting short-term memory to long-term memory. Defaults\nto `INSTRUCT`.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.OneOf(\n\"INSTRUCT\",\n)"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "long_term_memory",
+						"single_nested": {
+							"computed_optional_required": "computed_optional",
+							"attributes": [
+								{
+									"name": "classification",
+									"single_nested": {
+										"computed_optional_required": "computed_optional",
+										"attributes": [
+											{
+												"name": "credentials",
+												"single_nested": {
+													"computed_optional_required": "computed_optional",
+													"attributes": [
+														{
+															"name": "api_key",
+															"string": {
+																"computed_optional_required": "computed_optional",
+																"description": "The provider API key. Required on create. On update, omit it to keep the\ncurrent key.",
+																"sensitive": true
+															}
+														},
+														{
+															"name": "type",
+															"string": {
+																"computed_optional_required": "required",
+																"description": "How the secret behind a model credential is to be interpreted.",
+																"validators": [
+																	{
+																		"custom": {
+																			"imports": [
+																				{
+																					"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+																				}
+																			],
+																			"schema_definition": "stringvalidator.OneOf(\n\"API_KEY\",\n)"
+																		}
+																	}
+																]
+															}
+														}
+													],
+													"description": "A provider credential. Never returned by any operation."
+												}
+											},
+											{
+												"name": "model",
+												"string": {
+													"computed_optional_required": "computed_optional",
+													"description": "The model to use. Required on create. On update, omit it to keep the current\nmodel."
+												}
+											},
+											{
+												"name": "provider",
+												"string": {
+													"computed_optional_required": "computed_optional",
+													"description": "The model provider."
+												}
+											}
+										],
+										"description": "A model selection."
+									}
+								},
+								{
+									"name": "embedding",
+									"single_nested": {
+										"computed_optional_required": "computed_optional",
+										"attributes": [
+											{
+												"name": "credentials",
+												"single_nested": {
+													"computed_optional_required": "computed_optional",
+													"attributes": [
+														{
+															"name": "api_key",
+															"string": {
+																"computed_optional_required": "computed_optional",
+																"description": "The provider API key. Required on create. On update, omit it to keep the\ncurrent key.",
+																"sensitive": true
+															}
+														},
+														{
+															"name": "type",
+															"string": {
+																"computed_optional_required": "required",
+																"description": "How the secret behind a model credential is to be interpreted.",
+																"validators": [
+																	{
+																		"custom": {
+																			"imports": [
+																				{
+																					"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+																				}
+																			],
+																			"schema_definition": "stringvalidator.OneOf(\n\"API_KEY\",\n)"
+																		}
+																	}
+																]
+															}
+														}
+													],
+													"description": "A provider credential. Never returned by any operation."
+												}
+											},
+											{
+												"name": "model",
+												"string": {
+													"computed_optional_required": "computed_optional",
+													"description": "The model to use. Required on create. On update, omit it to keep the current\nmodel."
+												}
+											},
+											{
+												"name": "provider",
+												"string": {
+													"computed_optional_required": "computed_optional",
+													"description": "The model provider."
+												}
+											}
+										],
+										"description": "A model selection."
+									}
+								},
+								{
+									"name": "llm",
+									"single_nested": {
+										"computed_optional_required": "computed_optional",
+										"attributes": [
+											{
+												"name": "credentials",
+												"single_nested": {
+													"computed_optional_required": "computed_optional",
+													"attributes": [
+														{
+															"name": "api_key",
+															"string": {
+																"computed_optional_required": "computed_optional",
+																"description": "The provider API key. Required on create. On update, omit it to keep the\ncurrent key.",
+																"sensitive": true
+															}
+														},
+														{
+															"name": "type",
+															"string": {
+																"computed_optional_required": "required",
+																"description": "How the secret behind a model credential is to be interpreted.",
+																"validators": [
+																	{
+																		"custom": {
+																			"imports": [
+																				{
+																					"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+																				}
+																			],
+																			"schema_definition": "stringvalidator.OneOf(\n\"API_KEY\",\n)"
+																		}
+																	}
+																]
+															}
+														}
+													],
+													"description": "A provider credential. Never returned by any operation."
+												}
+											},
+											{
+												"name": "model",
+												"string": {
+													"computed_optional_required": "computed_optional",
+													"description": "The model to use. Required on create. On update, omit it to keep the current\nmodel."
+												}
+											},
+											{
+												"name": "provider",
+												"string": {
+													"computed_optional_required": "computed_optional",
+													"description": "The model provider."
+												}
+											}
+										],
+										"description": "A model selection."
+									}
+								},
+								{
+									"name": "session_summary_enabled",
+									"bool": {
+										"computed_optional_required": "computed_optional",
+										"default": {
+											"static": false
+										},
+										"description": "Extract session summaries into long-term memory. Takes effect only when the\ndeployment enables session summary extraction."
+									}
+								},
+								{
+									"name": "ttl_seconds",
+									"int64": {
+										"computed_optional_required": "computed_optional",
+										"default": {
+											"static": 31536000
+										},
+										"description": "Time-to-live in seconds for long-term memory entries. Defaults to 1 year.",
+										"validators": [
+											{
+												"custom": {
+													"imports": [
+														{
+															"path": "github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+														}
+													],
+													"schema_definition": "int64validator.Between(1, 31536000)"
+												}
+											}
+										]
+									}
+								}
+							],
+							"description": "Long-term memory configuration.\n\nOn Redis Cloud, `llm` and `embedding` select the store's own models and must be\nsupplied together; `classification` is independent. Omit them to use the platform\nmodels. The embedding model cannot be changed after the store is created."
+						}
+					},
+					{
+						"name": "long_term_memory_exclusions",
+						"single_nested": {
+							"computed_optional_required": "computed_optional",
+							"attributes": [
+								{
+									"name": "built_in_detectors",
+									"single_nested": {
+										"computed_optional_required": "computed_optional",
+										"attributes": [
+											{
+												"name": "detectors",
+												"list_nested": {
+													"computed_optional_required": "computed_optional",
+													"nested_object": {
+														"attributes": [
+															{
+																"name": "action",
+																"string": {
+																	"computed_optional_required": "computed_optional",
+																	"description": "What to do with a memory a detector matched. Defaults to `redact`. When matching\ndetectors disagree, `drop` wins.",
+																	"validators": [
+																		{
+																			"custom": {
+																				"imports": [
+																					{
+																						"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+																					}
+																				],
+																				"schema_definition": "stringvalidator.OneOf(\n\"REDACT\",\n\"DROP\",\n)"
+																			}
+																		}
+																	]
+																}
+															},
+															{
+																"name": "enabled",
+																"bool": {
+																	"computed_optional_required": "required",
+																	"description": "Whether this detector is active."
+																}
+															},
+															{
+																"name": "id",
+																"string": {
+																	"computed_optional_required": "required",
+																	"description": "The built-in detector id, as listed by ListBuiltInDetectors."
+																}
+															}
+														]
+													},
+													"description": "The selected detectors."
+												}
+											},
+											{
+												"name": "enabled",
+												"bool": {
+													"computed_optional_required": "required",
+													"description": "Toggle for the whole built-in group. False keeps the selections stored but\ninactive."
+												}
+											}
+										],
+										"description": "Selection of platform built-in detectors for a store. Nothing is selected by\ndefault."
+									}
+								},
+								{
+									"name": "custom_detectors",
+									"single_nested": {
+										"computed_optional_required": "computed_optional",
+										"attributes": [
+											{
+												"name": "detectors",
+												"list_nested": {
+													"computed_optional_required": "computed_optional",
+													"nested_object": {
+														"attributes": [
+															{
+																"name": "action",
+																"string": {
+																	"computed_optional_required": "computed_optional",
+																	"description": "What to do with a memory a detector matched. Defaults to `redact`. When matching\ndetectors disagree, `drop` wins.",
+																	"validators": [
+																		{
+																			"custom": {
+																				"imports": [
+																					{
+																						"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+																					}
+																				],
+																				"schema_definition": "stringvalidator.OneOf(\n\"REDACT\",\n\"DROP\",\n)"
+																			}
+																		}
+																	]
+																}
+															},
+															{
+																"name": "enabled",
+																"bool": {
+																	"computed_optional_required": "required",
+																	"description": "Whether this detector is active."
+																}
+															},
+															{
+																"name": "matcher",
+																"single_nested": {
+																	"computed_optional_required": "required",
+																	"attributes": [
+																		{
+																			"name": "kind",
+																			"string": {
+																				"computed_optional_required": "required",
+																				"description": "The supported matching techniques.",
+																				"validators": [
+																					{
+																						"custom": {
+																							"imports": [
+																								{
+																									"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+																								}
+																							],
+																							"schema_definition": "stringvalidator.OneOf(\n\"REGEX\",\n)"
+																						}
+																					}
+																				]
+																			}
+																		},
+																		{
+																			"name": "regex",
+																			"single_nested": {
+																				"computed_optional_required": "computed_optional",
+																				"attributes": [
+																					{
+																						"name": "pattern",
+																						"string": {
+																							"computed_optional_required": "required",
+																							"description": "The pattern, in RE2 syntax.",
+																							"validators": [
+																								{
+																									"custom": {
+																										"imports": [
+																											{
+																												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+																											}
+																										],
+																										"schema_definition": "stringvalidator.LengthBetween(1, 512)"
+																									}
+																								}
+																							]
+																						}
+																					}
+																				],
+																				"description": "A regular expression in RE2 syntax (no lookaround or backreferences). Required\nwhen `kind` is `regex`, and rejected otherwise. Rejected if it does not compile, or\nif it can match empty text."
+																			}
+																		}
+																	],
+																	"description": "How a detector matches. Exactly the block named by `kind` must be present."
+																}
+															},
+															{
+																"name": "name",
+																"string": {
+																	"computed_optional_required": "required",
+																	"description": "Identifies the detector wherever a match of it is reported.",
+																	"validators": [
+																		{
+																			"custom": {
+																				"imports": [
+																					{
+																						"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+																					}
+																				],
+																				"schema_definition": "stringvalidator.LengthBetween(1, 64)"
+																			}
+																		},
+																		{
+																			"custom": {
+																				"imports": [
+																					{
+																						"path": "regexp"
+																					},
+																					{
+																						"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+																					}
+																				],
+																				"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^[a-zA-Z][a-zA-Z0-9_-]*$\"), \"\")"
+																			}
+																		}
+																	]
+																}
+															}
+														]
+													},
+													"description": "At most 32. Names must be unique within the store and must not be a built-in\ndetector id."
+												}
+											},
+											{
+												"name": "enabled",
+												"bool": {
+													"computed_optional_required": "required",
+													"description": "Toggle for the whole custom group. False keeps the detectors stored but\ninactive."
+												}
+											}
+										],
+										"description": "Customer-authored detectors for a store. Evaluated together with the built-in\ndetectors. Nothing is defined by default."
+									}
+								},
+								{
+									"name": "enabled",
+									"bool": {
+										"computed_optional_required": "required",
+										"description": "Master toggle for the exclusions feature."
+									}
+								},
+								{
+									"name": "semantic",
+									"single_nested": {
+										"computed_optional_required": "computed_optional",
+										"attributes": [
+											{
+												"name": "enabled",
+												"bool": {
+													"computed_optional_required": "required",
+													"description": "Whether semantic exclusion is enabled."
+												}
+											},
+											{
+												"name": "prompt",
+												"string": {
+													"computed_optional_required": "computed_optional",
+													"description": "Instruction describing what to exclude."
+												}
+											}
+										],
+										"description": "Semantic exclusion configuration."
+									}
+								}
+							],
+							"description": "Store-level sensitive-data exclusions policy."
+						}
+					},
+					{
+						"name": "name",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The name of the memory store.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 128)"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "ownership",
+						"single_nested": {
+							"computed_optional_required": "computed_optional",
+							"attributes": [
+								{
+									"name": "mode",
+									"string": {
+										"computed_optional_required": "required",
+										"validators": [
+											{
+												"custom": {
+													"imports": [
+														{
+															"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+														}
+													],
+													"schema_definition": "stringvalidator.OneOf(\n\"INHERIT\",\n\"ENABLED\",\n\"DISABLED\",\n)"
+												}
+											}
+										]
+									}
+								},
+								{
+									"name": "enabled",
+									"bool": {
+										"computed_optional_required": "computed"
+									}
+								},
+								{
+									"name": "source",
+									"string": {
+										"computed_optional_required": "computed"
+									}
+								}
+							],
+							"description": "Controls server-side ownership checks. INHERIT uses the tenant default, then ownership.enabled. Omitted on create means inherit; omitted on update leaves the setting unchanged. When enabled, agent keys need a bound userId or verified delegated user token to access personal content; keys without a user ID can access only shared content within their store grants. Existing ownerless records become hidden and Summary Views with a different ownership policy must be recreated. Disabling restores legacy access. Changes propagate through the metadata cache."
+						}
+					},
+					{
+						"name": "short_memory",
+						"single_nested": {
+							"computed_optional_required": "computed_optional",
+							"attributes": [
+								{
+									"name": "ttl_seconds",
+									"int64": {
+										"computed_optional_required": "computed_optional",
+										"description": "Time-to-live in seconds for short-term memory entries. When omitted, no TTL is\nset on create, and the current value is kept on update.",
+										"validators": [
+											{
+												"custom": {
+													"imports": [
+														{
+															"path": "github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+														}
+													],
+													"schema_definition": "int64validator.Between(1, 31536000)"
+												}
+											}
+										]
+									}
+								}
+							],
+							"description": "Short-term memory configuration."
+						}
+					},
+					{
+						"name": "summarization",
+						"single_nested": {
+							"computed_optional_required": "computed_optional",
+							"attributes": [
+								{
+									"name": "enabled",
+									"bool": {
+										"computed_optional_required": "required",
+										"description": "Whether summarization is enabled for this store."
+									}
+								},
+								{
+									"name": "event_count",
+									"single_nested": {
+										"computed_optional_required": "computed_optional",
+										"attributes": [
+											{
+												"name": "retain_count",
+												"int64": {
+													"computed_optional_required": "required",
+													"description": "Number of most recent events to retain after each summarization cycle."
+												}
+											},
+											{
+												"name": "threshold",
+												"int64": {
+													"computed_optional_required": "required",
+													"description": "The threshold value that triggers summarization."
+												}
+											}
+										],
+										"description": "Configuration for a summarization trigger."
+									}
+								},
+								{
+									"name": "trigger_strategy",
+									"string": {
+										"computed_optional_required": "computed_optional",
+										"description": "Strategy that determines when summarization is triggered. Defaults to\n`EVENT_COUNT`.",
+										"validators": [
+											{
+												"custom": {
+													"imports": [
+														{
+															"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+														}
+													],
+													"schema_definition": "stringvalidator.OneOf(\n\"EVENT_COUNT\",\n)"
+												}
+											}
+										]
+									}
+								}
+							],
+							"description": "Configuration for session summarization. When enabled, long sessions are\nperiodically condensed into a running summary while retaining the most recent events."
+						}
+					},
+					{
+						"name": "created_at",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The UTC timestamp when the memory store was created."
+						}
+					},
+					{
+						"name": "endpoints",
+						"list_nested": {
+							"computed_optional_required": "computed",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "accessible",
+										"bool": {
+											"computed_optional_required": "computed",
+											"description": "Whether the endpoint can reach the database, based on its egress IPs and the\ndatabase CIDR allow-list."
+										}
+									},
+									{
+										"name": "egress_ips",
+										"list": {
+											"computed_optional_required": "computed",
+											"element_type": {
+												"string": {}
+											},
+											"description": "Egress IP addresses of the endpoint."
+										}
+									},
+									{
+										"name": "provider",
+										"string": {
+											"computed_optional_required": "computed",
+											"description": "The endpoint cloud provider."
+										}
+									},
+									{
+										"name": "region",
+										"string": {
+											"computed_optional_required": "computed",
+											"description": "The endpoint cloud region."
+										}
+									},
+									{
+										"name": "url",
+										"string": {
+											"computed_optional_required": "computed",
+											"description": "The URL of the endpoint."
+										}
+									}
+								]
+							},
+							"description": "API endpoints for accessing the memory store."
+						}
+					},
+					{
+						"name": "failure",
+						"single_nested": {
+							"computed_optional_required": "computed",
+							"attributes": [
+								{
+									"name": "message",
+									"string": {
+										"computed_optional_required": "computed",
+										"description": "What went wrong."
+									}
+								},
+								{
+									"name": "occurred_at",
+									"string": {
+										"computed_optional_required": "computed",
+										"description": "The UTC timestamp when the failure occurred."
+									}
+								}
+							],
+							"description": "Why the store failed to provision. Present only when the store's `state` is\n`UNAVAILABLE`. Not returned by ListStores."
+						}
+					},
+					{
+						"name": "state",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The condition of a provisioned resource, returned as `state`. A resource is usable\nwhen its state is `READY`. A resource reports only the states that apply to it."
+						}
+					},
+					{
+						"name": "store_id",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Unique identifier for the memory store."
+						}
+					},
+					{
+						"name": "subscription_id",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The memory store's database subscription ID."
+						}
+					},
+					{
+						"name": "id",
+						"string": {
+							"computed_optional_required": "computed_optional",
+							"description": "Server-generated store identifier: st_ followed by 32 lowercase hex characters.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(35, 35)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "regexp"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^st_[0-9a-f]{32}$\"), \"\")"
+									}
+								}
+							]
+						}
+					}
+				]
+			}
+		},
+		{
+			"name": "agent_memory_extractor",
+			"schema": {
+				"attributes": [
+					{
+						"name": "destination_namespace_id",
+						"string": {
+							"computed_optional_required": "computed_optional",
+							"description": "Server-generated namespace identifier: ns_ followed by 32 lowercase hex characters.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(35, 35)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "regexp"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^ns_[0-9a-f]{32}$\"), \"\")"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "enabled",
+						"bool": {
+							"computed_optional_required": "computed_optional",
+							"default": {
+								"static": true
+							}
+						}
+					},
+					{
+						"name": "memory_type",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "Must be a memory type registered on the store.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 64)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "regexp"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^[a-zA-Z][a-zA-Z0-9_-]*$\"), \"\")"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "name",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "Display name of any API resource.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 128)"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "prompt",
+						"string": {
+							"computed_optional_required": "required"
+						}
+					},
+					{
+						"name": "source",
+						"string": {
+							"computed_optional_required": "required",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.OneOf(\n\"DOCUMENTS\",\n)"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "strategy",
+						"string": {
+							"computed_optional_required": "required",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.OneOf(\n\"CUSTOM\",\n)"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "created_at",
+						"string": {
+							"computed_optional_required": "computed"
+						}
+					},
+					{
+						"name": "extractor_id",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Server-generated extractor identifier: ex_ followed by 32 lowercase hex characters."
+						}
+					},
+					{
+						"name": "revision",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Resource revision. Opaque: each change to a resource's own configuration writes a\nnew value, and a resource never gets a value it had before. Compare for equality\nonly; its format is the service's, so only its length is constrained. Returned as\n`revision`; sent back as `expectedRevision` to make a write conditional. Omitting\n`expectedRevision` makes the write unconditional."
+						}
+					},
+					{
+						"name": "updated_at",
+						"string": {
+							"computed_optional_required": "computed"
+						}
+					},
+					{
+						"name": "store_id",
+						"string": {
+							"computed_optional_required": "computed_optional",
+							"description": "Server-generated store identifier: st_ followed by 32 lowercase hex characters.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(35, 35)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "regexp"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^st_[0-9a-f]{32}$\"), \"\")"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "id",
+						"string": {
+							"computed_optional_required": "computed_optional",
+							"description": "Server-generated extractor identifier: ex_ followed by 32 lowercase hex characters.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(35, 35)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "regexp"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^ex_[0-9a-f]{32}$\"), \"\")"
+									}
+								}
+							]
+						}
+					}
+				]
+			}
+		},
+		{
+			"name": "agent_memory_type",
+			"schema": {
+				"attributes": [
+					{
+						"name": "description",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "Human-readable description of what this memory type captures.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 200)"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "extraction_strategy",
+						"single_nested": {
+							"computed_optional_required": "computed_optional",
+							"attributes": [
+								{
+									"name": "enabled",
+									"bool": {
+										"computed_optional_required": "computed_optional",
+										"description": "Whether the strategy is active. Defaults to true when omitted."
+									}
+								},
+								{
+									"name": "prompt",
+									"string": {
+										"computed_optional_required": "required",
+										"description": "Prompt used to extract memories of this type from session events."
+									}
+								}
+							],
+							"description": "Extraction strategy for a custom memory type."
+						}
+					},
+					{
+						"name": "fields",
+						"list_nested": {
+							"computed_optional_required": "computed_optional",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "description",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "Human-readable description of the field.",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.LengthBetween(1, 200)"
+													}
+												}
+											]
+										}
+									},
+									{
+										"name": "name",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "Field name.",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.LengthBetween(1, 64)"
+													}
+												},
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "regexp"
+															},
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^[a-zA-Z][a-zA-Z0-9_-]*$\"), \"\")"
+													}
+												}
+											]
+										}
+									},
+									{
+										"name": "type",
+										"string": {
+											"computed_optional_required": "required",
+											"description": "Supported custom field data types.",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.OneOf(\n\"STRING\",\n\"INTEGER\",\n\"FLOAT\",\n\"BOOLEAN\",\n\"STRING_LIST\",\n\"FLOAT_LIST\",\n\"OBJECT\",\n)"
+													}
+												}
+											]
+										}
+									}
+								]
+							},
+							"description": "Structured fields that make up a record of this type. Optional; a type with no\nfields accepts direct writes carrying no structured attributes."
+						}
+					},
+					{
+						"name": "name",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "Unique type name within the store. Must not collide with built-in types\n(semantic, episodic, message, session_summary, session_summary_view).",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 64)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "regexp"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^[a-zA-Z][a-zA-Z0-9_-]*$\"), \"\")"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "revision",
+						"string": {
+							"computed_optional_required": "computed_optional",
+							"description": "Opaque revision returned on reads. Server assigned; ignored on creation.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 64)"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "store_id",
+						"string": {
+							"computed_optional_required": "computed_optional",
+							"description": "Server-generated store identifier: st_ followed by 32 lowercase hex characters.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(35, 35)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "regexp"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^st_[0-9a-f]{32}$\"), \"\")"
+									}
+								}
+							]
+						}
+					}
+				]
+			}
+		}
+	],
+	"version": "0.1"
+}

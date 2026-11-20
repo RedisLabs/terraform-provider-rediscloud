@@ -1,0 +1,1 @@
+terraform import rediscloud_iris_agent_memory_extractor.example st_11111111111111111111111111111111/ex_22222222222222222222222222222222

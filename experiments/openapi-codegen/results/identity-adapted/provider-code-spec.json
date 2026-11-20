@@ -1,0 +1,304 @@
+{
+	"provider": {
+		"name": "rediscloud"
+	},
+	"resources": [
+		{
+			"name": "identity_api_key",
+			"schema": {
+				"attributes": [
+					{
+						"name": "expires_at",
+						"int64": {
+							"computed_optional_required": "computed_optional",
+							"description": "Unix seconds after which the key no longer authenticates; 0 or omitted means never."
+						}
+					},
+					{
+						"name": "grants",
+						"list_nested": {
+							"computed_optional_required": "computed_optional",
+							"nested_object": {
+								"attributes": [
+									{
+										"name": "actions",
+										"list": {
+											"computed_optional_required": "required",
+											"element_type": {
+												"string": {}
+											},
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+															}
+														],
+														"schema_definition": "listvalidator.SizeAtLeast(1)"
+													}
+												},
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+															}
+														],
+														"schema_definition": "listvalidator.UniqueValues()"
+													}
+												}
+											]
+										}
+									},
+									{
+										"name": "product",
+										"string": {
+											"computed_optional_required": "required",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.OneOf(\n\"memory\",\n\"langcache\",\n\"context\",\n\"playbook\",\n\"lens\",\n\"context-gateway\",\n\"intent\",\n)"
+													}
+												}
+											]
+										}
+									},
+									{
+										"name": "resource_id",
+										"string": {
+											"computed_optional_required": "required",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.LengthBetween(1, 128)"
+													}
+												},
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "regexp"
+															},
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^[A-Za-z0-9._:-]+$\"), \"\")"
+													}
+												}
+											]
+										}
+									},
+									{
+										"name": "resource_type",
+										"string": {
+											"computed_optional_required": "required",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.LengthBetween(1, 64)"
+													}
+												},
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "regexp"
+															},
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^[A-Za-z0-9._-]+$\"), \"\")"
+													}
+												}
+											]
+										}
+									},
+									{
+										"name": "tenant",
+										"string": {
+											"computed_optional_required": "computed_optional",
+											"description": "An opaque tenant identifier, for example a Redis Cloud account ID or account URN. It must not contain \"|\" or control characters.",
+											"validators": [
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.LengthBetween(1, 256)"
+													}
+												},
+												{
+													"custom": {
+														"imports": [
+															{
+																"path": "regexp"
+															},
+															{
+																"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+															}
+														],
+														"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^[^|\\\\u0000-\\\\u001f\\\\u007f]+$\"), \"\")"
+													}
+												}
+											]
+										}
+									}
+								]
+							},
+							"description": "Grants where an empty list is not a meaningful answer. On create and update, an\nexplicitly supplied but empty list is a caller mistake rather than a request to\nclear grants. On API-key introspection, reporting an active key with no grants\nwould read to a data plane as an authenticated caller with no authorization, so\nthe response must either carry grants or fail.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+											}
+										],
+										"schema_definition": "listvalidator.SizeAtLeast(1)"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "name",
+						"string": {
+							"computed_optional_required": "required",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 64)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "regexp"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^[A-Za-z0-9._-]+$\"), \"\")"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "user_id",
+						"string": {
+							"computed_optional_required": "computed_optional",
+							"description": "The user that the key acts as. Optional: a key without a user acts as no user. It cannot change after the mint. Requires API key user binding to be enabled in the deployment. The deployment admin and an on-prem suite_admin can set any user; another caller can set only its own user ID.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 64)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "regexp"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^(?:[\\\\w+=@-][\\\\w+=.@-]*|\\\\.[\\\\w+=@-][\\\\w+=.@-]*|\\\\.\\\\.[\\\\w+=.@-]+)$\"), \"\")"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "created_at",
+						"int64": {
+							"computed_optional_required": "computed"
+						}
+					},
+					{
+						"name": "key_id",
+						"string": {
+							"computed_optional_required": "computed"
+						}
+					},
+					{
+						"name": "token",
+						"string": {
+							"computed_optional_required": "computed",
+							"sensitive": true
+						}
+					},
+					{
+						"name": "rotated_from",
+						"string": {
+							"computed_optional_required": "computed"
+						}
+					},
+					{
+						"name": "tenant_id",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "Immutable tenant that owns this key, independently of its grants."
+						}
+					},
+					{
+						"name": "id",
+						"string": {
+							"computed_optional_required": "computed_optional",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "regexp"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^[0-9a-f]{32}$\"), \"\")"
+									}
+								}
+							]
+						}
+					}
+				]
+			}
+		}
+	],
+	"version": "0.1"
+}

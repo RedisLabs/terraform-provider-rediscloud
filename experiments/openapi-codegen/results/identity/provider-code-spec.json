@@ -1,0 +1,306 @@
+{
+	"provider": {
+		"name": "rediscloud"
+	},
+	"resources": [
+		{
+			"name": "identity_provider",
+			"schema": {
+				"attributes": [
+					{
+						"name": "audience",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The one aud value that a token must have. The usual value is api://redis-iris, or the application ID on Entra ID."
+						}
+					},
+					{
+						"name": "issuer",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The iss of the tokens of the IdP.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 512)"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "jwks_uri",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The https URL of the key set of the IdP."
+						}
+					},
+					{
+						"name": "name",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The name of a record: a letter, and then up to 63 letters, digits, \"_\", or \"-\" (MOD-20320 R3).",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 64)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "regexp"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^[A-Za-z][A-Za-z0-9_-]{0,63}$\"), \"\")"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "required_algorithms",
+						"list": {
+							"computed_optional_required": "computed_optional",
+							"element_type": {
+								"string": {}
+							},
+							"description": "The signing algorithms to accept. The default is RS256.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+											}
+										],
+										"schema_definition": "listvalidator.SizeAtLeast(1)"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "token_exchange",
+						"single_nested": {
+							"computed_optional_required": "computed_optional",
+							"attributes": [
+								{
+									"name": "grants",
+									"string": {
+										"computed_optional_required": "required",
+										"description": "How the token exchange gives grants to the subjects of the IdP. The\ntoken_exchange configuration names this mode subject_grants. A record holds\nonly trust, and no grants, so it has no issuer_grants mode. The member stays,\nso that a later mode is not a breaking change.",
+										"validators": [
+											{
+												"custom": {
+													"imports": [
+														{
+															"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+														}
+													],
+													"schema_definition": "stringvalidator.OneOf(\n\"SUBJECT_GRANTS\",\n)"
+												}
+											}
+										]
+									}
+								},
+								{
+									"name": "iris_audiences",
+									"list": {
+										"computed_optional_required": "required",
+										"element_type": {
+											"string": {}
+										},
+										"description": "The Iris audiences that the subjects can get, from token_exchange.audiences.",
+										"validators": [
+											{
+												"custom": {
+													"imports": [
+														{
+															"path": "github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+														}
+													],
+													"schema_definition": "listvalidator.SizeAtLeast(1)"
+												}
+											}
+										]
+									}
+								},
+								{
+									"name": "match",
+									"list_nested": {
+										"computed_optional_required": "computed_optional",
+										"nested_object": {
+											"attributes": [
+												{
+													"name": "claim",
+													"string": {
+														"computed_optional_required": "required",
+														"description": "The name of a string claim of the token.",
+														"validators": [
+															{
+																"custom": {
+																	"imports": [
+																		{
+																			"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+																		}
+																	],
+																	"schema_definition": "stringvalidator.LengthBetween(1, 256)"
+																}
+															}
+														]
+													}
+												},
+												{
+													"name": "value",
+													"string": {
+														"computed_optional_required": "required",
+														"description": "The exact value that the claim must have.",
+														"validators": [
+															{
+																"custom": {
+																	"imports": [
+																		{
+																			"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+																		}
+																	],
+																	"schema_definition": "stringvalidator.LengthBetween(1, 256)"
+																}
+															}
+														]
+													}
+												}
+											]
+										},
+										"description": "String claims that the token must have, to separate tenants that share an issuer."
+									}
+								}
+							],
+							"description": "How the token exchange uses the tokens of an IdP (MOD-19927). The token exchange names the entry \u003ctenant\u003e:\u003cname\u003e."
+						}
+					},
+					{
+						"name": "revision",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "The revision of the record. Each change writes a new value."
+						}
+					},
+					{
+						"name": "tenant",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "A tenant identifier as in TenantId, without \"/\" and without a space at its ends, and not \".\" or \"..\", because the tenant is a part of the path."
+						}
+					}
+				]
+			}
+		},
+		{
+			"name": "identity_subject_grant_set",
+			"schema": {
+				"attributes": [
+					{
+						"name": "issuer",
+						"string": {
+							"computed_optional_required": "computed_optional",
+							"description": "The token issuer of the subject. Omit it to use the issuer of the caller's own token. A caller without a token issuer, such as the Control credential, must send it.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 512)"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "subject",
+						"string": {
+							"computed_optional_required": "required",
+							"description": "The subject's user ID, taken from its token. Long enough for any Kubernetes ServiceAccount subject: system:serviceaccount: plus a 63-character namespace and a 253-character name.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 512)"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "tenant",
+						"string": {
+							"computed_optional_required": "computed_optional",
+							"description": "The set's tenant. When the installation has a single tenant, omit it to use that tenant.",
+							"validators": [
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.LengthBetween(1, 256)"
+									}
+								},
+								{
+									"custom": {
+										"imports": [
+											{
+												"path": "regexp"
+											},
+											{
+												"path": "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+											}
+										],
+										"schema_definition": "stringvalidator.RegexMatches(regexp.MustCompile(\"^[^|\\\\u0000-\\\\u001f\\\\u007f]+$\"), \"\")"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "id",
+						"string": {
+							"computed_optional_required": "computed",
+							"description": "A grant set ID: a random UUID as 32 lowercase hex characters."
+						}
+					},
+					{
+						"name": "products",
+						"map_nested": {
+							"computed_optional_required": "computed",
+							"nested_object": {}
+						}
+					}
+				]
+			}
+		}
+	],
+	"version": "0.1"
+}

@@ -1,0 +1,60 @@
+provider:
+  name: rediscloud
+resources:
+  agent_memory:
+    create:
+      path: /iris/v1/agent-memory/stores
+      method: POST
+    read:
+      path: /iris/v1/agent-memory/stores/{storeId}
+      method: GET
+    update:
+      path: /iris/v1/agent-memory/stores/{storeId}
+      method: PATCH
+    delete:
+      path: /iris/v1/agent-memory/stores/{storeId}
+      method: DELETE
+    schema:
+      ignores:
+        - projectId
+      attributes:
+        aliases:
+          storeId: id
+  agent_memory_extractor:
+    create:
+      path: /iris/v1/agent-memory/stores/{storeId}/extractors
+      method: POST
+    read:
+      path: /iris/v1/agent-memory/stores/{storeId}/extractors/{extractorId}
+      method: GET
+    update:
+      path: /iris/v1/agent-memory/stores/{storeId}/extractors/{extractorId}
+      method: PATCH
+    delete:
+      path: /iris/v1/agent-memory/stores/{storeId}/extractors/{extractorId}
+      method: DELETE
+    schema:
+      ignores:
+        - projectId
+      attributes:
+        aliases:
+          extractorId: id
+  agent_memory_type:
+    create:
+      path: /iris/v1/agent-memory/stores/{storeId}/memory-types
+      method: POST
+    read:
+      path: /iris/v1/agent-memory/stores/{storeId}/memory-types/{memoryTypeName}
+      method: GET
+    update:
+      path: /iris/v1/agent-memory/stores/{storeId}/memory-types/{memoryTypeName}
+      method: PATCH
+    delete:
+      path: /iris/v1/agent-memory/stores/{storeId}/memory-types/{memoryTypeName}
+      method: DELETE
+    schema:
+      ignores:
+        - projectId
+      attributes:
+        aliases:
+          memoryTypeName: name

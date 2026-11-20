@@ -1,0 +1,1 @@
+terraform import rediscloud_iris_identity_api_key.example 33333333333333333333333333333333

@@ -1,0 +1,1 @@
+terraform import rediscloud_iris_identity_provider.example your-tenant/Corporate

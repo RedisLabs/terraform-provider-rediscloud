@@ -23,6 +23,7 @@ import (
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/datapersistence"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentialsplan"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/essentialssubscription"
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/iris"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/paymentmethod"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/pro"
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/regions"
@@ -38,9 +39,13 @@ type redisCloudFrameworkProvider struct {
 
 // redisCloudProviderModel describes the provider data model.
 type redisCloudProviderModel struct {
-	Url       types.String `tfsdk:"url"`
-	ApiKey    types.String `tfsdk:"api_key"`
-	SecretKey types.String `tfsdk:"secret_key"`
+	Url                  types.String `tfsdk:"url"`
+	ApiKey               types.String `tfsdk:"api_key"`
+	SecretKey            types.String `tfsdk:"secret_key"`
+	IrisAgentMemoryURL   types.String `tfsdk:"iris_agent_memory_url"`
+	IrisAgentMemoryToken types.String `tfsdk:"iris_agent_memory_token"`
+	IrisIdentityURL      types.String `tfsdk:"iris_identity_url"`
+	IrisIdentityToken    types.String `tfsdk:"iris_identity_token"`
 }
 
 // NewFrameworkProvider returns a new Plugin Framework provider instance.
@@ -77,6 +82,9 @@ func (p *redisCloudFrameworkProvider) Schema(_ context.Context, _ provider.Schem
 			},
 		},
 	}
+	for _, setting := range irisSettings {
+		resp.Schema.Attributes[setting.name] = schema.StringAttribute{Optional: true, Sensitive: setting.sensitive, MarkdownDescription: setting.description + " May also be set using " + setting.env + "."}
+	}
 }
 
 // Configure prepares the Redis Cloud API client for data sources and resources.
@@ -106,8 +114,19 @@ func (p *redisCloudFrameworkProvider) Configure(ctx context.Context, req provide
 		secretKey = config.SecretKey.ValueString()
 	}
 
-	// Validate required credentials
-	if apiKey == "" {
+	connectors, err := irisClients(map[string]string{
+		"iris_agent_memory_url":   config.IrisAgentMemoryURL.ValueString(),
+		"iris_agent_memory_token": config.IrisAgentMemoryToken.ValueString(),
+		"iris_identity_url":       config.IrisIdentityURL.ValueString(),
+		"iris_identity_token":     config.IrisIdentityToken.ValueString(),
+	})
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid Iris configuration", err.Error())
+		return
+	}
+
+	// CAPI credentials are optional for configurations using only direct Iris services.
+	if apiKey == "" && len(connectors) == 0 {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("api_key"),
 			"Missing Redis Cloud API Key",
@@ -116,7 +135,7 @@ func (p *redisCloudFrameworkProvider) Configure(ctx context.Context, req provide
 		)
 	}
 
-	if secretKey == "" {
+	if secretKey == "" && len(connectors) == 0 {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("secret_key"),
 			"Missing Redis Cloud API Secret Key",
@@ -158,6 +177,7 @@ func (p *redisCloudFrameworkProvider) Configure(ctx context.Context, req provide
 	// Wrap in ApiClient for compatibility with existing code
 	wrappedClient := &client.ApiClient{
 		Client: apiClient,
+		Iris:   connectors,
 	}
 
 	// Make the client available during DataSource and Resource type Configure methods.
@@ -169,12 +189,12 @@ func (p *redisCloudFrameworkProvider) Configure(ctx context.Context, req provide
 
 // Resources defines the resources implemented in the provider.
 func (p *redisCloudFrameworkProvider) Resources(_ context.Context) []func() resource.Resource {
-	return []func() resource.Resource{
+	return append([]func() resource.Resource{
 		activeactive.NewActiveActiveDatabaseResource,
 		agentmemory.NewAgentMemoryResource,
 		agentmemory.NewAgentMemoryAPIKeyResource,
 		cloudaccount.NewCloudAccountResource,
-	}
+	}, iris.Resources()...)
 }
 
 // DataSources defines the data sources implemented in the provider.

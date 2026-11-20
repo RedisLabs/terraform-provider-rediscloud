@@ -1,0 +1,22 @@
+provider:
+  name: rediscloud
+resources:
+  identity_api_key:
+    create:
+      path: /v1/api-keys
+      method: POST
+    read:
+      path: /v1/api-keys/{keyId}
+      method: GET
+    update:
+      path: /v1/api-keys/{keyId}
+      method: PATCH
+    delete:
+      path: /v1/api-keys/{keyId}
+      method: DELETE
+    schema:
+      ignores:
+        - grants.constraints
+      attributes:
+        aliases:
+          keyId: id
