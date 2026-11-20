@@ -22,7 +22,8 @@ Supply tokens using `REDISCLOUD_IRIS_AGENT_MEMORY_TOKEN` and
 `REDISCLOUD_IRIS_IDENTITY_TOKEN`, or the sensitive provider attributes
 `iris_agent_memory_token` and `iris_identity_token`. URLs can also be supplied
 using `REDISCLOUD_IRIS_AGENT_MEMORY_URL` and `REDISCLOUD_IRIS_IDENTITY_URL`.
-Only configure the services you use. A configured service URL requires a token.
+Only configure the services you use. Use a service bearer token, or for the
+Agent Memory Cloud gateway use the Cloud API credentials described below.
 
 Iris-only configurations do not require Redis Cloud `api_key` and `secret_key`.
 Supply those credentials as usual when also managing Redis Cloud resources.
@@ -91,3 +92,13 @@ credentials, so imported secrets remain absent until separately configured.
 store is removed. Set it to `true` to request deletion of those sessions.
 Long-term memories are retained by the service in either case. A resource
 already missing from the service is removed from Terraform state.
+
+## Redis Cloud gateway authentication
+
+For Agent Memory behind a Cloud gateway such as app-qa, set
+`iris_agent_memory_url` to the origin (for example,
+`https://app-qa.qa.redislabs.com`) and supply the provider's `api_key` and
+`secret_key`, or `REDISCLOUD_ACCESS_KEY` and `REDISCLOUD_SECRET_KEY`.
+When no Agent Memory bearer token is supplied, the provider uses
+`x-api-key` and `x-api-secret-key` headers. An explicit bearer token takes
+precedence. Identity Service continues to require its separate bearer token.

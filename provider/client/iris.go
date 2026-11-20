@@ -13,15 +13,17 @@ import (
 	"time"
 )
 
-// IrisServiceConfig is independent of Redis Cloud credentials.
-type IrisServiceConfig struct{ URL, Token string }
+// IrisServiceConfig supports service bearer tokens or Cloud gateway API credentials.
+type IrisServiceConfig struct{ URL, Token, APIKey, SecretKey string }
 
 // IrisServiceClient sends synchronous requests to one direct-service control plane.
 // It never retries mutations or logs request/response bodies containing credentials.
 type IrisServiceClient struct {
-	baseURL *url.URL
-	token   string
-	http    *http.Client
+	baseURL   *url.URL
+	token     string
+	apiKey    string
+	secretKey string
+	http      *http.Client
 }
 
 type IrisHTTPError struct{ StatusCode int }
@@ -36,10 +38,10 @@ func NewIrisServiceClient(config IrisServiceConfig) (*IrisServiceClient, error) 
 	if err != nil || u.Host == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
 		return nil, errors.New("iris URL must be an HTTP(S) origin or path prefix without credentials, query or fragment")
 	}
-	if config.Token == "" {
-		return nil, errors.New("an Iris bearer token is required when its service URL is set")
+	if config.Token == "" && (config.APIKey == "" || config.SecretKey == "") {
+		return nil, errors.New("an Iris bearer token or Redis Cloud API key and secret is required when its service URL is set")
 	}
-	return &IrisServiceClient{baseURL: u, token: config.Token, http: &http.Client{Timeout: 60 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}, nil
+	return &IrisServiceClient{baseURL: u, token: config.Token, apiKey: config.APIKey, secretKey: config.SecretKey, http: &http.Client{Timeout: 60 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}, nil
 }
 func (c *IrisServiceClient) Call(ctx context.Context, method, path string, query url.Values, body map[string]any) (map[string]any, error) {
 	var input io.Reader
@@ -58,7 +60,12 @@ func (c *IrisServiceClient) Call(ctx context.Context, method, path string, query
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+c.token)
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	} else {
+		req.Header.Set("x-api-key", c.apiKey)
+		req.Header.Set("x-api-secret-key", c.secretKey)
+	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", "terraform-provider-rediscloud/iris")
 	if body != nil {

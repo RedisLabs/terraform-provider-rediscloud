@@ -7,6 +7,8 @@ import (
 )
 
 func TestIrisProviderConfiguration(t *testing.T) {
+	t.Setenv("REDISCLOUD_ACCESS_KEY", "")
+	t.Setenv("REDISCLOUD_SECRET_KEY", "")
 	for _, setting := range irisSettings {
 		t.Setenv(setting.env, "")
 	}

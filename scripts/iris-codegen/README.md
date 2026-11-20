@@ -43,8 +43,9 @@ See `docs/guides/iris.md` for public usage and limitations.
 
 Tests cover real Terraform CRUD/import flows through the mux against local HTTP
 servers, schema/model equality, JSON validation, mutation recovery, secret
-retention, exact numbers, credential isolation and HTTP failures. Live service
-acceptance is separate and has not been run for this change.
+retention, exact numbers, credential isolation and HTTP failures. Live Agent Memory acceptance against app-qa is documented in
+`provider/iris/tests/acceptance/README.md`; customer-model tests require separate
+model-provider credentials.
 
 The original unadapted experiment is retained in `experiments/openapi-codegen/`.
 Its failures describe raw generator output, not the integrated resources.

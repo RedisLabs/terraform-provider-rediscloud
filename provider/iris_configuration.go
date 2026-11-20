@@ -26,6 +26,11 @@ func irisClients(values map[string]string) (map[string]*client.IrisServiceClient
 			values[setting.name] = os.Getenv(setting.env)
 		}
 	}
+	for _, key := range []struct{ name, env string }{{"api_key", "REDISCLOUD_ACCESS_KEY"}, {"secret_key", "REDISCLOUD_SECRET_KEY"}} {
+		if values[key.name] == "" {
+			values[key.name] = os.Getenv(key.env)
+		}
+	}
 	services := map[string]*client.IrisServiceClient{}
 	for _, service := range []struct{ name, prefix string }{{"agent-memory", "iris_agent_memory"}, {"identity", "iris_identity"}} {
 		endpoint, token := values[service.prefix+"_url"], values[service.prefix+"_token"]
@@ -35,7 +40,12 @@ func irisClients(values map[string]string) (map[string]*client.IrisServiceClient
 		if endpoint == "" {
 			return nil, fmt.Errorf("%s_url is required when its token is set", service.prefix)
 		}
-		connector, err := client.NewIrisServiceClient(client.IrisServiceConfig{URL: endpoint, Token: token})
+		serviceConfig := client.IrisServiceConfig{URL: endpoint, Token: token}
+		if service.name == "agent-memory" {
+			serviceConfig.APIKey = values["api_key"]
+			serviceConfig.SecretKey = values["secret_key"]
+		}
+		connector, err := client.NewIrisServiceClient(serviceConfig)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", service.prefix, err)
 		}

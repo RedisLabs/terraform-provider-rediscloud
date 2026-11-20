@@ -123,7 +123,7 @@ func NewSdkProvider(version string) func() *schema.Provider {
 
 func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	return func(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-		irisValues := map[string]string{}
+		irisValues := map[string]string{"api_key": d.Get("api_key").(string), "secret_key": d.Get("secret_key").(string)}
 		for _, setting := range irisSettings {
 			irisValues[setting.name] = d.Get(setting.name).(string)
 		}

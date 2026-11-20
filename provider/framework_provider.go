@@ -115,6 +115,7 @@ func (p *redisCloudFrameworkProvider) Configure(ctx context.Context, req provide
 	}
 
 	connectors, err := irisClients(map[string]string{
+		"api_key": apiKey, "secret_key": secretKey,
 		"iris_agent_memory_url":   config.IrisAgentMemoryURL.ValueString(),
 		"iris_agent_memory_token": config.IrisAgentMemoryToken.ValueString(),
 		"iris_identity_url":       config.IrisIdentityURL.ValueString(),

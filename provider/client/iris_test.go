@@ -74,3 +74,27 @@ func TestIrisTransportCancellationAndConfiguration(t *testing.T) {
 	require.False(t, IrisNotFound(errors.New(strings.Repeat("error", 2))))
 	require.True(t, IrisNotFound(&IrisHTTPError{StatusCode: 404}))
 }
+
+func TestIrisCloudGatewayAuthentication(t *testing.T) {
+	for _, bearer := range []string{"", "explicit-token"} {
+		t.Run(bearer, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if bearer != "" {
+					assert.Equal(t, "Bearer "+bearer, r.Header.Get("Authorization"))
+					assert.Empty(t, r.Header.Get("x-api-key"))
+					assert.Empty(t, r.Header.Get("x-api-secret-key"))
+				} else {
+					assert.Empty(t, r.Header.Get("Authorization"))
+					assert.Equal(t, "fake-access", r.Header.Get("x-api-key"))
+					assert.Equal(t, "fake-secret", r.Header.Get("x-api-secret-key"))
+				}
+				w.WriteHeader(http.StatusNoContent)
+			}))
+			defer server.Close()
+			c, err := NewIrisServiceClient(IrisServiceConfig{URL: server.URL, Token: bearer, APIKey: "fake-access", SecretKey: "fake-secret"})
+			require.NoError(t, err)
+			_, err = c.Call(context.Background(), http.MethodGet, "/iris/v1/agent-memory/stores", nil, nil)
+			require.NoError(t, err)
+		})
+	}
+}
