@@ -182,14 +182,6 @@ func (v RuleSetValue) AsModels(ctx context.Context) ([]RuleModel, diag.Diagnosti
 // RulesFromAPI converts the rules of an API role into a rule set. Databases without
 // regions get a known empty regions set, as the SDKv2 implementation wrote.
 func RulesFromAPI(ctx context.Context, apiRules []*roles.GetRuleInRoleResponse) (RuleSetValue, diag.Diagnostics) {
-	return rulesFromAPI(ctx, apiRules, func(string, int64, int64) types.Set {
-		return types.SetValueMust(types.StringType, []attr.Value{})
-	})
-}
-
-// rulesFromAPI converts API rules, asking emptyRegions for the value to store when the
-// API returns no regions for a database of the named rule.
-func rulesFromAPI(ctx context.Context, apiRules []*roles.GetRuleInRoleResponse, emptyRegions func(ruleName string, subscription, database int64) types.Set) (RuleSetValue, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	rules := make([]RuleModel, 0, len(apiRules))
 	for _, apiRule := range apiRules {
@@ -206,7 +198,7 @@ func rulesFromAPI(ctx context.Context, apiRules []*roles.GetRuleInRoleResponse, 
 			subscription := int64(redis.IntValue(apiDatabase.SubscriptionId))
 			database := int64(redis.IntValue(apiDatabase.DatabaseId))
 
-			regions := emptyRegions(ruleName, subscription, database)
+			regions := types.SetValueMust(types.StringType, []attr.Value{})
 			if len(apiDatabase.Regions) > 0 {
 				var regionDiags diag.Diagnostics
 				regions, regionDiags = types.SetValueFrom(ctx, types.StringType, redis.StringSliceValue(apiDatabase.Regions...))

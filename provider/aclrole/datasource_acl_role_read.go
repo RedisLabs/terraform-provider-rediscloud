@@ -69,7 +69,7 @@ func (d *aclRoleDataSource) Read(ctx context.Context, req datasource.ReadRequest
 func filterRolesByName(list []*roles.GetRoleResponse, name string) []*roles.GetRoleResponse {
 	var filtered []*roles.GetRoleResponse
 	for _, role := range list {
-		if role != nil && redis.StringValue(role.Name) == name {
+		if role != nil && (name == "" || redis.StringValue(role.Name) == name) {
 			filtered = append(filtered, role)
 		}
 	}
