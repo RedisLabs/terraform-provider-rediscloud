@@ -32,3 +32,12 @@ Run the affected package and changed helper tests on the reviewed commit. Prefer
 For each blocking finding, identify the changed location, smallest realistic trigger, user-visible outcome, and the fix or regression assertion that would settle it. Link an existing thread if it already describes the defect. Group related findings in one review. Mark a preference or a future improvement as optional. When re-reviewing, inspect the fixing diff, reproduce or check the regression case and acknowledge the resolved concern. Leave others' review decisions to them.
 
 When asked to submit reviews, request changes for a verified blocker. If the head is sound, approve with the paths or behaviors checked and the test evidence. If essential evidence is missing, explain exactly what prevents a verdict. Submit against the reviewed commit and verify the recorded verdict. A review does not authorize merging the PR.
+
+## Summarize reviews in dev Slack
+
+When asked to post results in the development channel, use two lists. Group PRs by the latest review you submitted in this batch and verify each verdict on GitHub.
+
+- **Approved (count)** — one bullet per approved PR. Link the PR number to the review and give one sentence naming the change and what justified approval.
+- **Comments left (count)** — one bullet per PR where you commented or requested changes. Link the PR number to the review. Start its one-line summary with **Changes requested** or **Comment** and state the specific fix, question or suggestion.
+
+Include each reviewed PR exactly once, even when several share the same finding. An approval with optional notes belongs under Approved. Keep both headings when a list is empty and write “None” beneath it.
