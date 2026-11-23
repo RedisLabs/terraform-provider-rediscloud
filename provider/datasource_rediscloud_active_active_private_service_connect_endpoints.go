@@ -164,3 +164,21 @@ func flattenPrivateServiceConnectEndpoints(endpoints []*psc.PrivateServiceConnec
 
 	return rl
 }
+
+// flattenPrivateServiceConnectEndpointServiceAttachments moved here from the migrated Active-Active endpoint resource; remove it with this data source.
+func flattenPrivateServiceConnectEndpointServiceAttachments(serviceAttachments []psc.TerraformGCPServiceAttachment) []map[string]interface{} {
+	var rl []map[string]interface{}
+	for _, serviceAttachment := range serviceAttachments {
+
+		serviceAttachmentMapString := map[string]interface{}{
+			"name":                 serviceAttachment.Name,
+			"dns_record":           serviceAttachment.DNSRecord,
+			"ip_address_name":      serviceAttachment.IPAddressName,
+			"forwarding_rule_name": serviceAttachment.ForwardingRuleName,
+		}
+
+		rl = append(rl, serviceAttachmentMapString)
+	}
+
+	return rl
+}
