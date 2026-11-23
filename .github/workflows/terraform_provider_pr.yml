@@ -139,7 +139,7 @@ jobs:
     needs: [pre-test]
     uses: ./.github/workflows/testacc.yml
     with:
-      test_pattern: 'TestAccResourceRedisCloud(PrivateServiceConnect_CRUDI|AclRule_CRUDI)|^TestAccDataSourceRedisCloudSubscriptionPeerings_basic$'
+      test_pattern: 'TestAccResourceRedisCloud(PrivateServiceConnect_CRUDI|AclRule_CRUDI)|^TestAccDataSourceRedisCloudSubscriptionPeerings_basic$|^TestAccResourceRedisCloudSubscriptionPeering_aws$'
       create_account_sleep_seconds: 240
     secrets: inherit
 

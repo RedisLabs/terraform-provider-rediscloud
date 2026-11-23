@@ -83,9 +83,9 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				"rediscloud_essentials_database":     resourceRedisCloudEssentialsDatabase(),
 				// Note the difference in public resource name and the file/method name.
 				// <default> == flexible == pro
-				"rediscloud_subscription":                              pro.ResourceRedisCloudProSubscription(),
-				"rediscloud_subscription_database":                     pro.ResourceRedisCloudProDatabase(),
-				"rediscloud_subscription_peering":                      resourceRedisCloudSubscriptionPeering(),
+				"rediscloud_subscription":          pro.ResourceRedisCloudProSubscription(),
+				"rediscloud_subscription_database": pro.ResourceRedisCloudProDatabase(),
+				// Note: rediscloud_subscription_peering is served by the Plugin Framework provider
 				"rediscloud_private_service_connect":                   resourceRedisCloudPrivateServiceConnect(),
 				"rediscloud_private_service_connect_endpoint":          resourceRedisCloudPrivateServiceConnectEndpoint(),
 				"rediscloud_private_service_connect_endpoint_accepter": resourceRedisCloudPrivateServiceConnectEndpointAccepter(),
