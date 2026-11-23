@@ -52,7 +52,10 @@ func sourceIPsFromAPI(security *fixedDatabases.Security) []string {
 	if len(security.SourceIPs) == 1 && redis.StringValue(security.SourceIPs[0]) == defaultSourceIP {
 		return []string{}
 	}
-	return redis.StringSliceValue(security.SourceIPs...)
+	if sourceIPs := redis.StringSliceValue(security.SourceIPs...); sourceIPs != nil {
+		return sourceIPs
+	}
+	return []string{}
 }
 
 func syncSourceModelsFromAPI(replica *fixedDatabases.ReplicaOf) []SyncSourceModel {
@@ -186,9 +189,14 @@ func latestImportStatusFromAPI(ctx context.Context, status *latest_imports.Lates
 				if diags.HasError() {
 					return types.SetNull(latestImportStatusElemType), diags
 				}
+				//TODO(TF3.0) make last_import_time nullable
+				lastImportTime := types.StringValue("")
+				if res.LastImportTime != nil {
+					lastImportTime = types.StringValue(res.LastImportTime.String())
+				}
 				responses = append(responses, ImportStatusResponseModel{
 					Status:              types.StringValue(redis.StringValue(res.Status)),
-					LastImportTime:      timeStringValue(res.LastImportTime),
+					LastImportTime:      lastImportTime,
 					FailureReason:       types.StringValue(redis.StringValue(res.FailureReason)),
 					FailureReasonParams: paramList,
 				})

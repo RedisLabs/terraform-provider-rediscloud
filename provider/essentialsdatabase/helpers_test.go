@@ -3,19 +3,33 @@ package essentialsdatabase
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/databases"
 	fixedDatabases "github.com/RedisLabs/rediscloud-go-api/service/fixed/databases"
 	"github.com/RedisLabs/rediscloud-go-api/service/latest_backups"
+	"github.com/RedisLabs/rediscloud-go-api/service/latest_imports"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSourceIPsFromAPI(t *testing.T) {
-	assert.Empty(t, sourceIPsFromAPI(nil))
-	assert.Empty(t, sourceIPsFromAPI(&fixedDatabases.Security{SourceIPs: redis.StringSlice(defaultSourceIP)}))
+	for name, security := range map[string]*fixedDatabases.Security{
+		"missing security":   nil,
+		"missing source IPs": {},
+		"empty source IPs":   {SourceIPs: []*string{}},
+		"implicit allow-all": {SourceIPs: redis.StringSlice(defaultSourceIP)},
+	} {
+		t.Run(name, func(t *testing.T) {
+			sourceIPs, diags := types.SetValueFrom(t.Context(), types.StringType, sourceIPsFromAPI(security))
+			require.False(t, diags.HasError(), "%v", diags)
+			want := types.SetValueMust(types.StringType, nil)
+			assert.True(t, want.Equal(sourceIPs), "expected %s, got %s", want, sourceIPs)
+		})
+	}
+
 	assert.Equal(t,
 		[]string{"10.0.0.0/8", defaultSourceIP},
 		sourceIPsFromAPI(&fixedDatabases.Security{SourceIPs: redis.StringSlice("10.0.0.0/8", defaultSourceIP)}),
@@ -100,4 +114,34 @@ func TestLatestBackupStatusFromAPI(t *testing.T) {
 	require.Len(t, models, 1)
 	assert.Empty(t, models[0].Response.Elements())
 	assert.Len(t, models[0].Error.Elements(), 1)
+}
+
+func TestLatestImportStatusFromAPI(t *testing.T) {
+	importTime := time.Date(2026, time.November, 22, 10, 0, 0, 0, time.UTC)
+	for _, tc := range []struct {
+		name       string
+		importTime *time.Time
+		want       types.String
+	}{
+		{name: "missing import time", want: types.StringValue("")},
+		{name: "reported import time", importTime: &importTime, want: types.StringValue(importTime.String())},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
+			status, diags := latestImportStatusFromAPI(ctx, &latest_imports.LatestImportStatus{
+				Response: &latest_imports.Response{
+					Resource: &latest_imports.Resource{LastImportTime: tc.importTime},
+				},
+			})
+			require.False(t, diags.HasError(), "%v", diags)
+
+			var models []LatestImportStatusModel
+			require.False(t, status.ElementsAs(ctx, &models, false).HasError())
+			require.Len(t, models, 1)
+			var responses []ImportStatusResponseModel
+			require.False(t, models[0].Response.ElementsAs(ctx, &responses, false).HasError())
+			require.Len(t, responses, 1)
+			assert.Equal(t, tc.want, responses[0].LastImportTime)
+		})
+	}
 }
