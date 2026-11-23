@@ -1,4 +1,4 @@
-package provider_test
+package transitgateway_test
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
@@ -23,14 +24,42 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 	resourceTags, resourceTagsCheck := envchecks.BYOCResourceTagsValueAndCheck()
 
 	awsRegion, awsRegionCheck := envchecks.ValueAndCheck("AWS_REGION")
-	subscriptionName := testRandomWithPrefix() + "-aa-tgw"
-	databaseName := testRandomWithPrefix() + "-aa-tgw-db"
+	subscriptionName := utils.RandomWithPrefix() + "-aa-tgw"
+	databaseName := utils.RandomWithPrefix() + "-aa-tgw-db"
 	databasePassword := acctest.RandString(20)
 
 	const invitationsDatasourceName = "data.rediscloud_active_active_transit_gateway_invitations.test"
 	const acceptorResourceName = "rediscloud_active_active_transit_gateway_invitation_acceptor.test"
 	const attachmentResourceName = "rediscloud_active_active_transit_gateway_attachment.test"
 	const routeResourceName = "rediscloud_active_active_transit_gateway_route.test"
+
+	configVariables := func(routeCidrs ...string) config.Variables {
+		cidrs := make([]config.Variable, 0, len(routeCidrs))
+		for _, cidr := range routeCidrs {
+			cidrs = append(cidrs, config.StringVariable(cidr))
+		}
+		return config.Variables{
+			"subscription_name": config.StringVariable(subscriptionName),
+			"database_name":     config.StringVariable(databaseName),
+			"database_password": config.StringVariable(databasePassword),
+			"aws_region":        config.StringVariable(awsRegion),
+			"team":              config.StringVariable(resourceTags.Team),
+			"owner":             config.StringVariable(resourceTags.Owner),
+			"route_cidrs":       config.ListVariable(cidrs...),
+		}
+	}
+	testConfig := utils.GetTestConfig(t, "./testdata/aa_transit_gateway_invitation_acceptor.tf")
+
+	externalProviders := map[string]resource.ExternalProvider{
+		"aws": {
+			Source:            "hashicorp/aws",
+			VersionConstraint: "~> 6.0",
+		},
+		"time": {
+			Source:            "hashicorp/time",
+			VersionConstraint: "~> 0.14",
+		},
+	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck: envchecks.ComposePreChecks(t,
@@ -39,37 +68,48 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 			envchecks.AWSProviderCheck,
 			awsRegionCheck,
 		),
-		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
-		ExternalProviders: map[string]resource.ExternalProvider{
-			"aws": {
-				Source:            "hashicorp/aws",
-				VersionConstraint: "~> 6.0",
-			},
-			"time": {
-				Source:            "hashicorp/time",
-				VersionConstraint: "~> 0.14",
-			},
-		},
 		CheckDestroy: testhelpers.CheckActiveActiveSubscriptionDestroy,
 		Steps: []resource.TestStep{
 			{
-				ConfigVariables: config.Variables{
-					"team":  config.StringVariable(resourceTags.Team),
-					"owner": config.StringVariable(resourceTags.Owner),
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"rediscloud": {
+						Source:            "RedisLabs/rediscloud",
+						VersionConstraint: "2.20.0",
+					},
+					"aws":  externalProviders["aws"],
+					"time": externalProviders["time"],
 				},
-				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./transitgateway/testdata/aa_transit_gateway_invitation_acceptor.tf"),
-					subscriptionName, databaseName, databasePassword, awsRegion),
+				ConfigVariables: configVariables("10.10.20.0/24"),
+				Config:          testConfig,
 			},
 			{
-				ConfigVariables: config.Variables{
-					"team":  config.StringVariable(resourceTags.Team),
-					"owner": config.StringVariable(resourceTags.Owner),
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ExternalProviders:        externalProviders,
+				ConfigVariables:          configVariables("10.10.20.0/24"),
+				Config:                   testConfig,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
 				},
-				RefreshState: true,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(invitationsDatasourceName, "subscription_id"),
 					resource.TestCheckResourceAttrSet(invitationsDatasourceName, "invitations.#"),
+					resource.TestCheckResourceAttr(invitationsDatasourceName, "wait_for_invitations_timeout", "0"),
+					resource.TestCheckResourceAttr("data.rediscloud_active_active_transit_gateway.test", "wait_for_tgw_timeout", "0"),
+				),
+			},
+			{
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ExternalProviders:        externalProviders,
+				ConfigVariables:          configVariables("10.10.20.0/24"),
+				Config:                   testConfig,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(acceptorResourceName, "id"),
 					resource.TestCheckResourceAttr(acceptorResourceName, "action", "accept"),
 					resource.TestCheckResourceAttrSet(acceptorResourceName, "name"),
@@ -94,13 +134,10 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 				),
 			},
 			{
-				ConfigVariables: config.Variables{
-					"team":  config.StringVariable(resourceTags.Team),
-					"owner": config.StringVariable(resourceTags.Owner),
-				},
-				Config: fmt.Sprintf(
-					utils.GetTestConfig(t, "./transitgateway/testdata/aa_transit_gateway_route_update.tf"),
-					subscriptionName, databaseName, databasePassword, awsRegion),
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ExternalProviders:        externalProviders,
+				ConfigVariables:          configVariables("10.10.20.0/24", "10.10.21.0/24"),
+				Config:                   testConfig,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(routeResourceName, "cidrs.#", "2"),
 					resource.TestCheckResourceAttr(routeResourceName, "cidrs.0", "10.10.20.0/24"),
@@ -109,32 +146,43 @@ func TestAccResourceRedisCloudActiveActiveTransitGatewayInvitationAcceptor_CRUDI
 				),
 			},
 			{
-				ConfigVariables: config.Variables{
-					"team":  config.StringVariable(resourceTags.Team),
-					"owner": config.StringVariable(resourceTags.Owner),
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ExternalProviders:        externalProviders,
+				ConfigVariables:          configVariables("10.10.20.0/24", "10.10.21.0/24"),
+				Config:                   testConfig,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
 				},
-				ResourceName:            acceptorResourceName,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"action"},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(attachmentResourceName, "cidrs.#", "2"),
+				),
 			},
 			{
-				ConfigVariables: config.Variables{
-					"team":  config.StringVariable(resourceTags.Team),
-					"owner": config.StringVariable(resourceTags.Owner),
-				},
-				ResourceName:      attachmentResourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ExternalProviders:        externalProviders,
+				ConfigVariables:          configVariables("10.10.20.0/24", "10.10.21.0/24"),
+				ResourceName:             acceptorResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"action"},
 			},
 			{
-				ConfigVariables: config.Variables{
-					"team":  config.StringVariable(resourceTags.Team),
-					"owner": config.StringVariable(resourceTags.Owner),
-				},
-				ResourceName:      routeResourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ExternalProviders:        externalProviders,
+				ConfigVariables:          configVariables("10.10.20.0/24", "10.10.21.0/24"),
+				ResourceName:             attachmentResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+			},
+			{
+				ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+				ExternalProviders:        externalProviders,
+				ConfigVariables:          configVariables("10.10.20.0/24", "10.10.21.0/24"),
+				ResourceName:             routeResourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
 			},
 		},
 	})
