@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
@@ -110,9 +111,22 @@ func (r *activeActiveTransitGatewayAttachmentResource) Read(ctx context.Context,
 func (r *activeActiveTransitGatewayAttachmentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan ActiveActiveTransitGatewayAttachmentResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	var priorID types.String
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("id"), &priorID)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	subId, regionId, tgwId, err := ParseActiveActiveTransitGatewayAttachmentId(priorID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid Transit Gateway Attachment ID", err.Error())
+		return
+	}
+	if !attachmentIDPartMatches(plan.SubscriptionID, subId) || !attachmentIDPartMatches(plan.RegionID, regionId) || plan.TgwID.ValueInt64() != int64(tgwId) {
+		resp.Diagnostics.AddError("Transit Gateway attachment identity cannot change in place", "subscription_id, region_id and tgw_id must match the attachment ID stored in state.")
+		return
+	}
+	plan.ID = priorID
 
 	updateTimeout, diags := plan.Timeouts.Update(ctx, transitGatewayAttachmentDefaultUpdateTimeout)
 	resp.Diagnostics.Append(diags...)
@@ -121,12 +135,6 @@ func (r *activeActiveTransitGatewayAttachmentResource) Update(ctx context.Contex
 	}
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
-
-	subId, regionId, tgwId, err := ParseActiveActiveTransitGatewayAttachmentId(plan.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("Invalid Transit Gateway Attachment ID", err.Error())
-		return
-	}
 
 	cidrs, diags := cidrsToAPI(ctx, plan.Cidrs)
 	resp.Diagnostics.Append(diags...)
