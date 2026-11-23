@@ -309,3 +309,22 @@ func waitForPrivateServiceConnectServiceEndpointToBeInStatus(ctx context.Context
 
 	return nil
 }
+
+type privateServiceConnectEndpointId struct {
+	subscriptionId int
+	pscServiceId   int
+	endpointId     int
+}
+
+func (p privateServiceConnectEndpointId) String() string {
+	return fmt.Sprintf("%d/%d/%d", p.subscriptionId, p.pscServiceId, p.endpointId)
+}
+
+func FindPrivateServiceConnectEndpoints(id int, endpoints []*psc.PrivateServiceConnectEndpoint) *psc.PrivateServiceConnectEndpoint {
+	for _, endpoint := range endpoints {
+		if redis.IntValue(endpoint.ID) == id {
+			return endpoint
+		}
+	}
+	return nil
+}
