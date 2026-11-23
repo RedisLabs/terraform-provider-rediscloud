@@ -175,7 +175,7 @@ jobs:
     needs: [pre-test]
     uses: ./.github/workflows/testacc.yml
     with:
-      test_pattern: '^TestAccDataSourceRedisCloudPrivateServiceConnect_basic$'
+      test_pattern: '^TestAccDataSourceRedisCloudPrivateServiceConnect(Endpoints)?_basic$'
       create_account_sleep_seconds: 360
     secrets: inherit
 
