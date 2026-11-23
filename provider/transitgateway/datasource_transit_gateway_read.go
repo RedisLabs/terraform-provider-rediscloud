@@ -76,7 +76,7 @@ func (d *transitGatewayDataSource) Read(ctx context.Context, req datasource.Read
 		return
 	}
 
-	cidrs, diags := CidrsFromAPI(ctx, tgw.Cidrs)
+	cidrs, diags := dataSourceCidrsFromAPI(ctx, tgw.Cidrs)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

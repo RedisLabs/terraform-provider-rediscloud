@@ -184,11 +184,21 @@ func transitGatewayAttachmentMatches(tgwa *attachments.TransitGatewayAttachment,
 
 // CidrsFromAPI maps attachment CIDRs to a known list of addresses, keeping the API order.
 func CidrsFromAPI(ctx context.Context, cidrs []*attachments.Cidr) (types.List, diag.Diagnostics) {
+	return types.ListValueFrom(ctx, types.StringType, cidrAddressesFromAPI(cidrs))
+}
+
+func dataSourceCidrsFromAPI(ctx context.Context, cidrs []*attachments.Cidr) (types.List, diag.Diagnostics) {
+	addresses := cidrAddressesFromAPI(cidrs)
+	sort.Strings(addresses)
+	return types.ListValueFrom(ctx, types.StringType, addresses)
+}
+
+func cidrAddressesFromAPI(cidrs []*attachments.Cidr) []string {
 	addresses := make([]string, 0, len(cidrs))
 	for _, cidr := range cidrs {
 		addresses = append(addresses, redis.StringValue(cidr.CidrAddress))
 	}
-	return types.ListValueFrom(ctx, types.StringType, addresses)
+	return addresses
 }
 
 // transitGatewayDataSourceFilters mirrors the SDKv2 GetOk semantics, where zero values do not filter.
