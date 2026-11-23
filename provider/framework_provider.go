@@ -175,6 +175,7 @@ func (p *redisCloudFrameworkProvider) Resources(_ context.Context) []func() reso
 		agentmemory.NewAgentMemoryResource,
 		agentmemory.NewAgentMemoryAPIKeyResource,
 		cloudaccount.NewCloudAccountResource,
+		essentialssubscription.NewEssentialsSubscriptionResource,
 	}
 }
 
