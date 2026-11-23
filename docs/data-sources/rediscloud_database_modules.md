@@ -25,7 +25,7 @@ output "rediscloud_database_modules" {
 
 ## Attributes Reference
 
-* `modules` A list of database modules.
+* `modules` The set of database modules available to the account.
 
 Each module entry provides the following attributes
 
