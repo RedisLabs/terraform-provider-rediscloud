@@ -2,6 +2,7 @@ package essentialssubscription
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -22,7 +23,8 @@ import (
 )
 
 const (
-	defaultPaymentMethod = "credit-card"
+	defaultPaymentMethod      = "credit-card"
+	effectivePaymentMethodKey = "effective_payment_method"
 
 	createTimeout = 30 * time.Minute
 	readTimeout   = 10 * time.Minute
@@ -73,11 +75,16 @@ func (r *essentialsSubscriptionResource) Create(ctx context.Context, req resourc
 	}
 
 	plan.ID = types.StringValue(strconv.Itoa(subId))
+	encodedMethod, _ := json.Marshal(paymentMethod)
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, effectivePaymentMethodKey, encodedMethod)...)
+	recoveryState := plan
+	resolveUnknowns(&recoveryState)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &recoveryState)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	if err := WaitForEssentialsSubscriptionToBeActive(ctx, subId, r.client, timeout); err != nil {
-		// Persist the ID so the subscription is tracked (and tainted) instead of leaked, as SDKv2 did with SetId.
-		resolveUnknowns(&plan)
-		resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 		resp.Diagnostics.AddError("Essentials Subscription Failed to Become Active", err.Error())
 		return
 	}
@@ -156,6 +163,26 @@ func (r *essentialsSubscriptionResource) Update(ctx context.Context, req resourc
 	utils.SubscriptionMutex.Lock(subId)
 	defer utils.SubscriptionMutex.Unlock(subId)
 
+	// Framework state must match the configured plan even for ignored edits, so keep the effective method separately.
+	paymentMethod := state.PaymentMethod.ValueString()
+	storedMethod, diags := req.Private.GetKey(ctx, effectivePaymentMethodKey)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if len(storedMethod) == 0 {
+		encodedMethod, _ := json.Marshal(paymentMethod)
+		resp.Diagnostics.Append(resp.Private.SetKey(ctx, effectivePaymentMethodKey, encodedMethod)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	} else {
+		if err := json.Unmarshal(storedMethod, &paymentMethod); err != nil {
+			resp.Diagnostics.AddError("Unable to Read Effective Payment Method", err.Error())
+			return
+		}
+	}
+
 	changed := !plan.Name.Equal(state.Name) ||
 		!plan.PlanID.Equal(state.PlanID) ||
 		!plan.PaymentMethodID.Equal(state.PaymentMethodID)
@@ -172,9 +199,8 @@ func (r *essentialsSubscriptionResource) Update(ctx context.Context, req resourc
 		Name:   plan.Name.ValueStringPointer(),
 		PlanId: redis.Int(int(plan.PlanID.ValueInt64())),
 	}
-	// SDKv2 suppressed every payment_method diff after creation, so it always sent the stored value.
-	if v := state.PaymentMethod.ValueString(); v != "" {
-		request.PaymentMethod = redis.String(v)
+	if paymentMethod != "" {
+		request.PaymentMethod = redis.String(paymentMethod)
 	}
 	if v := int(plan.PaymentMethodID.ValueInt64()); v != 0 {
 		request.PaymentMethodID = redis.Int(v)
