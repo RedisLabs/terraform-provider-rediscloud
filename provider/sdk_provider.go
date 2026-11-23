@@ -94,8 +94,8 @@ func NewSdkProvider(version string) func() *schema.Provider {
 
 				"rediscloud_active_active_subscription": resourceRedisCloudActiveActiveSubscription(),
 				// Note: rediscloud_active_active_subscription_database is served by the Plugin Framework provider
-				"rediscloud_active_active_subscription_regions":                      resourceRedisCloudActiveActiveSubscriptionRegions(),
-				"rediscloud_active_active_subscription_peering":                      resourceRedisCloudActiveActiveSubscriptionPeering(),
+				"rediscloud_active_active_subscription_regions": resourceRedisCloudActiveActiveSubscriptionRegions(),
+				// Note: rediscloud_active_active_subscription_peering is served by the Plugin Framework provider
 				"rediscloud_active_active_private_service_connect":                   resourceRedisCloudActiveActivePrivateServiceConnect(),
 				"rediscloud_active_active_private_service_connect_endpoint":          resourceRedisCloudActiveActivePrivateServiceConnectEndpoint(),
 				"rediscloud_active_active_private_service_connect_endpoint_accepter": resourceRedisCloudActiveActivePrivateServiceConnectEndpointAccepter(),
