@@ -22,6 +22,10 @@ on:
         description: 'Seconds to sleep (stagger) ephemeral account creation'
         required: true
         type: number
+      s3_backup:
+        description: 'Enable -s3Backup and use the dedicated S3 test credentials'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -50,7 +54,7 @@ env:
   # Derived from the caller's trigger context (shared with this reusable
   # workflow): PRs targeting release/* get "tf-ci-<run>". PRs targeting
   # main/develop, manual dispatch, and other callers get "tf-ci-main-<run>".
-  TEST_RESOURCE_PREFIX: ${{ github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/') && format('tf-ci-{0}', github.run_number) || format('tf-ci-main-{0}', github.run_number) }}
+  TEST_RESOURCE_PREFIX: ${{ inputs.s3_backup && format('tf-ci-rb-{0}', github.run_id) || github.event_name == 'pull_request' && startsWith(github.base_ref, 'release/') && format('tf-ci-{0}', github.run_number) || format('tf-ci-main-{0}', github.run_number) }}
 
 jobs:
   testacc:
@@ -75,6 +79,23 @@ jobs:
         env:
           TEST_PATTERN: ${{ inputs.test_pattern }}
         run: make testacc-check
+
+      - name: Verify S3 backup prerequisites
+        if: inputs.s3_backup
+        shell: nix develop --command bash -e {0}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.REMOTE_BACKUP_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.REMOTE_BACKUP_AWS_SECRET_ACCESS_KEY }}
+        run: |
+          if [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" ]]; then
+            echo '::error::Configure REMOTE_BACKUP_AWS_ACCESS_KEY_ID and REMOTE_BACKUP_AWS_SECRET_ACCESS_KEY in integration-tests.'
+            exit 1
+          fi
+          if [[ "$(aws --version 2>&1)" != aws-cli/2.* ]]; then
+            echo '::error::Remote backup tests require AWS CLI v2.'
+            exit 1
+          fi
+          aws sts get-caller-identity --region us-east-1 >/dev/null
 
       # Short-lived installation token scoped to the private provisioning repo,
       # used to dispatch its workflows and download the encrypted artifact.
@@ -146,6 +167,9 @@ jobs:
         shell: nix develop --command bash -e {0}
         env:
           TEST_PATTERN: ${{ inputs.test_pattern }}
+          S3_BACKUP: ${{ inputs.s3_backup }}
+          REMOTE_BACKUP_AWS_ACCESS_KEY_ID: ${{ inputs.s3_backup && secrets.REMOTE_BACKUP_AWS_ACCESS_KEY_ID || '' }}
+          REMOTE_BACKUP_AWS_SECRET_ACCESS_KEY: ${{ inputs.s3_backup && secrets.REMOTE_BACKUP_AWS_SECRET_ACCESS_KEY || '' }}
         run: |
           set -euo pipefail
 
@@ -176,7 +200,14 @@ jobs:
           # sweep is needed here: if the tests fail, `set -e` fails the step, and
           # teardown still runs via the separate always() sweep and delete steps
           # below (the cleanup token was persisted above).
-          make testacc
+          if [[ "$S3_BACKUP" == true ]]; then
+            export AWS_ACCESS_KEY_ID="$REMOTE_BACKUP_AWS_ACCESS_KEY_ID"
+            export AWS_SECRET_ACCESS_KEY="$REMOTE_BACKUP_AWS_SECRET_ACCESS_KEY"
+            unset REMOTE_BACKUP_AWS_ACCESS_KEY_ID REMOTE_BACKUP_AWS_SECRET_ACCESS_KEY
+            make testacc-s3-backup TF_LOG=
+          else
+            make testacc
+          fi
 
       # Sweep the throwaway account's resources in a SEPARATE always() step so
       # it also runs when the test step is cancelled (an inline sweep dies with

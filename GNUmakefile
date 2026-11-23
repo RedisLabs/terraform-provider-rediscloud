@@ -26,7 +26,7 @@ TF_LOG?=info
         fmt fmt-golangci fmt-terraform \
         lint lint-golangci lint-terraform lint-tfproviderlint lint-docs lint-goreleaser lint-markdown \
         ci govulncheck go-mod-tidy go-build go-test terraform-providers-schema \
-        testacc testacc-essentials testacc-check \
+        testacc testacc-s3-backup testacc-essentials testacc-check \
         sweep \
         release-notes release
 
@@ -117,17 +117,22 @@ testacc-check:
 ifndef TEST_PATTERN
 	$(error TEST_PATTERN is not set, e.g. make testacc-check TEST_PATTERN='TestAccResourceRedisCloudProSubscription_CRUDI')
 endif
-	@if [ -z "$$(go test ./... -list='$(TEST_PATTERN)' | grep '^Test')" ]; then \
-		echo "Error: no tests match TEST_PATTERN='$(TEST_PATTERN)'"; \
+	@if [ -z "$$(go test ./... -list='$(value TEST_PATTERN)' | grep '^Test')" ]; then \
+		echo "Error: no tests match TEST_PATTERN='$(value TEST_PATTERN)'"; \
 		exit 1; \
 	fi
 
+# `-s3Backup` is registered only in the root provider test package.
+testacc: TESTACC_PACKAGES = ./...
+testacc-s3-backup: TESTACC_PACKAGES = ./provider
+testacc-s3-backup: TESTACC_ARGS = -args -s3Backup
+
 # `-p=1` added to avoid testing packages in parallel which causes `go test` to not stream logs as they are written
-testacc: bin
+testacc testacc-s3-backup: bin
 ifndef TEST_PATTERN
 	$(error TEST_PATTERN is not set, e.g. make testacc TEST_PATTERN='TestAccResourceRedisCloudProSubscription_CRUDI')
 endif
-	TF_ACC=1 TF_LOG=$(TF_LOG) go test ./... -v -run='$(TEST_PATTERN)' -timeout 360m -p=1 -parallel=$(TEST_PARALLELISM) -coverprofile $(BIN)/coverage.out
+	TF_ACC=1 TF_LOG=$(TF_LOG) go test $(TESTACC_PACKAGES) -v -run='$(value TEST_PATTERN)' -timeout 360m -p=1 -parallel=$(TEST_PARALLELISM) -coverprofile $(BIN)/coverage.out $(TESTACC_ARGS)
 
 # Essentials tests must run serially due to an API limit of one essentials db per
 # account, so run them through `testacc` with parallelism pinned to 1.

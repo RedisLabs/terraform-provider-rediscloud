@@ -93,6 +93,17 @@ jobs:
       test_pattern: '^TestAccResourceRedisCloudAgentMemory_'
       create_account_sleep_seconds: 210
     secrets: inherit
+
+  testacc-remote-backup:
+    name: Acceptance Tests (Remote Backup)
+    needs: [ci]
+    uses: ./.github/workflows/testacc.yml
+    with:
+      test_pattern: '^TestAccResourceRedisCloud(Pro|ActiveActive)Database_RemoteBackup$'
+      create_account_sleep_seconds: 240
+      s3_backup: true
+    secrets: inherit
+
   status:
     name: Status
     runs-on: ubuntu-latest
@@ -106,6 +117,7 @@ jobs:
       - testacc-cloud-account
       - testacc-transit-payment
       - testacc-agent-memory
+      - testacc-remote-backup
     if: always()
     steps:
       - name: Check CI status
