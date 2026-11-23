@@ -102,12 +102,12 @@ func resourceRedisCloudTransitGatewayRouteRead(ctx context.Context, d *schema.Re
 		return diag.FromErr(err)
 	}
 
-	var filters []func(tgw *attachments.TransitGatewayAttachment) bool
+	var filters []transitgateway.TransitGatewayAttachmentFilter
 	filters = append(filters, func(tgw *attachments.TransitGatewayAttachment) bool {
 		return redis.IntValue(tgw.Id) == tgwId
 	})
 
-	tgws := filterTgwAttachments(tgwTask, filters)
+	tgws := transitgateway.FilterTransitGatewayAttachments(tgwTask, filters)
 
 	if len(tgws) == 0 {
 		d.SetId("")
