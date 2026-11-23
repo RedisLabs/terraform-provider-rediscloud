@@ -56,7 +56,7 @@ func (d *databaseModulesDataSource) Schema(_ context.Context, _ datasource.Schem
 			// A computed set attribute, not a block: SDKv2 exposed this computed-only
 			// collection as an attribute, and blocks plan as empty on deferred reads.
 			"modules": schema.SetAttribute{
-				Description: "A list of database modules",
+				Description: "The set of database modules available to the account",
 				Computed:    true,
 				ElementType: ModuleElemType,
 			},

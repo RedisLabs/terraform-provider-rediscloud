@@ -29,6 +29,10 @@ func TestDatabaseModulesDataSourceSchemaMatchesModel(t *testing.T) {
 	})}
 	assert.True(t, response.Schema.Type().Equal(modelType), "data-source schema must match its model type")
 	assert.Empty(t, response.Schema.Blocks, "data-source schema must not declare blocks")
+	id := response.Schema.Attributes["id"]
+	require.NotNil(t, id)
+	assert.False(t, id.IsOptional(), "the configuration cannot set an id")
+	assert.True(t, id.IsComputed(), "the provider sets the id")
 }
 
 func TestModulesFromAPI(t *testing.T) {
