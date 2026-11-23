@@ -33,6 +33,7 @@ output "rediscloud_transit_gateway" {
 
 ## Attribute Reference
 
+* `id` - The identifier of the data source, in the form `<subscription_id>/<tgw_id>`
 * `attachment_uid` - A unique identifier for the Subscription/Transit Gateway attachment, if any
 * `status` - The status of the Transit Gateway
 * `attachment_status` - The status of the Subscription/Transit Gateway attachment, if any
