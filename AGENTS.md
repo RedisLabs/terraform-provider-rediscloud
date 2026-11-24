@@ -63,6 +63,14 @@ For stacked work, base each child branch and pull request on its immediate paren
 branch. Verify that helpers or packages expected from the parent are actually
 present before starting the child migration.
 
+When splitting work into multiple or stacked PRs, keep each PR self-contained
+relative to its base. Defer helpers, callbacks, extension points, and other
+implementation logic needed only by a follow-up PR to that follow-up. Keeping
+implementation changes alongside the behavior that requires them makes it clear
+why they are needed and what purpose they serve. Each PR should have a complete
+purpose and justification because the planned follow-ups might change or never
+merge.
+
 `.github/workflows/terraform_provider_pr.yml` defines the branches for which pull
 request checks run. `RELEASE_PROCESS.md` describes the separate process of
 merging a completed release branch into `main`.
