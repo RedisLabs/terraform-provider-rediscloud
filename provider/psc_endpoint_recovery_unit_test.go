@@ -8,9 +8,10 @@ import (
 	"testing"
 
 	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
-	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
 
 // API failures must not be interpreted as proof that a PSC endpoint is absent.
