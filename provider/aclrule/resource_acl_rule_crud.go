@@ -50,9 +50,12 @@ func (r *aclRuleResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	plan.ID = types.StringValue(strconv.Itoa(id))
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	if err := waitForAclRuleToBeActive(ctx, id, r.client, createTimeout); err != nil {
-		resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 		resp.Diagnostics.AddError("ACL rule failed to become active", err.Error())
 		return
 	}
