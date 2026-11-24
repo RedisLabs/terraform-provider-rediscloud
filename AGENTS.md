@@ -39,6 +39,10 @@ actionable. Put multi-step procedures in a task skill instead.
   backend reads may be eventually consistent. Clearing the ID remains
   appropriate after a successful provider-managed Delete.
 
+  Apply this rule to new resources and SDKv2-to-Framework migrations. The
+  migration skill lists intentional changes to SDKv2 behavior, including this
+  rule, in its [migration exceptions](.agents/skills/migrate-to-plugin-framework/SKILL.md#migration-exceptions).
+
 ## Implementation comments
 
 Comment contracts that Go types and the surrounding control flow do not make

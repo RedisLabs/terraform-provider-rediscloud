@@ -14,8 +14,9 @@ description: >-
 # Migrate to the Plugin Framework
 
 Treat a migration as a compatibility change. Move ownership from the SDKv2
-provider to the Framework provider without changing the public Terraform shape
-or the values users already have in state.
+provider to the Framework provider while preserving the public Terraform shape
+and existing behavior, except for the documented
+[migration exceptions](#migration-exceptions).
 
 Read `AGENTS.md` first for repository commands, branch policy, service ownership,
 and manual-provider setup.
@@ -33,9 +34,29 @@ and manual-provider setup.
    configure on its resource.
 4. Verify that files expected from a parent migration branch are present. Base a
    stacked migration on that parent rather than recreating its helpers.
-5. Ask before deliberately changing observable behaviour. Fixing an apparent
-   SDKv2 bug is separate from faithfully migrating it, even when the proposed fix
-   is non-breaking.
+5. Apply the documented [migration exceptions](#migration-exceptions) that
+   match the implementation being migrated. Preserve existing behavior
+   everywhere else.
+
+## Migration exceptions
+
+The exceptions below intentionally change SDKv2 behavior during migration.
+Apply an exception only when its stated conditions hold. Ask before introducing
+any behavior change outside this list.
+
+Each exception must explain when it applies, the required behavior change, and
+why the change is intentional. For every applied exception, document the
+previous behavior, new behavior, user impact, and reason in the PR description
+and changelog, and add regression coverage.
+
+1. **Retain missing managed resources in state.** When an SDKv2 implementation
+   clears the ID because a managed resource is missing during Read, retain the
+   existing state and return an error after any required retries. This applies
+   the [managed-resource Read policy](../../../AGENTS.md#provider-engineering-caveats)
+   because resources recorded in state are expected to remain under Terraform's
+   exclusive management. Refresh and plan now fail instead of accepting the
+   disappearance and allowing Terraform to plan recreation. Retry absence first
+   where backend reads may be eventually consistent.
 
 ## Preserve the protocol-v5 schema
 
@@ -249,16 +270,22 @@ that all three operations can call.
 
 Apply these resource rules:
 
-- Treat NotFound during `Read` as a missing resource and remove it from state.
+- For a missing managed resource during `Read`, follow the corresponding entry
+  in [Migration exceptions](#migration-exceptions).
 - Continue to propagate NotFound from `Delete` unless the existing resource
   deliberately does otherwise. These resources assume Terraform owns their
   lifecycle.
 - Continue using `terraform-plugin-sdk/v2/helper/retry` for state polling. There
   is no need to replace a working `retry.StateChangeConf` merely because the
   resource itself uses the Framework.
-- If creation or update produces a remote object and a later readiness wait
-  fails, write its identifier and last observed status to state before returning
-  the error. Otherwise Terraform loses ownership of an object it created.
+- After a remote Create returns an ID, persist valid response state containing
+  that ID and the values already known before starting a readiness wait or final
+  refresh. Assigning an ID to a Go model does not save Framework response state.
+  A later readiness, refresh, or model-conversion error must return diagnostics
+  while retaining ownership of the created object. Preserve the identifier and
+  last observed values when an Update fails after changing a remote object too.
+  Add fake-API tests for failures during readiness polling and the final refresh
+  that assert both the expected diagnostic and the retained resource ID.
 
 For imports, implement `ResourceWithImportState` and verify any configuration-only
 secret fields through the same ignore behaviour used by the existing acceptance
