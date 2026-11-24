@@ -10,7 +10,6 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/access_control_lists/redis_rules"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -60,11 +59,13 @@ func (r *aclRuleResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	if notFound := r.readAclRuleIntoModel(ctx, id, &plan, &resp.Diagnostics); notFound {
-		resp.Diagnostics.AddError("ACL rule not found", "The ACL rule was not found immediately after creation.")
-		return
-	}
-	if resp.Diagnostics.HasError() {
+	if err := r.readAclRuleIntoModel(ctx, id, &plan); err != nil {
+		var missing *redis_rules.NotFound
+		if errors.As(err, &missing) {
+			resp.Diagnostics.AddError("ACL rule not found", "The ACL rule was not found immediately after creation.")
+		} else {
+			resp.Diagnostics.AddError("Failed to read ACL rule", err.Error())
+		}
 		return
 	}
 
@@ -92,11 +93,8 @@ func (r *aclRuleResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	if notFound := r.readAclRuleIntoModel(ctx, id, &state, &resp.Diagnostics); notFound {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	if resp.Diagnostics.HasError() {
+	if err := r.refreshManagedAclRule(ctx, id, &state, readTimeout); err != nil {
+		resp.Diagnostics.AddError("Failed to read ACL rule", err.Error())
 		return
 	}
 
@@ -145,11 +143,8 @@ func (r *aclRuleResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	plan.ID = state.ID
-	if notFound := r.readAclRuleIntoModel(ctx, id, &plan, &resp.Diagnostics); notFound {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	if resp.Diagnostics.HasError() {
+	if err := r.refreshManagedAclRule(ctx, id, &plan, updateTimeout); err != nil {
+		resp.Diagnostics.AddError("Failed to read ACL rule", err.Error())
 		return
 	}
 
@@ -200,23 +195,32 @@ func (r *aclRuleResource) ImportState(ctx context.Context, req resource.ImportSt
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// readAclRuleIntoModel maps the API rule onto the model and reports whether it no longer exists.
-func (r *aclRuleResource) readAclRuleIntoModel(ctx context.Context, id int, model *AclRuleResourceModel, diags *diag.Diagnostics) (notFound bool) {
+// CAPI looks up rules from a list that may lag behind writes.
+func (r *aclRuleResource) refreshManagedAclRule(ctx context.Context, id int, model *AclRuleResourceModel, timeout time.Duration) error {
+	return retry.RetryContext(ctx, timeout, func() *retry.RetryError {
+		err := r.readAclRuleIntoModel(ctx, id, model)
+		if err == nil {
+			return nil
+		}
+		var missing *redis_rules.NotFound
+		if errors.As(err, &missing) {
+			return retry.RetryableError(err)
+		}
+		return retry.NonRetryableError(err)
+	})
+}
+
+func (r *aclRuleResource) readAclRuleIntoModel(ctx context.Context, id int, model *AclRuleResourceModel) error {
 	rule, err := r.client.Client.RedisRules.Get(ctx, id)
 	if err != nil {
-		notFoundErr := &redis_rules.NotFound{}
-		if errors.As(err, &notFoundErr) {
-			return true
-		}
-		diags.AddError("Failed to read ACL rule", err.Error())
-		return false
+		return err
 	}
 
 	model.ID = types.StringValue(strconv.Itoa(id))
 	model.Name = types.StringValue(redis.StringValue(rule.Name))
 	model.Rule = types.StringValue(redis.StringValue(rule.ACL))
 
-	return false
+	return nil
 }
 
 func waitForAclRuleToBeActive(ctx context.Context, id int, c *client.ApiClient, timeout time.Duration) error {
