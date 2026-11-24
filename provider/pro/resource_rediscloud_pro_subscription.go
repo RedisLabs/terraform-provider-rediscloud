@@ -555,10 +555,10 @@ func handleExistingResourceRegionChange(ctx context.Context, diff *schema.Resour
 	}
 
 	// SDKv2 does not propagate ForceNew from a set of nested resources to its
-	// fields. A Multi-AZ toggle keeps the set size unchanged, so the field must
-	// also require replacement.
+	// fields. A region change or Multi-AZ toggle keeps the set size unchanged,
+	// so a changed field must also require replacement.
 	for _, key := range diff.GetChangedKeysPrefix("cloud_provider.0.region") {
-		if strings.HasSuffix(key, ".multiple_availability_zones") && diff.HasChange(key) {
+		if (strings.HasSuffix(key, ".region") || strings.HasSuffix(key, ".multiple_availability_zones")) && diff.HasChange(key) {
 			return diff.ForceNew(key)
 		}
 	}

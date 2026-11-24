@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- `rediscloud_subscription`: changing `multiple_availability_zones` after provisioning now requires subscription replacement because the API cannot apply that change in place. Review the replacement plan before applying it, since dependent database resources may also be replaced and lose their data. Make sure `creation_plan` is present to create the replacement subscription.
+- `rediscloud_subscription`: changing `multiple_availability_zones` or the deployment `region` after provisioning now requires subscription replacement because the API cannot apply these changes in place. Review the replacement plan before applying it, since dependent database resources may also be replaced and lose their data. Make sure `creation_plan` is present to create the replacement subscription.
 - `rediscloud_essentials_database` now waits through the `active-upgrade-pending` and `bdb-update-pending` statuses, as `rediscloud_subscription_database` already does. Changing `redis_version` no longer fails with `unexpected state 'active-upgrade-pending', wanted target 'active'`.
 
 ### Changed

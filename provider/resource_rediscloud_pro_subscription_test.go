@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
@@ -662,6 +661,7 @@ func TestRedisCloudProSubscriptionMultiAZPlan(t *testing.T) {
 		previousCreationPlan bool
 		plannedCreationPlan  bool
 		wantReplacement      bool
+		wantChanges          map[string]*sdkterraform.ResourceAttrDiff
 		wantError            string
 	}{
 		{
@@ -683,21 +683,23 @@ func TestRedisCloudProSubscriptionMultiAZPlan(t *testing.T) {
 			previousName: "example", plannedName: "example",
 			previousMultiAZ: false, plannedMultiAZ: false,
 			previousCreationPlan: true, plannedCreationPlan: true,
-			wantReplacement: false, wantError: "",
+			wantReplacement: false, wantChanges: map[string]*sdkterraform.ResourceAttrDiff{}, wantError: "",
 		},
 		{
 			name: "Multi-AZ configuration is unchanged", resourceID: "123", status: "active",
 			previousName: "example", plannedName: "example",
 			previousMultiAZ: true, plannedMultiAZ: true,
 			previousCreationPlan: true, plannedCreationPlan: true,
-			wantReplacement: false, wantError: "",
+			wantReplacement: false, wantChanges: map[string]*sdkterraform.ResourceAttrDiff{}, wantError: "",
 		},
 		{
 			name: "rename without a creation plan", resourceID: "123", status: "active",
 			previousName: "example", plannedName: "renamed",
 			previousMultiAZ: true, plannedMultiAZ: true,
 			previousCreationPlan: false, plannedCreationPlan: false,
-			wantReplacement: false, wantError: "",
+			wantReplacement: false,
+			wantChanges:     map[string]*sdkterraform.ResourceAttrDiff{"name": {Old: "example", New: "renamed"}},
+			wantError:       "",
 		},
 		{
 			name: "enabling Multi-AZ requires the removed creation plan", resourceID: "123", status: "active",
@@ -732,8 +734,8 @@ func TestRedisCloudProSubscriptionMultiAZPlan(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			res := pro.ResourceRedisCloudProSubscription()
-			previous := proSubscriptionPlanConfig(tc.previousName, tc.previousMultiAZ, tc.previousCreationPlan)
-			planned := proSubscriptionPlanConfig(tc.plannedName, tc.plannedMultiAZ, tc.plannedCreationPlan)
+			previous := proSubscriptionPlanConfig(tc.previousName, "us-east-1", tc.previousMultiAZ, tc.previousCreationPlan, 1)
+			planned := proSubscriptionPlanConfig(tc.plannedName, "us-east-1", tc.plannedMultiAZ, tc.plannedCreationPlan, 1)
 			data := schema.TestResourceDataRaw(t, res.Schema, previous)
 			data.SetId(tc.resourceID)
 
@@ -748,23 +750,77 @@ func TestRedisCloudProSubscriptionMultiAZPlan(t *testing.T) {
 			}
 			require.NoError(t, err)
 			require.Equal(t, tc.wantReplacement, diff != nil && diff.RequiresNew())
-			if !tc.wantReplacement {
-				return
-			}
-
-			for key, attr := range diff.Attributes {
-				if strings.HasSuffix(key, ".multiple_availability_zones") && attr.RequiresNew {
-					return
+			if tc.wantChanges != nil {
+				changes := map[string]*sdkterraform.ResourceAttrDiff{}
+				if diff != nil {
+					for key, attr := range diff.Attributes {
+						if !attr.NewComputed {
+							changes[key] = attr
+						}
+					}
 				}
+				require.Equal(t, tc.wantChanges, changes)
 			}
-			t.Fatalf("Multi-AZ change did not require replacement: %#v", diff.Attributes)
+		})
+	}
+}
+
+func TestRedisCloudProSubscriptionReplacementPlan(t *testing.T) {
+	cases := []struct {
+		name                string
+		previousRegion      string
+		plannedRegion       string
+		previousMultiAZ     bool
+		plannedMultiAZ      bool
+		previousDatasetSize float64
+		plannedDatasetSize  float64
+		wantDatasetSize     string
+	}{
+		{
+			name:           "Multi-AZ replacement uses the updated creation plan",
+			previousRegion: "us-east-1", plannedRegion: "us-east-1",
+			previousMultiAZ: false, plannedMultiAZ: true,
+			previousDatasetSize: 1, plannedDatasetSize: 2, wantDatasetSize: "2",
+		},
+		{
+			name:           "changing the deployment region requires replacement",
+			previousRegion: "us-east-1", plannedRegion: "us-west-2",
+			previousMultiAZ: false, plannedMultiAZ: false,
+			previousDatasetSize: 1, plannedDatasetSize: 1, wantDatasetSize: "1",
+		},
+		{
+			name:           "changing both the deployment region and Multi-AZ requires replacement",
+			previousRegion: "us-east-1", plannedRegion: "us-west-2",
+			previousMultiAZ: false, plannedMultiAZ: true,
+			previousDatasetSize: 1, plannedDatasetSize: 1, wantDatasetSize: "1",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := pro.ResourceRedisCloudProSubscription()
+			previous := proSubscriptionPlanConfig("example", tc.previousRegion, tc.previousMultiAZ, true, tc.previousDatasetSize)
+			planned := proSubscriptionPlanConfig("example", tc.plannedRegion, tc.plannedMultiAZ, true, tc.plannedDatasetSize)
+			data := schema.TestResourceDataRaw(t, res.Schema, previous)
+			data.SetId("123")
+
+			fake := testhelpers.NewFakeAPI()
+			fake.Handle("GET /subscriptions/123", func(_ *http.Request) (any, error) {
+				return map[string]any{"id": 123, "status": "active"}, nil
+			})
+			diff, err := res.Diff(context.Background(), data.State(), sdkterraform.NewResourceConfigRaw(planned), testhelpers.NewAPIClient(t, fake))
+			require.NoError(t, err)
+			require.NotNil(t, diff)
+			require.True(t, diff.RequiresNew(), "subscription must be replaced: %#v", diff.Attributes)
+			require.Contains(t, diff.Attributes, "creation_plan.0.dataset_size_in_gb")
+			require.Equal(t, tc.wantDatasetSize, diff.Attributes["creation_plan.0.dataset_size_in_gb"].New)
 		})
 	}
 }
 
 func TestRedisCloudProSubscriptionMultiAZCMKActivation(t *testing.T) {
 	res := pro.ResourceRedisCloudProSubscription()
-	previous := proSubscriptionPlanConfig("example", true, true)
+	previous := proSubscriptionPlanConfig("example", "us-east-1", true, true, 1)
 	previous["customer_managed_key_enabled"] = true
 	data := schema.TestResourceDataRaw(t, res.Schema, previous)
 	data.SetId("123")
@@ -795,7 +851,7 @@ func TestRedisCloudProSubscriptionMultiAZCMKActivation(t *testing.T) {
 	region := data.Get("cloud_provider.0.region").(*schema.Set).List()[0].(map[string]interface{})
 	require.Equal(t, false, region["multiple_availability_zones"])
 
-	planned := proSubscriptionPlanConfig("example", true, true)
+	planned := proSubscriptionPlanConfig("example", "us-east-1", true, true, 1)
 	planned["customer_managed_key_enabled"] = true
 	planned["customer_managed_key"] = []interface{}{map[string]interface{}{
 		"resource_name": "arn:aws:kms:us-east-1:123456789012:key/example",
@@ -807,13 +863,13 @@ func TestRedisCloudProSubscriptionMultiAZCMKActivation(t *testing.T) {
 	require.Contains(t, diff.Attributes, "customer_managed_key.#")
 }
 
-func proSubscriptionPlanConfig(name string, multipleAvailabilityZones, creationPlan bool) map[string]interface{} {
+func proSubscriptionPlanConfig(name, region string, multipleAvailabilityZones, creationPlan bool, datasetSize float64) map[string]interface{} {
 	configuration := map[string]interface{}{
 		"name": name,
 		"cloud_provider": []interface{}{map[string]interface{}{
 			"provider": "AWS",
 			"region": []interface{}{map[string]interface{}{
-				"region":                       "us-east-1",
+				"region":                       region,
 				"multiple_availability_zones":  multipleAvailabilityZones,
 				"networking_deployment_cidr":   "10.0.0.0/24",
 				"preferred_availability_zones": []interface{}{},
@@ -822,7 +878,7 @@ func proSubscriptionPlanConfig(name string, multipleAvailabilityZones, creationP
 	}
 	if creationPlan {
 		configuration["creation_plan"] = []interface{}{map[string]interface{}{
-			"dataset_size_in_gb":           1.0,
+			"dataset_size_in_gb":           datasetSize,
 			"quantity":                     1,
 			"replication":                  true,
 			"throughput_measurement_by":    "operations-per-second",
