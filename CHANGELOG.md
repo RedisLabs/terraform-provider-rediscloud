@@ -5,6 +5,7 @@
 ### Fixed
 
 - `rediscloud_essentials_database` now waits through the `active-upgrade-pending` and `bdb-update-pending` statuses, as `rediscloud_subscription_database` already does. Changing `redis_version` no longer fails with `unexpected state 'active-upgrade-pending', wanted target 'active'`.
+- `rediscloud_active_active_transit_gateway_attachment` and `rediscloud_active_active_transit_gateway_route` reads now wait for their configured Transit Gateway attachment to appear. All resources are expected to be managed exclusively through Terraform, so a missing attachment is treated as a read failure rather than an out-of-band deletion that removes the resource from Terraform state. Temporarily empty or incomplete API responses continue polling; if the attachment remains absent, the read returns an error after the configured read timeout.
 
 ### Changed
 
