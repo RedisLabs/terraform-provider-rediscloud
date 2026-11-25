@@ -6,8 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RedisLabs/rediscloud-go-api/redis"
-	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
+	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
@@ -115,22 +114,23 @@ func resourceRedisCloudActiveActiveTransitGatewayRouteReadWithTimeout(ctx contex
 		return diag.FromErr(err)
 	}
 
-	// Wait for Transit Gateway resource to become available (handles subscription provisioning delays)
-	tgwTask, err := utils.WaitForActiveActiveTransitGatewayResourceToBeAvailable(ctx, subId, regionId, api, timeout)
+	// Active-Active attachment reads can lag behind writes, so wait until the requested attachment is visible.
+	matcher := transitGatewayAttachmentIDMatcher(tgwId)
+	tgws, err := utils.WaitForTransitGatewayAttachmentsToMatch(
+		ctx,
+		subId,
+		api,
+		matcher,
+		timeout,
+		subscriptions.SubscriptionDeploymentTypeActiveActive,
+		regionId,
+	)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	var filters []func(tgw *attachments.TransitGatewayAttachment) bool
-	filters = append(filters, func(tgw *attachments.TransitGatewayAttachment) bool {
-		return redis.IntValue(tgw.Id) == tgwId
-	})
-
-	tgws := filterTgwAttachments(tgwTask, filters)
-
 	if len(tgws) == 0 {
-		d.SetId("")
-		return diags
+		return diag.Errorf("no Active-Active Transit Gateway attachment found for subscription_id/region_id/tgw_id: %d/%d/%d", subId, regionId, tgwId)
 	}
 
 	if len(tgws) > 1 {

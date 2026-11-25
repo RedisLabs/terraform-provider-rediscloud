@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
+	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/RedisLabs/rediscloud-go-api/service/transit_gateway/attachments"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -105,8 +106,16 @@ func resourceRedisCloudTransitGatewayAttachmentCreate(ctx context.Context, d *sc
 		return diag.FromErr(err)
 	}
 
-	// Wait for attachment to become available
-	_, err = utils.WaitForTransitGatewayAttachmentToBeAvailable(ctx, subscriptionId, tgwId, api, timeout)
+	matcher := transitGatewayAttachmentAvailableMatcher(tgwId, "Transit Gateway")
+	_, err = utils.WaitForTransitGatewayAttachmentsToMatch(
+		ctx,
+		subscriptionId,
+		api,
+		matcher,
+		timeout,
+		subscriptions.SubscriptionDeploymentTypeSingleRegion,
+		0,
+	)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -21,6 +21,48 @@ The main directories are:
 - `scripts/` contains repository automation.
 - `bin/` receives local build output and the Terraform development override.
 
+## Provider engineering caveats
+
+Use this section for non-obvious SDK behaviour, backend characteristics,
+Terraform semantics, and similar cross-cutting facts that are easy to miss
+during otherwise unrelated provider work. Keep each entry independent and
+actionable. Put multi-step procedures in a task skill instead.
+
+- **SDKv2 waiter results.** `retry.StateChangeConf` treats a nil refresh result
+  as not found and increments `NotFoundChecks` before evaluating the returned
+  state. Return a non-nil result when the refresh should remain pending. Return
+  nil only when absence is intentional.
+- **Out-of-band deletion.** Treat a Redis Cloud resource that is missing during
+  Read as an error. Resources recorded in Terraform state are expected to be
+  managed exclusively through Terraform, so do not clear the resource ID to
+  accept a deletion performed outside Terraform. Retry absence first where
+  backend reads may be eventually consistent. Clearing the ID remains
+  appropriate after a successful provider-managed Delete.
+
+  Apply this rule to new resources and SDKv2-to-Framework migrations. The
+  migration skill lists intentional changes to SDKv2 behavior, including this
+  rule, in its [migration exceptions](.agents/skills/migrate-to-plugin-framework/SKILL.md#migration-exceptions).
+
+## Implementation comments
+
+Comment contracts that Go types and the surrounding control flow do not make
+obvious. Primitive values and generic callback results can carry state-machine
+or protocol meaning that is easy to lose during later refactoring. When adding
+or changing such code:
+
+- Document each semantic value where it is defined. State whether it comes from
+  an external API or exists only to control provider logic.
+- Document defaults, precedence, and aggregation where values are combined or
+  conditionally preserved, especially when response ordering or callback
+  conventions affect correctness.
+- Before handing off the change, inspect new callback signatures, sentinel
+  returns, state collections, and accumulators for hidden contracts that a
+  future maintainer could otherwise simplify incorrectly.
+
+Comment mechanics when their intent, purpose or constraint is not obvious from the
+surrounding code. Explain why the code uses that value, ordering, fallback, or
+operation rather than merely paraphrasing what it does.
+
 ## Build and test commands
 
 - Run `make build` to compile the provider and create
@@ -46,6 +88,13 @@ export TF_CLI_CONFIG_FILE="$PWD/bin/developer_overrides.tfrc"
 Terraform will then use the local provider binary for configurations under
 `playground/`.
 
+## Changelog entries
+
+Document user-visible changes in `CHANGELOG.md`. A behavioral change that may
+break an existing workflow must state both what changes and why the new behavior
+is intentional. Describe the user-visible impact and any action users must take.
+A fact-only entry is not sufficient.
+
 ## Branches and pull requests
 
 Base ordinary work on the newest active `release/<x.y.z>` branch and target the
@@ -62,6 +111,14 @@ not normally target `main`; the release branch itself is what later merges into
 For stacked work, base each child branch and pull request on its immediate parent
 branch. Verify that helpers or packages expected from the parent are actually
 present before starting the child migration.
+
+When splitting work into multiple or stacked PRs, keep each PR self-contained
+relative to its base. Defer helpers, callbacks, extension points, and other
+implementation logic needed only by a follow-up PR to that follow-up. Keeping
+implementation changes alongside the behavior that requires them makes it clear
+why they are needed and what purpose they serve. Each PR should have a complete
+purpose and justification because the planned follow-ups might change or never
+merge.
 
 `.github/workflows/terraform_provider_pr.yml` defines the branches for which pull
 request checks run. `RELEASE_PROCESS.md` describes the separate process of
