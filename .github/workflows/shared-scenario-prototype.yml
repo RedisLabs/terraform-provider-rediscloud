@@ -1,7 +1,7 @@
 name: Credential-free shared scenario prototype
 on:
   pull_request:
-    branches: ['release/*']
+    branches: ['release/*', 'codex/shared-scenario-terraform']
     paths:
       - 'scripts/shared_acceptance/**'
       - '.github/workflows/shared-scenario-prototype.yml'
