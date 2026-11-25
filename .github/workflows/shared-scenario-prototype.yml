@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: RedisLabs/crossplane-provider-rediscloud
-          ref: 7ab7fcbb7f70c01dbf08d9df3e40f072ec24b20e
+          ref: c585a473b0c8f68f9e179ca1ae9edf0aabe146d2
           path: fixture
       - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
         with:

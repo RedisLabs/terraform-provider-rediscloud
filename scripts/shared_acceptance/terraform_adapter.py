@@ -16,10 +16,10 @@ import subprocess
 import sys
 import tempfile
 
-CONTRACT_REV = "7ab7fcbb7f70c01dbf08d9df3e40f072ec24b20e"
+CONTRACT_REV = "c585a473b0c8f68f9e179ca1ae9edf0aabe146d2"
 SOURCE_REV = "043ad6617389634044d17e4c51dd4203a3ffb134"
 HASHES = {
-    "acceptance/contract.py": "d886f1c07d769cef790677a4d4edd52355a15feffbc5c64cd0fa1017b89a1fcc",
+    "acceptance/contract.py": "ea4e814af164658654dc860bad4c9549526d347793e25856a0e2afba794236c0",
     "acceptance/scenarios.json": "66f926d8c9a26acb6b2952b68280a1f82e71e98d2f463ff32862505b3989865a",
 }
 
