@@ -102,7 +102,7 @@ jobs:
     needs: [pre-test]
     uses: ./.github/workflows/testacc.yml
     with:
-      test_pattern: TestAccResourceRedisCloudProSubscription_CRUDI
+      test_pattern: 'TestAccResourceRedisCloudProSubscription_CRUDI|^TestAccDataSourceRedisCloudProSubscriptions_'
       create_account_sleep_seconds: 120
     secrets: inherit
 

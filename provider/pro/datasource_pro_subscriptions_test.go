@@ -86,3 +86,24 @@ func TestAccDataSourceRedisCloudProSubscriptions_emptyWhenNoMatch(t *testing.T) 
 		},
 	})
 }
+
+func TestAccDataSourceRedisCloudProSubscriptions_unfiltered(t *testing.T) {
+	tags, checkTags := envchecks.BYOCResourceTagsValueAndCheck()
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:                 envchecks.ComposePreChecks(t, checkTags, envchecks.RedisCloudCheck),
+		ProtoV5ProviderFactories: testhelpers.ProtoV5ProviderFactories(),
+		CheckDestroy:             testhelpers.CheckProSubscriptionDestroy,
+		Steps: []resource.TestStep{{
+			ConfigFile: config.StaticFile("testdata/pro_subscriptions_unfiltered.tf"),
+			ConfigVariables: config.Variables{
+				"subscription_name": config.StringVariable(utils.RandomWithPrefix()),
+				"team":              config.StringVariable(tags.Team),
+				"owner":             config.StringVariable(tags.Owner),
+			},
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckOutput("lists_expected_subscriptions", "true"),
+				resource.TestCheckOutput("subscription_ids_in_order", "true"),
+			),
+		}},
+	})
+}
