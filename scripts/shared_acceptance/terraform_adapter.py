@@ -93,7 +93,7 @@ class TerraformAdapter:
         self.observation = "loopback imported database: eviction update and stable identity observed"
         return self.contract.Evidence(provider="terraform", scenario_id=scenario.id, mode="simulated", source_revision=SOURCE_REV, artifact_digest="sha256:" + digest, run_url="", evidence_url="", steps=(), outcome="unsupported", cleanup="not_started", direct_cloud_recovery=False)
 
-    def _exercise_existing_fixture(self):
+    def _exercise_existing_fixture(self, alternate=None):
         source_repo, fixture_repo, go_bin, terraform_bin = self.source_repo, self.fixture_repo, self.go_bin, self.terraform_bin
         # Never pass ambient cloud or Terraform configuration to the fixture.
         allowed = {"PATH", "HOME", "GOPATH", "GOCACHE", "GOMODCACHE", "TMPDIR", "SYSTEMROOT"}
@@ -112,9 +112,12 @@ class TerraformAdapter:
             _run([go_bin, "build", "-trimpath", "-o", str(binary), "."], cwd=source, env=env)
             digest = _digest(binary)
             env.update({"QA_TEST_TERRAFORM": terraform_bin, "QA_TEST_PROVIDER_DIR": str(plugins)})
-            output = _run([go_bin, "test", "./scripts/qa_tfplan", "-run", "^TestEssentialsRefreshAndPlan$", "-count=1", "-v"], cwd=fixture_repo, env=env)
-            if "--- PASS: TestEssentialsRefreshAndPlan" not in output:
-                raise ValueError("fixture did not run and pass")
+            if alternate is None:
+                output = _run([go_bin, "test", "./scripts/qa_tfplan", "-run", "^TestEssentialsRefreshAndPlan$", "-count=1", "-v"], cwd=fixture_repo, env=env)
+                if "--- PASS: TestEssentialsRefreshAndPlan" not in output:
+                    raise ValueError("fixture did not run and pass")
+            else:
+                alternate(terraform_bin, plugins)
         return digest
 
 

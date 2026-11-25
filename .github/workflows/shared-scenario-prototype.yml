@@ -1,7 +1,7 @@
 name: Credential-free shared scenario prototype
 on:
   pull_request:
-    branches: ['release/*']
+    branches: ['release/*', 'codex/shared-scenario-terraform']
     paths:
       - 'scripts/shared_acceptance/**'
       - '.github/workflows/shared-scenario-prototype.yml'
@@ -11,6 +11,11 @@ permissions:
 jobs:
   simulated:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [essentials-database-lifecycle, essentials-database-eviction-update]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -42,13 +47,14 @@ jobs:
       - name: Verify adapter guardrails
         working-directory: provider
         run: python3 -B -m unittest discover -s scripts/shared_acceptance -p 'test_*.py' -v
-      - name: Run pinned simulated provider fixture
+      - name: Run pinned simulated provider lifecycle
         working-directory: provider
         shell: bash
         run: |
           set -euo pipefail
-          python3 scripts/shared_acceptance/terraform_adapter.py \
+          python3 scripts/shared_acceptance/terraform_lifecycle_adapter.py \
             --source-repo "$GITHUB_WORKSPACE/provider" \
             --fixture-repo "$GITHUB_WORKSPACE/fixture" \
             --go "$(command -v go)" \
-            --terraform "$RUNNER_TEMP/terraform-bin/terraform"
+            --terraform "$RUNNER_TEMP/terraform-bin/terraform" \
+            --scenario '${{ matrix.scenario }}'
