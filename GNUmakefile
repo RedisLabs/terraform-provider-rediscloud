@@ -141,7 +141,7 @@ install-local: build
 
 sweep:
 	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
-	go test ./provider -v -sweep=ALL $(SWEEPARGS) -timeout 30m
+	go test ./provider -v -sweep=ALL -sweep-allow-failures $(SWEEPARGS) -timeout 30m
 
 release-notes:
 	@echo "Generating release notes"
