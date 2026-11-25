@@ -12,6 +12,10 @@ PLUGINS_PROVIDER_PATH=$(PROVIDER_HOSTNAME)/$(PROVIDER_NAMESPACE)/$(PROVIDER_TYPE
 BIN=$(CURDIR)/bin
 CI_PLUGIN_DIR=$(BIN)/terraform-plugin-dir
 CI_SCHEMA_DIR=$(BIN)/providers-schema
+# Relative on purpose: tfplugindocs resolves --rendered-website-dir against the provider
+# directory, so an absolute path would be written beneath the repository root.
+IRIS_DOCS_DIR=bin/iris-docs
+IRIS_DOCS_GENERATE=tfplugindocs generate --rendered-provider-name rediscloud --rendered-website-dir $(IRIS_DOCS_DIR)
 RELEASE_NOTES_FILE=$(CURDIR)/release-notes.md
 
 # Use a parallelism of 6 by default for tests, overriding whatever GOMAXPROCS is set to.
@@ -24,10 +28,10 @@ TF_LOG?=info
 .PHONY: default \
         build clean install-local \
         fmt fmt-golangci fmt-terraform \
-        lint lint-golangci lint-terraform lint-tfproviderlint lint-docs lint-goreleaser lint-markdown \
+        lint lint-golangci lint-terraform lint-tfproviderlint lint-docs lint-docs-iris lint-goreleaser lint-markdown \
         ci govulncheck go-mod-tidy go-build go-test terraform-providers-schema \
         testacc testacc-essentials testacc-check \
-        sweep \
+        sweep docs-iris \
         release-notes release
 
 bin:
@@ -52,7 +56,7 @@ fmt-terraform:
 	@echo "Formatting Terraform files"
 	terraform fmt -recursive
 
-lint: lint-golangci lint-tfproviderlint lint-terraform lint-docs lint-goreleaser lint-markdown
+lint: lint-golangci lint-tfproviderlint lint-terraform lint-docs lint-docs-iris lint-goreleaser lint-markdown
 
 lint-golangci:
 	@echo "Running golangci-lint"
@@ -71,6 +75,31 @@ lint-terraform:
 lint-docs:
 	@echo "Validating documentation"
 	tfplugindocs validate
+
+docs-iris: bin
+	$(IRIS_DOCS_GENERATE)
+	@for doc in $(IRIS_DOCS_DIR)/resources/iris_*.md; do \
+		cp "$$doc" "docs/resources/rediscloud_$$(basename "$$doc")"; \
+	done
+
+# Regenerates into bin/ only, so tracked files are never modified.
+lint-docs-iris: bin
+	@echo "Checking generated Iris documentation is current"
+	$(IRIS_DOCS_GENERATE)
+	@status=0; found=0; \
+	for doc in $(IRIS_DOCS_DIR)/resources/iris_*.md; do \
+		[ -e "$$doc" ] || continue; \
+		found=1; \
+		committed="docs/resources/rediscloud_$$(basename "$$doc")"; \
+		if [ ! -f "$$committed" ]; then \
+			echo "missing committed page $$committed"; status=1; \
+		elif ! diff -u "$$committed" "$$doc"; then \
+			status=1; \
+		fi; \
+	done; \
+	if [ "$$found" -eq 0 ]; then echo "no generated Iris pages found in $(IRIS_DOCS_DIR)/resources"; status=1; fi; \
+	if [ "$$status" -ne 0 ]; then echo "Iris docs are out of date: run 'make docs-iris' and commit the result"; fi; \
+	exit $$status
 
 lint-goreleaser:
 	@echo "Checking GoReleaser config"

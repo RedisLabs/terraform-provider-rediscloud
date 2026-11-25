@@ -2,6 +2,12 @@
 
 ## 2.21.0 (unreleased)
 
+### Added
+
+- Added direct Iris resources: `rediscloud_iris_agent_memory`, `rediscloud_iris_agent_memory_type`, and `rediscloud_iris_identity_api_key`. They use native Terraform attributes and blocks, partial settings updates, and provider-specific model credentials, including keyless providers and write-only keys with version-based rotation. Memory stores and memory types support import. Identity API keys expose a sensitive token in state, cannot be imported because the service cannot recover existing tokens, and are replaced by creating a second key, switching consumers, and removing the original.
+- Iris resources accept a `timeouts` block for `create`, `read`, `update` and `delete`. Defaults are 30 minutes for mutations and five minutes for reads.
+- Added provider arguments `iris_agent_memory_url`, `iris_agent_memory_token`, `iris_identity_url`, and `iris_identity_token`, with corresponding `REDISCLOUD_IRIS_*` environment variables. Supported Cloud gateways can use the existing Cloud API key and secret instead of a bearer token.
+
 ### Fixed
 
 - `rediscloud_essentials_database` now waits through the `active-upgrade-pending` and `bdb-update-pending` statuses, as `rediscloud_subscription_database` already does. Changing `redis_version` no longer fails with `unexpected state 'active-upgrade-pending', wanted target 'active'`.
@@ -9,6 +15,8 @@
 
 ### Changed
 
+- Cloud credentials may be omitted together for Iris-only bearer configurations. Partial Cloud credential pairs are rejected when Iris is configured; Cloud-only configurations retain the existing missing-key diagnostics.
+- Provider URLs and credentials that are unknown during planning now produce explicit attribute diagnostics, including Cloud-only configurations, instead of being treated as empty or falling back to a default endpoint.
 - Raised the Go toolchain to 1.26.11 to pick up the fix for GO-2026-6859 in `net/http`.
 - Upgraded `rediscloud-go-api` from 0.53.0 to 0.54.0. GET requests to the API are now retried on connection resets and Cloudflare 520-524 responses, which made acceptance tests flaky.
 - Migrated `rediscloud_acl_role` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
