@@ -12,6 +12,8 @@ import (
 type ApiClient struct {
 	Client *rediscloudApi.Client
 
+	Iris map[string]*IrisServiceClient
+
 	// WaitDelayOverride and WaitPollIntervalOverride replace the corresponding resource-state waiter
 	// timing when non-zero. Production leaves both zero, so each waiter keeps the literal timing at its
 	// own call site — those timings differ per waiter and are not interchangeable, so there is
