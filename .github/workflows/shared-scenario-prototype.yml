@@ -1,0 +1,54 @@
+name: Credential-free shared scenario prototype
+on:
+  pull_request:
+    branches: ['release/*']
+    paths:
+      - 'scripts/shared_acceptance/**'
+      - '.github/workflows/shared-scenario-prototype.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  simulated:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: provider
+          fetch-depth: 0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: RedisLabs/crossplane-provider-rediscloud
+          ref: 7ab7fcbb7f70c01dbf08d9df3e40f072ec24b20e
+          path: fixture
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Install verified Terraform
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip -o "$RUNNER_TEMP/terraform.zip"
+          echo 'c0ed7bc32ee52ae255af9982c8c88a7a4c610485cf1d55feeb037eab75fa082c  '"$RUNNER_TEMP/terraform.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/terraform.zip" -d "$RUNNER_TEMP/terraform-bin"
+      - name: Download public Go modules
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/pinned-source"
+          git -C provider archive 043ad6617389634044d17e4c51dd4203a3ffb134 | tar -x -C "$RUNNER_TEMP/pinned-source"
+          go -C "$RUNNER_TEMP/pinned-source" mod download
+          go -C fixture mod download
+      - name: Verify adapter guardrails
+        working-directory: provider
+        run: python3 -B -m unittest discover -s scripts/shared_acceptance -p 'test_*.py' -v
+      - name: Run pinned simulated provider fixture
+        working-directory: provider
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/shared_acceptance/terraform_adapter.py \
+            --source-repo "$GITHUB_WORKSPACE/provider" \
+            --fixture-repo "$GITHUB_WORKSPACE/fixture" \
+            --go "$(command -v go)" \
+            --terraform "$RUNNER_TEMP/terraform-bin/terraform"
