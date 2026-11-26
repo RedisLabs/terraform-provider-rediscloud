@@ -451,6 +451,7 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 		DataPersistence:      utils.GetString(d, "data_persistence"),
 		DataEvictionPolicy:   utils.GetString(d, "data_eviction"),
 		Replication:          utils.GetBool(d, "replication"),
+		SourceIP:             utils.SetToStringSlice(d.Get("source_ips").(*schema.Set)),
 		ThroughputMeasurement: &databases.CreateThroughputMeasurement{
 			By:    utils.GetString(d, "throughput_measurement_by"),
 			Value: utils.GetInt(d, "throughput_measurement_value"),

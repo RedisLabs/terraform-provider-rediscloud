@@ -1,0 +1,26 @@
+name: Pro database create source IP regression
+on:
+  pull_request:
+    branches: ['release/*']
+    paths:
+      - 'provider/pro/resource_rediscloud_pro_database.go'
+      - 'provider/pro/resource_rediscloud_pro_database_source_ips_test.go'
+      - '.github/workflows/pro-db-source-ip-test.yml'
+permissions:
+  contents: read
+jobs:
+  fake-create:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
+        with:
+          go-version: '1.26.11'
+      - name: Exercise actual create handler against loopback fake
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test ./provider/pro -count=1 -run '^TestUnitProDatabaseCreateSourceIPs$' -v | tee "$RUNNER_TEMP/receipt.log"
+          grep -F -- '--- PASS: TestUnitProDatabaseCreateSourceIPs/explicit' "$RUNNER_TEMP/receipt.log"
+          grep -F -- '--- PASS: TestUnitProDatabaseCreateSourceIPs/omitted' "$RUNNER_TEMP/receipt.log"
