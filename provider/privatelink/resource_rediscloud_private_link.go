@@ -195,11 +195,11 @@ func resourceRedisCloudPrivateLinkCreate(ctx context.Context, d *schema.Resource
 	// Verify the full set before refreshing state so missing principals cannot be
 	// reported as a successful create.
 	getPrivateLink := privateLinkGetter(api, subId)
-	if err := WaitForPrivateLinkPrincipals(ctx, getPrivateLink, principals, d.Timeout(schema.TimeoutCreate)); err != nil {
+	verifiedLink, err := WaitForPrivateLinkPrincipals(ctx, getPrivateLink, principals, d.Timeout(schema.TimeoutCreate))
+	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	return resourceRedisCloudPrivateLinkRead(ctx, d, meta)
+	return setPrivateLinkState(d, verifiedLink)
 }
 
 func resourceRedisCloudPrivateLinkRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -229,39 +229,7 @@ func resourceRedisCloudPrivateLinkRead(ctx context.Context, d *schema.ResourceDa
 		return diag.FromErr(err)
 	}
 
-	err = d.Set("share_name", privateLink.ShareName)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("principal", FlattenPrincipals(privateLink.Principals)); err != nil {
-		return diag.FromErr(err)
-	}
-
-	err = d.Set("resource_configuration_id", privateLink.ResourceConfigurationId)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	err = d.Set("resource_configuration_arn", privateLink.ResourceConfigurationArn)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	err = d.Set("share_arn", privateLink.ShareArn)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("connections", FlattenConnections(privateLink.Connections)); err != nil {
-		return diag.FromErr(err)
-	}
-
-	if err := d.Set("databases", FlattenDatabases(privateLink.Databases)); err != nil {
-		return diag.FromErr(err)
-	}
-
-	return diags
+	return setPrivateLinkState(d, privateLink)
 }
 
 func resourceRedisCloudPrivateLinkUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -311,10 +279,11 @@ func resourceRedisCloudPrivateLinkUpdate(ctx context.Context, d *schema.Resource
 		// deletions to become visible before refreshing state so an incomplete
 		// change cannot be reported as a successful update.
 		getPrivateLink := privateLinkGetter(api, subId)
-		if err := WaitForPrivateLinkPrincipals(ctx, getPrivateLink, tfPrincipals, d.Timeout(schema.TimeoutUpdate)); err != nil {
+		verifiedLink, err := WaitForPrivateLinkPrincipals(ctx, getPrivateLink, tfPrincipals, d.Timeout(schema.TimeoutUpdate))
+		if err != nil {
 			return diag.FromErr(err)
 		}
-
+		return setPrivateLinkState(d, verifiedLink)
 	}
 
 	return resourceRedisCloudPrivateLinkRead(ctx, d, meta)
@@ -439,4 +408,40 @@ func privateLinkGetter(api *client.ApiClient, subscriptionID int) PrivateLinkGet
 	return func(ctx context.Context) (*pl.PrivateLink, error) {
 		return api.Client.PrivateLink.GetPrivateLink(ctx, subscriptionID)
 	}
+}
+
+func setPrivateLinkState(d *schema.ResourceData, privateLink *pl.PrivateLink) diag.Diagnostics {
+	err := d.Set("share_name", privateLink.ShareName)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("principal", FlattenPrincipals(privateLink.Principals)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = d.Set("resource_configuration_id", privateLink.ResourceConfigurationId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = d.Set("resource_configuration_arn", privateLink.ResourceConfigurationArn)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = d.Set("share_arn", privateLink.ShareArn)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("connections", FlattenConnections(privateLink.Connections)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("databases", FlattenDatabases(privateLink.Databases)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	return nil
 }

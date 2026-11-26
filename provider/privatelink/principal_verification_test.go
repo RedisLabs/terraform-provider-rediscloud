@@ -446,8 +446,7 @@ type principalVerificationAPI struct {
 
 // newPrincipalVerificationAPI supplies successful tasks with independently
 // configured principal lists. The first read returns given.initial for link
-// readiness or update diffing. Later reads repeat given.final for verification
-// and state refresh. Give parallel cases distinct subscription IDs because
+// readiness or update diffing. Verification reads return given.final. Give parallel cases distinct subscription IDs because
 // resource handlers lock subscriptions.
 //
 // Pass success=false to cancel shortly after the final membership response.
@@ -470,7 +469,10 @@ func newPrincipalVerificationAPI(t *testing.T, given principalVerificationLink, 
 		privateLinkPath: path,
 		principalReads:  [][]*pl.PrivateLinkPrincipal{given.initial, given.final},
 	}
-	if !success {
+	if success {
+		// A redundant read after verification would overwrite the confirmed principals.
+		fixture.principalReads = append(fixture.principalReads, nil)
+	} else {
 		fixture.cancelAfterFinalRead = cancel
 	}
 	fixture.registerHandlers()
@@ -499,9 +501,6 @@ func (fixture *principalVerificationAPI) readPrivateLink(*http.Request) (any, er
 		return nil, fmt.Errorf("no PrivateLink read response configured")
 	}
 	principals := fixture.principalReads[0]
-	// Verification and the final state refresh both need the last response.
-	// Keep that entry available for repeated reads. Successful cases leave the
-	// cancellation callback nil, and mismatch cases clear it after scheduling it once.
 	if len(fixture.principalReads) > 1 {
 		fixture.principalReads = fixture.principalReads[1:]
 	} else if fixture.cancelAfterFinalRead != nil {

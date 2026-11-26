@@ -85,7 +85,7 @@ type PrivateLinkGetter func(context.Context) (*pl.PrivateLink, error)
 
 // Use WaitForPrivateLinkPrincipals when an operation requires exact principal
 // membership. Retry temporary mismatches to allow API reads to catch up with writes.
-func WaitForPrivateLinkPrincipals(ctx context.Context, getPrincipals PrivateLinkGetter, expected []pl.PrivateLinkPrincipal, timeout time.Duration) error {
+func WaitForPrivateLinkPrincipals(ctx context.Context, getPrincipals PrivateLinkGetter, expected []pl.PrivateLinkPrincipal, timeout time.Duration) (*pl.PrivateLink, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -114,10 +114,11 @@ func WaitForPrivateLinkPrincipals(ctx context.Context, getPrincipals PrivateLink
 			return link, "pending", nil
 		},
 	}
-	if _, err := wait.WaitForStateContext(ctx); err != nil {
-		return fmt.Errorf("verifying PrivateLink principals: %w (last observed: %s)", err, lastObservation.Load().(string))
+	result, err := wait.WaitForStateContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("verifying PrivateLink principals: %w (last observed: %s)", err, lastObservation.Load().(string))
 	}
-	return nil
+	return result.(*pl.PrivateLink), nil
 }
 
 // Aliases label principals without changing access, so match membership by
@@ -134,7 +135,7 @@ func privateLinkPrincipalsMatch(actual []*pl.PrivateLinkPrincipal, expected []pl
 				return false, fmt.Errorf("PrivateLink principal %q association failed", redis.StringValue(principal.Principal))
 			}
 			// An external consumer accepts the invitation separately, so associating is sufficient here.
-			found = status != pl.PrivateLinkPrincipalStatusDisassociating && status != pl.PrivateLinkPrincipalStatusDisassociated
+			found = status == pl.PrivateLinkPrincipalStatusAssociated || status == pl.PrivateLinkPrincipalStatusAssociating
 			break
 		}
 		if !found {
