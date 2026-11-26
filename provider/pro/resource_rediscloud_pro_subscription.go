@@ -27,22 +27,15 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 	return &schema.Resource{
 
 		CustomizeDiff: func(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
-
-			// Ensure the "creation_plan" block exists
 			_, creationPlanExists := diff.GetOk("creation_plan")
-			if !creationPlanExists {
-				if diff.Id() == "" {
-					return fmt.Errorf(`the "creation_plan" block is required`)
-				}
-				return nil
+			// When a change requires replacement, SDKv2 reruns CustomizeDiff without
+			// prior state. An empty ID therefore covers both initial creation and
+			// replacement.
+			if diff.Id() == "" && !creationPlanExists {
+				return fmt.Errorf(`the "creation_plan" block is required when creating or replacing a subscription`)
 			}
 
-			err := cloudRegionsForceNewDiff(ctx, diff, meta)
-			if err != nil {
-				return err
-			}
-
-			return nil
+			return cloudRegionsForceNewDiff(ctx, diff, meta)
 		},
 
 		Description:   "Creates a Pro Subscription within your Redis Enterprise Cloud Account.",
@@ -529,7 +522,7 @@ func ResourceRedisCloudProSubscription() *schema.Resource {
 }
 
 // cloudRegionsForceNewDiff determines if changes to a cloud region should force
-// creation of a new resource based on whether it is a CMK pending state.
+// creation of a new subscription. It also takes into account whether it's in CMK pending state.
 func cloudRegionsForceNewDiff(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
 	if diff.Id() == "" {
 		return nil
@@ -538,21 +531,35 @@ func cloudRegionsForceNewDiff(ctx context.Context, diff *schema.ResourceDiff, me
 }
 
 func handleExistingResourceRegionChange(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+	oldRegion, newRegion := diff.GetChange("cloud_provider.0.region")
+	oldSet := oldRegion.(*schema.Set)
+	newSet := newRegion.(*schema.Set)
+	if oldSet.Equal(newSet) {
+		return nil
+	}
+
 	subscription, err := getSubscription(ctx, diff, meta)
 	if err != nil {
 		return fmt.Errorf("failed to get subscription: %w", err)
 	}
 
-	// Only check for force new if not in an encryption key pending state
-	if redis.StringValue(subscription.Status) != subscriptions.SubscriptionStatusEncryptionKeyPending {
-		oldRegion, newRegion := diff.GetChange("cloud_provider.0.region")
-		oldSet := oldRegion.(*schema.Set)
-		newSet := newRegion.(*schema.Set)
+	// While a subscription awaits its customer-managed encryption key, API reads
+	// can omit Multi-AZ, which is recorded as false even when true is configured.
+	// Preserve the subscription so supplying the key can complete activation.
+	if redis.StringValue(subscription.Status) == subscriptions.SubscriptionStatusEncryptionKeyPending {
+		return nil
+	}
 
-		// Check if any differences between old and new region sets
-		if !oldSet.Equal(newSet) {
-			// Force new for the entire region configuration
-			_ = diff.ForceNew("cloud_provider.0.region") //nolint:errcheck // return value not needed in CustomizeDiff
+	if err := diff.ForceNew("cloud_provider.0.region"); err != nil {
+		return err
+	}
+
+	// SDKv2 does not propagate ForceNew from a set of nested resources to its
+	// fields. A region change or Multi-AZ toggle keeps the set size unchanged,
+	// so a changed field must also require replacement.
+	for _, key := range diff.GetChangedKeysPrefix("cloud_provider.0.region") {
+		if (strings.HasSuffix(key, ".region") || strings.HasSuffix(key, ".multiple_availability_zones")) && diff.HasChange(key) {
+			return diff.ForceNew(key)
 		}
 	}
 	return nil

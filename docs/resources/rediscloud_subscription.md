@@ -126,7 +126,7 @@ The `creation_plan` block supports:
 The cloud_provider `region` block supports:
 
 * `region` - (Required) Deployment region as defined by cloud provider. **Modifying this attribute will force creation of a new resource.**
-* `multiple_availability_zones` - (Optional) Support deployment on multiple availability zones within the selected region. Default: ‘false’. **Modifying this attribute will force creation of a new resource.**
+* `multiple_availability_zones` - (Optional) Support deployment on multiple availability zones within the selected region. Default: ‘false’. **Changing this attribute after provisioning replaces the subscription.** Replacement requires `creation_plan` and may replace dependent database resources, destroying their data. The API cannot update this setting in place.
 * `networking_deployment_cidr` - (Required) Deployment CIDR mask. The total number of bits must be 24 (x.x.x.x/24). **Modifying this attribute will force creation of a new resource.**
 * `networking_vpc_id` - (Optional) Either an existing VPC Id (already exists in the specific region) or create a new VPC
   (if no VPC is specified). VPC Identifier must be in a valid format (for example: ‘vpc-0125be68a4986384ad’) and exist
