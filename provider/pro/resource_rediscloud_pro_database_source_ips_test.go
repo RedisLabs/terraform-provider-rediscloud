@@ -19,9 +19,9 @@ import (
 func TestUnitProDatabaseCreateSourceIPs(t *testing.T) {
 	for _, tc := range []struct {
 		name string
-		ips  []string
+		ips  []any
 	}{
-		{name: "explicit", ips: []string{"192.0.2.0/24", "198.51.100.0/24"}},
+		{name: "explicit", ips: []any{"192.0.2.0/24", "198.51.100.0/24"}},
 		{name: "omitted"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
