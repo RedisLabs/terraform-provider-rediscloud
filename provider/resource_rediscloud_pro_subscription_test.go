@@ -651,18 +651,19 @@ func TestAccResourceRedisCloudProSubscription_PublicEndpointAccess(t *testing.T)
 
 func TestRedisCloudProSubscriptionMultiAZPlan(t *testing.T) {
 	cases := []struct {
-		name                 string
-		resourceID           string
-		status               string
-		previousName         string
-		plannedName          string
-		previousMultiAZ      bool
-		plannedMultiAZ       bool
-		previousCreationPlan bool
-		plannedCreationPlan  bool
-		wantReplacement      bool
-		wantChanges          map[string]*sdkterraform.ResourceAttrDiff
-		wantError            string
+		name                   string
+		resourceID             string
+		status                 string
+		previousName           string
+		plannedName            string
+		rejectSubscriptionRead bool
+		previousMultiAZ        bool
+		plannedMultiAZ         bool
+		previousCreationPlan   bool
+		plannedCreationPlan    bool
+		wantReplacement        bool
+		wantChanges            map[string]*sdkterraform.ResourceAttrDiff
+		wantError              string
 	}{
 		{
 			name: "active subscription enables Multi-AZ", resourceID: "123", status: "active",
@@ -693,7 +694,7 @@ func TestRedisCloudProSubscriptionMultiAZPlan(t *testing.T) {
 			wantReplacement: false, wantChanges: map[string]*sdkterraform.ResourceAttrDiff{}, wantError: "",
 		},
 		{
-			name: "rename without a creation plan", resourceID: "123", status: "active",
+			name: "rename without a creation plan", rejectSubscriptionRead: true, resourceID: "123", status: "active",
 			previousName: "example", plannedName: "renamed",
 			previousMultiAZ: true, plannedMultiAZ: true,
 			previousCreationPlan: false, plannedCreationPlan: false,
@@ -741,6 +742,9 @@ func TestRedisCloudProSubscriptionMultiAZPlan(t *testing.T) {
 
 			fake := testhelpers.NewFakeAPI()
 			fake.Handle("GET /subscriptions/123", func(_ *http.Request) (any, error) {
+				if tc.rejectSubscriptionRead {
+					t.Error("unexpected subscription GET while planning a rename")
+				}
 				return map[string]any{"id": 123, "status": tc.status}, nil
 			})
 			diff, err := res.Diff(context.Background(), data.State(), sdkterraform.NewResourceConfigRaw(planned), testhelpers.NewAPIClient(t, fake))

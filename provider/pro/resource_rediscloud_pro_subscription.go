@@ -531,6 +531,13 @@ func cloudRegionsForceNewDiff(ctx context.Context, diff *schema.ResourceDiff, me
 }
 
 func handleExistingResourceRegionChange(ctx context.Context, diff *schema.ResourceDiff, meta interface{}) error {
+	oldRegion, newRegion := diff.GetChange("cloud_provider.0.region")
+	oldSet := oldRegion.(*schema.Set)
+	newSet := newRegion.(*schema.Set)
+	if oldSet.Equal(newSet) {
+		return nil
+	}
+
 	subscription, err := getSubscription(ctx, diff, meta)
 	if err != nil {
 		return fmt.Errorf("failed to get subscription: %w", err)
@@ -540,13 +547,6 @@ func handleExistingResourceRegionChange(ctx context.Context, diff *schema.Resour
 	// can omit Multi-AZ, which is recorded as false even when true is configured.
 	// Preserve the subscription so supplying the key can complete activation.
 	if redis.StringValue(subscription.Status) == subscriptions.SubscriptionStatusEncryptionKeyPending {
-		return nil
-	}
-
-	oldRegion, newRegion := diff.GetChange("cloud_provider.0.region")
-	oldSet := oldRegion.(*schema.Set)
-	newSet := newRegion.(*schema.Set)
-	if oldSet.Equal(newSet) {
 		return nil
 	}
 
