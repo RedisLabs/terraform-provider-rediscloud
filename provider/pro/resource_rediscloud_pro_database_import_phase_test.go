@@ -9,11 +9,11 @@ import (
 	"time"
 
 	rediscloudapi "github.com/RedisLabs/rediscloud-go-api"
+	"github.com/hashicorp/go-cty/cty"
+	"github.com/hashicorp/go-cty/cty/msgpack"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov5"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/zclconf/go-cty/cty"
-	"github.com/zclconf/go-cty/cty/msgpack"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/client"
 )
