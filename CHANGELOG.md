@@ -12,6 +12,7 @@
 - Raised the Go toolchain to 1.26.11 to pick up the fix for GO-2026-6859 in `net/http`.
 - Upgraded `rediscloud-go-api` from 0.53.0 to 0.54.0. GET requests to the API are now retried on connection resets and Cloudflare 520-524 responses, which made acceptance tests flaky.
 - Migrated `rediscloud_acl_role` data source from Terraform SDK v2 to the Terraform Plugin Framework with no schema changes.
+- Migrated `rediscloud_acl_rule` to the Terraform Plugin Framework. Previously, a missing rule was removed from state and the next plan could recreate it. Refresh and post-update reads now retry a missing rule to allow for stale API results. If it remains missing, Terraform reports an error and retains the ID so that a rule deleted outside Terraform is not silently recreated.
 
 ## 2.20.0 (4th November 2026)
 
