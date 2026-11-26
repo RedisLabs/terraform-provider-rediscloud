@@ -1,10 +1,11 @@
 name: Pro database create source IP regression
 on:
   pull_request:
-    branches: ['release/*']
+    branches: ['release/*', 'codex/pro-db-source-cidr-create']
     paths:
       - 'provider/pro/resource_rediscloud_pro_database.go'
       - 'provider/pro/resource_rediscloud_pro_database_source_ips_test.go'
+      - 'provider/pro/resource_rediscloud_pro_database_source_ips_read_test.go'
       - '.github/workflows/pro-db-source-ip-test.yml'
 permissions:
   contents: read
@@ -24,4 +25,12 @@ jobs:
           go test ./provider/pro -count=1 -run '^TestUnitProDatabaseCreateSourceIPs$' -v | tee "$RUNNER_TEMP/receipt.log"
           for case in custom_private_parent custom_public_parent omitted_private_parent omitted_public_parent public_default_private_parent public_default_public_parent private_default_public_parent private_default_private_parent default_unknown_policy default_lookup_failure; do
             grep -F -- "--- PASS: TestUnitProDatabaseCreateSourceIPs/$case " "$RUNNER_TEMP/receipt.log"
+          done
+      - name: Exercise actual read handler against loopback fake
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test ./provider/pro -count=1 -run '^TestUnitProDatabaseReadObservedSourceIPs$' -v | tee "$RUNNER_TEMP/read-receipt.log"
+          for case in missing_security null_security missing null null_element empty public_drift custom_drift unchanged; do
+            grep -F -- "--- PASS: TestUnitProDatabaseReadObservedSourceIPs/$case " "$RUNNER_TEMP/read-receipt.log"
           done

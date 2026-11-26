@@ -599,6 +599,22 @@ func resourceRedisCloudProDatabaseReadWithTimeout(ctx context.Context, d *schema
 		return diag.FromErr(err)
 	}
 
+	// Validate security observations before changing any state fields. SDKv2
+	// can construct partial state even when the read returns diagnostics.
+	if db.Security == nil {
+		return diag.Errorf("database security settings are missing from the API response")
+	}
+	for _, sourceIP := range db.Security.SourceIPs {
+		if sourceIP == nil {
+			return diag.Errorf("database source IP list contains a null entry")
+		}
+	}
+	currentStateSourceIPs := utils.SetToStringSlice(d.Get("source_ips").(*schema.Set))
+	stateHasCustomValue := !isDefaultSourceIPs(currentStateSourceIPs)
+	if stateHasCustomValue && db.Security.SourceIPs == nil {
+		return diag.Errorf("database source IPs are missing from the API response")
+	}
+
 	if err := d.Set("db_id", redis.IntValue(db.ID)); err != nil {
 		return diag.FromErr(err)
 	}
@@ -744,14 +760,8 @@ func resourceRedisCloudProDatabaseReadWithTimeout(ctx context.Context, d *schema
 		sourceIPsPtrs[i] = redis.String(ip)
 	}
 
-	// Check if user has configured a custom (non-default) value in state
-	currentStateSourceIPs := utils.SetToStringSlice(d.Get("source_ips").(*schema.Set))
-	stateHasCustomValue := !isDefaultSourceIPs(currentStateSourceIPs)
-
-	// If API returned empty or defaults, but user has a custom value configured, preserve it
-	if (len(sourceIPs) == 0 || isDefaultSourceIPs(sourceIPsPtrs)) && stateHasCustomValue {
-		sourceIPs = redis.StringSliceValue(currentStateSourceIPs...)
-	} else if len(sourceIPs) == 0 || isDefaultSourceIPs(sourceIPsPtrs) {
+	// An explicitly empty list is an observation and must not be replaced by state.
+	if !stateHasCustomValue && (len(sourceIPs) == 0 || isDefaultSourceIPs(sourceIPsPtrs)) {
 		// No custom value - ensure defaults match current public_endpoint_access setting
 		// Wait for subscription to be fully active to ensure we have the latest state
 		if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
