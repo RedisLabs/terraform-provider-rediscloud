@@ -53,6 +53,13 @@ func isDefaultSourceIPs(sourceIPs []*string) bool {
 	return false
 }
 
+func defaultSourceIPsForPublicEndpointAccess(publicAccess *bool) []*string {
+	if publicAccess != nil && !*publicAccess {
+		return redis.StringSlice(defaultPrivateIPRanges...)
+	}
+	return []*string{redis.String("0.0.0.0/0")}
+}
+
 func ResourceRedisCloudProDatabase() *schema.Resource {
 	return &schema.Resource{
 		Description:   "Creates database resource within a pro subscription in your Redis Enterprise Cloud Account.",
@@ -518,6 +525,24 @@ func resourceRedisCloudProDatabaseCreate(ctx context.Context, d *schema.Resource
 	if err := utils.WaitForSubscriptionToBeActive(ctx, subId, api, timeout); err != nil {
 		utils.SubscriptionMutex.Unlock(subId)
 		return append(diags, diag.FromErr(err)...)
+	}
+	// Default-pattern values must match the post-create update's subscription
+	// policy before create; otherwise the initial request could be wider.
+	if len(createDatabase.SourceIP) > 0 && isDefaultSourceIPs(createDatabase.SourceIP) {
+		subscription, err := api.Client.Subscription.Get(ctx, subId)
+		if err != nil {
+			utils.SubscriptionMutex.Unlock(subId)
+			return append(diags, diag.FromErr(err)...)
+		}
+		if subscription.PublicEndpointAccess == nil {
+			utils.SubscriptionMutex.Unlock(subId)
+			return append(diags, diag.Errorf("cannot determine subscription public endpoint access before database creation")...)
+		}
+		if *subscription.PublicEndpointAccess && len(createDatabase.SourceIP) > 1 {
+			utils.SubscriptionMutex.Unlock(subId)
+			return append(diags, diag.Errorf("private default source CIDRs conflict with public endpoint access; create would widen access")...)
+		}
+		createDatabase.SourceIP = defaultSourceIPsForPublicEndpointAccess(subscription.PublicEndpointAccess)
 	}
 
 	dbId, err := api.Client.Database.Create(ctx, subId, createDatabase)
