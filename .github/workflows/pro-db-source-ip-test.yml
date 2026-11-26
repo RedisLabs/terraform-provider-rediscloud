@@ -1,11 +1,12 @@
 name: Pro database create source IP regression
 on:
   pull_request:
-    branches: ['release/*', 'codex/pro-db-source-cidr-create']
+    branches: ['release/*', 'codex/pro-db-source-cidr-create', 'codex/pro-db-source-ip-observation']
     paths:
       - 'provider/pro/resource_rediscloud_pro_database.go'
       - 'provider/pro/resource_rediscloud_pro_database_source_ips_test.go'
       - 'provider/pro/resource_rediscloud_pro_database_source_ips_read_test.go'
+      - 'provider/pro/resource_rediscloud_pro_database_import_phase_test.go'
       - '.github/workflows/pro-db-source-ip-test.yml'
 permissions:
   contents: read
@@ -33,4 +34,12 @@ jobs:
           go test ./provider/pro -count=1 -run '^TestUnitProDatabaseReadObservedSourceIPs$' -v | tee "$RUNNER_TEMP/read-receipt.log"
           for case in missing_security null_security missing null null_element empty public_drift custom_drift unchanged; do
             grep -F -- "--- PASS: TestUnitProDatabaseReadObservedSourceIPs/$case " "$RUNNER_TEMP/read-receipt.log"
+          done
+      - name: Exercise SDK protocol import and fake refresh
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test ./provider/pro -count=1 -run '^TestProDatabaseProtocolImportSourceIPs$' -v | tee "$RUNNER_TEMP/import-receipt.log"
+          for case in custom public_default private_default_public_parent private_default_private_parent; do
+            grep -F -- "--- PASS: TestProDatabaseProtocolImportSourceIPs/$case " "$RUNNER_TEMP/import-receipt.log"
           done
