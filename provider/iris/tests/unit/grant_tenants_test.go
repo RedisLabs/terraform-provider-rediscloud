@@ -1,7 +1,6 @@
 package unit_test
 
 import (
-	"fmt"
 	"regexp"
 	"testing"
 
@@ -78,23 +77,7 @@ func TestIrisTenantChangeWithSeveralGrantsReplacesKey(t *testing.T) {
 // The tenant belongs to the key, so a grant cannot name its own and a key can
 // never be configured with conflicting tenants.
 func TestIrisGrantBlockRejectsATenant(t *testing.T) {
-	_, server := newFixture(t)
-	resource.UnitTest(t, resource.TestCase{Steps: []resource.TestStep{{ProtoV5ProviderFactories: factories(t), PlanOnly: true, ExpectError: regexp.MustCompile(`argument named "tenant" is not\s+expected here`), Config: fmt.Sprintf(`
-provider "rediscloud" {
-  iris_identity_url   = %q
-  iris_identity_token = "identity-token"
-}
-resource "rediscloud_iris_identity_api_key" "key" {
-  name = "grant-tenant"
-  grant {
-    tenant        = "tenant-one"
-    product       = "memory"
-    resource_type = "mem-store"
-    resource_id   = "store-1"
-    actions       = ["read"]
-  }
-}
-`, server.URL+"/identity-proxy")}}})
+	resource.UnitTest(t, resource.TestCase{Steps: []resource.TestStep{{ProtoV5ProviderFactories: factories(t), ConfigFile: config.StaticFile("testdata/key_grant_tenant.tf"), PlanOnly: true, ExpectError: regexp.MustCompile(`argument named "tenant" is not\s+expected here`)}}})
 }
 
 // A tenant that is unknown during planning cannot be compared with the stored
