@@ -36,7 +36,7 @@ jobs:
     needs: [ci]
     uses: ./.github/workflows/testacc.yml
     with:
-      test_pattern: TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Subscription_.*
+      test_pattern: 'TestAcc(DataSource|Resource)RedisCloud(Essentials|Pro|ActiveActive)Subscription_.*|^TestAccDataSourceRedisCloudProSubscriptions_'
       create_account_sleep_seconds: 30
     secrets: inherit
 

@@ -192,6 +192,7 @@ func (p *redisCloudFrameworkProvider) DataSources(_ context.Context) []func() da
 		cloudaccount.NewCloudAccountDataSource,
 		regions.NewRegionsDataSource,
 		pro.NewProSubscriptionDataSource,
+		pro.NewProSubscriptionsDataSource,
 	}
 }
 

@@ -2,6 +2,10 @@
 
 ## 2.21.0 (unreleased)
 
+### Added
+
+- Added the `rediscloud_subscriptions` data source for fetching a list of Pro subscriptions, with an optional exact-name filter.
+
 ### Fixed
 
 - `rediscloud_essentials_database` now waits through the `active-upgrade-pending` and `bdb-update-pending` statuses, as `rediscloud_subscription_database` already does. Changing `redis_version` no longer fails with `unexpected state 'active-upgrade-pending', wanted target 'active'`.

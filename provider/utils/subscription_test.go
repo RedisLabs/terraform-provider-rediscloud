@@ -7,11 +7,20 @@ import (
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	"github.com/RedisLabs/rediscloud-go-api/service/pricing"
 	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/RedisLabs/terraform-provider-rediscloud/provider/utils"
 )
+
+func newSubscription(id int, name, deploymentType string) *subscriptions.Subscription {
+	return &subscriptions.Subscription{
+		ID:             redis.Int(id),
+		Name:           redis.String(name),
+		DeploymentType: redis.String(deploymentType),
+	}
+}
 
 // --- FilterSubscriptions -----------------------------------------------------
 
@@ -104,6 +113,43 @@ func TestSubscriptionNameFilter(t *testing.T) {
 
 	assert.True(t, f(&subscriptions.Subscription{Name: redis.String("alpha")}), "should match the given name")
 	assert.False(t, f(&subscriptions.Subscription{Name: redis.String("beta")}), "should not match a different name")
+}
+
+func TestFilterAndSortProSubscriptions(t *testing.T) {
+	beta10 := newSubscription(10, "beta", subscriptions.SubscriptionDeploymentTypeSingleRegion)
+	activeActiveAlpha3 := newSubscription(3, "alpha", subscriptions.SubscriptionDeploymentTypeActiveActive)
+	alpha2 := newSubscription(2, "alpha", subscriptions.SubscriptionDeploymentTypeSingleRegion)
+	beta1 := newSubscription(1, "beta", subscriptions.SubscriptionDeploymentTypeSingleRegion)
+	subs := []*subscriptions.Subscription{
+		beta10,
+		activeActiveAlpha3,
+		alpha2,
+		beta1,
+	}
+
+	t.Run("null filter returns every Pro subscription", func(t *testing.T) {
+		got := utils.FilterAndSortProSubscriptions(subs, types.StringNull())
+
+		assert.Equal(t, []*subscriptions.Subscription{beta1, alpha2, beta10}, got)
+	})
+
+	t.Run("empty filter returns every Pro subscription", func(t *testing.T) {
+		got := utils.FilterAndSortProSubscriptions(subs, types.StringValue(""))
+
+		assert.Equal(t, []*subscriptions.Subscription{beta1, alpha2, beta10}, got)
+	})
+
+	t.Run("name filter keeps exact matches", func(t *testing.T) {
+		got := utils.FilterAndSortProSubscriptions(subs, types.StringValue("beta"))
+
+		assert.Equal(t, []*subscriptions.Subscription{beta1, beta10}, got)
+	})
+
+	t.Run("unmatched filter returns an empty list", func(t *testing.T) {
+		got := utils.FilterAndSortProSubscriptions(subs, types.StringValue("missing"))
+
+		assert.Empty(t, got)
+	})
 }
 
 // --- PricingFromAPI ----------------------------------------------------------
