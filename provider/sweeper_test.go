@@ -134,8 +134,9 @@ func init() {
 		F:            testSweepActiveActiveSubscriptions,
 	})
 	resource.AddTestSweepers("rediscloud_essentials_subscription", &resource.Sweeper{
-		Name: "rediscloud_essentials_subscription",
-		F:    testSweepEssentialsSubscriptions,
+		Name:         "rediscloud_essentials_subscription",
+		Dependencies: []string{"rediscloud_iris_agent_memory"},
+		F:            testSweepEssentialsSubscriptions,
 	})
 	resource.AddTestSweepers("rediscloud_cloud_account", &resource.Sweeper{
 		Name:         "rediscloud_cloud_account",

@@ -36,12 +36,12 @@ func NewSdkProvider(version string) func() *schema.Provider {
 				},
 				"api_key": {
 					Type:        schema.TypeString,
-					Description: fmt.Sprintf("This is the Redis Cloud API key. It must be provided but can also be set by the `%s` environment variable.", rediscloudApi.AccessKeyEnvVar),
+					Description: fmt.Sprintf("This is the Redis Cloud API key. Required together with the other Cloud credential when using Cloud API resources; optional when using only Iris bearer authentication. May also be set by the `%s` environment variable.", rediscloudApi.AccessKeyEnvVar),
 					Optional:    true,
 				},
 				"secret_key": {
 					Type:        schema.TypeString,
-					Description: fmt.Sprintf("This is the Redis Cloud API secret key. It must be provided but can also be set by the `%s` environment variable.", rediscloudApi.SecretKeyEnvVar),
+					Description: fmt.Sprintf("This is the Redis Cloud API secret key. Required together with the other Cloud credential when using Cloud API resources; optional when using only Iris bearer authentication. May also be set by the `%s` environment variable.", rediscloudApi.SecretKeyEnvVar),
 					Optional:    true,
 				},
 			},
@@ -111,6 +111,10 @@ func NewSdkProvider(version string) func() *schema.Provider {
 			},
 		}
 
+		for _, setting := range irisSettings {
+			p.Schema[setting.name] = &schema.Schema{Type: schema.TypeString, Optional: true, Sensitive: setting.sensitive, Description: setting.description + " May also be set using " + setting.env + "."}
+		}
+
 		p.ConfigureContextFunc = configure(version, p)
 
 		return p
@@ -119,6 +123,18 @@ func NewSdkProvider(version string) func() *schema.Provider {
 
 func configure(version string, p *schema.Provider) func(context.Context, *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	return func(_ context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+		irisValues := map[string]string{"api_key": d.Get("api_key").(string), "secret_key": d.Get("secret_key").(string)}
+		for _, setting := range irisSettings {
+			irisValues[setting.name] = d.Get(setting.name).(string)
+		}
+		// Framework reports unknown settings explicitly. SDK string access would
+		// otherwise turn them into misleading missing-credential diagnostics.
+		if d.GetRawConfig().IsWhollyKnown() {
+			if _, err := irisServiceConfigs(irisValues); err != nil {
+				return nil, diag.FromErr(err)
+			}
+		}
+
 		var config []rediscloudApi.Option
 		config = append(config, rediscloudApi.AdditionalUserAgent(p.UserAgent("terraform-provider-rediscloud", version)))
 
