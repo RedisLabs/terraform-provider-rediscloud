@@ -134,7 +134,7 @@ func TestWaitForPrivateLinkPrincipals(t *testing.T) {
 				getPrincipals := func(context.Context) (*pl.PrivateLink, error) {
 					return &pl.PrivateLink{Principals: tc.actual}, nil
 				}
-				_, err := privatelink.WaitForPrivateLinkPrincipals(context.Background(), getPrincipals, expected, 20*time.Millisecond)
+				err := privatelink.WaitForPrivateLinkPrincipals(context.Background(), getPrincipals, expected, 20*time.Millisecond)
 				if tc.success {
 					require.NoError(t, err)
 					return
@@ -149,22 +149,6 @@ func TestWaitForPrivateLinkPrincipals(t *testing.T) {
 		}
 	})
 
-	t.Run("initial association later fails", func(t *testing.T) {
-		synctest.Test(t, func(t *testing.T) {
-			reads := 0
-			get := func(context.Context) (*pl.PrivateLink, error) {
-				reads++
-				status := pl.PrivateLinkPrincipalStatusInitializing
-				if reads > 1 {
-					status = pl.PrivateLinkPrincipalStatusFailed
-				}
-				return &pl.PrivateLink{Principals: principalWithStatus(status)}, nil
-			}
-			_, err := privatelink.WaitForPrivateLinkPrincipals(t.Context(), get, expected, time.Minute)
-			require.ErrorContains(t, err, "association failed")
-			require.Equal(t, 2, reads)
-		})
-	})
 	t.Run("delayed membership", func(t *testing.T) {
 		t.Parallel()
 		expected := []pl.PrivateLinkPrincipal{privateLinkPrincipal("111111111111")}
@@ -199,7 +183,7 @@ func TestWaitForPrivateLinkPrincipals(t *testing.T) {
 						}
 						return &pl.PrivateLink{Principals: tc.final}, nil
 					}
-					_, err := privatelink.WaitForPrivateLinkPrincipals(context.Background(), getPrincipals, expected, 15*time.Second)
+					err := privatelink.WaitForPrivateLinkPrincipals(context.Background(), getPrincipals, expected, 15*time.Second)
 					require.NoError(t, err)
 					// Require a retry for stale membership and stop as soon as the final
 					// membership matches the requested principals.
@@ -216,7 +200,7 @@ func TestWaitForPrivateLinkPrincipals(t *testing.T) {
 			time.AfterFunc(20*time.Millisecond, cancel)
 			return &pl.PrivateLink{}, nil
 		}
-		_, err := privatelink.WaitForPrivateLinkPrincipals(ctx, getPrincipals, expected, time.Minute)
+		err := privatelink.WaitForPrivateLinkPrincipals(ctx, getPrincipals, expected, time.Minute)
 		require.ErrorIs(t, err, context.Canceled)
 		require.ErrorContains(t, err, "111111111111")
 	})
@@ -226,7 +210,7 @@ func TestWaitForPrivateLinkPrincipals(t *testing.T) {
 		getPrincipals := func(context.Context) (*pl.PrivateLink, error) {
 			return nil, readErr
 		}
-		_, err := privatelink.WaitForPrivateLinkPrincipals(context.Background(), getPrincipals, expected, time.Minute)
+		err := privatelink.WaitForPrivateLinkPrincipals(context.Background(), getPrincipals, expected, time.Minute)
 		require.ErrorIs(t, err, readErr)
 	})
 }
@@ -248,7 +232,6 @@ func apiPrincipalList(principals ...string) []*pl.PrivateLinkPrincipal {
 	result := make([]*pl.PrivateLinkPrincipal, 0, len(principals))
 	for _, principal := range principals {
 		value := privateLinkPrincipal(principal)
-		value.Status = redis.String(pl.PrivateLinkPrincipalStatusAssociated)
 		result = append(result, &value)
 	}
 	return result

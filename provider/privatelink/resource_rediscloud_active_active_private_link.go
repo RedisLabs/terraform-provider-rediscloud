@@ -204,11 +204,11 @@ func resourceRedisCloudActiveActivePrivateLinkCreate(ctx context.Context, d *sch
 	// Verify the full set before refreshing state so missing principals cannot be
 	// reported as a successful create.
 	getPrivateLink := activeActivePrivateLinkGetter(api, subId, regionId)
-	verifiedLink, err := WaitForPrivateLinkPrincipals(ctx, getPrivateLink, principals, d.Timeout(schema.TimeoutCreate))
-	if err != nil {
+	if err := WaitForPrivateLinkPrincipals(ctx, getPrivateLink, principals, d.Timeout(schema.TimeoutCreate)); err != nil {
 		return diag.FromErr(err)
 	}
-	return setPrivateLinkState(d, verifiedLink)
+
+	return resourceRedisCloudActiveActivePrivateLinkRead(ctx, d, meta)
 }
 
 func resourceRedisCloudActiveActivePrivateLinkRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -253,7 +253,39 @@ func resourceRedisCloudActiveActivePrivateLinkRead(ctx context.Context, d *schem
 		return diag.FromErr(err)
 	}
 
-	return setPrivateLinkState(d, privateLink)
+	err = d.Set("share_name", privateLink.ShareName)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("principal", FlattenPrincipals(privateLink.Principals)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = d.Set("resource_configuration_id", privateLink.ResourceConfigurationId)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = d.Set("resource_configuration_arn", privateLink.ResourceConfigurationArn)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	err = d.Set("share_arn", privateLink.ShareArn)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("connections", FlattenConnections(privateLink.Connections)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	if err := d.Set("databases", FlattenDatabases(privateLink.Databases)); err != nil {
+		return diag.FromErr(err)
+	}
+
+	return diags
 }
 
 func resourceRedisCloudActiveActivePrivateLinkUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -304,11 +336,10 @@ func resourceRedisCloudActiveActivePrivateLinkUpdate(ctx context.Context, d *sch
 		// deletions to become visible before refreshing state so an incomplete
 		// change cannot be reported as a successful update.
 		getPrivateLink := activeActivePrivateLinkGetter(api, subId, regionId)
-		verifiedLink, err := WaitForPrivateLinkPrincipals(ctx, getPrivateLink, tfPrincipals, d.Timeout(schema.TimeoutUpdate))
-		if err != nil {
+		if err := WaitForPrivateLinkPrincipals(ctx, getPrivateLink, tfPrincipals, d.Timeout(schema.TimeoutUpdate)); err != nil {
 			return diag.FromErr(err)
 		}
-		return setPrivateLinkState(d, verifiedLink)
+
 	}
 
 	return resourceRedisCloudActiveActivePrivateLinkRead(ctx, d, meta)
