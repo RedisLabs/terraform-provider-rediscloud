@@ -161,6 +161,7 @@ Recurring workflows live as Agent Skills:
 
 | Skill | Use it for |
 | --- | --- |
+| [terraform-provider-code-review](.agents/skills/terraform-provider-code-review/SKILL.md) | Reviewing provider changes and checking migration compatibility against the parent branch. |
 | `migrate-to-plugin-framework` | Migrating an SDKv2 resource or data source, or adding a new Framework implementation. |
 
 Skills are stored at `.agents/skills/<skill-name>/SKILL.md`. When adding or
