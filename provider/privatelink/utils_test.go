@@ -108,10 +108,11 @@ func privateLinkPrincipal(principal string) pl.PrivateLinkPrincipal {
 	}
 }
 
-func apiPrincipalList(principals ...string) []*pl.PrivateLinkPrincipal {
+func apiPrincipalList(status string, principals ...string) []*pl.PrivateLinkPrincipal {
 	result := make([]*pl.PrivateLinkPrincipal, 0, len(principals))
 	for _, principal := range principals {
 		value := privateLinkPrincipal(principal)
+		value.Status = redis.String(status)
 		result = append(result, &value)
 	}
 	return result

@@ -42,11 +42,14 @@ func TestWaitForPrivateLinkPrincipals(t *testing.T) {
 
 			// These cases should fail.
 			{success: false, name: "missing", actual: []*pl.PrivateLinkPrincipal{}, wantError: "expected [111111111111], got []", wantTimeout: true},
-			{success: false, name: "extra principal", actual: apiPrincipalList("111111111111", "222222222222"), wantError: "expected [111111111111], got [111111111111 222222222222]", wantTimeout: true},
+			{success: false, name: "extra principal", actual: apiPrincipalList(pl.PrivateLinkPrincipalStatusAssociated, "111111111111", "222222222222"), wantError: "expected [111111111111], got [111111111111 222222222222]", wantTimeout: true},
 			{success: false, name: "failed", actual: principalWithStatus(pl.PrivateLinkPrincipalStatusFailed), wantError: `PrivateLink principal "111111111111" association failed`, wantTimeout: false},
+			{success: false, name: "still initialising", actual: principalWithStatus(pl.PrivateLinkPrincipalStatusInitializing), wantError: "expected [111111111111], got [111111111111]", wantTimeout: true},
+			{success: false, name: "status omitted", actual: []*pl.PrivateLinkPrincipal{{Principal: redis.String("111111111111"), Type: redis.String(principalTypeAWSAccount)}}, wantError: "expected [111111111111], got [111111111111]", wantTimeout: true},
+			{success: false, name: "unrecognised status", actual: principalWithStatus("future-status"), wantError: "expected [111111111111], got [111111111111]", wantTimeout: true},
 			{success: false, name: "being removed", actual: principalWithStatus(pl.PrivateLinkPrincipalStatusDisassociating), wantError: "expected [111111111111], got [111111111111]", wantTimeout: true},
 			{success: false, name: "removed", actual: principalWithStatus(pl.PrivateLinkPrincipalStatusDisassociated), wantError: "expected [111111111111], got [111111111111]", wantTimeout: true},
-			{success: false, name: "wrong type", actual: []*pl.PrivateLinkPrincipal{{Principal: redis.String("111111111111"), Type: redis.String(principalTypeOrganization)}}, wantError: "expected [111111111111], got [111111111111]", wantTimeout: true},
+			{success: false, name: "wrong type", actual: []*pl.PrivateLinkPrincipal{{Principal: redis.String("111111111111"), Type: redis.String(principalTypeOrganization), Status: redis.String(pl.PrivateLinkPrincipalStatusAssociated)}}, wantError: "expected [111111111111], got [111111111111]", wantTimeout: true},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
 				fake := testhelpers.NewFakeAPI()
@@ -79,7 +82,7 @@ func TestWaitForPrivateLinkPrincipals(t *testing.T) {
 	t.Run("Active-Active endpoint", func(t *testing.T) {
 		fake := testhelpers.NewFakeAPI()
 		getPrincipals := func(*http.Request) (any, error) {
-			return privateLinkReadTask(fake, apiPrincipalList("111111111111")), nil
+			return privateLinkReadTask(fake, apiPrincipalList(pl.PrivateLinkPrincipalStatusAssociated, "111111111111")), nil
 		}
 		fake.Handle("GET /subscriptions/123/regions/1/private-link", getPrincipals)
 		api := testhelpers.NewAPIClient(t, fake)
@@ -93,6 +96,82 @@ func TestWaitForPrivateLinkPrincipals(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("association status changes", func(t *testing.T) {
+		for _, tc := range []struct {
+			name          string
+			initialStatus string
+			finalStatus   string
+			success       bool
+			wantReads     int
+			wantError     string
+		}{
+			// These cases should succeed.
+			{
+				name:          "initialising to associated",
+				initialStatus: pl.PrivateLinkPrincipalStatusInitializing,
+				finalStatus:   pl.PrivateLinkPrincipalStatusAssociated,
+				success:       true,
+				wantReads:     2,
+				wantError:     "",
+			},
+			{
+				name:          "initialising to invitation awaiting acceptance",
+				initialStatus: pl.PrivateLinkPrincipalStatusInitializing,
+				finalStatus:   pl.PrivateLinkPrincipalStatusAssociating,
+				success:       true,
+				wantReads:     2,
+				wantError:     "",
+			},
+
+			// These cases should fail.
+			{
+				name:          "initialising to failed",
+				initialStatus: pl.PrivateLinkPrincipalStatusInitializing,
+				finalStatus:   pl.PrivateLinkPrincipalStatusFailed,
+				success:       false,
+				wantReads:     2,
+				wantError:     `PrivateLink principal "111111111111" association failed`,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				// Use fake time for the ten-second polling interval.
+				// See https://go.dev/blog/synctest#testing-time.
+				synctest.Test(t, func(t *testing.T) {
+					fake := testhelpers.NewFakeAPI()
+					calls := 0
+					// Keep membership unchanged while association progresses. The
+					// waiter must observe the later status before returning.
+					getPrincipals := func(*http.Request) (any, error) {
+						calls++
+						if calls == 1 {
+							return privateLinkReadTask(fake, principalWithStatus(tc.initialStatus)), nil
+						}
+						return privateLinkReadTask(fake, principalWithStatus(tc.finalStatus)), nil
+					}
+					fake.Handle("GET /subscriptions/123/private-link", getPrincipals)
+					api := testhelpers.NewAPIClient(t, fake)
+					ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
+					t.Cleanup(cancel)
+
+					err := utils.WaitForPrivateLinkPrincipals(
+						ctx, 123, api, expected, 15*time.Second,
+						subscriptions.SubscriptionDeploymentTypeSingleRegion, 0,
+					)
+					assertReads := func() {
+						require.Equal(t, tc.wantReads, calls)
+					}
+					fake.WithHandlersPaused(assertReads)
+					if tc.success {
+						require.NoError(t, err)
+						return
+					}
+
+					require.ErrorContains(t, err, tc.wantError)
+				})
+			})
+		}
+	})
+
 	t.Run("delayed membership", func(t *testing.T) {
 		t.Parallel()
 		for _, tc := range []struct {
@@ -102,13 +181,13 @@ func TestWaitForPrivateLinkPrincipals(t *testing.T) {
 		}{
 			{
 				name:    "addition",
-				initial: apiPrincipalList(),
-				final:   apiPrincipalList("111111111111"),
+				initial: []*pl.PrivateLinkPrincipal{},
+				final:   apiPrincipalList(pl.PrivateLinkPrincipalStatusAssociated, "111111111111"),
 			},
 			{
 				name:    "deletion",
-				initial: apiPrincipalList("111111111111", "222222222222"),
-				final:   apiPrincipalList("111111111111"),
+				initial: apiPrincipalList(pl.PrivateLinkPrincipalStatusAssociated, "111111111111", "222222222222"),
+				final:   apiPrincipalList(pl.PrivateLinkPrincipalStatusAssociated, "111111111111"),
 			},
 		} {
 			t.Run(tc.name, func(t *testing.T) {
@@ -154,7 +233,7 @@ func TestWaitForPrivateLinkPrincipals(t *testing.T) {
 		fake := testhelpers.NewFakeAPI()
 		getPrincipals := func(*http.Request) (any, error) {
 			time.AfterFunc(20*time.Millisecond, cancel)
-			return privateLinkReadTask(fake, apiPrincipalList()), nil
+			return privateLinkReadTask(fake, []*pl.PrivateLinkPrincipal{}), nil
 		}
 		fake.Handle("GET /subscriptions/123/private-link", getPrincipals)
 		api := testhelpers.NewAPIClient(t, fake)
@@ -201,9 +280,7 @@ func privateLinkReadTask(fake *testhelpers.FakeAPI, principals []*pl.PrivateLink
 }
 
 func principalWithStatus(status string) []*pl.PrivateLinkPrincipal {
-	principals := apiPrincipalList("111111111111")
-	principals[0].Status = redis.String(status)
-	return principals
+	return apiPrincipalList(status, "111111111111")
 }
 
 func privateLinkPrincipal(principal string) pl.PrivateLinkPrincipal {
@@ -213,10 +290,11 @@ func privateLinkPrincipal(principal string) pl.PrivateLinkPrincipal {
 	}
 }
 
-func apiPrincipalList(principals ...string) []*pl.PrivateLinkPrincipal {
+func apiPrincipalList(status string, principals ...string) []*pl.PrivateLinkPrincipal {
 	result := make([]*pl.PrivateLinkPrincipal, 0, len(principals))
 	for _, principal := range principals {
 		value := privateLinkPrincipal(principal)
+		value.Status = redis.String(status)
 		result = append(result, &value)
 	}
 	return result

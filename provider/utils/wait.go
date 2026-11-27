@@ -358,8 +358,9 @@ func WaitForSubscriptionToBeEncryptionKeyPending(ctx context.Context, id int, ap
 	return nil
 }
 
-// Use WaitForPrivateLinkPrincipals when an operation requires exact principal
-// membership. Retry temporary mismatches to allow API reads to catch up with writes.
+// Use WaitForPrivateLinkPrincipals to verify exact membership once all expected
+// principals are associated or associating. Retry temporary mismatches to allow
+// API reads to catch up with writes.
 // The region ID is only used for Active-Active subscriptions.
 // Pass a context bounded by the calling operation's timeout.
 func WaitForPrivateLinkPrincipals(
@@ -421,8 +422,9 @@ func privateLinkPrincipalsMatch(actual []*pl.PrivateLinkPrincipal, expected []pl
 			if status == pl.PrivateLinkPrincipalStatusFailed {
 				return false, fmt.Errorf("PrivateLink principal %q association failed", redis.StringValue(principal.Principal))
 			}
-			// An external consumer accepts the invitation separately, so associating is sufficient here.
-			found = status != pl.PrivateLinkPrincipalStatusDisassociating && status != pl.PrivateLinkPrincipalStatusDisassociated
+			// An associating principal can be waiting for the consumer to accept
+			// its invitation. Acceptance happens separately from this operation.
+			found = status == pl.PrivateLinkPrincipalStatusAssociated || status == pl.PrivateLinkPrincipalStatusAssociating
 			break
 		}
 		if !found {
