@@ -10,6 +10,7 @@ import (
 
 	"github.com/RedisLabs/rediscloud-go-api/redis"
 	pl "github.com/RedisLabs/rediscloud-go-api/service/privatelink"
+	"github.com/RedisLabs/rediscloud-go-api/service/subscriptions"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
@@ -153,6 +154,9 @@ func ResourceRedisCloudActiveActivePrivateLink() *schema.Resource {
 }
 
 func resourceRedisCloudActiveActivePrivateLinkCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	ctx, cancel := context.WithTimeout(ctx, d.Timeout(schema.TimeoutCreate))
+	defer cancel()
+
 	api := meta.(*client.ApiClient)
 
 	subId, err := strconv.Atoi(d.Get("subscription_id").(string))
@@ -203,8 +207,15 @@ func resourceRedisCloudActiveActivePrivateLinkCreate(ctx context.Context, d *sch
 	// Task completion does not guarantee that the requested principals exist.
 	// Verify the full set before refreshing state so missing principals cannot be
 	// reported as a successful create.
-	getPrivateLink := activeActivePrivateLinkGetter(api, subId, regionId)
-	if err := WaitForPrivateLinkPrincipals(ctx, getPrivateLink, principals, d.Timeout(schema.TimeoutCreate)); err != nil {
+	if err := utils.WaitForPrivateLinkPrincipals(
+		ctx,
+		subId,
+		api,
+		principals,
+		d.Timeout(schema.TimeoutCreate),
+		subscriptions.SubscriptionDeploymentTypeActiveActive,
+		regionId,
+	); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -289,6 +300,9 @@ func resourceRedisCloudActiveActivePrivateLinkRead(ctx context.Context, d *schem
 }
 
 func resourceRedisCloudActiveActivePrivateLinkUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	ctx, cancel := context.WithTimeout(ctx, d.Timeout(schema.TimeoutUpdate))
+	defer cancel()
+
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
@@ -335,8 +349,15 @@ func resourceRedisCloudActiveActivePrivateLinkUpdate(ctx context.Context, d *sch
 		// This resource manages the complete principal set. Wait for additions and
 		// deletions to become visible before refreshing state so an incomplete
 		// change cannot be reported as a successful update.
-		getPrivateLink := activeActivePrivateLinkGetter(api, subId, regionId)
-		if err := WaitForPrivateLinkPrincipals(ctx, getPrivateLink, tfPrincipals, d.Timeout(schema.TimeoutUpdate)); err != nil {
+		if err := utils.WaitForPrivateLinkPrincipals(
+			ctx,
+			subId,
+			api,
+			tfPrincipals,
+			d.Timeout(schema.TimeoutUpdate),
+			subscriptions.SubscriptionDeploymentTypeActiveActive,
+			regionId,
+		); err != nil {
 			return diag.FromErr(err)
 		}
 
@@ -416,10 +437,4 @@ func deleteActiveActivePrincipals(ctx context.Context, api *client.ApiClient, su
 
 	}
 	return nil
-}
-
-func activeActivePrivateLinkGetter(api *client.ApiClient, subscriptionID, regionID int) PrivateLinkGetter {
-	return func(ctx context.Context) (*pl.PrivateLink, error) {
-		return api.Client.PrivateLink.GetActiveActivePrivateLink(ctx, subscriptionID, regionID)
-	}
 }
