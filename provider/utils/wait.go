@@ -409,6 +409,47 @@ func WaitForPrivateLinkPrincipals(
 	return nil
 }
 
+// Use WaitForPrivateLinkToBeDeleted after a delete task completes to confirm API
+// absence. The region ID is only used for Active-Active subscriptions. Pass a
+// context bounded by the calling operation's timeout.
+func WaitForPrivateLinkToBeDeleted(
+	ctx context.Context,
+	subId int,
+	api *client.ApiClient,
+	timeout time.Duration,
+	subscriptionType string,
+	regionId int,
+) error {
+	wait := &retry.StateChangeConf{
+		Pending:      []string{"pending"},
+		Target:       []string{"deleted"},
+		Timeout:      timeout,
+		PollInterval: api.WaitPollInterval(10 * time.Second),
+		Refresh: func() (interface{}, string, error) {
+			var link *pl.PrivateLink
+			var err error
+			if subscriptionType == subscriptions.SubscriptionDeploymentTypeActiveActive {
+				link, err = api.Client.PrivateLink.GetActiveActivePrivateLink(ctx, subId, regionId)
+			} else {
+				link, err = api.Client.PrivateLink.GetPrivateLink(ctx, subId)
+			}
+			if err != nil {
+				var notFound *pl.NotFound
+				var notFoundActiveActive *pl.NotFoundActiveActive
+				if errors.As(err, &notFound) || errors.As(err, &notFoundActiveActive) {
+					return "deleted", "deleted", nil
+				}
+				return nil, "", err
+			}
+			return link, "pending", nil
+		},
+	}
+	if _, err := wait.WaitForStateContext(ctx); err != nil {
+		return fmt.Errorf("verifying PrivateLink deletion: %w", err)
+	}
+	return nil
+}
+
 // Aliases label principals without changing access, so match membership by
 // principal value and type while checking association status.
 func privateLinkPrincipalsMatch(actual []*pl.PrivateLinkPrincipal, expected []pl.PrivateLinkPrincipal) (bool, error) {

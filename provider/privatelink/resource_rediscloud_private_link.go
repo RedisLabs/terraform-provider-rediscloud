@@ -342,6 +342,9 @@ func resourceRedisCloudPrivateLinkUpdate(ctx context.Context, d *schema.Resource
 }
 
 func resourceRedisCloudPrivateLinkDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	ctx, cancel := context.WithTimeout(ctx, d.Timeout(schema.TimeoutDelete))
+	defer cancel()
+
 	var diags diag.Diagnostics
 	api := meta.(*client.ApiClient)
 
@@ -362,12 +365,24 @@ func resourceRedisCloudPrivateLinkDelete(ctx context.Context, d *schema.Resource
 		return diag.FromErr(err)
 	}
 
-	d.SetId("")
-
 	err = utils.WaitForSubscriptionToBeActive(ctx, subId, api, d.Timeout(schema.TimeoutDelete))
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
+	// A completed task does not prove the link is gone. Retain the ID for a
+	// subsequent destroy attempt until an API read confirms absence.
+	if err := utils.WaitForPrivateLinkToBeDeleted(
+		ctx,
+		subId,
+		api,
+		d.Timeout(schema.TimeoutDelete),
+		subscriptions.SubscriptionDeploymentTypeSingleRegion,
+		0,
+	); err != nil {
+		return diag.FromErr(err)
+	}
+	d.SetId("")
 
 	return diags
 }
