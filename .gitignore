@@ -49,3 +49,4 @@ CLAUDE.md
 .serena/
 
 .run/
+scripts/shared_acceptance/__pycache__/
